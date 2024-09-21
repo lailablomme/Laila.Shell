@@ -135,7 +135,7 @@ Public Class Item
             Dim iconIndex As Integer
             shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
 
-            If iconIndex >= 0 Then
+            If iconIndex > 0 Then
                 ' Get the system image list
                 Dim hImageListLarge As IntPtr
                 Dim hImageListSmall As IntPtr
