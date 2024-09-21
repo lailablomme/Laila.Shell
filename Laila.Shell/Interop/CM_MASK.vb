@@ -1,0 +1,8 @@
+﻿<Flags>
+Public Enum CM_MASK
+    CM_MASK_WIDTH = &H1
+    CM_MASK_DEFAULTWIDTH = &H2
+    CM_MASK_IDEALWIDTH = &H4
+    CM_MASK_NAME = &H8
+    CM_MASK_STATE = &H10
+End Enum
