@@ -178,11 +178,11 @@ Public Class Item
             Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(Me.ShellItem2), pidl)
             lastpidl = Functions.ILFindLastID(pidl)
 
-            Dim shellIconOverlay As IShellIconOverlay = Me.Parent.ShellFolder
+            Dim shellIconOverlay As IShellIconOverlay = If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder)
             Dim iconIndex As Integer
             shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
 
-            If iconIndex >= 0 Then
+            If iconIndex > 0 Then
                 ' Get the system image list
                 Dim hImageListLarge As IntPtr
                 Dim hImageListSmall As IntPtr
