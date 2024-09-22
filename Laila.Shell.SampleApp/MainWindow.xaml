@@ -4,14 +4,21 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Laila.Shell.SampleApp"
-        xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell"
+        xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" x:Name="view"
         mc:Ignorable="d" Icon="{Binding DataContext.Folder.Icon32, ElementName=detailListView}"
         Height="450" Width="800" Title="{Binding DataContext.Folder.DisplayName, ElementName=detailListView}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-        <controls:DetailsListView x:Name="detailListView" FolderName="shell:MyComputerFolder" />
+        <controls:TreeView x:Name="treeView" SelectedFolderName="{Binding DataContext.FolderName, ElementName=view, Mode=TwoWay}" />
+        <GridSplitter Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+        <controls:DetailsListView Grid.Column="2" x:Name="detailListView" FolderName="{Binding DataContext.FolderName, ElementName=view, Mode=TwoWay}" />
     </Grid>
 </Window>

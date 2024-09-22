@@ -3,7 +3,7 @@ Imports Laila.Shell.ViewModels
 
 Namespace Controls
     Public Class DetailsListView
-        Public Shared ReadOnly FolderNameProperty As DependencyProperty = DependencyProperty.Register("FolderName", GetType(String), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, AddressOf OnFolderNameChanged))
+        Public Shared ReadOnly FolderNameProperty As DependencyProperty = DependencyProperty.Register("FolderName", GetType(String), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderNameChanged))
 
         Private _model As DetailsListViewModel
 

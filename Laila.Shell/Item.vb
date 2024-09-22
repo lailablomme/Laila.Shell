@@ -131,26 +131,33 @@ Public Class Item
             Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(Me.ShellItem2), pidl)
             lastpidl = Functions.ILFindLastID(pidl)
 
-            Dim shellIconOverlay As IShellIconOverlay = If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder)
-            Dim iconIndex As Integer
-            shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
+            Dim ptr As IntPtr = Marshal.GetIUnknownForObject(If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder))
+            Dim ptr2 As IntPtr
+            Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
+            If Not IntPtr.Zero.Equals(ptr2) Then
+                Dim shellIconOverlay As IShellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
+                Dim iconIndex As Integer
+                shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
 
-            If iconIndex > 0 Then
-                ' Get the system image list
-                Dim hImageListLarge As IntPtr
-                Dim hImageListSmall As IntPtr
-                Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
+                If iconIndex > 0 Then
+                    ' Get the system image list
+                    Dim hImageListLarge As IntPtr
+                    Dim hImageListSmall As IntPtr
+                    Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
 
-                ' Retrieve the overlay icon
-                Dim hIcon As IntPtr = Functions.ImageList_GetIcon(hImageListSmall, iconIndex, 0)
-                If hIcon <> IntPtr.Zero Then
-                    Try
-                        Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
-                            Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        End Using
-                    Finally
-                        Functions.DestroyIcon(hIcon)
-                    End Try
+                    ' Retrieve the overlay icon
+                    Dim hIcon As IntPtr = Functions.ImageList_GetIcon(hImageListSmall, iconIndex, 0)
+                    If hIcon <> IntPtr.Zero Then
+                        Try
+                            Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
+                                Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            End Using
+                        Finally
+                            Functions.DestroyIcon(hIcon)
+                        End Try
+                    Else
+                        Return Nothing
+                    End If
                 Else
                     Return Nothing
                 End If
@@ -178,26 +185,33 @@ Public Class Item
             Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(Me.ShellItem2), pidl)
             lastpidl = Functions.ILFindLastID(pidl)
 
-            Dim shellIconOverlay As IShellIconOverlay = If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder)
-            Dim iconIndex As Integer
-            shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
+            Dim ptr As IntPtr = Marshal.GetIUnknownForObject(If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder))
+            Dim ptr2 As IntPtr
+            Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
+            If Not IntPtr.Zero.Equals(ptr2) Then
+                Dim shellIconOverlay As IShellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
+                Dim iconIndex As Integer
+                shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
 
-            If iconIndex > 0 Then
-                ' Get the system image list
-                Dim hImageListLarge As IntPtr
-                Dim hImageListSmall As IntPtr
-                Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
+                If iconIndex > 0 Then
+                    ' Get the system image list
+                    Dim hImageListLarge As IntPtr
+                    Dim hImageListSmall As IntPtr
+                    Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
 
-                ' Retrieve the overlay icon
-                Dim hIcon As IntPtr = Functions.ImageList_GetIcon(hImageListLarge, iconIndex, 0)
-                If hIcon <> IntPtr.Zero Then
-                    Try
-                        Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
-                            Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        End Using
-                    Finally
-                        Functions.DestroyIcon(hIcon)
-                    End Try
+                    ' Retrieve the overlay icon
+                    Dim hIcon As IntPtr = Functions.ImageList_GetIcon(hImageListLarge, iconIndex, 0)
+                    If hIcon <> IntPtr.Zero Then
+                        Try
+                            Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
+                                Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            End Using
+                        Finally
+                            Functions.DestroyIcon(hIcon)
+                        End Try
+                    Else
+                        Return Nothing
+                    End If
                 Else
                     Return Nothing
                 End If
@@ -230,6 +244,9 @@ Public Class Item
         Get
             If _fullPath Is Nothing Then
                 Me.ShellItem2.GetDisplayName(SHGDN.FORPARSING, _fullPath)
+                If _fullPath.StartsWith("::{") AndAlso _fullPath.EndsWith("}") Then
+                    _fullPath = "shell:" & _fullPath
+                End If
             End If
 
             Return _fullPath

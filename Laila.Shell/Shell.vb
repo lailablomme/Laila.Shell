@@ -7,7 +7,7 @@ Imports System.Windows.Interop
 Public Class Shell
     Private Shared _desktop As Folder
 
-    Public Shared Property DoInsertLevelUpFolder As Boolean = True
+    Public Shared Property DoInsertLevelUpFolder As Boolean = False
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
 

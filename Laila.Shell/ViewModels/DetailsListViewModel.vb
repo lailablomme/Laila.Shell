@@ -20,7 +20,7 @@ Namespace ViewModels
         Private _folder As Folder
         Private _gridView As GridView
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
-        Private _isLoading As Boolean = True
+        Private _isLoading As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _scrollState As Dictionary(Of String, ScrollState) = New Dictionary(Of String, ScrollState)()
         Private _skipSavingScrollState As Boolean = False
@@ -105,16 +105,20 @@ Namespace ViewModels
                 Return _folderName
             End Get
             Set(value As String)
-                If Not Me.Folder Is Nothing Then
-                    saveScrollState()
-                End If
+                If Not (String.IsNullOrWhiteSpace(Me.FolderName) AndAlso String.IsNullOrWhiteSpace(value)) AndAlso
+                    Not EqualityComparer(Of String).Default.Equals(Me.FolderName, value) Then
+                    If Not Me.Folder Is Nothing Then
+                        saveScrollState()
+                    End If
 
-                SetValue(_folderName, value)
-                If Not String.IsNullOrWhiteSpace(Me.FolderName) Then
-                    _skipSavingScrollState = True
-                    If Not Me.Folder Is Nothing Then Me.Folder.Dispose()
-                    Me.Folder = Folder.FromParsingName(FolderName, Sub(val) Me.IsLoading = val)
-                    Me.ColumnsIn = buildColumnsIn()
+                    SetValue(_folderName, value)
+                    If Not String.IsNullOrWhiteSpace(Me.FolderName) Then
+                        _skipSavingScrollState = True
+                        If Not Me.Folder Is Nothing Then Me.Folder.Dispose()
+                        Me.Folder = Folder.FromParsingName(FolderName, Sub(val) Me.IsLoading = val)
+                        Me.ColumnsIn = buildColumnsIn()
+                    End If
+                    _view.FolderName = _folderName
                 End If
             End Set
         End Property
@@ -262,11 +266,11 @@ Namespace ViewModels
             End If
         End Sub
 
-        Private Async Sub OnListViewItemRightClick(sender As Object, e As MouseButtonEventArgs)
+        Private Sub OnListViewItemRightClick(sender As Object, e As MouseButtonEventArgs)
             If Not e.OriginalSource Is Nothing Then
                 Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
                 If Not listViewItem Is Nothing Then
-                    If Not listViewItem.IsSelected Then Await Me.SetSelectedItem(listViewItem.DataContext)
+                    If Not listViewItem.IsSelected Then Me.SetSelectedItem(listViewItem.DataContext)
 
                     Dim iContextMenu As IContextMenu, defaultId As String
                     Dim contextMenu As ContextMenu = Me.Folder.GetContextMenu(Me.SelectedItems, iContextMenu, defaultId)
@@ -321,11 +325,11 @@ Namespace ViewModels
             End Get
         End Property
 
-        Public Async Function SetSelectedItems(value As IEnumerable(Of Item)) As Task
+        Public Sub SetSelectedItems(value As IEnumerable(Of Item))
             If Not _selectionHelper Is Nothing Then
-                Await _selectionHelper.SetSelectedItems(value)
+                _selectionHelper.SetSelectedItems(value)
             End If
-        End Function
+        End Sub
 
         Public ReadOnly Property SelectedItem As Item
             Get
@@ -334,13 +338,13 @@ Namespace ViewModels
             End Get
         End Property
 
-        Public Async Function SetSelectedItem(value As Item) As Task
+        Public Sub SetSelectedItem(value As Item)
             If value Is Nothing Then
-                Await Me.SetSelectedItems(New Item() {})
+                Me.SetSelectedItems(New Item() {})
             Else
-                Await Me.SetSelectedItems(New Item() {value})
+                Me.SetSelectedItems(New Item() {value})
             End If
-        End Function
+        End Sub
 
         Private Class ScrollState
             Public Property OffsetY As Double

@@ -89,87 +89,22 @@ Public Class Folder
         End Get
     End Property
 
-    Public Property Items As ObservableCollection(Of Item)
+    Public ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
         Get
             If _items Is Nothing Then
                 If Not _setIsLoadingAction Is Nothing Then
                     _setIsLoadingAction(True)
                 End If
 
-                Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
-
                 Dim t As Thread = New Thread(New ThreadStart(
                     Sub()
-                        If Shell.DoInsertLevelUpFolder AndAlso Not Me.Parent Is Nothing Then
-                            result.Add(LevelUpFolder.FromParsingName(Me.Parent.FullPath, Me, _setIsLoadingAction))
-                        End If
-
-                        If Not isWindows7OrLower() Then
-                            Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
-                            Functions.CreateBindCtx(0, bindCtxPtr)
-                            bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
-
-                            Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
-                            Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
-                            propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
-
-                            Dim var As New PROPVARIANT()
-                            var.vt = VarEnum.VT_UI4
-                            var.union.uintVal = CType(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, UInt32) 'Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.FOLDERS
-                            propertyBag.Write("SHCONTF", var)
-
-                            bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
-                            Dim ptr2 As IntPtr
-                            bindCtxPtr = Marshal.GetIUnknownForObject(bindCtx)
-
-                            ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
-                            Dim enumShellItems As IEnumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
-
-                            Dim shellItemArray(0) As IShellItem, feteched As UInt32 = 1
-                            Application.Current.Dispatcher.Invoke(
-                                Sub()
-                                    enumShellItems.Next(1, shellItemArray, feteched)
-                                End Sub)
-                            While feteched = 1
-                                Dim attr As Integer = SFGAO.FOLDER
-                                shellItemArray(0).GetAttributes(attr, attr)
-                                If CBool(attr And SFGAO.FOLDER) Then
-                                    result.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), _setIsLoadingAction))
-                                Else
-                                    result.Add(New Item(shellItemArray(0), _setIsLoadingAction))
-                                End If
-                                'End If
-                                Application.Current.Dispatcher.Invoke(
-                                    Sub()
-                                        enumShellItems.Next(1, shellItemArray, feteched)
-                                    End Sub)
-                            End While
-                        Else
-                            Dim list As IEnumIDList
-                            Me.ShellFolder.EnumObjects(Nothing, SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, list)
-                            If Not list Is Nothing Then
-                                Dim pidl(0) As IntPtr, fetched As Integer
-                                While list.Next(1, pidl, fetched) = 0
-                                    Dim attr As Integer = SFGAO.FOLDER
-                                    Me.ShellFolder.GetAttributesOf(1, pidl, attr)
-                                    Application.Current.Dispatcher.Invoke(
-                                        Sub()
-                                            If CBool(attr And SFGAO.FOLDER) Then
-                                                result.Add(New Folder(Me, pidl(0), _setIsLoadingAction))
-                                            Else
-                                                result.Add(New Item(Me, pidl(0), _setIsLoadingAction))
-                                            End If
-                                        End Sub)
-                                End While
-                            End If
-                        End If
-
-                        Me.Items = result
+                        Dim result As ObservableCollection(Of Item) = Me.Items
 
                         If Not _setIsLoadingAction Is Nothing Then
                             _setIsLoadingAction(False)
                         End If
                     End Sub))
+
                 t.Start()
 
                 Return New ObservableCollection(Of Item)()
@@ -177,8 +112,85 @@ Public Class Folder
                 Return _items
             End If
         End Get
-        Friend Set(value As ObservableCollection(Of Item))
+    End Property
+
+    Public Property Items As ObservableCollection(Of Item)
+        Get
+            If _items Is Nothing Then
+                Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
+
+                If Shell.DoInsertLevelUpFolder AndAlso Not Me.Parent Is Nothing Then
+                    result.Add(LevelUpFolder.FromParsingName(Me.Parent.FullPath, Me, _setIsLoadingAction))
+                End If
+
+                If Not isWindows7OrLower() Then
+                    Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
+                    Functions.CreateBindCtx(0, bindCtxPtr)
+                    bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
+
+                    Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
+                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
+                    propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
+
+                    Dim var As New PROPVARIANT()
+                    var.vt = VarEnum.VT_UI4
+                    var.union.uintVal = CType(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, UInt32) 'Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.FOLDERS
+                    propertyBag.Write("SHCONTF", var)
+
+                    bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
+                    Dim ptr2 As IntPtr
+                    bindCtxPtr = Marshal.GetIUnknownForObject(bindCtx)
+
+                    ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                    Dim enumShellItems As IEnumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+
+                    Dim shellItemArray(0) As IShellItem, feteched As UInt32 = 1
+                    Application.Current.Dispatcher.Invoke(
+                        Sub()
+                            enumShellItems.Next(1, shellItemArray, feteched)
+                        End Sub)
+                    While feteched = 1
+                        Dim attr As Integer = SFGAO.FOLDER
+                        shellItemArray(0).GetAttributes(attr, attr)
+                        If CBool(attr And SFGAO.FOLDER) Then
+                            result.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), _setIsLoadingAction))
+                        Else
+                            result.Add(New Item(shellItemArray(0), _setIsLoadingAction))
+                        End If
+                        'End If
+                        Application.Current.Dispatcher.Invoke(
+                            Sub()
+                                enumShellItems.Next(1, shellItemArray, feteched)
+                            End Sub)
+                    End While
+                Else
+                    Dim list As IEnumIDList
+                    Me.ShellFolder.EnumObjects(Nothing, SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, list)
+                    If Not list Is Nothing Then
+                        Dim pidl(0) As IntPtr, fetched As Integer
+                        While list.Next(1, pidl, fetched) = 0
+                            Dim attr As Integer = SFGAO.FOLDER
+                            Me.ShellFolder.GetAttributesOf(1, pidl, attr)
+                            Application.Current.Dispatcher.Invoke(
+                                Sub()
+                                    If CBool(attr And SFGAO.FOLDER) Then
+                                        result.Add(New Folder(Me, pidl(0), _setIsLoadingAction))
+                                    Else
+                                        result.Add(New Item(Me, pidl(0), _setIsLoadingAction))
+                                    End If
+                                End Sub)
+                        End While
+                    End If
+                End If
+
+                Me.Items = result
+            End If
+
+            Return _items
+        End Get
+        Set(value As ObservableCollection(Of Item))
             SetValue(_items, value)
+            Me.NotifyOfPropertyChange("ItemsThreaded")
         End Set
     End Property
 
@@ -372,7 +384,7 @@ Public Class Folder
         End Select
     End Sub
 
-    Private Function isWindows7OrLower() As Boolean
+    Protected Function isWindows7OrLower() As Boolean
         Dim osVersion As Version = Environment.OSVersion.Version
         ' Windows 7 has version number 6.1
         Return osVersion.Major < 6 OrElse (osVersion.Major = 6 AndAlso osVersion.Minor <= 1)

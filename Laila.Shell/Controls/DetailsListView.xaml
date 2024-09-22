@@ -9,7 +9,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <ListView ItemsSource="{Binding Folder.Items}" x:Name="listView" SelectionMode="Extended"  
+        <ListView ItemsSource="{Binding Folder.ItemsThreaded}" x:Name="listView" SelectionMode="Extended"  
                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
                   VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="1" VirtualizingPanel.CacheLengthUnit="Page">
             <ListView.Resources>
