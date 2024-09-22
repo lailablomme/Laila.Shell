@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports System.Windows.Documents
 Imports System.Windows.Media
 Imports System.Xml.Serialization
 Imports Laila.Shell.Adorners
@@ -379,29 +380,26 @@ Namespace Behaviors
 
             ' re-add columns, restoring properties from state in the process
             Dim i As Integer = 0
-            For Each column In _activeColumns
+            For Each column In _activeColumns.Where(Function(c) c.IsVisible)
                 ' init width and visibility
                 column.Column.Width = column.Width
 
-                ' add column
-                If column.IsVisible Then
-                    SetColumnIndex(column.Column, i)
-                    column.OriginalIndex = i
+                SetColumnIndex(column.Column, i)
+                column.OriginalIndex = i
 
-                    _gridView.Columns.Add(column.Column)
+                _gridView.Columns.Add(column.Column)
 
-                    ' re-hook headers
-                    Dim colHeader As GridViewColumnHeader =
+                ' re-hook headers
+                Dim colHeader As GridViewColumnHeader =
                         UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter) _
                             .FirstOrDefault(Function(h) Not h.Column Is Nothing AndAlso h.Column.Equals(column.Column))
-                    If GetIsHeaderVisible(column.Column) Then
-                        AddHandler colHeader.MouseRightButtonDown, AddressOf ColumnHeader_MouseRightButtonDown
-                    Else
-                        colHeader.Visibility = Visibility.Hidden
-                    End If
-
-                    i += 1
+                If GetIsHeaderVisible(column.Column) Then
+                    AddHandler colHeader.MouseRightButtonDown, AddressOf ColumnHeader_MouseRightButtonDown
+                Else
+                    colHeader.Visibility = Visibility.Hidden
                 End If
+
+                i += 1
             Next
 
             ' fix sort glyphs
@@ -639,6 +637,19 @@ Namespace Behaviors
                 _skipResize = True
                 resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
             End If
+
+            Dim headers As List(Of GridViewColumnHeader) =
+                    UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+            For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
+                headers.Remove(header)
+            Next
+            For Each item In rows.Select(Function(r) r.DataContext).ToList()
+                Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
+                If Not lvi Is Nothing Then
+                    lvi.HorizontalAlignment = HorizontalAlignment.Left
+                    lvi.Width = headers.Sum(Function(h) h.Width)
+                End If
+            Next
         End Sub
 
         Private Sub resizeForRows(list As List(Of Object), minimum As Boolean)

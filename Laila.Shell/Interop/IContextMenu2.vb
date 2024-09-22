@@ -17,7 +17,7 @@ Public Interface IContextMenu2
     Function InvokeCommand(ByRef pici As CMINVOKECOMMANDINFO) As Integer
 
     <PreserveSig()>
-    Function GetCommandString(ByVal idcmd As Integer,
+    Function GetCommandString(ByVal idcmd As UInt32,
     ByVal uflags As Integer,
     ByVal reserved As Integer,
     <MarshalAs(UnmanagedType.LPArray)> ByVal commandstring As Byte(),

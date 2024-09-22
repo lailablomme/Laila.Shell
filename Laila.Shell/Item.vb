@@ -20,6 +20,7 @@ Public Class Item
     Protected _setIsLoadingAction As Action(Of Boolean)
     Protected disposedValue As Boolean
     Protected _logicalParent As Folder
+    Private _displayName As String
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
@@ -232,9 +233,10 @@ Public Class Item
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
-            Dim result As String
-            Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, result)
-            Return result
+            If String.IsNullOrWhiteSpace(_displayName) Then
+                Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+            End If
+            Return _displayName
         End Get
     End Property
 
@@ -320,14 +322,20 @@ Public Class Item
                     Me.ShellItem2.Update(IntPtr.Zero)
                     _fullPath = Nothing
                     _properties = New Dictionary(Of String, [Property])()
-                    Me.NotifyOfPropertyChange("Properties")
+                    _displayName = Nothing
+                    For Each prop In Me.GetType().GetProperties()
+                        Me.NotifyOfPropertyChange(prop.Name)
+                    Next
                 End If
             Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                 If Me.FullPath.Equals(e.Item1Path) Then
                     _interface = Item.GetIShellItem2FromParsingName(e.Item2Path)
                     _fullPath = Nothing
                     _properties = New Dictionary(Of String, [Property])()
-                    Me.NotifyOfPropertyChange("Properties")
+                    _displayName = Nothing
+                    For Each prop In Me.GetType().GetProperties()
+                        Me.NotifyOfPropertyChange(prop.Name)
+                    Next
                 End If
         End Select
     End Sub

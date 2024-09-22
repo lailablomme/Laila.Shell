@@ -228,12 +228,18 @@ Public Class Folder
                     If mii.fType = MFT.SEPARATOR Then
                         result.Add(New Separator())
                     Else
-                        mii.fMask = MIIM.MIIM_ID Or MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
+                        mii.fMask = MIIM.MIIM_ID
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        Dim bytes(256) As Byte
-                        contextMenu2.GetCommandString(mii.wID, GCS.VERBA, 0, bytes, 256)
-                        Dim cmd As String = Text.Encoding.ASCII.GetString(bytes).Trim(vbNullChar)
+                        Dim cmd As String
+                        If mii.wID < 1000000 Then
+                            Dim bytes(256) As Byte
+                            contextMenu2.GetCommandString(mii.wID, GCS.VERBA, 0, bytes, 256)
+                            cmd = Text.Encoding.ASCII.GetString(bytes).Trim(vbNullChar)
+                        End If
+
+                        mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
+                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
                         Dim menuItem As MenuItem = New MenuItem() With {
                             .Header = header.Replace("&", "_"),
@@ -273,7 +279,7 @@ Public Class Folder
 
     Public Sub InvokeCommand(contextMenu As IContextMenu, items As IEnumerable(Of Item), id As String)
         Dim cmi As New CMINVOKECOMMANDINFO
-        cmi.lpVerb = Convert.ToInt32(id.Split(vbTab)(0))
+        cmi.lpVerb = Convert.ToUInt32(id.Split(vbTab)(0))
         cmi.lpDirectory = Me.FullPath
         cmi.fMask = CMIC.NOZONECHECKS Or CMIC.ASYNCOK
         cmi.nShow = SW.SHOWNORMAL
@@ -286,17 +292,28 @@ Public Class Folder
     Private Function getIContextMenu(items As IEnumerable(Of Item),
                                      ByRef contextMenu2 As IContextMenu2, ByRef contextMenu3 As IContextMenu3,
                                      ByRef hMenu As IntPtr) As IContextMenu
-        Dim pidls(items.Count - 1) As IntPtr
-        Dim lastpidls(items.Count - 1) As IntPtr
+        Dim contextMenu As IContextMenu
 
-        For i = 0 To items.Count - 1
-            Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(items(i).ShellItem2), pidls(i))
-            lastpidls(i) = Functions.ILFindLastID(pidls(i))
-        Next
+        If Not items Is Nothing AndAlso items.Count > 0 Then
+            Dim pidls(items.Count - 1) As IntPtr
+            Dim lastpidls(items.Count - 1) As IntPtr
 
-        Dim ptr As IntPtr
-        Me.ShellFolder.GetUIObjectOf(IntPtr.Zero, lastpidls.Length, lastpidls, GetType(IContextMenu).GUID, 0, ptr)
-        Dim contextMenu As IContextMenu = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IContextMenu))
+            For i = 0 To items.Count - 1
+                Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(items(i).ShellItem2), pidls(i))
+                lastpidls(i) = Functions.ILFindLastID(pidls(i))
+            Next
+
+            Dim ptr As IntPtr
+            Me.ShellFolder.GetUIObjectOf(IntPtr.Zero, lastpidls.Length, lastpidls, GetType(IContextMenu).GUID, 0, ptr)
+            contextMenu = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IContextMenu))
+        Else
+            Dim ptr As IntPtr
+            Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
+            Dim shellView As IShellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
+
+            shellView.GetItemObject(SVGIO.SVGIO_BACKGROUND, GetType(IContextMenu).GUID, ptr)
+            contextMenu = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IContextMenu))
+        End If
 
         Dim ptr3 As IntPtr = Marshal.GetIUnknownForObject(contextMenu), ptr2
         Marshal.QueryInterface(ptr3, GetType(IContextMenu2).GUID, ptr2)
@@ -333,7 +350,7 @@ Public Class Folder
                     Dim parentFullPath As String
                     parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                     If Me.FullPath.Equals(parentFullPath) Then
-                        If Not _items Is Nothing Then
+                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
                             _items.Add(New Item(e.Item1, Me, _setIsLoadingAction))
                             Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_items)
                             view.Refresh()
@@ -347,7 +364,7 @@ Public Class Folder
                     Dim parentFullPath As String
                     parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                     If Me.FullPath.Equals(parentFullPath) Then
-                        If Not _items Is Nothing Then
+                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
                             _items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(e.Item1), e.Item1, Me, _setIsLoadingAction))
                         End If
                     End If
@@ -361,7 +378,7 @@ Public Class Folder
                 End If
             Case SHCNE.DRIVEADD
                 If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") Then
-                    If Not _items Is Nothing Then
+                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
                         _items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(e.Item1), e.Item1, Me, _setIsLoadingAction))
                     End If
                 End If
@@ -372,10 +389,10 @@ Public Class Folder
                         _items.Remove(item)
                     End If
                 End If
-            Case SHCNE.UPDATEDIR
+            Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                 If Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path) Then
                     _items = Nothing
-                    Me.NotifyOfPropertyChange("Items")
+                    Me.NotifyOfPropertyChange("ItemsThreaded")
                 End If
         End Select
     End Sub

@@ -8,9 +8,13 @@ Public Class Shell
     Private Shared _desktop As Folder
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
+    Friend Shared Event UpdateDirCompleted()
+
+    Friend Shared Property UpdateDirCounter As Integer
 
     Private Shared _hNotify As UInt32
     Private Shared _w As Window
+    Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
 
     Shared Sub New()
         Dim entry(0) As SHChangeNotifyEntry
@@ -45,6 +49,13 @@ Public Class Shell
                         Functions.SHChangeNotifyDeregister(_hNotify)
                     End Sub
             End Sub
+
+        _specialFolders.Add("Documents", Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing, Nothing))
+        _specialFolders.Add("Pictures", Folder.FromParsingName("shell:::{24ad3ad4-a569-4530-98e1-ab02f9417aa8}", Nothing, Nothing))
+        _specialFolders.Add("Downloads", Folder.FromParsingName("shell:::{088e3905-0323-4b02-9826-5d99428e115f}", Nothing, Nothing))
+        _specialFolders.Add("Videos", Folder.FromParsingName("shell:::{A0953C92-50DC-43bf-BE83-3742FED03C9C}", Nothing, Nothing))
+        _specialFolders.Add("Music", Folder.FromParsingName("shell:::{1CF1260C-4DD0-4ebb-811F-33C572699FDE}", Nothing, Nothing))
+        _specialFolders.Add("Favorites", Folder.FromParsingName("shell:::{323CA680-C24D-4099-B94D-446DD2D7249E}", Nothing, Nothing))
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
@@ -54,6 +65,8 @@ Public Class Shell
             Dim hLock As IntPtr = Functions.SHChangeNotification_Lock(wParam, lParam, pppidl, lEvent)
 
             If hLock <> IntPtr.Zero Then
+                Debug.WriteLine(lEvent.ToString())
+
                 Dim pidl1 As IntPtr = Marshal.ReadIntPtr(pppidl)
                 pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                 Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
@@ -89,6 +102,15 @@ Public Class Shell
         End If
     End Function
 
+    Public Shared Sub InvokeUpdateDirCompleted()
+        RaiseEvent UpdateDirCompleted()
+    End Sub
+
+    Public Shared ReadOnly Property SpecialFolders As Dictionary(Of String, Folder)
+        Get
+            Return _specialFolders
+        End Get
+    End Property
 
     Public Shared ReadOnly Property Desktop As Folder
         Get

@@ -90,14 +90,16 @@ Namespace ViewModels
         End Sub
 
         Private Sub loadScrollState()
-            Dim state As ScrollState = _scrollState(Me.Folder.FullPath)
-            getScrollViewer().ScrollToVerticalOffset(state.OffsetY)
-            Me.SetSelectedItems(state.SelectedItems)
+            If _scrollState.ContainsKey(Me.Folder.FullPath) Then
+                Dim state As ScrollState = _scrollState(Me.Folder.FullPath)
+                getScrollViewer().ScrollToVerticalOffset(state.OffsetY)
+                Me.SetSelectedItems(state.SelectedItems)
 
-            Dim index As Integer = _scrollState.Keys.ToList().IndexOf(Me.Folder.FullPath)
-            While _scrollState.Count > index
-                _scrollState.Remove(_scrollState.Keys.ElementAt(_scrollState.Count - 1))
-            End While
+                Dim index As Integer = _scrollState.Keys.ToList().IndexOf(Me.Folder.FullPath)
+                While _scrollState.Count > index
+                    _scrollState.Remove(_scrollState.Keys.ElementAt(_scrollState.Count - 1))
+                End While
+            End If
         End Sub
 
         Public Property FolderName As String
@@ -270,12 +272,15 @@ Namespace ViewModels
         Private Sub OnListViewItemRightClick(sender As Object, e As MouseButtonEventArgs)
             If Not e.OriginalSource Is Nothing Then
                 Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
+                Dim contextItems As IEnumerable(Of Item)
                 If Not listViewItem Is Nothing Then
                     If Not listViewItem.IsSelected Then Me.SetSelectedItem(listViewItem.DataContext)
+                    contextItems = Me.SelectedItems
+                End If
 
-                    Dim iContextMenu As IContextMenu, defaultId As String
-                    Dim contextMenu As ContextMenu = Me.Folder.GetContextMenu(Me.SelectedItems, iContextMenu, defaultId)
-                    Dim wireItems As Action(Of ItemCollection) =
+                Dim iContextMenu As IContextMenu, defaultId As String
+                Dim contextMenu As ContextMenu = Me.Folder.GetContextMenu(contextItems, iContextMenu, defaultId)
+                Dim wireItems As Action(Of ItemCollection) =
                         Sub(items As ItemCollection)
                             For Each c As Control In items
                                 If TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0 Then
@@ -301,10 +306,9 @@ Namespace ViewModels
                                 End If
                             Next
                         End Sub
-                    wireItems(contextMenu.Items)
+                wireItems(contextMenu.Items)
 
-                    _view.listView.ContextMenu = contextMenu
-                End If
+                _view.listView.ContextMenu = contextMenu
             End If
         End Sub
 

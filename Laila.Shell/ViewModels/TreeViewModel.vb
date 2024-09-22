@@ -15,6 +15,7 @@ Namespace ViewModels
         Private _selectionHelper1 As SelectionHelper(Of TreeViewFolder) = Nothing
         Private _selectionHelper2 As SelectionHelper(Of TreeViewFolder) = Nothing
         Private _selectionHelper3 As SelectionHelper(Of TreeViewFolder) = Nothing
+        Private _isSettingSelectedFolder As Boolean
 
         Public Sub New(view As TreeView)
             _view = view
@@ -30,7 +31,7 @@ Namespace ViewModels
             _folders2 = New List(Of TreeViewFolder)()
             For Each f In CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing), Folder) _
                 .Items.Where(Function(i) TypeOf i Is Folder AndAlso
-                (i.Parent Is Nothing OrElse Path.GetDirectoryName(i.FullPath) = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)))
+                (i.Parent Is Nothing OrElse Shell.SpecialFolders.Values.ToList().Exists(Function(sf) sf.FullPath = i.FullPath)))
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) Then
                     _folders2.Add(TreeViewFolder.FromParsingName(f.FullPath, Nothing, Nothing))
@@ -110,6 +111,14 @@ Namespace ViewModels
                             End If
                         End Sub
                 End Sub
+
+            AddHandler Shell.UpdateDirCompleted,
+                Sub()
+                    If Not Shell.UpdateDirCounter > 0 AndAlso
+                    (Me.SelectedItem Is Nothing Or Me.SelectedItem.FullPath <> _view.SelectedFolderName) Then
+                        Me.SetSelectedFolder(_view.SelectedFolderName)
+                    End If
+                End Sub
         End Sub
 
         Public ReadOnly Property Folders1 As List(Of TreeViewFolder)
@@ -131,12 +140,14 @@ Namespace ViewModels
         End Property
 
         Protected Overridable Sub OnSelectionChanged()
-            If Not Me.SelectedItem Is Nothing Then
-                _view.LogicalParent = Me.SelectedItem.LogicalParent
-                _view.SelectedFolderName = Me.SelectedItem.FullPath
-            Else
-                _view.LogicalParent = Nothing
-                _view.SelectedFolderName = Nothing
+            If Not Shell.UpdateDirCounter > 0 Then
+                If Not Me.SelectedItem Is Nothing Then
+                    _view.LogicalParent = Me.SelectedItem.LogicalParent
+                    _view.SelectedFolderName = Me.SelectedItem.FullPath
+                Else
+                    _view.LogicalParent = Nothing
+                    _view.SelectedFolderName = Nothing
+                End If
             End If
         End Sub
 
@@ -171,68 +182,84 @@ Namespace ViewModels
         End Sub
 
         Public Sub SetSelectedFolder(path As String)
-            Dim list As List(Of Folder) = New List(Of Folder)()
-            Dim f As Folder = Folder.FromParsingName(path, _view.LogicalParent, Nothing)
-            While Not f.LogicalParent Is Nothing
-                list.Add(f)
-                f = f.LogicalParent
-            End While
+            If Not _isSettingSelectedFolder Then
+                _isSettingSelectedFolder = True
 
-            Dim tf As TreeViewFolder, root As Integer
-            If _folders1.Exists(Function(f1) f1.FullPath = f.FullPath) Then
-                tf = _folders1.First(Function(f1) f1.FullPath = f.FullPath)
-                root = 1
-            ElseIf _folders2.Exists(Function(f1) f1.FullPath = f.FullPath) Then
-                tf = _folders2.First(Function(f1) f1.FullPath = f.FullPath)
-                root = 2
-            ElseIf _folders3.Exists(Function(f1) f1.FullPath = f.FullPath) Then
-                tf = _folders3.First(Function(f1) f1.FullPath = f.FullPath)
-                root = 3
-            Else
-                tf = Nothing
-            End If
+                Debug.WriteLine("SetSelectedFolder " & path)
+                Dim list As List(Of Folder) = New List(Of Folder)()
+                Dim f As Folder = Folder.FromParsingName(path, _view.LogicalParent, Nothing)
+                While Not f.LogicalParent Is Nothing
+                    list.Add(f)
+                    Debug.WriteLine("SetSelectedFolder Added parent " & f.FullPath)
+                    f = f.LogicalParent
+                End While
 
-            If Not tf Is Nothing Then
-                list.Reverse()
+                Dim tf As TreeViewFolder, root As Integer
+                If _folders1.Exists(Function(f1) f1.FullPath = f.FullPath) Then
+                    tf = _folders1.First(Function(f1) f1.FullPath = f.FullPath)
+                    root = 1
+                ElseIf _folders2.Exists(Function(f1) f1.FullPath = f.FullPath) Then
+                    tf = _folders2.First(Function(f1) f1.FullPath = f.FullPath)
+                    root = 2
+                ElseIf _folders3.Exists(Function(f1) f1.FullPath = f.FullPath) Then
+                    tf = _folders3.First(Function(f1) f1.FullPath = f.FullPath)
+                    root = 3
+                Else
+                    tf = Nothing
+                End If
 
-                Dim func As Action(Of Folder, Action(Of Boolean)) =
-                    Sub(item As Folder, callback As Action(Of Boolean))
-                        Dim tf2 As TreeViewFolder
-                        tf.IsLoading = True
-                        If Not tf.IsExpanded Then tf._folders = Nothing
-                        Dim thread As Thread = New Thread(New ThreadStart(
-                            Sub()
-                                tf2 = tf.Folders.FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
-                                tf.IsLoading = False
-                                If Not tf2 Is Nothing Then
-                                    tf.IsExpanded = True
-                                    tf = tf2
-                                    callback(False)
+                If Not tf Is Nothing Then
+                    list.Reverse()
+
+                    Dim func As Action(Of Folder, Action(Of Boolean)) =
+                        Sub(item As Folder, callback As Action(Of Boolean))
+                            Dim tf2 As TreeViewFolder
+                            tf.IsLoading = True
+                            Dim thread As Thread = New Thread(New ThreadStart(
+                                Sub()
+                                    SyncLock tf._foldersLock
+                                        If Not tf.IsExpanded Then tf._folders = Nothing
+                                        tf2 = tf.Folders.FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
+                                    End SyncLock
+                                    tf.IsLoading = False
+                                    If Not tf2 Is Nothing Then
+                                        Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
+                                        tf.IsExpanded = True
+                                        tf = tf2
+                                        callback(False)
+                                    Else
+                                        Debug.WriteLine("SetSelectedFolder didn't find " & item.FullPath)
+                                        callback(True)
+                                    End If
+                                End Sub))
+                            thread.Start()
+                        End Sub
+                    Dim en As IEnumerator(Of Folder) = list.GetEnumerator()
+                    Dim cb As System.Action(Of Boolean) =
+                        Sub(cancel As Boolean)
+                            If Not cancel Then
+                                If en.MoveNext() Then
+                                    func(en.Current, cb)
                                 Else
-                                    callback(True)
+                                    Select Case root
+                                        Case 1 : _selectionHelper1.SetSelectedItems({tf})
+                                        Case 2 : _selectionHelper2.SetSelectedItems({tf})
+                                        Case 3 : _selectionHelper3.SetSelectedItems({tf})
+                                    End Select
+                                    _isSettingSelectedFolder = False
                                 End If
-                            End Sub))
-                        thread.Start()
-                    End Sub
-                Dim en As IEnumerator(Of Folder) = list.GetEnumerator()
-                Dim cb As System.Action(Of Boolean) =
-                    Sub(cancel As Boolean)
-                        If Not cancel Then
-                            If en.MoveNext() Then
-                                func(en.Current, cb)
                             Else
-                                Select Case root
-                                    Case 1 : _selectionHelper1.SetSelectedItems({tf})
-                                    Case 2 : _selectionHelper2.SetSelectedItems({tf})
-                                    Case 3 : _selectionHelper3.SetSelectedItems({tf})
-                                End Select
+                                Me.SetSelectedItem(Nothing)
+                                _isSettingSelectedFolder = False
                             End If
-                        Else
-                            Me.SetSelectedItem(Nothing)
-                        End If
-                    End Sub
-                If en.MoveNext() Then
-                    func(en.Current, cb)
+                        End Sub
+                    If en.MoveNext() Then
+                        func(en.Current, cb)
+                    Else
+                        _isSettingSelectedFolder = False
+                    End If
+                Else
+                    _isSettingSelectedFolder = False
                 End If
             End If
         End Sub
