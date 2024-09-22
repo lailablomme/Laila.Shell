@@ -4,6 +4,7 @@ Imports Laila.Shell.ViewModels
 Namespace Controls
     Public Class TreeView
         Public Shared ReadOnly SelectedFolderNameProperty As DependencyProperty = DependencyProperty.Register("SelectedFolderName", GetType(String), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderNameChanged))
+        Public Shared ReadOnly LogicalParentProperty As DependencyProperty = DependencyProperty.Register("LogicalParent", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private _model As TreeViewModel
 
@@ -35,5 +36,14 @@ Namespace Controls
             Dim tv As TreeView = TryCast(d, TreeView)
             tv.Model.SetSelectedFolder(e.NewValue)
         End Sub
+
+        Public Property LogicalParent As Folder
+            Get
+                Return GetValue(LogicalParentProperty)
+            End Get
+            Set(ByVal value As Folder)
+                SetCurrentValue(LogicalParentProperty, value)
+            End Set
+        End Property
     End Class
 End Namespace

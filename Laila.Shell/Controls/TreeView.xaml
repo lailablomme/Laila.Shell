@@ -48,6 +48,9 @@
                                             <DataTrigger Binding="{Binding IsHidden}" Value="True">
                                                 <Setter Property="Image.Opacity" Value="0.5" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Image.Style>
@@ -58,6 +61,9 @@
                                         <Setter Property="Image.Opacity" Value="1" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
                                                 <Setter Property="Image.Opacity" Value="0.5" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -114,6 +120,9 @@
                                             <DataTrigger Binding="{Binding IsHidden}" Value="True">
                                                 <Setter Property="Image.Opacity" Value="0.5" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Image.Style>
@@ -124,6 +133,9 @@
                                         <Setter Property="Image.Opacity" Value="1" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
                                                 <Setter Property="Image.Opacity" Value="0.5" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -180,6 +192,9 @@
                                             <DataTrigger Binding="{Binding IsHidden}" Value="True">
                                                 <Setter Property="Image.Opacity" Value="0.5" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Image.Style>
@@ -190,6 +205,9 @@
                                         <Setter Property="Image.Opacity" Value="1" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
                                                 <Setter Property="Image.Opacity" Value="0.5" />
                                             </DataTrigger>
                                         </Style.Triggers>

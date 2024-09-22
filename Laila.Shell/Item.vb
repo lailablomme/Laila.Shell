@@ -19,15 +19,16 @@ Public Class Item
     Protected _fullPath As String
     Protected _setIsLoadingAction As Action(Of Boolean)
     Protected disposedValue As Boolean
+    Protected _logicalParent As Folder
 
-    Public Shared Function FromParsingName(parsingName As String, setIsLoadingAction As Action(Of Boolean)) As Item
+    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         Dim attr As Integer = SFGAO.FOLDER
         shellItem2.GetAttributes(attr, attr)
         If CBool(attr And SFGAO.FOLDER) Then
-            Return New Folder(Folder.GetIShellFolderFromIShellItem2(shellItem2), shellItem2, setIsLoadingAction)
+            Return New Folder(Folder.GetIShellFolderFromIShellItem2(shellItem2), shellItem2, logicalParent, setIsLoadingAction)
         Else
-            Return New Item(shellItem2, setIsLoadingAction)
+            Return New Item(shellItem2, logicalParent, setIsLoadingAction)
         End If
     End Function
 
@@ -43,17 +44,19 @@ Public Class Item
         Return If(Not IntPtr.Zero.Equals(ptr), Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2)), Nothing)
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, setIsLoadingAction As Action(Of Boolean))
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
         _interface = shellItem2
         _setIsLoadingAction = setIsLoadingAction
+        _logicalParent = logicalParent
         Dim s As String = Me.FullPath
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
 
-    Public Sub New(bindingParent As Folder, pidl As IntPtr, setIsLoadingAction As Action(Of Boolean))
+    Public Sub New(bindingParent As Folder, pidl As IntPtr, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
         _bindingParent = bindingParent
         _pidl = pidl
         _setIsLoadingAction = setIsLoadingAction
+        _logicalParent = logicalParent
         Dim s As String = Me.FullPath
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
@@ -87,6 +90,12 @@ Public Class Item
         End Get
     End Property
 
+    Public ReadOnly Property LogicalParent As Folder
+        Get
+            Return _logicalParent
+        End Get
+    End Property
+
     Public ReadOnly Property Parent As Folder
         Get
             If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
@@ -96,7 +105,7 @@ Public Class Item
                     Me.ShellItem2.GetParent(parentShellItem2)
                     If Not parentShellItem2 Is Nothing Then
                         Dim shellFolder As IShellFolder = Folder.GetIShellFolderFromIShellItem2(parentShellItem2)
-                        _parent = New Folder(shellFolder, parentShellItem2, _setIsLoadingAction)
+                        _parent = New Folder(shellFolder, parentShellItem2, Nothing, _setIsLoadingAction)
                     End If
                 End If
 
@@ -109,7 +118,7 @@ Public Class Item
 
     Public ReadOnly Property PrimarySort As Integer
         Get
-            Return If(TypeOf Me Is LevelUpFolder, 0, 1)
+            Return 0
         End Get
     End Property
 

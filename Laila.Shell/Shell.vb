@@ -7,15 +7,10 @@ Imports System.Windows.Interop
 Public Class Shell
     Private Shared _desktop As Folder
 
-    Public Shared Property DoInsertLevelUpFolder As Boolean = False
-
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
 
     Private Shared _hNotify As UInt32
     Private Shared _w As Window
-    Public Shared cm2 As IContextMenu2
-    Public Shared cm3 As IContextMenu3
-    Public Shared _hwnd As IntPtr
 
     Shared Sub New()
         Dim entry(0) As SHChangeNotifyEntry
@@ -35,7 +30,6 @@ Public Class Shell
 
                 Dim hwnd As IntPtr = New WindowInteropHelper(_w).Handle
                 Dim source As HwndSource = HwndSource.FromHwnd(hwnd)
-                _hwnd = hwnd
                 source.AddHook(AddressOf HwndHook)
 
                 _hNotify = Functions.SHChangeNotifyRegister(
@@ -54,25 +48,6 @@ Public Class Shell
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
-        Dim hr As Integer
-        If msg = WM.INITMENUPOPUP Or msg = WM.MEASUREITEM Or msg = WM.DRAWITEM Then
-            If msg = WM.DRAWITEM Or msg = WM.MEASUREITEM Then
-                Dim i As Int16 = 9
-            End If
-            If cm2 IsNot Nothing Then
-                hr = cm2.HandleMenuMsg(msg, wParam, lParam)
-                If hr = 0 Then
-                    Return IntPtr.Zero
-                End If
-            ElseIf msg = WM.MENUCHAR Then
-                If cm3 IsNot Nothing Then
-                    hr = cm3.HandleMenuMsg2(msg, wParam, lParam, IntPtr.Zero)
-                    If hr = 0 Then
-                        Return IntPtr.Zero
-                    End If
-                End If
-            End If
-        End If
         If msg = WM.USER + 1 Then
             Dim pppidl As IntPtr = IntPtr.Zero
             Dim lEvent As SHCNE = 0

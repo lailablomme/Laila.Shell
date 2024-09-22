@@ -18,7 +18,7 @@ Public Class Folder
     Private _firstContextMenuCall As Boolean = True
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid, setIsLoadingAction As Action(Of Boolean)) As Folder
-        Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), setIsLoadingAction)
+        Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing, setIsLoadingAction)
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
@@ -33,14 +33,14 @@ Public Class Folder
         Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellFolder))
     End Function
 
-    Public Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, setIsLoadingAction As Action(Of Boolean))
-        MyBase.New(shellItem2, setIsLoadingAction)
+    Public Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
+        MyBase.New(shellItem2, logicalParent, setIsLoadingAction)
 
         _interface = shellFolder
     End Sub
 
-    Public Sub New(bindingParent As Folder, pidl As IntPtr, setIsLoadingAction As Action(Of Boolean))
-        MyBase.New(bindingParent, pidl, setIsLoadingAction)
+    Public Sub New(bindingParent As Folder, pidl As IntPtr, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
+        MyBase.New(bindingParent, pidl, logicalParent, setIsLoadingAction)
     End Sub
 
     Friend Overloads ReadOnly Property ShellFolder As IShellFolder
@@ -119,10 +119,6 @@ Public Class Folder
             If _items Is Nothing Then
                 Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
 
-                If Shell.DoInsertLevelUpFolder AndAlso Not Me.Parent Is Nothing Then
-                    result.Add(LevelUpFolder.FromParsingName(Me.Parent.FullPath, Me, _setIsLoadingAction))
-                End If
-
                 If Not isWindows7OrLower() Then
                     Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
                     Functions.CreateBindCtx(0, bindCtxPtr)
@@ -153,9 +149,9 @@ Public Class Folder
                         Dim attr As Integer = SFGAO.FOLDER
                         shellItemArray(0).GetAttributes(attr, attr)
                         If CBool(attr And SFGAO.FOLDER) Then
-                            result.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), _setIsLoadingAction))
+                            result.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), Me, _setIsLoadingAction))
                         Else
-                            result.Add(New Item(shellItemArray(0), _setIsLoadingAction))
+                            result.Add(New Item(shellItemArray(0), Me, _setIsLoadingAction))
                         End If
                         'End If
                         Application.Current.Dispatcher.Invoke(
@@ -174,9 +170,9 @@ Public Class Folder
                             Application.Current.Dispatcher.Invoke(
                                 Sub()
                                     If CBool(attr And SFGAO.FOLDER) Then
-                                        result.Add(New Folder(Me, pidl(0), _setIsLoadingAction))
+                                        result.Add(New Folder(Me, pidl(0), Me, _setIsLoadingAction))
                                     Else
-                                        result.Add(New Item(Me, pidl(0), _setIsLoadingAction))
+                                        result.Add(New Item(Me, pidl(0), Me, _setIsLoadingAction))
                                     End If
                                 End Sub)
                         End While
@@ -338,7 +334,7 @@ Public Class Folder
                     parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                     If Me.FullPath.Equals(parentFullPath) Then
                         If Not _items Is Nothing Then
-                            _items.Add(New Item(e.Item1, _setIsLoadingAction))
+                            _items.Add(New Item(e.Item1, Me, _setIsLoadingAction))
                             Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_items)
                             view.Refresh()
                         End If
@@ -352,7 +348,7 @@ Public Class Folder
                     parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                     If Me.FullPath.Equals(parentFullPath) Then
                         If Not _items Is Nothing Then
-                            _items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(e.Item1), e.Item1, _setIsLoadingAction))
+                            _items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(e.Item1), e.Item1, Me, _setIsLoadingAction))
                         End If
                     End If
                 End If
@@ -366,7 +362,7 @@ Public Class Folder
             Case SHCNE.DRIVEADD
                 If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") Then
                     If Not _items Is Nothing Then
-                        _items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(e.Item1), e.Item1, _setIsLoadingAction))
+                        _items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(e.Item1), e.Item1, Me, _setIsLoadingAction))
                     End If
                 End If
             Case SHCNE.DRIVEREMOVED

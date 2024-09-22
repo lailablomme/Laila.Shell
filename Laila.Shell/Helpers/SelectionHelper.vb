@@ -209,6 +209,7 @@ Namespace Helpers
                                 Dim tvi As TreeViewItem = findTVI(_control2, selectedItems(0))
                                 If Not tvi Is Nothing Then
                                     tvi.IsSelected = True
+                                    tvi.BringIntoView()
                                     ' notify change
                                     SelectionChanged()
                                 End If

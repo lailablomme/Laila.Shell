@@ -17,8 +17,12 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <controls:TreeView x:Name="treeView" SelectedFolderName="{Binding DataContext.FolderName, ElementName=view, Mode=TwoWay}" />
+        <controls:TreeView x:Name="treeView" 
+                           SelectedFolderName="{Binding DataContext.FolderName, ElementName=view, Mode=TwoWay}"
+                           LogicalParent="{Binding DataContext.LogicalParent, ElementName=view, Mode=TwoWay}" />
         <GridSplitter Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-        <controls:DetailsListView Grid.Column="2" x:Name="detailListView" FolderName="{Binding DataContext.FolderName, ElementName=view, Mode=TwoWay}" />
+        <controls:DetailsListView Grid.Column="2" x:Name="detailListView" 
+                                  FolderName="{Binding DataContext.FolderName, ElementName=view, Mode=TwoWay}"
+                                  LogicalParent="{Binding DataContext.LogicalParent, ElementName=view, Mode=TwoWay}" />
     </Grid>
 </Window>

@@ -4,6 +4,7 @@ Imports Laila.Shell.ViewModels
 Namespace Controls
     Public Class DetailsListView
         Public Shared ReadOnly FolderNameProperty As DependencyProperty = DependencyProperty.Register("FolderName", GetType(String), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderNameChanged))
+        Public Shared ReadOnly LogicalParentProperty As DependencyProperty = DependencyProperty.Register("LogicalParent", GetType(Folder), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private _model As DetailsListViewModel
 
@@ -30,6 +31,15 @@ Namespace Controls
             Dim dlv As DetailsListView = TryCast(d, DetailsListView)
             dlv.Model.FolderName = e.NewValue
         End Sub
+
+        Public Property LogicalParent As Folder
+            Get
+                Return GetValue(LogicalParentProperty)
+            End Get
+            Set(ByVal value As Folder)
+                SetValue(LogicalParentProperty, value)
+            End Set
+        End Property
 
         Public ReadOnly Property Model As DetailsListViewModel
             Get

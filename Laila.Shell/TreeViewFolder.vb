@@ -17,23 +17,23 @@ Public Class TreeViewFolder
     Private _isLoading As Boolean
     Private _fromThread As Boolean
 
-    Public Overloads Shared Function FromParsingName(parsingName As String, setIsLoadingAction As Action(Of Boolean)) As TreeViewFolder
+    Public Overloads Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As TreeViewFolder
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         Dim attr As Integer = SFGAO.FOLDER
         shellItem2.GetAttributes(attr, attr)
         If CBool(attr And SFGAO.FOLDER) Then
-            Return New TreeViewFolder(Folder.GetIShellFolderFromIShellItem2(shellItem2), shellItem2, setIsLoadingAction)
+            Return New TreeViewFolder(Folder.GetIShellFolderFromIShellItem2(shellItem2), shellItem2, logicalParent, setIsLoadingAction)
         Else
             Throw New InvalidOperationException("Only folders.")
         End If
     End Function
 
-    Public Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, setIsLoadingAction As Action(Of Boolean))
-        MyBase.New(shellFolder, shellItem2, setIsLoadingAction)
+    Public Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
+        MyBase.New(shellFolder, shellItem2, logicalParent, setIsLoadingAction)
     End Sub
 
-    Public Sub New(bindingParent As Folder, pidl As IntPtr, setIsLoadingAction As Action(Of Boolean))
-        MyBase.New(bindingParent, pidl, setIsLoadingAction)
+    Public Sub New(bindingParent As Folder, pidl As IntPtr, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
+        MyBase.New(bindingParent, pidl, logicalParent, setIsLoadingAction)
     End Sub
 
     Public Property IsSelected As Boolean Implements ITreeViewItemData.IsSelected
@@ -139,7 +139,7 @@ Public Class TreeViewFolder
                             End Sub)
                         Dim onlyOnce As Boolean = True
                         While feteched = 1 AndAlso (Me.IsExpanded OrElse onlyOnce OrElse Not _fromThread)
-                            Dim tvf As TreeViewFolder = New TreeViewFolder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), _setIsLoadingAction)
+                            Dim tvf As TreeViewFolder = New TreeViewFolder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), Me, _setIsLoadingAction)
                             tvf.ITreeViewItemData_Parent = Me
                             result.Add(tvf)
                             Application.Current.Dispatcher.Invoke(
@@ -163,7 +163,7 @@ Public Class TreeViewFolder
                         While list.Next(1, pidl, fetched) = 0
                             Application.Current.Dispatcher.Invoke(
                                         Sub()
-                                            result.Add(New TreeViewFolder(Me, pidl(0), _setIsLoadingAction))
+                                            result.Add(New TreeViewFolder(Me, pidl(0), Me, _setIsLoadingAction))
                                         End Sub)
                         End While
                     End If

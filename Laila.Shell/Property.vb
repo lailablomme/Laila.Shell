@@ -84,21 +84,17 @@ Public Class [Property]
 
     Public ReadOnly Property Text As String
         Get
-            If TypeOf _item Is LevelUpFolder AndAlso _canonicalName = "System.ItemNameDisplay" Then
-                Return ".."
-            Else
-                Dim displayText As String
-                Dim charArray(2048 - 1) As Char
-                Using rawValue As PROPVARIANT = Me.RawValue
-                    If rawValue.vt <> VarEnum.VT_BSTR AndAlso rawValue.vt <> VarEnum.VT_LPSTR AndAlso rawValue.vt <> VarEnum.VT_LPWSTR Then
-                        Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, charArray)
-                        displayText = System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(charArray))
-                    Else
-                        displayText = getValue(rawValue)
-                    End If
-                End Using
-                Return displayText
-            End If
+            Dim displayText As String
+            Dim charArray(2048 - 1) As Char
+            Using rawValue As PROPVARIANT = Me.RawValue
+                If rawValue.vt <> VarEnum.VT_BSTR AndAlso rawValue.vt <> VarEnum.VT_LPSTR AndAlso rawValue.vt <> VarEnum.VT_LPWSTR Then
+                    Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, charArray)
+                    displayText = System.Text.Encoding.UTF8.GetString(System.Text.Encoding.UTF8.GetBytes(charArray))
+                Else
+                    displayText = getValue(rawValue)
+                End If
+            End Using
+            Return displayText
         End Get
     End Property
 

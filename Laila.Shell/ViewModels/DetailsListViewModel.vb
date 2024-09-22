@@ -115,7 +115,7 @@ Namespace ViewModels
                     If Not String.IsNullOrWhiteSpace(Me.FolderName) Then
                         _skipSavingScrollState = True
                         If Not Me.Folder Is Nothing Then Me.Folder.Dispose()
-                        Me.Folder = Folder.FromParsingName(FolderName, Sub(val) Me.IsLoading = val)
+                        Me.Folder = Folder.FromParsingName(FolderName, _view.LogicalParent, Sub(val) Me.IsLoading = val)
                         Me.ColumnsIn = buildColumnsIn()
                     End If
                     _view.FolderName = _folderName
@@ -256,6 +256,7 @@ Namespace ViewModels
                 Dim item As Item = CType(sender, ListViewItem).DataContext
                 If Not item Is Nothing Then
                     If TypeOf item Is Folder Then
+                        _view.LogicalParent = Me.Folder
                         Me.FolderName = item.FullPath
                     Else
                         Dim iContextMenu As IContextMenu, defaultId As String
