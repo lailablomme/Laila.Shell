@@ -5,7 +5,7 @@ Public Structure CMINVOKECOMMANDINFO
     Public cbSize As UInteger
     Public fMask As UInteger
     Public hwnd As IntPtr
-    Public lpVerb As Integer
+    Public lpVerb As IntPtr
     <MarshalAs(UnmanagedType.LPStr)>
     Public lpParameters As String
     <MarshalAs(UnmanagedType.LPStr)>

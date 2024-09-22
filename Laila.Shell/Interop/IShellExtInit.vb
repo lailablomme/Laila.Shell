@@ -5,6 +5,6 @@
 Public Interface IShellExtInit
     <PreserveSig()>
     Function Initialize(ByVal pidlFolder As IntPtr,
-                        ByVal lpdobj As IntPtr,
+                        ByVal lpdobj As IDataObject,
                         ByVal hKeyProgID As IntPtr) As Integer    'Treat all HANDLEs as IntPtr
 End Interface

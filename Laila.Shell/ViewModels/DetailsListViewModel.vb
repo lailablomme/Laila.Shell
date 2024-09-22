@@ -1,8 +1,10 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.ComponentModel.Design
+Imports System.Runtime.InteropServices
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
 Imports System.Windows.Interop
 Imports System.Windows.Markup
@@ -261,9 +263,9 @@ Namespace ViewModels
                         _view.LogicalParent = Me.Folder
                         Me.FolderName = item.FullPath
                     Else
-                        Dim iContextMenu As IContextMenu, defaultId As String
-                        Dim contextMenu As ContextMenu = Me.Folder.GetContextMenu(Me.SelectedItems, iContextMenu, defaultId)
-                        Me.Folder.InvokeCommand(iContextMenu, Me.SelectedItems, defaultId)
+                        Dim contextMenu As IContextMenu, defaultId As String
+                        Dim menu As ContextMenu = Me.Folder.GetContextMenu(Me.SelectedItems, contextMenu, defaultId, True)
+                        Me.Folder.InvokeCommand(contextMenu, Me.SelectedItems, defaultId)
                     End If
                 End If
             End If
@@ -278,8 +280,8 @@ Namespace ViewModels
                     contextItems = Me.SelectedItems
                 End If
 
-                Dim iContextMenu As IContextMenu, defaultId As String
-                Dim contextMenu As ContextMenu = Me.Folder.GetContextMenu(contextItems, iContextMenu, defaultId)
+                Dim contextMenu As IContextMenu, defaultId As String
+                Dim menu As ContextMenu = Me.Folder.GetContextMenu(contextItems, contextMenu, defaultId, False)
                 Dim wireItems As Action(Of ItemCollection) =
                         Sub(items As ItemCollection)
                             For Each c As Control In items
@@ -292,13 +294,16 @@ Namespace ViewModels
                                             Select Case menuItem.Tag.ToString().Split(vbTab)(1)
                                                 Case "open"
                                                     If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
+                                                        _view.LogicalParent = Me.Folder
                                                         Me.FolderName = Me.SelectedItem.FullPath
                                                         isHandled = True
                                                     End If
+                                                Case "copyaspath"
+                                                    Clipboard.SetText(String.Join(vbCrLf, Me.SelectedItems.Select(Function(i) """" & i.FullPath & """")))
                                             End Select
 
                                             If Not isHandled Then
-                                                Me.Folder.InvokeCommand(iContextMenu, Me.SelectedItems, menuItem.Tag)
+                                                Me.Folder.InvokeCommand(contextMenu, Me.SelectedItems, menuItem.Tag)
                                             End If
                                         End Sub
                                 ElseIf TypeOf c Is MenuItem Then
@@ -306,9 +311,9 @@ Namespace ViewModels
                                 End If
                             Next
                         End Sub
-                wireItems(contextMenu.Items)
+                wireItems(menu.Items)
 
-                _view.listView.ContextMenu = contextMenu
+                _view.listView.ContextMenu = menu
             End If
         End Sub
 

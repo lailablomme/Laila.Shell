@@ -25,6 +25,12 @@ Public Class DummyTreeViewFolder
         End Get
     End Property
 
+    Public Overrides ReadOnly Property FoldersThreaded As ObservableCollection(Of TreeViewFolder)
+        Get
+            Return Nothing
+        End Get
+    End Property
+
     Public Overrides Property Folders As ObservableCollection(Of TreeViewFolder)
         Get
             Return Nothing

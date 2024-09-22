@@ -1,6 +1,9 @@
 ﻿Imports System.IO
 Imports System.Runtime
 Imports System.Threading
+Imports System.Windows
+Imports System.Windows.Controls
+Imports System.Windows.Input
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Helpers
 
@@ -8,7 +11,7 @@ Namespace ViewModels
     Public Class TreeViewModel
         Inherits NotifyPropertyChangedBase
 
-        Private _view As TreeView
+        Private _view As Controls.TreeView
         Private _folders1 As List(Of TreeViewFolder)
         Private _folders2 As List(Of TreeViewFolder)
         Private _folders3 As List(Of TreeViewFolder)
@@ -17,7 +20,7 @@ Namespace ViewModels
         Private _selectionHelper3 As SelectionHelper(Of TreeViewFolder) = Nothing
         Private _isSettingSelectedFolder As Boolean
 
-        Public Sub New(view As TreeView)
+        Public Sub New(view As Controls.TreeView)
             _view = view
 
             ' home and galery
@@ -110,14 +113,10 @@ Namespace ViewModels
                                 isWorking = False
                             End If
                         End Sub
-                End Sub
 
-            AddHandler Shell.UpdateDirCompleted,
-                Sub()
-                    If Not Shell.UpdateDirCounter > 0 AndAlso
-                    (Me.SelectedItem Is Nothing Or Me.SelectedItem.FullPath <> _view.SelectedFolderName) Then
-                        Me.SetSelectedFolder(_view.SelectedFolderName)
-                    End If
+                    AddHandler _view.treeView1.PreviewMouseRightButtonDown, AddressOf OnTreeViewItemRightClick
+                    AddHandler _view.treeView2.PreviewMouseRightButtonDown, AddressOf OnTreeViewItemRightClick
+                    AddHandler _view.treeView3.PreviewMouseRightButtonDown, AddressOf OnTreeViewItemRightClick
                 End Sub
         End Sub
 
@@ -140,18 +139,16 @@ Namespace ViewModels
         End Property
 
         Protected Overridable Sub OnSelectionChanged()
-            If Not Shell.UpdateDirCounter > 0 Then
-                If Not Me.SelectedItem Is Nothing Then
-                    _view.LogicalParent = Me.SelectedItem.LogicalParent
-                    _view.SelectedFolderName = Me.SelectedItem.FullPath
-                Else
-                    _view.LogicalParent = Nothing
-                    _view.SelectedFolderName = Nothing
-                End If
+            If Not Me.SelectedItem Is Nothing Then
+                _view.LogicalParent = Me.SelectedItem.LogicalParent
+                _view.SelectedFolderName = Me.SelectedItem.FullPath
+            Else
+                _view.LogicalParent = Nothing
+                _view.SelectedFolderName = Nothing
             End If
         End Sub
 
-        Public ReadOnly Property SelectedItem As Item
+        Public ReadOnly Property SelectedItem As TreeViewFolder
             Get
                 If _selectionHelper1.SelectedItems.Count = 1 Then
                     Return _selectionHelper1.SelectedItems(0)
@@ -165,17 +162,17 @@ Namespace ViewModels
             End Get
         End Property
 
-        Public Sub SetSelectedItem(value As Item)
+        Public Sub SetSelectedItem(value As TreeViewFolder)
             If value Is Nothing Then
-                _selectionHelper1.SetSelectedItems(New TreeViewFolder() {})
-                _selectionHelper2.SetSelectedItems(New TreeViewFolder() {})
-                _selectionHelper3.SetSelectedItems(New TreeViewFolder() {})
+                _selectionHelper1.SetSelectedItems({})
+                _selectionHelper2.SetSelectedItems({})
+                _selectionHelper3.SetSelectedItems({})
             Else
-                _selectionHelper1.SetSelectedItems(New TreeViewFolder() {value})
+                _selectionHelper1.SetSelectedItems({value})
                 If Not _selectionHelper1.SelectedItems.Count = 1 Then
-                    _selectionHelper2.SetSelectedItems(New TreeViewFolder() {value})
+                    _selectionHelper2.SetSelectedItems({value})
                     If Not _selectionHelper2.SelectedItems.Count = 1 Then
-                        _selectionHelper3.SetSelectedItems(New TreeViewFolder() {value})
+                        _selectionHelper3.SetSelectedItems({value})
                     End If
                 End If
             End If
@@ -260,6 +257,53 @@ Namespace ViewModels
                     End If
                 Else
                     _isSettingSelectedFolder = False
+                End If
+            End If
+        End Sub
+
+        Private Sub OnTreeViewItemRightClick(sender As Object, e As MouseButtonEventArgs)
+            If Not e.OriginalSource Is Nothing Then
+                Dim treeViewItem As TreeViewItem = UIHelper.GetParentOfType(Of TreeViewItem)(e.OriginalSource)
+                If Not treeViewItem Is Nothing Then
+                    Dim clickedItem As TreeViewFolder = treeViewItem.DataContext
+
+                    Dim contextMenu As IContextMenu, defaultId As String, parent As Folder = clickedItem.Parent
+                    Dim menu As ContextMenu = parent.GetContextMenu({clickedItem}, contextMenu, defaultId, False)
+                    Dim wireItems As Action(Of ItemCollection) =
+                        Sub(items As ItemCollection)
+                            For Each c As Control In items
+                                If TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0 Then
+                                    Dim menuItem As MenuItem = c
+                                    AddHandler menuItem.Click,
+                                        Sub(s2 As Object, e2 As EventArgs)
+                                            Dim isHandled As Boolean = False
+
+                                            Select Case menuItem.Tag.ToString().Split(vbTab)(1)
+                                                Case "open"
+                                                    Me.SetSelectedItem(clickedItem)
+                                                    isHandled = True
+                                                Case "copyaspath"
+                                                    Clipboard.SetText(String.Join(vbCrLf, """" & clickedItem.FullPath & """"))
+                                            End Select
+
+                                            If Not isHandled Then
+                                                parent.InvokeCommand(contextMenu, {clickedItem}, menuItem.Tag)
+                                            End If
+                                        End Sub
+                                ElseIf TypeOf c Is MenuItem Then
+                                    wireItems(CType(c, MenuItem).Items)
+                                End If
+                            Next
+                        End Sub
+                    wireItems(menu.Items)
+
+                    _view.treeView1.ContextMenu = menu
+                    _view.treeView2.ContextMenu = menu
+                    _view.treeView3.ContextMenu = menu
+                Else
+                    _view.treeView1.ContextMenu = Nothing
+                    _view.treeView2.ContextMenu = Nothing
+                    _view.treeView3.ContextMenu = Nothing
                 End If
             End If
         End Sub

@@ -8,9 +8,6 @@ Public Class Shell
     Private Shared _desktop As Folder
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
-    Friend Shared Event UpdateDirCompleted()
-
-    Friend Shared Property UpdateDirCounter As Integer
 
     Private Shared _hNotify As UInt32
     Private Shared _w As Window
@@ -76,7 +73,7 @@ Public Class Shell
                     Dim path As StringBuilder = New StringBuilder(260)
                     Functions.SHGetPathFromIDList(pidl1, path)
                     path1 = path.ToString()
-                    Debug.WriteLine(path1.ToString())
+                    Debug.WriteLine(pidl1.ToString() & "/" & path1.ToString())
                     item1 = Item.GetIShellItem2FromParsingName(path1.ToString())
                 End If
 
@@ -85,7 +82,7 @@ Public Class Shell
                     Dim path As StringBuilder = New StringBuilder(260)
                     Functions.SHGetPathFromIDList(pidl2, path)
                     path2 = path.ToString()
-                    Debug.WriteLine(path2.ToString())
+                    Debug.WriteLine(pidl2.ToString() & "/" & path2.ToString())
                     item2 = Item.GetIShellItem2FromParsingName(path2.ToString())
                 End If
 
@@ -101,10 +98,6 @@ Public Class Shell
             End If
         End If
     End Function
-
-    Public Shared Sub InvokeUpdateDirCompleted()
-        RaiseEvent UpdateDirCompleted()
-    End Sub
 
     Public Shared ReadOnly Property SpecialFolders As Dictionary(Of String, Folder)
         Get

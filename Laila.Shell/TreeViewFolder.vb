@@ -77,7 +77,22 @@ Public Class TreeViewFolder
         End Set
     End Property
 
-    Public ReadOnly Property FoldersThreaded As ObservableCollection(Of TreeViewFolder)
+    Public Overrides ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
+        Get
+            Return Nothing
+        End Get
+    End Property
+
+    Public Overrides Property Items As ObservableCollection(Of Item)
+        Get
+            Return Nothing
+        End Get
+        Set(value As ObservableCollection(Of Item))
+            MyBase.Items = Nothing
+        End Set
+    End Property
+
+    Public Overridable ReadOnly Property FoldersThreaded As ObservableCollection(Of TreeViewFolder)
         Get
             If _folders Is Nothing AndAlso (Me.IsExpanded OrElse Me.ITreeViewItemData_Parent Is Nothing OrElse Me.ITreeViewItemData_Parent.IsExpanded) Then
                 If Not _setIsLoadingAction Is Nothing Then
@@ -113,67 +128,7 @@ Public Class TreeViewFolder
             SyncLock _foldersLock
                 If _folders Is Nothing Then
                     Dim result As ObservableCollection(Of TreeViewFolder) = New ObservableCollection(Of TreeViewFolder)()
-
-                    If Not isWindows7OrLower() Then
-                        Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
-                        Functions.CreateBindCtx(0, bindCtxPtr)
-                        bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
-
-                        Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
-                        Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
-                        propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
-
-                        Dim var As New PROPVARIANT()
-                        var.vt = VarEnum.VT_UI4
-                        var.union.uintVal = CType(SHCONTF.FOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, UInt32) 'Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.FOLDERS
-                        propertyBag.Write("SHCONTF", var)
-
-                        bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
-                        Dim ptr2 As IntPtr
-                        bindCtxPtr = Marshal.GetIUnknownForObject(bindCtx)
-
-                        ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
-                        Dim enumShellItems As IEnumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
-
-                        Try
-                            Dim shellItemArray(0) As IShellItem, feteched As UInt32 = 1
-                            Application.Current.Dispatcher.Invoke(
-                                Sub()
-                                    enumShellItems.Next(1, shellItemArray, feteched)
-                                End Sub)
-                            Dim onlyOnce As Boolean = True
-                            While feteched = 1 AndAlso (Me.IsExpanded OrElse onlyOnce OrElse Not _fromThread)
-                                Dim tvf As TreeViewFolder = New TreeViewFolder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), Me, _setIsLoadingAction)
-                                tvf.ITreeViewItemData_Parent = Me
-                                Dim cache As String = tvf.DisplayName
-                                result.Add(tvf)
-                                Application.Current.Dispatcher.Invoke(
-                                    Sub()
-                                        enumShellItems.Next(1, shellItemArray, feteched)
-                                    End Sub)
-                                onlyOnce = False
-                                Thread.Sleep(10)
-                            End While
-                            If Not Me.IsExpanded AndAlso result.Count > 0 AndAlso _fromThread Then
-                                result.Clear()
-                                result.Add(New DummyTreeViewFolder("Loading..."))
-                            End If
-                        Catch ex As Exception
-                        End Try
-                    Else
-                        Dim list As IEnumIDList
-                        Me.ShellFolder.EnumObjects(Nothing, SHCONTF.FOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, list)
-                        If Not list Is Nothing Then
-                            Dim pidl(0) As IntPtr, fetched As Integer
-                            While list.Next(1, pidl, fetched) = 0
-                                Application.Current.Dispatcher.Invoke(
-                                            Sub()
-                                                result.Add(New TreeViewFolder(Me, pidl(0), Me, _setIsLoadingAction))
-                                            End Sub)
-                            End While
-                        End If
-                    End If
-
+                    updateFolders(result)
                     Me.Folders = result
                     Me.NotifyOfPropertyChange("FoldersThreaded")
                 End If
@@ -185,6 +140,110 @@ Public Class TreeViewFolder
             SetValue(_folders, value)
         End Set
     End Property
+
+    Private Sub updateFolders(items As ObservableCollection(Of TreeViewFolder))
+        Dim paths As List(Of String) = New List(Of String)
+
+        Dim flags As UInt32 = CType(SHCONTF.FOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, UInt32)
+
+        If Not isWindows7OrLower() Then
+            Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
+            Functions.CreateBindCtx(0, bindCtxPtr)
+            bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
+
+            Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
+            Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
+            propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
+
+            Dim var As New PROPVARIANT()
+            var.vt = VarEnum.VT_UI4
+            var.union.uintVal = flags
+            propertyBag.Write("SHCONTF", var)
+
+            bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
+            Dim ptr2 As IntPtr
+            bindCtxPtr = Marshal.GetIUnknownForObject(bindCtx)
+
+            ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+            Dim enumShellItems As IEnumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+
+            Try
+                Dim shellItemArray(0) As IShellItem, feteched As UInt32 = 1
+                Application.Current.Dispatcher.Invoke(
+                                Sub()
+                                    enumShellItems.Next(1, shellItemArray, feteched)
+                                End Sub)
+                Dim onlyOnce As Boolean = True
+                While feteched = 1 AndAlso (Me.IsExpanded OrElse onlyOnce OrElse Not _fromThread)
+                    Dim tvf As TreeViewFolder = New TreeViewFolder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), Me, _setIsLoadingAction)
+                    tvf.ITreeViewItemData_Parent = Me
+                    Dim cache As String = tvf.DisplayName
+                    paths.Add(tvf.FullPath)
+                    If items.FirstOrDefault(Function(i) i.FullPath = tvf.FullPath) Is Nothing Then
+                        Application.Current.Dispatcher.Invoke(
+                            Sub()
+                                items.Add(tvf)
+                            End Sub)
+                    Else
+                        tvf.Dispose()
+                    End If
+                    onlyOnce = False
+                    Thread.Sleep(10)
+                    Application.Current.Dispatcher.Invoke(
+                        Sub()
+                            enumShellItems.Next(1, shellItemArray, feteched)
+                        End Sub)
+                End While
+            Catch ex As Exception
+                ' TODO handle access denied
+            End Try
+        Else
+            Dim list As IEnumIDList
+            Me.ShellFolder.EnumObjects(Nothing, flags, list)
+            If Not list Is Nothing Then
+                Dim pidl(0) As IntPtr, fetched As Integer
+                list.Next(1, pidl, fetched)
+                Dim onlyOnce As Boolean = True
+                While fetched = 1 AndAlso (Me.IsExpanded OrElse onlyOnce OrElse Not _fromThread)
+                    Dim tvf As TreeViewFolder
+                    Application.Current.Dispatcher.Invoke(
+                        Sub()
+                            tvf = New TreeViewFolder(Me, pidl(0), Me, _setIsLoadingAction)
+                            Dim cache As String = tvf.DisplayName
+                            paths.Add(tvf.FullPath)
+                            If items.FirstOrDefault(Function(i) i.FullPath = tvf.FullPath) Is Nothing Then
+                                items.Add(tvf)
+                            Else
+                                tvf.Dispose()
+                            End If
+                            list.Next(1, pidl, fetched)
+                        End Sub)
+                    Application.Current.Dispatcher.Invoke(
+                        Sub()
+                            list.Next(1, pidl, fetched)
+                        End Sub)
+                    onlyOnce = False
+                    Thread.Sleep(10)
+                End While
+            End If
+        End If
+
+        If Not Me.IsExpanded AndAlso items.Count > 0 AndAlso _fromThread Then
+            Application.Current.Dispatcher.Invoke(
+                Sub()
+                    items.Clear()
+                    items.Add(New DummyTreeViewFolder("Loading..."))
+                End Sub)
+        Else
+            Dim toBeRemoved As List(Of TreeViewFolder) = items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
+            For Each item In toBeRemoved
+                Application.Current.Dispatcher.Invoke(
+                    Sub()
+                        items.Remove(item)
+                    End Sub)
+            Next
+        End If
+    End Sub
 
     Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         Select Case e.Event
@@ -221,13 +280,32 @@ Public Class TreeViewFolder
                     End If
                 End If
             Case SHCNE.UPDATEDIR
-                If Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path) Then
-                    Shell.UpdateDirCounter += 1
-                    _folders = Nothing
-                    Me.NotifyOfPropertyChange("FoldersThreaded")
-                    Shell.UpdateDirCounter -= 1
-                    Shell.InvokeUpdateDirCompleted()
-                End If
+                SyncLock _foldersLock
+                    If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _folders Is Nothing Then
+                        If Not _setIsLoadingAction Is Nothing Then
+                            _setIsLoadingAction(True)
+                        End If
+
+                        Dim thread As Thread = New Thread(New ThreadStart(
+                            Sub()
+                                SyncLock _foldersLock
+                                    updateFolders(_folders)
+                                End SyncLock
+
+                                Application.Current.Dispatcher.Invoke(
+                                    Sub()
+                                        Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_folders)
+                                        view.Refresh()
+                                    End Sub)
+
+                                If Not _setIsLoadingAction Is Nothing Then
+                                    _setIsLoadingAction(False)
+                                End If
+                            End Sub))
+
+                        thread.Start()
+                    End If
+                End SyncLock
         End Select
     End Sub
 End Class
