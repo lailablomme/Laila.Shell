@@ -220,13 +220,13 @@ Public Class Folder
             End If
         End If
 
-        Dim toBeRemoved As List(Of Item) = items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
-        For Each item In toBeRemoved
-            Application.Current.Dispatcher.Invoke(
-                Sub()
-                    items.Remove(item)
-                End Sub)
-        Next
+        Application.Current.Dispatcher.Invoke(
+          Sub()
+              Dim toBeRemoved As List(Of Item) = items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
+              For Each item In toBeRemoved
+                  items.Remove(item)
+              Next
+          End Sub)
     End Sub
 
     Public Function GetContextMenu(items As IEnumerable(Of Item), ByRef contextMenu As IContextMenu, ByRef defaultId As String, isDefaultOnly As Boolean) As ContextMenu
@@ -327,12 +327,11 @@ Public Class Folder
 
     Public Sub InvokeCommand(contextMenu As IContextMenu, items As IEnumerable(Of Item), id As String)
         Dim cmi As New CMINVOKECOMMANDINFO
-        Select Case id.Split(vbTab)(1)
-            Case "copy"
-                cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
-            Case Else
-                cmi.lpVerb = Convert.ToUInt32(id.Split(vbTab)(0))
-        End Select
+        If id.Split(vbTab)(0).Length = 0 Then
+            cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
+        Else
+            cmi.lpVerb = Convert.ToUInt32(id.Split(vbTab)(0))
+        End If
         cmi.lpDirectory = Me.FullPath
         cmi.fMask = CMIC.NOZONECHECKS Or CMIC.ASYNCOK
         cmi.nShow = SW.SHOWNORMAL
@@ -472,9 +471,7 @@ Public Class Folder
 
                         Dim thread As Thread = New Thread(New ThreadStart(
                             Sub()
-                                SyncLock _itemsLock
-                                    updateItems(_items)
-                                End SyncLock
+                                updateItems(_items)
 
                                 Application.Current.Dispatcher.Invoke(
                                     Sub()
@@ -487,7 +484,6 @@ Public Class Folder
                                 End If
                             End Sub))
 
-                        thread.SetApartmentState(ApartmentState.STA)
                         thread.Start()
                     End If
                 End SyncLock

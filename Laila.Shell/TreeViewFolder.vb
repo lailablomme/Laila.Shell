@@ -179,14 +179,14 @@ Public Class TreeViewFolder
                     tvf.ITreeViewItemData_Parent = Me
                     Dim cache As String = tvf.DisplayName
                     paths.Add(tvf.FullPath)
-                    If items.FirstOrDefault(Function(i) i.FullPath = tvf.FullPath) Is Nothing Then
-                        Application.Current.Dispatcher.Invoke(
-                            Sub()
-                                items.Add(tvf)
-                            End Sub)
-                    Else
-                        tvf.Dispose()
-                    End If
+                    Application.Current.Dispatcher.Invoke(
+                    Sub()
+                        If items.FirstOrDefault(Function(i) i.FullPath = tvf.FullPath) Is Nothing Then
+                            items.Add(tvf)
+                        Else
+                            tvf.Dispose()
+                        End If
+                    End Sub)
                     onlyOnce = False
                     Thread.Sleep(10)
                     Application.Current.Dispatcher.Invoke(
@@ -235,13 +235,13 @@ Public Class TreeViewFolder
                     items.Add(New DummyTreeViewFolder("Loading..."))
                 End Sub)
         Else
-            Dim toBeRemoved As List(Of TreeViewFolder) = items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
-            For Each item In toBeRemoved
-                Application.Current.Dispatcher.Invoke(
-                    Sub()
+            Application.Current.Dispatcher.Invoke(
+                Sub()
+                    Dim toBeRemoved As List(Of TreeViewFolder) = items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
+                    For Each item In toBeRemoved
                         items.Remove(item)
-                    End Sub)
-            Next
+                    Next
+                End Sub)
         End If
     End Sub
 
@@ -288,9 +288,7 @@ Public Class TreeViewFolder
 
                         Dim thread As Thread = New Thread(New ThreadStart(
                             Sub()
-                                SyncLock _foldersLock
-                                    updateFolders(_folders)
-                                End SyncLock
+                                updateFolders(_folders)
 
                                 Application.Current.Dispatcher.Invoke(
                                     Sub()
