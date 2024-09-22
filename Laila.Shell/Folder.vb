@@ -167,18 +167,19 @@ Public Class Folder
             ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
             Dim enumShellItems As IEnumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
 
-            Dim shellItemArray(0) As IShellItem, feteched As UInt32 = 1
-            Application.Current.Dispatcher.Invoke(
+            Try
+                Dim shellItemArray(0) As IShellItem, feteched As UInt32 = 1
+                Application.Current.Dispatcher.Invoke(
                 Sub()
                     enumShellItems.Next(1, shellItemArray, feteched)
                 End Sub)
-            While feteched = 1
-                Dim attr As Integer = SFGAO.FOLDER
-                shellItemArray(0).GetAttributes(attr, attr)
-                Dim fullPath As String
-                CType(shellItemArray(0), IShellItem2).GetDisplayName(SHGDN.FORPARSING, fullPath)
-                paths.Add(fullPath)
-                Application.Current.Dispatcher.Invoke(
+                While feteched = 1
+                    Dim attr As Integer = SFGAO.FOLDER
+                    shellItemArray(0).GetAttributes(attr, attr)
+                    Dim fullPath As String
+                    CType(shellItemArray(0), IShellItem2).GetDisplayName(SHGDN.FORPARSING, fullPath)
+                    paths.Add(fullPath)
+                    Application.Current.Dispatcher.Invoke(
                     Sub()
                         If items.FirstOrDefault(Function(i) i.FullPath = fullPath) Is Nothing Then
                             If CBool(attr And SFGAO.FOLDER) Then
@@ -188,11 +189,14 @@ Public Class Folder
                             End If
                         End If
                     End Sub)
-                Application.Current.Dispatcher.Invoke(
+                    Application.Current.Dispatcher.Invoke(
                     Sub()
                         enumShellItems.Next(1, shellItemArray, feteched)
                     End Sub)
-            End While
+                End While
+            Catch ex As Exception
+                ' directories getting deleted while being enumerated
+            End Try
         Else
             Dim list As IEnumIDList
             Me.ShellFolder.EnumObjects(Nothing, flags, list)

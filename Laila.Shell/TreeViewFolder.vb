@@ -282,9 +282,7 @@ Public Class TreeViewFolder
             Case SHCNE.UPDATEDIR
                 SyncLock _foldersLock
                     If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _folders Is Nothing Then
-                        If Not _setIsLoadingAction Is Nothing Then
-                            _setIsLoadingAction(True)
-                        End If
+                        Me.IsLoading = True
 
                         Dim thread As Thread = New Thread(New ThreadStart(
                             Sub()
@@ -296,9 +294,7 @@ Public Class TreeViewFolder
                                         view.Refresh()
                                     End Sub)
 
-                                If Not _setIsLoadingAction Is Nothing Then
-                                    _setIsLoadingAction(False)
-                                End If
+                                Me.IsLoading = False
                             End Sub))
 
                         thread.Start()
