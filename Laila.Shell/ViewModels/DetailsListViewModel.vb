@@ -118,9 +118,11 @@ Namespace ViewModels
                     SetValue(_folderName, value)
                     If Not String.IsNullOrWhiteSpace(Me.FolderName) Then
                         _skipSavingScrollState = True
-                        If Not Me.Folder Is Nothing Then Me.Folder.Dispose()
-                        Me.Folder = Folder.FromParsingName(FolderName, _view.LogicalParent, Sub(val) Me.IsLoading = val)
-                        Me.ColumnsIn = buildColumnsIn()
+                        If Me.Folder Is Nothing OrElse Not EqualityComparer(Of String).Default.Equals(Me.Folder.FullPath, FolderName) Then
+                            If Not Me.Folder Is Nothing Then Me.Folder.Dispose()
+                            Me.Folder = Folder.FromParsingName(FolderName, _view.LogicalParent, Sub(val) Me.IsLoading = val)
+                            Me.ColumnsIn = buildColumnsIn()
+                        End If
                     End If
                     _view.FolderName = _folderName
                 End If

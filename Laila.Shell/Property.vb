@@ -44,26 +44,21 @@ Public Class [Property]
     Friend ReadOnly Property RawValue As PROPVARIANT
         Get
             Dim result As PROPVARIANT
-            Dim shellItem2 As IShellItem2 = _item.GetShellItem2()
 
-            Try
-                Select Case _canonicalName
-                    Case "System.StorageProviderUIStatus"
-                        shellItem2.GetProperty(_originalPropertyKey, result)
-                        Dim ptr As IntPtr, propertyStore As IPropertyStore, persistSerializedPropStorage As IPersistSerializedPropStorage
-                        Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
-                        propertyStore = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
-                        persistSerializedPropStorage = propertyStore
-                        persistSerializedPropStorage.SetFlags(0)
-                        persistSerializedPropStorage.SetPropertyStorage(result.union.bstrblobVal.pData, result.union.bstrblobVal.cbSize)
-                        result.Dispose()
-                        propertyStore.GetValue(_propertyKey, result)
-                    Case Else
-                        shellItem2.GetProperty(_propertyKey, result)
-                End Select
-            Finally
-                Marshal.ReleaseComObject(shellItem2)
-            End Try
+            Select Case _canonicalName
+                Case "System.StorageProviderUIStatus"
+                    _item._shellItem2.GetProperty(_originalPropertyKey, result)
+                    Dim ptr As IntPtr, propertyStore As IPropertyStore, persistSerializedPropStorage As IPersistSerializedPropStorage
+                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
+                    propertyStore = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
+                    persistSerializedPropStorage = propertyStore
+                    persistSerializedPropStorage.SetFlags(0)
+                    persistSerializedPropStorage.SetPropertyStorage(result.union.bstrblobVal.pData, result.union.bstrblobVal.cbSize)
+                    result.Dispose()
+                    propertyStore.GetValue(_propertyKey, result)
+                Case Else
+                    _item._shellItem2.GetProperty(_propertyKey, result)
+            End Select
 
             Return result
         End Get

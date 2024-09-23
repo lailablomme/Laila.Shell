@@ -7,7 +7,7 @@ Public Class DummyTreeViewFolder
     Private _displayName As String
 
     Public Sub New(displayName As String)
-        MyBase.New(String.Empty, Nothing, Nothing)
+        MyBase.New(Nothing, Nothing, Nothing)
 
         _displayName = displayName
         Me.IsLoading = True
@@ -24,6 +24,10 @@ Public Class DummyTreeViewFolder
             Return Nothing
         End Get
     End Property
+
+    Protected Overrides Function getOverlay(isLarge As Boolean) As ImageSource
+        Return Nothing
+    End Function
 
     Public Overrides ReadOnly Property FoldersThreaded As ObservableCollection(Of TreeViewFolder)
         Get

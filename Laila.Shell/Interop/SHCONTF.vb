@@ -1,5 +1,5 @@
 ﻿<Flags()>
-Public Enum SHCONTF
+Public Enum SHCONTF As UInt32
     EMPTY = 0                      ' used to zero a SHCONTF variable
     FOLDERS = &H20                 ' only want folders enumerated (FOLDER)
     NONFOLDERS = &H40              ' include non folders

@@ -71,40 +71,27 @@ Public Class Shell
                 pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                 Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
-                Dim path1 As String, item1 As IShellItem2
+                Dim path1 As String
                 If Not IntPtr.Zero.Equals(pidl1) Then
                     Dim path As StringBuilder = New StringBuilder(260)
                     Functions.SHGetPathFromIDList(pidl1, path)
                     path1 = path.ToString()
                     Debug.WriteLine(pidl1.ToString() & "/" & path1.ToString())
-                    item1 = Item.GetIShellItem2FromParsingName(path1.ToString())
                 End If
 
-                Dim path2 As String, item2 As IShellItem2
+                Dim path2 As String
                 If Not IntPtr.Zero.Equals(pidl2) Then
                     Dim path As StringBuilder = New StringBuilder(260)
                     Functions.SHGetPathFromIDList(pidl2, path)
                     path2 = path.ToString()
                     Debug.WriteLine(pidl2.ToString() & "/" & path2.ToString())
-                    item2 = Item.GetIShellItem2FromParsingName(path2.ToString())
                 End If
 
-                Try
-                    RaiseEvent Notification(Nothing, New NotificationEventArgs() With {
+                RaiseEvent Notification(Nothing, New NotificationEventArgs() With {
                     .Item1Path = path1,
-                    .Item1 = item1,
                     .Item2Path = path2,
-                    .Item2 = item2,
                     .[Event] = lEvent
                 })
-                Finally
-                    If Not item1 Is Nothing Then
-                        Marshal.ReleaseComObject(item1)
-                    End If
-                    If Not item2 Is Nothing Then
-                        Marshal.ReleaseComObject(item2)
-                    End If
-                End Try
 
                 Functions.SHChangeNotification_Unlock(hLock)
             End If
