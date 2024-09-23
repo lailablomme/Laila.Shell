@@ -10,10 +10,7 @@ Public Class Item
 
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
-    Protected _bindingParent As Folder
     Private _parent As Folder
-    Friend _pidl As IntPtr
-    Private _interface As IShellItem2
     Private _imageFactory As IShellItemImageFactory
     Protected _properties As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Protected _fullPath As String
@@ -24,60 +21,79 @@ Public Class Item
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
-        Dim attr As Integer = SFGAO.FOLDER
-        shellItem2.GetAttributes(attr, attr)
-        If CBool(attr And SFGAO.FOLDER) Then
-            Return New Folder(Folder.GetIShellFolderFromIShellItem2(shellItem2), shellItem2, logicalParent, setIsLoadingAction)
-        Else
-            Return New Item(shellItem2, logicalParent, setIsLoadingAction)
-        End If
+        Try
+            Dim attr As Integer = SFGAO.FOLDER
+            shellItem2.GetAttributes(attr, attr)
+            If CBool(attr And SFGAO.FOLDER) Then
+                Return New Folder(Item.GetFullPathFromShellItem2(shellItem2), logicalParent, setIsLoadingAction)
+            Else
+                Return New Item(Item.GetFullPathFromShellItem2(shellItem2), logicalParent, setIsLoadingAction)
+            End If
+        Finally
+            Marshal.ReleaseComObject(shellItem2)
+        End Try
     End Function
 
     Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, bindingParent As Folder) As IShellItem2
-        Dim ptr As IntPtr
-        Functions.SHCreateItemWithParent(IntPtr.Zero, bindingParent.ShellFolder, pidl, Guids.IID_IShellItem2, ptr)
-        Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2))
+        Dim bindingParentShellFolder As IShellFolder = bindingParent.GetShellFolder()
+        Try
+            Dim ptr As IntPtr
+            Functions.SHCreateItemWithParent(IntPtr.Zero, bindingParentShellFolder, pidl, Guids.IID_IShellItem2, ptr)
+            Try
+                Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2))
+            Finally
+                Marshal.Release(ptr)
+            End Try
+        Finally
+            Marshal.ReleaseComObject(bindingParentShellFolder)
+        End Try
     End Function
 
     Friend Shared Function GetIShellItem2FromParsingName(parsingName As String) As IShellItem2
         Dim ptr As IntPtr
         Functions.SHCreateItemFromParsingName(parsingName, IntPtr.Zero, Guids.IID_IShellItem2, ptr)
-        Return If(Not IntPtr.Zero.Equals(ptr), Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2)), Nothing)
+        Try
+            Return If(Not IntPtr.Zero.Equals(ptr), Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2)), Nothing)
+        Finally
+            If Not IntPtr.Zero.Equals(ptr) Then
+                Marshal.Release(ptr)
+            End If
+        End Try
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
-        _interface = shellItem2
+    Friend Shared Function GetFullPathFromShellItem2(shellItem2 As IShellItem2) As String
+        Dim fullPath As String
+        shellItem2.GetDisplayName(SHGDN.FORPARSING, fullPath)
+        If fullPath.StartsWith("::{") AndAlso fullPath.EndsWith("}") Then
+            fullPath = "shell:" & fullPath
+        End If
+        Return fullPath
+    End Function
+
+    Public Sub New(fullPath As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
+        If fullPath Is Nothing Then
+            Throw New InvalidDataException()
+        End If
+        _fullPath = fullPath
         _setIsLoadingAction = setIsLoadingAction
         _logicalParent = logicalParent
-        Dim s As String = Me.FullPath
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
 
-    Public Sub New(bindingParent As Folder, pidl As IntPtr, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
-        _bindingParent = bindingParent
-        _pidl = pidl
-        _setIsLoadingAction = setIsLoadingAction
-        _logicalParent = logicalParent
-        Dim s As String = Me.FullPath
-        AddHandler Shell.Notification, AddressOf shell_Notification
-    End Sub
+    Friend Function GetShellItem2() As IShellItem2
+        'If _interface Is Nothing Then
+        '    If _pidl.Equals(IntPtr.Zero) Then
+        '        Dim result As IShellItem
+        '        Functions.SHGetKnownFolderItem(Guids.KnownFolder_Desktop, 0, IntPtr.Zero, GetType(IShellItem).GUID, result)
+        '        _interface = result
+        '    Else
+        '        _interface = GetIShellItem2FromPidl(_pidl, _bindingParent)
+        '        Marshal.FreeCoTaskMem(_pidl)
+        '    End If
+        'End If
 
-    Friend ReadOnly Property ShellItem2 As IShellItem2
-        Get
-            If _interface Is Nothing Then
-                If _pidl.Equals(IntPtr.Zero) Then
-                    Dim result As IShellItem
-                    Functions.SHGetKnownFolderItem(Guids.KnownFolder_Desktop, 0, IntPtr.Zero, GetType(IShellItem).GUID, result)
-                    _interface = result
-                Else
-                    _interface = GetIShellItem2FromPidl(_pidl, _bindingParent)
-                    Marshal.FreeCoTaskMem(_pidl)
-                End If
-            End If
-
-            Return _interface
-        End Get
-    End Property
+        Return Item.GetIShellItem2FromParsingName(_fullPath)
+    End Function
 
     Friend ReadOnly Property ImageFactory As IShellItemImageFactory
         Get
@@ -103,11 +119,19 @@ Public Class Item
                 If _parent Is Nothing Then
                     ' this is bound to the desktop
                     Dim parentShellItem2 As IShellItem2
-                    Me.ShellItem2.GetParent(parentShellItem2)
-                    If Not parentShellItem2 Is Nothing Then
-                        Dim shellFolder As IShellFolder = Folder.GetIShellFolderFromIShellItem2(parentShellItem2)
-                        _parent = New Folder(shellFolder, parentShellItem2, Nothing, _setIsLoadingAction)
-                    End If
+                    Dim shellItem2 As IShellItem2 = Me.GetShellItem2()
+                    Try
+                        shellItem2.GetParent(parentShellItem2)
+                        If Not parentShellItem2 Is Nothing Then
+                            Try
+                                _parent = New Folder(Item.GetFullPathFromShellItem2(parentShellItem2), Nothing, _setIsLoadingAction)
+                            Finally
+                                Marshal.ReleaseComObject(parentShellItem2)
+                            End Try
+                        End If
+                    Finally
+                        Marshal.ReleaseComObject(shellItem2)
+                    End Try
                 End If
 
                 Return _parent
@@ -137,43 +161,62 @@ Public Class Item
 
     Public Overridable ReadOnly Property Overlay16 As ImageSource
         Get
-            Dim pidl As IntPtr, lastpidl As IntPtr
-            Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(Me.ShellItem2), pidl)
-            lastpidl = Functions.ILFindLastID(pidl)
+            Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr, shellItem2 As IShellItem2
+            shellItem2 = Me.GetShellItem2()
+            Try
+                ptr = Marshal.GetIUnknownForObject(shellItem2)
+                Try
+                    Functions.SHGetIDListFromObject(ptr, pidl)
+                    lastpidl = Functions.ILFindLastID(pidl)
+                Finally
+                    Marshal.Release(ptr)
+                End Try
+            Finally
+                Marshal.ReleaseComObject(shellItem2)
+            End Try
 
-            Dim ptr As IntPtr = Marshal.GetIUnknownForObject(If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder))
-            Dim ptr2 As IntPtr
-            Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
-            If Not IntPtr.Zero.Equals(ptr2) Then
-                Dim shellIconOverlay As IShellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
-                Dim iconIndex As Integer
-                shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
+            Dim shellFolder As IShellFolder = If(Not Me.Parent Is Nothing, Me.Parent.GetShellFolder(), Shell.Desktop.GetShellFolder())
+            Try
+                ptr = Marshal.GetIUnknownForObject(shellFolder)
+                Try
+                    Dim ptr2 As IntPtr
+                    Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
+                    If Not IntPtr.Zero.Equals(ptr2) Then
+                        Dim shellIconOverlay As IShellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
+                        Dim iconIndex As Integer
+                        shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
 
-                If iconIndex > 0 Then
-                    ' Get the system image list
-                    Dim hImageListLarge As IntPtr
-                    Dim hImageListSmall As IntPtr
-                    Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
+                        If iconIndex > 0 Then
+                            ' Get the system image list
+                            Dim hImageListLarge As IntPtr
+                            Dim hImageListSmall As IntPtr
+                            Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
 
-                    ' Retrieve the overlay icon
-                    Dim hIcon As IntPtr = Functions.ImageList_GetIcon(hImageListSmall, iconIndex, 0)
-                    If hIcon <> IntPtr.Zero Then
-                        Try
-                            Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
-                                Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                            End Using
-                        Finally
-                            Functions.DestroyIcon(hIcon)
-                        End Try
+                            ' Retrieve the overlay icon
+                            Dim hIcon As IntPtr = Functions.ImageList_GetIcon(hImageListSmall, iconIndex, 0)
+                            If hIcon <> IntPtr.Zero Then
+                                Try
+                                    Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
+                                        Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                    End Using
+                                Finally
+                                    Functions.DestroyIcon(hIcon)
+                                End Try
+                            Else
+                                Return Nothing
+                            End If
+                        Else
+                            Return Nothing
+                        End If
                     Else
                         Return Nothing
                     End If
-                Else
-                    Return Nothing
-                End If
-            Else
-                Return Nothing
-            End If
+                Finally
+                    Marshal.Release(ptr)
+                End Try
+            Finally
+                Marshal.ReleaseComObject(shellFolder)
+            End Try
         End Get
     End Property
 
@@ -191,50 +234,74 @@ Public Class Item
 
     Public Overridable ReadOnly Property Overlay32 As ImageSource
         Get
-            Dim pidl As IntPtr, lastpidl As IntPtr
-            Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(Me.ShellItem2), pidl)
-            lastpidl = Functions.ILFindLastID(pidl)
+            Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr, shellItem2 As IShellItem2
+            shellItem2 = Me.GetShellItem2()
+            Try
+                ptr = Marshal.GetIUnknownForObject(shellItem2)
+                Try
+                    Functions.SHGetIDListFromObject(ptr, pidl)
+                    lastpidl = Functions.ILFindLastID(pidl)
+                Finally
+                    Marshal.Release(ptr)
+                End Try
+            Finally
+                Marshal.ReleaseComObject(shellItem2)
+            End Try
 
-            Dim ptr As IntPtr = Marshal.GetIUnknownForObject(If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder))
-            Dim ptr2 As IntPtr
-            Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
-            If Not IntPtr.Zero.Equals(ptr2) Then
-                Dim shellIconOverlay As IShellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
-                Dim iconIndex As Integer
-                shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
+            Dim shellFolder As IShellFolder = If(Not Me.Parent Is Nothing, Me.Parent.GetShellFolder(), Shell.Desktop.GetShellFolder())
+            Try
+                ptr = Marshal.GetIUnknownForObject(shellFolder)
+                Try
+                    Dim ptr2 As IntPtr
+                    Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
+                    If Not IntPtr.Zero.Equals(ptr2) Then
+                        Dim shellIconOverlay As IShellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
+                        Dim iconIndex As Integer
+                        shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
 
-                If iconIndex > 0 Then
-                    ' Get the system image list
-                    Dim hImageListLarge As IntPtr
-                    Dim hImageListSmall As IntPtr
-                    Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
+                        If iconIndex > 0 Then
+                            ' Get the system image list
+                            Dim hImageListLarge As IntPtr
+                            Dim hImageListSmall As IntPtr
+                            Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
 
-                    ' Retrieve the overlay icon
-                    Dim hIcon As IntPtr = Functions.ImageList_GetIcon(hImageListLarge, iconIndex, 0)
-                    If hIcon <> IntPtr.Zero Then
-                        Try
-                            Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
-                                Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                            End Using
-                        Finally
-                            Functions.DestroyIcon(hIcon)
-                        End Try
+                            ' Retrieve the overlay icon
+                            Dim hIcon As IntPtr = Functions.ImageList_GetIcon(hImageListLarge, iconIndex, 0)
+                            If hIcon <> IntPtr.Zero Then
+                                Try
+                                    Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
+                                        Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                    End Using
+                                Finally
+                                    Functions.DestroyIcon(hIcon)
+                                End Try
+                            Else
+                                Return Nothing
+                            End If
+                        Else
+                            Return Nothing
+                        End If
                     Else
                         Return Nothing
                     End If
-                Else
-                    Return Nothing
-                End If
-            Else
-                Return Nothing
-            End If
+                Finally
+                    Marshal.Release(ptr)
+                End Try
+            Finally
+                Marshal.ReleaseComObject(shellFolder)
+            End Try
         End Get
     End Property
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
             If String.IsNullOrWhiteSpace(_displayName) Then
-                Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                Dim shellItem2 As IShellItem2 = Me.GetShellItem2()
+                Try
+                    shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                Finally
+                    Marshal.ReleaseComObject(shellItem2)
+                End Try
             End If
             Return _displayName
         End Get
@@ -253,13 +320,6 @@ Public Class Item
 
     Public ReadOnly Property FullPath As String
         Get
-            If _fullPath Is Nothing Then
-                Me.ShellItem2.GetDisplayName(SHGDN.FORPARSING, _fullPath)
-                If _fullPath.StartsWith("::{") AndAlso _fullPath.EndsWith("}") Then
-                    _fullPath = "shell:" & _fullPath
-                End If
-            End If
-
             Return _fullPath
         End Get
     End Property
@@ -267,7 +327,12 @@ Public Class Item
     Public ReadOnly Property RelativePath As String
         Get
             Dim result As String
-            Me.ShellItem2.GetDisplayName(SHGDN.FORPARSING Or SHGDN.INFOLDER, result)
+            Dim shellItem2 As IShellItem2 = Me.GetShellItem2()
+            Try
+                shellItem2.GetDisplayName(SHGDN.FORPARSING Or SHGDN.INFOLDER, result)
+            Finally
+                Marshal.ReleaseComObject(shellItem2)
+            End Try
             Return result
         End Get
     End Property
@@ -275,7 +340,12 @@ Public Class Item
     Public ReadOnly Property IsHidden As Boolean
         Get
             Dim attr As Integer = SFGAO.HIDDEN
-            Me.ShellItem2.GetAttributes(attr, attr)
+            Dim shellItem2 As IShellItem2 = Me.GetShellItem2()
+            Try
+                shellItem2.GetAttributes(attr, attr)
+            Finally
+                Marshal.ReleaseComObject(shellItem2)
+            End Try
             Return CBool(attr And SFGAO.HIDDEN)
         End Get
     End Property
@@ -319,8 +389,6 @@ Public Class Item
         Select Case e.Event
             Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                 If Me.FullPath.Equals(e.Item1Path) Then
-                    Me.ShellItem2.Update(IntPtr.Zero)
-                    _fullPath = Nothing
                     _properties = New Dictionary(Of String, [Property])()
                     _displayName = Nothing
                     For Each prop In Me.GetType().GetProperties()
@@ -329,8 +397,7 @@ Public Class Item
                 End If
             Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                 If Me.FullPath.Equals(e.Item1Path) Then
-                    _interface = Item.GetIShellItem2FromParsingName(e.Item2Path)
-                    _fullPath = Nothing
+                    _fullPath = e.Item2Path
                     _properties = New Dictionary(Of String, [Property])()
                     _displayName = Nothing
                     For Each prop In Me.GetType().GetProperties()
@@ -351,7 +418,6 @@ Public Class Item
                 End If
             End If
 
-            Marshal.ReleaseComObject(Me.ShellItem2)
             ' TODO: free unmanaged resources (unmanaged objects) and override finalizer
             ' TODO: set large fields to null
             disposedValue = True

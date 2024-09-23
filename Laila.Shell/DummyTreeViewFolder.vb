@@ -7,7 +7,7 @@ Public Class DummyTreeViewFolder
     Private _displayName As String
 
     Public Sub New(displayName As String)
-        MyBase.New(Nothing, IntPtr.Zero, Nothing, Nothing)
+        MyBase.New(String.Empty, Nothing, Nothing)
 
         _displayName = displayName
         Me.IsLoading = True

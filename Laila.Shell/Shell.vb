@@ -89,13 +89,22 @@ Public Class Shell
                     item2 = Item.GetIShellItem2FromParsingName(path2.ToString())
                 End If
 
-                RaiseEvent Notification(Nothing, New NotificationEventArgs() With {
+                Try
+                    RaiseEvent Notification(Nothing, New NotificationEventArgs() With {
                     .Item1Path = path1,
                     .Item1 = item1,
                     .Item2Path = path2,
                     .Item2 = item2,
                     .[Event] = lEvent
                 })
+                Finally
+                    If Not item1 Is Nothing Then
+                        Marshal.ReleaseComObject(item1)
+                    End If
+                    If Not item2 Is Nothing Then
+                        Marshal.ReleaseComObject(item2)
+                    End If
+                End Try
 
                 Functions.SHChangeNotification_Unlock(hLock)
             End If

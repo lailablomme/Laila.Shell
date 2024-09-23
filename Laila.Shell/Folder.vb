@@ -13,7 +13,6 @@ Imports System.Windows.Media.Imaging
 Public Class Folder
     Inherits Item
 
-    Private _interface As IShellFolder
     Private _columns As List(Of Column)
     Private _items As ObservableCollection(Of Item)
     Private _firstContextMenuCall As Boolean = True
@@ -30,35 +29,40 @@ Public Class Folder
     End Function
 
     Friend Shared Function GetIShellFolderFromPidl(pidl As IntPtr, bindingParent As Folder) As IShellFolder
-        Dim ptr As IntPtr
-        bindingParent.ShellFolder.BindToObject(pidl, IntPtr.Zero, Guids.IID_IShellFolder, ptr)
-        Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellFolder))
+        Dim bindingParentShellFolder As IShellFolder = bindingParent.GetShellFolder()
+        Try
+            Dim ptr As IntPtr
+            bindingParentShellFolder.BindToObject(pidl, IntPtr.Zero, Guids.IID_IShellFolder, ptr)
+            Try
+                Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellFolder))
+            Finally
+                Marshal.Release(ptr)
+            End Try
+        Finally
+            Marshal.ReleaseComObject(bindingParentShellFolder)
+        End Try
     End Function
 
-    Public Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
-        MyBase.New(shellItem2, logicalParent, setIsLoadingAction)
-
-        _interface = shellFolder
+    Public Sub New(fullPath As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
+        MyBase.New(fullPath, logicalParent, setIsLoadingAction)
     End Sub
 
-    Public Sub New(bindingParent As Folder, pidl As IntPtr, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
-        MyBase.New(bindingParent, pidl, logicalParent, setIsLoadingAction)
-    End Sub
-
-    Friend Overloads ReadOnly Property ShellFolder As IShellFolder
-        Get
-            If _interface Is Nothing Then
-                If _pidl.Equals(IntPtr.Zero) Then
-                    Functions.SHGetDesktopFolder(_interface)
-                Else
-                    _interface = GetIShellFolderFromPidl(_pidl, _bindingParent)
-                    Marshal.FreeCoTaskMem(_pidl)
-                End If
-            End If
-
-            Return _interface
-        End Get
-    End Property
+    Friend Function GetShellFolder() As IShellFolder
+        'If _interface Is Nothing Then
+        '    If _pidl.Equals(IntPtr.Zero) Then
+        '        Functions.SHGetDesktopFolder(_interface)
+        '    Else
+        '        _interface = GetIShellFolderFromPidl(_pidl, _bindingParent)
+        '        Marshal.FreeCoTaskMem(_pidl)
+        '    End If
+        'End If
+        Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+        Try
+            Return Folder.GetIShellFolderFromIShellItem2(shellItem2)
+        Finally
+            Marshal.ReleaseComObject(shellItem2)
+        End Try
+    End Function
 
     Public ReadOnly Property Columns(canonicalName As String) As Column
         Get
@@ -71,20 +75,25 @@ Public Class Folder
             If _columns Is Nothing Then
                 _columns = New List(Of Column)()
 
-                Dim ptr As IntPtr
-                Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
-                Dim shellView As IShellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
-                Dim columnManager As IColumnManager = shellView
-                Dim count As Integer
-                columnManager.GetColumnCount(CM_ENUM_FLAGS.CM_ENUM_ALL, count)
-                Dim propertyKeys(count - 1) As PROPERTYKEY
-                columnManager.GetColumns(CM_ENUM_FLAGS.CM_ENUM_ALL, propertyKeys, count)
-                Dim index As Integer = 0
-                For Each propertyKey In propertyKeys
-                    _columns.Add(New Column(propertyKey, columnManager,
-                                            index))
-                    index += 1
-                Next
+                Dim shellFolder As IShellFolder = Me.GetShellFolder()
+                Try
+                    Dim ptr As IntPtr
+                    shellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
+                    Dim shellView As IShellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
+                    Dim columnManager As IColumnManager = shellView
+                    Dim count As Integer
+                    columnManager.GetColumnCount(CM_ENUM_FLAGS.CM_ENUM_ALL, count)
+                    Dim propertyKeys(count - 1) As PROPERTYKEY
+                    columnManager.GetColumns(CM_ENUM_FLAGS.CM_ENUM_ALL, propertyKeys, count)
+                    Dim index As Integer = 0
+                    For Each propertyKey In propertyKeys
+                        _columns.Add(New Column(propertyKey, columnManager,
+                                                index))
+                        index += 1
+                    Next
+                Finally
+                    Marshal.ReleaseComObject(shellFolder)
+                End Try
             End If
 
             Return _columns
@@ -155,73 +164,97 @@ Public Class Folder
             Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
             propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
 
-            Dim var As New PROPVARIANT()
+            Dim var As PROPVARIANT
             var.vt = VarEnum.VT_UI4
             var.union.uintVal = flags
             propertyBag.Write("SHCONTF", var)
 
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
-            Dim ptr2 As IntPtr
             bindCtxPtr = Marshal.GetIUnknownForObject(bindCtx)
 
-            ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
-            Dim enumShellItems As IEnumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
-
+            Dim shellItem2 As IShellItem2 = Me.GetShellItem2()
+            Dim enumShellItems As IEnumShellItems
             Try
+                Dim ptr2 As IntPtr
+                shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                Try
+                    enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+                Finally
+                    Marshal.Release(ptr2)
+                End Try
+
                 Dim shellItemArray(0) As IShellItem, feteched As UInt32 = 1
                 Application.Current.Dispatcher.Invoke(
-                Sub()
-                    enumShellItems.Next(1, shellItemArray, feteched)
-                End Sub)
-                While feteched = 1
-                    Dim attr As Integer = SFGAO.FOLDER
-                    shellItemArray(0).GetAttributes(attr, attr)
-                    Dim fullPath As String
-                    CType(shellItemArray(0), IShellItem2).GetDisplayName(SHGDN.FORPARSING, fullPath)
-                    paths.Add(fullPath)
-                    Application.Current.Dispatcher.Invoke(
-                    Sub()
-                        If items.FirstOrDefault(Function(i) i.FullPath = fullPath) Is Nothing Then
-                            If CBool(attr And SFGAO.FOLDER) Then
-                                items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(shellItemArray(0)), shellItemArray(0), Me, _setIsLoadingAction))
-                            Else
-                                items.Add(New Item(shellItemArray(0), Me, _setIsLoadingAction))
-                            End If
-                        End If
-                    End Sub)
-                    Application.Current.Dispatcher.Invoke(
                     Sub()
                         enumShellItems.Next(1, shellItemArray, feteched)
                     End Sub)
+                While feteched = 1
+                    Try
+                        Dim attr As Integer = SFGAO.FOLDER
+                        shellItemArray(0).GetAttributes(attr, attr)
+                        Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItemArray(0))
+                        paths.Add(fullPath)
+                        Application.Current.Dispatcher.Invoke(
+                            Sub()
+                                If items.FirstOrDefault(Function(i) i.FullPath = fullPath) Is Nothing Then
+                                    If CBool(attr And SFGAO.FOLDER) Then
+                                        items.Add(New Folder(fullPath, Me, _setIsLoadingAction))
+                                    Else
+                                        items.Add(New Item(fullPath, Me, _setIsLoadingAction))
+                                    End If
+                                End If
+                            End Sub)
+                    Finally
+                        Marshal.ReleaseComObject(shellItemArray(0))
+                    End Try
+                    Application.Current.Dispatcher.Invoke(
+                        Sub()
+                            enumShellItems.Next(1, shellItemArray, feteched)
+                        End Sub)
                 End While
             Catch ex As Exception
                 ' directories getting deleted while being enumerated
+            Finally
+                Marshal.ReleaseComObject(enumShellItems)
+                Marshal.ReleaseComObject(shellItem2)
+                Marshal.ReleaseComObject(bindCtx)
+                Marshal.Release(bindCtxPtr)
+                var.Dispose()
             End Try
         Else
             Dim list As IEnumIDList
-            Me.ShellFolder.EnumObjects(Nothing, flags, list)
-            If Not list Is Nothing Then
-                Dim pidl(0) As IntPtr, fetched As Integer
-                While list.Next(1, pidl, fetched) = 0
-                    Dim attr As Integer = SFGAO.FOLDER
-                    Me.ShellFolder.GetAttributesOf(1, pidl, attr)
-                    Dim newItem As Item
-                    Application.Current.Dispatcher.Invoke(
-                        Sub()
-                            If CBool(attr And SFGAO.FOLDER) Then
-                                newItem = New Folder(Me, pidl(0), Me, _setIsLoadingAction)
-                            Else
-                                newItem = New Item(Me, pidl(0), Me, _setIsLoadingAction)
-                            End If
-                            paths.Add(newItem.FullPath)
-                            If items.FirstOrDefault(Function(i) i.FullPath = newItem.FullPath) Is Nothing Then
-                                items.Add(newItem)
-                            Else
-                                newItem.Dispose()
-                            End If
-                        End Sub)
-                End While
-            End If
+            Dim shellFolder As IShellFolder = Me.GetShellFolder()
+            Try
+                shellFolder.EnumObjects(Nothing, flags, list)
+                If Not list Is Nothing Then
+                    Dim pidl(0) As IntPtr, fetched As Integer
+                    While list.Next(1, pidl, fetched) = 0
+                        Dim attr As Integer = SFGAO.FOLDER
+                        shellFolder.GetAttributesOf(1, pidl, attr)
+                        Dim newItem As Item
+                        Application.Current.Dispatcher.Invoke(
+                            Sub()
+                                Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), Me)
+                                Try
+                                    If CBool(attr And SFGAO.FOLDER) Then
+                                        newItem = New Folder(Item.GetFullPathFromShellItem2(shellItem2), Me, _setIsLoadingAction)
+                                    Else
+                                        newItem = New Item(Item.GetFullPathFromShellItem2(shellItem2), Me, _setIsLoadingAction)
+                                    End If
+                                Finally
+                                End Try
+                                paths.Add(newItem.FullPath)
+                                If items.FirstOrDefault(Function(i) i.FullPath = newItem.FullPath) Is Nothing Then
+                                    items.Add(newItem)
+                                Else
+                                    newItem.Dispose()
+                                End If
+                            End Sub)
+                    End While
+                End If
+            Finally
+                Marshal.ReleaseComObject(shellFolder)
+            End Try
         End If
 
         Application.Current.Dispatcher.Invoke(
@@ -333,8 +366,12 @@ Public Class Folder
             For i = 1 To 9
                 menu.Items.RemoveAt(0)
             Next
-            menu.Items.Remove(menu.Items.Cast(Of Control) _
-                .FirstOrDefault(Function(c) Not c.Tag Is Nothing AndAlso c.Tag.ToString().Split(vbTab)(1) = "Windows.Share"))
+
+            Dim menuItemWindowsShare As MenuItem = menu.Items.Cast(Of Control) _
+                .FirstOrDefault(Function(c) Not c.Tag Is Nothing AndAlso c.Tag.ToString().Split(vbTab)(1) = "Windows.Share")
+            Dim menuItemWindowsShareIndex As Integer = menu.Items.IndexOf(menuItemWindowsShare)
+            menu.Items.RemoveAt(menuItemWindowsShareIndex - 1)
+            menu.Items.RemoveAt(menuItemWindowsShareIndex - 1)
 
             ' add some of our own
             menu.Items.Insert(0, New MenuItem() With {.Header = "Paste", .Tag = vbTab & "paste", .IsEnabled = Clipboard.ContainsFileDropList()})
@@ -390,21 +427,46 @@ Public Class Folder
     Private Function getIContextMenu(items As IEnumerable(Of Item),
                                      ByRef contextMenu2 As IContextMenu2, ByRef contextMenu3 As IContextMenu3,
                                      ByRef hMenu As IntPtr, isDefaultOnly As Boolean) As IContextMenu
-        Dim contextMenu As IContextMenu, folderpidl As IntPtr, shellItemPtr As IntPtr = Marshal.GetIUnknownForObject(Me.ShellItem2)
+        Dim shellItem2 As IShellItem2 = Me.GetShellItem2(), folderpidl As IntPtr
+        Try
+            Dim shellItemPtr As IntPtr = Marshal.GetIUnknownForObject(shellItem2)
+            Try
+                Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
+            Finally
+                Marshal.Release(shellItemPtr)
+            End Try
+        Finally
+            Marshal.ReleaseComObject(shellItem2)
+        End Try
+
+        Dim contextMenu As IContextMenu
         Dim pidls(If(items Is Nothing OrElse items.Count = 0, -1, items.Count - 1)) As IntPtr
         Dim lastpidls(If(items Is Nothing OrElse items.Count = 0, -1, items.Count - 1)) As IntPtr
         Dim ptr As IntPtr
 
-        Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
-
         If Not items Is Nothing AndAlso items.Count > 0 Then
             For i = 0 To items.Count - 1
-                Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(items(i).ShellItem2), pidls(i))
+                shellItem2 = items(i).GetShellItem2()
+                Try
+                    Dim shellItemPtr As IntPtr = Marshal.GetIUnknownForObject(shellItem2)
+                    Try
+                        Functions.SHGetIDListFromObject(shellItemPtr, pidls(i))
+                    Finally
+                        Marshal.Release(shellItemPtr)
+                    End Try
+                Finally
+                    Marshal.ReleaseComObject(shellItem2)
+                End Try
                 lastpidls(i) = Functions.ILFindLastID(pidls(i))
             Next
 
-            Me.ShellFolder.GetUIObjectOf(IntPtr.Zero, lastpidls.Length, lastpidls, GetType(IContextMenu).GUID, 0, ptr)
-            contextMenu = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IContextMenu))
+            Dim shellFolder As IShellFolder = Me.GetShellFolder()
+            Try
+                shellFolder.GetUIObjectOf(IntPtr.Zero, lastpidls.Length, lastpidls, GetType(IContextMenu).GUID, 0, ptr)
+                contextMenu = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IContextMenu))
+            Finally
+                Marshal.ReleaseComObject(shellFolder)
+            End Try
 
             Dim shellExtInitPtr As IntPtr
             Marshal.QueryInterface(ptr, GetType(IShellExtInit).GUID, shellExtInitPtr)
@@ -415,8 +477,14 @@ Public Class Folder
                 shellExtInit.Initialize(folderpidl, dataObject, IntPtr.Zero)
             End If
         Else
-            Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
-            Dim shellView As IShellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
+            Dim shellView As IShellView
+            Dim shellFolder As IShellFolder = Me.GetShellFolder()
+            Try
+                shellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
+                shellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
+            Finally
+                Marshal.ReleaseComObject(shellFolder)
+            End Try
 
             shellView.GetItemObject(SVGIO.SVGIO_BACKGROUND, GetType(IContextMenu).GUID, ptr)
             contextMenu = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IContextMenu))
@@ -461,7 +529,7 @@ Public Class Folder
                     If Me.FullPath.Equals(parentFullPath) Then
                         SyncLock _itemsLock
                             If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                                _items.Add(New Item(e.Item1, Me, _setIsLoadingAction))
+                                _items.Add(New Item(e.Item1Path, Me, _setIsLoadingAction))
                                 Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_items)
                                 view.Refresh()
                             End If
@@ -477,7 +545,7 @@ Public Class Folder
                     If Me.FullPath.Equals(parentFullPath) Then
                         SyncLock _itemsLock
                             If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                                _items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(e.Item1), e.Item1, Me, _setIsLoadingAction))
+                                _items.Add(New Folder(e.Item1Path, Me, _setIsLoadingAction))
                             End If
                         End SyncLock
                     End If
@@ -495,7 +563,7 @@ Public Class Folder
                 If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
                     SyncLock _itemsLock
                         If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                            _items.Add(New Folder(Folder.GetIShellFolderFromIShellItem2(e.Item1), e.Item1, Me, _setIsLoadingAction))
+                            _items.Add(New Folder(e.Item1Path, Me, _setIsLoadingAction))
                         End If
                     End SyncLock
                 End If
@@ -544,8 +612,6 @@ Public Class Folder
 
     Protected Overrides Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
-            Marshal.ReleaseComObject(Me.ShellFolder)
-
             If Not _items Is Nothing Then
                 For Each item In _items
                     item.Dispose()
