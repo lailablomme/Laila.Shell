@@ -7,6 +7,8 @@ Public Structure PropVariantUnion
 
 	<FieldOffset(0)>
 	Public bVal As Byte
+	<FieldOffset(0)>
+	Public boolVal As Boolean
 
 	<FieldOffset(0)>
 	Public iVal As Short

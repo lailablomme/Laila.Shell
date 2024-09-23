@@ -1,5 +1,5 @@
 ﻿<Flags>
-Public Enum MFS
+Public Enum MFS As Integer
     MFS_GRAYED = &H3
     MFS_DISABLED = MFS_GRAYED
     MFS_CHECKED = &H8

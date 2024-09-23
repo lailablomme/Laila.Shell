@@ -12,7 +12,7 @@ Public Class Shell
     Private Shared _hNotify As UInt32
     Private Shared _w As Window
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
-
+    Public Shared _hwnd As IntPtr
     Shared Sub New()
         Functions.OleInitialize(IntPtr.Zero)
 
@@ -34,6 +34,7 @@ Public Class Shell
                 Dim hwnd As IntPtr = New WindowInteropHelper(_w).Handle
                 Dim source As HwndSource = HwndSource.FromHwnd(hwnd)
                 source.AddHook(AddressOf HwndHook)
+                _hwnd = hwnd
 
                 _hNotify = Functions.SHChangeNotifyRegister(
                     hwnd,

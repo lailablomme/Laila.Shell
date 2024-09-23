@@ -149,7 +149,21 @@
                                 </Viewbox.Style>
                                 <local:LoadingSpinner />
                             </Viewbox>
-                            <TextBlock Grid.Column="1" Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <Image Source="../Images/pin.png" Margin="4,0,0,0" Width="16" Height="16">
+                                    <Image.Style>
+                                        <Style>
+                                            <Setter Property="Image.Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </StackPanel>
                         </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.Resources>

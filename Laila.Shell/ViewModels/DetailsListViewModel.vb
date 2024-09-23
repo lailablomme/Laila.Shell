@@ -300,8 +300,6 @@ Namespace ViewModels
                                                         Me.FolderName = Me.SelectedItem.FullPath
                                                         isHandled = True
                                                     End If
-                                                Case "copyaspath"
-                                                    Clipboard.SetText(String.Join(vbCrLf, Me.SelectedItems.Select(Function(i) """" & i.FullPath & """")))
                                             End Select
 
                                             If Not isHandled Then

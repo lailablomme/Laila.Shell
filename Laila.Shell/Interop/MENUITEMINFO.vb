@@ -6,7 +6,7 @@ Public Structure MENUITEMINFO
     Public fMask As UInteger
     Public fType As UInteger
     Public fState As MFS
-    Public wID As UInt32
+    Public wID As Integer
     Public hSubMenu As IntPtr
     Public hbmpChecked As IntPtr
     Public hbmpUnchecked As IntPtr

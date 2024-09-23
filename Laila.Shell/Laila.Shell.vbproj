@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <None Remove="Images\arrow_up16.png" />
+    <None Remove="Images\pin.png" />
     <None Remove="Images\sortasc.png" />
     <None Remove="Images\sortdesc.png" />
   </ItemGroup>
@@ -23,6 +24,7 @@
 
   <ItemGroup>
     <Resource Include="Images\arrow_up16.png" />
+    <Resource Include="Images\pin.png" />
     <Resource Include="Images\sortasc.png" />
     <Resource Include="Images\sortdesc.png" />
   </ItemGroup>

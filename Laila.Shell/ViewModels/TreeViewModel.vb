@@ -282,8 +282,6 @@ Namespace ViewModels
                                                 Case "open"
                                                     Me.SetSelectedItem(clickedItem)
                                                     isHandled = True
-                                                Case "copyaspath"
-                                                    Clipboard.SetText(String.Join(vbCrLf, """" & clickedItem.FullPath & """"))
                                             End Select
 
                                             If Not isHandled Then

@@ -1,7 +1,7 @@
 ﻿Imports System.Runtime.InteropServices
 
-<StructLayout(LayoutKind.Sequential, CharSet:=CharSet.Auto)>
-Public Structure CMINVOKECOMMANDINFOEX
+<StructLayout(LayoutKind.Sequential)>
+Public Structure CMInvokeCommandInfoEx
     Public cbSize As Integer
     Public fMask As Integer
     Public hwnd As IntPtr

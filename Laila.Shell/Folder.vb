@@ -9,6 +9,8 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Media.Imaging
+Imports Accessibility
+Imports Microsoft.Xaml.Behaviors
 
 Public Class Folder
     Inherits Item
@@ -274,8 +276,9 @@ Public Class Folder
           End Sub)
     End Sub
 
-    Public Function GetContextMenu(items As IEnumerable(Of Item), ByRef contextMenu As IContextMenu, ByRef defaultId As String, isDefaultOnly As Boolean) As ContextMenu
-        Dim hMenu As IntPtr, contextMenu2 As IContextMenu2, contextMenu3 As IContextMenu3
+    Public Function GetContextMenu(items As IEnumerable(Of Item), ByRef contextMenu As IContextMenu,
+                                   ByRef defaultId As String, isDefaultOnly As Boolean) As ContextMenu
+        Dim contextMenu2 As IContextMenu2, contextMenu3 As IContextMenu3, hMenu As IntPtr
         contextMenu = getContextMenu(items, contextMenu2, contextMenu3, hMenu, isDefaultOnly)
         Dim defaultIdLocal As String, contextMenuLocal As IContextMenu = contextMenu
         Dim getMenu As Func(Of IntPtr, List(Of Control)) =
@@ -301,6 +304,8 @@ Public Class Folder
                     Functions.GetMenuItemInfo(hMenu2, i, True, mii)
                     Dim header As String = mii.dwTypeData.Substring(0, mii.cch)
 
+                    mii = New MENUITEMINFO()
+                    mii.cbSize = CUInt(Marshal.SizeOf(mii))
                     mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE
                     Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
@@ -317,25 +322,30 @@ Public Class Folder
                             result.Add(New Separator())
                         End If
                     Else
+                        mii = New MENUITEMINFO()
+                        mii.cbSize = CUInt(Marshal.SizeOf(mii))
                         mii.fMask = MIIM.MIIM_ID
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        Dim cmd As String
+                        Dim cmd As String, id As Integer
                         If mii.wID < 9999999 Then
+                            id = mii.wID
                             Dim bytes(256) As Byte
                             contextMenuLocal.GetCommandString(mii.wID, GCS.VERBA, 0, bytes, 256)
                             cmd = Text.Encoding.ASCII.GetString(bytes).Trim(vbNullChar)
                         End If
 
+                        mii = New MENUITEMINFO()
+                        mii.cbSize = CUInt(Marshal.SizeOf(mii))
                         mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
                         Dim menuItem As MenuItem = New MenuItem() With {
                             .Header = header.Replace("&", "_"),
                             .Icon = New Image() With {.Source = bitmapSource},
-                            .Tag = mii.wID & vbTab & cmd,
-                            .IsEnabled = If(mii.fState.HasFlag(MFS.MFS_DISABLED), False, True),
-                            .FontWeight = If(mii.fState.HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
+                            .Tag = id & vbTab & cmd,
+                            .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
+                            .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
                         }
 
                         If CBool(mii.fState And MFS.MFS_DEFAULT) Then
@@ -358,20 +368,23 @@ Public Class Folder
                     result.RemoveAt(result.Count - 1)
                 End While
 
-                Functions.DestroyMenu(hMenu2)
-
                 Return result
             End Function
 
+        ' make our own menu
         Dim menu As ContextMenu = New ContextMenu()
         For Each item In getMenu(hMenu)
             menu.Items.Add(item)
         Next
+        AddHandler menu.Closed,
+            Sub(s As Object, e As RoutedEventArgs)
+                Functions.DestroyMenu(hMenu)
+            End Sub
 
         ' folder background menu
         If items Is Nothing OrElse items.Count = 0 Then
             ' remove some items that don't work anyway
-            For i = 1 To 9
+            For i = 1 To 7
                 menu.Items.RemoveAt(0)
             Next
 
@@ -381,8 +394,9 @@ Public Class Folder
             menu.Items.RemoveAt(menuItemWindowsShareIndex - 1)
             menu.Items.RemoveAt(menuItemWindowsShareIndex - 1)
 
-            ' add some of our own
-            menu.Items.Insert(0, New MenuItem() With {.Header = "Paste", .Tag = vbTab & "paste", .IsEnabled = Clipboard.ContainsFileDropList()})
+            ' update paste item
+            menu.Items(0).Tag = vbTab & "paste"
+            menu.Items(0).IsEnabled = Clipboard.ContainsFileDropList()
         End If
 
         defaultId = defaultIdLocal
@@ -391,46 +405,25 @@ Public Class Folder
     End Function
 
     Public Sub InvokeCommand(contextMenu As IContextMenu, items As IEnumerable(Of Item), id As String)
-        Dim cmi As New CMINVOKECOMMANDINFOEX
+        Dim cmi As New CMInvokeCommandInfoEx
         Debug.WriteLine("InvokeCommand " & id)
         If id.Split(vbTab)(1).Length <> 0 Then
             cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
-            cmi.lpVerbW = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
+            cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
         Else
-            cmi.lpVerb = Convert.ToUInt32(id.Split(vbTab)(0))
-            cmi.lpVerbW = Convert.ToUInt32(id.Split(vbTab)(0))
+            cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+            cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
         End If
         cmi.lpDirectory = Me.FullPath
         cmi.lpDirectoryW = Me.FullPath
-        cmi.fMask = CMIC.NOZONECHECKS Or CMIC.ASYNCOK
+        cmi.fMask = CMIC.UNICODE Or CMIC.PTINVOKE
         cmi.nShow = SW.SHOWNORMAL
-        cmi.hwnd = IntPtr.Zero
+        cmi.hwnd = Shell._hwnd
         cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
+        cmi.ptInvoke = New Drawing.Point(0, 0)
 
-        contextMenu.InvokeCommand(cmi)
-    End Sub
-
-    Public Sub PasteFiles()
-        ' Check if the clipboard contains file drop data
-        If Clipboard.ContainsFileDropList() Then
-            ' Get the list of files from the clipboard
-            Dim files As StringCollection = Clipboard.GetFileDropList()
-
-            ' Iterate through the files and move or copy them to the destination path
-            For Each fileFullPath As String In files
-                Dim fileName As String = Path.GetFileName(fileFullPath)
-                Dim destFile As String = Path.Combine(Me.FullPath, fileName)
-
-                ' Check if the file was cut or copied
-                If Clipboard.GetData("Preferred DropEffect") = DragDropEffects.Move Then
-                    ' Move the file
-                    File.Move(fileFullPath, destFile)
-                Else
-                    ' Copy the file
-                    File.Copy(fileFullPath, destFile)
-                End If
-            Next
-        End If
+        Dim h As HResult = contextMenu.InvokeCommand(cmi)
+        Debug.WriteLine("InvokeCommand returned " & h.ToString())
     End Sub
 
     Private Function getContextMenu(items As IEnumerable(Of Item),

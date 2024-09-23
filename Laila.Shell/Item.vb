@@ -129,6 +129,14 @@ Public Class Item
         End Get
     End Property
 
+    Public ReadOnly Property IsPinned As Boolean
+        Get
+            Using val = Me.Properties("System.IsPinnedToNameSpaceTree").RawValue
+                Return val.union.boolVal
+            End Using
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property Icon16 As ImageSource
         Get
             Dim ptr As IntPtr
