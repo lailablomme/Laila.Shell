@@ -14,6 +14,18 @@ Public Class Functions
     '    ByRef ppv As IntPtr
     ') As Integer
     'End Function
+    <DllImport("user32.dll", CharSet:=CharSet.Auto)>
+    Public Shared Function LoadString(hInstance As IntPtr, uID As Integer, lpBuffer As StringBuilder, nBufferMax As Integer) As Integer
+    End Function
+    <DllImport("kernel32.dll", CharSet:=CharSet.Auto)>
+    Public Shared Function LoadLibrary(lpFileName As String) As IntPtr
+    End Function
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Shared Function FreeLibrary(hModule As IntPtr) As Boolean
+    End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
+    End Function
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function GetDC(hWnd As IntPtr) As IntPtr
     End Function

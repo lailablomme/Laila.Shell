@@ -14,6 +14,8 @@ Public Class Shell
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
 
     Shared Sub New()
+        Functions.OleInitialize(IntPtr.Zero)
+
         Dim entry(0) As SHChangeNotifyEntry
         entry(0).pIdl = IntPtr.Zero
         entry(0).Recursively = True

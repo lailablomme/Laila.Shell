@@ -16,7 +16,7 @@ Public Interface IContextMenu
         ByVal uFlags As Integer) As Integer
 
     <PreserveSig()>
-    Function InvokeCommand(ByRef pici As CMINVOKECOMMANDINFO) As Integer
+    Function InvokeCommand(ByRef pici As CMINVOKECOMMANDINFOEX) As Integer
 
     <PreserveSig()>
     Function GetCommandString(ByVal idcmd As Integer,
