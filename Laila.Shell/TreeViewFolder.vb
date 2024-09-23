@@ -158,121 +158,12 @@ Public Class TreeViewFolder
                     End Function,
                     Function(shellItem2 As IShellItem2)
                         Return New TreeViewFolder(shellItem2, Me, _setIsLoadingAction)
-                    End Function)
+                    End Function,
+                    8)
 
         For Each item In items
             item.ITreeViewItemData_Parent = Me
         Next
-
-        'Dim paths As List(Of String) = New List(Of String)
-
-        'Dim flags As UInt32 = CType(SHCONTF.FOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, UInt32)
-
-        'If Not isWindows7OrLower() Then
-        '    Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
-        '    Functions.CreateBindCtx(0, bindCtxPtr)
-        '    bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
-
-        '    Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
-        '    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
-        '    propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
-
-        '    Dim var As New PROPVARIANT()
-        '    var.vt = VarEnum.VT_UI4
-        '    var.union.uintVal = flags
-        '    propertyBag.Write("SHCONTF", var)
-
-        '    bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
-        '    Dim ptr2 As IntPtr
-        '    bindCtxPtr = Marshal.GetIUnknownForObject(bindCtx)
-
-        '    Dim shellItem2 As IShellItem2 = Me.GetShellItem2()
-        '    If Not shellItem2 Is Nothing Then
-        '        Dim enumShellItems As IEnumShellItems
-        '        Try
-        '            shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
-        '            enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
-
-        '            Dim shellItemArray(0) As IShellItem, feteched As UInt32 = 1
-        '            Application.Current.Dispatcher.Invoke(
-        '                        Sub()
-        '                            enumShellItems.Next(1, shellItemArray, feteched)
-        '                        End Sub)
-        '            Dim onlyOnce As Boolean = True
-        '            While feteched = 1 AndAlso (Me.IsExpanded OrElse onlyOnce OrElse Not _fromThread)
-        '                Try
-        '                    Dim tvf As TreeViewFolder = New TreeViewFolder(Folder.GetFullPathFromShellItem2(shellItemArray(0)), Me, _setIsLoadingAction)
-        '                    tvf.ITreeViewItemData_Parent = Me
-        '                    paths.Add(tvf.FullPath)
-        '                    Application.Current.Dispatcher.Invoke(
-        '                Sub()
-        '                    If items.FirstOrDefault(Function(i) i.FullPath = tvf.FullPath) Is Nothing Then
-        '                        items.Add(tvf)
-        '                    Else
-        '                        tvf.Dispose()
-        '                    End If
-        '                End Sub)
-        '                    onlyOnce = False
-        '                    Thread.Sleep(10)
-        '                Finally
-        '                    Marshal.ReleaseComObject(shellItemArray(0))
-        '                End Try
-        '                Application.Current.Dispatcher.Invoke(
-        '                Sub()
-        '                    enumShellItems.Next(1, shellItemArray, feteched)
-        '                End Sub)
-        '            End While
-        '        Catch ex As Exception
-        '            ' TODO handle access denied
-        '        Finally
-        '            Marshal.ReleaseComObject(enumShellItems)
-        '            Marshal.ReleaseComObject(shellItem2)
-        '            Marshal.ReleaseComObject(bindCtx)
-        '            Marshal.Release(bindCtxPtr)
-        '            Marshal.Release(ptr2)
-        '            var.Dispose()
-        '        End Try
-        '    End If
-        'Else
-        '    Dim list As IEnumIDList
-        '    Dim shellFolder As IShellFolder = Me.GetShellFolder()
-        '    Try
-        '        shellFolder.EnumObjects(Nothing, flags, list)
-        '        If Not list Is Nothing Then
-        '            Dim pidl(0) As IntPtr, fetched As Integer
-        '            list.Next(1, pidl, fetched)
-        '            Dim onlyOnce As Boolean = True
-        '            While fetched = 1 AndAlso (Me.IsExpanded OrElse onlyOnce OrElse Not _fromThread)
-        '                Dim tvf As TreeViewFolder
-        '                Application.Current.Dispatcher.Invoke(
-        '                    Sub()
-        '                        Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), Me)
-        '                        Try
-        '                            tvf = New TreeViewFolder(Item.GetFullPathFromShellItem2(shellItem2), Me, _setIsLoadingAction)
-        '                            Dim cache As String = tvf.DisplayName
-        '                            paths.Add(tvf.FullPath)
-        '                            If items.FirstOrDefault(Function(i) i.FullPath = tvf.FullPath) Is Nothing Then
-        '                                items.Add(tvf)
-        '                            Else
-        '                                tvf.Dispose()
-        '                            End If
-        '                        Finally
-        '                            Marshal.ReleaseComObject(shellItem2)
-        '                        End Try
-        '                        list.Next(1, pidl, fetched)
-        '                    End Sub)
-        '                Application.Current.Dispatcher.Invoke(
-        '                    Sub()
-        '                        list.Next(1, pidl, fetched)
-        '                    End Sub)
-        '                onlyOnce = False
-        '                Thread.Sleep(10)
-        '            End While
-        '        End If
-        '    Finally
-        '        Marshal.ReleaseComObject(shellFolder)
-        '    End Try
-        'End If
 
         If Not Me.IsExpanded AndAlso items.Count > 0 AndAlso _fromThread Then
             Application.Current.Dispatcher.Invoke(
@@ -280,14 +171,6 @@ Public Class TreeViewFolder
                     items.Clear()
                     items.Add(New DummyTreeViewFolder("Loading..."))
                 End Sub)
-            'Else
-            '    Application.Current.Dispatcher.Invoke(
-            '        Sub()
-            '            Dim toBeRemoved As List(Of TreeViewFolder) = items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
-            '            For Each item In toBeRemoved
-            '                items.Remove(item)
-            '            Next
-            '        End Sub)
         End If
     End Sub
 

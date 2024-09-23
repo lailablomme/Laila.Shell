@@ -144,13 +144,14 @@ Public Class Folder
                     End Function,
                     Function(shellItem2 As IShellItem2)
                         Return New Folder(shellItem2, Me, _setIsLoadingAction)
-                    End Function)
+                    End Function,
+                    0)
     End Sub
 
     Protected Sub updateItems(flags As UInt32, condition As Boolean,
                               exists As Func(Of Item, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getToBeRemoved As Func(Of List(Of String), List(Of Item)),
-                              makeNewFolder As Func(Of IShellItem2, Item))
+                              makeNewFolder As Func(Of IShellItem2, Item), uiHelp As Integer)
         Dim paths As List(Of String) = New List(Of String)
 
         If Not isWindows7OrLower() Then
@@ -218,7 +219,7 @@ Public Class Folder
                                         enumShellItems.Next(1, shellItemArray, fetched)
                                     End Sub)
                                 isOnce = True
-                                Thread.Sleep(10)
+                                If uiHelp > 0 Then Thread.Sleep(uiHelp)
                             End While
                         End If
                     Catch ex As Exception
