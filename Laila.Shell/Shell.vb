@@ -46,6 +46,7 @@ Public Class Shell
                 AddHandler Application.Current.Exit,
                     Sub(s2 As Object, e2 As ExitEventArgs)
                         Functions.SHChangeNotifyDeregister(_hNotify)
+                        Functions.OleUninitialize()
                     End Sub
             End Sub
 

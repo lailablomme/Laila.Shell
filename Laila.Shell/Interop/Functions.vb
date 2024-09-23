@@ -26,6 +26,9 @@ Public Class Functions
     <DllImport("ole32.dll")>
     Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
     End Function
+    <DllImport("ole32.dll")>
+    Public Shared Sub OleUninitialize()
+    End Sub
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function GetDC(hWnd As IntPtr) As IntPtr
     End Function

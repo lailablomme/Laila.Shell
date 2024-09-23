@@ -280,7 +280,7 @@ Public Class Folder
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
                         Dim cmd As String
-                        If mii.wID Then
+                        If mii.wID < 9999999 Then
                             Dim bytes(256) As Byte
                             contextMenuLocal.GetCommandString(mii.wID, GCS.VERBA, 0, bytes, 256)
                             cmd = Text.Encoding.ASCII.GetString(bytes).Trim(vbNullChar)
