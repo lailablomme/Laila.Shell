@@ -7,7 +7,7 @@ Public Class Column
     Friend _columnManager As IColumnManager
     Private _propertyKey As PROPERTYKEY
     Private _index As Integer
-    Private _propertyDescription As IPropertyDescription
+    Friend _propertyDescription As IPropertyDescription
     Private _viewFlags As PROPDESC_VIEW_FLAGS
     Private _canonicalName As String
 
@@ -17,10 +17,17 @@ Public Class Column
         _index = index
 
         Dim ptr2 As IntPtr
-        Functions.PSGetPropertyDescription(propertyKey, GetType(IPropertyDescription).GUID, ptr2)
-        _propertyDescription = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IPropertyDescription))
-
-        _propertyDescription.GetViewFlags(_viewFlags)
+        Try
+            Functions.PSGetPropertyDescription(propertyKey, GetType(IPropertyDescription).GUID, ptr2)
+            If Not IntPtr.Zero.Equals(ptr2) Then
+                _propertyDescription = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IPropertyDescription))
+                _propertyDescription.GetViewFlags(_viewFlags)
+            End If
+        Finally
+            If Not IntPtr.Zero.Equals(ptr2) Then
+                Marshal.Release(ptr2)
+            End If
+        End Try
     End Sub
 
     Public ReadOnly Property CanonicalName As String

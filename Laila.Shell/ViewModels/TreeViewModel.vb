@@ -238,6 +238,11 @@ Namespace ViewModels
                                 If en.MoveNext() Then
                                     func(en.Current, cb)
                                 Else
+                                    ' wait for expanding to complete
+                                    Application.Current.Dispatcher.Invoke(
+                                            Sub()
+                                            End Sub, Threading.DispatcherPriority.ContextIdle)
+
                                     Select Case root
                                         Case 1 : _selectionHelper1.SetSelectedItems({tf})
                                         Case 2 : _selectionHelper2.SetSelectedItems({tf})

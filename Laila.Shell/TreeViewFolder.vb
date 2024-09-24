@@ -20,12 +20,16 @@ Public Class TreeViewFolder
 
     Public Overloads Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As TreeViewFolder
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
-        Dim attr As Integer = SFGAO.FOLDER
-        shellItem2.GetAttributes(attr, attr)
-        If CBool(attr And SFGAO.FOLDER) Then
-            Return New TreeViewFolder(shellItem2, logicalParent, setIsLoadingAction)
+        If Not shellItem2 Is Nothing Then
+            Dim attr As Integer = SFGAO.FOLDER
+            shellItem2.GetAttributes(attr, attr)
+            If CBool(attr And SFGAO.FOLDER) Then
+                Return New TreeViewFolder(shellItem2, logicalParent, setIsLoadingAction)
+            Else
+                Throw New InvalidOperationException("Only folders.")
+            End If
         Else
-            Throw New InvalidOperationException("Only folders.")
+            Return Nothing
         End If
     End Function
 

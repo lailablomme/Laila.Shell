@@ -71,8 +71,11 @@ Public Class Folder
                 _columnManager.GetColumns(CM_ENUM_FLAGS.CM_ENUM_ALL, propertyKeys, count)
                 Dim index As Integer = 0
                 For Each propertyKey In propertyKeys
-                    _columns.Add(New Column(propertyKey, _columnManager, index))
-                    index += 1
+                    Dim col As Column = New Column(propertyKey, _columnManager, index)
+                    If Not col._propertyDescription Is Nothing Then
+                        _columns.Add(col)
+                        index += 1
+                    End If
                 Next
             End If
 
@@ -156,124 +159,126 @@ Public Class Folder
                               makeNewFolder As Func(Of IShellItem2, Item), uiHelp As Integer)
         Dim paths As List(Of String) = New List(Of String)
 
-        If Not isWindows7OrLower() Then
-            Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
-            Functions.CreateBindCtx(0, bindCtxPtr)
-            bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
+        Dim attr As SFGAO = SFGAO.HASSUBFOLDER Or SFGAO.ISSLOW
+        _shellItem2.GetAttributes(attr, attr)
 
-            If Not bindCtx Is Nothing AndAlso Not IntPtr.Zero.Equals(bindCtxPtr) Then
-                Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
-                Try
-                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
-                    propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
-                Finally
-                    If Not IntPtr.Zero.Equals(propertyBagPtr) Then
-                        Marshal.Release(bindCtxPtr)
-                    End If
-                End Try
+        If Not condition AndAlso (attr.HasFlag(SFGAO.ISSLOW) OrElse Me.FullPath.StartsWith("\\")) AndAlso attr.HasFlag(SFGAO.HASSUBFOLDER) Then
+            Application.Current.Dispatcher.Invoke(
+                Sub()
+                    add(New DummyTreeViewFolder("Loading..."))
+                End Sub)
+        Else
+            If Not isWindows7OrLower() Then
+                Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
+                Functions.CreateBindCtx(0, bindCtxPtr)
+                bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
 
-                If Not propertyBag Is Nothing Then
-                    Dim var As PROPVARIANT
-                    Dim enumShellItems As IEnumShellItems
+                If Not bindCtx Is Nothing AndAlso Not IntPtr.Zero.Equals(bindCtxPtr) Then
+                    Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
                     Try
-                        var.vt = VarEnum.VT_UI4
-                        var.union.uintVal = flags
-                        propertyBag.Write("SHCONTF", var)
+                        Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
+                        propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
+                    Finally
+                        If Not IntPtr.Zero.Equals(propertyBagPtr) Then
+                            Marshal.Release(bindCtxPtr)
+                        End If
+                    End Try
 
-                        bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
-
-                        Dim ptr2 As IntPtr
+                    If Not propertyBag Is Nothing Then
+                        Dim var As PROPVARIANT
+                        Dim enumShellItems As IEnumShellItems
                         Try
-                            _shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
-                            enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
-                        Finally
-                            If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
-                        End Try
+                            var.vt = VarEnum.VT_UI4
+                            var.union.uintVal = flags
+                            propertyBag.Write("SHCONTF", var)
 
-                        If Not enumShellItems Is Nothing Then
-                            Dim shellItemArray(0) As IShellItem, fetched As UInt32 = 1
+                            bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
+
+                            Dim ptr2 As IntPtr
+                            Try
+                                _shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                                enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+                            Finally
+                                If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
+                            End Try
+
+                            If Not enumShellItems Is Nothing Then
+                                Dim shellItemArray(0) As IShellItem, fetched As UInt32 = 1
+                                enumShellItems.Next(1, shellItemArray, fetched)
+                                Dim isOnce As Boolean = False
+                                While fetched = 1 And (Not isOnce OrElse condition)
+                                    Dim attr2 As Integer = SFGAO.FOLDER
+                                    shellItemArray(0).GetAttributes(attr2, attr2)
+                                    Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItemArray(0))
+                                    Application.Current.Dispatcher.Invoke(
+                                        Sub()
+                                            Dim newItem As Item
+                                            If CBool(attr2 And SFGAO.FOLDER) Then
+                                                newItem = makeNewFolder(shellItemArray(0))
+                                            Else
+                                                newItem = New Item(shellItemArray(0), Nothing, Nothing)
+                                            End If
+                                            paths.Add(newItem.FullPath)
+                                            If Not exists(newItem) Then
+                                                add(newItem)
+                                            Else
+                                                newItem.Dispose()
+                                            End If
+                                        End Sub)
+                                    enumShellItems.Next(1, shellItemArray, fetched)
+                                    isOnce = True
+                                    If uiHelp > 0 Then Thread.Sleep(uiHelp)
+                                End While
+                            End If
+                        Catch ex As Exception
                             Application.Current.Dispatcher.Invoke(
                                 Sub()
-                                    Dim fp As String = Me.FullPath
-                                    enumShellItems.Next(1, shellItemArray, fetched)
+                                    add(New DummyTreeViewFolder(ex.Message))
                                 End Sub)
-                            Dim isOnce As Boolean = False
-                            While fetched = 1 And (Not isOnce OrElse condition)
-                                Dim attr As Integer = SFGAO.FOLDER
-                                shellItemArray(0).GetAttributes(attr, attr)
-                                Application.Current.Dispatcher.Invoke(
-                                    Sub()
-                                        Dim newItem As Item
-                                        If CBool(attr And SFGAO.FOLDER) Then
-                                            newItem = makeNewFolder(shellItemArray(0))
-                                        Else
-                                            newItem = New Item(shellItemArray(0), Me, _setIsLoadingAction)
-                                        End If
-                                        paths.Add(newItem.FullPath)
-                                        If Not exists(newItem) Then
-                                            add(newItem)
-                                        Else
-                                            newItem.Dispose()
-                                        End If
-                                    End Sub)
-                                Application.Current.Dispatcher.Invoke(
-                                    Sub()
-                                        enumShellItems.Next(1, shellItemArray, fetched)
-                                    End Sub)
-                                isOnce = True
-                                If uiHelp > 0 Then Thread.Sleep(uiHelp)
-                            End While
+                        Finally
+                            If Not enumShellItems Is Nothing Then
+                                Marshal.ReleaseComObject(enumShellItems)
+                            End If
+                            Marshal.ReleaseComObject(bindCtx)
+                            Marshal.Release(bindCtxPtr)
+                            Marshal.ReleaseComObject(propertyBag)
+                            var.Dispose()
+                        End Try
+                    End If
+                End If
+            Else
+                Dim list As IEnumIDList
+                _shellFolder.EnumObjects(Nothing, flags, list)
+                If Not list Is Nothing Then
+                    Dim pidl(0) As IntPtr, fetched As Integer
+                    While list.Next(1, pidl, fetched) = 0
+                        Dim attr2 As Integer = SFGAO.FOLDER
+                        _shellFolder.GetAttributesOf(1, pidl, attr2)
+                        Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), Me)
+                        Dim path As String = Item.GetFullPathFromShellItem2(shellItem2)
+                        Dim newItem As Item
+                        If CBool(attr2 And SFGAO.FOLDER) Then
+                            newItem = makeNewFolder(shellItem2)
+                        Else
+                            newItem = New Item(shellItem2, Me, _setIsLoadingAction)
                         End If
-                    Catch ex As Exception
-                        Application.Current.Dispatcher.Invoke(
-                            Sub()
-                                add(New DummyTreeViewFolder(ex.Message))
-                            End Sub)
-                    Finally
-                        If Not enumShellItems Is Nothing Then
-                            Marshal.ReleaseComObject(enumShellItems)
+                        paths.Add(newItem.FullPath)
+                        If Not exists(newItem) Then
+                            add(newItem)
+                        Else
+                            newItem.Dispose()
                         End If
-                        Marshal.ReleaseComObject(bindCtx)
-                        Marshal.Release(bindCtxPtr)
-                        Marshal.ReleaseComObject(propertyBag)
-                        var.Dispose()
-                    End Try
+                    End While
                 End If
             End If
-        Else
-            Dim list As IEnumIDList
-            _shellFolder.EnumObjects(Nothing, flags, list)
-            If Not list Is Nothing Then
-                Dim pidl(0) As IntPtr, fetched As Integer
-                While list.Next(1, pidl, fetched) = 0
-                    Dim attr As Integer = SFGAO.FOLDER
-                    _shellFolder.GetAttributesOf(1, pidl, attr)
-                    Application.Current.Dispatcher.Invoke(
-                        Sub()
-                            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), Me)
-                            Dim newItem As Item
-                            If CBool(attr And SFGAO.FOLDER) Then
-                                newItem = New Folder(shellItem2, Me, _setIsLoadingAction)
-                            Else
-                                newItem = New Item(shellItem2, Me, _setIsLoadingAction)
-                            End If
-                            paths.Add(newItem.FullPath)
-                            If Not exists(newItem) Then
-                                add(newItem)
-                            Else
-                                newItem.Dispose()
-                            End If
-                        End Sub)
-                End While
-            End If
-        End If
 
-        Application.Current.Dispatcher.Invoke(
-          Sub()
-              For Each item In getToBeRemoved(paths)
-                  remove(item)
-              Next
-          End Sub)
+            Application.Current.Dispatcher.Invoke(
+              Sub()
+                  For Each item In getToBeRemoved(paths)
+                      remove(item)
+                  Next
+              End Sub)
+        End If
     End Sub
 
     Public Function GetContextMenu(items As IEnumerable(Of Item), ByRef contextMenu As IContextMenu,

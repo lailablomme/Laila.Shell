@@ -8,13 +8,7 @@ Public Class NotifyPropertyChangedBase
     Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 
     Public Sub NotifyOfPropertyChange(propertyName As String)
-        Dim appl As Application = Application.Current
-        If Not appl Is Nothing Then
-            appl.Dispatcher.Invoke(
-                Sub()
-                    RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
-                End Sub)
-        End If
+        RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
     End Sub
 
     Protected Sub SetValue(Of T)(ByRef member As T, value As T, <CallerMemberName> Optional propertyName As String = "")

@@ -22,12 +22,16 @@ Public Class Item
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
-        Dim attr As Integer = SFGAO.FOLDER
-        shellItem2.GetAttributes(attr, attr)
-        If CBool(attr And SFGAO.FOLDER) Then
-            Return New Folder(shellItem2, logicalParent, setIsLoadingAction)
+        If Not shellItem2 Is Nothing Then
+            Dim attr As Integer = SFGAO.FOLDER
+            shellItem2.GetAttributes(attr, attr)
+            If CBool(attr And SFGAO.FOLDER) Then
+                Return New Folder(shellItem2, logicalParent, setIsLoadingAction)
+            Else
+                Return New Item(shellItem2, logicalParent, setIsLoadingAction)
+            End If
         Else
-            Return New Item(shellItem2, logicalParent, setIsLoadingAction)
+            Return Nothing
         End If
     End Function
 
@@ -82,22 +86,6 @@ Public Class Item
         End Get
     End Property
 
-    Friend ReadOnly Property ImageFactory As IShellItemImageFactory
-        Get
-            If _imageFactory Is Nothing Then
-                Dim ptr As IntPtr
-                Try
-                    Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItemImageFactory).GUID, ptr)
-                    _imageFactory = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItemImageFactory))
-                Finally
-                    Marshal.Release(ptr)
-                End Try
-            End If
-
-            Return _imageFactory
-        End Get
-    End Property
-
     Public ReadOnly Property LogicalParent As Folder
         Get
             Return _logicalParent
@@ -131,9 +119,11 @@ Public Class Item
 
     Public ReadOnly Property IsPinned As Boolean
         Get
-            Using val = Me.Properties("System.IsPinnedToNameSpaceTree").RawValue
-                Return val.union.boolVal
-            End Using
+            If Not _shellItem2 Is Nothing Then
+                Using val = Me.Properties("System.IsPinnedToNameSpaceTree").RawValue
+                    Return val.union.boolVal
+                End Using
+            End If
         End Get
     End Property
 
@@ -141,7 +131,7 @@ Public Class Item
         Get
             Dim ptr As IntPtr
             Try
-                Me.ImageFactory.GetImage(New System.Drawing.Size(16, 16), SIIGBF.SIIGBF_ICONONLY, ptr)
+                CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(16, 16), SIIGBF.SIIGBF_ICONONLY, ptr)
                 Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
             Finally
                 Functions.DeleteObject(ptr)
@@ -159,7 +149,7 @@ Public Class Item
         Get
             Dim ptr As IntPtr
             Try
-                Me.ImageFactory.GetImage(New System.Drawing.Size(32, 32), SIIGBF.SIIGBF_ICONONLY, ptr)
+                CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(32, 32), SIIGBF.SIIGBF_ICONONLY, ptr)
                 Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
             Finally
                 Functions.DeleteObject(ptr)
