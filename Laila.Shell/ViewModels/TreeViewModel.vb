@@ -239,9 +239,17 @@ Namespace ViewModels
                                     func(en.Current, cb)
                                 Else
                                     ' wait for expanding to complete
-                                    Application.Current.Dispatcher.Invoke(
+                                    For i = 1 To 5
+                                        Application.Current.Dispatcher.Invoke(
                                             Sub()
                                             End Sub, Threading.DispatcherPriority.ContextIdle)
+                                        Application.Current.Dispatcher.Invoke(
+                                            Sub()
+                                            End Sub, Threading.DispatcherPriority.ContextIdle)
+                                        Application.Current.Dispatcher.Invoke(
+                                            Sub()
+                                            End Sub, Threading.DispatcherPriority.ContextIdle)
+                                    Next
 
                                     Select Case root
                                         Case 1 : _selectionHelper1.SetSelectedItems({tf})
