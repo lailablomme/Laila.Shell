@@ -32,9 +32,10 @@ Namespace ViewModels
 
             ' all the special folders under quick launch
             _folders2 = New List(Of TreeViewFolder)()
+            Dim recentFolder As Folder = Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.Recent), Nothing, Nothing)
             For Each f In CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing), Folder) _
                 .Items.Where(Function(i) TypeOf i Is Folder AndAlso
-                (i.Parent Is Nothing OrElse Shell.SpecialFolders.Values.ToList().Exists(Function(sf) sf.FullPath = i.FullPath)))
+                (recentFolder.Items.FirstOrDefault(Function(r) r.FullPath = i.FullPath) Is Nothing))
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) Then
                     _folders2.Add(TreeViewFolder.FromParsingName(f.FullPath, Nothing, Nothing))
@@ -42,10 +43,8 @@ Namespace ViewModels
             Next
 
             ' 5 first regular folders under quicklaunch
-            For Each f In CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing), Folder) _
-                .Items.Where(Function(i) TypeOf i Is Folder AndAlso
-                (Not i.Parent Is Nothing AndAlso Path.GetDirectoryName(i.FullPath) <> Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))) _
-                .Take(5)
+            For Each f In recentFolder _
+                .Items.Where(Function(i) TypeOf i Is Folder).Take(5)
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) Then
                     _folders2.Add(TreeViewFolder.FromParsingName(f.FullPath, Nothing, Nothing))
