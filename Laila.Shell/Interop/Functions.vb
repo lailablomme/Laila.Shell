@@ -124,11 +124,18 @@ Public Class Functions
     Public Shared Function PSCreateMemoryPropertyStore(<[In]> riid As Guid, <Out> ByRef ppv As IntPtr) As HResult
     End Function
 
-    <DllImport("propsys.dll")>
-    Public Shared Function PSFormatForDisplay(<[In]> ByRef key As PROPERTYKEY, <[In]> ByRef propvar As PROPVARIANT, pdff As PropertyDescriptionFormatOptions, <[Out]> ppszDisplay() As Char) As Integer
-
+    <DllImport("propsys.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
+    Public Shared Function PSFormatForDisplay(
+    ByRef propkey As PROPERTYKEY,
+    ByRef propvar As PROPVARIANT,
+    ByVal pdfFlags As PropertyDescriptionFormatOptions,
+    ByVal pwszText As StringBuilder,
+    ByVal cchText As UInteger) As Integer
     End Function
 
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
+    Public Shared Function SHCreateDefaultContextMenu(<[In]> ByRef pdcm As DEFCONTEXTMENU, <[In]> ByRef riid As Guid, <Out> ByRef ppv As IntPtr) As Integer
+    End Function
     <DllImport("propsys.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
     Public Shared Function PSGetPropertyDescription(
             ByRef propkey As PROPERTYKEY,

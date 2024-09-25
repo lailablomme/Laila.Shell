@@ -285,32 +285,32 @@ Namespace ViewModels
                 Dim contextMenu As IContextMenu, defaultId As String
                 Dim menu As ContextMenu = Me.Folder.GetContextMenu(contextItems, contextMenu, defaultId, False)
                 Dim wireItems As Action(Of ItemCollection) =
-                        Sub(items As ItemCollection)
-                            For Each c As Control In items
-                                If TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0 Then
-                                    Dim menuItem As MenuItem = c
-                                    AddHandler menuItem.Click,
-                                        Sub(s2 As Object, e2 As EventArgs)
-                                            Dim isHandled As Boolean = False
+                    Sub(items As ItemCollection)
+                        For Each c As Control In items
+                            If TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0 Then
+                                Dim menuItem As MenuItem = c
+                                AddHandler menuItem.Click,
+                                    Sub(s2 As Object, e2 As EventArgs)
+                                        Dim isHandled As Boolean = False
 
-                                            Select Case menuItem.Tag.ToString().Split(vbTab)(1)
-                                                Case "open"
-                                                    If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
-                                                        _view.LogicalParent = Me.Folder
-                                                        Me.FolderName = Me.SelectedItem.FullPath
-                                                        isHandled = True
-                                                    End If
-                                            End Select
+                                        Select Case menuItem.Tag.ToString().Split(vbTab)(1)
+                                            Case "open"
+                                                If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
+                                                    _view.LogicalParent = Me.Folder
+                                                    Me.FolderName = Me.SelectedItem.FullPath
+                                                    isHandled = True
+                                                End If
+                                        End Select
 
-                                            If Not isHandled Then
-                                                Me.Folder.InvokeCommand(contextMenu, Me.SelectedItems, menuItem.Tag)
-                                            End If
-                                        End Sub
-                                ElseIf TypeOf c Is MenuItem Then
-                                    wireItems(CType(c, MenuItem).Items)
-                                End If
-                            Next
-                        End Sub
+                                        If Not isHandled Then
+                                            Me.Folder.InvokeCommand(contextMenu, Me.SelectedItems, menuItem.Tag)
+                                        End If
+                                    End Sub
+                            ElseIf TypeOf c Is MenuItem Then
+                                wireItems(CType(c, MenuItem).Items)
+                            End If
+                        Next
+                    End Sub
                 wireItems(menu.Items)
 
                 _view.listView.ContextMenu = menu

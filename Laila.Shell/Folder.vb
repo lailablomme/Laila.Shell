@@ -240,7 +240,6 @@ Public Class Folder
                                 Marshal.ReleaseComObject(enumShellItems)
                             End If
                             Marshal.ReleaseComObject(bindCtx)
-                            Marshal.Release(bindCtxPtr)
                             Marshal.ReleaseComObject(propertyBag)
                             var.Dispose()
                         End Try
@@ -286,16 +285,18 @@ Public Class Folder
         Dim contextMenu2 As IContextMenu2, contextMenu3 As IContextMenu3, hMenu As IntPtr
         contextMenu = getContextMenu(items, contextMenu2, contextMenu3, hMenu, isDefaultOnly)
         Dim defaultIdLocal As String, contextMenuLocal As IContextMenu = contextMenu
-        Dim getMenu As Func(Of IntPtr, List(Of Control)) =
-            Function(hMenu2 As IntPtr) As List(Of Control)
-                If Not contextMenu2 Is Nothing Then
-                    contextMenu2.HandleMenuMsg(WM.INITMENU, hMenu2, IntPtr.Zero)
-                    contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, IntPtr.Zero)
-                End If
+        Dim getMenu As Func(Of IntPtr, Integer, List(Of Control)) =
+            Function(hMenu2 As IntPtr, parentIndex As Integer) As List(Of Control)
+                Dim lParam As Integer = (&HFFFF0000) Or (parentIndex And &HFFFF)
                 If Not contextMenu3 Is Nothing Then
                     Dim ptr3 As IntPtr
-                    contextMenu3.HandleMenuMsg(WM.INITMENU, hMenu2, IntPtr.Zero)
-                    contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, IntPtr.Zero, ptr3)
+                    Dim h As HResult = contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
+                    Debug.WriteLine("contextMenu3 returned" & h.ToString())
+                    If Not IntPtr.Zero.Equals(ptr3) Then
+                        Marshal.Release(ptr3)
+                    End If
+                ElseIf Not contextMenu2 Is Nothing Then
+                    contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
                 End If
 
                 Dim result As List(Of Control) = New List(Of Control)()
@@ -332,12 +333,13 @@ Public Class Folder
                         mii.fMask = MIIM.MIIM_ID
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        Dim cmd As String, id As Integer
-                        If mii.wID < 9999999 Then
-                            id = mii.wID
-                            Dim bytes(256) As Byte
-                            contextMenuLocal.GetCommandString(mii.wID, GCS.VERBA, 0, bytes, 256)
-                            cmd = Text.Encoding.ASCII.GetString(bytes).Trim(vbNullChar)
+                        Dim cmd As StringBuilder = New StringBuilder(), id As Integer
+                        If mii.wID >= 1 AndAlso mii.wID <= 1000 Then
+                            id = mii.wID - 1
+                            contextMenuLocal.GetCommandString(id, GCS.VERBW, 0, cmd, 2048)
+                            If cmd.Length = 0 Then
+                                contextMenuLocal.GetCommandString(id, GCS.VERBA, 0, cmd, 2048)
+                            End If
                         End If
 
                         mii = New MENUITEMINFO()
@@ -348,7 +350,7 @@ Public Class Folder
                         Dim menuItem As MenuItem = New MenuItem() With {
                             .Header = header.Replace("&", "_"),
                             .Icon = New Image() With {.Source = bitmapSource},
-                            .Tag = id & vbTab & cmd,
+                            .Tag = id & vbTab & cmd.ToString(),
                             .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
                             .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
                         }
@@ -357,8 +359,8 @@ Public Class Folder
                             defaultIdLocal = menuItem.Tag
                         End If
 
-                        If mii.hSubMenu Then
-                            Dim subMenu As List(Of Control) = getMenu(mii.hSubMenu)
+                        If Not IntPtr.Zero.Equals(mii.hSubMenu) Then
+                            Dim subMenu As List(Of Control) = getMenu(mii.hSubMenu, i)
                             For Each subMenuItem In subMenu
                                 menuItem.Items.Add(subMenuItem)
                             Next
@@ -378,7 +380,7 @@ Public Class Folder
 
         ' make our own menu
         Dim menu As ContextMenu = New ContextMenu()
-        For Each item In getMenu(hMenu)
+        For Each item In getMenu(hMenu, 0)
             menu.Items.Add(item)
         Next
         AddHandler menu.Closed,
@@ -386,82 +388,37 @@ Public Class Folder
                 Functions.DestroyMenu(hMenu)
             End Sub
 
-        ' folder background menu
-        If items Is Nothing OrElse items.Count = 0 Then
-            ' remove some items that don't work anyway
-            For i = 1 To 7
-                menu.Items.RemoveAt(0)
-            Next
-
-            Dim menuItemWindowsShare As MenuItem = menu.Items.Cast(Of Control) _
-                .FirstOrDefault(Function(c) Not c.Tag Is Nothing AndAlso c.Tag.ToString().Split(vbTab)(1) = "Windows.Share")
-            Dim menuItemWindowsShareIndex As Integer = menu.Items.IndexOf(menuItemWindowsShare)
-            menu.Items.RemoveAt(menuItemWindowsShareIndex - 1)
-            menu.Items.RemoveAt(menuItemWindowsShareIndex - 1)
-
-            ' update paste item
-            menu.Items(0).Tag = vbTab & "paste"
-            menu.Items(0).IsEnabled = Clipboard.ContainsFileDropList()
-        End If
-
         defaultId = defaultIdLocal
-
-        Return menu
+        'Functions.TrackPopupMenuEx(hMenu, 0, 0, 0, Shell._hwnd, IntPtr.Zero)
+        Return  menu 'New ContextMenu() '
     End Function
-
-    Public Sub InvokeCommand(contextMenu As IContextMenu, items As IEnumerable(Of Item), id As String)
-        Dim cmi As New CMInvokeCommandInfoEx
-        Debug.WriteLine("InvokeCommand " & id)
-        If id.Split(vbTab)(1).Length <> 0 Then
-            cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
-            cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
-        Else
-            cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
-            cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
-        End If
-        cmi.lpDirectory = Me.FullPath
-        cmi.lpDirectoryW = Me.FullPath
-        cmi.fMask = CMIC.UNICODE Or CMIC.PTINVOKE
-        cmi.nShow = SW.SHOWNORMAL
-        cmi.hwnd = Shell._hwnd
-        cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
-        cmi.ptInvoke = New Drawing.Point(0, 0)
-
-        Dim h As HResult = contextMenu.InvokeCommand(cmi)
-        Debug.WriteLine("InvokeCommand returned " & h.ToString())
-    End Sub
 
     Private Function getContextMenu(items As IEnumerable(Of Item),
                                     ByRef contextMenu2 As IContextMenu2, ByRef contextMenu3 As IContextMenu3,
                                     ByRef hMenu As IntPtr, isDefaultOnly As Boolean) As IContextMenu
+
+        Dim contextMenu As IContextMenu, ptrContextMenu As IntPtr
         Dim folderpidl As IntPtr, shellItemPtr As IntPtr
         shellItemPtr = Marshal.GetIUnknownForObject(_shellItem2)
         Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
 
-        Dim contextMenu As IContextMenu
-        Dim pidls(If(items Is Nothing OrElse items.Count = 0, -1, items.Count - 1)) As IntPtr
-        Dim lastpidls(If(items Is Nothing OrElse items.Count = 0, -1, items.Count - 1)) As IntPtr
-
         If Not items Is Nothing AndAlso items.Count > 0 Then
+            Dim pidls(If(items Is Nothing OrElse items.Count = 0, -1, items.Count - 1)) As IntPtr
+            Dim lastpidls(If(items Is Nothing OrElse items.Count = 0, -1, items.Count - 1)) As IntPtr
+
+
             For i = 0 To items.Count - 1
                 shellItemPtr = Marshal.GetIUnknownForObject(items(i)._shellItem2)
                 Functions.SHGetIDListFromObject(shellItemPtr, pidls(i))
                 lastpidls(i) = Functions.ILFindLastID(pidls(i))
             Next
 
-            Dim ptr As IntPtr
-            Try
-                _shellFolder.GetUIObjectOf(IntPtr.Zero, lastpidls.Length, lastpidls, GetType(IContextMenu).GUID, 0, ptr)
-                contextMenu = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IContextMenu))
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-            End Try
+            _shellFolder.GetUIObjectOf(IntPtr.Zero, lastpidls.Length, lastpidls, GetType(IContextMenu).GUID, 0, ptrContextMenu)
+            contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
 
             Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As IDataObject
             Try
-                Marshal.QueryInterface(ptr, GetType(IShellExtInit).GUID, shellExtInitPtr)
+                Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
                 If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
                     shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
                     Functions.SHCreateDataObject(folderpidl, lastpidls.Count, lastpidls, IntPtr.Zero, GetType(IDataObject).GUID, dataObject)
@@ -479,25 +436,12 @@ Public Class Folder
                 End If
             End Try
         Else
-            Dim shellView As IShellView, ptr As IntPtr
-            Try
-                _shellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
-                shellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
-                shellView.GetItemObject(SVGIO.SVGIO_BACKGROUND, GetType(IContextMenu).GUID, ptr)
-                contextMenu = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IContextMenu))
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-                If Not shellView Is Nothing Then
-                    Marshal.ReleaseComObject(shellView)
-                End If
-            End Try
+            _shellFolder.CreateViewObject(IntPtr.Zero, GetType(IContextMenu).GUID, ptrContextMenu)
+            contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
         End If
 
-        Dim ptrContextMenu As IntPtr, ptr2, ptr3
+        Dim ptr2 As IntPtr, ptr3 As IntPtr
         Try
-            ptrContextMenu = Marshal.GetIUnknownForObject(contextMenu)
             Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu2).GUID, ptr2)
             If Not IntPtr.Zero.Equals(ptr2) Then
                 contextMenu2 = Marshal.GetObjectForIUnknown(ptr2)
@@ -521,18 +465,40 @@ Public Class Folder
         hMenu = Functions.CreatePopupMenu()
         Dim flags As Integer = CMF.CMF_NORMAL Or CMF.CMF_EXTENDEDVERBS
         If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
-        contextMenu.QueryContextMenu(hMenu, 0, 0, Integer.MaxValue, flags)
+        contextMenu.QueryContextMenu(hMenu, 0, 1, 1000, flags)
 
         If _firstContextMenuCall Then
             ' somehow very first call doesn't return all items
             Functions.DestroyMenu(hMenu)
             hMenu = Functions.CreatePopupMenu()
-            contextMenu.QueryContextMenu(hMenu, 0, 0, Integer.MaxValue, flags)
+            contextMenu.QueryContextMenu(hMenu, 0, 1, 1000, flags)
             _firstContextMenuCall = False
         End If
 
         Return contextMenu
     End Function
+
+    Public Sub InvokeCommand(contextMenu As IContextMenu, items As IEnumerable(Of Item), id As String)
+        Dim cmi As New CMInvokeCommandInfoEx
+        Debug.WriteLine("InvokeCommand " & id)
+        'If id.Split(vbTab)(1).Length = 0 Then
+        '    cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
+        '    cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
+        'Else
+        cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+        cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+        'End If
+        cmi.lpDirectory = Me.FullPath
+        cmi.lpDirectoryW = Me.FullPath
+        cmi.fMask = CMIC.UNICODE Or CMIC.PTINVOKE
+        cmi.nShow = SW.SHOWNORMAL
+        cmi.hwnd = Shell._hwnd
+        cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
+        cmi.ptInvoke = New Drawing.Point(0, 0)
+
+        Dim h As HResult = contextMenu.InvokeCommand(cmi)
+        Debug.WriteLine("InvokeCommand returned " & h.ToString())
+    End Sub
 
     Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)

@@ -1,4 +1,5 @@
 ﻿Imports System.Runtime.InteropServices
+Imports System.Text
 
 <ComImport(),
 InterfaceType(ComInterfaceType.InterfaceIsIUnknown),
@@ -12,15 +13,14 @@ Public Interface IContextMenu2
     ByVal idCmdFirst As Integer,
     ByVal idCmdLast As Integer,
     ByVal uFlags As Integer) As Integer
+    <PreserveSig()>
+    Function InvokeCommand(ByRef pici As CMInvokeCommandInfoEx) As Integer
 
     <PreserveSig()>
-    Function InvokeCommand(ByRef pici As CMINVOKECOMMANDINFOEX) As Integer
-
-    <PreserveSig()>
-    Function GetCommandString(ByVal idcmd As UInt32,
+    Function GetCommandString(ByVal idcmd As Integer,
     ByVal uflags As Integer,
     ByVal reserved As Integer,
-    <MarshalAs(UnmanagedType.LPArray)> ByVal commandstring As Byte(),
+    ByVal commandstring As StringBuilder,
     ByVal cch As Integer) As Integer
 
     'IContextMenu2 method
