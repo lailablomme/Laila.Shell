@@ -280,6 +280,7 @@ Namespace ViewModels
                     Dim clickedItem As TreeViewFolder = treeViewItem.DataContext
 
                     Dim contextMenu As IContextMenu, defaultId As String, parent As Folder = clickedItem.Parent
+                    If parent Is Nothing Then parent = Shell.Desktop
                     Dim menu As ContextMenu = parent.GetContextMenu({clickedItem}, contextMenu, defaultId, False)
                     Dim wireItems As Action(Of ItemCollection) =
                         Sub(items As ItemCollection)

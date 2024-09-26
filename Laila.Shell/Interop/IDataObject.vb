@@ -5,7 +5,7 @@ Imports System.Runtime.Serialization
 <ComVisible(True)>
 <InterfaceType(ComInterfaceType.InterfaceIsIUnknown)>
 <Guid("0000010e-0000-0000-C000-000000000046")>
-Public Interface IDataObject
+Public Interface IDataObject2
     Sub GetData(ByRef format As FORMATETC, ByRef medium As STGMEDIUM)
     Sub GetDataHere(ByRef format As FORMATETC, ByRef medium As STGMEDIUM)
     Function QueryGetData(ByRef format As FORMATETC) As Integer

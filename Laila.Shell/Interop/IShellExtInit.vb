@@ -1,4 +1,5 @@
 ﻿Imports System.Runtime.InteropServices
+Imports System.Runtime.InteropServices.ComTypes
 
 <ComImport(), InterfaceType(ComInterfaceType.InterfaceIsIUnknown),
               GuidAttribute("000214e8-0000-0000-c000-000000000046")>

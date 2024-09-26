@@ -261,25 +261,25 @@ Public Class Item
         End Get
     End Property
 
-    Public Overridable ReadOnly Property Properties(key As PROPERTYKEY) As [Property]
-        Get
-            Dim propertyDescription As IPropertyDescription
-            Try
-                Functions.PSGetPropertyDescription(key, GetType(IPropertyDescription).GUID, propertyDescription)
-                If Not propertyDescription Is Nothing Then
-                    Dim canonicalName As String
-                    propertyDescription.GetCanonicalName(canonicalName)
-                    Return Me.Properties(canonicalName)
-                Else
-                    Throw New Exception(String.Format("Property '{0}, {1}' not found.", key.fmtid.ToString(), key.pid))
-                End If
-            Finally
-                If Not propertyDescription Is Nothing Then
-                    Marshal.ReleaseComObject(propertyDescription)
-                End If
-            End Try
-        End Get
-    End Property
+    'Public Overridable ReadOnly Property Properties(key As PROPERTYKEY) As [Property]
+    '    Get
+    '        Dim propertyDescription As IPropertyDescription
+    '        Try
+    '            Functions.PSGetPropertyDescription(key, GetType(IPropertyDescription).GUID, propertyDescription)
+    '            If Not propertyDescription Is Nothing Then
+    '                Dim canonicalName As String
+    '                propertyDescription.GetCanonicalName(canonicalName)
+    '                Return Me.Properties(canonicalName)
+    '            Else
+    '                Throw New Exception(String.Format("Property '{0}, {1}' not found.", key.fmtid.ToString(), key.pid))
+    '            End If
+    '        Finally
+    '            If Not propertyDescription Is Nothing Then
+    '                Marshal.ReleaseComObject(propertyDescription)
+    '            End If
+    '        End Try
+    '    End Get
+    'End Property
 
     Public Overridable ReadOnly Property Properties(canonicalName As String) As [Property]
         Get

@@ -86,6 +86,7 @@ Public Class [Property]
         Get
             Using rawValue As PROPVARIANT = Me.RawValue
                 Dim buffer As StringBuilder = New StringBuilder()
+                buffer.Append(New String(" ", 2050))
                 Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
                 Return Buffer.ToString()
             End Using
