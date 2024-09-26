@@ -1,4 +1,18 @@
-﻿
+﻿'Dim cmcb As ContextMenuCB = New ContextMenuCB()
+'Dim itemArray As PCUITEMID_CHILD_ARRAY = marshalItemArray(lastpidls)
+'Dim dcm As New DEFCONTEXTMENU With {
+'        .psf = ShellFolder,
+'        .pcmcb = cmcb,
+'        .pidlFolder = folderpidl, ' folderpidl,
+'        .cidl = itemArray.cItems,
+'        .apidl = itemArray.pItems,
+'        .punkAssociationInfo = IntPtr.Zero,
+'        .cKeys = 0,
+'        .aKeys = IntPtr.Zero
+'    }
+''If IntPtr.Zero.Equals(ptrContextMenu) Then
+'Dim hr As Integer = Functions.SHCreateDefaultContextMenu(dcm, GetType(IContextMenu).GUID, ptrContextMenu)
+
 'Imports System.Runtime.InteropServices
 
 'Private Function marshalItemArray(itemPtrs As IntPtr()) As PCUITEMID_CHILD_ARRAY

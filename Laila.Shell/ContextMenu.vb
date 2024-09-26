@@ -206,9 +206,10 @@ Public Class ContextMenu
                         lastpidls(i) = Functions.ILFindLastID(pidls(i))
                     Next
                 Else
+                    Dim eaten As Integer
                     Functions.SHGetDesktopFolder(shellFolder)
+                    shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, IO.Path.GetDirectoryName(_parent.FullPath), eaten, folderpidl, 0)
                     For i = 0 To items.Count - 1
-                        Dim eaten As Integer
                         shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, items(i).FullPath, eaten, pidls(i), 0)
                         lastpidls(i) = Functions.ILFindLastID(pidls(i))
                     Next
@@ -304,8 +305,8 @@ Public Class ContextMenu
             End If
             For i = 0 To pidls.Count - 1
                 Marshal.FreeCoTaskMem(pidls(i))
-                Marshal.FreeCoTaskMem(folderpidl)
             Next
+            Marshal.FreeCoTaskMem(folderpidl)
         End Try
     End Sub
 

@@ -3,7 +3,7 @@
 <StructLayout(LayoutKind.Sequential)>
 Public Structure DEFCONTEXTMENU
     Public hwnd As IntPtr
-    Public pcmcb As IntPtr
+    <MarshalAs(UnmanagedType.Interface)> Public pcmcb As IContextMenuCB
     Public pidlFolder As IntPtr
     <MarshalAs(UnmanagedType.Interface)> Public psf As IShellFolder
     Public cidl As UInteger
