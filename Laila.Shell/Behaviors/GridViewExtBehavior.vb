@@ -472,7 +472,7 @@ Namespace Behaviors
         End Sub
 
         Private Sub ColumnHeader_MouseRightButtonDown(sender As Object, e As RoutedEventArgs)
-            Dim menu As ContextMenu = New ContextMenu()
+            Dim menu As System.Windows.Controls.ContextMenu = New System.Windows.Controls.ContextMenu()
 
             For Each column In _activeColumns
                 ' add menu item

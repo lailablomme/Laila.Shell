@@ -34,11 +34,12 @@ Namespace ViewModels
             _folders2 = New List(Of TreeViewFolder)()
             Dim recentFolder As Folder = Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.Recent), Nothing, Nothing)
             For Each f In CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing), Folder) _
-                .Items.Where(Function(i) TypeOf i Is Folder AndAlso
-                (recentFolder.Items.FirstOrDefault(Function(r) r.FullPath = i.FullPath) Is Nothing))
+                .Items.Where(Function(i) TypeOf i Is Folder AndAlso Not IO.File.Exists(i.FullPath))
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) Then
-                    _folders2.Add(TreeViewFolder.FromParsingName(f.FullPath, Nothing, Nothing))
+                    Dim tvf As TreeViewFolder = TreeViewFolder.FromParsingName(f.FullPath, Nothing, Nothing)
+                    'tvf.IsPinned = True
+                    _folders2.Add(tvf)
                 End If
             Next
 
@@ -279,38 +280,22 @@ Namespace ViewModels
                 If Not treeViewItem Is Nothing Then
                     Dim clickedItem As TreeViewFolder = treeViewItem.DataContext
 
-                    Dim contextMenu As IContextMenu, defaultId As String, parent As Folder = clickedItem.Parent
+                    Dim parent As Folder = clickedItem.Parent
                     If parent Is Nothing Then parent = Shell.Desktop
-                    Dim menu As ContextMenu = parent.GetContextMenu({clickedItem}, contextMenu, defaultId, False)
-                    Dim wireItems As Action(Of ItemCollection) =
-                        Sub(items As ItemCollection)
-                            For Each c As Control In items
-                                If TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0 Then
-                                    Dim menuItem As MenuItem = c
-                                    AddHandler menuItem.Click,
-                                        Sub(s2 As Object, e2 As EventArgs)
-                                            Dim isHandled As Boolean = False
 
-                                            Select Case menuItem.Tag.ToString().Split(vbTab)(1)
-                                                Case "open"
-                                                    Me.SetSelectedItem(clickedItem)
-                                                    isHandled = True
-                                            End Select
-
-                                            If Not isHandled Then
-                                                parent.InvokeCommand(contextMenu, {clickedItem}, menuItem.Tag)
-                                            End If
-                                        End Sub
-                                ElseIf TypeOf c Is MenuItem Then
-                                    wireItems(CType(c, MenuItem).Items)
-                                End If
-                            Next
+                    Dim menu As ContextMenu = New ContextMenu()
+                    AddHandler menu.Click,
+                        Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
+                            Select Case verb
+                                Case "open"
+                                    Me.SetSelectedItem(clickedItem)
+                                    isHandled = True
+                            End Select
                         End Sub
-                    wireItems(menu.Items)
 
-                    _view.treeView1.ContextMenu = menu
-                    _view.treeView2.ContextMenu = menu
-                    _view.treeView3.ContextMenu = menu
+                    _view.treeView1.ContextMenu = menu.GetContextMenu(parent, {clickedItem}, False)
+                    _view.treeView2.ContextMenu = menu.GetContextMenu(parent, {clickedItem}, False)
+                    _view.treeView3.ContextMenu = menu.GetContextMenu(parent, {clickedItem}, False)
                 Else
                     _view.treeView1.ContextMenu = Nothing
                     _view.treeView2.ContextMenu = Nothing

@@ -19,6 +19,7 @@ Public Class Item
     Protected _logicalParent As Folder
     Protected _displayName As String
     Friend _shellItem2 As IShellItem2
+    Private _isPinned As Boolean
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
@@ -117,14 +118,13 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property IsPinned As Boolean
+    Public Property IsPinned As Boolean
         Get
-            If Not _shellItem2 Is Nothing Then
-                Using val = Me.Properties("System.IsPinnedToNameSpaceTree").RawValue
-                    Return val.union.boolVal
-                End Using
-            End If
+            Return _isPinned
         End Get
+        Set(value As Boolean)
+            SetValue(_isPinned, value)
+        End Set
     End Property
 
     Public Overridable ReadOnly Property Icon16 As ImageSource
