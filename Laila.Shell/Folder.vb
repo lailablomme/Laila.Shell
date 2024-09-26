@@ -186,9 +186,9 @@ Public Class Folder
                         Try
                             var.vt = VarEnum.VT_UI4
                             var.union.uintVal = flags
-                            propertyBag.Write("SHCONTF", var)
+                            propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
 
-                            bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag)
+                            bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
 
                             Dim ptr2 As IntPtr
                             Try
