@@ -51,6 +51,10 @@ Namespace ViewModels
 
                     AddHandler _view.listView.PreviewMouseRightButtonDown, AddressOf OnListViewItemRightClick
                 End Sub
+
+            AddHandler _view.listView.MouseMove, AddressOf OnListViewMouseMove
+            AddHandler _view.listView.PreviewMouseLeftButtonDown, AddressOf OnListViewPreviewMouseLeftButtonDown
+            AddHandler _view.PreviewKeyDown, AddressOf OnListViewKeyDown
         End Sub
 
         Public Property IsLoading As Boolean
@@ -271,6 +275,33 @@ Namespace ViewModels
                         menu.InvokeCommand(menu.DefaultId)
                     End If
                 End If
+            End If
+        End Sub
+
+        Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
+            If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) AndAlso Me.SelectedItems.Count > 0 Then
+                Clipboard.CopyFiles(Me.SelectedItems)
+            ElseIf e.Key = Key.x AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) AndAlso Me.SelectedItems.Count > 0 Then
+                Clipboard.CutFiles(Me.SelectedItems)
+            End If
+        End Sub
+
+        Public Sub OnListViewPreviewMouseLeftButtonDown(sender As Object, e As MouseButtonEventArgs)
+            ' this prevents a multiple selection getting replaced by the single clicked item
+            If Not e.OriginalSource Is Nothing Then
+                Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
+                If Not listViewItem Is Nothing Then
+                    Dim clickedItem As Item = listViewItem.DataContext
+                    If Me.SelectedItems.Contains(clickedItem) Then
+                        e.Handled = True
+                    End If
+                End If
+            End If
+        End Sub
+
+        Private Sub OnListViewMouseMove(sender As Object, e As MouseEventArgs)
+            If Me.SelectedItems.Count > 0 AndAlso e.LeftButton = MouseButtonState.Pressed Then
+                DragDrop.DoDragDrop(_view.listView, Me.SelectedItems)
             End If
         End Sub
 

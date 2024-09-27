@@ -17,18 +17,69 @@ Public Class Functions
     <DllImport("user32.dll", CharSet:=CharSet.Auto)>
     Public Shared Function LoadString(hInstance As IntPtr, uID As Integer, lpBuffer As StringBuilder, nBufferMax As Integer) As Integer
     End Function
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function SetClipboardData(uFormat As Integer, hMem As IntPtr) As IntPtr
+    End Function
+
+    Public Const CFSTR_PREFERREDDROPEFFECT As String = "Preferred DropEffect"
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function EmptyClipboard() As Boolean
+    End Function
+    <DllImport("user32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
+    Public Shared Function RegisterClipboardFormat(lpString As String) As UInteger
+    End Function
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function OpenClipboard(hWndNewOwner As IntPtr) As Boolean
+    End Function
+
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function CloseClipboard() As Boolean
+    End Function
+
+    <DllImport("ole32.dll")>
+    Public Shared Function OleCreateDataObject(
+    ByRef riid As Guid,
+    ByVal pUnkOuter As IntPtr,
+    ByVal riidDataObject As Guid,
+    ByRef ppvObj As IntPtr
+) As Integer
+    End Function
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Shared Function GlobalAlloc(uFlags As Integer, dwBytes As Integer) As IntPtr
+    End Function
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Shared Function GlobalLock(hMem As IntPtr) As IntPtr
+    End Function
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Shared Function GlobalUnlock(hMem As IntPtr) As Boolean
+    End Function
+
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Shared Function GlobalFree(hMem As IntPtr) As Integer
+    End Function
     <DllImport("kernel32.dll", CharSet:=CharSet.Auto)>
     Public Shared Function LoadLibrary(lpFileName As String) As IntPtr
     End Function
     <DllImport("kernel32.dll", SetLastError:=True)>
     Public Shared Function FreeLibrary(hModule As IntPtr) As Boolean
     End Function
+    '<DllImport("ole32.dll")>
+    'Public Shared Function DoDragDrop(pDataObj As ComTypes.IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
+    'End Function
     <DllImport("ole32.dll")>
     Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
     End Function
     <DllImport("ole32.dll")>
     Public Shared Sub OleUninitialize()
     End Sub
+    <DllImport("Shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
+    Public Shared Function SHCreateShellItemArrayFromIDLists(
+        ByVal cidl As UInteger,
+        ByVal rgpidl As IntPtr(),
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppsiItemArray As IShellItemArray) As Integer
+    End Function
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function GetDC(hWnd As IntPtr) As IntPtr
     End Function
