@@ -25,8 +25,9 @@ Public Class DragDrop
     Private Shared _dragSourceHelper As IDragSourceHelper
     Private Shared _bitmap As Bitmap
     Private Shared _dataObject As DragDataObject
+    Private Shared _isDragging As Boolean
 
-    Private _addDragImageAction As Action
+    Private _handleDrag As Action
     Private _copyCursor As Cursor
     Private _moveCursor As Cursor
     Private _linkCursor As Cursor
@@ -40,68 +41,80 @@ Public Class DragDrop
         _copyCursor = New Cursor(copyCursorStream)
         _moveCursor = New Cursor(moveCursorStream)
         _linkCursor = New Cursor(linkCursorStream)
-        _addDragImageAction = addDragImageAction
+        _handleDrag = addDragImageAction
+        _lastEffect = -1
     End Sub
 
     Public Shared Sub DoDragDrop(items As IEnumerable(Of Item), button As MK)
-        Dim dropFiles As New DROPFILES()
-        dropFiles.pFiles = Marshal.SizeOf(dropFiles)
-        dropFiles.fWide = False
+        If Not _isDragging Then
+            _isDragging = True
 
-        Dim fileNames As New StringBuilder()
-        For Each item In items
-            fileNames.Append(item.FullPath)
-            fileNames.Append(Chr(0)) ' Null character
-        Next
-        fileNames.Append(Chr(0)) ' Double null character to end the list
+            Try
+                Debug.WriteLine("DoDragDrop")
 
-        Dim fileNamesBytes As Byte() = Encoding.ASCII.GetBytes(fileNames.ToString())
-        Dim globalPtr As IntPtr = Functions.GlobalAlloc(GHND, Marshal.SizeOf(dropFiles) + fileNamesBytes.Length)
-        Dim lockPtr As IntPtr = Functions.GlobalLock(globalPtr)
-        Marshal.StructureToPtr(dropFiles, lockPtr, False)
-        Marshal.Copy(fileNamesBytes, 0, IntPtr.Add(lockPtr, Marshal.SizeOf(dropFiles)), fileNamesBytes.Length)
-        Functions.GlobalUnlock(lockPtr)
+                Dim dropFiles As New DROPFILES()
+                dropFiles.pFiles = Marshal.SizeOf(dropFiles)
+                dropFiles.fWide = False
 
-        Dim format As New FORMATETC With {
-            .cfFormat = ClipboardFormat.CF_HDROP,
-            .ptd = IntPtr.Zero,
-            .dwAspect = DVASPECT.DVASPECT_CONTENT,
-            .lindex = -1,
-            .tymed = TYMED.TYMED_HGLOBAL
-        }
+                Dim fileNames As New StringBuilder()
+                For Each item In items
+                    fileNames.Append(item.FullPath)
+                    fileNames.Append(Chr(0)) ' Null character
+                Next
+                fileNames.Append(Chr(0)) ' Double null character to end the list
 
-        Dim medium As New STGMEDIUM With {
-            .tymed = TYMED.TYMED_HGLOBAL,
-            .unionmember = globalPtr,
-            .pUnkForRelease = IntPtr.Zero
-        }
+                Dim fileNamesBytes As Byte() = Encoding.ASCII.GetBytes(fileNames.ToString())
+                Dim globalPtr As IntPtr = Functions.GlobalAlloc(GHND, Marshal.SizeOf(dropFiles) + fileNamesBytes.Length)
+                Dim lockPtr As IntPtr = Functions.GlobalLock(globalPtr)
+                Marshal.StructureToPtr(dropFiles, lockPtr, False)
+                Marshal.Copy(fileNamesBytes, 0, IntPtr.Add(lockPtr, Marshal.SizeOf(dropFiles)), fileNamesBytes.Length)
+                Functions.GlobalUnlock(lockPtr)
 
-        If Not _dataObject Is Nothing Then _dataObject.Dispose()
+                Dim format As New FORMATETC With {
+                    .cfFormat = ClipboardFormat.CF_HDROP,
+                    .ptd = IntPtr.Zero,
+                    .dwAspect = DVASPECT.DVASPECT_CONTENT,
+                    .lindex = -1,
+                    .tymed = TYMED.TYMED_HGLOBAL
+                }
 
-        _dataObject = New DragDataObject()
-        _dataObject.SetData(format, medium, False)
+                Dim medium As New STGMEDIUM With {
+                    .tymed = TYMED.TYMED_HGLOBAL,
+                    .unionmember = globalPtr,
+                    .pUnkForRelease = IntPtr.Zero
+                }
 
-        makeDragImageObjects(items)
-        handleDrag(items)
+                _dataObject = New DragDataObject()
+                Using _dataObject
+                    _dataObject.SetData(format, medium, False)
 
-        Dim availableDropEffects As DROPEFFECT
-        If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY)) Then
-            availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_COPY
+                    makeDragImageObjects(items)
+                    'handleDrag(items)
+
+                    Dim availableDropEffects As DROPEFFECT
+                    If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY)) Then
+                        availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_COPY
+                    End If
+                    If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE)) Then
+                        availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_MOVE
+                    End If
+                    If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANLINK)) Then
+                        availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_LINK
+                    End If
+
+                    Dim effect As Integer
+                    Functions.DoDragDrop(_dataObject, New DragDrop(Sub() If Not _dataObject Is Nothing Then handleDrag(items), button),
+                                 availableDropEffects, effect)
+
+                    Functions.ReleaseStgMedium(medium)
+                    Shell._w.Content = Nothing
+                    Mouse.OverrideCursor = Nothing
+                End Using
+                _dataObject = Nothing
+            Finally
+                _isDragging = False
+            End Try
         End If
-        If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE)) Then
-            availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_MOVE
-        End If
-        If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANLINK)) Then
-            availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_LINK
-        End If
-
-        Dim effect As Integer
-        Functions.DoDragDrop(_dataObject, New DragDrop(Sub() handleDrag(items), button),
-                             availableDropEffects, effect)
-
-        Functions.ReleaseStgMedium(medium)
-        Shell._w.Content = Nothing
-        Mouse.OverrideCursor = Nothing
     End Sub
 
     Private Shared Sub makeDragImageObjects(items As IEnumerable(Of Item))
@@ -249,8 +262,12 @@ Public Class DragDrop
         Return DragDropResult.S_OK
     End Function
 
+    Private _lastEffect As DROPEFFECT
     Public Function GiveFeedback(<[In]> dwEffect As DROPEFFECT) As Integer Implements IDropSource.GiveFeedback
-        _addDragImageAction.Invoke()
+        If _lastEffect <> dwEffect Then
+            _handleDrag.Invoke()
+            _lastEffect = dwEffect
+        End If
 
         If dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
             Mouse.OverrideCursor = _moveCursor

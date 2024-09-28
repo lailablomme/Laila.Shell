@@ -18,14 +18,14 @@ Public Class DragDataObject
 
             Select Case format.cfFormat
                 'Case ClipboardFormat.CF_HDROP,
-                '     Functions.RegisterClipboardFormat("ComputedImage"),
+                'Functions.RegisterClipboardFormat("DragImageBits")
+                'Functions.RegisterClipboardFormat("ComputedImage")
+                'Functions.RegisterClipboardFormat("IsComputingImage")
+                'Functions.RegisterClipboardFormat("DragSourceHelperFlags")
+                'Functions.RegisterClipboardFormat("DragContext")
+                'Functions.RegisterClipboardFormat("DragWindow")
                 '     Functions.RegisterClipboardFormat("DisableDragTextX"),
-                '     Functions.RegisterClipboardFormat("DragContextX"),
-                '     Functions.RegisterClipboardFormat("DragImageBitsX"),
-                '     Functions.RegisterClipboardFormat("DragSourceHelperFlagsX"),
-                '     Functions.RegisterClipboardFormat("DragWindow"),
                 '     Functions.RegisterClipboardFormat("DropDescription"),
-                '     Functions.RegisterClipboardFormat("IsComputingImage"),
                 '     Functions.RegisterClipboardFormat("IsShowingLayered"),
                 '     Functions.RegisterClipboardFormat("IsShowingText"),
                 '     Functions.RegisterClipboardFormat("UsingDefaultDragImageX")
