@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:Laila.Shell.Controls"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <ListView ItemsSource="{Binding Folder.ItemsThreaded}" x:Name="listView" SelectionMode="Extended"  

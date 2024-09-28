@@ -10,11 +10,9 @@ Public Class Shell
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
 
     Private Shared _hNotify As UInt32
-    Private Shared _w As Window
+    Friend Shared _w As Window
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Public Shared _hwnd As IntPtr
-    Public Shared cm2 As IContextMenu2
-    Public Shared cm3 As IContextMenu3
 
     Shared Sub New()
         Functions.OleInitialize(IntPtr.Zero)
@@ -29,8 +27,9 @@ Public Class Shell
                 _w.Owner = Application.Current.MainWindow
                 _w.Left = Int32.MinValue
                 _w.Top = Int32.MinValue
-                _w.Width = 1
-                _w.Height = 1
+                _w.WindowStyle = WindowStyle.None
+                _w.Width = 1920
+                _w.Height = 1080
                 _w.ShowInTaskbar = False
                 _w.Show()
 
@@ -63,16 +62,7 @@ Public Class Shell
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
-        If msg = WM.MENUCHAR Or msg = WM.INITMENUPOPUP Or msg = WM.DRAWITEM Or msg = WM.MEASUREITEM Then
-            If Not cm3 Is Nothing Then
-                Dim result As IntPtr
-                If cm3.HandleMenuMsg2(msg, wParam, lParam, result) = HResult.Ok Then
-                    Return result
-                End If
-            ElseIf Not cm2 Is Nothing Then
-                cm2.HandleMenuMsg(msg, wParam, lParam)
-            End If
-        End If
+        Debug.WriteLine(CType(msg, WM).ToString())
         If msg = WM.USER + 1 Then
             Dim pppidl As IntPtr = IntPtr.Zero
             Dim lEvent As SHCNE = 0

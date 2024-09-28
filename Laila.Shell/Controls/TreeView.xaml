@@ -33,7 +33,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Image Source="{Binding Icon16}" Margin="0,0,4,0" Width="16" Height="16">
+                            <Image Source="{Binding Icon[16]}" Margin="0,0,4,0" Width="16" Height="16">
                                 <Image.Style>
                                     <Style>
                                         <Setter Property="Image.Opacity" Value="1" />
@@ -48,7 +48,7 @@
                                     </Style>
                                 </Image.Style>
                             </Image>
-                            <Image Source="{Binding Overlay16}" Margin="0,0,4,0" Width="16" Height="16">
+                            <Image Source="{Binding OverlaySmall}" Margin="0,0,4,0" Width="16" Height="16">
                                 <Image.Style>
                                     <Style>
                                         <Setter Property="Image.Opacity" Value="1" />
@@ -106,7 +106,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Image Source="{Binding Icon16}" Margin="0,0,4,0" Width="16" Height="16">
+                            <Image Source="{Binding Icon[16]}" Margin="0,0,4,0" Width="16" Height="16">
                                 <Image.Style>
                                     <Style>
                                         <Setter Property="Image.Opacity" Value="1" />
@@ -121,7 +121,7 @@
                                     </Style>
                                 </Image.Style>
                             </Image>
-                            <Image Source="{Binding Overlay16}" Margin="0,0,4,0" Width="16" Height="16">
+                            <Image Source="{Binding OverlaySmall}" Margin="0,0,4,0" Width="16" Height="16">
                                 <Image.Style>
                                     <Style>
                                         <Setter Property="Image.Opacity" Value="1" />
@@ -193,7 +193,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Image Source="{Binding Icon16}" Margin="0,0,4,0" Width="16" Height="16">
+                            <Image Source="{Binding Icon[16]}" Margin="0,0,4,0" Width="16" Height="16">
                                 <Image.Style>
                                     <Style>
                                         <Setter Property="Image.Opacity" Value="1" />
@@ -208,7 +208,7 @@
                                     </Style>
                                 </Image.Style>
                             </Image>
-                            <Image Source="{Binding Overlay16}" Margin="0,0,4,0" Width="16" Height="16">
+                            <Image Source="{Binding OverlaySmall}" Margin="0,0,4,0" Width="16" Height="16">
                                 <Image.Style>
                                     <Style>
                                         <Setter Property="Image.Opacity" Value="1" />

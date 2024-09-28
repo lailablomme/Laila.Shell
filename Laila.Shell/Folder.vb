@@ -1,13 +1,10 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.ComponentModel
+Imports System.IO
 Imports System.Runtime.InteropServices
-Imports System.Text
 Imports System.Threading
 Imports System.Windows
-Imports System.Windows.Controls
 Imports System.Windows.Data
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement
-Imports System.Windows.Media.Imaging
 
 Public Class Folder
     Inherits Item
@@ -146,13 +143,21 @@ Public Class Folder
                     Function(shellItem2 As IShellItem2)
                         Return New Folder(shellItem2, Me, _setIsLoadingAction)
                     End Function,
-                    0)
+                    Sub(path As String)
+                        Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path)
+                        If Not item Is Nothing Then
+                            item._shellItem2.Update(IntPtr.Zero)
+                            For Each prop In item.GetType().GetProperties()
+                                item.NotifyOfPropertyChange(prop.Name)
+                            Next
+                        End If
+                    End Sub, 0)
     End Sub
 
     Protected Sub updateItems(flags As UInt32, condition As Boolean,
                               exists As Func(Of Item, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getToBeRemoved As Func(Of List(Of String), List(Of Item)),
-                              makeNewFolder As Func(Of IShellItem2, Item), uiHelp As Integer)
+                              makeNewFolder As Func(Of IShellItem2, Item), updateProperties As Action(Of String), uiHelp As Integer)
         Dim paths As List(Of String) = New List(Of String)
 
         Dim attr As SFGAO = SFGAO.HASSUBFOLDER Or SFGAO.ISSLOW
@@ -200,7 +205,10 @@ Public Class Folder
 
                             If Not enumShellItems Is Nothing Then
                                 Dim shellItemArray(0) As IShellItem, fetched As UInt32 = 1
-                                enumShellItems.Next(1, shellItemArray, fetched)
+                                Application.Current.Dispatcher.Invoke(
+                                    Sub()
+                                        enumShellItems.Next(1, shellItemArray, fetched)
+                                    End Sub)
                                 Dim isOnce As Boolean = False
                                 While fetched = 1 And (Not isOnce OrElse condition)
                                     Dim attr2 As Integer = SFGAO.FOLDER
@@ -219,11 +227,12 @@ Public Class Folder
                                                 If Not exists(newItem) Then
                                                     add(newItem)
                                                 Else
+                                                    updateProperties(newItem.FullPath)
                                                     newItem.Dispose()
                                                 End If
                                             End If
+                                            enumShellItems.Next(1, shellItemArray, fetched)
                                         End Sub)
-                                    enumShellItems.Next(1, shellItemArray, fetched)
                                     isOnce = True
                                     If uiHelp > 0 Then Thread.Sleep(uiHelp)
                                 End While

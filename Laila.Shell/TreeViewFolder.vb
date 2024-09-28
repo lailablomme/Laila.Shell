@@ -163,6 +163,15 @@ Public Class TreeViewFolder
                     Function(shellItem2 As IShellItem2)
                         Return New TreeViewFolder(shellItem2, Me, _setIsLoadingAction)
                     End Function,
+                    Sub(path As String)
+                        Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path)
+                        If Not item Is Nothing Then
+                            item._shellItem2.Update(IntPtr.Zero)
+                            For Each prop In item.GetType().GetProperties()
+                                item.NotifyOfPropertyChange(prop.Name)
+                            Next
+                        End If
+                    End Sub,
                     8)
 
         For Each item In items

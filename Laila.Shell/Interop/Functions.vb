@@ -14,20 +14,36 @@ Public Class Functions
     '    ByRef ppv As IntPtr
     ') As Integer
     'End Function
+    <DllImport("ole32.dll")>
+    Public Shared Sub ReleaseStgMedium(ByRef pmedium As STGMEDIUM)
+    End Sub
     <DllImport("user32.dll", CharSet:=CharSet.Auto)>
     Public Shared Function LoadString(hInstance As IntPtr, uID As Integer, lpBuffer As StringBuilder, nBufferMax As Integer) As Integer
     End Function
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function SetClipboardData(uFormat As Integer, hMem As IntPtr) As IntPtr
     End Function
-
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function DestroyCursor(hCursor As IntPtr) As Boolean
+    End Function
     Public Const CFSTR_PREFERREDDROPEFFECT As String = "Preferred DropEffect"
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function EmptyClipboard() As Boolean
     End Function
-    <DllImport("user32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
-    Public Shared Function RegisterClipboardFormat(lpString As String) As UInteger
+    <DllImport("user32.dll", EntryPoint:="RegisterClipboardFormat", SetLastError:=True, CharSet:=CharSet.Auto)>
+    Public Shared Function RegisterClipboardFormatWIN32(lpString As String) As UInteger
     End Function
+    <DllImport("user32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
+    Public Shared Function LoadCursor(hInstance As IntPtr, lpCursorName As String) As IntPtr
+    End Function
+    Public Shared Function RegisterClipboardFormat(lpString As String) As Short
+        Dim i As Integer = Functions.RegisterClipboardFormatWIN32(lpString)
+        While i > Short.MaxValue
+            i -= 65536
+        End While
+        Return i
+    End Function
+
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function OpenClipboard(hWndNewOwner As IntPtr) As Boolean
     End Function
@@ -65,9 +81,22 @@ Public Class Functions
     <DllImport("kernel32.dll", SetLastError:=True)>
     Public Shared Function FreeLibrary(hModule As IntPtr) As Boolean
     End Function
-    '<DllImport("ole32.dll")>
-    'Public Shared Function DoDragDrop(pDataObj As ComTypes.IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function GetCursorPos(ByRef lpPoint As Point) As Boolean
+    End Function
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function SetWindowPos _
+    (ByVal hwnd As IntPtr, ByVal hWndInsertAfter As IntPtr,
+     ByVal x As Integer, ByVal y As Integer,
+     ByVal cx As Integer, ByVal cy As Integer,
+     ByVal uFlags As UInteger) As Boolean
+    End Function
+    '<DllImport("user32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
+    'Public Shared Function RegisterClipboardFormat(lpString As String) As UInteger
     'End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function DoDragDrop(pDataObj As ComTypes.IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
+    End Function
     <DllImport("ole32.dll")>
     Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
     End Function
@@ -88,7 +117,10 @@ Public Class Functions
     Public Shared Function ReleaseDC(hWnd As IntPtr, hDC As IntPtr) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
-    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr(), pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As System.Runtime.InteropServices.ComTypes.IDataObject) As Integer
+    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As System.Runtime.InteropServices.ComTypes.IDataObject) As Integer
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
+    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As System.Runtime.InteropServices.ComTypes.IDataObject) As Integer
     End Function
     <DllImport("ole32.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function CoCreateBindCtx(dwFlags As UInt32, reserved As UInt32, pMalloc As IntPtr, ByRef ppbc As IBindCtx) As Integer

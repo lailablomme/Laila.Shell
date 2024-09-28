@@ -20,6 +20,7 @@ Public Class Item
     Protected _displayName As String
     Friend _shellItem2 As IShellItem2
     Private _isPinned As Boolean
+    Private _isCut As Boolean
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
@@ -127,39 +128,27 @@ Public Class Item
         End Set
     End Property
 
-    Public Overridable ReadOnly Property Icon16 As ImageSource
-        Get
-            Dim ptr As IntPtr
-            Try
-                CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(16, 16), SIIGBF.SIIGBF_ICONONLY, ptr)
-                Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-            Finally
-                Functions.DeleteObject(ptr)
-            End Try
-        End Get
-    End Property
-
-    Public Overridable ReadOnly Property Overlay16 As ImageSource
+    Public Overridable ReadOnly Property OverlaySmall As ImageSource
         Get
             Return getOverlay(False)
         End Get
     End Property
 
-    Public Overridable ReadOnly Property Icon32 As ImageSource
+    Public Overridable ReadOnly Property OverlayLarge As ImageSource
+        Get
+            Return getOverlay(True)
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
             Dim ptr As IntPtr
             Try
-                CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(32, 32), SIIGBF.SIIGBF_ICONONLY, ptr)
+                CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
                 Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
             Finally
                 Functions.DeleteObject(ptr)
             End Try
-        End Get
-    End Property
-
-    Public Overridable ReadOnly Property Overlay32 As ImageSource
-        Get
-            Return getOverlay(True)
         End Get
     End Property
 
@@ -253,11 +242,32 @@ Public Class Item
         End Get
     End Property
 
+    Public Property IsCut As Boolean
+        Get
+            Return _isCut
+        End Get
+        Friend Set(value As Boolean)
+            SetValue(_isCut, value)
+        End Set
+    End Property
+
     Public ReadOnly Property IsHidden As Boolean
         Get
-            Dim attr As SFGAO = SFGAO.HIDDEN
+            Return Me.Attributes.HasFlag(SFGAO.HIDDEN)
+        End Get
+    End Property
+
+    Public ReadOnly Property IsCompressed As Boolean
+        Get
+            Return Me.Attributes.HasFlag(SFGAO.COMPRESSED)
+        End Get
+    End Property
+
+    Public ReadOnly Property Attributes As SFGAO
+        Get
+            Dim attr As SFGAO = SFGAO.HIDDEN Or SFGAO.COMPRESSED Or SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK
             _shellItem2.GetAttributes(attr, attr)
-            Return attr.HasFlag(SFGAO.HIDDEN)
+            Return attr
         End Get
     End Property
 
@@ -305,6 +315,7 @@ Public Class Item
         Select Case e.Event
             Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                 If Me.FullPath.Equals(e.Item1Path) Then
+                    Me._shellItem2.Update(IntPtr.Zero)
                     _properties = New Dictionary(Of String, [Property])()
                     _displayName = Nothing
                     For Each prop In Me.GetType().GetProperties()

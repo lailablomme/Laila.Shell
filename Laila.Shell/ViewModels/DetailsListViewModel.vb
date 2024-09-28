@@ -27,6 +27,8 @@ Namespace ViewModels
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _scrollState As Dictionary(Of String, ScrollState) = New Dictionary(Of String, ScrollState)()
         Private _skipSavingScrollState As Boolean = False
+        Private _mousePointDown As Point
+        Private _mouseItemDown As Item
 
         Public Sub New(view As DetailsListView)
             _view = view
@@ -48,12 +50,11 @@ Namespace ViewModels
                             NotifyOfPropertyChange("SelectedItem")
                             NotifyOfPropertyChange("SelectedItems")
                         End Function
-
-                    AddHandler _view.listView.PreviewMouseRightButtonDown, AddressOf OnListViewItemRightClick
                 End Sub
 
-            AddHandler _view.listView.MouseMove, AddressOf OnListViewMouseMove
-            AddHandler _view.listView.PreviewMouseLeftButtonDown, AddressOf OnListViewPreviewMouseLeftButtonDown
+            AddHandler _view.listView.PreviewMouseMove, AddressOf OnListViewMouseMove
+            AddHandler _view.listView.PreviewMouseLeftButtonDown, AddressOf OnListViewPreviewMouseButtonDown
+            AddHandler _view.listView.PreviewMouseRightButtonDown, AddressOf OnListViewPreviewMouseButtonDown
             AddHandler _view.PreviewKeyDown, AddressOf OnListViewKeyDown
         End Sub
 
@@ -226,11 +227,20 @@ Namespace ViewModels
                     }
                     dataTrigger2.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(0.5)))
                     style.Triggers.Add(dataTrigger2)
+                    Dim dataTrigger3 As DataTrigger = New DataTrigger() With {
+                        .Binding = New Binding("IsCut") With
+                                   {
+                                       .Mode = BindingMode.OneWay
+                                   },
+                        .Value = True
+                    }
+                    dataTrigger3.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(0.5)))
+                    style.Triggers.Add(dataTrigger3)
                     imageFactory1.SetValue(Image.StyleProperty, style)
                     Return imageFactory1
                 End Function
-            gridFactory.AppendChild(getIconFactory("Icon16"))
-            gridFactory.AppendChild(getIconFactory("Overlay16"))
+            gridFactory.AppendChild(getIconFactory("Icon[16]"))
+            gridFactory.AppendChild(getIconFactory("OverlaySmall"))
 
             If [property].HasIcon Then
                 Dim imageFactory2 As FrameworkElementFactory = New FrameworkElementFactory(GetType(Image))
@@ -244,6 +254,18 @@ Namespace ViewModels
                     .Path = New PropertyPath(String.Format("Properties[{0}].Icon16", column.CanonicalName)),
                     .Mode = BindingMode.OneWay
                 })
+                Dim imageStyle As Style = New Style(GetType(Image))
+                imageStyle.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(1)))
+                Dim imageDataTrigger1 As DataTrigger = New DataTrigger() With {
+                        .Binding = New Binding("IsCut") With
+                                   {
+                                       .Mode = BindingMode.OneWay
+                                   },
+                        .Value = True
+                    }
+                imageDataTrigger1.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(0.5)))
+                imageStyle.Triggers.Add(imageDataTrigger1)
+                imageFactory2.SetValue(Image.StyleProperty, imageStyle)
                 gridFactory.AppendChild(imageFactory2)
             End If
 
@@ -256,6 +278,28 @@ Namespace ViewModels
                 .Path = New PropertyPath(String.Format("Properties[{0}].Text", column.CanonicalName)),
                 .Mode = BindingMode.OneWay
             })
+            Dim textBlockStyle As Style = New Style(GetType(TextBlock))
+            textBlockStyle.Setters.Add(New Setter(TextBlock.ForegroundProperty, Brushes.Black))
+            textBlockStyle.Setters.Add(New Setter(TextBlock.OpacityProperty, Convert.ToDouble(1)))
+            Dim textBlockDataTrigger1 As DataTrigger = New DataTrigger() With {
+                        .Binding = New Binding("IsCut") With
+                                   {
+                                       .Mode = BindingMode.OneWay
+                                   },
+                        .Value = True
+                    }
+            textBlockDataTrigger1.Setters.Add(New Setter(TextBlock.OpacityProperty, Convert.ToDouble(0.5)))
+            textBlockStyle.Triggers.Add(textBlockDataTrigger1)
+            Dim textBlockDataTrigger2 As DataTrigger = New DataTrigger() With {
+                        .Binding = New Binding("IsCompressed") With
+                                   {
+                                       .Mode = BindingMode.OneWay
+                                   },
+                        .Value = True
+                    }
+            textBlockDataTrigger2.Setters.Add(New Setter(TextBlock.ForegroundProperty, Brushes.Blue))
+            textBlockStyle.Triggers.Add(textBlockDataTrigger2)
+            textBlockFactory.SetValue(Image.StyleProperty, textBlockStyle)
             gridFactory.AppendChild(textBlockFactory)
 
             template.VisualTree = gridFactory
@@ -281,41 +325,27 @@ Namespace ViewModels
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
             If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) AndAlso Me.SelectedItems.Count > 0 Then
                 Clipboard.CopyFiles(Me.SelectedItems)
-            ElseIf e.Key = Key.x AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) AndAlso Me.SelectedItems.Count > 0 Then
+            ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) AndAlso Me.SelectedItems.Count > 0 Then
                 Clipboard.CutFiles(Me.SelectedItems)
             End If
         End Sub
 
-        Public Sub OnListViewPreviewMouseLeftButtonDown(sender As Object, e As MouseButtonEventArgs)
+        Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
+            _mousePointDown = e.GetPosition(_view)
+
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then
                 Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
                 If Not listViewItem Is Nothing Then
                     Dim clickedItem As Item = listViewItem.DataContext
-                    If Me.SelectedItems.Contains(clickedItem) Then
+                    _mouseItemDown = clickedItem
+                    If Me.SelectedItems.Count > 1 AndAlso Me.SelectedItems.Contains(clickedItem) Then
                         e.Handled = True
-                    End If
-                End If
-            End If
-        End Sub
+                    ElseIf e.RightButton = MouseButtonState.Pressed Then
+                        If Me.SelectedItem Is Nothing Then Me.SetSelectedItem(clickedItem)
 
-        Private Sub OnListViewMouseMove(sender As Object, e As MouseEventArgs)
-            If Me.SelectedItems.Count > 0 AndAlso e.LeftButton = MouseButtonState.Pressed Then
-                DragDrop.DoDragDrop(_view.listView, Me.SelectedItems)
-            End If
-        End Sub
-
-        Private Sub OnListViewItemRightClick(sender As Object, e As MouseButtonEventArgs)
-            If Not e.OriginalSource Is Nothing Then
-                Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
-                Dim contextItems As IEnumerable(Of Item)
-                If Not listViewItem Is Nothing Then
-                    If Not listViewItem.IsSelected Then Me.SetSelectedItem(listViewItem.DataContext)
-                    contextItems = Me.SelectedItems
-                End If
-
-                Dim menu As ContextMenu = New ContextMenu()
-                AddHandler menu.Click,
+                        Dim menu As ContextMenu = New ContextMenu()
+                        AddHandler menu.Click,
                         Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
                             Select Case verb
                                 Case "open"
@@ -327,7 +357,23 @@ Namespace ViewModels
                             End Select
                         End Sub
 
-                _view.listView.ContextMenu = menu.GetContextMenu(Me.Folder, contextItems, False)
+                        _view.listView.ContextMenu = menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                    End If
+                Else
+                    _mouseItemDown = Nothing
+                End If
+            Else
+                _mouseItemDown = Nothing
+            End If
+        End Sub
+
+        Private Sub OnListViewMouseMove(sender As Object, e As MouseEventArgs)
+            If Not _mouseItemDown Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso
+                (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
+                Dim currentPointDown As Point = e.GetPosition(_view)
+                If Math.Abs(currentPointDown.X - _mousePointDown.X) > 2 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) Then
+                    DragDrop.DoDragDrop(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
+                End If
             End If
         End Sub
 

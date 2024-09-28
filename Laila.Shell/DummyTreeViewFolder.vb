@@ -19,7 +19,7 @@ Public Class DummyTreeViewFolder
         End Get
     End Property
 
-    Public Overrides ReadOnly Property Icon16 As ImageSource
+    Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
         Get
             Return Nothing
         End Get
