@@ -10,7 +10,7 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
 
-Public Class DragDrop
+Public Class Drag
     Implements IDropSource
 
     Private Const MAX_COL As Integer = 5
@@ -29,13 +29,13 @@ Public Class DragDrop
     Private Shared _isDragging As Boolean
     Private Shared _dragImage As SHDRAGIMAGE
 
-    Private _handleDrag As Action
+    Private _initializeDragImageAction As Action
     Private _copyCursor As Cursor
     Private _moveCursor As Cursor
     Private _linkCursor As Cursor
     Private _button As MK
 
-    Public Sub New(addDragImageAction As Action, button As MK)
+    Public Sub New(initializeDragImageAction As Action, button As MK)
         _button = button
         Dim copyCursorStream As Stream = New MemoryStream(My.Resources.cursor_copy)
         Dim moveCursorStream As Stream = New MemoryStream(My.Resources.cursor_move)
@@ -43,16 +43,16 @@ Public Class DragDrop
         _copyCursor = New Cursor(copyCursorStream)
         _moveCursor = New Cursor(moveCursorStream)
         _linkCursor = New Cursor(linkCursorStream)
-        _handleDrag = addDragImageAction
+        _initializeDragImageAction = initializeDragImageAction
         _lastEffect = -1
     End Sub
 
-    Public Shared Sub DoDragDrop(items As IEnumerable(Of Item), button As MK)
+    Public Shared Sub Start(items As IEnumerable(Of Item), button As MK)
         If Not _isDragging Then
             _isDragging = True
 
             Try
-                Debug.WriteLine("DoDragDrop")
+                Debug.WriteLine("Drag.Start")
 
                 _dataObject = New DragDataObject()
 
@@ -85,7 +85,7 @@ Public Class DragDrop
                 _dataObject.SetData(format, medium, False)
 
                 makeDragImageObjects(items)
-                handleDrag()
+                InitializeDragImage()
 
                 Dim availableDropEffects As DROPEFFECT
                 If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY)) Then
@@ -99,7 +99,7 @@ Public Class DragDrop
                 End If
 
                 Dim effect As Integer
-                Functions.DoDragDrop(_dataObject, New DragDrop(Sub() If Not _dataObject Is Nothing Then handleDrag(), button),
+                Functions.DoDragDrop(_dataObject, New Drag(Sub() If Not _dataObject Is Nothing Then InitializeDragImage(), button),
                              availableDropEffects, effect)
 
                 Functions.ReleaseStgMedium(medium)
@@ -240,8 +240,8 @@ Public Class DragDrop
         dataObject.SetData(formatEtc, medium, True)
     End Sub
 
-    Friend Shared Sub handleDrag()
-        Debug.WriteLine("HANDLEDRAG")
+    Friend Shared Sub InitializeDragImage()
+        Debug.WriteLine("InitializeDragImage")
         Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
                 &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
         Dim dragSourceHelper2 As IDragSourceHelper2 = _dragSourceHelper
@@ -281,8 +281,6 @@ Public Class DragDrop
                 Mouse.OverrideCursor = Cursors.No
             End If
         End If
-
-        'Debug.WriteLine(CType(dwEffect, DROPEFFECT).ToString())
 
         Return DragDropResult.S_OK
     End Function

@@ -102,11 +102,11 @@ Public Class Shell
             End If
         ElseIf msg = 49252 Then
             Dim dragImage As SHDRAGIMAGE = Marshal.PtrToStructure(Of SHDRAGIMAGE)(lParam)
-            dragImage.sizeDragImage.Width = DragDrop._bitmap.Width
-            dragImage.sizeDragImage.Height = DragDrop._bitmap.Height
-            dragImage.ptOffset.x = DragDrop.ICON_SIZE / 2
-            dragImage.ptOffset.y = DragDrop.ICON_SIZE / 2
-            dragImage.hbmpDragImage = DragDrop._bitmap.GetHbitmap()
+            dragImage.sizeDragImage.Width = Drag._bitmap.Width
+            dragImage.sizeDragImage.Height = Drag._bitmap.Height
+            dragImage.ptOffset.x = Drag.ICON_SIZE / 2
+            dragImage.ptOffset.y = Drag.ICON_SIZE / 2
+            dragImage.hbmpDragImage = Drag._bitmap.GetHbitmap()
             dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
             Marshal.StructureToPtr(Of SHDRAGIMAGE)(dragImage, lParam, False)
         End If

@@ -1,17 +1,13 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
-Imports Laila.Shell.Helpers
+Imports System.Text
 Imports System.Threading
 Imports System.Windows
-Imports System.Runtime.Serialization
-Imports Laila.Shell.ViewModels
 Imports System.Windows.Controls
-Imports Microsoft
-Imports System.Text
-Imports System.IO
-Imports Shell32
+Imports Laila.Shell.Helpers
+Imports Laila.Shell.ViewModels
 
-Public Class DropTarget
+Public Class ListViewDropTarget
     Inherits BaseDropTarget
 
     Private _dataObject As ComTypes.IDataObject

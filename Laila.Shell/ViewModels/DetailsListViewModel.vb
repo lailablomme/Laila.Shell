@@ -44,7 +44,7 @@ Namespace ViewModels
                             NotifyOfPropertyChange("SelectedItems")
                         End Function
 
-                    _dropTarget = New DropTarget(Me)
+                    _dropTarget = New ListViewDropTarget(Me)
                     WpfDragTargetProxy.RegisterDragDrop(_view.listView, _dropTarget)
                 End Sub
 
@@ -373,7 +373,7 @@ Namespace ViewModels
                 (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(_view)
                 If Math.Abs(currentPointDown.X - _mousePointDown.X) > 2 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) Then
-                    DragDrop.DoDragDrop(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
+                    Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
                 End If
             End If
         End Sub
