@@ -88,7 +88,7 @@ Public Class [Property]
                 Dim buffer As StringBuilder = New StringBuilder()
                 buffer.Append(New String(" ", 2050))
                 Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
-                Return Buffer.ToString()
+                Return buffer.ToString()
             End Using
         End Get
     End Property

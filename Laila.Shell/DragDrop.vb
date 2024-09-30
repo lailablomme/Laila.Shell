@@ -8,6 +8,7 @@ Imports System.Windows.Controls
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Helpers
 
 Public Class DragDrop
     Implements IDropSource
@@ -19,13 +20,14 @@ Public Class DragDrop
     Private Const GMEM_SHARE As Integer = &H2000
     Private Const GHND As Integer = GMEM_MOVEABLE Or GMEM_ZEROINIT Or GMEM_SHARE
 
-    Private Shared ICON_SIZE As Integer = 128
+    Public Shared ICON_SIZE As Integer = 128
 
     Private Shared _grid As Grid
     Private Shared _dragSourceHelper As IDragSourceHelper
-    Private Shared _bitmap As Bitmap
-    Private Shared _dataObject As DragDataObject
+    Public Shared _bitmap As Bitmap
+    Private Shared _dataObject As ComTypes.IDataObject
     Private Shared _isDragging As Boolean
+    Private Shared _dragImage As SHDRAGIMAGE
 
     Private _handleDrag As Action
     Private _copyCursor As Cursor
@@ -52,23 +54,7 @@ Public Class DragDrop
             Try
                 Debug.WriteLine("DoDragDrop")
 
-                Dim dropFiles As New DROPFILES()
-                dropFiles.pFiles = Marshal.SizeOf(dropFiles)
-                dropFiles.fWide = False
-
-                Dim fileNames As New StringBuilder()
-                For Each item In items
-                    fileNames.Append(item.FullPath)
-                    fileNames.Append(Chr(0)) ' Null character
-                Next
-                fileNames.Append(Chr(0)) ' Double null character to end the list
-
-                Dim fileNamesBytes As Byte() = Encoding.ASCII.GetBytes(fileNames.ToString())
-                Dim globalPtr As IntPtr = Functions.GlobalAlloc(GHND, Marshal.SizeOf(dropFiles) + fileNamesBytes.Length)
-                Dim lockPtr As IntPtr = Functions.GlobalLock(globalPtr)
-                Marshal.StructureToPtr(dropFiles, lockPtr, False)
-                Marshal.Copy(fileNamesBytes, 0, IntPtr.Add(lockPtr, Marshal.SizeOf(dropFiles)), fileNamesBytes.Length)
-                Functions.GlobalUnlock(lockPtr)
+                _dataObject = New DragDataObject()
 
                 Dim format As New FORMATETC With {
                     .cfFormat = ClipboardFormat.CF_HDROP,
@@ -77,45 +63,108 @@ Public Class DragDrop
                     .lindex = -1,
                     .tymed = TYMED.TYMED_HGLOBAL
                 }
-
                 Dim medium As New STGMEDIUM With {
                     .tymed = TYMED.TYMED_HGLOBAL,
-                    .unionmember = globalPtr,
+                    .unionmember = createCFHDrop(items.Select(Function(i) i.FullPath).ToArray()),
+                    .pUnkForRelease = IntPtr.Zero
+                }
+                _dataObject.SetData(format, medium, False)
+
+                format = New FORMATETC With {
+                    .cfFormat = Functions.RegisterClipboardFormat("Shell ID List"),
+                    .ptd = IntPtr.Zero,
+                    .dwAspect = DVASPECT.DVASPECT_CONTENT,
+                    .lindex = -1,
+                    .tymed = TYMED.TYMED_HGLOBAL
+                }
+                Dim pidls As List(Of IntPtr) = New List(Of IntPtr)()
+                For Each item In items
+                    Dim pidl As IntPtr = IntPtr.Zero
+                    Dim punk As IntPtr = Marshal.GetIUnknownForObject(items(0)._shellItem2)
+                    Functions.SHGetIDListFromObject(punk, pidl)
+                    pidls.Add(pidl)
+                    Marshal.Release(punk)
+                Next
+                medium = New STGMEDIUM With {
+                    .tymed = TYMED.TYMED_HGLOBAL,
+                    .unionmember = createShellIDList(pidls),
                     .pUnkForRelease = IntPtr.Zero
                 }
 
-                _dataObject = New DragDataObject()
-                Using _dataObject
-                    _dataObject.SetData(format, medium, False)
+                makeDragImageObjects(items)
+                handleDrag(items)
 
-                    makeDragImageObjects(items)
-                    'handleDrag(items)
+                Dim availableDropEffects As DROPEFFECT
+                If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY)) Then
+                    availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_COPY
+                End If
+                If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE)) Then
+                    availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_MOVE
+                End If
+                If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANLINK)) Then
+                    availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_LINK
+                End If
 
-                    Dim availableDropEffects As DROPEFFECT
-                    If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY)) Then
-                        availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_COPY
-                    End If
-                    If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE)) Then
-                        availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_MOVE
-                    End If
-                    If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANLINK)) Then
-                        availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_LINK
-                    End If
+                Dim effect As Integer
+                Functions.DoDragDrop(_dataObject, New DragDrop(Sub() If Not _dataObject Is Nothing Then handleDrag(items), button),
+                             availableDropEffects, effect)
 
-                    Dim effect As Integer
-                    Functions.DoDragDrop(_dataObject, New DragDrop(Sub() If Not _dataObject Is Nothing Then handleDrag(items), button),
-                                 availableDropEffects, effect)
-
-                    Functions.ReleaseStgMedium(medium)
-                    Shell._w.Content = Nothing
-                    Mouse.OverrideCursor = Nothing
-                End Using
+                Functions.ReleaseStgMedium(medium)
+                Shell._w.Content = Nothing
+                Mouse.OverrideCursor = Nothing
+                CType(_dataObject, IDisposable).Dispose()
                 _dataObject = Nothing
             Finally
                 _isDragging = False
             End Try
         End If
     End Sub
+
+    Private Shared Function createShellIDList(pidls As List(Of IntPtr)) As IntPtr
+        Dim totalSize As Integer = 0
+        For Each pid In pidls
+            totalSize += Marshal.ReadInt16(pid) ' Get size of each PIDL
+        Next
+
+        Dim idListPtr As IntPtr = Marshal.AllocHGlobal(totalSize + 4) ' +4 for the header size
+        Marshal.WriteInt32(idListPtr, totalSize) ' Write the total size at the start
+
+        Dim offset As Integer = 4 ' Start writing after the size header
+        For Each pid In pidls
+            Dim pidSize As Integer = Marshal.ReadInt16(pid) ' Get size of the current PIDL
+            Functions.CopyMemory(idListPtr + offset, pid, pidSize) ' Copy the PIDL data
+            offset += pidSize ' Update offset for the next PIDL
+        Next
+
+        Return idListPtr ' Return pointer to the allocated ID list
+    End Function
+
+    Private Shared Function createCFHDrop(files As String()) As IntPtr
+        Dim sb As StringBuilder = New StringBuilder()
+        For Each file As String In files
+            sb.Append(file & Chr(0))
+        Next
+        sb.Append(Chr(0))
+
+        Dim strPtr As IntPtr = Marshal.StringToHGlobalUni(sb.ToString())
+        Dim strSize As Integer = Functions.GlobalSize(strPtr)
+
+        Dim hGlobal As IntPtr = Functions.GlobalAlloc(GMEM_MOVEABLE, Marshal.SizeOf(Of DROPFILES) + strSize)
+        Dim pGlobal As IntPtr = Functions.GlobalLock(hGlobal)
+
+        ' Write the DROPFILES structure
+        Dim dropfiles As New DROPFILES()
+        dropfiles.pFiles = CType(Marshal.SizeOf(GetType(DROPFILES)), UInteger)
+        dropfiles.fWide = True ' Using Unicode (WCHAR)
+
+        Marshal.StructureToPtr(dropfiles, pGlobal, False)
+        Functions.RtlMoveMemory(IntPtr.Add(pGlobal, dropfiles.pFiles), strPtr, strSize)
+
+        Marshal.FreeHGlobal(strPtr)
+        Functions.GlobalUnlock(pGlobal)
+
+        Return hGlobal
+    End Function
 
     Private Shared Sub makeDragImageObjects(items As IEnumerable(Of Item))
         If items.Count > 5 Then
@@ -218,36 +267,18 @@ Public Class DragDrop
     End Sub
 
     Private Shared Sub handleDrag(items As IEnumerable(Of Item))
-        If _dragSourceHelper Is Nothing Then
-            _dragSourceHelper = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_DragDropHelper))
-        End If
+        Debug.WriteLine("HANDLEDRAG")
+        Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
+                &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
         Dim dragSourceHelper2 As IDragSourceHelper2 = _dragSourceHelper
         dragSourceHelper2.SetFlags(1)
-        Dim dragImage As SHDRAGIMAGE
-        dragImage.sizeDragImage.Width = _bitmap.Width
-        dragImage.sizeDragImage.Height = _bitmap.Height
-        dragImage.ptOffset.x = ICON_SIZE / 2
-        dragImage.ptOffset.y = ICON_SIZE / 2
-        dragImage.hbmpDragImage = _bitmap.GetHbitmap()
-        dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
-        Debug.WriteLine("InitializeFromBitmap returned " & _dragSourceHelper.InitializeFromBitmap(dragImage, _dataObject))
-        Functions.DeleteObject(dragImage.hbmpDragImage)
-
-        Dim format2 As FORMATETC, medium2 As STGMEDIUM
-        format2.cfFormat = Functions.RegisterClipboardFormat("IsShowingLayered")
-        If _dataObject.QueryGetData(format2) = 0 Then
-            _dataObject.GetData(format2, medium2)
-            If Not IntPtr.Zero.Equals(medium2.unionmember) Then
-                Dim format As FORMATETC, medium As STGMEDIUM
-                format.cfFormat = Functions.RegisterClipboardFormat("DragWindow")
-                If _dataObject.QueryGetData(format) = 0 Then
-                    addDropDescription(_dataObject, DROPEFFECT.DROPEFFECT_COPY)
-                    _dataObject.GetData(format, medium)
-                    Dim hwnd As Integer = Marshal.ReadInt32(medium.unionmember)
-                    Functions.SendMessage(hwnd, WM.USER + 2, 0, 0)
-                End If
-            End If
-        End If
+        _dragImage.sizeDragImage.Width = _bitmap.Width
+        _dragImage.sizeDragImage.Height = _bitmap.Height
+        _dragImage.ptOffset.x = ICON_SIZE / 2
+        _dragImage.ptOffset.y = ICON_SIZE / 2
+        _dragImage.hbmpDragImage = _bitmap.GetHbitmap()
+        _dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
+        Debug.WriteLine("InitializeFromBitmap returned " & _dragSourceHelper.InitializeFromBitmap(_dragImage, _dataObject))
     End Sub
 
     Public Function QueryContinueDrag(<[In]> <MarshalAs(UnmanagedType.Bool)> fEscapePressed As Boolean, <[In]> grfKeyState As Integer) As Integer Implements IDropSource.QueryContinueDrag
@@ -265,18 +296,16 @@ Public Class DragDrop
     Private _lastEffect As DROPEFFECT
     Public Function GiveFeedback(<[In]> dwEffect As DROPEFFECT) As Integer Implements IDropSource.GiveFeedback
         If _lastEffect <> dwEffect Then
-            _handleDrag.Invoke()
             _lastEffect = dwEffect
-        End If
-
-        If dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
-            Mouse.OverrideCursor = _moveCursor
-        ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
-            Mouse.OverrideCursor = _copyCursor
-        ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
-            Mouse.OverrideCursor = _linkCursor
-        Else
-            Mouse.OverrideCursor = Cursors.No
+            If dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
+                Mouse.OverrideCursor = _moveCursor
+            ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
+                Mouse.OverrideCursor = _copyCursor
+            ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
+                Mouse.OverrideCursor = _linkCursor
+            Else
+                Mouse.OverrideCursor = Cursors.No
+            End If
         End If
 
         Debug.WriteLine(CType(dwEffect, DROPEFFECT).ToString())

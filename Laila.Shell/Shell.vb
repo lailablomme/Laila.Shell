@@ -1,4 +1,5 @@
-﻿Imports System.Runtime.InteropServices
+﻿Imports System.Drawing
+Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows
@@ -99,6 +100,15 @@ Public Class Shell
 
                 Functions.SHChangeNotification_Unlock(hLock)
             End If
+        ElseIf msg = 49252 Then
+            Dim dragImage As SHDRAGIMAGE = Marshal.PtrToStructure(Of SHDRAGIMAGE)(lParam)
+            dragImage.sizeDragImage.Width = DragDrop._bitmap.Width
+            dragImage.sizeDragImage.Height = DragDrop._bitmap.Height
+            dragImage.ptOffset.x = DragDrop.ICON_SIZE / 2
+            dragImage.ptOffset.y = DragDrop.ICON_SIZE / 2
+            dragImage.hbmpDragImage = DragDrop._bitmap.GetHbitmap()
+            dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
+            Marshal.StructureToPtr(Of SHDRAGIMAGE)(dragImage, lParam, False)
         End If
     End Function
 

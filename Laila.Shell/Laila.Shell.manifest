@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity version="1.0.0.0" name="Laila.Shell"/>
+
+	<dependency>
+		<dependentAssembly>
+			<!-- RegFree COM - CoreCLR Shim -->
+			<assemblyIdentity
+                type="win32"
+                name="Laila.Shell.X"
+                version="1.0.0.0" />
+		</dependentAssembly>
+	</dependency>
+
+</assembly>

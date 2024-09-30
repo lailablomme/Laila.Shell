@@ -1,0 +1,6 @@
+﻿<Flags>
+Public Enum FOF As Short
+    FOF_MULTIDESTFILES = &H1
+    FOF_ALLOWUNDO = &H40
+    FOF_NOCONFIRMMKDIR = &H200
+End Enum

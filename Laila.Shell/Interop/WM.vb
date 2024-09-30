@@ -1,5 +1,6 @@
 ﻿<Flags()>
 Public Enum WM As UInt32
+    DI_GETDRAGIMAGE = &H40
     ACTIVATE = 6
     ACTIVATEAPP = 28
     AFXFIRST = 864

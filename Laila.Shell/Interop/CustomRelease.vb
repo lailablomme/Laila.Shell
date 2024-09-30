@@ -1,6 +1,5 @@
 ﻿Imports System.Runtime.InteropServices
 
-<ComVisible(True)>
 Public Class CustomRelease
     Implements IUnknown
 

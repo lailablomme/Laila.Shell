@@ -271,6 +271,24 @@ Public Class Item
         End Get
     End Property
 
+    Public ReadOnly Property IsExecutable As Boolean
+        Get
+            Dim executableExtensions As List(Of String) = New List(Of String)() From {
+                ".exe", ".bat", ".cmd", ".com", ".msi"
+            }
+            Return executableExtensions.Contains(IO.Path.GetExtension(Me.FullPath).ToLower())
+        End Get
+    End Property
+
+    Public Sub Execute(Optional arguments As String = Nothing)
+        Dim psi As ProcessStartInfo = New ProcessStartInfo() With {
+            .FileName = Me.FullPath,
+            .Arguments = arguments,
+            .UseShellExecute = True
+        }
+        Process.Start(psi)
+    End Sub
+
     'Public Overridable ReadOnly Property Properties(key As PROPERTYKEY) As [Property]
     '    Get
     '        Dim propertyDescription As IPropertyDescription

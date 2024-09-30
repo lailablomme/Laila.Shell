@@ -13,6 +13,7 @@
     Public Shared Property IID_IPropertyBag As Guid = New Guid("55272A00-42CB-11CE-8135-00AA004BB851")
     Public Shared Property IID_IEnumShellItems As Guid = New Guid("70629033-e363-4a28-a567-0db78006e6d7")
     Public Shared Property IID_IPropertyDescription As Guid = New Guid("6f79d558-3e96-4549-a1d1-7d75d2288814")
+    Public Shared Property CLSID_FileOperation As Guid = New Guid("3ad05575-8857-4850-9277-11b85bdb8e09")
     Public Shared Property CLSID_DragDropHelper As Guid = New Guid("4657278a-411b-11d2-839a-00c04fd918d0")
     'https://gist.githubusercontent.com/stevemk14ebr/af8053c506ef895cd520f8017a81f913/raw/98944bc6ae995229d5231568a8ae73dd287e8b4f/guids
 End Class

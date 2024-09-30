@@ -8,6 +8,34 @@ Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
 
+    <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
+    Public Shared Function SHCreateItemArray(
+        ByVal cItems As UInteger,
+        <MarshalAs(UnmanagedType.LPArray, SizeParamIndex:=0)> ByVal rgpsi As IShellItem(),
+        ByVal punkAttributes As IntPtr,
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppsia As IShellItemArray) As Integer
+    End Function
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Shared Sub RtlMoveMemory(ByVal dest As IntPtr, ByVal src As IntPtr, ByVal count As UIntPtr)
+    End Sub
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Shared Function GlobalSize(ByVal hMem As IntPtr) As UIntPtr
+    End Function
+    <DllImport("shell32.dll", EntryPoint:="DragQueryFileW", CharSet:=CharSet.Auto)>
+    Public Shared Function DragQueryFile(hDrop As IntPtr, iFile As UInteger, lpFile As StringBuilder, cch As UInteger) As UInteger
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
+    Public Shared Function DragFinish(hDrop As IntPtr) As Boolean
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
+    Public Shared Function SHFileOperation(ByRef FileOp As SHFILEOPSTRUCT) As Integer
+    End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function RegisterDragDrop(hwnd As IntPtr, pDropTarget As IDropTarget) As Integer
+    End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function RevokeDragDrop(ByVal hwnd As IntPtr) As Integer
+    End Function
     '<DllImport("propsys.dll", SetLastError:=True, CharSet:=CharSet.Unicode)>
     'Public Shared Function PSCreateMemoryPropertyStore(
     '    ByRef riid As Guid,
@@ -100,6 +128,36 @@ Public Class Functions
     <DllImport("ole32.dll")>
     Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
     End Function
+    <DllImport("urlmon.dll")>
+    Public Shared Function CopyStgMedium(ByRef pcstgmedSrc As STGMEDIUM, ByRef pstgmedDest As STGMEDIUM) As Integer
+    End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
+        ByRef riid As Guid,
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IFileOperation) As Integer
+    End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
+        ByRef riid As Guid,
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDropTargetHelper) As Integer
+    End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
+        ByRef riid As Guid,
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDragSourceHelper) As Integer
+    End Function
+    <DllImport("kernel32.dll", EntryPoint:="RtlMoveMemory", SetLastError:=False)>
+    Public Shared Sub CopyMemory(destination As IntPtr, source As IntPtr, length As UInteger)
+    End Sub
     <DllImport("ole32.dll")>
     Public Shared Sub OleUninitialize()
     End Sub

@@ -1,16 +1,8 @@
-﻿Imports System.Collections.ObjectModel
-Imports System.ComponentModel.Design
-Imports System.Runtime.InteropServices
-Imports System.Windows
+﻿Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
 Imports System.Windows.Input
-Imports System.Windows.Interop
-Imports System.Windows.Markup
 Imports System.Windows.Media
-Imports System.Windows.Threading
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Helpers
 
@@ -18,7 +10,7 @@ Namespace ViewModels
     Public Class DetailsListViewModel
         Inherits NotifyPropertyChangedBase
 
-        Private _view As DetailsListView
+        Friend _view As DetailsListView
         Private _folderName As String
         Private _folder As Folder
         Private _gridView As GridView
@@ -29,6 +21,7 @@ Namespace ViewModels
         Private _skipSavingScrollState As Boolean = False
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
+        Private _dropTarget As IDropTarget
 
         Public Sub New(view As DetailsListView)
             _view = view
@@ -50,6 +43,14 @@ Namespace ViewModels
                             NotifyOfPropertyChange("SelectedItem")
                             NotifyOfPropertyChange("SelectedItems")
                         End Function
+
+                    _dropTarget = New DropTarget(Me)
+                    WpfDragTargetProxy.RegisterDragDrop(_view.listView, _dropTarget)
+                End Sub
+
+            AddHandler System.Windows.Application.Current.MainWindow.Closed,
+                Sub()
+                    WpfDragTargetProxy.RevokeDragDrop(_view.listView)
                 End Sub
 
             AddHandler _view.listView.PreviewMouseMove, AddressOf OnListViewMouseMove
@@ -315,7 +316,7 @@ Namespace ViewModels
                         Me.FolderName = item.FullPath
                     Else
                         Dim menu As ContextMenu = New ContextMenu()
-                        menu.GetContextMenu(Me.Folder, Me.SelectedItems, True)
+                        menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
                         menu.InvokeCommand(menu.DefaultId)
                     End If
                 End If
@@ -336,9 +337,9 @@ Namespace ViewModels
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then
                 Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
-                If Not listViewItem Is Nothing Then
-                    Dim clickedItem As Item = listViewItem.DataContext
-                    _mouseItemDown = clickedItem
+                'If Not listViewItem Is Nothing Then
+                Dim clickedItem As Item = listViewItem?.DataContext
+                _mouseItemDown = clickedItem
                     If Me.SelectedItems.Count > 1 AndAlso Me.SelectedItems.Contains(clickedItem) Then
                         e.Handled = True
                     ElseIf e.RightButton = MouseButtonState.Pressed Then
@@ -359,9 +360,9 @@ Namespace ViewModels
 
                         _view.listView.ContextMenu = menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
                     End If
-                Else
-                    _mouseItemDown = Nothing
-                End If
+                'Else
+                '    _mouseItemDown = Nothing
+                'End If
             Else
                 _mouseItemDown = Nothing
             End If

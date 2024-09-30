@@ -1,8 +1,16 @@
 ﻿Imports System.Windows
+Imports System.Windows.Controls
 Imports System.Windows.Media
+Imports Laila.Shell.ViewModels
+Imports Microsoft
 
 Namespace Helpers
     Public Class UIHelper
+        Public Shared Function WIN32POINTToControl(ptWIN32 As WIN32POINT, control As Control) As Point
+            Dim pt As Point = New Point(ptWIN32.x, ptWIN32.y)
+            Return control.PointFromScreen(pt)
+        End Function
+
         Public Shared Function GetParent(obj As DependencyObject) As DependencyObject
             If obj Is Nothing Then
                 Return Nothing

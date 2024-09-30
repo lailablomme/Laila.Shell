@@ -4,12 +4,12 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Laila.Shell.Controls"
-             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <ListView ItemsSource="{Binding Folder.ItemsThreaded}" x:Name="listView" SelectionMode="Extended"  
+        <ListView ItemsSource="{Binding Folder.ItemsThreaded}" x:Name="listView" SelectionMode="Extended" 
                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
                   VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="1" VirtualizingPanel.CacheLengthUnit="Page">
             <ListView.Resources>
@@ -69,9 +69,6 @@
             </ListView.View>
             <i:Interaction.Behaviors>
                 <behaviors:GridViewExtBehavior ColumnsIn="{Binding ColumnsIn}" x:Name="ext" />
-                <!--<behaviors:GridViewColumns />
-                <behaviors:GridViewCopy/>
-                <behaviors:GridViewContextMenu DataType="{x:Type dataLocal:GebruikerData}" />-->
             </i:Interaction.Behaviors>
         </ListView>
         <local:LoadingSpinner>
@@ -86,5 +83,6 @@
                 </Style>
             </local:LoadingSpinner.Style>
         </local:LoadingSpinner>
+        <WindowsFormsHost Background="Red" />
     </Grid>
 </UserControl>

@@ -334,7 +334,11 @@ Public Class ContextMenu
     Private Sub ReleaseContextMenu()
         Functions.DestroyMenu(_hMenu)
         Marshal.ReleaseComObject(_contextMenu)
-        Marshal.ReleaseComObject(_contextMenu2)
-        Marshal.ReleaseComObject(_contextMenu3)
+        If Not _contextMenu2 Is Nothing Then
+            Marshal.ReleaseComObject(_contextMenu2)
+        End If
+        If Not _contextMenu3 Is Nothing Then
+            Marshal.ReleaseComObject(_contextMenu3)
+        End If
     End Sub
 End Class
