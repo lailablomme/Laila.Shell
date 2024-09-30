@@ -1,8 +1,10 @@
-﻿Imports System.Runtime.InteropServices
+﻿Imports System.Reflection.Metadata
+Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
+Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
 
@@ -16,7 +18,7 @@ Public Class ContextMenu
     Private _contextMenu3 As IContextMenu3
     Private _hMenu As IntPtr
     Private _firstContextMenuCall As Boolean = True
-    Private _menu As System.Windows.Controls.ContextMenu
+    Private _menu As Controls.ContextMenu
     Private _parent As Folder
 
     Public Function GetContextMenu(parent As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean) As System.Windows.Controls.ContextMenu
@@ -127,9 +129,31 @@ Public Class ContextMenu
             End Function
 
         ' make our own menu
-        _menu = New System.Windows.Controls.ContextMenu()
+        _menu = New Controls.ContextMenu()
         For Each item In getMenu(_hMenu, -1)
-            _menu.Items.Add(item)
+            Select Case item.Tag?.ToString().Split(vbTab)(1)
+                Case "copy", "cut", "paste", "delete"
+                    Dim button As System.Windows.Controls.Button = New System.Windows.Controls.Button()
+                    Dim image As Image = New Image()
+                    image.Width = 16
+                    image.Height = 16
+                    image.Margin = New Thickness(2)
+                    Select Case item.Tag.ToString().Split(vbTab)(1)
+                        Case "copy" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/copy16.png")
+                        Case "cut" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/cut16.png")
+                        Case "paste" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/paste16.png")
+                        Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
+                    End Select
+                    button.Content = image
+                    button.Background = Brushes.Transparent
+                    button.BorderThickness = New Thickness(0)
+                    button.ToolTip = CType(item, MenuItem).Header.ToString().Replace("_", "")
+                    'button.Margin = New Thickness(0, 0, 4, 0)
+                    button.Tag = item.Tag
+                    _menu.ButtonsTop.Add(button)
+                Case Else
+                    _menu.Items.Add(item)
+            End Select
         Next
 
         AddHandler _menu.Closed,
@@ -137,32 +161,55 @@ Public Class ContextMenu
                 ReleaseContextMenu()
             End Sub
 
-        Dim wireItems As Action(Of ItemCollection) =
-            Sub(menuItems As ItemCollection)
+        Dim wireItem As Action(Of Control) =
+            Sub(c As Control)
+                If TypeOf c Is Windows.Controls.Button Then
+                    AddHandler CType(c, Windows.Controls.Button).Click,
+                        Sub(s2 As Object, e2 As EventArgs)
+                            UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    _menu.IsOpen = False
+                                    Dim isHandled As Boolean = False
+
+                                    RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
+
+                                    If Not isHandled Then
+                                        InvokeCommand(c.Tag)
+                                    End If
+                                End Sub)
+                        End Sub
+                ElseIf TypeOf c Is MenuItem Then
+                    AddHandler CType(c, MenuItem).Click,
+                        Sub(s2 As Object, e2 As EventArgs)
+                            UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    _menu.IsOpen = False
+                                    Dim isHandled As Boolean = False
+
+                                    RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
+
+                                    If Not isHandled Then
+                                        InvokeCommand(c.Tag)
+                                    End If
+                                End Sub)
+                        End Sub
+                End If
+            End Sub
+
+        Dim wireItems As Action(Of List(Of Control)) =
+            Sub(menuItems As List(Of Control))
                 For Each c As Control In menuItems
-                    If TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0 Then
-                        Dim menuItem As MenuItem = c
-                        AddHandler menuItem.Click,
-                            Sub(s2 As Object, e2 As EventArgs)
-                                UIHelper.OnUIThreadAsync(
-                                    Sub()
-                                        Dim isHandled As Boolean = False
-
-                                        RaiseEvent Click(menuItem.Tag.ToString().Split(vbTab)(0),
-                                                 menuItem.Tag.ToString().Split(vbTab)(1),
-                                                 isHandled)
-
-                                        If Not isHandled Then
-                                            InvokeCommand(menuItem.Tag)
-                                        End If
-                                    End Sub)
-                            End Sub
+                    If (TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0) _
+                        OrElse TypeOf c Is Windows.Controls.Button Then
+                        wireItem(c)
                     ElseIf TypeOf c Is MenuItem Then
-                        wireItems(CType(c, MenuItem).Items)
+                        wireItems(CType(c, MenuItem).Items.Cast(Of Control).ToList())
                     End If
                 Next
             End Sub
-        wireItems(_menu.Items)
+        wireItems(_menu.Items.Cast(Of Control).ToList())
+        wireItems(_menu.ButtonsTop.Cast(Of Control).ToList())
+        wireItems(_menu.ButtonsBottom.Cast(Of Control).ToList())
 
         If _menu.Items.Count = 0 Then
             _menu = Nothing

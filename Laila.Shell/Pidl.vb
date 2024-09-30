@@ -55,12 +55,13 @@ Public Class Pidl
         Dim start As IntPtr = ptr
 
         ' read count
-        Dim count As UInt32 = Marshal.ReadInt32(ptr) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
+        Dim count As UInt32 = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
+        If count > 1000 Then Return Nothing
 
         ' read parent
-        Dim offset As UInt32 = Marshal.ReadInt32(ptr) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32)) ' parent
+        Dim offset As UInt32 = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32)) ' parent
         Dim parentShellFolder As IShellFolder
-        If Marshal.ReadInt16(IntPtr.Add(start, offset)) = 0 Then
+        If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) = 0 Then
             parentShellFolder = Nothing
         Else
             parentShellFolder = New Folder(Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), Nothing), Nothing, Nothing)._shellFolder
@@ -68,7 +69,7 @@ Public Class Pidl
 
         ' read items
         For i = 0 To count - 1
-            offset = Marshal.ReadInt32(ptr) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
+            offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
             Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
             result.Add(Item.FromParsingName(Item.GetFullPathFromShellItem2(shellItem2), Nothing, Nothing))
         Next

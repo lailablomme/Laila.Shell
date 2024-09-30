@@ -12,6 +12,14 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
  </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <RemoveIntegerChecks>False</RemoveIntegerChecks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <RemoveIntegerChecks>False</RemoveIntegerChecks>
+  </PropertyGroup>
+
   <ItemGroup>
     <AdditionalFiles Remove="Laila.Shell.manifest" />
   </ItemGroup>
@@ -147,6 +155,10 @@
 
   <ItemGroup>
     <None Remove="Images\arrow_up16.png" />
+    <None Remove="Images\copy16.png" />
+    <None Remove="Images\cut16.png" />
+    <None Remove="Images\delete16.png" />
+    <None Remove="Images\paste16.png" />
     <None Remove="Images\pin.png" />
     <None Remove="Images\sortasc.png" />
     <None Remove="Images\sortdesc.png" />
@@ -160,6 +172,10 @@
 
   <ItemGroup>
     <Resource Include="Images\arrow_up16.png" />
+    <Resource Include="Images\copy16.png" />
+    <Resource Include="Images\cut16.png" />
+    <Resource Include="Images\delete16.png" />
+    <Resource Include="Images\paste16.png" />
     <Resource Include="Images\pin.png" />
     <Resource Include="Images\sortasc.png" />
     <Resource Include="Images\sortdesc.png" />

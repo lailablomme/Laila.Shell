@@ -1,4 +1,22 @@
-﻿'Dim cmcb As ContextMenuCB = New ContextMenuCB()
+﻿'    Case "copy", "cut", "paste", "delete"
+'        Dim button As Button = New Button()
+'        Dim image As Image = New Image()
+'        image.Width = 16
+'        image.Height = 16
+'        image.Margin = New Thickness(4)
+'        Select Case item.Tag.ToString().Split(vbTab)(1)
+'            Case "copy" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/copy16.png")
+'            Case "cut" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/cut16.png")
+'            Case "paste" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/paste16.png")
+'            Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
+'        End Select
+'        button.Content = image
+'        button.ToolTip = CType(item, MenuItem).Header.ToString().Replace("&", "")
+'        button.Margin = New Thickness(0, 0, 4, 0)
+'        _menu.ButtonsTop.Add(button)
+'Case Else
+'    _menu.Items.Add(item)
+'Dim cmcb As ContextMenuCB = New ContextMenuCB()
 'Dim itemArray As PCUITEMID_CHILD_ARRAY = marshalItemArray(lastpidls)
 'Dim dcm As New DEFCONTEXTMENU With {
 '        .psf = ShellFolder,

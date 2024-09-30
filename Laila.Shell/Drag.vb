@@ -241,18 +241,20 @@ Public Class Drag
     End Sub
 
     Friend Shared Sub InitializeDragImage()
-        Debug.WriteLine("InitializeDragImage")
-        Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
-                &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
-        Dim dragSourceHelper2 As IDragSourceHelper2 = _dragSourceHelper
-        dragSourceHelper2.SetFlags(1)
-        _dragImage.sizeDragImage.Width = _bitmap.Width
-        _dragImage.sizeDragImage.Height = _bitmap.Height
-        _dragImage.ptOffset.x = ICON_SIZE / 2
-        _dragImage.ptOffset.y = ICON_SIZE / 2
-        _dragImage.hbmpDragImage = _bitmap.GetHbitmap()
-        _dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
-        Debug.WriteLine("InitializeFromBitmap returned " & _dragSourceHelper.InitializeFromBitmap(_dragImage, _dataObject))
+        If _isDragging Then
+            Debug.WriteLine("InitializeDragImage")
+            Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
+                    &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
+            Dim dragSourceHelper2 As IDragSourceHelper2 = _dragSourceHelper
+            dragSourceHelper2.SetFlags(1)
+            _dragImage.sizeDragImage.Width = _bitmap.Width
+            _dragImage.sizeDragImage.Height = _bitmap.Height
+            _dragImage.ptOffset.x = ICON_SIZE / 2
+            _dragImage.ptOffset.y = ICON_SIZE / 2
+            _dragImage.hbmpDragImage = _bitmap.GetHbitmap()
+            _dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
+            Debug.WriteLine("InitializeFromBitmap returned " & _dragSourceHelper.InitializeFromBitmap(_dragImage, _dataObject))
+        End If
     End Sub
 
     Public Function QueryContinueDrag(<[In]> <MarshalAs(UnmanagedType.Bool)> fEscapePressed As Boolean, <[In]> grfKeyState As Integer) As Integer Implements IDropSource.QueryContinueDrag

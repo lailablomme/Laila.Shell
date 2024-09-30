@@ -26,7 +26,7 @@ Public Class ListViewDropTarget
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
 
-        _fileList = getFileList()
+        _fileList = Clipboard.GetFileNameList(pDataObj)
 
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
@@ -83,11 +83,10 @@ Public Class ListViewDropTarget
                     Dim fileOperation As IFileOperation
                     Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
                     Debug.WriteLine("CoCreateInstance returned " & h.ToString())
-                    Dim shellItem As IShellItem = CType(overItem, Folder)._shellItem2
                     If CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
-                        h = fileOperation.MoveItems(sourceArray, shellItem)
+                        h = fileOperation.MoveItems(sourceArray, overItem._shellItem2)
                     Else
-                        h = fileOperation.CopyItems(sourceArray, shellItem)
+                        h = fileOperation.CopyItems(sourceArray, overItem._shellItem2)
                     End If
                     fileOperation.PerformOperations()
                 ElseIf CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
@@ -108,49 +107,6 @@ Public Class ListViewDropTarget
         End If
 
         Return 0
-    End Function
-
-    Private Function getFileList() As String()
-        ' get data from data object
-        Dim format As New FORMATETC With {
-            .cfFormat = Functions.RegisterClipboardFormat("Shell IDList Array"),
-            .ptd = IntPtr.Zero,
-            .dwAspect = DVASPECT.DVASPECT_CONTENT,
-            .lindex = -1,
-            .tymed = TYMED.TYMED_HGLOBAL
-        }
-        If _dataObject.QueryGetData(format) = 0 Then
-            Dim medium As STGMEDIUM
-            _dataObject.GetData(format, medium)
-
-            Return Pidl.GetItemsFromShellIDListArray(medium.unionmember).Select(Function(i) i.FullPath).ToArray()
-        Else
-            format = New FORMATETC With {
-                .cfFormat = ClipboardFormat.CF_HDROP,
-                .ptd = IntPtr.Zero,
-                .dwAspect = DVASPECT.DVASPECT_CONTENT,
-                .lindex = -1,
-                .tymed = TYMED.TYMED_HGLOBAL
-            }
-            If _dataObject.QueryGetData(format) = 0 Then
-                Dim medium As STGMEDIUM
-                _dataObject.GetData(format, medium)
-
-                Dim fileCount As UInteger = Functions.DragQueryFile(medium.unionmember, UInt32.MaxValue, Nothing, 0)
-                Dim fileList As New List(Of String)()
-                If fileCount > 0 Then
-                    For i As UInteger = 0 To fileCount - 1
-                        Dim filePathBuilder As New StringBuilder(260) ' MAX_PATH
-                        Functions.DragQueryFile(medium.unionmember, i, filePathBuilder, CType(filePathBuilder.Capacity, UInteger))
-                        fileList.Add(filePathBuilder.ToString())
-                    Next
-                End If
-
-                Return fileList.ToArray()
-            End If
-        End If
-
-        Return Nothing
     End Function
 
     Private Function getOverItem(ptWIN32 As WIN32POINT) As Item

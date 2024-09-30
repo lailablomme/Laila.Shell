@@ -368,6 +368,8 @@ Namespace ViewModels
                         End Sub
 
                     _view.listView.ContextMenu = menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso clickedItem Is Nothing Then
+                    Me.SetSelectedItem(Nothing)
                 End If
             Else
                 _mouseItemDown = Nothing
