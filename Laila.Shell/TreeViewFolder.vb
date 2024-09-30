@@ -5,6 +5,7 @@ Imports System.Runtime.InteropServices
 Imports System.Windows
 Imports System.ComponentModel
 Imports System.Windows.Data
+Imports Laila.Shell.Helpers
 
 Public Class TreeViewFolder
     Inherits Folder
@@ -179,7 +180,7 @@ Public Class TreeViewFolder
         Next
 
         If Not Me.IsExpanded AndAlso items.Count > 0 AndAlso _fromThread Then
-            Application.Current.Dispatcher.Invoke(
+            UIHelper.OnUIThread(
                 Sub()
                     items.Clear()
                     items.Add(New DummyTreeViewFolder("Loading..."))
@@ -239,7 +240,7 @@ Public Class TreeViewFolder
                         Sub()
                             updateFolders(_folders)
 
-                            Application.Current.Dispatcher.Invoke(
+                            UIHelper.OnUIThread(
                                 Sub()
                                     Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_folders)
                                     view.Refresh()

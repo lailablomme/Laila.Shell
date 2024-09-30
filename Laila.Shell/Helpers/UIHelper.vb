@@ -1,11 +1,25 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Media
+Imports System.Windows.Threading
 Imports Laila.Shell.ViewModels
 Imports Microsoft
 
 Namespace Helpers
     Public Class UIHelper
+        Public Shared Sub OnUIThread(action As Action)
+            Dim appl As System.Windows.Application = System.Windows.Application.Current
+            If Not appl Is Nothing Then
+                If appl.Dispatcher.CheckAccess Then
+                    action()
+                Else
+                    appl.Dispatcher.Invoke(
+                        Sub()
+                            action()
+                        End Sub)
+                End If
+            End If
+        End Sub
         Public Shared Function WIN32POINTToControl(ptWIN32 As WIN32POINT, control As Control) As Point
             Dim pt As Point = New Point(ptWIN32.x, ptWIN32.y)
             Return control.PointFromScreen(pt)

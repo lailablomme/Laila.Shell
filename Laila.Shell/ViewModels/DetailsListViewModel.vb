@@ -68,14 +68,14 @@ Namespace ViewModels
 
                 If Not _isLoading Then
                     If Not Me.Folder Is Nothing AndAlso _scrollState.ContainsKey(Me.Folder.FullPath) Then
-                        Application.Current.Dispatcher.Invoke(
+                        UIHelper.OnUIThread(
                             Sub()
                                 loadScrollState()
                             End Sub)
                     End If
                 Else
                     If Not Me.Folder Is Nothing AndAlso Not _skipSavingScrollState Then
-                        Application.Current.Dispatcher.Invoke(
+                        UIHelper.OnUIThread(
                             Sub()
                                 saveScrollState()
                             End Sub)

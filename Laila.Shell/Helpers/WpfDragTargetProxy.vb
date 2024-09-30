@@ -82,9 +82,6 @@ Namespace Helpers
             If Not dropTarget Is Nothing Then
                 _activeDropTarget = dropTarget
                 Dim h As HRESULT = _activeDropTarget.DragEnterInternal(pDataObj, grfKeyState, ptWIN32, pdwEffect)
-                System.Windows.Application.Current.Dispatcher.Invoke(
-                    Sub()
-                    End Sub)
                 Dim hwnd As IntPtr = _hwnds(_controls.FirstOrDefault(Function(kv) kv.Value.Equals(_activeDropTarget)).Key)
                 _dropTargetHelper.DragEnter(hwnd, _dataObject, ptWIN32, pdwEffect)
                 Return h

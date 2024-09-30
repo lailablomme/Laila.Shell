@@ -5,6 +5,7 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
+Imports Laila.Shell.Helpers
 
 Public Class Folder
     Inherits Item
@@ -164,7 +165,7 @@ Public Class Folder
         _shellItem2.GetAttributes(attr, attr)
 
         If Not condition AndAlso (attr.HasFlag(SFGAO.ISSLOW) OrElse Me.FullPath.StartsWith("\\")) AndAlso attr.HasFlag(SFGAO.HASSUBFOLDER) Then
-            Application.Current.Dispatcher.Invoke(
+            UIHelper.OnUIThread(
                 Sub()
                     add(New DummyTreeViewFolder("Loading..."))
                 End Sub)
@@ -205,7 +206,7 @@ Public Class Folder
 
                             If Not enumShellItems Is Nothing Then
                                 Dim shellItemArray(0) As IShellItem, fetched As UInt32 = 1
-                                Application.Current.Dispatcher.Invoke(
+                                UIHelper.OnUIThread(
                                     Sub()
                                         enumShellItems.Next(1, shellItemArray, fetched)
                                     End Sub)
@@ -214,7 +215,7 @@ Public Class Folder
                                     Dim attr2 As Integer = SFGAO.FOLDER
                                     shellItemArray(0).GetAttributes(attr2, attr2)
                                     Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItemArray(0))
-                                    Application.Current.Dispatcher.Invoke(
+                                    UIHelper.OnUIThread(
                                         Sub()
                                             Dim newItem As Item
                                             If CBool(attr2 And SFGAO.FOLDER) Then
@@ -238,7 +239,7 @@ Public Class Folder
                                 End While
                             End If
                         Catch ex As Exception
-                            Application.Current.Dispatcher.Invoke(
+                            UIHelper.OnUIThread(
                                 Sub()
                                     add(New DummyTreeViewFolder(ex.Message))
                                 End Sub)
@@ -278,7 +279,7 @@ Public Class Folder
                 End If
             End If
 
-            Application.Current.Dispatcher.Invoke(
+            UIHelper.OnUIThread(
               Sub()
                   For Each item In getToBeRemoved(paths)
                       remove(item)
@@ -379,7 +380,7 @@ Public Class Folder
                         Sub()
                             updateItems(_items)
 
-                            Application.Current.Dispatcher.Invoke(
+                            UIHelper.OnUIThread(
                                 Sub()
                                     Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_items)
                                     view.Refresh()

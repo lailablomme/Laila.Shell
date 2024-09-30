@@ -201,7 +201,7 @@ Public Class ListViewDropTarget
                 End If
                 _scrollTimer = New Timer(New TimerCallback(
                     Sub()
-                        System.Windows.Application.Current.Dispatcher.Invoke(
+                        UIHelper.OnUIThread(
                             Sub()
                                 Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListViewModel._view.listView)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset - 1)
@@ -216,7 +216,7 @@ Public Class ListViewDropTarget
                 End If
                 _scrollTimer = New Timer(New TimerCallback(
                     Sub()
-                        System.Windows.Application.Current.Dispatcher.Invoke(
+                        UIHelper.OnUIThread(
                             Sub()
                                 Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListViewModel._view.listView)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset + 1)
@@ -243,7 +243,7 @@ Public Class ListViewDropTarget
 
                 _dragOpenTimer = New Timer(New TimerCallback(
                     Sub()
-                        System.Windows.Application.Current.Dispatcher.Invoke(
+                        UIHelper.OnUIThread(
                             Sub()
                                 _detailsListViewModel._view.LogicalParent = _detailsListViewModel.Folder
                                 _detailsListViewModel.FolderName = overItem.FullPath

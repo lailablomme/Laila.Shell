@@ -794,10 +794,10 @@ Namespace Behaviors
         End Function
 
         Public Sub NotifyOfPropertyChange(propertyName As String)
-            Application.Current.Dispatcher.Invoke(
-            Sub()
-                RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
-            End Sub)
+            UIHelper.OnUIThread(
+                Sub()
+                    RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
+                End Sub)
         End Sub
 
         Public Class GridViewStateData
