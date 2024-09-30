@@ -11,7 +11,7 @@ Namespace ViewModels
     Public Class TreeViewModel
         Inherits NotifyPropertyChangedBase
 
-        Private _view As Controls.TreeView
+        Friend _view As Controls.TreeView
         Private _folders1 As List(Of TreeViewFolder)
         Private _folders2 As List(Of TreeViewFolder)
         Private _folders3 As List(Of TreeViewFolder)
@@ -19,6 +19,9 @@ Namespace ViewModels
         Private _selectionHelper2 As SelectionHelper(Of TreeViewFolder) = Nothing
         Private _selectionHelper3 As SelectionHelper(Of TreeViewFolder) = Nothing
         Private _isSettingSelectedFolder As Boolean
+        Private _mousePointDown As Point
+        Private _mouseItemDown As Item
+        Private _dropTarget As IDropTarget
 
         Public Sub New(view As Controls.TreeView)
             _view = view
@@ -114,9 +117,17 @@ Namespace ViewModels
                             End If
                         End Sub
 
-                    AddHandler _view.treeView1.PreviewMouseRightButtonDown, AddressOf OnTreeViewItemRightClick
-                    AddHandler _view.treeView2.PreviewMouseRightButtonDown, AddressOf OnTreeViewItemRightClick
-                    AddHandler _view.treeView3.PreviewMouseRightButtonDown, AddressOf OnTreeViewItemRightClick
+                    AddHandler _view.PreviewMouseMove, AddressOf OnTreeViewPreviewMouseMove
+                    AddHandler _view.PreviewMouseLeftButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
+                    AddHandler _view.PreviewMouseRightButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
+
+                    _dropTarget = New TreeViewDropTarget(Me)
+                    WpfDragTargetProxy.RegisterDragDrop(_view, _dropTarget)
+                End Sub
+
+            AddHandler System.Windows.Application.Current.MainWindow.Closed,
+                Sub()
+                    WpfDragTargetProxy.RevokeDragDrop(_view)
                 End Sub
         End Sub
 
@@ -274,11 +285,25 @@ Namespace ViewModels
             End If
         End Sub
 
-        Private Sub OnTreeViewItemRightClick(sender As Object, e As MouseButtonEventArgs)
+        Private Sub OnTreeViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
+            If Not _mouseItemDown Is Nothing AndAlso Not Me.SelectedItem Is Nothing AndAlso
+                (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
+                Dim currentPointDown As Point = e.GetPosition(_view)
+                If Math.Abs(currentPointDown.X - _mousePointDown.X) > 7 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 7 Then
+                    Drag.Start({Me.SelectedItem}, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
+                End If
+            End If
+        End Sub
+
+        Private Sub OnTreeViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
+            _mousePointDown = e.GetPosition(_view)
+
             If Not e.OriginalSource Is Nothing Then
                 Dim treeViewItem As TreeViewItem = UIHelper.GetParentOfType(Of TreeViewItem)(e.OriginalSource)
-                If Not treeViewItem Is Nothing Then
-                    Dim clickedItem As TreeViewFolder = treeViewItem.DataContext
+                Dim clickedItem As TreeViewFolder = treeViewItem?.DataContext
+                _mouseItemDown = clickedItem
+                If e.RightButton = MouseButtonState.Pressed Then
+                    If Me.SelectedItem Is Nothing Then Me.SetSelectedItem(clickedItem)
 
                     Dim parent As Folder = clickedItem.Parent
                     If parent Is Nothing Then parent = Shell.Desktop
@@ -293,14 +318,17 @@ Namespace ViewModels
                             End Select
                         End Sub
 
-                    _view.treeView1.ContextMenu = menu.GetContextMenu(parent, {clickedItem}, False)
-                    _view.treeView2.ContextMenu = menu.GetContextMenu(parent, {clickedItem}, False)
-                    _view.treeView3.ContextMenu = menu.GetContextMenu(parent, {clickedItem}, False)
+                    Dim contextMenu As System.Windows.Controls.ContextMenu = menu.GetContextMenu(parent, {clickedItem}, False)
+                    _view.treeView1.ContextMenu = contextMenu
+                    _view.treeView2.ContextMenu = contextMenu
+                    _view.treeView3.ContextMenu = contextMenu
                 Else
                     _view.treeView1.ContextMenu = Nothing
                     _view.treeView2.ContextMenu = Nothing
                     _view.treeView3.ContextMenu = Nothing
                 End If
+            Else
+                _mouseItemDown = Nothing
             End If
         End Sub
     End Class

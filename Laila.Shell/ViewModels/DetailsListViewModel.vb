@@ -53,7 +53,7 @@ Namespace ViewModels
                     WpfDragTargetProxy.RevokeDragDrop(_view.listView)
                 End Sub
 
-            AddHandler _view.listView.PreviewMouseMove, AddressOf OnListViewMouseMove
+            AddHandler _view.listView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
             AddHandler _view.listView.PreviewMouseLeftButtonDown, AddressOf OnListViewPreviewMouseButtonDown
             AddHandler _view.listView.PreviewMouseRightButtonDown, AddressOf OnListViewPreviewMouseButtonDown
             AddHandler _view.PreviewKeyDown, AddressOf OnListViewKeyDown
@@ -331,22 +331,31 @@ Namespace ViewModels
             End If
         End Sub
 
+        Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
+            If Not _mouseItemDown Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso
+                (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
+                Dim currentPointDown As Point = e.GetPosition(_view)
+                If Math.Abs(currentPointDown.X - _mousePointDown.X) > 7 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 7 Then
+                    Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
+                End If
+            End If
+        End Sub
+
         Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
             _mousePointDown = e.GetPosition(_view)
 
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then
                 Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
-                'If Not listViewItem Is Nothing Then
                 Dim clickedItem As Item = listViewItem?.DataContext
                 _mouseItemDown = clickedItem
-                    If Me.SelectedItems.Count > 1 AndAlso Me.SelectedItems.Contains(clickedItem) Then
-                        e.Handled = True
-                    ElseIf e.RightButton = MouseButtonState.Pressed Then
-                        If Me.SelectedItem Is Nothing Then Me.SetSelectedItem(clickedItem)
+                If Me.SelectedItems.Count > 1 AndAlso Me.SelectedItems.Contains(clickedItem) Then
+                    e.Handled = True
+                ElseIf e.RightButton = MouseButtonState.Pressed Then
+                    If Me.SelectedItem Is Nothing Then Me.SetSelectedItem(clickedItem)
 
-                        Dim menu As ContextMenu = New ContextMenu()
-                        AddHandler menu.Click,
+                    Dim menu As ContextMenu = New ContextMenu()
+                    AddHandler menu.Click,
                         Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
                             Select Case verb
                                 Case "open"
@@ -358,23 +367,10 @@ Namespace ViewModels
                             End Select
                         End Sub
 
-                        _view.listView.ContextMenu = menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
-                    End If
-                'Else
-                '    _mouseItemDown = Nothing
-                'End If
+                    _view.listView.ContextMenu = menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                End If
             Else
                 _mouseItemDown = Nothing
-            End If
-        End Sub
-
-        Private Sub OnListViewMouseMove(sender As Object, e As MouseEventArgs)
-            If Not _mouseItemDown Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso
-                (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
-                Dim currentPointDown As Point = e.GetPosition(_view)
-                If Math.Abs(currentPointDown.X - _mousePointDown.X) > 2 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) Then
-                    Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
-                End If
             End If
         End Sub
 

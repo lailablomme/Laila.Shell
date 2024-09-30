@@ -1,25 +1,26 @@
-﻿Imports System.Runtime.InteropServices
-Imports System.Runtime.InteropServices.ComTypes
+﻿Imports Laila.Shell.Helpers
+Imports Laila.Shell.ViewModels
+Imports System.Runtime.InteropServices
+Imports System.Runtime.Serialization
 Imports System.Text
 Imports System.Threading
 Imports System.Windows
+Imports System.Runtime.InteropServices.ComTypes
 Imports System.Windows.Controls
-Imports Laila.Shell.Helpers
-Imports Laila.Shell.ViewModels
 
-Public Class ListViewDropTarget
+Public Class TreeViewDropTarget
     Inherits BaseDropTarget
 
     Private _dataObject As ComTypes.IDataObject
-    Private _detailsListViewModel As DetailsListViewModel
+    Private _treeViewModel As TreeViewModel
     Private _lastOverItem As Item
     Private _dragOpenTimer As Timer
     Private _scrollTimer As Timer
     Private _scrollDirection As Boolean?
     Private _fileList() As String
 
-    Public Sub New(detailsListViewModel As DetailsListViewModel)
-        _detailsListViewModel = detailsListViewModel
+    Public Sub New(treeViewModel As TreeViewModel)
+        _treeViewModel = treeViewModel
     End Sub
 
     Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
@@ -155,28 +156,20 @@ Public Class ListViewDropTarget
 
     Private Function getOverItem(ptWIN32 As WIN32POINT) As Item
         ' translate point to listview
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListViewModel._view.listView)
+        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeViewModel._view)
 
         ' find which item we're over
-        Dim overObject As IInputElement = _detailsListViewModel._view.listView.InputHitTest(pt)
-        Dim overListViewItem As ListViewItem
-        If TypeOf overObject Is ListViewItem Then
-            overListViewItem = overObject
+        Dim overObject As IInputElement = _treeViewModel._view.InputHitTest(pt)
+        Dim overTreeViewItem As TreeViewItem
+        If TypeOf overObject Is TreeViewItem Then
+            overTreeViewItem = overObject
         Else
-            overListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(overObject)
+            overTreeViewItem = UIHelper.GetParentOfType(Of TreeViewItem)(overObject)
         End If
-        If Not overListViewItem Is Nothing Then
-            Return overListViewItem.DataContext
-        Else
-            Return _detailsListViewModel.Folder
-        End If
+        Return overTreeViewItem?.DataContext
     End Function
 
     Private Function getDropEffect(overItem As Item) As DROPEFFECT
-        If Not TypeOf overItem Is Folder Or overItem.IsExecutable Then
-            overItem = overItem.Parent
-        End If
-
         If Not _fileList Is Nothing Then
             Return If(Not overItem Is Nothing _
                     AndAlso Not (_fileList.Count = 1 AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = overItem.FullPath)),
@@ -192,7 +185,7 @@ Public Class ListViewDropTarget
     End Function
 
     Private Function dragPoint(grfKeyState As UInteger, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListViewModel._view.listView)
+        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeViewModel._view)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
                 _scrollDirection = False
@@ -203,12 +196,12 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListViewModel._view.listView)(0)
-                                sv.ScrollToVerticalOffset(sv.VerticalOffset - 1)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeViewModel._view)(0)
+                                sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
                             End Sub)
                     End Sub), Nothing, 350, 350)
             End If
-        ElseIf pt.Y > _detailsListViewModel._view.listView.ActualHeight - 100 Then
+        ElseIf pt.Y > _treeViewModel._view.ActualHeight - 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> True Then
                 _scrollDirection = True
                 If Not _scrollTimer Is Nothing Then
@@ -218,8 +211,8 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListViewModel._view.listView)(0)
-                                sv.ScrollToVerticalOffset(sv.VerticalOffset + 1)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeViewModel._view)(0)
+                                sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
                             End Sub)
                     End Sub), Nothing, 350, 350)
             End If
@@ -233,9 +226,7 @@ Public Class ListViewDropTarget
         Dim overItem As Item = getOverItem(ptWIN32)
 
         ' if we're over a folder, open it after two seconds of hovering
-        If TypeOf overItem Is Folder AndAlso Not overItem.Equals(_detailsListViewModel.Folder) Then
-            _detailsListViewModel.SetSelectedItem(overItem)
-
+        If TypeOf overItem Is Folder Then
             If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 If Not _dragOpenTimer Is Nothing Then
                     _dragOpenTimer.Dispose()
@@ -245,8 +236,8 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                _detailsListViewModel._view.LogicalParent = _detailsListViewModel.Folder
-                                _detailsListViewModel.FolderName = overItem.FullPath
+                                _treeViewModel.SetSelectedItem(overItem)
+                                CType(overItem, TreeViewFolder).IsExpanded = True
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
@@ -255,12 +246,6 @@ Public Class ListViewDropTarget
         Else
             If Not _dragOpenTimer Is Nothing Then
                 _dragOpenTimer.Dispose()
-            End If
-
-            If overItem.IsExecutable Then
-                _detailsListViewModel.SetSelectedItem(overItem)
-            Else
-                _detailsListViewModel.SetSelectedItem(Nothing)
             End If
         End If
 
