@@ -12,7 +12,7 @@ Imports System.IO
 Imports Shell32
 
 Public Class DropTarget
-    Implements IDropTarget
+    Inherits BaseDropTarget
 
     Private _dataObject As ComTypes.IDataObject
     Private _detailsListViewModel As DetailsListViewModel
@@ -21,33 +21,25 @@ Public Class DropTarget
     Private _scrollTimer As Timer
     Private _scrollDirection As Boolean?
     Private _fileList() As String
-    Private _dropTargetHelper As IDropTargetHelper
 
     Public Sub New(detailsListViewModel As DetailsListViewModel)
         _detailsListViewModel = detailsListViewModel
-        Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
-                &H1, GetType(IDropTargetHelper).GUID, _dropTargetHelper)
-        '_dropTargetHelper = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_DragDropHelper))
     End Sub
 
-    Public Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragEnter
+    Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
 
         _fileList = getFileList()
 
-        Dim h As HResult = dragPoint(grfKeyState, ptWIN32, pdwEffect)
-        _dropTargetHelper.DragEnter(WpfDragTargetProxy.GetHwndFromControl(_detailsListViewModel._view.listView), _dataObject, ptWIN32, pdwEffect)
-        Return h
+        Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
-    Public Function DragOver(grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragOver
-        Dim h As HResult = dragPoint(grfKeyState, ptWIN32, pdwEffect)
-        _dropTargetHelper.DragOver(ptWIN32, pdwEffect)
-        Return h
+    Public Overrides Function DragOver(grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+        Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
-    Public Function DragLeave() As Integer Implements IDropTarget.DragLeave
+    Public Overrides Function DragLeave() As Integer
         Debug.WriteLine("DragLeave")
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
@@ -56,11 +48,10 @@ Public Class DropTarget
             _scrollTimer.Dispose()
             _scrollDirection = Nothing
         End If
-        _dropTargetHelper.DragLeave()
         Return 0
     End Function
 
-    Public Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.Drop
+    Public Overrides Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -69,20 +60,13 @@ Public Class DropTarget
             _scrollDirection = Nothing
         End If
 
-        _dropTargetHelper.Drop(_dataObject, ptWIN32, pdwEffect)
-
         If Not _fileList Is Nothing Then
             Dim overItem As Item = getOverItem(ptWIN32)
-            If Not TypeOf overItem Is Folder Then
-                overItem = _detailsListViewModel.Folder
-            End If
-
-            Dim destPath As String = If(TypeOf overItem Is Folder, overItem.FullPath, IO.Path.GetDirectoryName(overItem.FullPath))
 
             If CType(pdwEffect, DROPEFFECT) <> DROPEFFECT.DROPEFFECT_NONE _
             AndAlso CType(pdwEffect, DROPEFFECT) <> DROPEFFECT.DROPEFFECT_SCROLL _
             AndAlso Not (_fileList.Count = 1 _
-                AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = destPath)) Then
+                AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = overItem.FullPath)) Then
 
                 If overItem.IsExecutable Then
                     overItem.Execute("""" & String.Join(""" """, _fileList) & """")
@@ -90,6 +74,7 @@ Public Class DropTarget
                 OrElse CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
                     Dim sourceItems As List(Of IShellItem) = _fileList.Select(Function(f) CType(Item.FromParsingName(f, Nothing, Nothing)._shellItem2, IShellItem)).ToList()
                     Dim sourcePidls As New List(Of IntPtr)()
+                    Dim destPath As String = If(TypeOf overItem Is Folder, overItem.FullPath, IO.Path.GetDirectoryName(overItem.FullPath))
                     For Each item As IShellItem In sourceItems
                         Dim pidl As IntPtr = IntPtr.Zero
                         Dim punk As IntPtr = Marshal.GetIUnknownForObject(item)
@@ -101,7 +86,7 @@ Public Class DropTarget
                     Functions.SHCreateShellItemArrayFromIDLists(sourcePidls.Count, sourcePidls.ToArray(), sourceArray)
                     Dim fileOperation As IFileOperation
                     Dim h As HResult = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                    Debug.WriteLine("CoCreateInstance returned" & h.ToString())
+                    Debug.WriteLine("CoCreateInstance returned " & h.ToString())
                     Dim shellItem As IShellItem = CType(overItem, Folder)._shellItem2
                     If CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
                         h = fileOperation.MoveItems(sourceArray, shellItem)
@@ -192,11 +177,13 @@ Public Class DropTarget
     End Function
 
     Private Function getDropEffect(overItem As Item) As DROPEFFECT
-        Dim destPath As String = If(TypeOf overItem Is Folder, overItem.FullPath, IO.Path.GetDirectoryName(overItem.FullPath))
+        If Not TypeOf overItem Is Folder Or overItem.IsExecutable Then
+            overItem = overItem.Parent
+        End If
 
         If Not _fileList Is Nothing Then
             Return If(Not overItem Is Nothing _
-                    AndAlso Not (_fileList.Count = 1 AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = destPath)),
+                    AndAlso Not (_fileList.Count = 1 AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = overItem.FullPath)),
                 If(overItem.IsExecutable,
                     DROPEFFECT.DROPEFFECT_COPY,
                     If(Not overItem.Attributes.HasFlag(SFGAO.RDONLY),
@@ -267,7 +254,7 @@ Public Class DropTarget
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
-                    End Sub), Nothing, 2000, 0)
+                    End Sub), Nothing, 1250, 0)
             End If
         Else
             If Not _dragOpenTimer Is Nothing Then

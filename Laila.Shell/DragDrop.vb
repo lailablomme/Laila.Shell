@@ -85,7 +85,7 @@ Public Class DragDrop
                 _dataObject.SetData(format, medium, False)
 
                 makeDragImageObjects(items)
-                handleDrag(items)
+                handleDrag()
 
                 Dim availableDropEffects As DROPEFFECT
                 If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY)) Then
@@ -99,7 +99,7 @@ Public Class DragDrop
                 End If
 
                 Dim effect As Integer
-                Functions.DoDragDrop(_dataObject, New DragDrop(Sub() If Not _dataObject Is Nothing Then handleDrag(items), button),
+                Functions.DoDragDrop(_dataObject, New DragDrop(Sub() If Not _dataObject Is Nothing Then handleDrag(), button),
                              availableDropEffects, effect)
 
                 Functions.ReleaseStgMedium(medium)
@@ -240,7 +240,7 @@ Public Class DragDrop
         dataObject.SetData(formatEtc, medium, True)
     End Sub
 
-    Private Shared Sub handleDrag(items As IEnumerable(Of Item))
+    Friend Shared Sub handleDrag()
         Debug.WriteLine("HANDLEDRAG")
         Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
                 &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
