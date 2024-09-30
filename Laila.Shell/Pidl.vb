@@ -45,6 +45,7 @@ Public Class Pidl
         Dim bytes() As Byte = mem.GetBuffer()
         Dim hGlobal As IntPtr = Marshal.AllocHGlobal(bytes.Length)
         Marshal.Copy(bytes, 0, hGlobal, bytes.Length)
+        mem.Dispose()
 
         Return hGlobal
     End Function

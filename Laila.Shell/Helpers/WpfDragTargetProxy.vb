@@ -30,9 +30,9 @@ Namespace Helpers
                 Dim hwnd As IntPtr = GetHwndFromControl(control)
                 If Not _controls.Keys.ToList().Exists(Function(c) GetHwndFromControl(c).Equals(hwnd)) Then
                     Functions.RevokeDragDrop(hwnd)
-                    Dim h As HResult = Functions.RegisterDragDrop(hwnd, _instance)
+                    Dim h As HRESULT = Functions.RegisterDragDrop(hwnd, _instance)
                     Debug.WriteLine("RegisterDragDrop returned " & h.ToString())
-                    If Not h = HResult.Ok Then
+                    If Not h = HRESULT.Ok Then
                         Dim ex As InvalidOperationException = New InvalidOperationException("Error registering drag and drop.")
                         ex.HResult = h
                         Throw ex
@@ -51,9 +51,9 @@ Namespace Helpers
                 _controls.Remove(control)
                 _hwnds.Remove(control)
                 If Not _controls.Keys.ToList().Exists(Function(c) GetHwndFromControl(c).Equals(hwnd)) Then
-                    Dim h As HResult = Functions.RevokeDragDrop(hwnd)
+                    Dim h As HRESULT = Functions.RevokeDragDrop(hwnd)
                     Debug.WriteLine("RevokeDragDrop returned " & h.ToString())
-                    If Not h = HResult.Ok Then
+                    If Not h = HRESULT.Ok Then
                         Dim ex As InvalidOperationException = New InvalidOperationException("Error revoking drag and drop.")
                         ex.HResult = h
                         Throw ex
@@ -81,7 +81,7 @@ Namespace Helpers
             Dim dropTarget As BaseDropTarget = GetDropTargetFromWIN32POINT(ptWIN32)
             If Not dropTarget Is Nothing Then
                 _activeDropTarget = dropTarget
-                Dim h As HResult = _activeDropTarget.DragEnterInternal(pDataObj, grfKeyState, ptWIN32, pdwEffect)
+                Dim h As HRESULT = _activeDropTarget.DragEnterInternal(pDataObj, grfKeyState, ptWIN32, pdwEffect)
                 System.Windows.Application.Current.Dispatcher.Invoke(
                     Sub()
                     End Sub)
@@ -91,7 +91,7 @@ Namespace Helpers
             Else
                 _activeDropTarget = Nothing
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-                Return HResult.Ok
+                Return HRESULT.Ok
             End If
         End Function
 
@@ -99,12 +99,12 @@ Namespace Helpers
             Dim dropTarget As IDropTarget = GetDropTargetFromWIN32POINT(ptWIN32)
             If Not dropTarget Is Nothing Then
                 If Not _activeDropTarget Is Nothing Then
-                    Dim h As HResult = _activeDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
+                    Dim h As HRESULT = _activeDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
                     _dropTargetHelper.DragOver(ptWIN32, pdwEffect)
                     Return h
                 Else
                     _activeDropTarget = dropTarget
-                    Dim h As HResult = _activeDropTarget.DragEnterInternal(_dataObject, grfKeyState, ptWIN32, pdwEffect)
+                    Dim h As HRESULT = _activeDropTarget.DragEnterInternal(_dataObject, grfKeyState, ptWIN32, pdwEffect)
                     _dropTargetHelper.DragEnter(_hwnds(_controls.FirstOrDefault(Function(kv) kv.Value.Equals(_activeDropTarget)).Key),
                                                 _dataObject, ptWIN32, pdwEffect)
                     Return h
@@ -113,28 +113,28 @@ Namespace Helpers
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                 If Not _activeDropTarget Is Nothing Then
                     Try
-                        Dim h As HResult = _activeDropTarget.DragLeave()
+                        Dim h As HRESULT = _activeDropTarget.DragLeave()
                         _dropTargetHelper.DragLeave()
                         Return h
                     Finally
                         _activeDropTarget = Nothing
                     End Try
                 End If
-                Return HResult.Ok
+                Return HRESULT.Ok
             End If
         End Function
 
         Public Function DragLeave() As Integer Implements IDropTarget.DragLeave
             If Not _activeDropTarget Is Nothing Then
                 Try
-                    Dim h As HResult = _activeDropTarget.DragLeave()
+                    Dim h As HRESULT = _activeDropTarget.DragLeave()
                     _dropTargetHelper.DragLeave()
                     Return h
                 Finally
                     _activeDropTarget = Nothing
                 End Try
             Else
-                Return HResult.Ok
+                Return HRESULT.Ok
             End If
         End Function
 
@@ -145,7 +145,7 @@ Namespace Helpers
                 Return dropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
             Else
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-                Return HResult.Ok
+                Return HRESULT.Ok
             End If
         End Function
     End Class

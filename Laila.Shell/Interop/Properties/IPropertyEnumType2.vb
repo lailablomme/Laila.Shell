@@ -19,5 +19,5 @@ Public Interface IPropertyEnumType2
     Sub GetDisplayText(<Out, MarshalAs(UnmanagedType.LPWStr)> ByRef ppszDisplay As String)
     <MethodImpl(MethodImplOptions.InternalCall, MethodCodeType:=MethodCodeType.Runtime)>
     <PreserveSig>
-    Function GetImageReference(<Out, MarshalAs(UnmanagedType.LPWStr)> ByRef ppszImageRes As String) As HResult
+    Function GetImageReference(<Out, MarshalAs(UnmanagedType.LPWStr)> ByRef ppszImageRes As String) As HRESULT
 End Interface

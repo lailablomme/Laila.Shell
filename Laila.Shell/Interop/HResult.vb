@@ -1,4 +1,4 @@
-﻿Public Enum HResult
+﻿Public Enum HRESULT
 	Ok = 0
 	[False] = 1
 	InvalidArguments = -2147024809

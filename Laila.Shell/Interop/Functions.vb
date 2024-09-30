@@ -199,7 +199,7 @@ Public Class Functions
     End Function
 
     <DllImport("shell32.dll")>
-    Public Shared Function SHGetKnownFolderItem(<[In]> rfid As Guid, <[In]> flags As UInteger, <[In]> hToken As IntPtr, <[In]> riid As Guid, <Out> ByRef ppv As IShellItem) As HResult
+    Public Shared Function SHGetKnownFolderItem(<[In]> rfid As Guid, <[In]> flags As UInteger, <[In]> hToken As IntPtr, <[In]> riid As Guid, <Out> ByRef ppv As IShellItem) As HRESULT
     End Function
 
     <DllImport("shlwapi.dll")>
@@ -241,7 +241,7 @@ Public Class Functions
 
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
-    Public Shared Function SHCreateItemFromParsingName(pszPath As String, pbc As IntPtr, riid As Guid, ByRef ppv As IntPtr) As HResult
+    Public Shared Function SHCreateItemFromParsingName(pszPath As String, pbc As IntPtr, riid As Guid, ByRef ppv As IntPtr) As HRESULT
     End Function
 
     <DllImport("shell32.dll")>
@@ -249,7 +249,7 @@ Public Class Functions
     End Sub
 
     <DllImport("shell32.dll")>
-    Public Shared Function SHCreateItemFromIDList(<[In]> pidl As IntPtr, <[In]> riid As Guid, <Out> ByRef ppv As IntPtr) As HResult
+    Public Shared Function SHCreateItemFromIDList(<[In]> pidl As IntPtr, <[In]> riid As Guid, <Out> ByRef ppv As IntPtr) As HRESULT
     End Function
 
     <DllImport("shell32.dll")>
@@ -265,7 +265,7 @@ Public Class Functions
     End Function
 
     <DllImport("propsys.dll")>
-    Public Shared Function PSCreateMemoryPropertyStore(<[In]> riid As Guid, <Out> ByRef ppv As IntPtr) As HResult
+    Public Shared Function PSCreateMemoryPropertyStore(<[In]> riid As Guid, <Out> ByRef ppv As IntPtr) As HRESULT
     End Function
 
     <DllImport("propsys.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
@@ -285,11 +285,11 @@ Public Class Functions
             ByRef propkey As PROPERTYKEY,
             ByRef riid As Guid,
             <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppv As IPropertyDescription
-        ) As HResult
+        ) As HRESULT
     End Function
 
     <DllImport("propsys.dll")>
-    Public Shared Function SHLoadPropertyStoreFromBlob(pBlob As PROPVARIANT, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppPropStore As IPropertyStore) As HResult
+    Public Shared Function SHLoadPropertyStoreFromBlob(pBlob As PROPVARIANT, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppPropStore As IPropertyStore) As HRESULT
     End Function
 
     <DllImport("shlwapi.dll", SetLastError:=True)>
@@ -301,7 +301,7 @@ Public Class Functions
         ByVal pszFilePath As String,
         ByVal grfFlags As UInt32,
         ByRef ppPropStore As IntPtr
-    ) As HResult
+    ) As HRESULT
     End Function
 
     <DllImport("propsys.dll", SetLastError:=True)>
@@ -309,14 +309,14 @@ Public Class Functions
             <MarshalAs(UnmanagedType.LPWStr)> pszFilePath As String,
              grfFlags As Integer,
             <MarshalAs(UnmanagedType.Interface)> ByRef ppPropStore As IPropertyStore
-        ) As HResult
+        ) As HRESULT
     End Function
 
     <DllImport("propsys.dll", SetLastError:=True)>
     Public Shared Function PSGetPropertySystem(
   <[In]> riid As Guid,
   <[Out]> ByRef ppv As IntPtr
-) As HResult
+) As HRESULT
     End Function
 
     <DllImport("propsys.dll", SetLastError:=True)>
@@ -324,7 +324,7 @@ Public Class Functions
     <[In], MarshalAs(UnmanagedType.LPWStr)> pszCanonicalName As String,
   <[In]> riid As Guid,
   <[Out], MarshalAs(UnmanagedType.Interface)> ByRef ppv As IPropertyDescription
-) As HResult
+) As HRESULT
 
     End Function
 

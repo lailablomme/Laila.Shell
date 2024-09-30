@@ -4,6 +4,6 @@
 Public Interface IPersistSerializedPropStorage
     Function SetFlags(
   <[In]> flags As UInt32
-) As HResult
-    Function SetPropertyStorage(<[In]> psps As IntPtr, <[In]> cb As UInt32) As HResult
+) As HRESULT
+    Function SetPropertyStorage(<[In]> psps As IntPtr, <[In]> cb As UInt32) As HRESULT
 End Interface

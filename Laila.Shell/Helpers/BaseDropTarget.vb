@@ -6,7 +6,7 @@ Public MustInherit Class BaseDropTarget
     Public MustOverride Function DragEnter(pDataObj As IDataObject, grfKeyState As Integer, pt As WIN32POINT, ByRef pdwEffect As Integer) As Integer
 
     Public Function DragEnterInternal(pDataObj As IDataObject, grfKeyState As Integer, pt As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragEnter
-        Dim h As HResult = DragEnter(pDataObj, grfKeyState, pt, pdwEffect)
+        Dim h As HRESULT = DragEnter(pDataObj, grfKeyState, pt, pdwEffect)
         Drag.InitializeDragImage()
         Return h
     End Function

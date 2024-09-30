@@ -33,7 +33,7 @@ Public Class ContextMenu
                     Dim lParam As Integer = (&HFFFF0000) Or (parentIndex And &HFFFF)
                     If Not _contextMenu3 Is Nothing Then
                         Dim ptr3 As IntPtr
-                        Dim h As HResult = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
+                        Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
                         Debug.WriteLine("contextMenu3 returned" & h.ToString())
                         If Not IntPtr.Zero.Equals(ptr3) Then
                             Marshal.Release(ptr3)
@@ -327,7 +327,7 @@ Public Class ContextMenu
         'cmi.hwnd = Shell._hwnd
         cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
 
-        Dim h As HResult = _contextMenu.InvokeCommand(cmi)
+        Dim h As HRESULT = _contextMenu.InvokeCommand(cmi)
         Debug.WriteLine("InvokeCommand returned " & h.ToString())
     End Sub
 

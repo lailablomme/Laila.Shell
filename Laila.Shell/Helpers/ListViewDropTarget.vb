@@ -81,7 +81,7 @@ Public Class ListViewDropTarget
                     Dim sourceArray As IShellItemArray
                     Functions.SHCreateShellItemArrayFromIDLists(sourcePidls.Count, sourcePidls.ToArray(), sourceArray)
                     Dim fileOperation As IFileOperation
-                    Dim h As HResult = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
+                    Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
                     Debug.WriteLine("CoCreateInstance returned " & h.ToString())
                     Dim shellItem As IShellItem = CType(overItem, Folder)._shellItem2
                     If CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
@@ -268,6 +268,6 @@ Public Class ListViewDropTarget
 
         pdwEffect = getDropEffect(overItem)
 
-        Return HResult.Ok
+        Return HRESULT.Ok
     End Function
 End Class
