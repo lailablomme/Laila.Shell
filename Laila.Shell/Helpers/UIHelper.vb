@@ -20,6 +20,17 @@ Namespace Helpers
                 End If
             End If
         End Sub
+
+        Public Shared Sub OnUIThreadAsync(action As Action)
+            Dim appl As System.Windows.Application = System.Windows.Application.Current
+            If Not appl Is Nothing Then
+                appl.Dispatcher.BeginInvoke(
+                    Sub()
+                        action()
+                    End Sub, DispatcherPriority.Background)
+            End If
+        End Sub
+
         Public Shared Function WIN32POINTToControl(ptWIN32 As WIN32POINT, control As Control) As Point
             Dim pt As Point = New Point(ptWIN32.x, ptWIN32.y)
             Return control.PointFromScreen(pt)

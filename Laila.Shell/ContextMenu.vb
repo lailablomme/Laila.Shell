@@ -4,6 +4,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Helpers
 
 Public Class ContextMenu
     Public Event Click(id As Integer, verb As String, ByRef isHandled As Boolean)
@@ -143,15 +144,18 @@ Public Class ContextMenu
                         Dim menuItem As MenuItem = c
                         AddHandler menuItem.Click,
                             Sub(s2 As Object, e2 As EventArgs)
-                                Dim isHandled As Boolean = False
+                                UIHelper.OnUIThreadAsync(
+                                    Sub()
+                                        Dim isHandled As Boolean = False
 
-                                RaiseEvent Click(menuItem.Tag.ToString().Split(vbTab)(0),
+                                        RaiseEvent Click(menuItem.Tag.ToString().Split(vbTab)(0),
                                                  menuItem.Tag.ToString().Split(vbTab)(1),
                                                  isHandled)
 
-                                If Not isHandled Then
-                                    InvokeCommand(menuItem.Tag)
-                                End If
+                                        If Not isHandled Then
+                                            InvokeCommand(menuItem.Tag)
+                                        End If
+                                    End Sub)
                             End Sub
                     ElseIf TypeOf c Is MenuItem Then
                         wireItems(CType(c, MenuItem).Items)
