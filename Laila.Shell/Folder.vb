@@ -260,7 +260,7 @@ Public Class Folder
                     While list.Next(1, pidl, fetched) = 0
                         Dim attr2 As Integer = SFGAO.FOLDER
                         _shellFolder.GetAttributesOf(1, pidl, attr2)
-                        Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), Me)
+                        Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), _shellFolder)
                         Dim path As String = Item.GetFullPathFromShellItem2(shellItem2)
                         Dim newItem As Item
                         If CBool(attr2 And SFGAO.FOLDER) Then

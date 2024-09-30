@@ -37,10 +37,14 @@ Public Class Item
         End If
     End Function
 
-    Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, bindingParent As Folder) As IShellItem2
+    Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, parentShellFolder As IShellFolder) As IShellItem2
         Dim ptr As IntPtr
         Try
-            Functions.SHCreateItemWithParent(IntPtr.Zero, bindingParent._shellFolder, pidl, Guids.IID_IShellItem2, ptr)
+            If parentShellFolder Is Nothing Then
+                Functions.SHCreateItemFromIDList(pidl, Guids.IID_IShellItem2, ptr)
+            Else
+                Functions.SHCreateItemWithParent(IntPtr.Zero, parentShellFolder, pidl, Guids.IID_IShellItem2, ptr)
+            End If
             Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2))
         Finally
             If Not IntPtr.Zero.Equals(ptr) Then

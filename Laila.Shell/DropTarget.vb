@@ -31,19 +31,10 @@ Public Class DropTarget
     End Sub
 
     Public Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragEnter
+        Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
 
-        Dim format As New FORMATETC With {
-            .cfFormat = ClipboardFormat.CF_HDROP,
-            .ptd = IntPtr.Zero,
-            .dwAspect = DVASPECT.DVASPECT_CONTENT,
-            .lindex = -1,
-            .tymed = TYMED.TYMED_HGLOBAL
-        }
-
-        If _dataObject.QueryGetData(format) = HResult.Ok Then
-            _fileList = getFileList()
-        End If
+        _fileList = getFileList()
 
         Dim h As HResult = dragPoint(grfKeyState, ptWIN32, pdwEffect)
         _dropTargetHelper.DragEnter(WpfDragTargetProxy.GetHwndFromControl(_detailsListViewModel._view.listView), _dataObject, ptWIN32, pdwEffect)
@@ -57,6 +48,7 @@ Public Class DropTarget
     End Function
 
     Public Function DragLeave() As Integer Implements IDropTarget.DragLeave
+        Debug.WriteLine("DragLeave")
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -140,26 +132,44 @@ Public Class DropTarget
     Private Function getFileList() As String()
         ' get data from data object
         Dim format As New FORMATETC With {
-            .cfFormat = ClipboardFormat.CF_HDROP,
+            .cfFormat = Functions.RegisterClipboardFormat("Shell IDList Array"),
             .ptd = IntPtr.Zero,
             .dwAspect = DVASPECT.DVASPECT_CONTENT,
             .lindex = -1,
             .tymed = TYMED.TYMED_HGLOBAL
         }
-        Dim medium As STGMEDIUM
-        _dataObject.GetData(format, medium)
+        If _dataObject.QueryGetData(format) = 0 Then
+            Dim medium As STGMEDIUM
+            _dataObject.GetData(format, medium)
 
-        Dim fileCount As UInteger = Functions.DragQueryFile(medium.unionmember, UInt32.MaxValue, Nothing, 0)
-        Dim fileList As New List(Of String)()
-        If fileCount > 0 Then
-            For i As UInteger = 0 To fileCount - 1
-                Dim filePathBuilder As New StringBuilder(260) ' MAX_PATH
-                Functions.DragQueryFile(medium.unionmember, i, filePathBuilder, CType(filePathBuilder.Capacity, UInteger))
-                fileList.Add(filePathBuilder.ToString())
-            Next
+            Return Pidl.GetItemsFromShellIDListArray(medium.unionmember).Select(Function(i) i.FullPath).ToArray()
+        Else
+            format = New FORMATETC With {
+                .cfFormat = ClipboardFormat.CF_HDROP,
+                .ptd = IntPtr.Zero,
+                .dwAspect = DVASPECT.DVASPECT_CONTENT,
+                .lindex = -1,
+                .tymed = TYMED.TYMED_HGLOBAL
+            }
+            If _dataObject.QueryGetData(format) = 0 Then
+                Dim medium As STGMEDIUM
+                _dataObject.GetData(format, medium)
+
+                Dim fileCount As UInteger = Functions.DragQueryFile(medium.unionmember, UInt32.MaxValue, Nothing, 0)
+                Dim fileList As New List(Of String)()
+                If fileCount > 0 Then
+                    For i As UInteger = 0 To fileCount - 1
+                        Dim filePathBuilder As New StringBuilder(260) ' MAX_PATH
+                        Functions.DragQueryFile(medium.unionmember, i, filePathBuilder, CType(filePathBuilder.Capacity, UInteger))
+                        fileList.Add(filePathBuilder.ToString())
+                    Next
+                End If
+
+                Return fileList.ToArray()
+            End If
         End If
 
-        Return fileList.ToArray()
+        Return Nothing
     End Function
 
     Private Function getOverItem(ptWIN32 As WIN32POINT) As Item
@@ -182,8 +192,11 @@ Public Class DropTarget
     End Function
 
     Private Function getDropEffect(overItem As Item) As DROPEFFECT
+        Dim destPath As String = If(TypeOf overItem Is Folder, overItem.FullPath, IO.Path.GetDirectoryName(overItem.FullPath))
+
         If Not _fileList Is Nothing Then
-            Return If(Not overItem Is Nothing AndAlso Not (_fileList.Count = 1 AndAlso _fileList(0) = overItem.FullPath),
+            Return If(Not overItem Is Nothing _
+                    AndAlso Not (_fileList.Count = 1 AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = destPath)),
                 If(overItem.IsExecutable,
                     DROPEFFECT.DROPEFFECT_COPY,
                     If(Not overItem.Attributes.HasFlag(SFGAO.RDONLY),
@@ -197,7 +210,7 @@ Public Class DropTarget
 
     Private Function dragPoint(grfKeyState As UInteger, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
         Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListViewModel._view.listView)
-        If pt.Y < 150 Then
+        If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
                 _scrollDirection = False
                 If Not _scrollTimer Is Nothing Then
@@ -212,7 +225,7 @@ Public Class DropTarget
                             End Sub)
                     End Sub), Nothing, 500, 500)
             End If
-        ElseIf pt.Y > _detailsListViewModel._view.listView.ActualHeight - 150 Then
+        ElseIf pt.Y > _detailsListViewModel._view.listView.ActualHeight - 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> True Then
                 _scrollDirection = True
                 If Not _scrollTimer Is Nothing Then
@@ -247,8 +260,11 @@ Public Class DropTarget
 
                 _dragOpenTimer = New Timer(New TimerCallback(
                     Sub()
-                        _detailsListViewModel._view.LogicalParent = _detailsListViewModel.Folder
-                        _detailsListViewModel.FolderName = overItem.FullPath
+                        System.Windows.Application.Current.Dispatcher.Invoke(
+                            Sub()
+                                _detailsListViewModel._view.LogicalParent = _detailsListViewModel.Folder
+                                _detailsListViewModel.FolderName = overItem.FullPath
+                            End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
                     End Sub), Nothing, 2000, 0)
@@ -264,6 +280,8 @@ Public Class DropTarget
                 _detailsListViewModel.SetSelectedItem(Nothing)
             End If
         End If
+
+        _lastOverItem = overItem
 
         pdwEffect = getDropEffect(overItem)
 

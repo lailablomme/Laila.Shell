@@ -56,40 +56,33 @@ Public Class DragDrop
 
                 _dataObject = New DragDataObject()
 
-                Dim format As New FORMATETC With {
+                Dim format As FORMATETC = New FORMATETC With { ' CFSTR_SHELLIDLIST 
+                    .cfFormat = Functions.RegisterClipboardFormat("Shell IDList Array"),
+                    .ptd = IntPtr.Zero,
+                    .dwAspect = DVASPECT.DVASPECT_CONTENT,
+                    .lindex = -1,
+                    .tymed = TYMED.TYMED_HGLOBAL
+                }
+                Dim medium As STGMEDIUM = New STGMEDIUM With {
+                    .tymed = TYMED.TYMED_HGLOBAL,
+                    .unionmember = Pidl.CreateShellIDListArray(items),
+                    .pUnkForRelease = IntPtr.Zero
+                }
+                _dataObject.SetData(format, medium, False)
+
+                format = New FORMATETC With {
                     .cfFormat = ClipboardFormat.CF_HDROP,
                     .ptd = IntPtr.Zero,
                     .dwAspect = DVASPECT.DVASPECT_CONTENT,
                     .lindex = -1,
                     .tymed = TYMED.TYMED_HGLOBAL
                 }
-                Dim medium As New STGMEDIUM With {
+                medium = New STGMEDIUM With {
                     .tymed = TYMED.TYMED_HGLOBAL,
                     .unionmember = createCFHDrop(items.Select(Function(i) i.FullPath).ToArray()),
                     .pUnkForRelease = IntPtr.Zero
                 }
                 _dataObject.SetData(format, medium, False)
-
-                format = New FORMATETC With {
-                    .cfFormat = Functions.RegisterClipboardFormat("Shell ID List"),
-                    .ptd = IntPtr.Zero,
-                    .dwAspect = DVASPECT.DVASPECT_CONTENT,
-                    .lindex = -1,
-                    .tymed = TYMED.TYMED_HGLOBAL
-                }
-                Dim pidls As List(Of IntPtr) = New List(Of IntPtr)()
-                For Each item In items
-                    Dim pidl As IntPtr = IntPtr.Zero
-                    Dim punk As IntPtr = Marshal.GetIUnknownForObject(items(0)._shellItem2)
-                    Functions.SHGetIDListFromObject(punk, pidl)
-                    pidls.Add(pidl)
-                    Marshal.Release(punk)
-                Next
-                medium = New STGMEDIUM With {
-                    .tymed = TYMED.TYMED_HGLOBAL,
-                    .unionmember = createShellIDList(pidls),
-                    .pUnkForRelease = IntPtr.Zero
-                }
 
                 makeDragImageObjects(items)
                 handleDrag(items)
@@ -119,25 +112,6 @@ Public Class DragDrop
             End Try
         End If
     End Sub
-
-    Private Shared Function createShellIDList(pidls As List(Of IntPtr)) As IntPtr
-        Dim totalSize As Integer = 0
-        For Each pid In pidls
-            totalSize += Marshal.ReadInt16(pid) ' Get size of each PIDL
-        Next
-
-        Dim idListPtr As IntPtr = Marshal.AllocHGlobal(totalSize + 4) ' +4 for the header size
-        Marshal.WriteInt32(idListPtr, totalSize) ' Write the total size at the start
-
-        Dim offset As Integer = 4 ' Start writing after the size header
-        For Each pid In pidls
-            Dim pidSize As Integer = Marshal.ReadInt16(pid) ' Get size of the current PIDL
-            Functions.CopyMemory(idListPtr + offset, pid, pidSize) ' Copy the PIDL data
-            offset += pidSize ' Update offset for the next PIDL
-        Next
-
-        Return idListPtr ' Return pointer to the allocated ID list
-    End Function
 
     Private Shared Function createCFHDrop(files As String()) As IntPtr
         Dim sb As StringBuilder = New StringBuilder()
@@ -308,7 +282,7 @@ Public Class DragDrop
             End If
         End If
 
-        Debug.WriteLine(CType(dwEffect, DROPEFFECT).ToString())
+        'Debug.WriteLine(CType(dwEffect, DROPEFFECT).ToString())
 
         Return DragDropResult.S_OK
     End Function

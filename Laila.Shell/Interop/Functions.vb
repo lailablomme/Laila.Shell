@@ -128,6 +128,9 @@ Public Class Functions
     <DllImport("ole32.dll")>
     Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
     End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
+    Public Shared Function ILGetSize(ByVal pidl As IntPtr) As UInteger
+    End Function
     <DllImport("urlmon.dll")>
     Public Shared Function CopyStgMedium(ByRef pcstgmedSrc As STGMEDIUM, ByRef pstgmedDest As STGMEDIUM) As Integer
     End Function

@@ -2,7 +2,7 @@
 Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
 
-<ComVisible(True), Guid("e5fdcd58-61e1-4c99-9e7b-94882e93fd58"), ProgId("Laila.Shell.DataObject")>
+<ComVisible(True), Guid("e5fdcd58-61e1-4c99-9e7b-94882e93fd58"), ProgId("Laila.Shell.DragDataObject")>
 Public Class DragDataObject
     Implements ComTypes.IDataObject
     Implements IDisposable
@@ -16,34 +16,34 @@ Public Class DragDataObject
     End Sub
 
     Public Sub GetData(ByRef format As FORMATETC, ByRef medium As STGMEDIUM) Implements IDataObject.GetData
-        Select Case format.cfFormat
-            Case ClipboardFormat.CF_HDROP
-                Debug.WriteLine("GetData CF_HDROP")
-            Case Functions.RegisterClipboardFormat("DragImageBits")
-                Debug.WriteLine("GetData DragImageBits")
-            Case Functions.RegisterClipboardFormat("ComputedImage")
-                Debug.WriteLine("GetData ComputedImage")
-            Case Functions.RegisterClipboardFormat("IsComputingImage")
-                Debug.WriteLine("GetData IsComputingImage")
-            Case Functions.RegisterClipboardFormat("DragSourceHelperFlags")
-                Debug.WriteLine("GetData DragSourceHelperFlags")
-            Case Functions.RegisterClipboardFormat("DragContext")
-                Debug.WriteLine("GetData DragContext")
-            Case Functions.RegisterClipboardFormat("DragWindow")
-                Debug.WriteLine("GetData DragWindow")
-            Case Functions.RegisterClipboardFormat("DisableDragText")
-                Debug.WriteLine("GetData DisableDragText")
-            Case Functions.RegisterClipboardFormat("DropDescription")
-                Debug.WriteLine("GetData DropDescription")
-            Case Functions.RegisterClipboardFormat("IsShowingLayered")
-                Debug.WriteLine("GetData IsShowingLayered")
-            Case Functions.RegisterClipboardFormat("IsShowingText")
-                Debug.WriteLine("GetData IsShowingText")
-            Case Functions.RegisterClipboardFormat("UsingDefaultDragImage")
-                Debug.WriteLine("GetData UsingDefaultDragImage")
-            Case Else
-                Debug.WriteLine("GetData " & format.cfFormat)
-        End Select
+        'Select Case format.cfFormat
+        '    Case ClipboardFormat.CF_HDROP
+        '        Debug.WriteLine("GetData CF_HDROP")
+        '    Case Functions.RegisterClipboardFormat("DragImageBits")
+        '        Debug.WriteLine("GetData DragImageBits")
+        '    Case Functions.RegisterClipboardFormat("ComputedImage")
+        '        Debug.WriteLine("GetData ComputedImage")
+        '    Case Functions.RegisterClipboardFormat("IsComputingImage")
+        '        Debug.WriteLine("GetData IsComputingImage")
+        '    Case Functions.RegisterClipboardFormat("DragSourceHelperFlags")
+        '        Debug.WriteLine("GetData DragSourceHelperFlags")
+        '    Case Functions.RegisterClipboardFormat("DragContext")
+        '        Debug.WriteLine("GetData DragContext")
+        '    Case Functions.RegisterClipboardFormat("DragWindow")
+        '        Debug.WriteLine("GetData DragWindow")
+        '    Case Functions.RegisterClipboardFormat("DisableDragText")
+        '        Debug.WriteLine("GetData DisableDragText")
+        '    Case Functions.RegisterClipboardFormat("DropDescription")
+        '        Debug.WriteLine("GetData DropDescription")
+        '    Case Functions.RegisterClipboardFormat("IsShowingLayered")
+        '        Debug.WriteLine("GetData IsShowingLayered")
+        '    Case Functions.RegisterClipboardFormat("IsShowingText")
+        '        Debug.WriteLine("GetData IsShowingText")
+        '    Case Functions.RegisterClipboardFormat("UsingDefaultDragImage")
+        '        Debug.WriteLine("GetData UsingDefaultDragImage")
+        '    Case Else
+        '        Debug.WriteLine("GetData " & format.cfFormat)
+        'End Select
 
         Dim item As Tuple(Of FORMATETC, STGMEDIUM, Boolean)
         For Each d In _data
@@ -54,9 +54,9 @@ Public Class DragDataObject
         Next
         If Not item Is Nothing Then
             Functions.CopyStgMedium(item.Item2, medium)
-            Debug.WriteLine("Found")
+            'Debug.WriteLine("Found")
         Else
-            Debug.WriteLine("Not found")
+            'Debug.WriteLine("Not found")
         End If
     End Sub
 
@@ -105,8 +105,10 @@ Public Class DragDataObject
             End If
         Next
         If Not item Is Nothing Then
+            Debug.WriteLine("Found")
             Return 0 ' S_OK
         Else
+            Debug.WriteLine("Not Found")
             Return &H80040064 ' DV_E_FORMATETC
         End If
     End Function
