@@ -206,25 +206,24 @@ Public Class Folder
 
                             If Not enumShellItems Is Nothing Then
                                 Dim shellItemArray(0) As IShellItem, fetched As UInt32 = 1
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                        enumShellItems.Next(1, shellItemArray, fetched)
-                                    End Sub)
+                                enumShellItems.Next(1, shellItemArray, fetched)
                                 Dim isOnce As Boolean = False
                                 While fetched = 1 And (Not isOnce OrElse condition)
                                     Dim attr2 As Integer = SFGAO.FOLDER
                                     shellItemArray(0).GetAttributes(attr2, attr2)
                                     Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItemArray(0))
+                                    Dim newItem As Item
+                                    If CBool(attr2 And SFGAO.FOLDER) Then
+                                        newItem = makeNewFolder(shellItemArray(0))
+                                    Else
+                                        newItem = New Item(shellItemArray(0), Nothing, Nothing)
+                                    End If
+                                    If Not newItem Is Nothing Then
+                                        paths.Add(newItem.FullPath)
+                                    End If
                                     UIHelper.OnUIThread(
                                         Sub()
-                                            Dim newItem As Item
-                                            If CBool(attr2 And SFGAO.FOLDER) Then
-                                                newItem = makeNewFolder(shellItemArray(0))
-                                            Else
-                                                newItem = New Item(shellItemArray(0), Nothing, Nothing)
-                                            End If
                                             If Not newItem Is Nothing Then
-                                                paths.Add(newItem.FullPath)
                                                 If Not exists(newItem) Then
                                                     add(newItem)
                                                 Else
@@ -232,8 +231,8 @@ Public Class Folder
                                                     newItem.Dispose()
                                                 End If
                                             End If
-                                            enumShellItems.Next(1, shellItemArray, fetched)
                                         End Sub)
+                                    enumShellItems.Next(1, shellItemArray, fetched)
                                     isOnce = True
                                     If uiHelp > 0 Then Thread.Sleep(uiHelp)
                                 End While

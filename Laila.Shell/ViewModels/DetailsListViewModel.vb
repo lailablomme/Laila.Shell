@@ -31,7 +31,6 @@ Namespace ViewModels
             listViewItemStyle.TargetType = GetType(ListViewItem)
             listViewItemStyle.BasedOn = _view.TryFindResource(GetType(ListViewItem))
             listViewItemStyle.Setters.Add(New Setter(ListViewItem.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch))
-            listViewItemStyle.Setters.Add(New EventSetter(ListViewItem.MouseDoubleClickEvent, New MouseButtonEventHandler(AddressOf OnListViewItemDoubleClick)))
             _view.Resources.Add(GetType(ListViewItem), listViewItemStyle)
 
             AddHandler _view.Loaded,
@@ -308,22 +307,6 @@ Namespace ViewModels
             Return template
         End Function
 
-        Private Sub OnListViewItemDoubleClick(sender As Object, e As MouseButtonEventArgs)
-            If Not sender Is Nothing AndAlso TypeOf sender Is ListViewItem Then
-                Dim item As Item = CType(sender, ListViewItem).DataContext
-                If Not item Is Nothing Then
-                    If TypeOf item Is Folder Then
-                        _view.LogicalParent = Me.Folder
-                        Me.FolderName = item.FullPath
-                    Else
-                        _menu = New ContextMenu()
-                        _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
-                        _menu.InvokeCommand(_menu.DefaultId)
-                    End If
-                End If
-            End If
-        End Sub
-
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
             If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) AndAlso Me.SelectedItems.Count > 0 Then
                 Clipboard.CopyFiles(Me.SelectedItems)
@@ -350,8 +333,25 @@ Namespace ViewModels
                 Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
                 Dim clickedItem As Item = listViewItem?.DataContext
                 _mouseItemDown = clickedItem
-                If e.RightButton = MouseButtonState.Pressed Then
-                    If Me.SelectedItems.Count = 0 Then Me.SetSelectedItem(clickedItem)
+                If Not clickedItem Is Nothing Then
+                    listViewItem.Focus()
+                Else
+                    _view.listView.Focus()
+                End If
+                If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
+                    If TypeOf clickedItem Is Folder Then
+                        _view.LogicalParent = Me.Folder
+                        Me.FolderName = clickedItem.FullPath
+                    Else
+                        _menu = New ContextMenu()
+                        _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                        _menu.InvokeCommand(_menu.DefaultId)
+                    End If
+                ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
+                    If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
+                    e.Handled = True
+                ElseIf e.RightButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
+                    If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
 
                     _menu = New ContextMenu()
                     AddHandler _menu.Click,
@@ -368,7 +368,7 @@ Namespace ViewModels
 
                     _view.listView.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
                     e.Handled = True
-                ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso clickedItem Is Nothing Then
+                ElseIf clickedItem Is Nothing Then
                     Me.SetSelectedItem(Nothing)
                 End If
             Else
