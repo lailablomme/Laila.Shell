@@ -9,6 +9,8 @@ Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
 
 Public Class ContextMenu
+    Implements IDisposable
+
     Public Event Click(id As Integer, verb As String, ByRef isHandled As Boolean)
 
     Public Property DefaultId As String
@@ -20,6 +22,8 @@ Public Class ContextMenu
     Private _firstContextMenuCall As Boolean = True
     Private _menu As Controls.ContextMenu
     Private _parent As Folder
+    Private _invokedId As String = Nothing
+    Private disposedValue As Boolean
 
     Public Function GetContextMenu(parent As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean) As System.Windows.Controls.ContextMenu
         If Not _menu Is Nothing Then
@@ -157,41 +161,51 @@ Public Class ContextMenu
         Next
 
         AddHandler _menu.Closed,
-            Sub(s As Object, e As RoutedEventArgs)
-                ReleaseContextMenu()
+            Sub(s As Object, e As EventArgs)
+                If Not _invokedId Is Nothing Then
+                    Me.InvokeCommand(_invokedId)
+                End If
             End Sub
 
         Dim wireItem As Action(Of Control) =
             Sub(c As Control)
                 If TypeOf c Is Windows.Controls.Button Then
                     AddHandler CType(c, Windows.Controls.Button).Click,
-                        Sub(s2 As Object, e2 As EventArgs)
-                            UIHelper.OnUIThreadAsync(
-                                Sub()
-                                    _menu.IsOpen = False
-                                    Dim isHandled As Boolean = False
+                        Async Sub(s2 As Object, e2 As EventArgs)
+                            _menu.IsOpen = False
 
-                                    RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
+                            For x = 1 To 25
+                                Application.Current.Dispatcher.Invoke(
+                                    Sub()
+                                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                            Next
 
-                                    If Not isHandled Then
-                                        InvokeCommand(c.Tag)
-                                    End If
-                                End Sub)
+                            Dim isHandled As Boolean = False
+
+                            RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
+
+                            If Not isHandled Then
+                                invokeCommandDelayed(c.Tag)
+                            End If
                         End Sub
                 ElseIf TypeOf c Is MenuItem Then
                     AddHandler CType(c, MenuItem).Click,
-                        Sub(s2 As Object, e2 As EventArgs)
-                            UIHelper.OnUIThreadAsync(
-                                Sub()
-                                    _menu.IsOpen = False
-                                    Dim isHandled As Boolean = False
+                        Async Sub(s2 As Object, e2 As EventArgs)
+                            _menu.IsOpen = False
 
-                                    RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
+                            For x = 1 To 25
+                                Application.Current.Dispatcher.Invoke(
+                                    Sub()
+                                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                            Next
 
-                                    If Not isHandled Then
-                                        InvokeCommand(c.Tag)
-                                    End If
-                                End Sub)
+                            Dim isHandled As Boolean = False
+
+                            RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
+
+                            If Not isHandled Then
+                                invokeCommandDelayed(c.Tag)
+                            End If
                         End Sub
                 End If
             End Sub
@@ -361,6 +375,10 @@ Public Class ContextMenu
         End Try
     End Sub
 
+    Protected Sub invokeCommandDelayed(id As String)
+        _invokedId = id
+    End Sub
+
     Public Sub InvokeCommand(id As String)
         Dim cmi As New CMInvokeCommandInfoEx
         Debug.WriteLine("InvokeCommand " & id)
@@ -380,16 +398,48 @@ Public Class ContextMenu
 
         Dim h As HRESULT = _contextMenu.InvokeCommand(cmi)
         Debug.WriteLine("InvokeCommand returned " & h.ToString())
+
+        Me.ReleaseContextMenu()
     End Sub
 
     Private Sub ReleaseContextMenu()
-        Functions.DestroyMenu(_hMenu)
-        Marshal.ReleaseComObject(_contextMenu)
+        If Not IntPtr.Zero.Equals(_hMenu) Then
+            Functions.DestroyMenu(_hMenu)
+        End If
+        If Not _contextMenu Is Nothing Then
+            Marshal.ReleaseComObject(_contextMenu)
+        End If
         If Not _contextMenu2 Is Nothing Then
             Marshal.ReleaseComObject(_contextMenu2)
         End If
         If Not _contextMenu3 Is Nothing Then
             Marshal.ReleaseComObject(_contextMenu3)
         End If
+    End Sub
+
+    Protected Overridable Sub Dispose(disposing As Boolean)
+        If Not disposedValue Then
+            If disposing Then
+                ' dispose managed state (managed objects)
+            End If
+
+            ' free unmanaged resources (unmanaged objects) and override finalizer
+            ' set large fields to null
+            'Me.ReleaseContextMenu()
+            disposedValue = True
+        End If
+    End Sub
+
+    ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
+    Protected Overrides Sub Finalize()
+        ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+        Dispose(disposing:=False)
+        MyBase.Finalize()
+    End Sub
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+        Dispose(disposing:=True)
+        GC.SuppressFinalize(Me)
     End Sub
 End Class

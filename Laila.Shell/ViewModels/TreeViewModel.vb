@@ -22,6 +22,7 @@ Namespace ViewModels
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
+        Private _menu As ContextMenu = New ContextMenu()
 
         Public Sub New(view As Controls.TreeView)
             _view = view
@@ -308,8 +309,8 @@ Namespace ViewModels
                     Dim parent As Folder = clickedItem.Parent
                     If parent Is Nothing Then parent = Shell.Desktop
 
-                    Dim menu As ContextMenu = New ContextMenu()
-                    AddHandler menu.Click,
+                    _menu = New ContextMenu()
+                    AddHandler _menu.Click,
                         Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
                             Select Case verb
                                 Case "open"
@@ -318,10 +319,11 @@ Namespace ViewModels
                             End Select
                         End Sub
 
-                    Dim contextMenu As System.Windows.Controls.ContextMenu = menu.GetContextMenu(parent, {clickedItem}, False)
+                    Dim contextMenu As System.Windows.Controls.ContextMenu = _menu.GetContextMenu(parent, {clickedItem}, False)
                     _view.treeView1.ContextMenu = contextMenu
                     _view.treeView2.ContextMenu = contextMenu
                     _view.treeView3.ContextMenu = contextMenu
+                    e.Handled = True
                 Else
                     _view.treeView1.ContextMenu = Nothing
                     _view.treeView2.ContextMenu = Nothing

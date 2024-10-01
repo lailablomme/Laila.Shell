@@ -22,6 +22,7 @@ Namespace ViewModels
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
+        Private _menu As ContextMenu = New ContextMenu()
 
         Public Sub New(view As DetailsListView)
             _view = view
@@ -315,9 +316,9 @@ Namespace ViewModels
                         _view.LogicalParent = Me.Folder
                         Me.FolderName = item.FullPath
                     Else
-                        Dim menu As ContextMenu = New ContextMenu()
-                        menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
-                        menu.InvokeCommand(menu.DefaultId)
+                        _menu = New ContextMenu()
+                        _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                        _menu.InvokeCommand(_menu.DefaultId)
                     End If
                 End If
             End If
@@ -349,13 +350,11 @@ Namespace ViewModels
                 Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
                 Dim clickedItem As Item = listViewItem?.DataContext
                 _mouseItemDown = clickedItem
-                If Me.SelectedItems.Count > 1 AndAlso Me.SelectedItems.Contains(clickedItem) Then
-                    e.Handled = True
-                ElseIf e.RightButton = MouseButtonState.Pressed Then
-                    If Me.SelectedItem Is Nothing Then Me.SetSelectedItem(clickedItem)
+                If e.RightButton = MouseButtonState.Pressed Then
+                    If Me.SelectedItems.Count = 0 Then Me.SetSelectedItem(clickedItem)
 
-                    Dim menu As ContextMenu = New ContextMenu()
-                    AddHandler menu.Click,
+                    _menu = New ContextMenu()
+                    AddHandler _menu.Click,
                         Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
                             Select Case verb
                                 Case "open"
@@ -367,7 +366,8 @@ Namespace ViewModels
                             End Select
                         End Sub
 
-                    _view.listView.ContextMenu = menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                    _view.listView.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                    e.Handled = True
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso clickedItem Is Nothing Then
                     Me.SetSelectedItem(Nothing)
                 End If
