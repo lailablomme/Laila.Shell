@@ -288,111 +288,120 @@ Public Class Folder
     End Sub
 
 
-    Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+    Protected Overrides Async Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)
 
-        Select Case e.Event
-            Case SHCNE.CREATE
-                If Not String.IsNullOrWhiteSpace(e.Item1Path) Then
-                    Dim parentShellItem2 As IShellItem2
-                    Try
-                        Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                        If Not item1 Is Nothing Then
-                            item1.GetParent(parentShellItem2)
-                            Dim parentFullPath As String
-                            parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
-                            If Me.FullPath.Equals(parentFullPath) Then
-                                SyncLock _itemsLock
-                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                                        _items.Add(New Item(item1, Me, _setIsLoadingAction))
-                                        Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_items)
-                                        view.Refresh()
+        Dim t As Func(Of Task) =
+            Async Function() As Task
+                Select Case e.Event
+                    Case SHCNE.CREATE
+                        If Not String.IsNullOrWhiteSpace(e.Item1Path) Then
+                            Dim parentShellItem2 As IShellItem2
+                            Try
+                                Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                                If Not item1 Is Nothing Then
+                                    item1.GetParent(parentShellItem2)
+                                    Dim parentFullPath As String
+                                    parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
+                                    If Me.FullPath.Equals(parentFullPath) Then
+                                        SyncLock _itemsLock
+                                            If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
+                                                UIHelper.OnUIThread(
+                                                    Sub()
+                                                        _items.Add(New Item(item1, Me, _setIsLoadingAction))
+                                                    End Sub)
+                                            End If
+                                        End SyncLock
                                     End If
-                                End SyncLock
-                            End If
+                                End If
+                            Finally
+                                If Not parentShellItem2 Is Nothing Then
+                                    Marshal.ReleaseComObject(parentShellItem2)
+                                End If
+                            End Try
                         End If
-                    Finally
-                        If Not parentShellItem2 Is Nothing Then
-                            Marshal.ReleaseComObject(parentShellItem2)
-                        End If
-                    End Try
-                End If
-            Case SHCNE.MKDIR
-                If Not String.IsNullOrWhiteSpace(e.Item1Path) Then
-                    Dim parentShellItem2 As IShellItem2
-                    Try
-                        Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                        If Not item1 Is Nothing Then
-                            item1.GetParent(parentShellItem2)
-                            Dim parentFullPath As String
-                            parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
-                            If Me.FullPath.Equals(parentFullPath) Then
-                                SyncLock _itemsLock
-                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                                        _items.Add(New Folder(item1, Me, _setIsLoadingAction))
+                    Case SHCNE.MKDIR
+                        If Not String.IsNullOrWhiteSpace(e.Item1Path) Then
+                            Dim parentShellItem2 As IShellItem2
+                            Try
+                                Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                                If Not item1 Is Nothing Then
+                                    item1.GetParent(parentShellItem2)
+                                    Dim parentFullPath As String
+                                    parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
+                                    If Me.FullPath.Equals(parentFullPath) Then
+                                        SyncLock _itemsLock
+                                            If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
+                                                UIHelper.OnUIThread(
+                                                    Sub()
+                                                        _items.Add(New Folder(item1, Me, _setIsLoadingAction))
+                                                    End Sub)
+                                            End If
+                                        End SyncLock
                                     End If
-                                End SyncLock
+                                End If
+                            Finally
+                                If Not parentShellItem2 Is Nothing Then
+                                    Marshal.ReleaseComObject(parentShellItem2)
+                                End If
+                            End Try
+                        End If
+                    Case SHCNE.RMDIR, SHCNE.DELETE
+                        SyncLock _itemsLock
+                            If Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
+                                Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
+                                If Not item Is Nothing Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            _items.Remove(item)
+                                        End Sub)
+                                End If
                             End If
+                        End SyncLock
+                    Case SHCNE.DRIVEADD
+                        If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
+                            SyncLock _itemsLock
+                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
+                                    Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                                    If Not item1 Is Nothing Then
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                _items.Add(New Folder(item1, Me, _setIsLoadingAction))
+                                            End Sub)
+                                    End If
+                                End If
+                            End SyncLock
                         End If
-                    Finally
-                        If Not parentShellItem2 Is Nothing Then
-                            Marshal.ReleaseComObject(parentShellItem2)
+                    Case SHCNE.DRIVEREMOVED
+                        If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
+                            SyncLock _itemsLock
+                                Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
+                                If Not item Is Nothing Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            _items.Remove(item)
+                                        End Sub)
+                                End If
+                            End SyncLock
                         End If
-                    End Try
-                End If
-            Case SHCNE.RMDIR, SHCNE.DELETE
-                SyncLock _itemsLock
-                    If Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
-                        Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
-                        If Not item Is Nothing Then
-                            _items.Remove(item)
-                        End If
-                    End If
-                End SyncLock
-            Case SHCNE.DRIVEADD
-                If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
-                    SyncLock _itemsLock
-                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                            If Not item1 Is Nothing Then
-                                _items.Add(New Folder(item1, Me, _setIsLoadingAction))
+                    Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
+                        If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing Then
+                            If Not _setIsLoadingAction Is Nothing Then
+                                _setIsLoadingAction(True)
                             End If
-                        End If
-                    End SyncLock
-                End If
-            Case SHCNE.DRIVEREMOVED
-                If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
-                    SyncLock _itemsLock
-                        Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
-                        If Not item Is Nothing Then
-                            _items.Remove(item)
-                        End If
-                    End SyncLock
-                End If
-            Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing Then
-                    If Not _setIsLoadingAction Is Nothing Then
-                        _setIsLoadingAction(True)
-                    End If
 
-                    Dim thread As Thread = New Thread(New ThreadStart(
-                        Sub()
-                            updateItems(_items)
-
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_items)
-                                    view.Refresh()
-                                End Sub)
+                            SyncLock _itemsLock
+                                updateItems(_items)
+                            End SyncLock
 
                             If Not _setIsLoadingAction Is Nothing Then
                                 _setIsLoadingAction(False)
                             End If
-                        End Sub))
+                        End If
+                End Select
+            End Function
 
-                    thread.Start()
-                End If
-        End Select
+        Await Task.Run(t)
     End Sub
 
     Protected Function isWindows7OrLower() As Boolean

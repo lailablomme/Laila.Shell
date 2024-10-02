@@ -3,6 +3,7 @@ Imports System.Runtime.InteropServices
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Helpers
 
 Public Class Item
     Inherits NotifyPropertyChangedBase
@@ -221,9 +222,12 @@ Public Class Item
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
-            If String.IsNullOrWhiteSpace(_displayName) Then
-                _shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
-            End If
+            UIHelper.OnUIThread(
+                Sub()
+                    If String.IsNullOrWhiteSpace(_displayName) Then
+                        _shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                    End If
+                End Sub)
             Return _displayName
         End Get
     End Property

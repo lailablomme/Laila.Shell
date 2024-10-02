@@ -109,8 +109,11 @@ Public Class TreeViewFolder
                         Debug.WriteLine(fp)
                         SyncLock _foldersLock
                             _fromThread = True
-                            Dim result As ObservableCollection(Of TreeViewFolder) = Me.Folders
-                            _fromThread = False
+                            Try
+                                Dim result As ObservableCollection(Of TreeViewFolder) = Me.Folders
+                            Finally
+                                _fromThread = False
+                            End Try
                         End SyncLock
 
                         If Not _setIsLoadingAction Is Nothing Then
@@ -188,70 +191,91 @@ Public Class TreeViewFolder
         End If
     End Sub
 
-    Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
-        Select Case e.Event
-            Case SHCNE.MKDIR
-                Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                If Not item1 Is Nothing Then
-                    Dim parentShellItem2 As IShellItem2
-                    Try
-                        item1.GetParent(parentShellItem2)
-                        Dim parentFullPath As String
-                        parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
-                        If Me.FullPath.Equals(parentFullPath) Then
-                            If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                                _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction))
-                            End If
-                        End If
-                    Finally
-                        If Not parentShellItem2 Is Nothing Then
-                            Marshal.ReleaseComObject(parentShellItem2)
-                        End If
-                    End Try
-                End If
-            Case SHCNE.RMDIR
-                If Not _folders Is Nothing Then
-                    Dim item As Item = _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
-                    If Not item Is Nothing Then
-                        _folders.Remove(item)
-                    End If
-                End If
-            Case SHCNE.DRIVEADD
-                If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") Then
-                    If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
+    Protected Overrides Async Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+        Dim t As Func(Of Task) =
+            Async Function() As Task
+                Select Case e.Event
+                    Case SHCNE.MKDIR
                         Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
                         If Not item1 Is Nothing Then
-                            _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction))
+                            Dim parentShellItem2 As IShellItem2
+                            Try
+                                item1.GetParent(parentShellItem2)
+                                Dim parentFullPath As String
+                                parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
+                                If Me.FullPath.Equals(parentFullPath) Then
+                                    SyncLock _foldersLock
+                                        If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
+                                            UIHelper.OnUIThread(
+                                                Sub()
+                                                    _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction))
+                                                End Sub)
+                                        End If
+                                    End SyncLock
+                                End If
+                            Finally
+                                If Not parentShellItem2 Is Nothing Then
+                                    Marshal.ReleaseComObject(parentShellItem2)
+                                End If
+                            End Try
                         End If
-                    End If
-                End If
-            Case SHCNE.DRIVEREMOVED
-                If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") Then
-                    Dim item As Item = _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
-                    If Not _folders Is Nothing Then
-                        _folders.Remove(item)
-                    End If
-                End If
-            Case SHCNE.UPDATEDIR
-                If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _folders Is Nothing Then
-                    Me.IsLoading = True
+                    Case SHCNE.RMDIR
+                        SyncLock _foldersLock
+                            If Not _folders Is Nothing Then
+                                Dim item As Item = _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
+                                If Not item Is Nothing Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            _folders.Remove(item)
+                                        End Sub)
+                                End If
+                            End If
+                        End SyncLock
+                    Case SHCNE.DRIVEADD
+                        If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") Then
+                            SyncLock _foldersLock
+                                If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
+                                    Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                                    If Not item1 Is Nothing Then
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction))
+                                            End Sub)
+                                    End If
+                                End If
+                            End SyncLock
+                        End If
+                    Case SHCNE.DRIVEREMOVED
+                        If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") Then
+                            SyncLock _foldersLock
+                                Dim item As Item = _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
+                                If Not _folders Is Nothing Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            _folders.Remove(item)
+                                        End Sub)
+                                End If
+                            End SyncLock
+                        End If
+                    Case SHCNE.UPDATEDIR
+                        If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _folders Is Nothing Then
+                            Me.IsLoading = True
 
-                    Dim thread As Thread = New Thread(New ThreadStart(
-                        Sub()
-                            updateFolders(_folders)
-
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_folders)
-                                    view.Refresh()
-                                End Sub)
+                            SyncLock _foldersLock
+                                _fromThread = True
+                                Try
+                                    updateFolders(_folders)
+                                Finally
+                                    _fromThread = False
+                                End Try
+                            End SyncLock
 
                             Me.IsLoading = False
-                        End Sub))
+                        End If
+                End Select
+            End Function
 
-                    thread.Start()
-                End If
-        End Select
+        Await Task.Run(t)
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)

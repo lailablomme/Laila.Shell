@@ -9,7 +9,7 @@ Public Class NotifyPropertyChangedBase
     Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 
     Public Sub NotifyOfPropertyChange(propertyName As String)
-        UIHelper.OnUIThreadAsync(
+        UIHelper.OnUIThread(
             Sub()
                 RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
             End Sub)
