@@ -335,9 +335,7 @@ Namespace ViewModels
                     Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
                     Dim clickedItem As Item = listViewItem?.DataContext
                     _mouseItemDown = clickedItem
-                    If Not clickedItem Is Nothing Then
-                        listViewItem.Focus()
-                    Else
+                    If clickedItem Is Nothing Then
                         _view.listView.Focus()
                     End If
                     If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
@@ -350,8 +348,9 @@ Namespace ViewModels
                             _menu.InvokeCommand(_menu.DefaultId)
                         End If
                     ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
-                        If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
-                        e.Handled = True
+                        If Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.Contains(clickedItem) Then
+                            e.Handled = True
+                        End If
                     ElseIf e.RightButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                         If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
 
@@ -370,7 +369,8 @@ Namespace ViewModels
 
                         _view.listView.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
                         e.Handled = True
-                    ElseIf clickedItem Is Nothing Then
+                    ElseIf clickedItem Is Nothing AndAlso
+                        UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
                         Me.SetSelectedItem(Nothing)
                     End If
                 Else

@@ -1,5 +1,7 @@
-﻿Imports System.Windows
+﻿Imports System.Timers
+Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Controls.Primitives
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Shapes
@@ -13,10 +15,14 @@ Namespace Behaviors
         Private _listView As ListView
         Private _selectionRectangle As Rectangle
         Private _isSelecting As Boolean
+        Private _canStartSelecting As Boolean
         Private _mouseDownPos As Point
         Private _control As Control
         Private _sv As ScrollViewer
         Private _headerHeight As Double
+        Private _ptMin As Point
+        Private _ptMax As Point
+        Private _scrollTimer As Timer
 
         Protected Overrides Sub OnAttached()
             MyBase.OnAttached()
@@ -48,24 +54,53 @@ Namespace Behaviors
                         Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
                         Dim clickedItem As Item = listViewItem?.DataContext
 
-                        If Not _listView.SelectedItems.Contains(clickedItem) Then
+                        If Not _listView.SelectedItems.Contains(clickedItem) _
+                            AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing _
+                            AndAlso UIHelper.GetParentOfType(Of GridViewHeaderRowPresenter)(e.OriginalSource) Is Nothing Then
                             Dim hrp As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
-                            hrp.Measure(New Size(_listView.ActualHeight, _listView.ActualHeight))
-                            _headerHeight = hrp.DesiredSize.Height
-                            _mouseDownPos = e.GetPosition(_listView)
-                            If _mouseDownPos.Y > _headerHeight Then
-                                _isSelecting = True
-                                _listView.Focus()
-                                _mouseDownPos.X += _sv.HorizontalOffset
-                                _mouseDownPos.Y += _sv.VerticalOffset
-                                _control.CaptureMouse()
-                                _selectionRectangle.Margin = New Thickness(_mouseDownPos.X, _mouseDownPos.Y - _headerHeight, 0, 0)
-                                _selectionRectangle.Width = 0
-                                _selectionRectangle.Height = 0
+                            _headerHeight = hrp.ActualHeight
 
-                                _selectionRectangle.Visibility = Visibility.Visible
-                                e.Handled = True
-                            End If
+                            _ptMin = New Point(_listView.BorderThickness.Left, _listView.BorderThickness.Top + _headerHeight)
+                            _ptMax = New Point(_listView.ActualWidth - _listView.BorderThickness.Right - 3,
+                                               _listView.ActualHeight - _listView.BorderThickness.Bottom - 3)
+                            Dim scrollBars As IEnumerable(Of ScrollBar) = UIHelper.FindVisualChildren(Of ScrollBar)(_sv)
+                            Dim vs As ScrollBar = scrollBars.First(Function(sb) sb.Name = "PART_VerticalScrollBar")
+                            Dim hs As ScrollBar = scrollBars.First(Function(sb) sb.Name = "PART_HorizontalScrollBar")
+                            If vs.Visibility = Visibility.Visible Then _
+                                _ptMax.X = _listView.PointFromScreen(vs.PointToScreen(New Point(0, 0))).X - 3
+                            If hs.Visibility = Visibility.Visible Then _
+                                _ptMax.Y = _listView.PointFromScreen(hs.PointToScreen(New Point(0, 0))).Y - 3
+
+                            _mouseDownPos = e.GetPosition(_listView)
+                            _canStartSelecting = True
+                        Else
+                            _canStartSelecting = False
+                        End If
+                    End If
+                End Sub
+
+            AddHandler _listView.PreviewMouseUp,
+                Sub(s As Object, e As MouseButtonEventArgs)
+                    _canStartSelecting = False
+                End Sub
+
+            AddHandler _listView.PreviewMouseMove,
+                Sub(s As Object, e As MouseEventArgs)
+                    Dim actualMousePos As Point = e.GetPosition(_listView)
+
+                    If Not _isSelecting AndAlso _canStartSelecting Then
+                        If Math.Abs(actualMousePos.X - _mouseDownPos.X) > 2 OrElse Math.Abs(actualMousePos.Y - _mouseDownPos.Y) > 2 Then
+                            _isSelecting = True
+                            _listView.Focus()
+                            _mouseDownPos.X += _sv.HorizontalOffset
+                            _mouseDownPos.Y += _sv.VerticalOffset
+                            _control.CaptureMouse()
+                            _selectionRectangle.Margin = New Thickness(_mouseDownPos.X, _mouseDownPos.Y - _headerHeight, 0, 0)
+                            _selectionRectangle.Width = 0
+                            _selectionRectangle.Height = 0
+
+                            _selectionRectangle.Visibility = Visibility.Visible
+                            e.Handled = True
                         End If
                     End If
                 End Sub
@@ -82,9 +117,14 @@ Namespace Behaviors
 
             AddHandler _control.PreviewMouseMove,
                 Sub(s As Object, e As MouseEventArgs)
-                    If (_isSelecting) Then
+                    Dim actualMousePos As Point = e.GetPosition(_listView)
+
+                    If _isSelecting Then
                         Dim mousePos As Point = e.GetPosition(_listView)
-                        Dim actualMousePos As Point = e.GetPosition(_listView)
+                        If mousePos.X < _ptMin.X Then mousePos.X = _ptMin.X
+                        If mousePos.Y < _ptMin.Y Then mousePos.Y = _ptMin.Y
+                        If mousePos.X > _ptMax.X Then mousePos.X = _ptMax.X
+                        If mousePos.Y > _ptMax.Y Then mousePos.Y = _ptMax.Y
                         mousePos.X += _sv.HorizontalOffset
                         mousePos.Y += _sv.VerticalOffset
 

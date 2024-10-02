@@ -174,12 +174,6 @@ Public Class ContextMenu
                         Async Sub(s2 As Object, e2 As EventArgs)
                             _menu.IsOpen = False
 
-                            For x = 1 To 25
-                                Application.Current.Dispatcher.Invoke(
-                                    Sub()
-                                    End Sub, Threading.DispatcherPriority.ContextIdle)
-                            Next
-
                             Dim isHandled As Boolean = False
 
                             RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
@@ -191,14 +185,6 @@ Public Class ContextMenu
                 ElseIf TypeOf c Is MenuItem Then
                     AddHandler CType(c, MenuItem).Click,
                         Async Sub(s2 As Object, e2 As EventArgs)
-                            _menu.IsOpen = False
-
-                            For x = 1 To 25
-                                Application.Current.Dispatcher.Invoke(
-                                    Sub()
-                                    End Sub, Threading.DispatcherPriority.ContextIdle)
-                            Next
-
                             Dim isHandled As Boolean = False
 
                             RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
