@@ -54,8 +54,7 @@ Namespace ViewModels
                 End Sub
 
             AddHandler _view.listView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
-            AddHandler _view.listView.PreviewMouseLeftButtonDown, AddressOf OnListViewPreviewMouseButtonDown
-            AddHandler _view.listView.PreviewMouseRightButtonDown, AddressOf OnListViewPreviewMouseButtonDown
+            AddHandler _view.listView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
             AddHandler _view.PreviewKeyDown, AddressOf OnListViewKeyDown
         End Sub
 
@@ -316,63 +315,67 @@ Namespace ViewModels
         End Sub
 
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
-            If Not _mouseItemDown Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso
-                (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
-                Dim currentPointDown As Point = e.GetPosition(_view)
-                If Math.Abs(currentPointDown.X - _mousePointDown.X) > 7 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 7 Then
-                    Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
+            If Not _view.selection.IsSelecting Then
+                If Not _mouseItemDown Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso
+                            (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
+                    Dim currentPointDown As Point = e.GetPosition(_view)
+                    If Math.Abs(currentPointDown.X - _mousePointDown.X) > 7 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 7 Then
+                        Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
+                    End If
                 End If
             End If
         End Sub
 
         Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
-            _mousePointDown = e.GetPosition(_view)
+            If Not _view.selection.IsSelecting Then
+                _mousePointDown = e.GetPosition(_view)
 
-            ' this prevents a multiple selection getting replaced by the single clicked item
-            If Not e.OriginalSource Is Nothing Then
-                Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
-                Dim clickedItem As Item = listViewItem?.DataContext
-                _mouseItemDown = clickedItem
-                If Not clickedItem Is Nothing Then
-                    listViewItem.Focus()
-                Else
-                    _view.listView.Focus()
-                End If
-                If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
-                    If TypeOf clickedItem Is Folder Then
-                        _view.LogicalParent = Me.Folder
-                        Me.FolderName = clickedItem.FullPath
+                ' this prevents a multiple selection getting replaced by the single clicked item
+                If Not e.OriginalSource Is Nothing Then
+                    Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
+                    Dim clickedItem As Item = listViewItem?.DataContext
+                    _mouseItemDown = clickedItem
+                    If Not clickedItem Is Nothing Then
+                        listViewItem.Focus()
                     Else
-                        _menu = New ContextMenu()
-                        _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
-                        _menu.InvokeCommand(_menu.DefaultId)
+                        _view.listView.Focus()
                     End If
-                ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
-                    If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
-                    e.Handled = True
-                ElseIf e.RightButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
-                    If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
+                    If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
+                        If TypeOf clickedItem Is Folder Then
+                            _view.LogicalParent = Me.Folder
+                            Me.FolderName = clickedItem.FullPath
+                        Else
+                            _menu = New ContextMenu()
+                            _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                            _menu.InvokeCommand(_menu.DefaultId)
+                        End If
+                    ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
+                        If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
+                        e.Handled = True
+                    ElseIf e.RightButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
+                        If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
 
-                    _menu = New ContextMenu()
-                    AddHandler _menu.Click,
-                        Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
-                            Select Case verb
-                                Case "open"
-                                    If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
-                                        _view.LogicalParent = Me.Folder
-                                        Me.FolderName = Me.SelectedItem.FullPath
-                                        isHandled = True
-                                    End If
-                            End Select
-                        End Sub
+                        _menu = New ContextMenu()
+                        AddHandler _menu.Click,
+                            Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
+                                Select Case verb
+                                    Case "open"
+                                        If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
+                                            _view.LogicalParent = Me.Folder
+                                            Me.FolderName = Me.SelectedItem.FullPath
+                                            isHandled = True
+                                        End If
+                                End Select
+                            End Sub
 
-                    _view.listView.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
-                    e.Handled = True
-                ElseIf clickedItem Is Nothing Then
-                    Me.SetSelectedItem(Nothing)
+                        _view.listView.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                        e.Handled = True
+                    ElseIf clickedItem Is Nothing Then
+                        Me.SetSelectedItem(Nothing)
+                    End If
+                Else
+                    _mouseItemDown = Nothing
                 End If
-            Else
-                _mouseItemDown = Nothing
             End If
         End Sub
 

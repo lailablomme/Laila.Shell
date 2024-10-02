@@ -152,7 +152,7 @@ Public Class Folder
                                 item.NotifyOfPropertyChange(prop.Name)
                             Next
                         End If
-                    End Sub, 0)
+                    End Sub, 2)
     End Sub
 
     Protected Sub updateItems(flags As UInt32, condition As Boolean,

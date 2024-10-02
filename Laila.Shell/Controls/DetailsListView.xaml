@@ -69,6 +69,7 @@
             </ListView.View>
             <i:Interaction.Behaviors>
                 <behaviors:GridViewExtBehavior ColumnsIn="{Binding ColumnsIn}" x:Name="ext" />
+                <behaviors:SelectionBehavior x:Name="selection" />
             </i:Interaction.Behaviors>
         </ListView>
         <local:LoadingSpinner>
