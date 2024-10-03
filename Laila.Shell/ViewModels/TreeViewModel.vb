@@ -257,14 +257,12 @@ Namespace ViewModels
                         Dim func As Action(Of Folder, Action(Of Boolean)) =
                         Sub(item As Folder, callback As Action(Of Boolean))
                             Dim tf2 As TreeViewFolder
-                            tf.IsLoading = True
                             Dim thread As Thread = New Thread(New ThreadStart(
                                 Sub()
                                     SyncLock tf._foldersLock
                                         If Not tf.IsExpanded Then tf._folders = Nothing
                                         tf2 = tf.Folders.FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
                                     End SyncLock
-                                    tf.IsLoading = False
                                     If Not tf2 Is Nothing Then
                                         Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
                                         tf.IsExpanded = True

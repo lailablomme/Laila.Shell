@@ -3,6 +3,7 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Data
 Imports Laila.Shell.Data
+Imports Laila.Shell.Helpers
 
 Public Class TreeViewFolder
     Inherits Folder
@@ -100,21 +101,14 @@ Public Class TreeViewFolder
                 Dim result As ObservableCollection(Of TreeViewFolder) = New ObservableCollection(Of TreeViewFolder)()
                 BindingOperations.EnableCollectionSynchronization(result, _foldersLock)
 
-                Dim result2 As ObservableCollection(Of TreeViewFolder) = New ObservableCollection(Of TreeViewFolder)()
-                BindingOperations.EnableCollectionSynchronization(result2, _foldersLock)
-
                 Dim t As Thread = New Thread(New ThreadStart(
                     Sub()
-                        result2.Add(New DummyTreeViewFolder("Loading...", Nothing))
-
-                        SyncLock _foldersLock
-                            If _folders Is Nothing Then
-                                _fromThread = True
-                                updateFolders(result)
-                                Me.Folders = result
-                                _fromThread = False
-                            End If
-                        End SyncLock
+                        If _folders Is Nothing Then
+                            _fromThread = True
+                            updateFolders(result, False)
+                            Me.Folders = result
+                            _fromThread = False
+                        End If
 
                         If Not _setIsLoadingAction Is Nothing Then
                             _setIsLoadingAction(False)
@@ -123,7 +117,7 @@ Public Class TreeViewFolder
 
                 t.Start()
 
-                Return result2
+                Return Nothing
             Else
                 Return _folders
             End If
@@ -132,16 +126,14 @@ Public Class TreeViewFolder
 
     Public Overridable Property Folders As ObservableCollection(Of TreeViewFolder)
         Get
-            SyncLock _foldersLock
-                If _folders Is Nothing Then
-                    Dim result As ObservableCollection(Of TreeViewFolder) = New ObservableCollection(Of TreeViewFolder)()
-                    BindingOperations.EnableCollectionSynchronization(result, _foldersLock)
-                    updateFolders(result)
-                    Me.Folders = result
-                End If
+            If _folders Is Nothing Then
+                Dim result As ObservableCollection(Of TreeViewFolder) = New ObservableCollection(Of TreeViewFolder)()
+                BindingOperations.EnableCollectionSynchronization(result, _foldersLock)
+                updateFolders(result, False)
+                Me.Folders = result
+            End If
 
-                Return _folders
-            End SyncLock
+            Return _folders
         End Get
         Friend Set(value As ObservableCollection(Of TreeViewFolder))
             SetValue(_folders, value)
@@ -149,15 +141,22 @@ Public Class TreeViewFolder
         End Set
     End Property
 
-    Private Sub updateFolders(items As ObservableCollection(Of TreeViewFolder))
+    Private Sub updateFolders(items As ObservableCollection(Of TreeViewFolder), isOnUIThread As Boolean)
+        If Me.IsExpanded OrElse Not _fromThread Then
+            Me.IsLoading = True
+            UIHelper.OnUIThread(
+                Sub()
+                End Sub, Windows.Threading.DispatcherPriority.ContextIdle)
+        End If
+
         updateItems(SHCONTF.FOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, Me.IsExpanded OrElse Not _fromThread,
                     Function(item As Item) As Boolean
                         Return Not items.FirstOrDefault(Function(i) i.FullPath = item.FullPath AndAlso Not i.disposedValue) Is Nothing
                     End Function,
-                    Sub(item As Item)
+                    Sub(item As TreeViewFolder)
                         items.Add(item)
                     End Sub,
-                    Sub(item As Item)
+                    Sub(item As TreeViewFolder)
                         items.Remove(item)
                     End Sub,
                     Function(paths As List(Of String)) As List(Of Item)
@@ -183,11 +182,13 @@ Public Class TreeViewFolder
                         items.Clear()
                         items.Add(New DummyTreeViewFolder("Loading...", Nothing))
                     End Sub,
-                    0)
+                    0, isOnUIThread)
 
         For Each item In items
             item.ITreeViewItemData_Parent = Me
         Next
+
+        Me.IsLoading = False
     End Sub
 
     Protected Overrides Async Sub shell_Notification(sender As Object, e As NotificationEventArgs)
@@ -207,10 +208,13 @@ Public Class TreeViewFolder
                                         Dim parentFullPath As String
                                         parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                                         If Me.FullPath.Equals(parentFullPath) Then
-                                            SyncLock _foldersLock
-                                                If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                    _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction, _folders))
-                                                End If
+                                            SyncLock _itemsLock
+                                                UIHelper.OnUIThread(
+                                                    Sub()
+                                                        If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                                            _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction, _folders))
+                                                        End If
+                                                    End Sub)
                                             End SyncLock
                                         End If
                                     Finally
@@ -221,53 +225,48 @@ Public Class TreeViewFolder
                                 End If
                             End If
                         Case SHCNE.RMDIR, SHCNE.DELETE
-                            SyncLock _foldersLock
-                                If Not _folders Is Nothing Then
-                                    Dim item As Item = _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                                    If Not item Is Nothing Then
-                                        _folders.Remove(item)
-                                    End If
-                                End If
+                            SyncLock _itemsLock
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        If Not _folders Is Nothing Then
+                                            Dim item As Item = _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                                            If Not item Is Nothing Then
+                                                _folders.Remove(item)
+                                            End If
+                                        End If
+                                    End Sub)
                             End SyncLock
                         Case SHCNE.DRIVEADD
                             If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") Then
-                                SyncLock _foldersLock
-                                    If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                        Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                                        If Not item1 Is Nothing Then
-                                            _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction, _folders))
-                                        End If
-                                    End If
+                                SyncLock _itemsLock
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                                Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                                                If Not item1 Is Nothing Then
+                                                    _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction, _folders))
+                                                End If
+                                            End If
+                                        End Sub)
                                 End SyncLock
                             End If
                         Case SHCNE.DRIVEREMOVED
                             If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") Then
-                                SyncLock _foldersLock
-                                    Dim item As Item = _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                                    If Not _folders Is Nothing Then
-                                        _folders.Remove(item)
-                                    End If
+                                SyncLock _itemsLock
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            Dim item As Item = _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                                            If Not _folders Is Nothing Then
+                                                _folders.Remove(item)
+                                            End If
+                                        End Sub)
                                 End SyncLock
                             End If
                         Case SHCNE.UPDATEDIR
                             If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _folders Is Nothing Then
-                                Me.IsLoading = True
-
-                                SyncLock _foldersLock
-                                    _fromThread = True
-                                    Try
-                                        If _folders.Count = 1 AndAlso TypeOf _folders(0) Is DummyTreeViewFolder Then
-                                            _folders = Nothing
-                                            NotifyOfPropertyChange("FoldersThreaded")
-                                        Else
-                                            updateFolders(_folders)
-                                        End If
-                                    Finally
-                                        _fromThread = False
-                                    End Try
-                                End SyncLock
-
-                                Me.IsLoading = False
+                                _fromThread = True
+                                updateFolders(_folders, True)
+                                _fromThread = False
                             End If
                     End Select
                 End If
