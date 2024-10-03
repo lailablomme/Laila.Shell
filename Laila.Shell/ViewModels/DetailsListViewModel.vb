@@ -366,8 +366,12 @@ Namespace ViewModels
                         If Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.Contains(clickedItem) Then
                             e.Handled = True
                         End If
-                    ElseIf e.RightButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
-                        If Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem) Then Me.SetSelectedItem(clickedItem)
+                    ElseIf e.RightButton = MouseButtonState.Pressed AndAlso
+                        UIHelper.GetParentOfType(Of Primitives.ScrollBar)(e.OriginalSource) Is Nothing AndAlso
+                        UIHelper.GetParentOfType(Of GridViewHeaderRowPresenter)(e.OriginalSource) Is Nothing Then
+
+                        If (Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem)) _
+                            AndAlso Not clickedItem Is Nothing Then Me.SetSelectedItem(clickedItem)
 
                         _menu = New ContextMenu()
                         AddHandler _menu.Click,

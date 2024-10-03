@@ -16,13 +16,14 @@ Public Class Item
     Protected _properties As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Protected _fullPath As String
     Protected _setIsLoadingAction As Action(Of Boolean)
-    Protected disposedValue As Boolean
+    Friend disposedValue As Boolean
     Protected _logicalParent As Folder
     Protected _displayName As String
     Friend _shellItem2 As IShellItem2
     Private _isPinned As Boolean
     Private _isCut As Boolean
     Private _list As IList
+    Private _attributes As SFGAO
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), list As IList) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
@@ -80,6 +81,9 @@ Public Class Item
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = GetFullPathFromShellItem2(shellItem2)
+            _attributes = SFGAO.HIDDEN Or SFGAO.COMPRESSED Or SFGAO.CANCOPY Or SFGAO.CANMOVE _
+                Or SFGAO.CANLINK Or SFGAO.HASSUBFOLDER Or SFGAO.ISSLOW
+            _shellItem2.GetAttributes(_attributes, _attributes)
         Else
             _fullPath = String.Empty
         End If
@@ -162,8 +166,8 @@ Public Class Item
     Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
         Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr
         ptr = Marshal.GetIUnknownForObject(_shellItem2)
-        Functions.SHGetIDListFromObject(ptr, pidl)
-        lastpidl = Functions.ILFindLastID(pidl)
+        Functions.SHGetIDListFromObject(ptr, Pidl)
+        lastpidl = Functions.ILFindLastID(Pidl)
 
         Dim shellFolder As IShellFolder = If(Not Me.Parent Is Nothing, Me.Parent._shellFolder, Shell.Desktop._shellFolder)
         Try
@@ -272,9 +276,7 @@ Public Class Item
 
     Public ReadOnly Property Attributes As SFGAO
         Get
-            Dim attr As SFGAO = SFGAO.HIDDEN Or SFGAO.COMPRESSED Or SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK
-            _shellItem2.GetAttributes(attr, attr)
-            Return attr
+            Return _attributes
         End Get
     End Property
 
@@ -337,7 +339,7 @@ Public Class Item
     End Function
 
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
-        If Not _shellItem2 Is Nothing Then
+        If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                     If Me.FullPath.Equals(e.Item1Path) Then
@@ -376,11 +378,15 @@ Public Class Item
 
     Protected Overridable Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
+            disposedValue = True
+
             If disposing Then
                 ' dispose managed state (managed objects)
                 RemoveHandler Shell.Notification, AddressOf shell_Notification
             End If
-
+            If Me.FullPath.ToLower().Contains("office") Then
+                Dim i As Int16 = 9
+            End If
             ' free unmanaged resources (unmanaged objects) and override finalizer
             If Not _imageFactory Is Nothing Then
                 Marshal.ReleaseComObject(_imageFactory)
@@ -392,18 +398,16 @@ Public Class Item
             End If
             'If Not _list Is Nothing Then
             '    _list.Remove(Me)
-            '    _list = Nothing
             'End If
-            disposedValue = True
         End If
     End Sub
 
     ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
-    Protected Overrides Sub Finalize()
-        ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
-        Dispose(disposing:=False)
-        MyBase.Finalize()
-    End Sub
+    'Protected Overrides Sub Finalize()
+    '    ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+    '    Dispose(disposing:=False)
+    '    MyBase.Finalize()
+    'End Sub
 
     Public Sub Dispose() Implements IDisposable.Dispose
         ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method

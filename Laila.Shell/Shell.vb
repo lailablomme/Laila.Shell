@@ -4,11 +4,13 @@ Imports System.Text
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Interop
+Imports Laila.Shell.Events
 
 Public Class Shell
     Private Shared _desktop As Folder
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
+    Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
@@ -128,4 +130,9 @@ Public Class Shell
             Return _desktop
         End Get
     End Property
+
+    Friend Shared Sub RaiseFolderNotificationEvent(sender As Object, e As FolderNotificationEventArgs)
+        RaiseEvent FolderNotification(sender, e)
+    End Sub
+
 End Class

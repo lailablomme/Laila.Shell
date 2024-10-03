@@ -1,9 +1,6 @@
 ﻿Imports System.Collections.ObjectModel
-Imports System.ComponentModel
-Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Threading
-Imports System.Windows
 Imports System.Windows.Data
 Imports Laila.Shell.Helpers
 
@@ -85,6 +82,7 @@ Public Class Folder
                 End If
 
                 Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
+                BindingOperations.EnableCollectionSynchronization(result, _itemsLock)
 
                 Dim t As Thread = New Thread(New ThreadStart(
                     Sub()
@@ -102,7 +100,9 @@ Public Class Folder
 
                 t.Start()
 
-                Return New ObservableCollection(Of Item)()
+                Dim result2 As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
+                BindingOperations.EnableCollectionSynchronization(result2, _itemsLock)
+                Return result2
             Else
                 Return _items
             End If
@@ -114,6 +114,7 @@ Public Class Folder
             SyncLock _itemsLock
                 If _items Is Nothing Then
                     Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
+                    BindingOperations.EnableCollectionSynchronization(result, _itemsLock)
                     updateItems(result)
                     Me.Items = result
                 End If
@@ -130,7 +131,7 @@ Public Class Folder
     Protected Sub updateItems(items As ObservableCollection(Of Item))
         updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, True,
                     Function(item As Item) As Boolean
-                        Return Not items.FirstOrDefault(Function(i) i.FullPath = item.FullPath) Is Nothing
+                        Return Not items.FirstOrDefault(Function(i) i.FullPath = item.FullPath AndAlso Not i.disposedValue) Is Nothing
                     End Function,
                     Sub(item As Item)
                         items.Add(item)
@@ -148,34 +149,32 @@ Public Class Folder
                         Return New Item(shellItem2, Me, _setIsLoadingAction, items)
                     End Function,
                     Sub(path As String)
-                        Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path)
+                        Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
                         If Not item Is Nothing Then
                             item._shellItem2.Update(IntPtr.Zero)
                             For Each prop In item.GetType().GetProperties()
                                 item.NotifyOfPropertyChange(prop.Name)
                             Next
                         End If
-                    End Sub, 2)
+                    End Sub,
+                    Sub()
+                    End Sub, 0)
     End Sub
 
     Protected Sub updateItems(flags As UInt32, condition As Boolean,
                               exists As Func(Of Item, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getToBeRemoved As Func(Of List(Of String), List(Of Item)),
                               makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
-                              updateProperties As Action(Of String), uiHelp As Integer)
+                              updateProperties As Action(Of String), addLoadingItem As Action, uiHelp As Integer)
         If _shellItem2 Is Nothing Then Return
 
         Dim paths As List(Of String) = New List(Of String)
 
-        Dim attr As SFGAO = SFGAO.HASSUBFOLDER Or SFGAO.ISSLOW
-        _shellItem2.GetAttributes(attr, attr)
-
-        If Not condition AndAlso (attr.HasFlag(SFGAO.ISSLOW) OrElse Me.FullPath.StartsWith("\\")) AndAlso attr.HasFlag(SFGAO.HASSUBFOLDER) Then
-            UIHelper.OnUIThread(
-                Sub()
-                    add(New DummyTreeViewFolder("Loading...", Nothing))
-                End Sub)
+        If Not condition AndAlso (Me.Attributes.HasFlag(SFGAO.ISSLOW) OrElse Me.FullPath.StartsWith("\\")) AndAlso Me.Attributes.HasFlag(SFGAO.HASSUBFOLDER) Then
+            addLoadingItem()
         Else
+            Dim toAdd As List(Of Item) = New List(Of Item)()
+            Dim toUpdate As List(Of String) = New List(Of String)()
             If Not isWindows7OrLower() Then
                 Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
                 Functions.CreateBindCtx(0, bindCtxPtr)
@@ -205,7 +204,9 @@ Public Class Folder
                             Dim ptr2 As IntPtr
                             Try
                                 _shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
-                                enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+                                If Not IntPtr.Zero.Equals(ptr2) Then
+                                    enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+                                End If
                             Finally
                                 If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
                             End Try
@@ -213,41 +214,36 @@ Public Class Folder
                             If Not enumShellItems Is Nothing Then
                                 Dim shellItemArray(0) As IShellItem, fetched As UInt32 = 1
                                 enumShellItems.Next(1, shellItemArray, fetched)
-                                Dim isOnce As Boolean = False
-                                While fetched = 1 And (Not isOnce OrElse condition)
-                                    Dim attr2 As Integer = SFGAO.FOLDER
-                                    shellItemArray(0).GetAttributes(attr2, attr2)
-                                    Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItemArray(0))
-                                    Dim newItem As Item
-                                    If CBool(attr2 And SFGAO.FOLDER) Then
-                                        newItem = makeNewFolder(shellItemArray(0))
-                                    Else
-                                        newItem = makeNewItem(shellItemArray(0))
-                                    End If
-                                    If Not newItem Is Nothing Then
-                                        paths.Add(newItem.FullPath)
-                                    End If
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            If Not newItem Is Nothing Then
-                                                If Not exists(newItem) Then
-                                                    add(newItem)
-                                                Else
-                                                    updateProperties(newItem.FullPath)
-                                                    newItem.Dispose()
-                                                End If
+                                If fetched = 1 AndAlso Not condition Then
+                                    addLoadingItem()
+                                Else
+                                    While fetched = 1
+                                        Dim attr2 As Integer = SFGAO.FOLDER
+                                        shellItemArray(0).GetAttributes(attr2, attr2)
+                                        Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItemArray(0))
+                                        Dim newItem As Item
+                                        If CBool(attr2 And SFGAO.FOLDER) Then
+                                            newItem = makeNewFolder(shellItemArray(0))
+                                        Else
+                                            newItem = makeNewItem(shellItemArray(0))
+                                        End If
+                                        If Not newItem Is Nothing Then
+                                            paths.Add(newItem.FullPath)
+                                        End If
+                                        If Not newItem Is Nothing Then
+                                            If Not exists(newItem) Then
+                                                toAdd.Add(newItem)
+                                            Else
+                                                toUpdate.Add(newItem.FullPath)
+                                                newItem.Dispose()
                                             End If
-                                        End Sub)
-                                    enumShellItems.Next(1, shellItemArray, fetched)
-                                    isOnce = True
-                                    If uiHelp > 0 Then Thread.Sleep(uiHelp)
-                                End While
+                                        End If
+                                        enumShellItems.Next(1, shellItemArray, fetched)
+                                    End While
+                                End If
                             End If
                         Catch ex As Exception
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    add(New DummyTreeViewFolder(ex.Message, Nothing))
-                                End Sub)
+                            toAdd.Add(New DummyTreeViewFolder(ex.Message, Nothing))
                         Finally
                             If Not enumShellItems Is Nothing Then
                                 Marshal.ReleaseComObject(enumShellItems)
@@ -276,20 +272,28 @@ Public Class Folder
                         End If
                         paths.Add(newItem.FullPath)
                         If Not exists(newItem) Then
-                            add(newItem)
+                            toAdd.Add(newItem)
                         Else
+                            toUpdate.Add(newItem.FullPath)
                             newItem.Dispose()
                         End If
                     End While
                 End If
             End If
 
-            UIHelper.OnUIThread(
-              Sub()
-                  For Each item In getToBeRemoved(paths)
-                      remove(item)
-                  Next
-              End Sub)
+            For Each item In toAdd
+                add(item)
+                If uiHelp <> 0 Then Thread.Sleep(uiHelp)
+            Next
+            For Each item In toUpdate
+                updateProperties(item)
+                If uiHelp <> 0 Then Thread.Sleep(uiHelp)
+            Next
+            For Each item In getToBeRemoved(paths)
+                remove(item)
+                item.Dispose()
+                If uiHelp <> 0 Then Thread.Sleep(uiHelp)
+            Next
         End If
     End Sub
 
@@ -299,7 +303,7 @@ Public Class Folder
 
         Dim t As Func(Of Task) =
             Async Function() As Task
-                If Not _shellItem2 Is Nothing Then
+                If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then
                     Select Case e.Event
                         Case SHCNE.CREATE
                             If Not String.IsNullOrWhiteSpace(e.Item1Path) Then
@@ -312,11 +316,8 @@ Public Class Folder
                                         parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                                         If Me.FullPath.Equals(parentFullPath) Then
                                             SyncLock _itemsLock
-                                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                                                    UIHelper.OnUIThread(
-                                                        Sub()
-                                                            _items.Add(New Item(item1, Me, _setIsLoadingAction, _items))
-                                                        End Sub)
+                                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                                    _items.Add(New Item(item1, Me, _setIsLoadingAction, _items))
                                                 End If
                                             End SyncLock
                                         End If
@@ -338,11 +339,8 @@ Public Class Folder
                                         parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                                         If Me.FullPath.Equals(parentFullPath) Then
                                             SyncLock _itemsLock
-                                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
-                                                    UIHelper.OnUIThread(
-                                                        Sub()
-                                                            _items.Add(New Folder(item1, Me, _setIsLoadingAction, _items))
-                                                        End Sub)
+                                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                                    _items.Add(New Folder(item1, Me, _setIsLoadingAction, _items))
                                                 End If
                                             End SyncLock
                                         End If
@@ -356,25 +354,26 @@ Public Class Folder
                         Case SHCNE.RMDIR, SHCNE.DELETE
                             SyncLock _itemsLock
                                 If Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
-                                    Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
+                                    Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
                                     If Not item Is Nothing Then
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                _items.Remove(item)
+                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                                    .Folder = item,
+                                                    .[Event] = e.Event
+                                                })
                                             End Sub)
+                                        _items.Remove(item)
                                     End If
                                 End If
                             End SyncLock
                         Case SHCNE.DRIVEADD
                             If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
                                 SyncLock _itemsLock
-                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path) Is Nothing Then
+                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
                                         Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
                                         If Not item1 Is Nothing Then
-                                            UIHelper.OnUIThread(
-                                                Sub()
-                                                    _items.Add(New Folder(item1, Me, _setIsLoadingAction, _items))
-                                                End Sub)
+                                            _items.Add(New Folder(item1, Me, _setIsLoadingAction, _items))
                                         End If
                                     End If
                                 End SyncLock
@@ -382,12 +381,16 @@ Public Class Folder
                         Case SHCNE.DRIVEREMOVED
                             If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
                                 SyncLock _itemsLock
-                                    Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path)
+                                    Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
                                     If Not item Is Nothing Then
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                _items.Remove(item)
+                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                                    .Folder = item,
+                                                    .[Event] = e.Event
+                                                })
                                             End Sub)
+                                        _items.Remove(item)
                                     End If
                                 End SyncLock
                             End If

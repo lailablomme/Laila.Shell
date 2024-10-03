@@ -9,10 +9,7 @@ Public Class NotifyPropertyChangedBase
     Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 
     Public Sub NotifyOfPropertyChange(propertyName As String)
-        UIHelper.OnUIThread(
-            Sub()
-                RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
-            End Sub)
+        RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
     End Sub
 
     Protected Sub SetValue(Of T)(ByRef member As T, value As T, <CallerMemberName> Optional propertyName As String = "")

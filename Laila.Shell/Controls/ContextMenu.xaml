@@ -51,10 +51,10 @@
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <DataTrigger Binding="{Binding Children.Count, ElementName=buttonsTop}" Value="0">
+                        <DataTrigger Binding="{Binding Children.Count, ElementName=PART_ButtonsTop}" Value="0">
                             <Setter Property="Visibility" TargetName="borderTop" Value="Collapsed" />
                         </DataTrigger>
-                        <DataTrigger Binding="{Binding Children.Count, ElementName=buttonsBottom}" Value="0">
+                        <DataTrigger Binding="{Binding Children.Count, ElementName=PART_ButtonsBottom}" Value="0">
                             <Setter Property="Visibility" TargetName="borderBottom" Value="Collapsed" />
                         </DataTrigger>
                     </ControlTemplate.Triggers>

@@ -5,6 +5,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
 Imports Laila.Shell.Controls
+Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 
 Namespace ViewModels
@@ -139,7 +140,30 @@ Namespace ViewModels
                 Sub()
                     WpfDragTargetProxy.RevokeDragDrop(_view)
                 End Sub
+
+            AddHandler Shell.FolderNotification,
+                Sub(s As Object, e As FolderNotificationEventArgs)
+                    Select Case e.Event
+                        Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
+                            If Not Me.SelectedItem Is Nothing AndAlso Me.IsSelectionWithin(Me.SelectedItem) Then
+                                Me.SetSelectedItem(Me.SelectedItem.LogicalParent)
+                            End If
+                    End Select
+                End Sub
         End Sub
+
+        Private Function IsSelectionWithin(folder As TreeViewFolder) As Boolean
+            If Me.SelectedItem.Equals(folder) Then
+                Return True
+            Else
+                For Each f In folder.Folders
+                    If Me.IsSelectionWithin(f) Then
+                        Return True
+                    End If
+                Next
+                Return False
+            End If
+        End Function
 
         Public ReadOnly Property Folders1 As List(Of TreeViewFolder)
             Get
@@ -206,30 +230,31 @@ Namespace ViewModels
                 Debug.WriteLine("SetSelectedFolder " & path)
                 Dim list As List(Of Folder) = New List(Of Folder)()
                 Dim f As Folder = Folder.FromParsingName(path, _view.LogicalParent, Nothing, Nothing)
-                While Not f.LogicalParent Is Nothing
-                    list.Add(f)
-                    Debug.WriteLine("SetSelectedFolder Added parent " & f.FullPath)
-                    f = f.LogicalParent
-                End While
+                If Not f Is Nothing Then
+                    While Not f.LogicalParent Is Nothing
+                        list.Add(f)
+                        Debug.WriteLine("SetSelectedFolder Added parent " & f.FullPath)
+                        f = f.LogicalParent
+                    End While
 
-                Dim tf As TreeViewFolder, root As Integer
-                If _folders1.Exists(Function(f1) f1.FullPath = f.FullPath) Then
-                    tf = _folders1.First(Function(f1) f1.FullPath = f.FullPath)
-                    root = 1
-                ElseIf _folders2.Exists(Function(f1) f1.FullPath = f.FullPath) Then
-                    tf = _folders2.First(Function(f1) f1.FullPath = f.FullPath)
-                    root = 2
-                ElseIf _folders3.Exists(Function(f1) f1.FullPath = f.FullPath) Then
-                    tf = _folders3.First(Function(f1) f1.FullPath = f.FullPath)
-                    root = 3
-                Else
-                    tf = Nothing
-                End If
+                    Dim tf As TreeViewFolder, root As Integer
+                    If _folders1.Exists(Function(f1) f1.FullPath = f.FullPath) Then
+                        tf = _folders1.First(Function(f1) f1.FullPath = f.FullPath)
+                        root = 1
+                    ElseIf _folders2.Exists(Function(f1) f1.FullPath = f.FullPath) Then
+                        tf = _folders2.First(Function(f1) f1.FullPath = f.FullPath)
+                        root = 2
+                    ElseIf _folders3.Exists(Function(f1) f1.FullPath = f.FullPath) Then
+                        tf = _folders3.First(Function(f1) f1.FullPath = f.FullPath)
+                        root = 3
+                    Else
+                        tf = Nothing
+                    End If
 
-                If Not tf Is Nothing Then
-                    list.Reverse()
+                    If Not tf Is Nothing Then
+                        list.Reverse()
 
-                    Dim func As Action(Of Folder, Action(Of Boolean)) =
+                        Dim func As Action(Of Folder, Action(Of Boolean)) =
                         Sub(item As Folder, callback As Action(Of Boolean))
                             Dim tf2 As TreeViewFolder
                             tf.IsLoading = True
@@ -252,8 +277,8 @@ Namespace ViewModels
                                 End Sub))
                             thread.Start()
                         End Sub
-                    Dim en As IEnumerator(Of Folder) = list.GetEnumerator()
-                    Dim cb As System.Action(Of Boolean) =
+                        Dim en As IEnumerator(Of Folder) = list.GetEnumerator()
+                        Dim cb As System.Action(Of Boolean) =
                         Sub(cancel As Boolean)
                             If Not cancel Then
                                 If en.MoveNext() Then
@@ -284,8 +309,11 @@ Namespace ViewModels
                                 _isSettingSelectedFolder = False
                             End If
                         End Sub
-                    If en.MoveNext() Then
-                        func(en.Current, cb)
+                        If en.MoveNext() Then
+                            func(en.Current, cb)
+                        Else
+                            _isSettingSelectedFolder = False
+                        End If
                     Else
                         _isSettingSelectedFolder = False
                     End If
