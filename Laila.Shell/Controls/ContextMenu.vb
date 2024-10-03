@@ -18,8 +18,8 @@ Namespace Controls
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
-            _buttonsTop = Template.FindName("buttonsTop", Me)
-            _buttonsBottom = Template.FindName("buttonsBottom", Me)
+            _buttonsTop = Template.FindName("PART_ButtonsTop", Me)
+            _buttonsBottom = Template.FindName("PART_ButtonsBottom", Me)
 
             For Each button In _listTop
                 _buttonsTop.Children.Add(button)

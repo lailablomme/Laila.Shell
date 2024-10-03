@@ -7,27 +7,27 @@ Imports Microsoft
 
 Namespace Helpers
     Public Class UIHelper
-        Public Shared Sub OnUIThread(action As Action)
+        Public Shared Sub OnUIThread(action As Action, Optional priority As DispatcherPriority = DispatcherPriority.Normal)
             Dim appl As System.Windows.Application = System.Windows.Application.Current
             If Not appl Is Nothing Then
-                If appl.Dispatcher.CheckAccess Then
+                If appl.Dispatcher.CheckAccess AndAlso priority = DispatcherPriority.Normal Then
                     action()
                 Else
                     appl.Dispatcher.Invoke(
                         Sub()
                             action()
-                        End Sub)
+                        End Sub, priority)
                 End If
             End If
         End Sub
 
-        Public Shared Sub OnUIThreadAsync(action As Action)
+        Public Shared Sub OnUIThreadAsync(action As Action, Optional priority As DispatcherPriority = DispatcherPriority.Normal)
             Dim appl As System.Windows.Application = System.Windows.Application.Current
             If Not appl Is Nothing Then
                 appl.Dispatcher.BeginInvoke(
                     Sub()
                         action()
-                    End Sub, DispatcherPriority.Background)
+                    End Sub, priority)
             End If
         End Sub
 

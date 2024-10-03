@@ -149,8 +149,6 @@ Public Class ContextMenu
                         Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
                     End Select
                     button.Content = image
-                    button.Background = Brushes.Transparent
-                    button.BorderThickness = New Thickness(0)
                     button.ToolTip = CType(item, MenuItem).Header.ToString().Replace("_", "")
                     'button.Margin = New Thickness(0, 0, 4, 0)
                     button.Tag = item.Tag

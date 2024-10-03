@@ -95,11 +95,16 @@ Namespace Helpers
         Public Function DragOver(grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragOver
             Dim dropTarget As IDropTarget = GetDropTargetFromWIN32POINT(ptWIN32)
             If Not dropTarget Is Nothing Then
-                If Not _activeDropTarget Is Nothing Then
+                If Not _activeDropTarget Is Nothing AndAlso dropTarget.Equals(_activeDropTarget) Then
                     Dim h As HRESULT = _activeDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
                     _dropTargetHelper.DragOver(ptWIN32, pdwEffect)
                     Return h
                 Else
+                    If Not _activeDropTarget Is Nothing Then
+                        _activeDropTarget.DragLeave()
+                        _dropTargetHelper.DragLeave()
+                    End If
+
                     _activeDropTarget = dropTarget
                     Dim h As HRESULT = _activeDropTarget.DragEnterInternal(_dataObject, grfKeyState, ptWIN32, pdwEffect)
                     _dropTargetHelper.DragEnter(_hwnds(_controls.FirstOrDefault(Function(kv) kv.Value.Equals(_activeDropTarget)).Key),

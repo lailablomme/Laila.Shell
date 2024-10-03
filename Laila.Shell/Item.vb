@@ -22,16 +22,17 @@ Public Class Item
     Friend _shellItem2 As IShellItem2
     Private _isPinned As Boolean
     Private _isCut As Boolean
+    Private _list As IList
 
-    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
+    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), list As IList) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As Integer = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If CBool(attr And SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, logicalParent, setIsLoadingAction)
+                Return New Folder(shellItem2, logicalParent, setIsLoadingAction, list)
             Else
-                Return New Item(shellItem2, logicalParent, setIsLoadingAction)
+                Return New Item(shellItem2, logicalParent, setIsLoadingAction, list)
             End If
         Else
             Return Nothing
@@ -75,13 +76,14 @@ Public Class Item
         Return fullPath
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), list As IList)
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = GetFullPathFromShellItem2(shellItem2)
         Else
             _fullPath = String.Empty
         End If
+        _list = list
         _setIsLoadingAction = setIsLoadingAction
         _logicalParent = logicalParent
         AddHandler Shell.Notification, AddressOf shell_Notification
@@ -107,7 +109,7 @@ Public Class Item
                     Dim parentShellItem2 As IShellItem2
                     _shellItem2.GetParent(parentShellItem2)
                     If Not parentShellItem2 Is Nothing Then
-                        _parent = New Folder(parentShellItem2, Nothing, _setIsLoadingAction)
+                        _parent = New Folder(parentShellItem2, Nothing, _setIsLoadingAction, Nothing)
                     End If
                 End If
 
@@ -335,26 +337,41 @@ Public Class Item
     End Function
 
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
-        Select Case e.Event
-            Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
-                If Me.FullPath.Equals(e.Item1Path) Then
-                    Me._shellItem2.Update(IntPtr.Zero)
-                    _properties = New Dictionary(Of String, [Property])()
-                    _displayName = Nothing
-                    For Each prop In Me.GetType().GetProperties()
-                        Me.NotifyOfPropertyChange(prop.Name)
-                    Next
-                End If
-            Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
-                If Me.FullPath.Equals(e.Item1Path) Then
-                    _fullPath = e.Item2Path
-                    _properties = New Dictionary(Of String, [Property])()
-                    _displayName = Nothing
-                    For Each prop In Me.GetType().GetProperties()
-                        Me.NotifyOfPropertyChange(prop.Name)
-                    Next
-                End If
-        End Select
+        If Not _shellItem2 Is Nothing Then
+            Select Case e.Event
+                Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
+                    If Me.FullPath.Equals(e.Item1Path) Then
+                        Marshal.ReleaseComObject(_shellItem2)
+                        _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+                        _properties = New Dictionary(Of String, [Property])()
+                        _displayName = Nothing
+                        For Each prop In Me.GetType().GetProperties()
+                            Me.NotifyOfPropertyChange(prop.Name)
+                        Next
+                        If Not Me.Parent Is Nothing Then
+                            For Each column In Me.Parent.Columns
+                                Me.NotifyOfPropertyChange(String.Format("Properties[{0}].Text", column.CanonicalName))
+                            Next
+                        End If
+                    End If
+                Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
+                    If Me.FullPath.Equals(e.Item1Path) Then
+                        _fullPath = e.Item2Path
+                        Marshal.ReleaseComObject(_shellItem2)
+                        _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+                        _properties = New Dictionary(Of String, [Property])()
+                        _displayName = Nothing
+                        For Each prop In Me.GetType().GetProperties()
+                            Me.NotifyOfPropertyChange(prop.Name)
+                        Next
+                        If Not Me.Parent Is Nothing Then
+                            For Each column In Me.Parent.Columns
+                                Me.NotifyOfPropertyChange(String.Format("Properties[{0}].Text", column.CanonicalName))
+                            Next
+                        End If
+                    End If
+            End Select
+        End If
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
@@ -367,10 +384,16 @@ Public Class Item
             ' free unmanaged resources (unmanaged objects) and override finalizer
             If Not _imageFactory Is Nothing Then
                 Marshal.ReleaseComObject(_imageFactory)
+                _imageFactory = Nothing
             End If
             If Not _shellItem2 Is Nothing Then
                 Marshal.ReleaseComObject(_shellItem2)
+                _shellItem2 = Nothing
             End If
+            'If Not _list Is Nothing Then
+            '    _list.Remove(Me)
+            '    _list = Nothing
+            'End If
             disposedValue = True
         End If
     End Sub

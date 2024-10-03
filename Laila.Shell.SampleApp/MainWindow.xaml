@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Laila.Shell.SampleApp"
         xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" x:Name="view"
         mc:Ignorable="d" Icon="{Binding DataContext.Folder.Icon[48], ElementName=detailListView}"
-        Height="450" Width="800" Title="{Binding DataContext.Folder.DisplayName, ElementName=detailListView}">
+        Height="450" Width="800" Title="{Binding DataContext.FolderDisplayName, ElementName=detailListView}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />

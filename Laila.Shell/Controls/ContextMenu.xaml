@@ -34,13 +34,19 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
+                            <Grid.Resources>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                            </Grid.Resources>
 
                             <Border x:Name="borderTop" Grid.Row="0" CornerRadius="5,5,0,0" Background="#dddddd" Padding="2">
-                                <StackPanel Orientation="Horizontal" x:Name="buttonsTop" />
+                                <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsTop" />
                             </Border>
                             <ItemsPresenter Grid.Row="1" Margin="{TemplateBinding Padding}"  />
                             <Border x:Name="borderBottom" Grid.Row="2" CornerRadius="0,0,5,5" Background="#dddddd" Padding="2">
-                                <StackPanel Orientation="Horizontal" x:Name="buttonsBottom" />
+                                <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsBottom" />
                             </Border>
                         </Grid>
                     </Border>

@@ -185,7 +185,7 @@ Namespace Helpers
                          _isWorking = False
                      End Sub)
             ElseIf Not _control2 Is Nothing Then
-                System.Windows.Application.Current.Dispatcher.Invoke(
+                UIHelper.OnUIThread(
                     Sub()
                         ' clean
                         Dim selectedItems As IEnumerable(Of TData) = value.Where(Function(v) Not v Is Nothing)

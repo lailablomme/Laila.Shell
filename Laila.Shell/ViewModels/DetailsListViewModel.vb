@@ -126,13 +126,27 @@ Namespace ViewModels
                         _skipSavingScrollState = True
                         If Me.Folder Is Nothing OrElse Not EqualityComparer(Of String).Default.Equals(Me.Folder.FullPath, FolderName) Then
                             If Not Me.Folder Is Nothing Then Me.Folder.Dispose()
-                            Me.Folder = Folder.FromParsingName(FolderName, _view.LogicalParent, Sub(val) Me.IsLoading = val)
-                            Me.ColumnsIn = buildColumnsIn()
+                            Me.Folder = Folder.FromParsingName(FolderName, _view.LogicalParent, Sub(val) Me.IsLoading = val, Nothing)
+                            If Not Me.Folder Is Nothing Then
+                                Me.ColumnsIn = buildColumnsIn()
+                                _view.FolderName = _folderName
+                            Else
+                                _view.FolderName = Nothing
+                            End If
+                        Else
+                            _view.FolderName = Nothing
                         End If
+                    Else
+                        _view.FolderName = Nothing
                     End If
-                    _view.FolderName = _folderName
                 End If
             End Set
+        End Property
+
+        Public ReadOnly Property FolderDisplayName
+            Get
+                Return If(String.IsNullOrWhiteSpace(Me.Folder?.DisplayName), "(no folder selected)", Me.Folder?.DisplayName)
+            End Get
         End Property
 
         Public Property Folder As Folder
@@ -142,6 +156,7 @@ Namespace ViewModels
             Set(value As Folder)
                 SetValue(_folder, value)
                 Me.NotifyOfPropertyChange("Items")
+                Me.NotifyOfPropertyChange("FolderDisplayName")
             End Set
         End Property
 
