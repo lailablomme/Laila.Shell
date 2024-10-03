@@ -11,7 +11,14 @@
     <Grid>
         <ListView ItemsSource="{Binding Folder.ItemsThreaded}" x:Name="listView" SelectionMode="Extended" 
                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
-                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="1" VirtualizingPanel.CacheLengthUnit="Page">
+                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="1" VirtualizingPanel.CacheLengthUnit="Page"
+                  ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True"
+                  VirtualizingPanel.ScrollUnit="Pixel">
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
             <ListView.Resources>
                 <GroupStyle x:Key="groupByStyle">
                     <GroupStyle.ContainerStyle>
@@ -53,17 +60,6 @@
                     </GroupStyle.ContainerStyle>
                 </GroupStyle>
             </ListView.Resources>
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <ContentPresenter Content="testr">
-                        <ContentPresenter.InputBindings>
-                            <MouseBinding MouseAction="LeftDoubleClick" 
-                                      Command="{Binding DataContext.LeftDoubleClickCommand, ElementName=listView}" 
-                                      CommandParameter="{Binding SelectedItem, ElementName=listView}"/>
-                        </ContentPresenter.InputBindings>
-                    </ContentPresenter>
-                </DataTemplate>
-            </ListView.ItemTemplate>
             <ListView.View>
                 <GridView></GridView>
             </ListView.View>

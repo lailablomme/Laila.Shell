@@ -222,12 +222,9 @@ Public Class Item
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
-            UIHelper.OnUIThread(
-                Sub()
-                    If String.IsNullOrWhiteSpace(_displayName) Then
-                        _shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
-                    End If
-                End Sub)
+            If String.IsNullOrWhiteSpace(_displayName) Then
+                _shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+            End If
             Return _displayName
         End Get
     End Property

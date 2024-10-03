@@ -1,4 +1,4 @@
-﻿Imports System.Timers
+﻿Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
@@ -13,7 +13,7 @@ Namespace Behaviors
         Inherits Behavior(Of ListView)
 
         Private _listView As ListView
-        Private _selectionRectangle As Rectangle
+        Private _selectionRectangle As Border
         Private _isSelecting As Boolean
         Private _canStartSelecting As Boolean
         Private _mouseDownPos As Point
@@ -23,6 +23,8 @@ Namespace Behaviors
         Private _ptMin As Point
         Private _ptMax As Point
         Private _scrollTimer As Timer
+        Private _panel As Panel
+        Private _grid As Grid
 
         Protected Overrides Sub OnAttached()
             MyBase.OnAttached()
@@ -33,19 +35,22 @@ Namespace Behaviors
             AddHandler _listView.Loaded,
                 Sub(s As Object, e As EventArgs)
                     _sv = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
-                    _selectionRectangle = New Rectangle() With {
-                        .Stroke = Brushes.SkyBlue,
-                        .Fill = New SolidColorBrush(Color.FromArgb(75, Colors.SkyBlue.R, Colors.SkyBlue.G, Colors.SkyBlue.B)),
+                    _selectionRectangle = New Border() With {
+                        .BorderBrush = Brushes.SkyBlue,
+                        .BorderThickness = New Thickness(1),
+                        .Background = New SolidColorBrush(Color.FromArgb(75, Colors.SkyBlue.R, Colors.SkyBlue.G, Colors.SkyBlue.B)),
                         .Visibility = Visibility.Collapsed,
                         .HorizontalAlignment = HorizontalAlignment.Left,
                         .VerticalAlignment = VerticalAlignment.Top
                     }
-                    Dim grid As Grid = New Grid()
-                    Dim content As Object = _sv.Content
-                    _sv.Content = grid
-                    grid.Children.Add(content)
-                    grid.Children.Add(_selectionRectangle)
-                    grid.Children.Add(_control)
+                    _panel = _listView.Parent
+                    _grid = New Grid()
+                    _grid.HorizontalAlignment = HorizontalAlignment.Left
+                    _grid.VerticalAlignment = VerticalAlignment.Top
+                    _grid.ClipToBounds = True
+                    _grid.Children.Add(_selectionRectangle)
+                    _grid.Children.Add(_control)
+                    _panel.Children.Add(_grid)
                 End Sub
 
             AddHandler _listView.PreviewMouseDown,
@@ -61,15 +66,19 @@ Namespace Behaviors
                             _headerHeight = hrp.ActualHeight
 
                             _ptMin = New Point(_listView.BorderThickness.Left, _listView.BorderThickness.Top + _headerHeight)
-                            _ptMax = New Point(_listView.ActualWidth - _listView.BorderThickness.Right - 3,
-                                               _listView.ActualHeight - _listView.BorderThickness.Bottom - 3)
+                            _ptMax = New Point(_listView.ActualWidth - _listView.BorderThickness.Right - 1,
+                                               _listView.ActualHeight - _listView.BorderThickness.Bottom - 1)
                             Dim scrollBars As IEnumerable(Of ScrollBar) = UIHelper.FindVisualChildren(Of ScrollBar)(_sv)
                             Dim vs As ScrollBar = scrollBars.First(Function(sb) sb.Name = "PART_VerticalScrollBar")
                             Dim hs As ScrollBar = scrollBars.First(Function(sb) sb.Name = "PART_HorizontalScrollBar")
                             If vs.Visibility = Visibility.Visible Then _
-                                _ptMax.X = _listView.PointFromScreen(vs.PointToScreen(New Point(0, 0))).X - 3
+                                _ptMax.X = _listView.PointFromScreen(vs.PointToScreen(New Point(0, 0))).X - 1
                             If hs.Visibility = Visibility.Visible Then _
-                                _ptMax.Y = _listView.PointFromScreen(hs.PointToScreen(New Point(0, 0))).Y - 3
+                                _ptMax.Y = _listView.PointFromScreen(hs.PointToScreen(New Point(0, 0))).Y - 1
+
+                            _grid.Margin = New Thickness(_ptMin.X, _ptMin.Y, 0, 0)
+                            _grid.Width = _ptMax.X - _ptMin.X + 1
+                            _grid.Height = _ptMax.Y - _ptMin.Y + 1
 
                             _mouseDownPos = e.GetPosition(_listView)
                             _canStartSelecting = True
@@ -109,9 +118,15 @@ Namespace Behaviors
                 Sub(s As Object, e As MouseButtonEventArgs)
                     If (_isSelecting) Then
                         _isSelecting = False
+                        _canStartSelecting = False
                         _control.ReleaseMouseCapture()
 
                         _selectionRectangle.Visibility = Visibility.Collapsed
+
+                        If Not _scrollTimer Is Nothing Then
+                            _scrollTimer.Dispose()
+                            _scrollTimer = Nothing
+                        End If
                     End If
                 End Sub
 
@@ -120,68 +135,85 @@ Namespace Behaviors
                     Dim actualMousePos As Point = e.GetPosition(_listView)
 
                     If _isSelecting Then
-                        Dim mousePos As Point = e.GetPosition(_listView)
-                        If mousePos.X < _ptMin.X Then mousePos.X = _ptMin.X
-                        If mousePos.Y < _ptMin.Y Then mousePos.Y = _ptMin.Y
-                        If mousePos.X > _ptMax.X Then mousePos.X = _ptMax.X
-                        If mousePos.Y > _ptMax.Y Then mousePos.Y = _ptMax.Y
-                        mousePos.X += _sv.HorizontalOffset
-                        mousePos.Y += _sv.VerticalOffset
-
-                        If (_mouseDownPos.X < mousePos.X) Then
-                            _selectionRectangle.Margin = New Thickness(_mouseDownPos.X, _selectionRectangle.Margin.Top, 0, 0)
-                            _selectionRectangle.Width = mousePos.X - _mouseDownPos.X
-                        Else
-                            _selectionRectangle.Margin = New Thickness(mousePos.X, _selectionRectangle.Margin.Top, 0, 0)
-                            _selectionRectangle.Width = _mouseDownPos.X - mousePos.X
-                        End If
-
-                        If (_mouseDownPos.Y < mousePos.Y) Then
-                            _selectionRectangle.Margin = New Thickness(_selectionRectangle.Margin.Left, _mouseDownPos.Y - _headerHeight, 0, 0)
-                            _selectionRectangle.Height = mousePos.Y - _mouseDownPos.Y
-                        Else
-                            _selectionRectangle.Margin = New Thickness(_selectionRectangle.Margin.Left, mousePos.Y - _headerHeight, 0, 0)
-                            _selectionRectangle.Height = _mouseDownPos.Y - mousePos.Y
-                        End If
-
-                        Dim left As Double, top As Double
-                        Dim width As Double = _selectionRectangle.Width, height As Double = _selectionRectangle.Height
-                        If _selectionRectangle.Margin.Left - _sv.HorizontalOffset < 0 Then
-                            Dim diff As Double = -(_selectionRectangle.Margin.Left - _sv.HorizontalOffset)
-                            left = 0 : width -= diff
-                        Else
-                            left = _selectionRectangle.Margin.Left - _sv.HorizontalOffset
-                        End If
-                        If _selectionRectangle.Margin.Top - _sv.VerticalOffset + _headerHeight < 0 Then
-                            Dim diff As Double = -(_selectionRectangle.Margin.Top - _sv.VerticalOffset + _headerHeight)
-                            top = 0 : height -= diff
-                        Else
-                            top = _selectionRectangle.Margin.Top - _sv.VerticalOffset + _headerHeight
-                        End If
-                        If left + width > _listView.ActualWidth Then
-                            width = _listView.ActualWidth - left
-                        End If
-                        If top + height > _listView.ActualHeight Then
-                            height = _listView.ActualHeight - top
-                        End If
-                        Dim rect As Rect = New Rect(left, top, width, height)
-
-                        For Each item In _listView.Items
-                            Dim listViewItem As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
-                            If Not listViewItem Is Nothing Then
-                                Dim bounds As Rect = listViewItem.TransformToAncestor(_listView).TransformBounds(
-                                    New Rect(0.0, 0.0, listViewItem.ActualWidth, listViewItem.ActualHeight))
-                                If rect.IntersectsWith(bounds) AndAlso Not _listView.SelectedItems.Contains(item) Then
-                                    _listView.SelectedItems.Add(item)
-                                ElseIf Not rect.IntersectsWith(bounds) AndAlso _listView.SelectedItems.Contains(item) Then
-                                    _listView.SelectedItems.Remove(item)
-                                End If
-                            End If
-                        Next
-
+                        onAfterMouseMove()
                         e.Handled = True
+
+                        If actualMousePos.X < _ptMin.X OrElse actualMousePos.Y < _ptMin.Y _
+                            OrElse actualMousePos.X > _ptMax.X OrElse actualMousePos.Y > _ptMax.Y Then
+                            If _scrollTimer Is Nothing Then
+                                _scrollTimer = New Timer(
+                                Sub()
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            Dim scrollMousePos As Point = e.GetPosition(_listView)
+                                            If scrollMousePos.X < _ptMin.X Then
+                                                _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset - 10)
+                                            ElseIf scrollMousePos.X > _ptMax.X Then
+                                                _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset + 10)
+                                            End If
+                                            If scrollMousePos.Y < _ptMin.Y Then
+                                                _sv.ScrollToVerticalOffset(_sv.VerticalOffset - 10)
+                                            ElseIf scrollMousePos.Y > _ptMax.Y Then
+                                                _sv.ScrollToVerticalOffset(_sv.VerticalOffset + 10)
+                                            End If
+
+                                            onAfterMouseMove()
+                                        End Sub)
+                                End Sub, Nothing, 30, 30)
+                            End If
+                        Else
+                            If Not _scrollTimer Is Nothing Then
+                                _scrollTimer.Dispose()
+                                _scrollTimer = Nothing
+                            End If
+                        End If
                     End If
                 End Sub
+        End Sub
+
+        Private Sub onAfterMouseMove()
+            Dim mousePos As Point = Mouse.GetPosition(_listView)
+            If mousePos.X < _ptMin.X Then mousePos.X = _ptMin.X
+            If mousePos.Y < _ptMin.Y Then mousePos.Y = _ptMin.Y
+            If mousePos.X > _ptMax.X Then mousePos.X = _ptMax.X
+            If mousePos.Y > _ptMax.Y Then mousePos.Y = _ptMax.Y
+            mousePos.X += _sv.HorizontalOffset
+            mousePos.Y += _sv.VerticalOffset
+
+            If (_mouseDownPos.X < mousePos.X) Then
+                _selectionRectangle.Margin = New Thickness(_mouseDownPos.X - _sv.HorizontalOffset, _selectionRectangle.Margin.Top, 0, 0)
+                _selectionRectangle.Width = mousePos.X - _mouseDownPos.X
+            Else
+                _selectionRectangle.Margin = New Thickness(mousePos.X - _sv.HorizontalOffset, _selectionRectangle.Margin.Top, 0, 0)
+                _selectionRectangle.Width = _mouseDownPos.X - mousePos.X
+            End If
+
+            If (_mouseDownPos.Y < mousePos.Y) Then
+                _selectionRectangle.Margin = New Thickness(_selectionRectangle.Margin.Left, _mouseDownPos.Y - _headerHeight - _sv.VerticalOffset, 0, 0)
+                _selectionRectangle.Height = mousePos.Y - _mouseDownPos.Y
+            Else
+                _selectionRectangle.Margin = New Thickness(_selectionRectangle.Margin.Left, mousePos.Y - _headerHeight - _sv.VerticalOffset, 0, 0)
+                _selectionRectangle.Height = _mouseDownPos.Y - mousePos.Y
+            End If
+
+            Dim left As Double = _selectionRectangle.Margin.Left
+            Dim top As Double = _selectionRectangle.Margin.Top + _headerHeight
+            Dim width As Double = _selectionRectangle.Width
+            Dim height As Double = _selectionRectangle.Height
+            Dim rect As Rect = New Rect(left, top, width, height)
+
+            For Each item In _listView.Items
+                Dim listViewItem As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
+                If Not listViewItem Is Nothing Then
+                    Dim bounds As Rect = listViewItem.TransformToAncestor(_listView).TransformBounds(
+                                    New Rect(0.0, 0.0, listViewItem.ActualWidth, listViewItem.ActualHeight))
+                    If rect.IntersectsWith(bounds) AndAlso Not _listView.SelectedItems.Contains(item) Then
+                        _listView.SelectedItems.Add(item)
+                    ElseIf Not rect.IntersectsWith(bounds) AndAlso _listView.SelectedItems.Contains(item) Then
+                        _listView.SelectedItems.Remove(item)
+                    End If
+                End If
+            Next
         End Sub
 
         Public ReadOnly Property IsSelecting As Boolean
