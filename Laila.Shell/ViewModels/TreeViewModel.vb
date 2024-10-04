@@ -31,18 +31,18 @@ Namespace ViewModels
             ' home and galery
             _folders1 = New List(Of TreeViewFolder) From
             {
-                TreeViewFolder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing, Nothing),
-                TreeViewFolder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing, Nothing, Nothing)
+                TreeViewFolder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing),
+                TreeViewFolder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing)
             }
 
             ' all the special folders under quick launch
             _folders2 = New List(Of TreeViewFolder)()
-            Dim recentFolder As Folder = Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.Recent), Nothing, Nothing, Nothing)
-            For Each f In CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing, Nothing), Folder) _
+            Dim recentFolder As Folder = Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.Recent), Nothing, Nothing)
+            For Each f In CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing), Folder) _
                 .Items.Where(Function(i) TypeOf i Is Folder AndAlso Not IO.File.Exists(i.FullPath))
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) Then
-                    Dim tvf As TreeViewFolder = TreeViewFolder.FromParsingName(f.FullPath, Nothing, Nothing, Nothing)
+                    Dim tvf As TreeViewFolder = TreeViewFolder.FromParsingName(f.FullPath, Nothing)
                     'tvf.IsPinned = True
                     _folders2.Add(tvf)
                 End If
@@ -53,27 +53,27 @@ Namespace ViewModels
                 .Items.Where(Function(i) TypeOf i Is Folder).Take(5)
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) Then
-                    _folders2.Add(TreeViewFolder.FromParsingName(f.FullPath, Nothing, Nothing, Nothing))
+                    _folders2.Add(TreeViewFolder.FromParsingName(f.FullPath, Nothing))
                 End If
             Next
 
             ' all special folders under user profile that we'rent added yet
-            For Each f In CType(Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), Nothing, Nothing, Nothing), Folder) _
+            For Each f In CType(Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), Nothing, Nothing), Folder) _
                 .Items.Where(Function(i) TypeOf i Is Folder AndAlso
                     Not _folders1.Exists(Function(f2) f2.FullPath = i.FullPath))
-                Dim fpure As Folder = Folder.FromParsingName(f.FullPath, Nothing, Nothing, Nothing)
+                Dim fpure As Folder = Folder.FromParsingName(f.FullPath, Nothing, Nothing)
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     (fpure.Parent Is Nothing OrElse fpure.Parent.Parent Is Nothing) Then
-                    _folders1.Insert(2, TreeViewFolder.FromParsingName(f.FullPath, Nothing, Nothing, Nothing))
+                    _folders1.Insert(2, TreeViewFolder.FromParsingName(f.FullPath, Nothing))
                 End If
             Next
 
             ' this computer & network
             _folders3 = New List(Of TreeViewFolder) From
             {
-                TreeViewFolder.FromParsingName("shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", Nothing, Nothing, Nothing),
-                TreeViewFolder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing, Nothing, Nothing)
+                TreeViewFolder.FromParsingName("shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", Nothing),
+                TreeViewFolder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing)
             }
 
             Dim isWorking As Boolean
@@ -229,7 +229,7 @@ Namespace ViewModels
 
                 Debug.WriteLine("SetSelectedFolder " & path)
                 Dim list As List(Of Folder) = New List(Of Folder)()
-                Dim f As Folder = Folder.FromParsingName(path, _view.LogicalParent, Nothing, Nothing)
+                Dim f As Folder = Folder.FromParsingName(path, _view.LogicalParent, Nothing)
                 If Not f Is Nothing Then
                     While Not f.LogicalParent Is Nothing
                         list.Add(f)

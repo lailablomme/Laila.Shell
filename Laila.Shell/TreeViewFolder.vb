@@ -17,13 +17,13 @@ Public Class TreeViewFolder
     Private _fromThread As Boolean
     Friend _foldersLock As Object = New Object()
 
-    Public Overloads Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), list As IList) As TreeViewFolder
+    Public Overloads Shared Function FromParsingName(parsingName As String, logicalParent As Folder) As TreeViewFolder
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As Integer = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If CBool(attr And SFGAO.FOLDER) Then
-                Return New TreeViewFolder(shellItem2, logicalParent, setIsLoadingAction, list)
+                Return New TreeViewFolder(shellItem2, logicalParent)
             Else
                 Throw New InvalidOperationException("Only folders.")
             End If
@@ -32,8 +32,8 @@ Public Class TreeViewFolder
         End If
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), list As IList)
-        MyBase.New(shellItem2, logicalParent, setIsLoadingAction, list)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
+        MyBase.New(shellItem2, logicalParent, Nothing)
     End Sub
 
     Public Property IsSelected As Boolean Implements ITreeViewItemData.IsSelected
@@ -94,10 +94,6 @@ Public Class TreeViewFolder
     Public Overridable ReadOnly Property FoldersThreaded As ObservableCollection(Of TreeViewFolder)
         Get
             If _folders Is Nothing AndAlso (Me.IsExpanded OrElse Me.ITreeViewItemData_Parent Is Nothing OrElse Me.ITreeViewItemData_Parent.IsExpanded) Then
-                If Not _setIsLoadingAction Is Nothing Then
-                    _setIsLoadingAction(True)
-                End If
-
                 Dim result As ObservableCollection(Of TreeViewFolder) = New ObservableCollection(Of TreeViewFolder)()
                 BindingOperations.EnableCollectionSynchronization(result, _foldersLock)
 
@@ -108,10 +104,6 @@ Public Class TreeViewFolder
                             updateFolders(result, False)
                             Me.Folders = result
                             _fromThread = False
-                        End If
-
-                        If Not _setIsLoadingAction Is Nothing Then
-                            _setIsLoadingAction(False)
                         End If
                     End Sub))
 
@@ -164,10 +156,10 @@ Public Class TreeViewFolder
                                                AndAlso Not TypeOf i Is DummyTreeViewFolder).Cast(Of Item).ToList()
                     End Function,
                     Function(shellItem2 As IShellItem2)
-                        Return New TreeViewFolder(shellItem2, Me, _setIsLoadingAction, items)
+                        Return New TreeViewFolder(shellItem2, Me)
                     End Function,
                     Function(shellItem2 As IShellItem2)
-                        Return New Item(shellItem2, Me, _setIsLoadingAction, items)
+                        Return New Item(shellItem2, Me)
                     End Function,
                     Sub(path As String)
                         Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
@@ -212,7 +204,7 @@ Public Class TreeViewFolder
                                                 UIHelper.OnUIThread(
                                                     Sub()
                                                         If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                            _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction, _folders))
+                                                            _folders.Add(New TreeViewFolder(item1, Me))
                                                         End If
                                                     End Sub)
                                             End SyncLock
@@ -244,7 +236,7 @@ Public Class TreeViewFolder
                                             If Not _folders Is Nothing AndAlso _folders.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
                                                 Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
                                                 If Not item1 Is Nothing Then
-                                                    _folders.Add(New TreeViewFolder(item1, Me, _setIsLoadingAction, _folders))
+                                                    _folders.Add(New TreeViewFolder(item1, Me))
                                                 End If
                                             End If
                                         End Sub)

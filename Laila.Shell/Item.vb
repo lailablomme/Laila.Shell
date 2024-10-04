@@ -15,25 +15,23 @@ Public Class Item
     Private _imageFactory As IShellItemImageFactory
     Protected _properties As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Protected _fullPath As String
-    Protected _setIsLoadingAction As Action(Of Boolean)
     Friend disposedValue As Boolean
     Protected _logicalParent As Folder
     Protected _displayName As String
     Friend _shellItem2 As IShellItem2
     Private _isPinned As Boolean
     Private _isCut As Boolean
-    Private _list As IList
     Private _attributes As SFGAO
 
-    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), list As IList) As Item
+    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As Integer = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If CBool(attr And SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, logicalParent, setIsLoadingAction, list)
+                Return New Folder(shellItem2, logicalParent, setIsLoadingAction)
             Else
-                Return New Item(shellItem2, logicalParent, setIsLoadingAction, list)
+                Return New Item(shellItem2, logicalParent)
             End If
         Else
             Return Nothing
@@ -77,7 +75,7 @@ Public Class Item
         Return fullPath
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), list As IList)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = GetFullPathFromShellItem2(shellItem2)
@@ -87,8 +85,6 @@ Public Class Item
         Else
             _fullPath = String.Empty
         End If
-        _list = list
-        _setIsLoadingAction = setIsLoadingAction
         _logicalParent = logicalParent
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
@@ -113,7 +109,7 @@ Public Class Item
                     Dim parentShellItem2 As IShellItem2
                     _shellItem2.GetParent(parentShellItem2)
                     If Not parentShellItem2 Is Nothing Then
-                        _parent = New Folder(parentShellItem2, Nothing, _setIsLoadingAction, Nothing)
+                        _parent = New Folder(parentShellItem2, Nothing, Nothing)
                     End If
                 End If
 
@@ -231,6 +227,7 @@ Public Class Item
             If String.IsNullOrWhiteSpace(_displayName) Then
                 _shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
             End If
+            'Debug.WriteLine(_displayName)
             Return _displayName
         End Get
     End Property
