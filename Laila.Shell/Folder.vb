@@ -14,8 +14,8 @@ Public Class Folder
     Private _columnManager As IColumnManager
     Protected _setIsLoadingAction As Action(Of Boolean)
 
-    Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid, setIsLoadingAction As Action(Of Boolean)) As Folder
-        Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing, setIsLoadingAction)
+    Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid, setIsLoadingAction As Action(Of Boolean), cachedIconSize As Integer) As Folder
+        Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing, setIsLoadingAction, cachedIconSize)
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
@@ -34,8 +34,8 @@ Public Class Folder
         End Try
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean))
-        MyBase.New(shellItem2, logicalParent)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), cachedIconSize As Integer)
+        MyBase.New(shellItem2, logicalParent, cachedIconSize)
 
         If Not shellItem2 Is Nothing Then
             _shellFolder = Folder.GetIShellFolderFromIShellItem2(shellItem2)
@@ -144,10 +144,10 @@ Public Class Folder
                         Return items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
                     End Function,
                     Function(shellItem2 As IShellItem2)
-                        Return New Folder(shellItem2, Me, _setIsLoadingAction)
+                        Return New Folder(shellItem2, Me, _setIsLoadingAction, _cachedIconSize)
                     End Function,
                     Function(shellItem2 As IShellItem2)
-                        Return New Item(shellItem2, Me)
+                        Return New Item(shellItem2, Me, _cachedIconSize)
                     End Function,
                     Sub(path As String)
                         Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
@@ -342,7 +342,7 @@ Public Class Folder
                                                 UIHelper.OnUIThread(
                                                     Sub()
                                                         If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                            _items.Add(New Item(item1, Me))
+                                                            _items.Add(New Item(item1, Me, _cachedIconSize))
                                                         End If
                                                     End Sub)
                                             End SyncLock
@@ -368,7 +368,7 @@ Public Class Folder
                                                 UIHelper.OnUIThread(
                                                     Sub()
                                                         If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                            _items.Add(New Folder(item1, Me, _setIsLoadingAction))
+                                                            _items.Add(New Folder(item1, Me, _setIsLoadingAction, _cachedIconSize))
                                                         End If
                                                     End Sub)
                                             End SyncLock
@@ -404,7 +404,7 @@ Public Class Folder
                                             If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
                                                 Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
                                                 If Not item1 Is Nothing Then
-                                                    _items.Add(New Folder(item1, Me, _setIsLoadingAction))
+                                                    _items.Add(New Folder(item1, Me, _setIsLoadingAction, _cachedIconSize))
                                                 End If
                                             End If
                                         End Sub)

@@ -68,7 +68,7 @@ Public Class ListViewDropTarget
                     overItem.Execute("""" & String.Join(""" """, _fileList) & """")
                 ElseIf CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_MOVE) _
                 OrElse CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
-                    Dim sourceItems As List(Of IShellItem) = _fileList.Select(Function(f) CType(Item.FromParsingName(f, Nothing, Nothing)?._shellItem2, IShellItem)).Where(Function(i) Not i Is Nothing).ToList()
+                    Dim sourceItems As List(Of IShellItem) = _fileList.Select(Function(f) CType(Item.FromParsingName(f, Nothing, Nothing, 0)?._shellItem2, IShellItem)).Where(Function(i) Not i Is Nothing).ToList()
                     Dim sourcePidls As New List(Of IntPtr)()
                     Dim destPath As String = If(TypeOf overItem Is Folder, overItem.FullPath, IO.Path.GetDirectoryName(overItem.FullPath))
                     For Each item As IShellItem In sourceItems

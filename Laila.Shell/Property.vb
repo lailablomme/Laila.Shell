@@ -14,6 +14,7 @@ Public Class [Property]
     Private _originalPropertyKey As PROPERTYKEY
     Private _propertyDescription As IPropertyDescription
     Private _propertyKey As PROPERTYKEY
+    Private _text As String
 
     Public Shared Function FromCanonicalName(canonicalName As String, Optional item As Item = Nothing) As [Property]
         Dim propertyDescription As IPropertyDescription
@@ -84,12 +85,15 @@ Public Class [Property]
 
     Public ReadOnly Property Text As String
         Get
-            Using rawValue As PROPVARIANT = Me.RawValue
-                Dim buffer As StringBuilder = New StringBuilder()
-                buffer.Append(New String(" ", 2050))
-                Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
-                Return buffer.ToString()
-            End Using
+            If String.IsNullOrWhiteSpace(_text) Then
+                Using rawValue As PROPVARIANT = Me.RawValue
+                    Dim buffer As StringBuilder = New StringBuilder()
+                    buffer.Append(New String(" ", 2050))
+                    Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
+                    _text = buffer.ToString()
+                End Using
+            End If
+            Return _text
         End Get
     End Property
 

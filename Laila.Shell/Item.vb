@@ -22,16 +22,21 @@ Public Class Item
     Private _isPinned As Boolean
     Private _isCut As Boolean
     Private _attributes As SFGAO
+    Private _icon As Dictionary(Of Integer, ImageSource) = New Dictionary(Of Integer, ImageSource)()
+    Private _overlaySmall As ImageSource
+    Private _overlayLarge As ImageSource
+    Protected _cachedIconSize As Integer
 
-    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean)) As Item
+    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean),
+                                           cachedIconSize As Integer) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As Integer = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If CBool(attr And SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, logicalParent, setIsLoadingAction)
+                Return New Folder(shellItem2, logicalParent, setIsLoadingAction, cachedIconSize)
             Else
-                Return New Item(shellItem2, logicalParent)
+                Return New Item(shellItem2, logicalParent, cachedIconSize)
             End If
         Else
             Return Nothing
@@ -75,7 +80,7 @@ Public Class Item
         Return fullPath
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, cachedIconSize As Integer)
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = GetFullPathFromShellItem2(shellItem2)
@@ -85,6 +90,18 @@ Public Class Item
         Else
             _fullPath = String.Empty
         End If
+        UIHelper.OnUIThread(
+            Sub()
+                If cachedIconSize <> 0 Then
+                    _cachedIconSize = cachedIconSize
+                    _icon(cachedIconSize) = Me.Icon(cachedIconSize)
+                    If cachedIconSize < 32 Then
+                        _overlaySmall = Me.OverlaySmall
+                    Else
+                        _overlayLarge = Me.OverlayLarge
+                    End If
+                End If
+            End Sub)
         _logicalParent = logicalParent
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
@@ -109,7 +126,7 @@ Public Class Item
                     Dim parentShellItem2 As IShellItem2
                     _shellItem2.GetParent(parentShellItem2)
                     If Not parentShellItem2 Is Nothing Then
-                        _parent = New Folder(parentShellItem2, Nothing, Nothing)
+                        _parent = New Folder(parentShellItem2, Nothing, Nothing, 0)
                     End If
                 End If
 
@@ -137,25 +154,34 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlaySmall As ImageSource
         Get
-            Return getOverlay(False)
+            If _overlaySmall Is Nothing Then
+                _overlaySmall = getOverlay(False)
+            End If
+            Return _overlaySmall
         End Get
     End Property
 
     Public Overridable ReadOnly Property OverlayLarge As ImageSource
         Get
-            Return getOverlay(True)
+            If _overlayLarge Is Nothing Then
+                _overlayLarge = getOverlay(True)
+            End If
+            Return _overlayLarge
         End Get
     End Property
 
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
-            Dim ptr As IntPtr
-            Try
-                CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
-                Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-            Finally
-                Functions.DeleteObject(ptr)
-            End Try
+            If Not _icon.ContainsKey(size) Then
+                Dim ptr As IntPtr
+                Try
+                    CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
+                    _icon.Add(size, Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()))
+                Finally
+                    Functions.DeleteObject(ptr)
+                End Try
+            End If
+            Return _icon(size)
         End Get
     End Property
 
@@ -317,8 +343,9 @@ Public Class Item
 
     Public Overridable ReadOnly Property Properties(canonicalName As String) As [Property]
         Get
-            If _properties.Keys.Contains(canonicalName) Then
-                Return _properties(canonicalName)
+            Dim kv As KeyValuePair(Of String, [Property]) = _properties.FirstOrDefault(Function(kvp) kvp.Key.Equals(canonicalName))
+            If Not String.IsNullOrEmpty(kv.Key) Then
+                Return kv.Value
             Else
                 Dim [property] As [Property] = [Property].FromCanonicalName(canonicalName, Me)
                 _properties.Add(canonicalName, [property])

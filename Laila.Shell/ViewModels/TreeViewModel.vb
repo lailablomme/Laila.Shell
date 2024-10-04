@@ -37,8 +37,8 @@ Namespace ViewModels
 
             ' all the special folders under quick launch
             _folders2 = New List(Of TreeViewFolder)()
-            Dim recentFolder As Folder = Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.Recent), Nothing, Nothing)
-            For Each f In CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing), Folder) _
+            Dim recentFolder As Folder = Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.Recent), Nothing, Nothing, 0)
+            For Each f In CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, Nothing, 0), Folder) _
                 .Items.Where(Function(i) TypeOf i Is Folder AndAlso Not IO.File.Exists(i.FullPath))
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) Then
@@ -58,10 +58,10 @@ Namespace ViewModels
             Next
 
             ' all special folders under user profile that we'rent added yet
-            For Each f In CType(Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), Nothing, Nothing), Folder) _
+            For Each f In CType(Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), Nothing, Nothing, 0), Folder) _
                 .Items.Where(Function(i) TypeOf i Is Folder AndAlso
                     Not _folders1.Exists(Function(f2) f2.FullPath = i.FullPath))
-                Dim fpure As Folder = Folder.FromParsingName(f.FullPath, Nothing, Nothing)
+                Dim fpure As Folder = Folder.FromParsingName(f.FullPath, Nothing, Nothing, 0)
                 If Not _folders1.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     Not _folders2.Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                     (fpure.Parent Is Nothing OrElse fpure.Parent.Parent Is Nothing) Then
@@ -229,7 +229,7 @@ Namespace ViewModels
 
                 Debug.WriteLine("SetSelectedFolder " & path)
                 Dim list As List(Of Folder) = New List(Of Folder)()
-                Dim f As Folder = Folder.FromParsingName(path, _view.LogicalParent, Nothing)
+                Dim f As Folder = Folder.FromParsingName(path, _view.LogicalParent, Nothing, 0)
                 If Not f Is Nothing Then
                     While Not f.LogicalParent Is Nothing
                         list.Add(f)

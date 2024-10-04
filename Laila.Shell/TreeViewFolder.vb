@@ -33,7 +33,7 @@ Public Class TreeViewFolder
     End Function
 
     Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
-        MyBase.New(shellItem2, logicalParent, Nothing)
+        MyBase.New(shellItem2, logicalParent, Nothing, 16)
     End Sub
 
     Public Property IsSelected As Boolean Implements ITreeViewItemData.IsSelected
@@ -159,7 +159,7 @@ Public Class TreeViewFolder
                         Return New TreeViewFolder(shellItem2, Me)
                     End Function,
                     Function(shellItem2 As IShellItem2)
-                        Return New Item(shellItem2, Me)
+                        Return New Item(shellItem2, Me, _cachedIconSize)
                     End Function,
                     Sub(path As String)
                         Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
