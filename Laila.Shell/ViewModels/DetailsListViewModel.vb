@@ -21,16 +21,12 @@ Namespace ViewModels
         Private _gridView As GridView
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
-        Private _isLoadingVisible As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _scrollState As Dictionary(Of String, ScrollState) = New Dictionary(Of String, ScrollState)()
-        Private _skipSavingScrollState As Boolean = False
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
         Private _menu As ContextMenu = New ContextMenu()
-        Private _catchIgc As Boolean
-        Private _stopPreloading As Boolean
 
         Public Sub New(view As DetailsListView)
             _view = view
@@ -64,8 +60,6 @@ Namespace ViewModels
             AddHandler _view.listView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
             AddHandler _view.listView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
             AddHandler _view.PreviewKeyDown, AddressOf OnListViewKeyDown
-
-            AddHandler _view.listView.ItemContainerGenerator.StatusChanged, AddressOf icgStatusChanged
         End Sub
 
         Public Property IsLoading As Boolean
@@ -82,83 +76,7 @@ Namespace ViewModels
                                 loadScrollState()
                             End Sub)
                     End If
-
-                    UIHelper.OnUIThread(
-                        Sub()
-                            _view.loadingViewBox.Margin = New Thickness(_view.listView.ActualWidth - 26, _view.listView.ActualHeight - 26, 10, 10)
-                            _view.loadingViewBox.Width = 16
-                            _view.loadingViewBox.Height = 16
-                            If Me.Folder.Items.Count = 0 Then Me.IsLoadingVisible = False
-                        End Sub)
-                Else
-                    If Not Me.Folder Is Nothing AndAlso Not _skipSavingScrollState Then
-                        UIHelper.OnUIThread(
-                            Sub()
-                                saveScrollState()
-                            End Sub)
-                    End If
-                    _skipSavingScrollState = False
-                    UIHelper.OnUIThread(
-                        Sub()
-                            _view.loadingViewBox.Margin = New Thickness(0, 0, 0, 0)
-                            _view.loadingViewBox.Width = 64
-                            _view.loadingViewBox.Height = 64
-                            Me.IsLoadingVisible = True
-                        End Sub)
-                    _catchIgc = True
                 End If
-            End Set
-        End Property
-
-        Private Sub icgStatusChanged(sender As Object, e As EventArgs)
-            If _catchIgc AndAlso _view.listView.ItemContainerGenerator.Status = Primitives.GeneratorStatus.ContainersGenerated Then
-                _catchIgc = False
-
-                Dim bindings As IEnumerable(Of Binding)
-                Dim items As IEnumerable(Of Object)
-
-                Dim rp As ListViewItem = UIHelper.FindVisualChildren(Of ListViewItem)(_view.listView).FirstOrDefault()
-                If Not rp Is Nothing Then
-                    bindings = UIHelper.GetBindingsDeep(rp)
-                    items = _view.listView.Items.Cast(Of Object).ToList()
-                End If
-
-                Dim preloadItems As Func(Of Task) =
-                    Async Function() As Task
-                        Try
-                            If Not bindings Is Nothing AndAlso Not items Is Nothing Then
-                                For Each row In items
-                                    If _stopPreloading Then Exit For
-                                    For Each binding In bindings
-                                        If _stopPreloading Then Exit For
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                Try
-                                                    Dim eval As BindingEvaluator = New BindingEvaluator(binding)
-                                                    If Not _stopPreloading Then eval.Evaluate(row)
-                                                Catch ex As Exception
-                                                End Try
-                                            End Sub, Threading.DispatcherPriority.ContextIdle)
-                                    Next
-                                Next
-                                Debug.WriteLine(items.Count & " item(s) cached.")
-                            End If
-                        Finally
-                            Me.IsLoadingVisible = False
-                        End Try
-                    End Function
-
-                _stopPreloading = False
-                Task.Run(preloadItems)
-            End If
-        End Sub
-
-        Public Property IsLoadingVisible As Boolean
-            Get
-                Return _isLoadingVisible
-            End Get
-            Set(value As Boolean)
-                SetValue(_isLoadingVisible, value)
             End Set
         End Property
 
@@ -203,10 +121,13 @@ Namespace ViewModels
                 Return _folder
             End Get
             Set(value As Folder)
-                _stopPreloading = True
                 If Not Me.Folder Is Nothing Then
                     saveScrollState()
                     RemoveHandler Me.Folder.LoadingStateChanged, AddressOf folder_LoadingStateChanged
+                    UIHelper.OnUIThread(
+                        Sub()
+                            saveScrollState()
+                        End Sub)
                 End If
 
                 If Not value Is Nothing AndAlso Not value._items Is Nothing AndAlso value._items.Count = 1 _
@@ -214,13 +135,14 @@ Namespace ViewModels
                     value._items = Nothing
                 End If
 
-                If Not value Is Nothing Then AddHandler value.LoadingStateChanged, AddressOf folder_LoadingStateChanged
+                If Not value Is Nothing Then
+                    AddHandler value.LoadingStateChanged, AddressOf folder_LoadingStateChanged
+                End If
                 SetValue(_folder, value)
                 Me.NotifyOfPropertyChange("Items")
                 Me.NotifyOfPropertyChange("FolderDisplayName")
 
                 If Not value Is Nothing Then
-                    _skipSavingScrollState = True
                     Me.ColumnsIn = buildColumnsIn()
                 End If
 

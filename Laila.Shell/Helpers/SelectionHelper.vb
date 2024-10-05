@@ -1,7 +1,5 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
-Imports System.Windows.Data
-Imports System.Windows.Threading
 
 Namespace Helpers
     Public Class SelectionHelper(Of TData)
@@ -200,14 +198,13 @@ Namespace Helpers
                     End If
                 ElseIf selectedItems.Count = 1 Then
                     _selectedItem = selectedItems(0)
-                    If Not selectedItems(0).Equals(_control2.SelectedItem) Then
-                        Dim tvi As TreeViewItem = findTVI(_control2, selectedItems(0))
-                        If Not tvi Is Nothing Then
-                            tvi.IsSelected = True
-                            tvi.BringIntoView()
-                            ' notify change
-                            SelectionChanged()
-                        End If
+                    Dim tvi As TreeViewItem = findTVI(_control2, selectedItems(0))
+                    If Not tvi Is Nothing Then
+                        Dim areEqual As Boolean = selectedItems(0).Equals(_control2.SelectedItem)
+                        If Not areEqual Then tvi.IsSelected = True
+                        tvi.BringIntoView()
+                        ' notify change
+                        If Not areEqual Then SelectionChanged()
                     End If
                 Else
                     Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
@@ -234,20 +231,6 @@ Namespace Helpers
                 End If
                 i += 1
             Next
-            'Dim found As TreeViewItem = ic.ItemContainerGenerator.ContainerFromItem(item)
-            'If Not found Is Nothing Then
-            '    Return found
-            'Else
-            '    For Each i In ic.Items
-            '        Dim itvi As TreeViewItem = ic.ItemContainerGenerator.ContainerFromItem(i)
-            '        If Not itvi Is Nothing Then
-            '            found = findTVI(itvi, item)
-            '            If Not found Is Nothing Then
-            '                Return found
-            '            End If
-            '        End If
-            '    Next
-            'End If
             Return Nothing
         End Function
     End Class

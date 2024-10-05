@@ -11,7 +11,7 @@
     <Grid>
         <ListView ItemsSource="{Binding Folder.ItemsThreaded}" x:Name="listView" SelectionMode="Extended" 
                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
-                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="1" VirtualizingPanel.CacheLengthUnit="Page"
+                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True"
                   VirtualizingPanel.ScrollUnit="Pixel">
             <ListView.ItemsPanel>
@@ -68,12 +68,12 @@
                 <behaviors:SelectionBehavior x:Name="selection" />
             </i:Interaction.Behaviors>
         </ListView>
-        <Viewbox StretchDirection="Both" Stretch="Uniform" Width="16" Height="16" x:Name="loadingViewBox">
+        <Viewbox StretchDirection="Both" Stretch="Uniform" Width="64" Height="64" x:Name="loadingViewBox">
             <Viewbox.Style>
                 <Style>
                     <Setter Property="Viewbox.Visibility" Value="Visible" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsLoadingVisible}" Value="False">
+                        <DataTrigger Binding="{Binding IsLoading}" Value="False">
                             <Setter Property="Viewbox.Visibility" Value="Collapsed" />
                         </DataTrigger>
                     </Style.Triggers>

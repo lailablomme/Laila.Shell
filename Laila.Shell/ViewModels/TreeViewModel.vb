@@ -256,10 +256,8 @@ Namespace ViewModels
                                 Dim tf2 As Folder
                                 UIHelper.OnUIThreadAsync(
                                     Sub()
-                                        SyncLock tf._itemsLock
-                                            If Not tf.IsExpanded AndAlso Not tf.IsSelected Then tf._items = Nothing
-                                            tf2 = tf.Items.FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
-                                        End SyncLock
+                                        If Not tf.IsExpanded AndAlso Not tf.IsSelected Then tf._items = Nothing
+                                        tf2 = tf.Items.FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
                                         If Not tf2 Is Nothing Then
                                             Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
                                             tf.IsExpanded = True
@@ -273,36 +271,36 @@ Namespace ViewModels
                             End Sub
                         Dim en As IEnumerator(Of Folder) = list.GetEnumerator()
                         Dim cb As System.Action(Of Boolean) =
-                        Sub(cancel As Boolean)
-                            If Not cancel Then
-                                If en.MoveNext() Then
-                                    func(en.Current, cb)
-                                Else
-                                    ' wait for expanding to complete
-                                    For i = 1 To 5
-                                        Application.Current.Dispatcher.Invoke(
+                            Sub(cancel As Boolean)
+                                If Not cancel Then
+                                    If en.MoveNext() Then
+                                        func(en.Current, cb)
+                                    Else
+                                        ' wait for expanding to complete
+                                        For i = 1 To 5
+                                            Application.Current.Dispatcher.Invoke(
                                             Sub()
                                             End Sub, Threading.DispatcherPriority.ContextIdle)
-                                        Application.Current.Dispatcher.Invoke(
+                                            Application.Current.Dispatcher.Invoke(
                                             Sub()
                                             End Sub, Threading.DispatcherPriority.ContextIdle)
-                                        Application.Current.Dispatcher.Invoke(
+                                            Application.Current.Dispatcher.Invoke(
                                             Sub()
                                             End Sub, Threading.DispatcherPriority.ContextIdle)
-                                    Next
+                                        Next
 
-                                    Select Case root
-                                        Case 1 : _selectionHelper1.SetSelectedItems({tf})
-                                        Case 2 : _selectionHelper2.SetSelectedItems({tf})
-                                        Case 3 : _selectionHelper3.SetSelectedItems({tf})
-                                    End Select
+                                        Select Case root
+                                            Case 1 : _selectionHelper1.SetSelectedItems({tf})
+                                            Case 2 : _selectionHelper2.SetSelectedItems({tf})
+                                            Case 3 : _selectionHelper3.SetSelectedItems({tf})
+                                        End Select
+                                        _isSettingSelectedFolder = False
+                                    End If
+                                Else
+                                    Me.SetSelectedItem(Nothing)
                                     _isSettingSelectedFolder = False
                                 End If
-                            Else
-                                Me.SetSelectedItem(Nothing)
-                                _isSettingSelectedFolder = False
-                            End If
-                        End Sub
+                            End Sub
                         If en.MoveNext() Then
                             func(en.Current, cb)
                         Else

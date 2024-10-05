@@ -25,6 +25,7 @@ Public Class Item
     Private _icon As Dictionary(Of Integer, ImageSource) = New Dictionary(Of Integer, ImageSource)()
     Private _overlaySmall As ImageSource
     Private _overlayLarge As ImageSource
+    Private _overlayIconIndex As Integer?
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
@@ -188,7 +189,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlaySmall As ImageSource
         Get
-            If _overlaySmall Is Nothing Then
+            If _overlaySmall Is Nothing And Not _overlayIconIndex.HasValue Then
                 _overlaySmall = getOverlay(False)
             End If
             Return _overlaySmall
@@ -197,7 +198,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlayLarge As ImageSource
         Get
-            If _overlayLarge Is Nothing Then
+            If _overlayLarge Is Nothing And Not _overlayIconIndex.HasValue Then
                 _overlayLarge = getOverlay(True)
             End If
             Return _overlayLarge
@@ -220,66 +221,70 @@ Public Class Item
     End Property
 
     Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
-        Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr
-        ptr = Marshal.GetIUnknownForObject(_shellItem2)
-        Functions.SHGetIDListFromObject(ptr, pidl)
-        lastpidl = Functions.ILFindLastID(pidl)
+        If Not _overlayIconIndex.HasValue Then
+            Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr
+            ptr = Marshal.GetIUnknownForObject(_shellItem2)
+            Functions.SHGetIDListFromObject(ptr, pidl)
+            lastpidl = Functions.ILFindLastID(pidl)
 
-        Dim shellFolder As IShellFolder = If(Not Me.Parent Is Nothing, Me.Parent._shellFolder, Shell.Desktop._shellFolder)
-        Try
-            ptr = Marshal.GetIUnknownForObject(shellFolder)
-            Dim ptr2 As IntPtr, shellIconOverlay As IShellIconOverlay
+            Dim shellFolder As IShellFolder = If(Not Me.Parent Is Nothing, Me.Parent._shellFolder, Shell.Desktop._shellFolder)
             Try
-                Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
-                If Not IntPtr.Zero.Equals(ptr2) Then
-                    Dim iconIndex As Integer
+                ptr = Marshal.GetIUnknownForObject(shellFolder)
+                Dim ptr2 As IntPtr, shellIconOverlay As IShellIconOverlay
+                Try
+                    Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
+                    If Not IntPtr.Zero.Equals(ptr2) Then
+                        Dim iconIndex As Integer
 
-                    shellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
-                    shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
+                        shellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
+                        shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
 
-                    If iconIndex > 0 Then
-                        ' Get the system image list
-                        Dim hImageListLarge As IntPtr
-                        Dim hImageListSmall As IntPtr
-                        Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
-
-                        ' Retrieve the overlay icon
-                        Dim hIcon As IntPtr
-                        Try
-                            If isLarge Then
-                                hIcon = Functions.ImageList_GetIcon(hImageListLarge, iconIndex, 0)
-                            Else
-                                hIcon = Functions.ImageList_GetIcon(hImageListSmall, iconIndex, 0)
-                            End If
-                            If hIcon <> IntPtr.Zero Then
-                                Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
-                                    Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                End Using
-                            Else
-                                Return Nothing
-                            End If
-                        Finally
-                            If hIcon <> IntPtr.Zero Then
-                                Functions.DestroyIcon(hIcon)
-                            End If
-                        End Try
+                        _overlayIconIndex = iconIndex
                     Else
                         Return Nothing
                     End If
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr2) Then
+                        Marshal.Release(ptr2)
+                    End If
+                    If Not shellIconOverlay Is Nothing Then
+                        Marshal.ReleaseComObject(shellIconOverlay)
+                    End If
+                End Try
+            Finally
+                Marshal.Release(ptr)
+            End Try
+        End If
+
+        If _overlayIconIndex > 0 Then
+            ' Get the system image list
+            Dim hImageListLarge As IntPtr
+            Dim hImageListSmall As IntPtr
+            Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
+
+            ' Retrieve the overlay icon
+            Dim hIcon As IntPtr
+            Try
+                If isLarge Then
+                    hIcon = Functions.ImageList_GetIcon(hImageListLarge, _overlayIconIndex, 0)
+                Else
+                    hIcon = Functions.ImageList_GetIcon(hImageListSmall, _overlayIconIndex, 0)
+                End If
+                If hIcon <> IntPtr.Zero Then
+                    Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
+                        Return Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    End Using
                 Else
                     Return Nothing
                 End If
             Finally
-                If Not IntPtr.Zero.Equals(ptr2) Then
-                    Marshal.Release(ptr2)
-                End If
-                If Not shellIconOverlay Is Nothing Then
-                    Marshal.ReleaseComObject(shellIconOverlay)
+                If hIcon <> IntPtr.Zero Then
+                    Functions.DestroyIcon(hIcon)
                 End If
             End Try
-        Finally
-            Marshal.Release(ptr)
-        End Try
+        Else
+            Return Nothing
+        End If
     End Function
 
     Public Overridable ReadOnly Property DisplayName As String
@@ -384,7 +389,7 @@ Public Class Item
 
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
             If [property] Is Nothing Then
-                [property] = [Property].FromKey(key, Me)
+                [property] = [property].FromKey(key, Me)
                 _properties.Add([property])
             End If
             Return [property]
@@ -395,7 +400,7 @@ Public Class Item
         Get
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
             If [property] Is Nothing Then
-                [property] = [Property].FromKey(propertyKey, Me)
+                [property] = [property].FromKey(propertyKey, Me)
                 _properties.Add([property])
             End If
             Return [property]
