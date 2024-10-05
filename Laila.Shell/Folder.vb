@@ -58,10 +58,6 @@ Public Class Folder
         End Get
         Set(value As Boolean)
             SetValue(_isSelected, value)
-            If (_items Is Nothing OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder)) Then
-                _items = Nothing
-                NotifyOfPropertyChange("ItemsThreaded")
-            End If
         End Set
     End Property
 
@@ -71,6 +67,10 @@ Public Class Folder
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)
+            If value AndAlso (_items Is Nothing OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder)) Then
+                _items = Nothing
+                NotifyOfPropertyChange("ItemsThreaded")
+            End If
         End Set
     End Property
 
