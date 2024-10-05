@@ -78,7 +78,9 @@ Public Class [Property]
     Friend Overridable ReadOnly Property RawValue As PROPVARIANT
         Get
             Dim result As PROPVARIANT
-            _item._shellItem2.GetProperty(_propertyKey, result)
+            If Not _item._shellItem2 Is Nothing AndAlso Not _item.disposedValue Then
+                _item._shellItem2.GetProperty(_propertyKey, result)
+            End If
             Return result
         End Get
     End Property
