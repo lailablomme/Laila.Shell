@@ -113,7 +113,10 @@ Namespace ViewModels
         End Property
 
         Private Sub folder_LoadingStateChanged(isLoading As Boolean)
-            Me.IsLoading = isLoading
+            UIHelper.OnUIThread(
+                Sub()
+                    Me.IsLoading = isLoading
+                End Sub)
         End Sub
 
         Public Property Folder As Folder
