@@ -1,8 +1,8 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Windows.Media
 
-Public Class DummyTreeViewFolder
-    Inherits TreeViewFolder
+Public Class DummyFolder
+    Inherits Folder
 
     Private _displayName As String
 
@@ -29,17 +29,21 @@ Public Class DummyTreeViewFolder
         Return Nothing
     End Function
 
-    Public Overrides ReadOnly Property FoldersThreaded As ObservableCollection(Of TreeViewFolder)
+    Public Overrides ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
             Return Nothing
         End Get
     End Property
 
-    Public Overrides Property Folders As ObservableCollection(Of TreeViewFolder)
+    Public Overrides ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
         Get
             Return Nothing
         End Get
-        Friend Set(value As ObservableCollection(Of TreeViewFolder))
-        End Set
+    End Property
+
+    Public Overrides ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
+        Get
+            Return Nothing
+        End Get
     End Property
 End Class

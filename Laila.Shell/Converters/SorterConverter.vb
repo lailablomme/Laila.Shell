@@ -12,6 +12,9 @@ Namespace Converters
             Else
                 Dim view As ListCollectionView = New ListCollectionView(list)
                 view.SortDescriptions.Add(New SortDescription(parameter.ToString(), ListSortDirection.Ascending))
+                view.Filter = Function(obj As Object) As Boolean
+                                  Return TypeOf obj Is Folder
+                              End Function
                 Return view
             End If
         End Function

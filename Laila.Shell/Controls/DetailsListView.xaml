@@ -68,18 +68,19 @@
                 <behaviors:SelectionBehavior x:Name="selection" />
             </i:Interaction.Behaviors>
         </ListView>
-        <local:LoadingSpinner>
-            <local:LoadingSpinner.Style>
+        <Viewbox StretchDirection="Both" Stretch="Uniform" Width="16" Height="16" x:Name="loadingViewBox">
+            <Viewbox.Style>
                 <Style>
-                    <Setter Property="local:LoadingSpinner.Visibility" Value="Visible" />
+                    <Setter Property="Viewbox.Visibility" Value="Visible" />
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsLoading}" Value="False">
-                            <Setter Property="local:LoadingSpinner.Visibility" Value="Collapsed" />
+                        <DataTrigger Binding="{Binding IsLoadingVisible}" Value="False">
+                            <Setter Property="Viewbox.Visibility" Value="Collapsed" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </local:LoadingSpinner.Style>
-        </local:LoadingSpinner>
+            </Viewbox.Style>
+            <local:LoadingSpinner />
+        </Viewbox>
         <WindowsFormsHost Background="Red" />
     </Grid>
 </UserControl>

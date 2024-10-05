@@ -27,7 +27,7 @@
                     </Style>
                 </TreeView.Style>
                 <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type root:TreeViewFolder}" ItemsSource="{Binding Path=FoldersThreaded, Converter={StaticResource sorterConverter}, ConverterParameter=ItemNameDisplaySortValue}">
+                    <HierarchicalDataTemplate DataType="{x:Type root:Folder}" ItemsSource="{Binding Path=ItemsThreaded, Converter={StaticResource sorterConverter}, ConverterParameter=ItemNameDisplaySortValue}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -76,7 +76,17 @@
                                 </Viewbox.Style>
                                 <local:LoadingSpinner />
                             </Viewbox>
-                            <TextBlock Grid.Column="1" Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCompressed}" Value="True">
+                                                <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.Resources>
@@ -100,7 +110,7 @@
                     </Style>
                 </TreeView.Style>
                 <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type root:TreeViewFolder}" ItemsSource="{Binding Path=FoldersThreaded, Converter={StaticResource sorterConverter}, ConverterParameter=ItemNameDisplaySortValue}">
+                    <HierarchicalDataTemplate DataType="{x:Type root:Folder}" ItemsSource="{Binding Path=ItemsThreaded, Converter={StaticResource sorterConverter}, ConverterParameter=ItemNameDisplaySortValue}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -150,7 +160,17 @@
                                 <local:LoadingSpinner />
                             </Viewbox>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCompressed}" Value="True">
+                                                    <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                                 <Image Source="../Images/pin.png" Margin="4,0,0,0" Width="16" Height="16">
                                     <Image.Style>
                                         <Style>
@@ -187,7 +207,7 @@
                     </Style>
                 </TreeView.Style>
                 <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type root:TreeViewFolder}" ItemsSource="{Binding Path=FoldersThreaded, Converter={StaticResource sorterConverter}, ConverterParameter=ItemNameDisplaySortValue}">
+                    <HierarchicalDataTemplate DataType="{x:Type root:Folder}" ItemsSource="{Binding Path=ItemsThreaded, Converter={StaticResource sorterConverter}, ConverterParameter=ItemNameDisplaySortValue}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -236,7 +256,17 @@
                                 </Viewbox.Style>
                                 <local:LoadingSpinner />
                             </Viewbox>
-                            <TextBlock Grid.Column="1" Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCompressed}" Value="True">
+                                                <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
                     </HierarchicalDataTemplate>
                 </TreeView.Resources>

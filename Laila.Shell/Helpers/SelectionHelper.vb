@@ -119,108 +119,102 @@ Namespace Helpers
                         End Sub, Threading.DispatcherPriority.DataBind)
                 End If
 
-                UIHelper.OnUIThread(
-                     Sub()
-                         ' clean
-                         Dim selectedItems As IEnumerable(Of TData) = value.Where(Function(v) Not v Is Nothing)
+                ' clean
+                Dim selectedItems As IEnumerable(Of TData) = value.Where(Function(v) Not v Is Nothing)
 
-                         ' turn off notifications  
-                         _isWorking = True
+                ' turn off notifications  
+                _isWorking = True
 
-                         If _control.SelectionMode = SelectionMode.Single Then
-                             If selectedItems.Count = 0 Then
-                                 If Not _control.SelectedItem Is Nothing Then
-                                     _control.SelectedItem = Nothing
-                                     SelectionChanged()
-                                 End If
-                             ElseIf selectedItems.Count = 1 Then
-                                 If Not selectedItems(0).Equals(_control.SelectedItem) Then
-                                     _control.SelectedItem = selectedItems(0)
-                                     '_control.ScrollIntoView(selectedItems(0))
-                                     scrollIntoView(_control, selectedItems(0))
-                                     SelectionChanged()
-                                 End If
-                             Else
-                                 Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
-                             End If
-                         Else
-                             Dim isSame As Boolean = True
-                             If _control.SelectedItems.Count <> selectedItems.Count Then
-                                 isSame = False
-                             Else
-                                 For Each i In _control.SelectedItems
-                                     If Not selectedItems.Contains(i) Then
-                                         isSame = False
-                                         Exit For
-                                     End If
-                                 Next
-
-                                 If isSame Then
-                                     For Each i In selectedItems
-                                         If Not _control.SelectedItems.Contains(i) Then
-                                             isSame = False
-                                             Exit For
-                                         End If
-                                     Next
-                                 End If
-                             End If
-
-                             If Not isSame Then
-                                 ' add selected items
-                                 _control.SelectedItems.Clear()
-                                 For Each item In selectedItems
-                                     _control.SelectedItems.Add(_control.Items.Cast(Of TData).FirstOrDefault(Function(i) i.Equals(item)))
-                                 Next
-                                 If selectedItems.Count > 0 Then
-                                     '_control.ScrollIntoView(selectedItems(0))
-                                     scrollIntoView(_control, selectedItems(0))
-                                 End If
-
-                                 ' notify change
-                                 SelectionChanged()
-                             End If
-                         End If
-
-                         ' turn back on notifications  
-                         _isWorking = False
-                     End Sub)
-            ElseIf Not _control2 Is Nothing Then
-                UIHelper.OnUIThread(
-                    Sub()
-                        ' clean
-                        Dim selectedItems As IEnumerable(Of TData) = value.Where(Function(v) Not v Is Nothing)
-
-                        ' turn off notifications  
-                        _isWorking = True
-
-                        If selectedItems.Count = 0 Then
-                            _selectedItem = Nothing
-                            If Not _control2.SelectedItem Is Nothing Then
-                                Dim tvi As TreeViewItem = findTVI(_control2, _control2.SelectedItem)
-                                If Not tvi Is Nothing Then
-                                    tvi.IsSelected = False
-                                    ' notify change
-                                    SelectionChanged()
-                                End If
+                If _control.SelectionMode = SelectionMode.Single Then
+                    If selectedItems.Count = 0 Then
+                        If Not _control.SelectedItem Is Nothing Then
+                            _control.SelectedItem = Nothing
+                            SelectionChanged()
+                        End If
+                    ElseIf selectedItems.Count = 1 Then
+                        If Not selectedItems(0).Equals(_control.SelectedItem) Then
+                            _control.SelectedItem = selectedItems(0)
+                            '_control.ScrollIntoView(selectedItems(0))
+                            scrollIntoView(_control, selectedItems(0))
+                            SelectionChanged()
+                        End If
+                    Else
+                        Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
+                    End If
+                Else
+                    Dim isSame As Boolean = True
+                    If _control.SelectedItems.Count <> selectedItems.Count Then
+                        isSame = False
+                    Else
+                        For Each i In _control.SelectedItems
+                            If Not selectedItems.Contains(i) Then
+                                isSame = False
+                                Exit For
                             End If
-                        ElseIf selectedItems.Count = 1 Then
-                            _selectedItem = selectedItems(0)
-                            If Not selectedItems(0).Equals(_control2.SelectedItem) Then
-                                Dim tvi As TreeViewItem = findTVI(_control2, selectedItems(0))
-                                If Not tvi Is Nothing Then
-                                    tvi.IsSelected = True
-                                    tvi.BringIntoView()
-                                    ' notify change
-                                    SelectionChanged()
+                        Next
+
+                        If isSame Then
+                            For Each i In selectedItems
+                                If Not _control.SelectedItems.Contains(i) Then
+                                    isSame = False
+                                    Exit For
                                 End If
-                            End If
-                        Else
-                            Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
+                            Next
+                        End If
+                    End If
+
+                    If Not isSame Then
+                        ' add selected items
+                        _control.SelectedItems.Clear()
+                        For Each item In selectedItems
+                            _control.SelectedItems.Add(_control.Items.Cast(Of TData).FirstOrDefault(Function(i) i.Equals(item)))
+                        Next
+                        If selectedItems.Count > 0 Then
+                            '_control.ScrollIntoView(selectedItems(0))
+                            scrollIntoView(_control, selectedItems(0))
                         End If
 
-                        ' turn back on notifications  
-                        _isWorking = False
-                    End Sub, DispatcherPriority.Loaded)
+                        ' notify change
+                        SelectionChanged()
+                    End If
+                End If
+
+                ' turn back on notifications  
+                _isWorking = False
+            ElseIf Not _control2 Is Nothing Then
+                ' clean
+                Dim selectedItems As IEnumerable(Of TData) = value.Where(Function(v) Not v Is Nothing)
+
+                ' turn off notifications  
+                _isWorking = True
+
+                If selectedItems.Count = 0 Then
+                    _selectedItem = Nothing
+                    If Not _control2.SelectedItem Is Nothing Then
+                        Dim tvi As TreeViewItem = findTVI(_control2, _control2.SelectedItem)
+                        If Not tvi Is Nothing Then
+                            tvi.IsSelected = False
+                            ' notify change
+                            SelectionChanged()
+                        End If
+                    End If
+                ElseIf selectedItems.Count = 1 Then
+                    _selectedItem = selectedItems(0)
+                    If Not selectedItems(0).Equals(_control2.SelectedItem) Then
+                        Dim tvi As TreeViewItem = findTVI(_control2, selectedItems(0))
+                        If Not tvi Is Nothing Then
+                            tvi.IsSelected = True
+                            tvi.BringIntoView()
+                            ' notify change
+                            SelectionChanged()
+                        End If
+                    End If
+                Else
+                    Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
+                End If
+
+                ' turn back on notifications  
+                _isWorking = False
             Else
                 Throw New InvalidOperationException()
             End If

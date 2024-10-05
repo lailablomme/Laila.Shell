@@ -1,5 +1,7 @@
-﻿Imports System.Windows
+﻿Imports System.Reflection
+Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Data
 Imports System.Windows.Media
 Imports System.Windows.Threading
 Imports Laila.Shell.ViewModels
@@ -80,6 +82,43 @@ Namespace Helpers
                     Next
                 End If
             Next
+        End Function
+
+        Public Shared Function GetBindingsDeep(obj As DependencyObject) As IEnumerable(Of Binding)
+            Dim result As List(Of Binding) = New List(Of Binding)()
+
+            Dim objectBindings As Dictionary(Of DependencyProperty, Binding) = GetBindings(obj)
+            result.AddRange(objectBindings.Values.ToList())
+
+            For i = 0 To VisualTreeHelper.GetChildrenCount(obj) - 1
+                Dim child As DependencyObject = VisualTreeHelper.GetChild(obj, i)
+                Dim childBindings As IEnumerable(Of Binding) = GetBindingsDeep(child)
+                result.AddRange(childBindings)
+            Next
+
+            Return result
+        End Function
+
+        Public Shared Function GetBindings(obj As DependencyObject) As Dictionary(Of DependencyProperty, Binding)
+            Dim result As Dictionary(Of DependencyProperty, Binding) = New Dictionary(Of DependencyProperty, Binding)()
+            Dim properties As List(Of DependencyProperty) = GetDependencyProperties(obj)
+            For Each p In properties
+                Dim b As BindingBase = BindingOperations.GetBindingBase(obj, p)
+                If Not b Is Nothing AndAlso TypeOf b Is Binding Then
+                    result.Add(p, b)
+                End If
+            Next
+            Return result
+        End Function
+
+        Public Shared Function GetDependencyProperties(obj As DependencyObject) As List(Of DependencyProperty)
+            Dim result As List(Of DependencyProperty) = New List(Of DependencyProperty)()
+            For Each fi As FieldInfo In obj.GetType().GetFields(BindingFlags.FlattenHierarchy Or BindingFlags.NonPublic Or BindingFlags.Public Or BindingFlags.Static Or BindingFlags.Public)
+                If fi.FieldType = GetType(DependencyProperty) Then
+                    result.Add(fi.GetValue(Nothing))
+                End If
+            Next
+            Return result
         End Function
     End Class
 End Namespace

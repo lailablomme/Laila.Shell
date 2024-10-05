@@ -13,7 +13,7 @@ Public Class Item
 
     Private _parent As Folder
     Private _imageFactory As IShellItemImageFactory
-    Protected _properties As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
+    Protected _properties As List(Of [Property]) = New List(Of [Property])
     Protected _fullPath As String
     Friend disposedValue As Boolean
     Protected _logicalParent As Folder
@@ -25,18 +25,16 @@ Public Class Item
     Private _icon As Dictionary(Of Integer, ImageSource) = New Dictionary(Of Integer, ImageSource)()
     Private _overlaySmall As ImageSource
     Private _overlayLarge As ImageSource
-    Protected _cachedIconSize As Integer
 
-    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean),
-                                           cachedIconSize As Integer) As Item
+    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As Integer = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If CBool(attr And SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, logicalParent, setIsLoadingAction, cachedIconSize)
+                Return New Folder(shellItem2, logicalParent)
             Else
-                Return New Item(shellItem2, logicalParent, cachedIconSize)
+                Return New Item(shellItem2, logicalParent)
             End If
         Else
             Return Nothing
@@ -80,7 +78,7 @@ Public Class Item
         Return fullPath
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, cachedIconSize As Integer)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = GetFullPathFromShellItem2(shellItem2)
@@ -90,20 +88,56 @@ Public Class Item
         Else
             _fullPath = String.Empty
         End If
-        UIHelper.OnUIThread(
-            Sub()
-                If cachedIconSize <> 0 Then
-                    _cachedIconSize = cachedIconSize
-                    _icon(cachedIconSize) = Me.Icon(cachedIconSize)
-                    If cachedIconSize < 32 Then
-                        _overlaySmall = Me.OverlaySmall
-                    Else
-                        _overlayLarge = Me.OverlayLarge
-                    End If
-                End If
-            End Sub)
+        'UIHelper.OnUIThread(
+        '    Sub()
+        '        If cachedIconSize <> 0 Then
+        '            _cachedIconSize = cachedIconSize
+        '            _icon(cachedIconSize) = Me.Icon(cachedIconSize)
+        '            If cachedIconSize < 32 Then
+        '                _overlaySmall = Me.OverlaySmall
+        '            Else
+        '                _overlayLarge = Me.OverlayLarge
+        '            End If
+        '        End If
+        '    End Sub)
         _logicalParent = logicalParent
         AddHandler Shell.Notification, AddressOf shell_Notification
+    End Sub
+
+    Public Sub ClearCache()
+        If Not _parent Is Nothing Then
+            _parent.Dispose()
+            _parent = Nothing
+        End If
+        If Not _imageFactory Is Nothing Then
+            Marshal.ReleaseComObject(_imageFactory)
+            _imageFactory = Nothing
+        End If
+        For Each [property] In _properties
+            [property].Dispose()
+        Next
+        _properties = New List(Of [Property])()
+        _displayName = Nothing
+        _icon = New Dictionary(Of Integer, ImageSource)()
+        _overlaySmall = Nothing
+        _overlayLarge = Nothing
+    End Sub
+
+    Public Sub Refresh()
+        Marshal.ReleaseComObject(_shellItem2)
+        _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+        _attributes = SFGAO.HIDDEN Or SFGAO.COMPRESSED Or SFGAO.CANCOPY Or SFGAO.CANMOVE _
+                Or SFGAO.CANLINK Or SFGAO.HASSUBFOLDER Or SFGAO.ISSLOW
+        _shellItem2.GetAttributes(_attributes, _attributes)
+        Me.ClearCache()
+        For Each prop In Me.GetType().GetProperties()
+            Me.NotifyOfPropertyChange(prop.Name)
+        Next
+        If Not Me.Parent Is Nothing Then
+            For Each column In Me.Parent.Columns
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
+            Next
+        End If
     End Sub
 
     Public ReadOnly Property FullPath As String
@@ -126,7 +160,7 @@ Public Class Item
                     Dim parentShellItem2 As IShellItem2
                     _shellItem2.GetParent(parentShellItem2)
                     If Not parentShellItem2 Is Nothing Then
-                        _parent = New Folder(parentShellItem2, Nothing, Nothing, 0)
+                        _parent = New Folder(parentShellItem2, Nothing)
                     End If
                 End If
 
@@ -188,8 +222,8 @@ Public Class Item
     Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
         Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr
         ptr = Marshal.GetIUnknownForObject(_shellItem2)
-        Functions.SHGetIDListFromObject(ptr, Pidl)
-        lastpidl = Functions.ILFindLastID(Pidl)
+        Functions.SHGetIDListFromObject(ptr, pidl)
+        lastpidl = Functions.ILFindLastID(pidl)
 
         Dim shellFolder As IShellFolder = If(Not Me.Parent Is Nothing, Me.Parent._shellFolder, Shell.Desktop._shellFolder)
         Try
@@ -341,16 +375,41 @@ Public Class Item
     '    End Get
     'End Property
 
-    Public Overridable ReadOnly Property Properties(canonicalName As String) As [Property]
+    Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
-            Dim kv As KeyValuePair(Of String, [Property]) = _properties.FirstOrDefault(Function(kvp) kvp.Key.Equals(canonicalName))
-            If Not String.IsNullOrEmpty(kv.Key) Then
-                Return kv.Value
-            Else
-                Dim [property] As [Property] = [Property].FromCanonicalName(canonicalName, Me)
-                _properties.Add(canonicalName, [property])
-                Return [property]
+            Dim parts() As String = propertyKey.Split(":")
+            Dim key As PROPERTYKEY
+            key.fmtid = New Guid(parts(0))
+            key.pid = parts(1)
+
+            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
+            If [property] Is Nothing Then
+                [property] = [Property].FromKey(key, Me)
+                _properties.Add([property])
             End If
+            Return [property]
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
+        Get
+            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
+            If [property] Is Nothing Then
+                [property] = [Property].FromKey(propertyKey, Me)
+                _properties.Add([property])
+            End If
+            Return [property]
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
+        Get
+            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
+            If [property] Is Nothing Then
+                [property] = [Property].FromCanonicalName(canonicalName, Me)
+                _properties.Add([property])
+            End If
+            Return [property]
         End Get
     End Property
 
@@ -367,34 +426,12 @@ Public Class Item
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                     If Me.FullPath.Equals(e.Item1Path) Then
-                        Marshal.ReleaseComObject(_shellItem2)
-                        _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
-                        _properties = New Dictionary(Of String, [Property])()
-                        _displayName = Nothing
-                        For Each prop In Me.GetType().GetProperties()
-                            Me.NotifyOfPropertyChange(prop.Name)
-                        Next
-                        If Not Me.Parent Is Nothing Then
-                            For Each column In Me.Parent.Columns
-                                Me.NotifyOfPropertyChange(String.Format("Properties[{0}].Text", column.CanonicalName))
-                            Next
-                        End If
+                        Me.Refresh()
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If Me.FullPath.Equals(e.Item1Path) Then
                         _fullPath = e.Item2Path
-                        Marshal.ReleaseComObject(_shellItem2)
-                        _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
-                        _properties = New Dictionary(Of String, [Property])()
-                        _displayName = Nothing
-                        For Each prop In Me.GetType().GetProperties()
-                            Me.NotifyOfPropertyChange(prop.Name)
-                        Next
-                        If Not Me.Parent Is Nothing Then
-                            For Each column In Me.Parent.Columns
-                                Me.NotifyOfPropertyChange(String.Format("Properties[{0}].Text", column.CanonicalName))
-                            Next
-                        End If
+                        Me.Refresh()
                     End If
             End Select
         End If

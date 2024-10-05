@@ -4,8 +4,7 @@ Imports Laila.Shell.ViewModels
 
 Namespace Controls
     Public Class DetailsListView
-        Public Shared ReadOnly FolderNameProperty As DependencyProperty = DependencyProperty.Register("FolderName", GetType(String), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderNameChanged))
-        Public Shared ReadOnly LogicalParentProperty As DependencyProperty = DependencyProperty.Register("LogicalParent", GetType(Folder), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
 
         Private _model As DetailsListViewModel
 
@@ -16,31 +15,21 @@ Namespace Controls
             ' Add any initialization after the InitializeComponent() call.
             _model = New DetailsListViewModel(Me)
             Me.DataContext = _model
-            _model.FolderName = Me.FolderName
         End Sub
 
-        Public Property FolderName As String
+        Public Property Folder As Folder
             Get
-                Return GetValue(FolderNameProperty)
-            End Get
-            Set(ByVal value As String)
-                SetValue(FolderNameProperty, value)
-            End Set
-        End Property
-
-        Shared Sub OnFolderNameChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim dlv As DetailsListView = TryCast(d, DetailsListView)
-            dlv.Model.FolderName = e.NewValue
-        End Sub
-
-        Public Property LogicalParent As Folder
-            Get
-                Return GetValue(LogicalParentProperty)
+                Return GetValue(FolderProperty)
             End Get
             Set(ByVal value As Folder)
-                SetValue(LogicalParentProperty, value)
+                SetCurrentValue(FolderProperty, value)
             End Set
         End Property
+
+        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim dlv As DetailsListView = TryCast(d, DetailsListView)
+            dlv.Model.Folder = e.NewValue
+        End Sub
 
         Public ReadOnly Property Model As DetailsListViewModel
             Get

@@ -3,8 +3,7 @@ Imports Laila.Shell.ViewModels
 
 Namespace Controls
     Public Class TreeView
-        Public Shared ReadOnly SelectedFolderNameProperty As DependencyProperty = DependencyProperty.Register("SelectedFolderName", GetType(String), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderNameChanged))
-        Public Shared ReadOnly LogicalParentProperty As DependencyProperty = DependencyProperty.Register("LogicalParent", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
 
         Private _model As TreeViewModel
 
@@ -23,27 +22,18 @@ Namespace Controls
             End Get
         End Property
 
-        Public Property SelectedFolderName As String
+        Public Property Folder As Folder
             Get
-                Return GetValue(SelectedFolderNameProperty)
+                Return GetValue(FolderProperty)
             End Get
-            Set(ByVal value As String)
-                SetCurrentValue(SelectedFolderNameProperty, value)
+            Set(ByVal value As Folder)
+                SetCurrentValue(FolderProperty, value)
             End Set
         End Property
 
-        Shared Sub OnFolderNameChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim tv As TreeView = TryCast(d, TreeView)
             tv.Model.SetSelectedFolder(e.NewValue)
         End Sub
-
-        Public Property LogicalParent As Folder
-            Get
-                Return GetValue(LogicalParentProperty)
-            End Get
-            Set(ByVal value As Folder)
-                SetCurrentValue(LogicalParentProperty, value)
-            End Set
-        End Property
     End Class
 End Namespace

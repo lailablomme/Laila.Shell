@@ -8,6 +8,9 @@ Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
 
+    <DllImport("propsys.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
+    Public Shared Function PSGetNameFromPropertyKey(ByRef propkey As PROPERTYKEY, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszCanonicalName As String) As Integer
+    End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
     Public Shared Function SHCreateItemArray(
         ByVal cItems As UInteger,

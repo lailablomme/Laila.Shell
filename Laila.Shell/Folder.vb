@@ -2,20 +2,28 @@
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Data
+Imports Laila.Shell.Data
 Imports Laila.Shell.Helpers
 
 Public Class Folder
     Inherits Item
+    Implements ITreeViewItemData
+
+    Public Event LoadingStateChanged(isLoading As Boolean)
 
     Private _columns As List(Of Column)
-    Private _items As ObservableCollection(Of Item)
-    Protected _itemsLock As Object = New Object()
+    Friend _items As ObservableCollection(Of Item)
+    Friend _itemsLock As Object = New Object()
     Friend _shellFolder As IShellFolder
     Private _columnManager As IColumnManager
-    Protected _setIsLoadingAction As Action(Of Boolean)
+    Private _isSelected As Boolean
+    Private _isExpanded As Boolean
+    Private _parent As ITreeViewItemData
+    Private _isLoading As Boolean
+    Private _fromThread As Boolean
 
-    Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid, setIsLoadingAction As Action(Of Boolean), cachedIconSize As Integer) As Folder
-        Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing, setIsLoadingAction, cachedIconSize)
+    Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
+        Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
@@ -34,15 +42,53 @@ Public Class Folder
         End Try
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, setIsLoadingAction As Action(Of Boolean), cachedIconSize As Integer)
-        MyBase.New(shellItem2, logicalParent, cachedIconSize)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
+        MyBase.New(shellItem2, logicalParent)
 
         If Not shellItem2 Is Nothing Then
             _shellFolder = Folder.GetIShellFolderFromIShellItem2(shellItem2)
         End If
-
-        _setIsLoadingAction = setIsLoadingAction
     End Sub
+
+    Public Property IsSelected As Boolean Implements ITreeViewItemData.IsSelected
+        Get
+            Return _isSelected
+        End Get
+        Set(value As Boolean)
+            SetValue(_isSelected, value)
+        End Set
+    End Property
+
+    Public Property IsExpanded As Boolean Implements ITreeViewItemData.IsExpanded
+        Get
+            Return _isExpanded
+        End Get
+        Set(value As Boolean)
+            SetValue(_isExpanded, value)
+            If value AndAlso (_items Is Nothing OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder)) Then
+                _items = Nothing
+                NotifyOfPropertyChange("ItemsThreaded")
+            End If
+        End Set
+    End Property
+
+    Private Property ITreeViewItemData_Parent As ITreeViewItemData Implements ITreeViewItemData.Parent
+        Get
+            Return _parent
+        End Get
+        Set(value As ITreeViewItemData)
+            SetValue(_parent, value)
+        End Set
+    End Property
+
+    Public Property IsLoading As Boolean
+        Get
+            Return _isLoading
+        End Get
+        Set(value As Boolean)
+            SetValue(_isLoading, value)
+        End Set
+    End Property
 
     Public ReadOnly Property Columns(canonicalName As String) As Column
         Get
@@ -79,26 +125,25 @@ Public Class Folder
 
     Public Overridable ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
         Get
-            If _items Is Nothing Then
-                Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
-                BindingOperations.EnableCollectionSynchronization(result, _itemsLock)
+            If _items Is Nothing AndAlso (Me.IsExpanded OrElse Me.ITreeViewItemData_Parent Is Nothing _
+                OrElse Me.ITreeViewItemData_Parent.IsExpanded OrElse Me.IsSelected) Then
 
-                If Not _setIsLoadingAction Is Nothing Then
-                    _setIsLoadingAction(True)
-                End If
+                Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
 
                 Dim t As Thread = New Thread(New ThreadStart(
                     Sub()
+                        RaiseEvent LoadingStateChanged(True)
+
                         SyncLock _itemsLock
                             If _items Is Nothing Then
-                                updateItems(result, False)
+                                _fromThread = True
+                                updateItems(result, True)
+                                _fromThread = False
                                 Me.Items = result
                             End If
                         End SyncLock
 
-                        If Not _setIsLoadingAction Is Nothing Then
-                            _setIsLoadingAction(False)
-                        End If
+                        RaiseEvent LoadingStateChanged(False)
                     End Sub))
 
                 t.Start()
@@ -115,7 +160,6 @@ Public Class Folder
             SyncLock _itemsLock
                 If _items Is Nothing Then
                     Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
-                    BindingOperations.EnableCollectionSynchronization(result, _itemsLock)
                     updateItems(result, False)
                     Me.Items = result
                 End If
@@ -130,7 +174,15 @@ Public Class Folder
     End Property
 
     Protected Sub updateItems(items As ObservableCollection(Of Item), isOnUIThread As Boolean)
-        updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN, True,
+        If Me.IsExpanded OrElse Not _fromThread Then
+            Me.IsLoading = True
+            UIHelper.OnUIThread(
+                Sub()
+                End Sub, Windows.Threading.DispatcherPriority.ContextIdle)
+        End If
+
+        updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN,
+                    Me.IsExpanded OrElse Not _fromThread OrElse Me.IsSelected,
                     Function(item As Item) As Boolean
                         Return Not items.FirstOrDefault(Function(i) i.FullPath = item.FullPath AndAlso Not i.disposedValue) Is Nothing
                     End Function,
@@ -141,25 +193,33 @@ Public Class Folder
                         items.Remove(item)
                     End Sub,
                     Function(paths As List(Of String)) As List(Of Item)
-                        Return items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
+                        Return items.Where(Function(i) Not paths.Contains(i.FullPath) _
+                                               AndAlso Not TypeOf i Is DummyFolder).ToList()
                     End Function,
                     Function(shellItem2 As IShellItem2)
-                        Return New Folder(shellItem2, Me, _setIsLoadingAction, _cachedIconSize)
+                        Return New Folder(shellItem2, Me)
                     End Function,
                     Function(shellItem2 As IShellItem2)
-                        Return New Item(shellItem2, Me, _cachedIconSize)
+                        Return New Item(shellItem2, Me)
                     End Function,
                     Sub(path As String)
                         Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
                         If Not item Is Nothing Then
-                            item._shellItem2.Update(IntPtr.Zero)
-                            For Each prop In item.GetType().GetProperties()
-                                item.NotifyOfPropertyChange(prop.Name)
-                            Next
+                            item.Refresh()
                         End If
                     End Sub,
                     Sub()
+                        items.Clear()
+                        items.Add(New DummyFolder("Loading...", Nothing))
                     End Sub, 0, isOnUIThread)
+
+        For Each item In items
+            If TypeOf item Is Folder Then
+                CType(item, Folder).ITreeViewItemData_Parent = Me
+            End If
+        Next
+
+        Me.IsLoading = False
     End Sub
 
     Protected Sub updateItems(flags As UInt32, condition As Boolean,
@@ -246,7 +306,7 @@ Public Class Folder
                                     End If
                                 End If
                             Catch ex As Exception
-                                toAdd.Add(New DummyTreeViewFolder(ex.Message, Nothing))
+                                toAdd.Add(New DummyFolder(ex.Message, Nothing))
                             Finally
                                 If Not enumShellItems Is Nothing Then
                                     Marshal.ReleaseComObject(enumShellItems)
@@ -342,7 +402,7 @@ Public Class Folder
                                                 UIHelper.OnUIThread(
                                                     Sub()
                                                         If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                            _items.Add(New Item(item1, Me, _cachedIconSize))
+                                                            _items.Add(New Item(item1, Me))
                                                         End If
                                                     End Sub)
                                             End SyncLock
@@ -368,7 +428,7 @@ Public Class Folder
                                                 UIHelper.OnUIThread(
                                                     Sub()
                                                         If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                            _items.Add(New Folder(item1, Me, _setIsLoadingAction, _cachedIconSize))
+                                                            _items.Add(New Folder(item1, Me))
                                                         End If
                                                     End Sub)
                                             End SyncLock
@@ -387,10 +447,12 @@ Public Class Folder
                                     If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                                    .Folder = item,
-                                                    .[Event] = e.Event
-                                                })
+                                                If TypeOf item Is Folder Then
+                                                    Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                                        .Folder = item,
+                                                        .[Event] = e.Event
+                                                    })
+                                                End If
                                                 _items.Remove(item)
                                             End Sub)
                                     End If
@@ -404,7 +466,7 @@ Public Class Folder
                                             If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
                                                 Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
                                                 If Not item1 Is Nothing Then
-                                                    _items.Add(New Folder(item1, Me, _setIsLoadingAction, _cachedIconSize))
+                                                    _items.Add(New Folder(item1, Me))
                                                 End If
                                             End If
                                         End Sub)
@@ -426,7 +488,7 @@ Public Class Folder
                                     End If
                                 End SyncLock
                             End If
-                        Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
+                        Case SHCNE.UPDATEDIR
                             If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing Then
                                 SyncLock _itemsLock
                                     updateItems(_items, True)

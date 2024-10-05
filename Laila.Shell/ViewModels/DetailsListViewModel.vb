@@ -1,8 +1,11 @@
-﻿Imports System.Windows
+﻿Imports System.Threading
+Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
 Imports System.Windows.Media
+Imports System.Windows.Media.Animation
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Helpers
 
@@ -10,12 +13,15 @@ Namespace ViewModels
     Public Class DetailsListViewModel
         Inherits NotifyPropertyChangedBase
 
+        Private Const LOADINGSPINNER_ANIMATION_DURATION = 100
+
         Friend _view As DetailsListView
         Private _folderName As String
         Private _folder As Folder
         Private _gridView As GridView
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
+        Private _isLoadingVisible As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _scrollState As Dictionary(Of String, ScrollState) = New Dictionary(Of String, ScrollState)()
         Private _skipSavingScrollState As Boolean = False
@@ -23,6 +29,8 @@ Namespace ViewModels
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
         Private _menu As ContextMenu = New ContextMenu()
+        Private _catchIgc As Boolean
+        Private _stopPreloading As Boolean
 
         Public Sub New(view As DetailsListView)
             _view = view
@@ -56,6 +64,8 @@ Namespace ViewModels
             AddHandler _view.listView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
             AddHandler _view.listView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
             AddHandler _view.PreviewKeyDown, AddressOf OnListViewKeyDown
+
+            AddHandler _view.listView.ItemContainerGenerator.StatusChanged, AddressOf icgStatusChanged
         End Sub
 
         Public Property IsLoading As Boolean
@@ -72,6 +82,14 @@ Namespace ViewModels
                                 loadScrollState()
                             End Sub)
                     End If
+
+                    UIHelper.OnUIThread(
+                        Sub()
+                            _view.loadingViewBox.Margin = New Thickness(_view.listView.ActualWidth - 26, _view.listView.ActualHeight - 26, 10, 10)
+                            _view.loadingViewBox.Width = 16
+                            _view.loadingViewBox.Height = 16
+                            If Me.Folder.Items.Count = 0 Then Me.IsLoadingVisible = False
+                        End Sub)
                 Else
                     If Not Me.Folder Is Nothing AndAlso Not _skipSavingScrollState Then
                         UIHelper.OnUIThread(
@@ -80,7 +98,67 @@ Namespace ViewModels
                             End Sub)
                     End If
                     _skipSavingScrollState = False
+                    UIHelper.OnUIThread(
+                        Sub()
+                            _view.loadingViewBox.Margin = New Thickness(0, 0, 0, 0)
+                            _view.loadingViewBox.Width = 64
+                            _view.loadingViewBox.Height = 64
+                            Me.IsLoadingVisible = True
+                        End Sub)
+                    _catchIgc = True
                 End If
+            End Set
+        End Property
+
+        Private Sub icgStatusChanged(sender As Object, e As EventArgs)
+            If _catchIgc AndAlso _view.listView.ItemContainerGenerator.Status = Primitives.GeneratorStatus.ContainersGenerated Then
+                _catchIgc = False
+
+                Dim bindings As IEnumerable(Of Binding)
+                Dim items As IEnumerable(Of Object)
+
+                Dim rp As ListViewItem = UIHelper.FindVisualChildren(Of ListViewItem)(_view.listView).FirstOrDefault()
+                If Not rp Is Nothing Then
+                    bindings = UIHelper.GetBindingsDeep(rp)
+                    items = _view.listView.Items.Cast(Of Object).ToList()
+                End If
+
+                Dim preloadItems As Func(Of Task) =
+                    Async Function() As Task
+                        Try
+                            If Not bindings Is Nothing AndAlso Not items Is Nothing Then
+                                For Each row In items
+                                    If _stopPreloading Then Exit For
+                                    For Each binding In bindings
+                                        If _stopPreloading Then Exit For
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Try
+                                                    Dim eval As BindingEvaluator = New BindingEvaluator(binding)
+                                                    If Not _stopPreloading Then eval.Evaluate(row)
+                                                Catch ex As Exception
+                                                End Try
+                                            End Sub, Threading.DispatcherPriority.ContextIdle)
+                                    Next
+                                Next
+                                Debug.WriteLine(items.Count & " item(s) cached.")
+                            End If
+                        Finally
+                            Me.IsLoadingVisible = False
+                        End Try
+                    End Function
+
+                _stopPreloading = False
+                Task.Run(preloadItems)
+            End If
+        End Sub
+
+        Public Property IsLoadingVisible As Boolean
+            Get
+                Return _isLoadingVisible
+            End Get
+            Set(value As Boolean)
+                SetValue(_isLoadingVisible, value)
             End Set
         End Property
 
@@ -110,53 +188,43 @@ Namespace ViewModels
             End If
         End Sub
 
-        Public Property FolderName As String
-            Get
-                Return _folderName
-            End Get
-            Set(value As String)
-                If Not (String.IsNullOrWhiteSpace(Me.FolderName) AndAlso String.IsNullOrWhiteSpace(value)) AndAlso
-                    Not EqualityComparer(Of String).Default.Equals(Me.FolderName, value) Then
-                    If Not Me.Folder Is Nothing Then
-                        saveScrollState()
-                    End If
-
-                    SetValue(_folderName, value)
-                    If Not String.IsNullOrWhiteSpace(Me.FolderName) Then
-                        _skipSavingScrollState = True
-                        If Me.Folder Is Nothing OrElse Not EqualityComparer(Of String).Default.Equals(Me.Folder.FullPath, FolderName) Then
-                            If Not Me.Folder Is Nothing Then Me.Folder.Dispose()
-                            Me.Folder = Folder.FromParsingName(FolderName, _view.LogicalParent, Sub(val As Boolean) Me.IsLoading = val, 0)
-                            If Not Me.Folder Is Nothing Then
-                                Me.ColumnsIn = buildColumnsIn()
-                                _view.FolderName = _folderName
-                            Else
-                                _view.FolderName = Nothing
-                            End If
-                        Else
-                            _view.FolderName = Nothing
-                        End If
-                    Else
-                        _view.FolderName = Nothing
-                    End If
-                End If
-            End Set
-        End Property
-
         Public ReadOnly Property FolderDisplayName
             Get
                 Return If(String.IsNullOrWhiteSpace(Me.Folder?.DisplayName), "(no folder selected)", Me.Folder?.DisplayName)
             End Get
         End Property
 
+        Private Sub folder_LoadingStateChanged(isLoading As Boolean)
+            Me.IsLoading = isLoading
+        End Sub
+
         Public Property Folder As Folder
             Get
                 Return _folder
             End Get
             Set(value As Folder)
+                _stopPreloading = True
+                If Not Me.Folder Is Nothing Then
+                    saveScrollState()
+                    RemoveHandler Me.Folder.LoadingStateChanged, AddressOf folder_LoadingStateChanged
+                End If
+
+                If Not value Is Nothing AndAlso Not value._items Is Nothing AndAlso value._items.Count = 1 _
+                    AndAlso TypeOf value._items(0) Is DummyFolder Then
+                    value._items = Nothing
+                End If
+
+                If Not value Is Nothing Then AddHandler value.LoadingStateChanged, AddressOf folder_LoadingStateChanged
                 SetValue(_folder, value)
                 Me.NotifyOfPropertyChange("Items")
                 Me.NotifyOfPropertyChange("FolderDisplayName")
+
+                If Not value Is Nothing Then
+                    _skipSavingScrollState = True
+                    Me.ColumnsIn = buildColumnsIn()
+                End If
+
+                _view.Folder = Me.Folder
             End Set
         End Property
 
@@ -182,11 +250,11 @@ Namespace ViewModels
                 gvc.Header = column.DisplayName
                 gvc.CellTemplate = getCellTemplate(column, [property])
                 gvc.SetValue(Behaviors.GridViewExtBehavior.IsVisibleProperty, CBool(column.State And CM_STATE.VISIBLE))
-                gvc.SetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty, String.Format("Properties[{0}].Value", column.CanonicalName))
+                gvc.SetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
                 If column.CanonicalName = "System.ItemNameDisplay" Then
                     gvc.SetValue(Behaviors.GridViewExtBehavior.SortPropertyNameProperty, "ItemNameDisplaySortValue")
                 End If
-                gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("Properties[{0}].Text", column.CanonicalName))
+                gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
                 d.Items.Add(gvc)
             Next
 
@@ -224,7 +292,7 @@ Namespace ViewModels
                     style.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Collapsed))
                     style.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(1)))
                     Dim dataTrigger1 As DataTrigger = New DataTrigger() With {
-                        .Binding = New Binding(String.Format("ColumnIndexFor[Properties[{0}].Value]", column.CanonicalName)) With
+                        .Binding = New Binding(String.Format("ColumnIndexFor[PropertiesByKeyAsText[{0}].Value]", column.PROPERTYKEY.ToString())) With
                                    {
                                        .ElementName = "ext",
                                        .Mode = BindingMode.OneWay
@@ -266,7 +334,7 @@ Namespace ViewModels
                 imageFactory2.SetValue(Image.HorizontalAlignmentProperty, HorizontalAlignment.Left)
                 imageFactory2.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center)
                 imageFactory2.SetValue(Image.SourceProperty, New Binding() With {
-                    .Path = New PropertyPath(String.Format("Properties[{0}].Icon16", column.CanonicalName)),
+                    .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Icon16", column.PROPERTYKEY.ToString())),
                     .Mode = BindingMode.OneWay
                 })
                 Dim imageStyle As Style = New Style(GetType(Image))
@@ -290,7 +358,7 @@ Namespace ViewModels
             textBlockFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center)
             textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis)
             textBlockFactory.SetValue(TextBlock.TextProperty, New Binding() With {
-                .Path = New PropertyPath(String.Format("Properties[{0}].Text", column.CanonicalName)),
+                .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString())),
                 .Mode = BindingMode.OneWay
             })
             Dim textBlockStyle As Style = New Style(GetType(TextBlock))
@@ -355,8 +423,8 @@ Namespace ViewModels
                     End If
                     If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
                         If TypeOf clickedItem Is Folder Then
-                            _view.LogicalParent = Me.Folder
-                            Me.FolderName = clickedItem.FullPath
+                            CType(clickedItem, Folder).IsSelected = True
+                            Me.Folder = clickedItem
                         Else
                             _menu = New ContextMenu()
                             _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
@@ -379,8 +447,7 @@ Namespace ViewModels
                                 Select Case verb
                                     Case "open"
                                         If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
-                                            _view.LogicalParent = Me.Folder
-                                            Me.FolderName = Me.SelectedItem.FullPath
+                                            Me.Folder = Me.SelectedItem
                                             isHandled = True
                                         End If
                                 End Select
