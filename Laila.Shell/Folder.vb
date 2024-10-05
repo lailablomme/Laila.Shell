@@ -135,7 +135,7 @@ Public Class Folder
 
                         If _items Is Nothing Then
                             _fromThread = True
-                            updateItems(result, True)
+                            updateItems(result)
                             _fromThread = False
                             'Me.Items = result
                         End If
@@ -156,7 +156,7 @@ Public Class Folder
         Get
             If _items Is Nothing Then
                 Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
-                updateItems(result, False)
+                updateItems(result)
                 'Me.Items = result
             End If
 
@@ -168,7 +168,7 @@ Public Class Folder
         End Set
     End Property
 
-    Protected Sub updateItems(items As ObservableCollection(Of Item), isOnUIThread As Boolean)
+    Protected Sub updateItems(items As ObservableCollection(Of Item))
         Me.IsLoading = True
 
         updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN,
@@ -183,8 +183,7 @@ Public Class Folder
                         items.Remove(item)
                     End Sub,
                     Function(paths As List(Of String)) As List(Of Item)
-                        Return items.Where(Function(i) Not paths.Contains(i.FullPath) _
-                                               AndAlso Not TypeOf i Is DummyFolder).ToList()
+                        Return items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
                     End Function,
                     Function(shellItem2 As IShellItem2)
                         Return New Folder(shellItem2, Me)
@@ -212,19 +211,18 @@ Public Class Folder
                         Me.Items = items
 
                         Me.IsLoading = False
-                    End Sub,
-                    0, isOnUIThread)
+                    End Sub)
     End Sub
 
     Protected Sub updateItems(flags As UInt32, condition As Boolean,
                               exists As Func(Of Item, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getToBeRemoved As Func(Of List(Of String), List(Of Item)),
                               makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
-                              updateProperties As Action(Of String), addLoadingItem As Action, complete As Action,
-                              uiHelp As Integer, isOnUIThread As Boolean)
+                              updateProperties As Action(Of String), addLoadingItem As Action, complete As Action)
         If _shellItem2 Is Nothing Then Return
 
         Dim paths As List(Of String) = New List(Of String)
+        Dim doKeepAll As Boolean
 
         If Not condition AndAlso (Me.Attributes.HasFlag(SFGAO.ISSLOW) OrElse Me.FullPath.StartsWith("\\")) AndAlso Me.Attributes.HasFlag(SFGAO.HASSUBFOLDER) Then
             addLoadingItem()
@@ -273,6 +271,7 @@ Public Class Folder
                                 enumShellItems.Next(1, shellItemArray, fetched)
                                 If fetched = 1 AndAlso Not condition Then
                                     addLoadingItem()
+                                    doKeepAll = True
                                 Else
                                     While fetched = 1
                                         Dim attr2 As Integer = SFGAO.FOLDER
@@ -338,40 +337,21 @@ Public Class Folder
                 End If
             End If
 
-            If Not isOnUIThread Then
-                For Each item In toAdd
-                    add(item)
-                    If uiHelp <> 0 Then Thread.Sleep(uiHelp)
-                Next
-                For Each item In toUpdate
-                    updateProperties(item)
-                    If uiHelp <> 0 Then Thread.Sleep(uiHelp)
-                Next
-                For Each item In getToBeRemoved(paths)
-                    remove(item)
-                    item.Dispose()
-                    If uiHelp <> 0 Then Thread.Sleep(uiHelp)
-                Next
-
-                complete()
-            Else
-                UIHelper.OnUIThread(
-                    Sub()
-                        For Each item In toAdd
-                            add(item)
-                            If uiHelp <> 0 Then Thread.Sleep(uiHelp)
-                        Next
-                        For Each item In toUpdate
-                            updateProperties(item)
-                            If uiHelp <> 0 Then Thread.Sleep(uiHelp)
-                        Next
+            UIHelper.OnUIThread(
+                Sub()
+                    For Each item In toAdd
+                        add(item)
+                    Next
+                    For Each item In toUpdate
+                        updateProperties(item)
+                    Next
+                    If Not doKeepAll Then
                         For Each item In getToBeRemoved(paths)
                             remove(item)
                             item.Dispose()
-                            If uiHelp <> 0 Then Thread.Sleep(uiHelp)
                         Next
-                    End Sub)
-            End If
+                    End If
+                End Sub)
         End If
 
         complete()
@@ -477,7 +457,7 @@ Public Class Folder
                             End If
                         Case SHCNE.UPDATEDIR
                             If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing Then
-                                updateItems(_items, True)
+                                updateItems(_items)
                             End If
                     End Select
                 End If
