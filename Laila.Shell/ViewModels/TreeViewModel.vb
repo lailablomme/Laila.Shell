@@ -145,19 +145,20 @@ Namespace ViewModels
                 Sub(s As Object, e As FolderNotificationEventArgs)
                     Select Case e.Event
                         Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                            If Not Me.SelectedItem Is Nothing AndAlso Me.IsSelectionWithin(Me.SelectedItem) Then
-                                Me.SetSelectedItem(Me.SelectedItem.LogicalParent)
+                            If Not Me.SelectedItem Is Nothing AndAlso Not e.Folder.LogicalParent Is Nothing _
+                                AndAlso Me.IsDownSelection(e.Folder) Then
+                                Me.SetSelectedFolder(e.Folder.LogicalParent)
                             End If
                     End Select
                 End Sub
         End Sub
 
-        Private Function IsSelectionWithin(folder As Folder) As Boolean
+        Private Function IsDownSelection(folder As Folder) As Boolean
             If Me.SelectedItem.Equals(folder) Then
                 Return True
             Else
                 For Each f In folder.Items
-                    If TypeOf f Is Folder AndAlso Me.IsSelectionWithin(f) Then
+                    If TypeOf f Is Folder AndAlso Me.IsDownSelection(f) Then
                         Return True
                     End If
                 Next
@@ -205,21 +206,21 @@ Namespace ViewModels
             End Get
         End Property
 
-        Public Sub SetSelectedItem(value As Folder)
-            If value Is Nothing Then
-                _selectionHelper1.SetSelectedItems({})
-                _selectionHelper2.SetSelectedItems({})
-                _selectionHelper3.SetSelectedItems({})
-            Else
-                _selectionHelper1.SetSelectedItems({value})
-                If Not _selectionHelper1.SelectedItems.Count = 1 Then
-                    _selectionHelper2.SetSelectedItems({value})
-                    If Not _selectionHelper2.SelectedItems.Count = 1 Then
-                        _selectionHelper3.SetSelectedItems({value})
-                    End If
-                End If
-            End If
-        End Sub
+        'Public Sub SetSelectedItem(value As Folder)
+        '    If value Is Nothing Then
+        '        _selectionHelper1.SetSelectedItems({})
+        '        _selectionHelper2.SetSelectedItems({})
+        '        _selectionHelper3.SetSelectedItems({})
+        '    Else
+        '        _selectionHelper1.SetSelectedItems({value})
+        '        If Not _selectionHelper1.SelectedItems.Count = 1 Then
+        '            _selectionHelper2.SetSelectedItems({value})
+        '            If Not _selectionHelper2.SelectedItems.Count = 1 Then
+        '                _selectionHelper3.SetSelectedItems({value})
+        '            End If
+        '        End If
+        '    End If
+        'End Sub
 
         Public Sub SetSelectedFolder(folder As Folder)
             If Not _isSettingSelectedFolder Then
@@ -297,7 +298,9 @@ Namespace ViewModels
                                         _isSettingSelectedFolder = False
                                     End If
                                 Else
-                                    Me.SetSelectedItem(Nothing)
+                                    _selectionHelper1.SetSelectedItems({})
+                                    _selectionHelper2.SetSelectedItems({})
+                                    _selectionHelper3.SetSelectedItems({})
                                     _isSettingSelectedFolder = False
                                 End If
                             End Sub
@@ -333,7 +336,7 @@ Namespace ViewModels
                 Dim clickedItem As Folder = treeViewItem?.DataContext
                 _mouseItemDown = clickedItem
                 If e.RightButton = MouseButtonState.Pressed Then
-                    If Me.SelectedItem Is Nothing Then Me.SetSelectedItem(clickedItem)
+                    If Me.SelectedItem Is Nothing Then Me.SetSelectedFolder(clickedItem)
 
                     Dim parent As Folder = clickedItem.Parent
                     If parent Is Nothing Then parent = Shell.Desktop
@@ -343,7 +346,7 @@ Namespace ViewModels
                         Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
                             Select Case verb
                                 Case "open"
-                                    Me.SetSelectedItem(clickedItem)
+                                    Me.SetSelectedFolder(clickedItem)
                                     isHandled = True
                             End Select
                         End Sub

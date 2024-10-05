@@ -192,7 +192,7 @@ Public Class TreeViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                _treeViewModel.SetSelectedItem(overItem)
+                                _treeViewModel.SetSelectedFolder(overItem)
                                 CType(overItem, Folder).IsExpanded = True
                             End Sub)
                         _dragOpenTimer.Dispose()

@@ -22,7 +22,7 @@ Public Class Item
     Private _isPinned As Boolean
     Private _isCut As Boolean
     Private _attributes As SFGAO
-    Private _icon As Dictionary(Of Integer, ImageSource) = New Dictionary(Of Integer, ImageSource)()
+    Friend _icon As Dictionary(Of Integer, ImageSource) = New Dictionary(Of Integer, ImageSource)()
     Private _overlaySmall As ImageSource
     Private _overlayLarge As ImageSource
     Private _overlayIconIndex As Integer?
@@ -105,7 +105,7 @@ Public Class Item
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
 
-    Public Sub ClearCache()
+    Public Overridable Sub ClearCache()
         If Not _parent Is Nothing Then
             _parent.Dispose()
             _parent = Nothing
@@ -124,15 +124,20 @@ Public Class Item
         _overlayLarge = Nothing
     End Sub
 
-    Public Sub Refresh()
-        Marshal.ReleaseComObject(_shellItem2)
-        _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+    Public Overridable Sub Refresh()
+        Dim newShellItem2 As IShellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+        If Not newShellItem2 Is Nothing Then
+            Marshal.ReleaseComObject(_shellItem2)
+            _shellItem2 = newShellItem2
+        End If
         _attributes = SFGAO.HIDDEN Or SFGAO.COMPRESSED Or SFGAO.CANCOPY Or SFGAO.CANMOVE _
                 Or SFGAO.CANLINK Or SFGAO.HASSUBFOLDER Or SFGAO.ISSLOW
         _shellItem2.GetAttributes(_attributes, _attributes)
         Me.ClearCache()
         For Each prop In Me.GetType().GetProperties()
-            Me.NotifyOfPropertyChange(prop.Name)
+            If Not prop.Name = "ItemsThreaded" Then
+                Me.NotifyOfPropertyChange(prop.Name)
+            End If
         Next
         If Not Me.Parent Is Nothing Then
             For Each column In Me.Parent.Columns
@@ -389,7 +394,7 @@ Public Class Item
 
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
             If [property] Is Nothing Then
-                [property] = [property].FromKey(key, Me)
+                [property] = [Property].FromKey(key, Me)
                 _properties.Add([property])
             End If
             Return [property]
@@ -400,7 +405,7 @@ Public Class Item
         Get
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
             If [property] Is Nothing Then
-                [property] = [property].FromKey(propertyKey, Me)
+                [property] = [Property].FromKey(propertyKey, Me)
                 _properties.Add([property])
             End If
             Return [property]
@@ -418,13 +423,13 @@ Public Class Item
         End Get
     End Property
 
-    Public Overrides Function Equals(obj As Object) As Boolean
-        If TypeOf obj Is Item Then
-            Return EqualityComparer(Of String).Default.Equals(Me.FullPath, CType(obj, Item).FullPath)
-        Else
-            Return False
-        End If
-    End Function
+    'Public Overrides Function Equals(obj As Object) As Boolean
+    '    If TypeOf obj Is Item Then
+    '        Return EqualityComparer(Of String).Default.Equals(Me.FullPath, CType(obj, Item).FullPath)
+    '    Else
+    '        Return False
+    '    End If
+    'End Function
 
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then

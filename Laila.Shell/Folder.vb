@@ -2,6 +2,7 @@
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Data
+Imports System.Windows.Media
 Imports Laila.Shell.Data
 Imports Laila.Shell.Helpers
 
@@ -137,7 +138,6 @@ Public Class Folder
                             _fromThread = True
                             updateItems(result)
                             _fromThread = False
-                            'Me.Items = result
                         End If
 
                         RaiseEvent LoadingStateChanged(False)
@@ -157,7 +157,6 @@ Public Class Folder
             If _items Is Nothing Then
                 Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
                 updateItems(result)
-                'Me.Items = result
             End If
 
             Return _items
@@ -198,7 +197,6 @@ Public Class Folder
                         End If
                     End Sub,
                     Sub()
-                        items.Clear()
                         items.Add(New DummyFolder("Loading...", Nothing))
                     End Sub,
                     Sub()
@@ -299,7 +297,12 @@ Public Class Folder
                                 End If
                             End If
                         Catch ex As Exception
-                            toAdd.Add(New DummyFolder(ex.Message, Nothing))
+                            Dim dummy As DummyFolder = New DummyFolder(ex.Message, Nothing)
+                            dummy.IsLoading = False
+                            dummy._icon.Add(16, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error16.png"))
+                            dummy._icon.Add(32, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error32.png"))
+                            toAdd.Add(dummy)
+                            paths.Add(dummy.FullPath)
                         Finally
                             If Not enumShellItems Is Nothing Then
                                 Marshal.ReleaseComObject(enumShellItems)
@@ -347,6 +350,12 @@ Public Class Folder
                     Next
                     If Not doKeepAll Then
                         For Each item In getToBeRemoved(paths)
+                            If TypeOf item Is Folder Then
+                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                    .Folder = item,
+                                    .[Event] = SHCNE.RMDIR
+                                })
+                            End If
                             remove(item)
                             item.Dispose()
                         Next

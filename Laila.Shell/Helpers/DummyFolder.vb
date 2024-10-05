@@ -10,18 +10,19 @@ Public Class DummyFolder
         MyBase.New(Nothing, Nothing)
 
         _displayName = displayName
+        _fullPath = "dummy" & Guid.NewGuid().ToString()
         Me.IsLoading = True
+    End Sub
+
+    Public Overrides Sub ClearCache()
+    End Sub
+
+    Public Overrides Sub Refresh()
     End Sub
 
     Public Overrides ReadOnly Property DisplayName As String
         Get
             Return _displayName
-        End Get
-    End Property
-
-    Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
-        Get
-            Return Nothing
         End Get
     End Property
 
@@ -42,6 +43,20 @@ Public Class DummyFolder
     End Property
 
     Public Overrides ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
+        Get
+            Return Nothing
+        End Get
+    End Property
+
+    Public Overrides Property Items As ObservableCollection(Of Item)
+        Get
+            Return Nothing
+        End Get
+        Set(value As ObservableCollection(Of Item))
+        End Set
+    End Property
+
+    Public Overrides ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
         Get
             Return Nothing
         End Get
