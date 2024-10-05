@@ -157,11 +157,13 @@ Namespace ViewModels
             If Me.SelectedItem.Equals(folder) Then
                 Return True
             Else
-                For Each f In folder.Items
-                    If TypeOf f Is Folder AndAlso Me.IsDownSelection(f) Then
-                        Return True
-                    End If
-                Next
+                If Not folder.Items Is Nothing Then
+                    For Each f In folder.Items
+                        If TypeOf f Is Folder AndAlso Me.IsDownSelection(f) Then
+                            Return True
+                        End If
+                    Next
+                End If
                 Return False
             End If
         End Function

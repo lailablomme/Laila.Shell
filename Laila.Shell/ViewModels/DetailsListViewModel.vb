@@ -127,6 +127,7 @@ Namespace ViewModels
                 If Not Me.Folder Is Nothing Then
                     saveScrollState()
                     RemoveHandler Me.Folder.LoadingStateChanged, AddressOf folder_LoadingStateChanged
+                    Me.Folder.IsOpened = False
                     UIHelper.OnUIThread(
                         Sub()
                             saveScrollState()
@@ -140,6 +141,7 @@ Namespace ViewModels
 
                 If Not value Is Nothing Then
                     AddHandler value.LoadingStateChanged, AddressOf folder_LoadingStateChanged
+                    value.IsOpened = True
                 End If
                 SetValue(_folder, value)
                 Me.NotifyOfPropertyChange("Items")
@@ -348,7 +350,6 @@ Namespace ViewModels
                     End If
                     If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
                         If TypeOf clickedItem Is Folder Then
-                            CType(clickedItem, Folder).IsSelected = True
                             Me.Folder = clickedItem
                         Else
                             _menu = New ContextMenu()

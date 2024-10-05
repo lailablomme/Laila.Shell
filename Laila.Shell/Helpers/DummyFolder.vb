@@ -1,5 +1,7 @@
 ﻿Imports System.Collections.ObjectModel
+Imports System.Windows
 Imports System.Windows.Media
+Imports System.Windows.Media.Imaging
 
 Public Class DummyFolder
     Inherits Folder
@@ -23,6 +25,15 @@ Public Class DummyFolder
     Public Overrides ReadOnly Property DisplayName As String
         Get
             Return _displayName
+        End Get
+    End Property
+
+    Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
+        Get
+            If Not _icon.ContainsKey(size) Then
+                Return Nothing
+            End If
+            Return _icon(size)
         End Get
     End Property
 

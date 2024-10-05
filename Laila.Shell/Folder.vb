@@ -12,6 +12,8 @@ Public Class Folder
 
     Public Event LoadingStateChanged(isLoading As Boolean)
 
+    Public Property IsOpened As Boolean
+
     Private _columns As List(Of Column)
     Friend _items As ObservableCollection(Of Item)
     Friend _shellFolder As IShellFolder
@@ -56,6 +58,10 @@ Public Class Folder
         End Get
         Set(value As Boolean)
             SetValue(_isSelected, value)
+            If (_items Is Nothing OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder)) Then
+                _items = Nothing
+                NotifyOfPropertyChange("ItemsThreaded")
+            End If
         End Set
     End Property
 
@@ -65,10 +71,6 @@ Public Class Folder
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)
-            If value AndAlso (_items Is Nothing OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder)) Then
-                _items = Nothing
-                NotifyOfPropertyChange("ItemsThreaded")
-            End If
         End Set
     End Property
 
@@ -126,7 +128,7 @@ Public Class Folder
     Public Overridable ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
         Get
             If _items Is Nothing AndAlso (Me.IsExpanded OrElse Me.ITreeViewItemData_Parent Is Nothing _
-                OrElse Me.ITreeViewItemData_Parent.IsExpanded OrElse Me.IsSelected) Then
+                OrElse Me.ITreeViewItemData_Parent.IsExpanded OrElse Me.IsSelected OrElse Me.IsOpened) Then
 
                 Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
 
@@ -171,7 +173,7 @@ Public Class Folder
         Me.IsLoading = True
 
         updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN,
-                    Me.IsExpanded OrElse Not _fromThread OrElse Me.IsSelected,
+                    Me.IsExpanded OrElse Not _fromThread OrElse Me.IsSelected OrElse Me.IsOpened,
                     Function(item As Item) As Boolean
                         Return Not items.FirstOrDefault(Function(i) i.FullPath = item.FullPath AndAlso Not i.disposedValue) Is Nothing
                     End Function,
