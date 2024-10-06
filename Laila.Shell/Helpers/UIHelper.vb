@@ -2,6 +2,7 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports System.Windows.Interop
 Imports System.Windows.Media
 Imports System.Windows.Threading
 Imports Laila.Shell.ViewModels
@@ -9,6 +10,23 @@ Imports Microsoft
 
 Namespace Helpers
     Public Class UIHelper
+        Public Shared Function GetScreenSize(visual As Visual, isWorkingArea As Boolean) As Size
+            Dim handle As IntPtr = CType(PresentationSource.FromVisual(visual), HwndSource).Handle
+            Dim currentScreen As System.Windows.Forms.Screen = System.Windows.Forms.Screen.FromHandle(handle)
+            Dim dpi As DpiScale = VisualTreeHelper.GetDpi(visual)
+            If isWorkingArea Then
+                Return New Size(
+                    1.0 * currentScreen.WorkingArea.Width / (dpi.PixelsPerInchX / 96),
+                    1.0 * currentScreen.WorkingArea.Height / (dpi.PixelsPerInchY / 96)
+                )
+            Else
+                Return New Size(
+                    1.0 * currentScreen.Bounds.Width / (dpi.PixelsPerInchX / 96),
+                    1.0 * currentScreen.Bounds.Height / (dpi.PixelsPerInchY / 96)
+                )
+            End If
+        End Function
+
         Public Shared Sub OnUIThread(action As Action, Optional priority As DispatcherPriority = DispatcherPriority.Normal)
             Dim appl As System.Windows.Application = System.Windows.Application.Current
             If Not appl Is Nothing Then

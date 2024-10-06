@@ -71,11 +71,16 @@ Public Class ContextMenu
         ' make our own menu
         _menu = New Controls.ContextMenu()
         Dim menuItems As List(Of Control) = getMenuItems(_hMenu, -1)
+        Dim lastMenuItem As Control
         For Each item In menuItems
             Select Case item.Tag?.ToString().Split(vbTab)(1)
-                Case "copy", "cut", "paste", "delete"
+                Case "copy", "cut", "paste", "delete", "pintohome"
+                    ' don't add these
                 Case Else
-                    _menu.Items.Add(item)
+                    If Not (TypeOf item Is Separator AndAlso Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator) Then
+                        _menu.Items.Add(item)
+                        lastMenuItem = item
+                    End If
             End Select
         Next
         Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "cut")
@@ -235,25 +240,25 @@ Public Class ContextMenu
                 _firstContextMenuCall = False
             End If
 
-            Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
-            Try
-                Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
-                If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
-                    shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
-                    Functions.SHCreateDataObject(folderpidl, lastpidls.Count, lastpidls, IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
-                    shellExtInit.Initialize(folderpidl2, dataObject, IntPtr.Zero)
-                End If
-            Finally
-                If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
-                    Marshal.Release(shellExtInitPtr)
-                End If
-                If Not shellExtInit Is Nothing Then
-                    Marshal.ReleaseComObject(shellExtInit)
-                End If
-                If Not dataObject Is Nothing Then
-                    Marshal.ReleaseComObject(dataObject)
-                End If
-            End Try
+            'Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
+            'Try
+            '    Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
+            '    If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
+            '        shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
+            '        Functions.SHCreateDataObject(folderpidl, lastpidls.Count, lastpidls, IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
+            '        shellExtInit.Initialize(folderpidl2, dataObject, IntPtr.Zero)
+            '    End If
+            'Finally
+            '    If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
+            '        Marshal.Release(shellExtInitPtr)
+            '    End If
+            '    If Not shellExtInit Is Nothing Then
+            '        Marshal.ReleaseComObject(shellExtInit)
+            '    End If
+            '    If Not dataObject Is Nothing Then
+            '        Marshal.ReleaseComObject(dataObject)
+            '    End If
+            'End Try
         Finally
             If Not IntPtr.Zero.Equals(ptrContextMenu) Then
                 Marshal.Release(ptrContextMenu)
