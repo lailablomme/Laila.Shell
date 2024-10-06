@@ -176,7 +176,7 @@ Public Class Folder
     Protected Sub updateItems(items As ObservableCollection(Of Item), isFromThread As Boolean)
         Me.IsLoading = True
 
-        updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN,
+        updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE,
                     Me.IsExpanded OrElse Not isFromThread OrElse Me.IsSelected OrElse Me.IsOpened,
                     Function(item As Item) As Boolean
                         Return Not items.FirstOrDefault(Function(i) i.FullPath = item.FullPath AndAlso Not i.disposedValue) Is Nothing
@@ -411,9 +411,11 @@ Public Class Folder
                                         If Me.FullPath.Equals(parentFullPath) Then
                                             UIHelper.OnUIThread(
                                                 Sub()
-                                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                        _items.Add(New Item(item1, Me))
-                                                    End If
+                                                    SyncLock _lock
+                                                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                                            _items.Add(New Item(item1, Me))
+                                                        End If
+                                                    End SyncLock
                                                 End Sub)
                                         End If
                                     End If
@@ -435,9 +437,11 @@ Public Class Folder
                                         If Me.FullPath.Equals(parentFullPath) Then
                                             UIHelper.OnUIThread(
                                                 Sub()
-                                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                        _items.Add(New Folder(item1, Me))
-                                                    End If
+                                                    SyncLock _lock
+                                                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                                            _items.Add(New Folder(item1, Me))
+                                                        End If
+                                                    End SyncLock
                                                 End Sub)
                                         End If
                                     End If
@@ -449,45 +453,51 @@ Public Class Folder
                             End If
                         Case SHCNE.RMDIR, SHCNE.DELETE
                             If Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
-                                Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                                If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            If TypeOf item Is Folder Then
-                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                                    .Folder = item,
-                                                    .[Event] = e.Event
-                                                })
-                                            End If
-                                            _items.Remove(item)
-                                        End Sub)
-                                End If
+                                SyncLock _lock
+                                    Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                                    If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                If TypeOf item Is Folder Then
+                                                    Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                                        .Folder = item,
+                                                        .[Event] = e.Event
+                                                    })
+                                                End If
+                                                _items.Remove(item)
+                                            End Sub)
+                                    End If
+                                End SyncLock
                             End If
                         Case SHCNE.DRIVEADD
                             If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
                                 UIHelper.OnUIThread(
                                     Sub()
-                                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                                            If Not item1 Is Nothing Then
-                                                _items.Add(New Folder(item1, Me))
+                                        SyncLock _lock
+                                            If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                                Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                                                If Not item1 Is Nothing Then
+                                                    _items.Add(New Folder(item1, Me))
+                                                End If
                                             End If
-                                        End If
+                                        End SyncLock
                                     End Sub)
                             End If
                         Case SHCNE.DRIVEREMOVED
                             If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) Then
-                                Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                                If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                    UIHelper.OnUIThread(
+                                SyncLock _lock
+                                    Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                                    If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                                        UIHelper.OnUIThread(
                                             Sub()
                                                 Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                                    .Folder = item,
-                                                    .[Event] = e.Event
-                                                })
+                                                        .Folder = item,
+                                                        .[Event] = e.Event
+                                                    })
                                                 _items.Remove(item)
                                             End Sub)
-                                End If
+                                    End If
+                                End SyncLock
                             End If
                         Case SHCNE.UPDATEDIR
                             If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing Then

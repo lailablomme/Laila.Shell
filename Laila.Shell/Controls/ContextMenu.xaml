@@ -42,10 +42,16 @@
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="ShowButtonsTopOrBottom" Value="False">
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="Bottom">
                             <Setter Property="Visibility" TargetName="borderTop" Value="Collapsed" />
                         </Trigger>
-                        <Trigger Property="ShowButtonsTopOrBottom" Value="True">
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="None">
+                            <Setter Property="Visibility" TargetName="borderTop" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="Top">
+                            <Setter Property="Visibility" TargetName="borderBottom" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="None">
                             <Setter Property="Visibility" TargetName="borderBottom" Value="Collapsed" />
                         </Trigger>
                     </ControlTemplate.Triggers>

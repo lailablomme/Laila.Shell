@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Interop
 Imports Laila.Shell.Events
+Imports Laila.Shell.Helpers
 
 Public Class Shell
     Private Shared _desktop As Folder
@@ -12,6 +13,7 @@ Public Class Shell
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
     Public Shared Event RequestSetSelectedFolder(sender As Object, e As RequestSetSelectedFolderEventArgs)
+    Public Shared Event Ready(sender As Object, e As EventArgs)
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
@@ -26,7 +28,7 @@ Public Class Shell
         entry(0).Recursively = True
 
         AddHandler Application.Current.MainWindow.Loaded,
-            Sub(sender As Object, e As EventArgs)
+            Async Sub(sender As Object, e As EventArgs)
                 _w = New Window()
                 _w.Owner = Application.Current.MainWindow
                 _w.Left = Int32.MinValue
@@ -84,6 +86,16 @@ Public Class Shell
         '_specialFolders.Add("Programs and Features", Folder.FromParsingName("shell:::{7b81be6a-ce2b-4676-a29e-eb907a5126c5}", Nothing))
         '_specialFolders.Add("Public", Folder.FromParsingName("shell:::{4336a54d-038b-4685-ab02-99bb52d3fb8b}", Nothing))
         '_specialFolders.Add("Recent Items", Folder.FromParsingName("shell:::{4564b25e-30cd-4787-82ba-39e73a750b14}", Nothing))
+
+        Task.Run(
+            Async Function() As Task
+                _specialFolders.Add("Recent", Await Item.FromParsingNameDeepGet("%APPDATA%\Microsoft\Windows\Recent", Nothing))
+
+                UIHelper.OnUIThread(
+                    Sub()
+                        RaiseEvent Ready(Nothing, New EventArgs())
+                    End Sub)
+            End Function)
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr

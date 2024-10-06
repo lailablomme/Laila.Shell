@@ -6,7 +6,6 @@ Namespace Controls
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
 
         Private _model As TreeViewModel
-        Friend Shared _isFolderChanging As Boolean
 
         Public Sub New()
             ' This call is required by the designer.
@@ -28,20 +27,13 @@ Namespace Controls
                 Return GetValue(FolderProperty)
             End Get
             Set(ByVal value As Folder)
-                Try
-                    _isFolderChanging = True
-                    SetCurrentValue(FolderProperty, value)
-                Finally
-                    _isFolderChanging = False
-                End Try
+                SetCurrentValue(FolderProperty, value)
             End Set
         End Property
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim tv As TreeView = TryCast(d, TreeView)
-            If Not tv._isFolderChanging Then
-                tv.Model.SetSelectedFolder(e.NewValue)
-            End If
+            tv.Model.SetSelectedFolder(e.NewValue)
         End Sub
     End Class
 End Namespace

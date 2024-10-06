@@ -90,6 +90,7 @@ Public Class TreeViewDropTarget
                         h = fileOperation.CopyItems(sourceArray, overItem._shellItem2)
                     End If
                     fileOperation.PerformOperations()
+                    Shell.SetSelectedFolder(If(TypeOf overItem Is Folder, overItem, overItem.LogicalParent), Nothing)
                 ElseIf CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
                 End If
 

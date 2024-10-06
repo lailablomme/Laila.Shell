@@ -28,6 +28,7 @@ Public Class Item
     Private _overlayIconIndex As Integer?
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder) As Item
+        parsingName = Environment.ExpandEnvironmentVariables(parsingName)
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As Integer = SFGAO.FOLDER
@@ -61,6 +62,7 @@ Public Class Item
     Friend Shared Function GetIShellItem2FromParsingName(parsingName As String) As IShellItem2
         Dim ptr As IntPtr
         Try
+            parsingName = Environment.ExpandEnvironmentVariables(parsingName)
             Functions.SHCreateItemFromParsingName(parsingName, IntPtr.Zero, Guids.IID_IShellItem2, ptr)
             Return If(Not IntPtr.Zero.Equals(ptr), Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2)), Nothing)
         Finally
@@ -89,18 +91,6 @@ Public Class Item
         Else
             _fullPath = String.Empty
         End If
-        'UIHelper.OnUIThread(
-        '    Sub()
-        '        If cachedIconSize <> 0 Then
-        '            _cachedIconSize = cachedIconSize
-        '            _icon(cachedIconSize) = Me.Icon(cachedIconSize)
-        '            If cachedIconSize < 32 Then
-        '                _overlaySmall = Me.OverlaySmall
-        '            Else
-        '                _overlayLarge = Me.OverlayLarge
-        '            End If
-        '        End If
-        '    End Sub)
         _logicalParent = logicalParent
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
@@ -445,13 +435,67 @@ Public Class Item
         End Get
     End Property
 
-    'Public Overrides Function Equals(obj As Object) As Boolean
-    '    If TypeOf obj Is Item Then
-    '        Return EqualityComparer(Of String).Default.Equals(Me.FullPath, CType(obj, Item).FullPath)
-    '    Else
-    '        Return False
-    '    End If
-    'End Function
+
+    Public Shared Async Function FromParsingNameDeepGet(parsingName As String, logicalParent As Folder) As Task(Of Item)
+        ' resolve environment variable?
+        parsingName = Environment.ExpandEnvironmentVariables(parsingName)
+        Dim path As String = parsingName.Trim()
+
+        ' get parts of path
+        Dim isNetworkPath As Boolean = path.StartsWith("\\")
+        If isNetworkPath Then path = path.Substring(2)
+
+        Dim parts As List(Of String) = New List(Of String)()
+        While Not String.IsNullOrWhiteSpace(path)
+            Debug.WriteLine(path)
+            If path = IO.Path.GetPathRoot(path) Then
+                parts.Add(path)
+            Else
+                parts.Add(IO.Path.GetFileName(path))
+            End If
+            path = IO.Path.GetDirectoryName(path)
+        End While
+        parts.Reverse()
+
+        If parts.Count > 0 Then
+            Dim folder As Folder
+            Dim j As Integer = 0
+
+            If isNetworkPath Then
+                ' network path
+                folder = Shell.SpecialFolders("Network")
+            ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
+                ' this is a path on disk
+                folder = Shell.SpecialFolders("This computer")
+            Else
+                ' root must be some special folder
+                folder = Shell.SpecialFolders.Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
+                                                                         OrElse f.FullPath.ToLower() = parts(0).ToLower())
+                j = 1
+            End If
+
+            ' find folder
+            If Not folder Is Nothing Then
+                For j = j To parts.Count - 1
+                    Dim subFolder As Folder
+                    If j = 0 Then
+                        subFolder = (Await folder.GetItems()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
+                    Else
+                        subFolder = (Await folder.GetItems()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
+                    End If
+                    folder.Dispose()
+                    folder = subFolder
+                    If folder Is Nothing Then Exit For
+                Next
+            End If
+
+            If Not folder Is Nothing Then folder.LogicalParent = logicalParent
+
+            Return folder
+        Else
+            Return Nothing
+        End If
+    End Function
 
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then

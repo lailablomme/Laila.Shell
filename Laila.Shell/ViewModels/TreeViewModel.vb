@@ -294,26 +294,27 @@ Namespace ViewModels
                                             End Sub, Threading.DispatcherPriority.ContextIdle)
                                         Next
 
+                                        Select Case root
+                                            Case 1 : _selectionHelper1.SetSelectedItems({tf})
+                                            Case 2 : _selectionHelper2.SetSelectedItems({tf})
+                                            Case 3 : _selectionHelper3.SetSelectedItems({tf})
+                                        End Select
+
                                         If Not callback Is Nothing Then
                                             callback(tf)
-                                        Else
-                                            Select Case root
-                                                Case 1 : _selectionHelper1.SetSelectedItems({tf})
-                                                Case 2 : _selectionHelper2.SetSelectedItems({tf})
-                                                Case 3 : _selectionHelper3.SetSelectedItems({tf})
-                                            End Select
                                         End If
 
                                         _isSettingSelectedFolder = False
                                     End If
                                 Else
+                                    _selectionHelper1.SetSelectedItems({})
+                                    _selectionHelper2.SetSelectedItems({})
+                                    _selectionHelper3.SetSelectedItems({})
+
                                     If Not callback Is Nothing Then
                                         callback(Nothing)
-                                    Else
-                                        _selectionHelper1.SetSelectedItems({})
-                                        _selectionHelper2.SetSelectedItems({})
-                                        _selectionHelper3.SetSelectedItems({})
                                     End If
+
                                     _isSettingSelectedFolder = False
                                 End If
                             End Sub
@@ -324,11 +325,12 @@ Namespace ViewModels
                             _isSettingSelectedFolder = False
                         End If
                     Else
+                        _view.Folder = folder
+
                         If Not callback Is Nothing Then
                             callback(folder)
-                        Else
-                            _view.Folder = folder
                         End If
+
                         _isSettingSelectedFolder = False
                     End If
                 Else

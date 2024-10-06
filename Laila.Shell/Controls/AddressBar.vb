@@ -1,4 +1,5 @@
 ﻿Imports Laila.AutoCompleteTextBox
+Imports Laila.Shell.Helpers
 Imports System.Collections.Specialized
 Imports System.ComponentModel
 Imports System.Environment
@@ -23,6 +24,17 @@ Namespace Controls
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(AddressBar), New FrameworkPropertyMetadata(GetType(AddressBar)))
+        End Sub
+
+        Public Sub New()
+            MyBase.New()
+
+            AddHandler Shell.Ready,
+                Sub(sender As Object, e As EventArgs)
+                    If Not Me.Folder Is Nothing Then
+                        Me.ShowNavigationButtons(Me.Folder)
+                    End If
+                End Sub
         End Sub
 
         Public Overrides Sub OnApplyTemplate()
@@ -183,7 +195,7 @@ Namespace Controls
                 End If
 
                 panel.Measure(New Size(1000, 1000))
-                If totalWidth + panel.DesiredSize.Width < Me.ActualWidth Then
+                If totalWidth + panel.DesiredSize.Width < Me.ActualWidth - 30 Then
                     totalWidth += panel.DesiredSize.Width
                     buttons.Add(panel)
                 Else
