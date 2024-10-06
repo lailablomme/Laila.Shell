@@ -89,7 +89,7 @@ Public Class Shell
 
         Task.Run(
             Async Function() As Task
-                _specialFolders.Add("Recent", Await Item.FromParsingNameDeepGet("%APPDATA%\Microsoft\Windows\Recent", Nothing))
+                _specialFolders.Add("Recent", Await Item.FromParsingNameDeepGet("%APPDATA%\Microsoft\Windows\Recent"))
 
                 UIHelper.OnUIThread(
                     Sub()

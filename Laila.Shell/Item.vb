@@ -436,7 +436,7 @@ Public Class Item
     End Property
 
 
-    Public Shared Async Function FromParsingNameDeepGet(parsingName As String, logicalParent As Folder) As Task(Of Item)
+    Public Shared Async Function FromParsingNameDeepGet(parsingName As String) As Task(Of Item)
         ' resolve environment variable?
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
         Dim path As String = parsingName.Trim()
@@ -459,7 +459,7 @@ Public Class Item
 
         If parts.Count > 0 Then
             Dim folder As Folder
-            Dim j As Integer = 0
+            Dim j As Integer, start As Integer = 0
 
             If isNetworkPath Then
                 ' network path
@@ -471,25 +471,22 @@ Public Class Item
                 ' root must be some special folder
                 folder = Shell.SpecialFolders.Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
                                                                          OrElse f.FullPath.ToLower() = parts(0).ToLower())
-                j = 1
+                start = 1
             End If
 
             ' find folder
             If Not folder Is Nothing Then
-                For j = j To parts.Count - 1
+                For j = start To parts.Count - 1
                     Dim subFolder As Folder
                     If j = 0 Then
                         subFolder = (Await folder.GetItems()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
                     Else
                         subFolder = (Await folder.GetItems()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
                     End If
-                    folder.Dispose()
                     folder = subFolder
                     If folder Is Nothing Then Exit For
                 Next
             End If
-
-            If Not folder Is Nothing Then folder.LogicalParent = logicalParent
 
             Return folder
         Else

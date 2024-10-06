@@ -33,12 +33,12 @@ Namespace ViewModels
             AddHandler _view.Loaded,
                 Async Sub(s As Object, e As EventArgs)
                     ' home and galery
-                    _folders1.Add(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing))
-                    _folders1.Add(Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing))
+                    _folders1.Add(Shell.SpecialFolders("Home"))
+                    _folders1.Add(Shell.SpecialFolders("Gallery"))
 
                     ' all the special folders under quick launch
                     Dim recentFolder As Folder = Folder.FromParsingName(Environment.GetFolderPath(Environment.SpecialFolder.Recent), Nothing)
-                    For Each f In (Await CType(Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing), Folder) _
+                    For Each f In (Await Shell.SpecialFolders("Home") _
                         .GetItems()).Where(Function(i) TypeOf i Is Folder AndAlso Not IO.File.Exists(i.FullPath))
                         If Not _folders1.ToList().Exists(Function(f2) f2.FullPath = f.FullPath) AndAlso
                             Not _folders2.ToList().Exists(Function(f2) f2.FullPath = f.FullPath) Then
@@ -70,8 +70,8 @@ Namespace ViewModels
                     Next
 
                     ' this computer & network
-                    _folders3.Add(Folder.FromParsingName("shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", Nothing))
-                    _folders3.Add(Folder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing))
+                    _folders3.Add(Shell.SpecialFolders("This computer"))
+                    _folders3.Add(Shell.SpecialFolders("Network"))
 
                     _selectionHelper1 = New SelectionHelper(Of Folder)(_view.treeView1)
                     _selectionHelper1.SelectionChanged =

@@ -24,7 +24,7 @@ Namespace Helpers
                                     OrElse f.DisplayName.ToLower.StartsWith(fileName.ToLower())).ToList()
                         End If
                     Else
-                        folder = Await Item.FromParsingNameDeepGet(folderName, Nothing)
+                        folder = Await Item.FromParsingNameDeepGet(folderName)
                     End If
                     If Not folder Is Nothing Then
                         Return (Await folder.GetItems()) _

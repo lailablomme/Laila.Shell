@@ -53,12 +53,6 @@ Namespace Controls
             Else
                 Me.ShowButtonsTopOrBottom = TopOrBottom.None
             End If
-
-            _buttonsTop.Measure(New Size(1000, 1000))
-            _buttonsBottom.Measure(New Size(1000, 1000))
-
-            _scrollViewer.MaxHeight = UIHelper.GetScreenSize(_scrollViewer, True).Height _
-                - _buttonsTop.DesiredSize.Height - _buttonsBottom.DesiredSize.Height - 16
         End Sub
 
         Public Property ShowButtonsTopOrBottom As TopOrBottom
