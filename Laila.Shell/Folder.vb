@@ -137,9 +137,7 @@ Public Class Folder
                         SyncLock _lock
                             If _items Is Nothing Then
                                 RaiseEvent LoadingStateChanged(True)
-
                                 updateItems(result, True)
-
                                 RaiseEvent LoadingStateChanged(False)
                             End If
                         End SyncLock
@@ -276,7 +274,6 @@ Public Class Folder
                             Finally
                                 If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
                             End Try
-
                             If Not enumShellItems Is Nothing Then
                                 Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
                                 enumShellItems.Next(1, shellItems, fetched)
@@ -290,7 +287,10 @@ Public Class Folder
                                         Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
                                         Dim newItem As Item
                                         If CBool(attr2 And SFGAO.FOLDER) Then
-                                            newItem = makeNewFolder(shellItems(0))
+                                            UIHelper.OnUIThread(
+                                                Sub()
+                                                    newItem = makeNewFolder(shellItems(0))
+                                                End Sub)
                                         Else
                                             newItem = makeNewItem(shellItems(0))
                                         End If
@@ -338,7 +338,10 @@ Public Class Folder
                         Dim path As String = Item.GetFullPathFromShellItem2(shellItem2)
                         Dim newItem As Item
                         If CBool(attr2 And SFGAO.FOLDER) Then
-                            newItem = makeNewFolder(shellItem2)
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    newItem = makeNewFolder(shellItem2)
+                                End Sub)
                         Else
                             newItem = makeNewItem(shellItem2)
                         End If

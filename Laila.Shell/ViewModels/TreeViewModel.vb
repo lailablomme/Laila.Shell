@@ -327,7 +327,7 @@ Namespace ViewModels
             If Not _mouseItemDown Is Nothing AndAlso Not Me.SelectedItem Is Nothing AndAlso
                 (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(_view)
-                If Math.Abs(currentPointDown.X - _mousePointDown.X) > 7 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 7 Then
+                If Math.Abs(currentPointDown.X - _mousePointDown.X) > 10 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 10 Then
                     Drag.Start({Me.SelectedItem}, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
                 End If
             End If
