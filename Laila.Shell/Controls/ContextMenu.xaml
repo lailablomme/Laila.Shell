@@ -9,16 +9,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type controls:ContextMenu}">
-                    <Border Padding="3" x:Name="Menu" Opacity="0" BorderBrush="#959595" BorderThickness="1" Margin="0,0,6,6" CornerRadius="5">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="5" Color="Black" ShadowDepth="5" Opacity="0.5" />
-                        </Border.Effect>
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1" >
-                                <GradientStop Color="White" Offset="0.0" />
-                                <GradientStop Color="#dddddd" Offset="1" />
-                            </LinearGradientBrush>
-                        </Border.Background>
+                    <Border Padding="3" x:Name="Menu" Opacity="0" BorderBrush="#999999" BorderThickness="1" Background="#F0F0F0">
                         <Border.Triggers>
                             <EventTrigger RoutedEvent="Rectangle.Loaded">
                                 <BeginStoryboard>
