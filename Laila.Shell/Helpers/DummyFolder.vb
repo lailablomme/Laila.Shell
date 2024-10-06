@@ -8,11 +8,11 @@ Public Class DummyFolder
 
     Private _displayName As String
 
-    Public Sub New(displayName As String, list As IList)
+    Public Sub New(displayName As String, Optional id As String = Nothing)
         MyBase.New(Nothing, Nothing)
 
         _displayName = displayName
-        _fullPath = "dummy" & Guid.NewGuid().ToString()
+        _fullPath = "dummy" & If(id Is Nothing, Guid.NewGuid().ToString(), id)
         Me.IsLoading = True
     End Sub
 
@@ -59,13 +59,9 @@ Public Class DummyFolder
         End Get
     End Property
 
-    Public Overrides Property Items As ObservableCollection(Of Item)
-        Get
-            Return Nothing
-        End Get
-        Set(value As ObservableCollection(Of Item))
-        End Set
-    End Property
+    Public Overrides Async Function GetItems() As Task(Of List(Of Item))
+        Return New List(Of Item)
+    End Function
 
     Public Overrides ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
         Get

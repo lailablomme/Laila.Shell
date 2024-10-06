@@ -18,6 +18,7 @@ Public Class [Property]
     Protected _text As String
     Private _hasIcon As Boolean?
     Protected disposedValue As Boolean
+    Private _rawValue As PROPVARIANT
 
     Public Shared Function FromCanonicalName(canonicalName As String, Optional item As Item = Nothing) As [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
@@ -78,9 +79,12 @@ Public Class [Property]
     Friend Overridable ReadOnly Property RawValue As PROPVARIANT
         Get
             Dim result As PROPVARIANT
-            If Not _item._shellItem2 Is Nothing AndAlso Not _item.disposedValue Then
-                _item._shellItem2.GetProperty(_propertyKey, result)
-            End If
+            Try
+                If Not _item._shellItem2 Is Nothing AndAlso Not _item.disposedValue Then
+                    _item._shellItem2.GetProperty(_propertyKey, result)
+                End If
+            Catch ex As COMException
+            End Try
             Return result
         End Get
     End Property

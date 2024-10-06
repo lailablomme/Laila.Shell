@@ -22,7 +22,7 @@ Public Class Folder
     Private _isExpanded As Boolean
     Private _parent As ITreeViewItemData
     Private _isLoading As Boolean
-    Private _fromThread As Boolean
+    Private _lock As Object = New Object()
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -134,15 +134,15 @@ Public Class Folder
 
                 Dim t As Thread = New Thread(New ThreadStart(
                     Sub()
-                        RaiseEvent LoadingStateChanged(True)
+                        SyncLock _lock
+                            If _items Is Nothing Then
+                                RaiseEvent LoadingStateChanged(True)
 
-                        If _items Is Nothing Then
-                            _fromThread = True
-                            updateItems(result)
-                            _fromThread = False
-                        End If
+                                updateItems(result, True)
 
-                        RaiseEvent LoadingStateChanged(False)
+                                RaiseEvent LoadingStateChanged(False)
+                            End If
+                        End SyncLock
                     End Sub))
 
                 t.Start()
@@ -154,26 +154,32 @@ Public Class Folder
         End Get
     End Property
 
-    Public Overridable Property Items As ObservableCollection(Of Item)
-        Get
-            If _items Is Nothing Then
-                Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
-                updateItems(result)
-            End If
+    Public Overridable Async Function GetItems() As Task(Of List(Of Item))
+        Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
 
-            Return _items
-        End Get
-        Set(value As ObservableCollection(Of Item))
-            SetValue(_items, value)
-            Me.NotifyOfPropertyChange("ItemsThreaded")
-        End Set
-    End Property
+        Dim func As Func(Of Task(Of List(Of Item))) =
+            Async Function() As Task(Of List(Of Item))
+                SyncLock _lock
+                    If _items Is Nothing OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder) Then
+                        updateItems(result, False)
+                    End If
+                End SyncLock
 
-    Protected Sub updateItems(items As ObservableCollection(Of Item))
+                If _items Is Nothing Then
+                    Return New List(Of Item)
+                Else
+                    Return _items.ToList()
+                End If
+            End Function
+
+        Return Await Task.Run(func)
+    End Function
+
+    Protected Sub updateItems(items As ObservableCollection(Of Item), isFromThread As Boolean)
         Me.IsLoading = True
 
         updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN,
-                    Me.IsExpanded OrElse Not _fromThread OrElse Me.IsSelected OrElse Me.IsOpened,
+                    Me.IsExpanded OrElse Not isFromThread OrElse Me.IsSelected OrElse Me.IsOpened,
                     Function(item As Item) As Boolean
                         Return Not items.FirstOrDefault(Function(i) i.FullPath = item.FullPath AndAlso Not i.disposedValue) Is Nothing
                     End Function,
@@ -199,7 +205,11 @@ Public Class Folder
                         End If
                     End Sub,
                     Sub()
-                        items.Add(New DummyFolder("Loading...", Nothing))
+                        UIHelper.OnUIThread(
+                            Sub()
+                                items.Clear()
+                                items.Add(New DummyFolder("Loading..."))
+                            End Sub)
                     End Sub,
                     Sub()
                         For Each item In items
@@ -208,7 +218,8 @@ Public Class Folder
                             End If
                         Next
 
-                        Me.Items = items
+                        _items = items
+                        Me.NotifyOfPropertyChange("ItemsThreaded")
 
                         Me.IsLoading = False
                     End Sub)
@@ -267,21 +278,21 @@ Public Class Folder
                             End Try
 
                             If Not enumShellItems Is Nothing Then
-                                Dim shellItemArray(0) As IShellItem, fetched As UInt32 = 1
-                                enumShellItems.Next(1, shellItemArray, fetched)
+                                Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
+                                enumShellItems.Next(1, shellItems, fetched)
                                 If fetched = 1 AndAlso Not condition Then
                                     addLoadingItem()
                                     doKeepAll = True
                                 Else
                                     While fetched = 1
                                         Dim attr2 As Integer = SFGAO.FOLDER
-                                        shellItemArray(0).GetAttributes(attr2, attr2)
-                                        Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItemArray(0))
+                                        shellItems(0).GetAttributes(attr2, attr2)
+                                        Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
                                         Dim newItem As Item
                                         If CBool(attr2 And SFGAO.FOLDER) Then
-                                            newItem = makeNewFolder(shellItemArray(0))
+                                            newItem = makeNewFolder(shellItems(0))
                                         Else
-                                            newItem = makeNewItem(shellItemArray(0))
+                                            newItem = makeNewItem(shellItems(0))
                                         End If
                                         If Not newItem Is Nothing Then
                                             paths.Add(newItem.FullPath)
@@ -294,12 +305,12 @@ Public Class Folder
                                                 newItem.Dispose()
                                             End If
                                         End If
-                                        enumShellItems.Next(1, shellItemArray, fetched)
+                                        enumShellItems.Next(1, shellItems, fetched)
                                     End While
                                 End If
                             End If
                         Catch ex As Exception
-                            Dim dummy As DummyFolder = New DummyFolder(ex.Message, Nothing)
+                            Dim dummy As DummyFolder = New DummyFolder(ex.Message)
                             dummy.IsLoading = False
                             dummy._icon.Add(16, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error16.png"))
                             dummy._icon.Add(32, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error32.png"))
@@ -342,27 +353,36 @@ Public Class Folder
                 End If
             End If
 
-            UIHelper.OnUIThread(
-                Sub()
-                    For Each item In toAdd
+            For Each item In toAdd
+                UIHelper.OnUIThread(
+                    Sub()
                         add(item)
-                    Next
-                    For Each item In toUpdate
+                    End Sub)
+                Thread.Sleep(2)
+            Next
+            For Each item In toUpdate
+                UIHelper.OnUIThread(
+                    Sub()
                         updateProperties(item)
-                    Next
-                    If Not doKeepAll Then
-                        For Each item In getToBeRemoved(paths)
+                    End Sub)
+                Thread.Sleep(2)
+            Next
+            If Not doKeepAll Then
+                For Each item In getToBeRemoved(paths)
+                    UIHelper.OnUIThread(
+                        Sub()
                             If TypeOf item Is Folder Then
                                 Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                    .Folder = item,
-                                    .[Event] = SHCNE.RMDIR
-                                })
+                                   .Folder = item,
+                                   .[Event] = SHCNE.RMDIR
+                               })
                             End If
                             remove(item)
-                            item.Dispose()
-                        Next
-                    End If
-                End Sub)
+                        End Sub)
+                    item.Dispose()
+                    Thread.Sleep(2)
+                Next
+            End If
         End If
 
         complete()
@@ -468,7 +488,7 @@ Public Class Folder
                             End If
                         Case SHCNE.UPDATEDIR
                             If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing Then
-                                updateItems(_items)
+                                updateItems(_items, True)
                             End If
                     End Select
                 End If
@@ -485,11 +505,6 @@ Public Class Folder
 
     Protected Overrides Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
-            If Not _items Is Nothing Then
-                For Each item In _items
-                    item.Dispose()
-                Next
-            End If
         End If
 
         If Not _shellFolder Is Nothing Then

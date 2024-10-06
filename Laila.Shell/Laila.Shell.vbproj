@@ -154,12 +154,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Images\3dots16.png" />
     <None Remove="Images\arrow_up16.png" />
+    <None Remove="Images\chevron16.png" />
     <None Remove="Images\copy16.png" />
     <None Remove="Images\cut16.png" />
     <None Remove="Images\delete16.png" />
     <None Remove="Images\error16.png" />
     <None Remove="Images\error32.png" />
+    <None Remove="Images\monitor16.png" />
     <None Remove="Images\paste16.png" />
     <None Remove="Images\pin.png" />
     <None Remove="Images\sortasc.png" />
@@ -173,12 +176,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Images\3dots16.png" />
     <Resource Include="Images\arrow_up16.png" />
+    <Resource Include="Images\chevron16.png" />
     <Resource Include="Images\copy16.png" />
     <Resource Include="Images\cut16.png" />
     <Resource Include="Images\delete16.png" />
     <Resource Include="Images\error16.png" />
     <Resource Include="Images\error32.png" />
+    <Resource Include="Images\monitor16.png" />
     <Resource Include="Images\paste16.png" />
     <Resource Include="Images\pin.png" />
     <Resource Include="Images\sortasc.png" />
@@ -214,6 +220,10 @@
     <Folder Include="Interop\Memory\" />
     <Folder Include="Interop\Windows\" />
     <Folder Include="Interop\Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\laila-autocompletetextbox\Laila.AutoCompleteTextBox\Laila.AutoCompleteTextBox.vbproj" />
   </ItemGroup>
 
 </Project>

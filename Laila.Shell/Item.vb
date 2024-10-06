@@ -152,10 +152,13 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property LogicalParent As Folder
+    Public Property LogicalParent As Folder
         Get
             Return _logicalParent
         End Get
+        Friend Set(value As Folder)
+            _logicalParent = value
+        End Set
     End Property
 
     Public ReadOnly Property Parent As Folder
@@ -212,21 +215,25 @@ Public Class Item
 
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
-            If Not _icon.ContainsKey(size) Then
-                Dim ptr As IntPtr
-                Try
-                    CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
-                    _icon.Add(size, Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()))
-                Finally
-                    Functions.DeleteObject(ptr)
-                End Try
+            If Not disposedValue Then
+                If Not _icon.ContainsKey(size) Then
+                    Dim ptr As IntPtr
+                    Try
+                        CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
+                        _icon.Add(size, Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()))
+                    Finally
+                        Functions.DeleteObject(ptr)
+                    End Try
+                End If
+                Return _icon(size)
+            Else
+                Return Nothing
             End If
-            Return _icon(size)
         End Get
     End Property
 
     Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
-        If Not _overlayIconIndex.HasValue Then
+        If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
             Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr
             ptr = Marshal.GetIUnknownForObject(_shellItem2)
             Functions.SHGetIDListFromObject(ptr, pidl)
@@ -261,7 +268,7 @@ Public Class Item
             End Try
         End If
 
-        If _overlayIconIndex > 0 Then
+        If _overlayIconIndex.HasValue AndAlso _overlayIconIndex > 0 Then
             ' Get the system image list
             Dim hImageListLarge As IntPtr
             Dim hImageListSmall As IntPtr
@@ -299,6 +306,21 @@ Public Class Item
             End If
             'Debug.WriteLine(_displayName)
             Return _displayName
+        End Get
+    End Property
+
+    Public ReadOnly Property AddressBarDisplayName As String
+        Get
+            If Not Shell.SpecialFolders.Values.FirstOrDefault(Function(f) f.FullPath = Me.FullPath) Is Nothing Then
+                Return Me.DisplayName
+            Else
+                Dim specialFolderAsRoot As Folder = Shell.SpecialFolders.Values.FirstOrDefault(Function(f) Me.FullPath.StartsWith(f.FullPath))
+                If Not specialFolderAsRoot Is Nothing Then
+                    Return specialFolderAsRoot.DisplayName & Me.FullPath.Substring(specialFolderAsRoot.FullPath.Length)
+                Else
+                    Return Me.FullPath
+                End If
+            End If
         End Get
     End Property
 

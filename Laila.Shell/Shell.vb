@@ -11,6 +11,7 @@ Public Class Shell
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
+    Public Shared Event RequestSetSelectedFolder(sender As Object, e As RequestSetSelectedFolderEventArgs)
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
@@ -57,16 +58,21 @@ Public Class Shell
                     End Sub
             End Sub
 
+        _specialFolders.Add("Desktop", Folder.FromParsingName("shell:::{" & Guids.KnownFolder_Desktop.ToString() & "}", Nothing))
         _specialFolders.Add("Documents", Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing))
         _specialFolders.Add("Pictures", Folder.FromParsingName("shell:::{24ad3ad4-a569-4530-98e1-ab02f9417aa8}", Nothing))
         _specialFolders.Add("Downloads", Folder.FromParsingName("shell:::{088e3905-0323-4b02-9826-5d99428e115f}", Nothing))
         _specialFolders.Add("Videos", Folder.FromParsingName("shell:::{A0953C92-50DC-43bf-BE83-3742FED03C9C}", Nothing))
         _specialFolders.Add("Music", Folder.FromParsingName("shell:::{1CF1260C-4DD0-4ebb-811F-33C572699FDE}", Nothing))
         _specialFolders.Add("Favorites", Folder.FromParsingName("shell:::{323CA680-C24D-4099-B94D-446DD2D7249E}", Nothing))
+        _specialFolders.Add("This computer", Folder.FromParsingName("shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", Nothing))
+        _specialFolders.Add("Network", Folder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing))
+        _specialFolders.Add("Home", Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing))
+        _specialFolders.Add("Gallery", Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing))
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
-        Debug.WriteLine(CType(msg, WM).ToString())
+        'Debug.WriteLine(CType(msg, WM).ToString())
         If msg = WM.USER + 1 Then
             Dim pppidl As IntPtr = IntPtr.Zero
             Dim lEvent As SHCNE = 0
@@ -133,6 +139,14 @@ Public Class Shell
 
     Friend Shared Sub RaiseFolderNotificationEvent(sender As Object, e As FolderNotificationEventArgs)
         RaiseEvent FolderNotification(sender, e)
+    End Sub
+
+    Public Shared Sub SetSelectedFolder(folder As Folder, callback As Action(Of Folder))
+        Dim e As RequestSetSelectedFolderEventArgs = New RequestSetSelectedFolderEventArgs With {
+            .RequestedFolder = folder,
+            .Callback = callback
+        }
+        RaiseEvent RequestSetSelectedFolder(Nothing, e)
     End Sub
 
 End Class

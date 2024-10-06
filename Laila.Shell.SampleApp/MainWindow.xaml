@@ -9,6 +9,8 @@
         Height="450" Width="800" Title="{Binding DataContext.FolderDisplayName, ElementName=detailListView}">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="4" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -17,10 +19,11 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <controls:TreeView x:Name="treeView" 
+        <controls:AddressBar Grid.Row="0" Grid.Column="2" Folder="{Binding DataContext.Folder, ElementName=view, Mode=TwoWay}" />
+        <controls:TreeView Grid.Row="2" x:Name="treeView" 
                            Folder="{Binding DataContext.Folder, ElementName=view, Mode=TwoWay}" />
-        <GridSplitter Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-        <controls:DetailsListView Grid.Column="2" x:Name="detailListView" 
+        <GridSplitter Grid.Row="2" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+        <controls:DetailsListView Grid.Row="2" Grid.Column="2" x:Name="detailListView" 
                                   Folder="{Binding DataContext.Folder, ElementName=view, Mode=TwoWay}" />
     </Grid>
 </Window>
