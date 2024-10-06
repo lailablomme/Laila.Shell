@@ -1,9 +1,11 @@
-﻿Imports System.Reflection.Metadata
+﻿Imports System.ComponentModel
+Imports System.Reflection.Metadata
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
+Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
@@ -30,184 +32,88 @@ Public Class ContextMenu
             Return _menu
         End If
 
-        _parent = parent
+        Dim hasPaste As Boolean, pasteHeader As String
+        If Not isDefaultOnly AndAlso (items Is Nothing OrElse items.Count = 0) Then
+            ' check for paste
+            _parent = parent.Parent
+            makeContextMenu({parent}, isDefaultOnly)
+            Dim pasteMenuItem As MenuItem = getMenuItems(_hMenu, -1).FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
+            If Not pasteMenuItem Is Nothing Then
+                hasPaste = True
+                pasteHeader = pasteMenuItem.Header
+            End If
+            Me.ReleaseContextMenu()
+        End If
 
+        _parent = parent
         makeContextMenu(items, isDefaultOnly)
 
-        Dim getMenu As Func(Of IntPtr, Integer, List(Of Control)) =
-            Function(hMenu2 As IntPtr, parentIndex As Integer) As List(Of Control)
-                If parentIndex >= 0 Then
-                    Dim lParam As Integer = (&HFFFF0000) Or (parentIndex And &HFFFF)
-                    If Not _contextMenu3 Is Nothing Then
-                        Dim ptr3 As IntPtr
-                        Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
-                        Debug.WriteLine("contextMenu3 returned" & h.ToString())
-                        If Not IntPtr.Zero.Equals(ptr3) Then
-                            Marshal.Release(ptr3)
-                        End If
-                    ElseIf Not _contextMenu2 Is Nothing Then
-                        _contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
-                    End If
-                End If
-
-                Dim result As List(Of Control) = New List(Of Control)()
-
-                For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
-                    Dim mii As MENUITEMINFO
-                    mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                    mii.fMask = MIIM.MIIM_STRING
-                    mii.dwTypeData = New String(" "c, 2050)
-                    mii.cch = mii.dwTypeData.Length - 2
-                    Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-                    Dim header As String = mii.dwTypeData.Substring(0, mii.cch)
-
-                    mii = New MENUITEMINFO()
-                    mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                    mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE
-                    Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-
-                    Dim bitmapSource As BitmapSource
-                    If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                        bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                    Else
-                        bitmapSource = Nothing
-                    End If
-
-                    If mii.fType = MFT.SEPARATOR Then
-                        ' refuse initial and double separators
-                        If Not result.Count = 0 AndAlso Not TypeOf result(result.Count - 1) Is Separator Then
-                            result.Add(New Separator())
-                        End If
-                    Else
-                        mii = New MENUITEMINFO()
-                        mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                        mii.fMask = MIIM.MIIM_ID
-                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-
-                        Dim cmd As StringBuilder = New StringBuilder(), id As Integer
-                        cmd.Append(New String(" ", 2050))
-                        If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
-                            id = mii.wID - 1
-                            _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 2048)
-                            If cmd.Length = 0 Then
-                                _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 2048)
-                            End If
-                        End If
-
-                        Debug.WriteLine(header & "  " & id)
-
-                        mii = New MENUITEMINFO()
-                        mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                        mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
-                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-
-                        Dim menuItem As MenuItem = New MenuItem() With {
-                            .Header = header.Replace("&", "_"),
-                            .Icon = New Image() With {.Source = bitmapSource},
-                            .Tag = id & vbTab & cmd.ToString(),
-                            .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
-                            .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
-                        }
-
-                        If CBool(mii.fState And MFS.MFS_DEFAULT) Then
-                            DefaultId = menuItem.Tag
-                        End If
-
-                        If Not IntPtr.Zero.Equals(mii.hSubMenu) Then
-                            Dim subMenu As List(Of Control) = getMenu(mii.hSubMenu, i)
-                            For Each subMenuItem In subMenu
-                                menuItem.Items.Add(subMenuItem)
-                            Next
-                        End If
-
-                        result.Add(menuItem)
-                    End If
-                Next
-
-                ' remove trailing separators
-                While result.Count > 0 AndAlso TypeOf result(result.Count - 1) Is Separator
-                    result.RemoveAt(result.Count - 1)
-                End While
-
-                Return result
+        Dim makeButton As Func(Of Object, String, Windows.Controls.Button) =
+            Function(tag As Object, toolTip As String) As Windows.Controls.Button
+                Dim button As System.Windows.Controls.Button = New System.Windows.Controls.Button()
+                Dim image As Image = New Image()
+                image.Width = 16
+                image.Height = 16
+                image.Margin = New Thickness(2)
+                Select Case tag.ToString().Split(vbTab)(1)
+                    Case "copy" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/copy16.png")
+                    Case "cut" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/cut16.png")
+                    Case "paste" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/paste16.png")
+                    Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
+                End Select
+                button.Content = image
+                button.ToolTip = toolTip
+                'button.Margin = New Thickness(0, 0, 4, 0)
+                button.Tag = tag
+                Return button
             End Function
 
         ' make our own menu
         _menu = New Controls.ContextMenu()
-        For Each item In getMenu(_hMenu, -1)
+        Dim menuItems As List(Of Control) = getMenuItems(_hMenu, -1)
+        For Each item In menuItems
             Select Case item.Tag?.ToString().Split(vbTab)(1)
                 Case "copy", "cut", "paste", "delete"
-                    Dim button As System.Windows.Controls.Button = New System.Windows.Controls.Button()
-                    Dim image As Image = New Image()
-                    image.Width = 16
-                    image.Height = 16
-                    image.Margin = New Thickness(2)
-                    Select Case item.Tag.ToString().Split(vbTab)(1)
-                        Case "copy" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/copy16.png")
-                        Case "cut" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/cut16.png")
-                        Case "paste" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/paste16.png")
-                        Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
-                    End Select
-                    button.Content = image
-                    button.ToolTip = CType(item, MenuItem).Header.ToString().Replace("_", "")
-                    'button.Margin = New Thickness(0, 0, 4, 0)
-                    button.Tag = item.Tag
-                    _menu.ButtonsTop.Add(button)
                 Case Else
                     _menu.Items.Add(item)
             End Select
         Next
+        Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "cut")
+        If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+        menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "copy")
+        If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+        menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
+        If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
+            Else If hasPaste Then _menu.Buttons.Add(makeButton("-1" & vbTab & "paste", pasteHeader.Replace("_", "")))
+        menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
+        If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
 
         AddHandler _menu.Closed,
             Sub(s As Object, e As EventArgs)
                 If Not _invokedId Is Nothing Then
                     Me.InvokeCommand(_invokedId)
+                Else
+                    Me.ReleaseContextMenu()
                 End If
             End Sub
 
-        Dim wireItem As Action(Of Control) =
-            Sub(c As Control)
-                If TypeOf c Is Windows.Controls.Button Then
-                    AddHandler CType(c, Windows.Controls.Button).Click,
-                        Async Sub(s2 As Object, e2 As EventArgs)
-                            _menu.IsOpen = False
-
-                            Dim isHandled As Boolean = False
-
-                            RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
-
-                            If Not isHandled Then
-                                invokeCommandDelayed(c.Tag)
-                            End If
-                        End Sub
-                ElseIf TypeOf c Is MenuItem Then
-                    AddHandler CType(c, MenuItem).Click,
-                        Async Sub(s2 As Object, e2 As EventArgs)
-                            Dim isHandled As Boolean = False
-
-                            RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
-
-                            If Not isHandled Then
-                                invokeCommandDelayed(c.Tag)
-                            End If
-                        End Sub
-                End If
-            End Sub
-
-        Dim wireItems As Action(Of List(Of Control)) =
-            Sub(menuItems As List(Of Control))
-                For Each c As Control In menuItems
+        Dim wireMenuItems As Action(Of List(Of Control)) =
+            Sub(wireItems As List(Of Control))
+                For Each c As Control In wireItems
                     If (TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0) _
                         OrElse TypeOf c Is Windows.Controls.Button Then
-                        wireItem(c)
+                        If TypeOf c Is Windows.Controls.Button Then
+                            AddHandler CType(c, Windows.Controls.Button).Click, AddressOf menuItem_Click
+                        ElseIf TypeOf c Is MenuItem Then
+                            AddHandler CType(c, MenuItem).Click, AddressOf menuItem_Click
+                        End If
                     ElseIf TypeOf c Is MenuItem Then
-                        wireItems(CType(c, MenuItem).Items.Cast(Of Control).ToList())
+                        wireMenuItems(CType(c, MenuItem).Items.Cast(Of Control).ToList())
                     End If
                 Next
             End Sub
-        wireItems(_menu.Items.Cast(Of Control).ToList())
-        wireItems(_menu.ButtonsTop.Cast(Of Control).ToList())
-        wireItems(_menu.ButtonsBottom.Cast(Of Control).ToList())
+        wireMenuItems(_menu.Items.Cast(Of Control).ToList())
+        wireMenuItems(_menu.Buttons.Cast(Of Control).ToList())
 
         If _menu.Items.Count = 0 Then
             _menu = Nothing
@@ -359,6 +265,115 @@ Public Class ContextMenu
         End Try
     End Sub
 
+    Private Function getMenuItems(hMenu2 As IntPtr, parentIndex As Integer) As List(Of Control)
+        If parentIndex >= 0 Then
+            Dim lParam As Integer = (&HFFFF0000) Or (parentIndex And &HFFFF)
+            If Not _contextMenu3 Is Nothing Then
+                Dim ptr3 As IntPtr
+                Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
+                Debug.WriteLine("contextMenu3 returned" & h.ToString())
+                If Not IntPtr.Zero.Equals(ptr3) Then
+                    Marshal.Release(ptr3)
+                End If
+            ElseIf Not _contextMenu2 Is Nothing Then
+                _contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
+            End If
+        End If
+
+        Dim result As List(Of Control) = New List(Of Control)()
+
+        For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
+            Dim mii As MENUITEMINFO
+            mii.cbSize = CUInt(Marshal.SizeOf(mii))
+            mii.fMask = MIIM.MIIM_STRING
+            mii.dwTypeData = New String(" "c, 2050)
+            mii.cch = mii.dwTypeData.Length - 2
+            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+            Dim header As String = mii.dwTypeData.Substring(0, mii.cch)
+
+            mii = New MENUITEMINFO()
+            mii.cbSize = CUInt(Marshal.SizeOf(mii))
+            mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE
+            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+
+            Dim bitmapSource As BitmapSource
+            If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
+                bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+            Else
+                bitmapSource = Nothing
+            End If
+
+            If mii.fType = MFT.SEPARATOR Then
+                ' refuse initial and double separators
+                If Not result.Count = 0 AndAlso Not TypeOf result(result.Count - 1) Is Separator Then
+                    result.Add(New Separator())
+                End If
+            Else
+                mii = New MENUITEMINFO()
+                mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                mii.fMask = MIIM.MIIM_ID
+                Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+
+                Dim cmd As StringBuilder = New StringBuilder(), id As Integer
+                cmd.Append(New String(" ", 2050))
+                If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
+                    id = mii.wID - 1
+                    _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 2048)
+                    If cmd.Length = 0 Then
+                        _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 2048)
+                    End If
+                End If
+
+                Debug.WriteLine(header & "  " & id)
+
+                mii = New MENUITEMINFO()
+                mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
+                Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+
+                Dim menuItem As MenuItem = New MenuItem() With {
+                    .Header = header.Replace("&", "_"),
+                    .Icon = New Image() With {.Source = bitmapSource},
+                    .Tag = id & vbTab & cmd.ToString(),
+                    .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
+                    .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
+                }
+
+                If CBool(mii.fState And MFS.MFS_DEFAULT) Then
+                    DefaultId = menuItem.Tag
+                End If
+
+                If Not IntPtr.Zero.Equals(mii.hSubMenu) Then
+                    Dim subMenu As List(Of Control) = getMenuItems(mii.hSubMenu, i)
+                    For Each subMenuItem In subMenu
+                        menuItem.Items.Add(subMenuItem)
+                    Next
+                End If
+
+                result.Add(menuItem)
+            End If
+        Next
+
+        ' remove trailing separators
+        While result.Count > 0 AndAlso TypeOf result(result.Count - 1) Is Separator
+            result.RemoveAt(result.Count - 1)
+        End While
+
+        Return result
+    End Function
+
+
+    Private Sub menuItem_Click(c As Control, e2 As EventArgs)
+        Dim isHandled As Boolean = False
+
+        _menu.IsOpen = False
+        RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
+
+        If Not isHandled Then
+            invokeCommandDelayed(c.Tag)
+        End If
+    End Sub
+
     Protected Sub invokeCommandDelayed(id As String)
         _invokedId = id
     End Sub
@@ -366,16 +381,18 @@ Public Class ContextMenu
     Public Sub InvokeCommand(id As String)
         Dim cmi As New CMInvokeCommandInfoEx
         Debug.WriteLine("InvokeCommand " & id)
-        'If id.Split(vbTab)(1).Length = 0 Then
-        '    cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
-        '    cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
-        'Else
-        cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
-        cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
-        'End If
+        If Convert.ToInt32(id.Split(vbTab)(0)) >= 0 Then
+            cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+            cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+        Else
+            cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
+            cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
+        End If
         'cmi.lpDirectory = _parent.FullPath
         'cmi.lpDirectoryW = _parent.FullPath
-        cmi.fMask = CMIC.UNICODE
+        cmi.fMask = CMIC.UNICODE Or CMIC.ASYNCOK
+        If Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then cmi.fMask = cmi.fMask Or CMIC.CONTROL_DOWN
+        If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then cmi.fMask = cmi.fMask Or CMIC.SHIFT_DOWN
         cmi.nShow = SW.SHOWNORMAL
         'cmi.hwnd = Shell._hwnd
         cmi.cbSize = CUInt(Marshal.SizeOf(cmi))

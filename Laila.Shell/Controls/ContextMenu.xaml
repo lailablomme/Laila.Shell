@@ -41,22 +41,22 @@
                                 </Style>
                             </Grid.Resources>
 
-                            <Border x:Name="borderTop" Grid.Row="0" CornerRadius="5,5,0,0" Background="#dddddd" Padding="2">
+                            <Border x:Name="borderTop" Grid.Row="0" CornerRadius="5,5,0,0" Background="#dddddd" Padding="2" Visibility="Visible">
                                 <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsTop" />
                             </Border>
                             <ItemsPresenter Grid.Row="1" Margin="{TemplateBinding Padding}"  />
-                            <Border x:Name="borderBottom" Grid.Row="2" CornerRadius="0,0,5,5" Background="#dddddd" Padding="2">
+                            <Border x:Name="borderBottom" Grid.Row="2" CornerRadius="0,0,5,5" Background="#dddddd" Padding="2" Visibility="Visible">
                                 <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsBottom" />
                             </Border>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <DataTrigger Binding="{Binding Children.Count, ElementName=PART_ButtonsTop}" Value="0">
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="False">
                             <Setter Property="Visibility" TargetName="borderTop" Value="Collapsed" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding Children.Count, ElementName=PART_ButtonsBottom}" Value="0">
+                        </Trigger>
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="True">
                             <Setter Property="Visibility" TargetName="borderBottom" Value="Collapsed" />
-                        </DataTrigger>
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

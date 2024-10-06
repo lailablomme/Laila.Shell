@@ -59,6 +59,8 @@ Namespace ViewModels
 
             AddHandler _view.listView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
             AddHandler _view.listView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
+            AddHandler _view.listView.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
+            AddHandler _view.listView.MouseLeave, AddressOf OnListViewMouseLeave
             AddHandler _view.PreviewKeyDown, AddressOf OnListViewKeyDown
         End Sub
 
@@ -337,9 +339,9 @@ Namespace ViewModels
         End Sub
 
         Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
-            If Not _view.selection.IsSelecting Then
-                _mousePointDown = e.GetPosition(_view)
+            _mousePointDown = e.GetPosition(_view)
 
+            If Not _view.selection.IsSelecting Then
                 ' this prevents a multiple selection getting replaced by the single clicked item
                 If Not e.OriginalSource Is Nothing Then
                     Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
@@ -365,7 +367,11 @@ Namespace ViewModels
                         UIHelper.GetParentOfType(Of GridViewHeaderRowPresenter)(e.OriginalSource) Is Nothing Then
 
                         If (Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem)) _
-                            AndAlso Not clickedItem Is Nothing Then Me.SetSelectedItem(clickedItem)
+                            AndAlso Not clickedItem Is Nothing Then
+                            Me.SetSelectedItem(clickedItem)
+                        ElseIf clickedItem Is Nothing Then
+                            Me.SetSelectedItem(Nothing)
+                        End If
 
                         _menu = New ContextMenu()
                         AddHandler _menu.Click,
@@ -379,7 +385,8 @@ Namespace ViewModels
                                 End Select
                             End Sub
 
-                        _view.listView.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                        Dim contextMenu As Controls.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
+                        _view.listView.ContextMenu = contextMenu
                         e.Handled = True
                     ElseIf clickedItem Is Nothing AndAlso
                         UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
@@ -389,6 +396,14 @@ Namespace ViewModels
                     _mouseItemDown = Nothing
                 End If
             End If
+        End Sub
+
+        Public Sub OnListViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+            _mouseItemDown = Nothing
+        End Sub
+
+        Public Sub OnListViewMouseLeave(sender As Object, e As MouseEventArgs)
+            _mouseItemDown = Nothing
         End Sub
 
         Private Function getScrollViewer() As ScrollViewer

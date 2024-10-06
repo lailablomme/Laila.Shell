@@ -125,6 +125,8 @@ Namespace ViewModels
                     AddHandler _view.PreviewMouseMove, AddressOf OnTreeViewPreviewMouseMove
                     AddHandler _view.PreviewMouseLeftButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
                     AddHandler _view.PreviewMouseRightButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
+                    AddHandler _view.PreviewMouseUp, AddressOf OnTreeViewPreviewMouseButtonUp
+                    AddHandler _view.MouseLeave, AddressOf OnTreeViewMouseLeave
 
                     _dropTarget = New TreeViewDropTarget(Me)
                     WpfDragTargetProxy.RegisterDragDrop(_view, _dropTarget)
@@ -229,22 +231,23 @@ Namespace ViewModels
 
                 Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
                 Dim list As List(Of Folder) = New List(Of Folder)()
-                If Not folder Is Nothing Then
-                    While Not folder.LogicalParent Is Nothing
-                        list.Add(folder)
-                        Debug.WriteLine("SetSelectedFolder Added parent " & folder.FullPath)
-                        folder = folder.LogicalParent
+                Dim currentFolder As Folder = folder
+                If Not currentFolder Is Nothing Then
+                    While Not currentFolder.LogicalParent Is Nothing
+                        list.Add(currentFolder)
+                        Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
+                        currentFolder = currentFolder.LogicalParent
                     End While
 
                     Dim tf As Folder, root As Integer
-                    If _folders1.ToList().Exists(Function(f1) f1.FullPath = folder.FullPath) Then
-                        tf = _folders1.First(Function(f1) f1.FullPath = folder.FullPath)
+                    If _folders1.ToList().Exists(Function(f1) f1.FullPath = currentFolder.FullPath) Then
+                        tf = _folders1.First(Function(f1) f1.FullPath = currentFolder.FullPath)
                         root = 1
-                    ElseIf _folders2.ToList().Exists(Function(f1) f1.FullPath = folder.FullPath) Then
-                        tf = _folders2.First(Function(f1) f1.FullPath = folder.FullPath)
+                    ElseIf _folders2.ToList().Exists(Function(f1) f1.FullPath = currentFolder.FullPath) Then
+                        tf = _folders2.First(Function(f1) f1.FullPath = currentFolder.FullPath)
                         root = 2
-                    ElseIf _folders3.ToList().Exists(Function(f1) f1.FullPath = folder.FullPath) Then
-                        tf = _folders3.First(Function(f1) f1.FullPath = folder.FullPath)
+                    ElseIf _folders3.ToList().Exists(Function(f1) f1.FullPath = currentFolder.FullPath) Then
+                        tf = _folders3.First(Function(f1) f1.FullPath = currentFolder.FullPath)
                         root = 3
                     Else
                         tf = Nothing
@@ -291,20 +294,26 @@ Namespace ViewModels
                                             End Sub, Threading.DispatcherPriority.ContextIdle)
                                         Next
 
-                                        Select Case root
-                                            Case 1 : _selectionHelper1.SetSelectedItems({tf})
-                                            Case 2 : _selectionHelper2.SetSelectedItems({tf})
-                                            Case 3 : _selectionHelper3.SetSelectedItems({tf})
-                                        End Select
+                                        If Not callback Is Nothing Then
+                                            callback(tf)
+                                        Else
+                                            Select Case root
+                                                Case 1 : _selectionHelper1.SetSelectedItems({tf})
+                                                Case 2 : _selectionHelper2.SetSelectedItems({tf})
+                                                Case 3 : _selectionHelper3.SetSelectedItems({tf})
+                                            End Select
+                                        End If
 
-                                        If Not callback Is Nothing Then callback(tf)
                                         _isSettingSelectedFolder = False
                                     End If
                                 Else
-                                    _selectionHelper1.SetSelectedItems({})
-                                    _selectionHelper2.SetSelectedItems({})
-                                    _selectionHelper3.SetSelectedItems({})
-                                    If Not callback Is Nothing Then callback(Nothing)
+                                    If Not callback Is Nothing Then
+                                        callback(Nothing)
+                                    Else
+                                        _selectionHelper1.SetSelectedItems({})
+                                        _selectionHelper2.SetSelectedItems({})
+                                        _selectionHelper3.SetSelectedItems({})
+                                    End If
                                     _isSettingSelectedFolder = False
                                 End If
                             End Sub
@@ -315,6 +324,11 @@ Namespace ViewModels
                             _isSettingSelectedFolder = False
                         End If
                     Else
+                        If Not callback Is Nothing Then
+                            callback(folder)
+                        Else
+                            _view.Folder = folder
+                        End If
                         _isSettingSelectedFolder = False
                     End If
                 Else
@@ -341,13 +355,14 @@ Namespace ViewModels
                 Dim clickedItem As Folder = treeViewItem?.DataContext
                 _mouseItemDown = clickedItem
                 If e.RightButton = MouseButtonState.Pressed Then
-                    If Me.SelectedItem Is Nothing Then Me.SetSelectedFolder(clickedItem)
+                    If Not clickedItem Is Nothing Then
+                        If Me.SelectedItem Is Nothing Then Me.SetSelectedFolder(clickedItem)
 
-                    Dim parent As Folder = clickedItem.Parent
-                    If parent Is Nothing Then parent = Shell.Desktop
+                        Dim parent As Folder = clickedItem.Parent
+                        If parent Is Nothing Then parent = Shell.Desktop
 
-                    _menu = New ContextMenu()
-                    AddHandler _menu.Click,
+                        _menu = New ContextMenu()
+                        AddHandler _menu.Click,
                         Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
                             Select Case verb
                                 Case "open"
@@ -356,19 +371,28 @@ Namespace ViewModels
                             End Select
                         End Sub
 
-                    Dim contextMenu As System.Windows.Controls.ContextMenu = _menu.GetContextMenu(parent, {clickedItem}, False)
-                    _view.treeView1.ContextMenu = contextMenu
-                    _view.treeView2.ContextMenu = contextMenu
-                    _view.treeView3.ContextMenu = contextMenu
-                    e.Handled = True
-                Else
-                    _view.treeView1.ContextMenu = Nothing
-                    _view.treeView2.ContextMenu = Nothing
-                    _view.treeView3.ContextMenu = Nothing
+                        Dim contextMenu As Controls.ContextMenu = _menu.GetContextMenu(parent, {clickedItem}, False)
+                        _view.treeView1.ContextMenu = contextMenu
+                        _view.treeView2.ContextMenu = contextMenu
+                        _view.treeView3.ContextMenu = contextMenu
+                        e.Handled = True
+                    Else
+                        _view.treeView1.ContextMenu = Nothing
+                        _view.treeView2.ContextMenu = Nothing
+                        _view.treeView3.ContextMenu = Nothing
+                    End If
                 End If
             Else
                 _mouseItemDown = Nothing
             End If
+        End Sub
+
+        Public Sub OnTreeViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+            _mouseItemDown = Nothing
+        End Sub
+
+        Public Sub OnTreeViewMouseLeave(sender As Object, e As MouseEventArgs)
+            _mouseItemDown = Nothing
         End Sub
     End Class
 End Namespace
