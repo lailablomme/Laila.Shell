@@ -4,6 +4,7 @@ Imports System.Text
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
+Imports Laila.Shell.Controls
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.ViewModels
 
@@ -11,15 +12,15 @@ Public Class ListViewDropTarget
     Inherits BaseDropTarget
 
     Private _dataObject As ComTypes.IDataObject
-    Private _detailsListViewModel As DetailsListViewModel
+    Private _detailsListView As DetailsListView
     Private _lastOverItem As Item
     Private _dragOpenTimer As Timer
     Private _scrollTimer As Timer
     Private _scrollDirection As Boolean?
     Private _fileList() As String
 
-    Public Sub New(detailsListViewModel As DetailsListViewModel)
-        _detailsListViewModel = detailsListViewModel
+    Public Sub New(detailsListView As DetailsListView)
+        _detailsListView = detailsListView
     End Sub
 
     Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
@@ -112,10 +113,10 @@ Public Class ListViewDropTarget
 
     Private Function getOverItem(ptWIN32 As WIN32POINT) As Item
         ' translate point to listview
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListViewModel._view.listView)
+        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListView.PART_ListView)
 
         ' find which item we're over
-        Dim overObject As IInputElement = _detailsListViewModel._view.listView.InputHitTest(pt)
+        Dim overObject As IInputElement = _detailsListView.PART_ListView.InputHitTest(pt)
         Dim overListViewItem As ListViewItem
         If TypeOf overObject Is ListViewItem Then
             overListViewItem = overObject
@@ -125,7 +126,7 @@ Public Class ListViewDropTarget
         If Not overListViewItem Is Nothing Then
             Return overListViewItem.DataContext
         Else
-            Return _detailsListViewModel.Folder
+            Return _detailsListView.Folder
         End If
     End Function
 
@@ -149,7 +150,7 @@ Public Class ListViewDropTarget
     End Function
 
     Private Function dragPoint(grfKeyState As UInteger, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListViewModel._view.listView)
+        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListView.PART_ListView)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
                 _scrollDirection = False
@@ -160,12 +161,12 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListViewModel._view.listView)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListView.PART_ListView)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset - 1)
                             End Sub)
                     End Sub), Nothing, 350, 350)
             End If
-        ElseIf pt.Y > _detailsListViewModel._view.listView.ActualHeight - 100 Then
+        ElseIf pt.Y > _detailsListView.PART_ListView.ActualHeight - 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> True Then
                 _scrollDirection = True
                 If Not _scrollTimer Is Nothing Then
@@ -175,7 +176,7 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListViewModel._view.listView)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListView.PART_ListView)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset + 1)
                             End Sub)
                     End Sub), Nothing, 350, 350)
@@ -190,8 +191,8 @@ Public Class ListViewDropTarget
         Dim overItem As Item = getOverItem(ptWIN32)
 
         ' if we're over a folder, open it after two seconds of hovering
-        If TypeOf overItem Is Folder AndAlso Not overItem.Equals(_detailsListViewModel.Folder) Then
-            _detailsListViewModel.SetSelectedItem(overItem)
+        If TypeOf overItem Is Folder AndAlso Not overItem.Equals(_detailsListView.Folder) Then
+            _detailsListView.SetSelectedItem(overItem)
 
             If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 If Not _dragOpenTimer Is Nothing Then
@@ -202,7 +203,7 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                _detailsListViewModel.Folder = overItem
+                                _detailsListView.Folder = overItem
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
@@ -214,9 +215,9 @@ Public Class ListViewDropTarget
             End If
 
             If overItem.IsExecutable Then
-                _detailsListViewModel.SetSelectedItem(overItem)
+                _detailsListView.SetSelectedItem(overItem)
             Else
-                _detailsListViewModel.SetSelectedItem(Nothing)
+                _detailsListView.SetSelectedItem(Nothing)
             End If
         End If
 

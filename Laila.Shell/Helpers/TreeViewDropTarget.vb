@@ -9,20 +9,21 @@ Imports System.Runtime.InteropServices.ComTypes
 Imports System.Windows.Controls
 Imports System.Windows.Media.Imaging
 Imports System.Windows.Media
+Imports Laila.Shell.Controls
 
 Public Class TreeViewDropTarget
     Inherits BaseDropTarget
 
     Private _dataObject As ComTypes.IDataObject
-    Private _treeViewModel As TreeViewModel
+    Private _treeView As Laila.Shell.Controls.TreeView
     Private _lastOverItem As Item
     Private _dragOpenTimer As Timer
     Private _scrollTimer As Timer
     Private _scrollDirection As Boolean?
     Private _fileList() As String
 
-    Public Sub New(treeViewModel As TreeViewModel)
-        _treeViewModel = treeViewModel
+    Public Sub New(treeView As Laila.Shell.Controls.TreeView)
+        _treeView = treeView
     End Sub
 
     Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
@@ -64,7 +65,7 @@ Public Class TreeViewDropTarget
         End If
 
         If Not _fileList Is Nothing Then
-            Dim overItem As Item = getOverTreeViewItem(ptWIN32)?.DataContext
+            Dim overItem As Item = getOverListBoxItem(ptWIN32)?.DataContext
 
             If CType(pdwEffect, DROPEFFECT) <> DROPEFFECT.DROPEFFECT_NONE _
             AndAlso CType(pdwEffect, DROPEFFECT) <> DROPEFFECT.DROPEFFECT_SCROLL _
@@ -117,17 +118,17 @@ Public Class TreeViewDropTarget
         Return 0
     End Function
 
-    Private Function getOverTreeViewItem(ptWIN32 As WIN32POINT) As TreeViewItem
+    Private Function getOverListBoxItem(ptWIN32 As WIN32POINT) As ListBoxItem
         ' translate point to listview
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeViewModel._view)
+        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeView)
 
         ' find which item we're over
-        Dim overObject As IInputElement = _treeViewModel._view.InputHitTest(pt)
-        Dim overTreeViewItem As TreeViewItem
-        If TypeOf overObject Is TreeViewItem Then
+        Dim overObject As IInputElement = _treeView.InputHitTest(pt)
+        Dim overTreeViewItem As ListBoxItem
+        If TypeOf overObject Is ListBoxItem Then
             overTreeViewItem = overObject
         Else
-            overTreeViewItem = UIHelper.GetParentOfType(Of TreeViewItem)(overObject)
+            overTreeViewItem = UIHelper.GetParentOfType(Of ListBoxItem)(overObject)
         End If
         Return overTreeViewItem
     End Function
@@ -150,7 +151,7 @@ Public Class TreeViewDropTarget
     Private _prevOverTreeViewItem As TreeViewItem, _isTopOrBottom As Boolean, _offset As Double
 
     Private Function dragPoint(grfKeyState As UInteger, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeViewModel._view)
+        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeView)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
                 _scrollDirection = False
@@ -161,12 +162,12 @@ Public Class TreeViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeViewModel._view)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
                             End Sub)
                     End Sub), Nothing, 350, 350)
             End If
-        ElseIf pt.Y > _treeViewModel._view.ActualHeight - 100 Then
+        ElseIf pt.Y > _treeView.ActualHeight - 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> True Then
                 _scrollDirection = True
                 If Not _scrollTimer Is Nothing Then
@@ -176,7 +177,7 @@ Public Class TreeViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeViewModel._view)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
                             End Sub)
                     End Sub), Nothing, 350, 350)
@@ -188,7 +189,7 @@ Public Class TreeViewDropTarget
             End If
         End If
 
-        Dim overItem As Item = getOverTreeViewItem(ptWIN32)?.DataContext
+        Dim overItem As Item = getOverListBoxItem(ptWIN32)?.DataContext
 
         ' if we're over a folder, open it after two seconds of hovering
         If TypeOf overItem Is Folder Then
@@ -201,7 +202,7 @@ Public Class TreeViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                _treeViewModel.SetSelectedFolder(overItem)
+                                _treeView.SetSelectedFolder(overItem)
                                 CType(overItem, Folder).IsExpanded = True
                             End Sub)
                         _dragOpenTimer.Dispose()
@@ -214,46 +215,46 @@ Public Class TreeViewDropTarget
             End If
         End If
 
-        ' if we're over TreeView2, we might want to add pinned items
-        Dim overTreeViewItem As TreeViewItem = getOverTreeViewItem(ptWIN32)
-        If Not overTreeViewItem Is Nothing Then
-            Dim parentTreeView As TreeView = UIHelper.GetParentOfType(Of TreeView)(overTreeViewItem)
-            Const RESERVED_ITEM_SPACE As Integer = 18
-            If Not parentTreeView Is Nothing AndAlso parentTreeView.Equals(_treeViewModel._view.treeView2) Then
-                Dim ptOver As Point = UIHelper.WIN32POINTToControl(ptWIN32, overTreeViewItem)
-                If ptOver.Y < 2 Or ptOver.Y > overTreeViewItem.ActualHeight - 2 Then
-                    If _prevOverTreeViewItem Is Nothing OrElse
-                    Not _prevOverTreeViewItem.Equals(overTreeViewItem) OrElse
-                    _isTopOrBottom <> ptOver.Y < 2 Then
+        '' if we're over TreeView2, we might want to add pinned items
+        'Dim overTreeViewItem As TreeViewItem = getOverTreeViewItem(ptWIN32)
+        'If Not overTreeViewItem Is Nothing Then
+        '    Dim parentTreeView As TreeView = UIHelper.GetParentOfType(Of TreeView)(overTreeViewItem)
+        '    Const RESERVED_ITEM_SPACE As Integer = 18
+        '    If Not parentTreeView Is Nothing AndAlso parentTreeView.Equals(_treeView._view.treeView2) Then
+        '        Dim ptOver As Point = UIHelper.WIN32POINTToControl(ptWIN32, overTreeViewItem)
+        '        If ptOver.Y < 2 Or ptOver.Y > overTreeViewItem.ActualHeight - 2 Then
+        '            If _prevOverTreeViewItem Is Nothing OrElse
+        '            Not _prevOverTreeViewItem.Equals(overTreeViewItem) OrElse
+        '            _isTopOrBottom <> ptOver.Y < 2 Then
 
-                        _isTopOrBottom = ptOver.Y < 2
-                        If Not _prevOverTreeViewItem Is Nothing AndAlso
-                        Not _prevOverTreeViewItem.Equals(overTreeViewItem) Then
-                            _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
-                            _prevOverTreeViewItem = Nothing
-                        End If
+        '                _isTopOrBottom = ptOver.Y < 2
+        '                If Not _prevOverTreeViewItem Is Nothing AndAlso
+        '                Not _prevOverTreeViewItem.Equals(overTreeViewItem) Then
+        '                    _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
+        '                    _prevOverTreeViewItem = Nothing
+        '                End If
 
-                        If ptOver.Y < 2 Then
-                            overTreeViewItem.Margin = New Thickness(0, RESERVED_ITEM_SPACE, 0, 0)
-                            _prevOverTreeViewItem = overTreeViewItem
-                        Else
-                            overTreeViewItem.Margin = New Thickness(0, 0, 0, RESERVED_ITEM_SPACE)
-                            _prevOverTreeViewItem = overTreeViewItem
-                        End If
-                    End If
-                Else
-                    If Not _prevOverTreeViewItem Is Nothing Then
-                        _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
-                        _prevOverTreeViewItem = Nothing
-                    End If
-                End If
-            Else
-                If Not _prevOverTreeViewItem Is Nothing Then
-                    _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
-                    _prevOverTreeViewItem = Nothing
-                End If
-            End If
-        End If
+        '                If ptOver.Y < 2 Then
+        '                    overTreeViewItem.Margin = New Thickness(0, RESERVED_ITEM_SPACE, 0, 0)
+        '                    _prevOverTreeViewItem = overTreeViewItem
+        '                Else
+        '                    overTreeViewItem.Margin = New Thickness(0, 0, 0, RESERVED_ITEM_SPACE)
+        '                    _prevOverTreeViewItem = overTreeViewItem
+        '                End If
+        '            End If
+        '        Else
+        '            If Not _prevOverTreeViewItem Is Nothing Then
+        '                _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
+        '                _prevOverTreeViewItem = Nothing
+        '            End If
+        '        End If
+        '    Else
+        '        If Not _prevOverTreeViewItem Is Nothing Then
+        '            _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
+        '            _prevOverTreeViewItem = Nothing
+        '        End If
+        '    End If
+        'End If
 
         _lastOverItem = overItem
 

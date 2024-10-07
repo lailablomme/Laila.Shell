@@ -21,10 +21,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ViewModels\**" />
+    <EmbeddedResource Remove="ViewModels\**" />
+    <None Remove="ViewModels\**" />
+    <Page Remove="ViewModels\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AdditionalFiles Remove="Laila.Shell.manifest" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Controls\DetailsListView.xaml.vb" />
+    <Compile Remove="Controls\TreeView.xaml.vb" />
     <Compile Remove="Interop\AssociationInfo.vb" />
     <Compile Remove="Interop\BSTRBLOB.vb" />
     <Compile Remove="Interop\CArray.vb" />

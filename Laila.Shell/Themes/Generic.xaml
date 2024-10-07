@@ -4,6 +4,8 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/Laila.Shell;component/Controls/AddressBar.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ContextMenu.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/TreeView.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/DetailsListView.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

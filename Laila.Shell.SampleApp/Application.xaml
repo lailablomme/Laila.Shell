@@ -4,6 +4,47 @@
              xmlns:local="clr-namespace:Laila.Shell.SampleApp"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <Style TargetType="ToggleButton" x:Key="lailaShell_TreeChevronButtonStyle">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Visibility" Value="Visible" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="border" Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <Image Source="pack://application:,,,/Laila.Shell;component/Images/chevron16.png" Width="16" Height="16" x:Name="chevronImage"
+                                   VerticalAlignment="Center" HorizontalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+                                <Image.RenderTransform>
+                                    <RotateTransform Angle="0"/>
+                                </Image.RenderTransform>
+                            </Image>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding HasSubFolders}" Value="False">
+                                <Setter Property="ToggleButton.Visibility" Value="Hidden" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                <Setter Property="ToggleButton.Visibility" Value="Visible" />
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="chevronImage" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <RotateTransform Angle="90"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="Button" x:Key="lailaShell_ContextMenuButtonStyle">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="Black"/>

@@ -1,6 +1,7 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Runtime.InteropServices
 Imports System.Threading
+Imports System.Windows
 Imports System.Windows.Data
 Imports System.Windows.Media
 Imports Laila.Shell.Data
@@ -15,7 +16,7 @@ Public Class Folder
     Public Property IsOpened As Boolean
 
     Private _columns As List(Of Column)
-    Friend _items As ObservableCollection(Of Item)
+    Friend _items As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
     Friend _shellFolder As IShellFolder
     Private _columnManager As IColumnManager
     Private _isSelected As Boolean
@@ -23,6 +24,8 @@ Public Class Folder
     Private _parent As ITreeViewItemData
     Private _isLoading As Boolean
     Private _lock As Object = New Object()
+    Private _treeSortKey As String
+    Friend _rootIndex As Long
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -52,6 +55,29 @@ Public Class Folder
         End If
     End Sub
 
+    Public ReadOnly Property TreeSortKey As String
+        Get
+            If _logicalParent Is Nothing Then
+                Return String.Format("{0:00000000}", _rootIndex)
+            Else
+                Return _logicalParent.TreeSortKey & Me.ItemNameDisplaySortValue & New String(" ", 260 - Me.ItemNameDisplaySortValue.Length)
+            End If
+        End Get
+    End Property
+
+    Public ReadOnly Property TreeMargin As Thickness
+        Get
+            Dim level As Integer = 0
+            Dim lp As Folder = Me.LogicalParent
+            While Not lp Is Nothing
+                level += 1
+                lp = lp.LogicalParent
+            End While
+
+            Return New Thickness(level * 16, 0, 0, 0)
+        End Get
+    End Property
+
     Public Property IsSelected As Boolean Implements ITreeViewItemData.IsSelected
         Get
             Return _isSelected
@@ -63,13 +89,20 @@ Public Class Folder
 
     Public Property IsExpanded As Boolean Implements ITreeViewItemData.IsExpanded
         Get
-            Return _isExpanded
+            Return _isExpanded AndAlso (Me.LogicalParent Is Nothing OrElse Me.LogicalParent.IsExpanded)
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)
-            If value AndAlso (_items Is Nothing OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder)) Then
-                _items = Nothing
-                NotifyOfPropertyChange("ItemsThreaded")
+            If value AndAlso (_items.Count = 0 OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder)) Then
+                Dim t As Thread = New Thread(New ThreadStart(
+                    Sub()
+                        RaiseEvent LoadingStateChanged(True)
+                        SyncLock _lock
+                            updateItems(_items, True)
+                        End SyncLock
+                        RaiseEvent LoadingStateChanged(False)
+                    End Sub))
+                t.Start()
             End If
         End Set
     End Property
@@ -125,27 +158,31 @@ Public Class Folder
         End Get
     End Property
 
+    Public ReadOnly Property HasSubFolders As Boolean
+        Get
+            Return Me.Attributes.HasFlag(SFGAO.HASSUBFOLDER)
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
         Get
-            If _items Is Nothing AndAlso (Me.IsExpanded OrElse Me.ITreeViewItemData_Parent Is Nothing _
-                OrElse Me.ITreeViewItemData_Parent.IsExpanded OrElse Me.IsSelected OrElse Me.IsOpened) Then
-
-                Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
+            If _items.Count = 0 OrElse _items.Count <= 1 AndAlso (Me.IsExpanded OrElse (Me.LogicalParent Is Nothing _
+                OrElse Me.LogicalParent.IsExpanded) OrElse Me.IsSelected OrElse Me.IsOpened) Then
 
                 Dim t As Thread = New Thread(New ThreadStart(
                     Sub()
+                        RaiseEvent LoadingStateChanged(True)
                         SyncLock _lock
-                            If _items Is Nothing Then
-                                RaiseEvent LoadingStateChanged(True)
-                                updateItems(result, True)
-                                RaiseEvent LoadingStateChanged(False)
+                            If _items.Count = 0 Then
+                                updateItems(_items, True)
                             End If
                         End SyncLock
+                        RaiseEvent LoadingStateChanged(False)
                     End Sub))
 
                 t.Start()
 
-                Return Nothing
+                Return _items
             Else
                 Return _items
             End If
@@ -153,13 +190,11 @@ Public Class Folder
     End Property
 
     Public Overridable Async Function GetItems() As Task(Of List(Of Item))
-        Dim result As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
-
         Dim func As Func(Of Task(Of List(Of Item))) =
             Async Function() As Task(Of List(Of Item))
                 SyncLock _lock
-                    If _items Is Nothing OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder) Then
-                        updateItems(result, False)
+                    If _items.Count = 0 OrElse (_items.Count = 1 AndAlso TypeOf _items(0) Is DummyFolder) Then
+                        updateItems(_items, False)
                     End If
                 End SyncLock
 
@@ -205,8 +240,10 @@ Public Class Folder
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                items.Clear()
-                                items.Add(New DummyFolder("Loading..."))
+                                For Each item In items.ToList()
+                                    items.Remove(item)
+                                Next
+                                items.Add(New DummyFolder("Loading...", Me))
                             End Sub)
                     End Sub,
                     Sub()
@@ -216,8 +253,7 @@ Public Class Folder
                             End If
                         Next
 
-                        _items = items
-                        Me.NotifyOfPropertyChange("ItemsThreaded")
+                        Me.NotifyOfPropertyChange("HasSubFolders")
 
                         Me.IsLoading = False
                     End Sub)
@@ -310,7 +346,7 @@ Public Class Folder
                                 End If
                             End If
                         Catch ex As Exception
-                            Dim dummy As DummyFolder = New DummyFolder(ex.Message)
+                            Dim dummy As DummyFolder = New DummyFolder(ex.Message, Me)
                             dummy.IsLoading = False
                             dummy._icon.Add(16, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error16.png"))
                             dummy._icon.Add(32, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error32.png"))
@@ -361,30 +397,30 @@ Public Class Folder
                     Sub()
                         add(item)
                     End Sub)
-                Thread.Sleep(2)
+                'Thread.Sleep(2)
             Next
             For Each item In toUpdate
                 UIHelper.OnUIThread(
                     Sub()
                         updateProperties(item)
                     End Sub)
-                Thread.Sleep(2)
+                'Thread.Sleep(2)
             Next
             If Not doKeepAll Then
-                For Each item In getToBeRemoved(paths)
-                    UIHelper.OnUIThread(
-                        Sub()
+                UIHelper.OnUIThread(
+                    Sub()
+                        For Each item In getToBeRemoved(paths)
                             If TypeOf item Is Folder Then
                                 Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                   .Folder = item,
-                                   .[Event] = SHCNE.RMDIR
-                               })
+                               .Folder = item,
+                               .[Event] = SHCNE.RMDIR
+                            })
                             End If
                             remove(item)
-                        End Sub)
-                    item.Dispose()
-                    Thread.Sleep(2)
-                Next
+                            item.Dispose()
+                            'Thread.Sleep(2)
+                        Next
+                    End Sub)
             End If
         End If
 
