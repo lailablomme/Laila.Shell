@@ -10,15 +10,22 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-        <StackPanel Orientation="Vertical">
-            <StackPanel.Resources>
+        <Grid>
+            <Grid.Resources>
                 <converters:SorterConverter x:Key="sorterConverter" />
                 <Style TargetType="ScrollViewer" BasedOn="{StaticResource {x:Type ScrollViewer}}">
                     <Setter Property="behaviors:ScrollViewerFix.IsEnabled" Value="True" />
                 </Style>
-            </StackPanel.Resources>
+            </Grid.Resources>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-            <TreeView x:Name="treeView1" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+            <TreeView Grid.Row="0" x:Name="treeView1" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       ItemsSource="{Binding Folders1}" VirtualizingStackPanel.IsVirtualizing="False">
                 <TreeView.Style>
                     <Style TargetType="TreeView" BasedOn="{StaticResource {x:Type TreeView}}">
@@ -99,10 +106,10 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
 
-            <Separator />
+            <Separator Grid.Row="1" />
 
-            <TreeView x:Name="treeView2" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
-                      ItemsSource="{Binding Folders2}" VirtualizingStackPanel.IsVirtualizing="False">
+            <TreeView Grid.Row="2" x:Name="treeView2" Background="White" ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
+                      ItemsSource="{Binding Folders2}" VirtualizingStackPanel.IsVirtualizing="False" SnapsToDevicePixels="True">
                 <TreeView.Style>
                     <Style TargetType="TreeView" BasedOn="{StaticResource {x:Type TreeView}}">
                         <Setter Property="TreeView.Background" Value="Transparent" />
@@ -196,9 +203,11 @@
                 </TreeView.ItemContainerStyle>
             </TreeView>
 
-            <Separator />
+            <Grid Grid.Row="2" x:Name="dragPinnedGrid" />
 
-            <TreeView x:Name="treeView3" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
+            <Separator Grid.Row="3" />
+
+            <TreeView Grid.Row="4" x:Name="treeView3" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" 
                       ItemsSource="{Binding Folders3}" VirtualizingStackPanel.IsVirtualizing="False">
                 <TreeView.Style>
                     <Style TargetType="TreeView" BasedOn="{StaticResource {x:Type TreeView}}">
@@ -278,6 +287,6 @@
                     </Style>
                 </TreeView.ItemContainerStyle>
             </TreeView>
-        </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>
