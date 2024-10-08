@@ -31,9 +31,9 @@ Public Class Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
-            Dim attr As Integer = SFGAO.FOLDER
+            Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
-            If CBool(attr And SFGAO.FOLDER) Then
+            If attr.HasFlag(SFGAO.FOLDER) Then
                 Return New Folder(shellItem2, logicalParent)
             Else
                 Return New Item(shellItem2, logicalParent)

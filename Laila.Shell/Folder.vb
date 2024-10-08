@@ -366,113 +366,99 @@ Public Class Folder
     Protected Overrides Async Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)
 
-        Dim t As Func(Of Task) =
-            Async Function() As Task
-                If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then
-                    Select Case e.Event
-                        Case SHCNE.CREATE
-                            If Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                                Dim parentShellItem2 As IShellItem2
-                                Try
-                                    Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                                    If Not item1 Is Nothing Then
-                                        item1.GetParent(parentShellItem2)
-                                        Dim parentFullPath As String
-                                        parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
-                                        If Me.FullPath.Equals(parentFullPath) Then
-                                            UIHelper.OnUIThread(
-                                                Sub()
-                                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                        _items.Add(New Item(item1, Me))
-                                                    End If
-                                                End Sub)
+        If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then
+            Select Case e.Event
+                Case SHCNE.CREATE
+                    If Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
+                        Dim parentShellItem2 As IShellItem2
+                        Try
+                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                            If Not item1 Is Nothing Then
+                                item1.GetParent(parentShellItem2)
+                                Dim parentFullPath As String
+                                parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
+                                If Me.FullPath.Equals(parentFullPath) Then
+                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                        Dim attr As SFGAO = SFGAO.FOLDER
+                                        item1.GetAttributes(attr, attr)
+                                        If attr.HasFlag(SFGAO.FOLDER) Then
+                                            _items.Add(New Folder(item1, Me))
+                                        Else
+                                            _items.Add(New Item(item1, Me))
                                         End If
                                     End If
-                                Finally
-                                    If Not parentShellItem2 Is Nothing Then
-                                        Marshal.ReleaseComObject(parentShellItem2)
+                                End If
+                            End If
+                        Finally
+                            If Not parentShellItem2 Is Nothing Then
+                                Marshal.ReleaseComObject(parentShellItem2)
+                            End If
+                        End Try
+                    End If
+                Case SHCNE.MKDIR
+                    If Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
+                        Dim parentShellItem2 As IShellItem2
+                        Try
+                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                            If Not item1 Is Nothing Then
+                                item1.GetParent(parentShellItem2)
+                                Dim parentFullPath As String
+                                parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
+                                If Me.FullPath.Equals(parentFullPath) Then
+                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                        _items.Add(New Folder(item1, Me))
                                     End If
-                                End Try
+                                End If
                             End If
-                        Case SHCNE.MKDIR
-                            If Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                                Dim parentShellItem2 As IShellItem2
-                                Try
-                                    Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                                    If Not item1 Is Nothing Then
-                                        item1.GetParent(parentShellItem2)
-                                        Dim parentFullPath As String
-                                        parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
-                                        If Me.FullPath.Equals(parentFullPath) Then
-                                            UIHelper.OnUIThread(
-                                                Sub()
-                                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                                        _items.Add(New Folder(item1, Me))
-                                                    End If
-                                                End Sub)
-                                        End If
-                                    End If
-                                Finally
-                                    If Not parentShellItem2 Is Nothing Then
-                                        Marshal.ReleaseComObject(parentShellItem2)
-                                    End If
-                                End Try
+                        Finally
+                            If Not parentShellItem2 Is Nothing Then
+                                Marshal.ReleaseComObject(parentShellItem2)
                             End If
-                        Case SHCNE.RMDIR, SHCNE.DELETE
-                            If Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                                SyncLock _lock
-                                    Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                                    If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If TypeOf item Is Folder Then
-                                                    Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                                        .Folder = item,
-                                                        .[Event] = e.Event
-                                                    })
-                                                End If
-                                                _items.Remove(item)
-                                            End Sub)
-                                    End If
-                                End SyncLock
+                        End Try
+                    End If
+                Case SHCNE.RMDIR, SHCNE.DELETE
+                    If Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
+                        SyncLock _lock
+                            Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                            If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                                If TypeOf item Is Folder Then
+                                    Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                        .Folder = item,
+                                        .[Event] = e.Event
+                                    })
+                                End If
+                                _items.Remove(item)
                             End If
-                        Case SHCNE.DRIVEADD
-                            If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
-                                            If Not item1 Is Nothing Then
-                                                _items.Add(New Folder(item1, Me))
-                                            End If
-                                        End If
-                                    End Sub)
+                        End SyncLock
+                    End If
+                Case SHCNE.DRIVEADD
+                    If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
+                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                            If Not item1 Is Nothing Then
+                                _items.Add(New Folder(item1, Me))
                             End If
-                        Case SHCNE.DRIVEREMOVED
-                            If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                                SyncLock _lock
-                                    Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                                    If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                                        .Folder = item,
-                                                        .[Event] = e.Event
-                                                    })
-                                                _items.Remove(item)
-                                            End Sub)
-                                    End If
-                                End SyncLock
+                        End If
+                    End If
+                Case SHCNE.DRIVEREMOVED
+                    If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
+                        SyncLock _lock
+                            Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                            If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                        .Folder = item,
+                                        .[Event] = e.Event
+                                    })
+                                _items.Remove(item)
                             End If
-                        Case SHCNE.UPDATEDIR
-                            If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing AndAlso _isLoaded Then
-                                updateItems(_items, True)
-                            End If
-                    End Select
-                End If
-            End Function
-
-        Await Task.Run(t)
+                        End SyncLock
+                    End If
+                Case SHCNE.UPDATEDIR
+                    If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing AndAlso _isLoaded Then
+                        updateItems(_items, True)
+                    End If
+            End Select
+        End If
     End Sub
 
     Protected Function isWindows7OrLower() As Boolean
