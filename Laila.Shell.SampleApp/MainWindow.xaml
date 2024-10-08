@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Laila.Shell.SampleApp"
         xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" x:Name="view"
-        mc:Ignorable="d" Icon="{Binding DataContext.Folder.Icon[48], ElementName=detailListView}"
-        Height="450" Width="800" Title="{Binding DataContext.FolderDisplayName, ElementName=detailListView}">
+        mc:Ignorable="d" Icon="{Binding Folder.Icon[48], ElementName=detailListView}"
+        Height="450" Width="800" Title="{Binding Folder.DisplayName, ElementName=detailListView}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -19,11 +19,11 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <controls:AddressBar Grid.Row="0" Grid.Column="2" Folder="{Binding DataContext.Folder, ElementName=view, Mode=TwoWay}" />
+        <controls:AddressBar Grid.Row="0" Grid.Column="2" Folder="{Binding Folder, Mode=TwoWay}" />
         <controls:TreeView Grid.Row="2" x:Name="treeView" 
-                           Folder="{Binding DataContext.Folder, ElementName=view, Mode=TwoWay}" />
+                           Folder="{Binding Folder, Mode=TwoWay}" />
         <GridSplitter Grid.Row="2" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
         <controls:DetailsListView Grid.Row="2" Grid.Column="2" x:Name="detailListView" 
-                                  Folder="{Binding DataContext.Folder, ElementName=view, Mode=TwoWay}" />
+                                  Folder="{Binding Folder, Mode=TwoWay}" />
     </Grid>
 </Window>

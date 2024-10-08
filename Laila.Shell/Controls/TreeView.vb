@@ -340,7 +340,6 @@ Namespace Controls
                                         End If
                                     End Sub)
                             Next
-                            'Dim items As ObservableCollection(Of Item) = folder.ItemsThreaded
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Remove
@@ -400,21 +399,8 @@ Namespace Controls
 
             Select Case e.PropertyName
                 Case "IsExpanded"
-                    UIHelper.OnUIThreadAsync(
-                        Sub()
-                            Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                            view.Refresh()
-                        End Sub)
-                Case "ItemsThreaded"
-                    If Not folder.ItemsThreaded Is Nothing Then
-                        For Each item In Me.Items.Where(Function(i) Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
-                            Me.Items.Remove(item)
-                        Next
-                        For Each item In folder.ItemsThreaded.Where(Function(i) TypeOf i Is Folder)
-                            Me.Items.Add(item)
-                        Next
-                        AddHandler folder.ItemsThreaded.CollectionChanged, AddressOf items_CollectionChanged
-                    End If
+                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                    view.Refresh()
             End Select
         End Sub
 

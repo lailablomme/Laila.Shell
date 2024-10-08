@@ -13,7 +13,6 @@ Public Class Shell
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
     Public Shared Event RequestSetSelectedFolder(sender As Object, e As RequestSetSelectedFolderEventArgs)
-    Public Shared Event Ready(sender As Object, e As EventArgs)
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
@@ -73,6 +72,7 @@ Public Class Shell
         _specialFolders.Add("Gallery", Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing))
         _specialFolders.Add("OneDrive", Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing))
         _specialFolders.Add("Recycle Bin", Folder.FromParsingName("shell:::{645FF040-5081-101B-9F08-00AA002F954E}", Nothing))
+        '_specialFolders.Add("Recent", Folder.FromParsingName("%APPDATA%\Microsoft\Windows\Recent", Nothing))
         '_specialFolders.Add("Windows Tools", Folder.FromParsingName("shell:::{D20EA4E1-3957-11D2-A40B-0C5020524153}", Nothing))
         '_specialFolders.Add("Libraries", Folder.FromParsingName("shell:::{031E4825-7B94-4DC3-B131-E946B44C8DD5}", Nothing))
         '_specialFolders.Add("User Pinned", Folder.FromParsingName("shell:::{1F3427C8-5C10-4210-AA03-2EE45287D668}", Nothing))
@@ -86,17 +86,6 @@ Public Class Shell
         '_specialFolders.Add("Programs and Features", Folder.FromParsingName("shell:::{7b81be6a-ce2b-4676-a29e-eb907a5126c5}", Nothing))
         '_specialFolders.Add("Public", Folder.FromParsingName("shell:::{4336a54d-038b-4685-ab02-99bb52d3fb8b}", Nothing))
         '_specialFolders.Add("Recent Items", Folder.FromParsingName("shell:::{4564b25e-30cd-4787-82ba-39e73a750b14}", Nothing))
-
-        Task.Run(
-            Async Function() As Task
-                Dim recentFolder As Folder = Await Item.FromParsingNameDeepGet("%APPDATA%\Microsoft\Windows\Recent")
-                If Not recentFolder Is Nothing Then _specialFolders.Add("Recent", recentFolder)
-
-                UIHelper.OnUIThread(
-                    Sub()
-                        RaiseEvent Ready(Nothing, New EventArgs())
-                    End Sub)
-            End Function)
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr

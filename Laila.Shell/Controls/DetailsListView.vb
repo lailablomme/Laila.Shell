@@ -397,7 +397,6 @@ Namespace Controls
             If Not Me.Folder Is Nothing Then
                 saveScrollState()
                 RemoveHandler Me.Folder.LoadingStateChanged, AddressOf folder_LoadingStateChanged
-                Me.Folder.IsOpened = False
                 UIHelper.OnUIThread(
                     Sub()
                         saveScrollState()
@@ -406,7 +405,6 @@ Namespace Controls
 
             If Not newValue Is Nothing Then
                 AddHandler newValue.LoadingStateChanged, AddressOf folder_LoadingStateChanged
-                newValue.IsOpened = True
                 Me.ColumnsIn = buildColumnsIn()
             End If
         End Sub

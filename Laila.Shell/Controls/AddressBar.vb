@@ -26,17 +26,6 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(AddressBar), New FrameworkPropertyMetadata(GetType(AddressBar)))
         End Sub
 
-        Public Sub New()
-            MyBase.New()
-
-            AddHandler Shell.Ready,
-                Sub(sender As Object, e As EventArgs)
-                    If Not Me.Folder Is Nothing Then
-                        Me.ShowNavigationButtons(Me.Folder)
-                    End If
-                End Sub
-        End Sub
-
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
@@ -51,11 +40,14 @@ Namespace Controls
             AddHandler PART_ClickToEdit.MouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
                     PART_NavigationButtons.Visibility = Visibility.Hidden
+                    Me.Editor.IsEnabled = True
                     Me.Editor.Focus()
                 End Sub
         End Sub
 
         Protected Overrides Sub OnAfterSelect()
+            Me.Editor.IsEnabled = False
+
             If INVALID_VALUE.Equals(Me.SelectedValue) Then
                 Dim item As Item = Item.FromParsingName(Me.Editor.Text, Nothing)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
@@ -107,6 +99,7 @@ Namespace Controls
         Protected Overrides Sub Cancel()
             MyBase.Cancel()
 
+            Me.Editor.IsEnabled = False
             Me.ShowNavigationButtons(Me.Folder)
         End Sub
 
