@@ -442,22 +442,30 @@ Public Class Item
         Dim path As String = parsingName.Trim()
 
         ' get parts of path
+        Dim parts As List(Of String)
         Dim isNetworkPath As Boolean = path.StartsWith("\\")
-        If isNetworkPath Then path = path.Substring(2)
-
-        Dim parts As List(Of String) = New List(Of String)()
-        While Not String.IsNullOrWhiteSpace(path)
-            Debug.WriteLine(path)
-            If path = IO.Path.GetPathRoot(path) Then
-                parts.Add(path)
-            Else
-                parts.Add(IO.Path.GetFileName(path))
+        If isNetworkPath Then
+            parts = path.Substring(2).Split(IO.Path.DirectorySeparatorChar).ToList()
+            If parts.Count = 1 AndAlso parts(0).Length = 0 Then
+                parts.RemoveAt(0)
+            ElseIf parts.Count > 0 Then
+                parts(0) = "\\" & parts(0)
             End If
-            path = IO.Path.GetDirectoryName(path)
-        End While
-        parts.Reverse()
+        Else
+            parts = New List(Of String)()
+            While Not String.IsNullOrWhiteSpace(path)
+                Debug.WriteLine(path)
+                If path = IO.Path.GetPathRoot(path) Then
+                    parts.Add(path)
+                Else
+                    parts.Add(IO.Path.GetFileName(path))
+                End If
+                path = IO.Path.GetDirectoryName(path)
+            End While
+            parts.Reverse()
+        End If
 
-        If parts.Count > 0 Then
+        If parts.Count > 0 Or isNetworkPath Then
             Dim folder As Folder
             Dim j As Integer, start As Integer = 0
 
