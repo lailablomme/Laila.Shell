@@ -332,7 +332,7 @@ Namespace Controls
                             End If
                             AddHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             AddHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
-                            For Each item2 In folder.ItemsThreaded.Where(Function(i) TypeOf i Is Folder)
+                            For Each item2 In folder._items.Where(Function(i) TypeOf i Is Folder)
                                 UIHelper.OnUIThreadAsync(
                                     Sub()
                                         If Not Me.Items.Contains(item2) Then
@@ -340,6 +340,7 @@ Namespace Controls
                                         End If
                                     End Sub)
                             Next
+                            'Dim items As ObservableCollection(Of Item) = folder.ItemsThreaded
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Remove
@@ -347,13 +348,16 @@ Namespace Controls
                         If TypeOf item Is Folder Then
                             Dim folder As Folder = item
                             RemoveHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
-                            UIHelper.OnUIThreadAsync(
-                                Sub()
-                                    RemoveHandler folder.ItemsThreaded.CollectionChanged, AddressOf folder_CollectionChanged
-                                    For Each item2 In folder.ItemsThreaded.Where(Function(i) TypeOf i Is Folder)
-                                        Me.Items.Remove(item2)
-                                    Next
-                                End Sub)
+                            RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
+                            For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder))
+                                UIHelper.OnUIThreadAsync(
+                                    Sub()
+                                        If Not Me.Items.Contains(item2) Then
+                                            Me.Items.Remove(item2)
+                                        End If
+                                    End Sub)
+                            Next
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Reset
@@ -396,8 +400,11 @@ Namespace Controls
 
             Select Case e.PropertyName
                 Case "IsExpanded"
-                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                    view.Refresh()
+                    UIHelper.OnUIThreadAsync(
+                        Sub()
+                            Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                            view.Refresh()
+                        End Sub)
                 Case "ItemsThreaded"
                     If Not folder.ItemsThreaded Is Nothing Then
                         For Each item In Me.Items.Where(Function(i) Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()

@@ -36,14 +36,14 @@ Namespace Helpers
                         folderName = filter
                     End If
                     If folder Is Nothing Then folder = Await Item.FromParsingNameDeepGet(folderName)
-                    'End If
                     If Not folder Is Nothing Then
                         Return (Await folder.GetItems()) _
                             .Where(Function(f) _
                                 If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
                                    f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
-                                   f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar)).ToLower().StartsWith(fileName.ToLower()) _
-                                OrElse f.DisplayName.ToLower.StartsWith(fileName.ToLower())).ToList()
+                                   f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar)) _
+                                       .ToLower().StartsWith(fileName.ToLower()) _
+                                OrElse (Not f.DisplayName Is Nothing AndAlso f.DisplayName.ToLower().StartsWith(fileName.ToLower()))).ToList()
                     Else
                         Return Shell.SpecialFolders.Values.Where(Function(f) f.DisplayName.ToLower().StartsWith(fileName.ToLower()) _
                                                                       OrElse f.FullPath.ToLower().StartsWith(fileName.ToLower())) _

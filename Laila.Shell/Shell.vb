@@ -89,7 +89,8 @@ Public Class Shell
 
         Task.Run(
             Async Function() As Task
-                _specialFolders.Add("Recent", Await Item.FromParsingNameDeepGet("%APPDATA%\Microsoft\Windows\Recent"))
+                Dim recentFolder As Folder = Await Item.FromParsingNameDeepGet("%APPDATA%\Microsoft\Windows\Recent")
+                If Not recentFolder Is Nothing Then _specialFolders.Add("Recent", recentFolder)
 
                 UIHelper.OnUIThread(
                     Sub()
@@ -157,7 +158,7 @@ Public Class Shell
     Public Shared ReadOnly Property Desktop As Folder
         Get
             If _desktop Is Nothing Then
-                _desktop = Folder.FromKnownFolderGuid(Guids.KnownFolder_Desktop)
+                _desktop = Shell.SpecialFolders("Desktop")
             End If
 
             Return _desktop

@@ -6,6 +6,7 @@
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ContextMenu.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/TreeView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/DetailsListView.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/ToggleButton.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

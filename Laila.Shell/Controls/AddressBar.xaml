@@ -43,6 +43,7 @@
         <Setter Property="SelectedValuePath" Value="FullPath" />
         <Setter Property="MinChars" Value="1" />
         <Setter Property="ShowDropDownButton" Value="False" />
+        <Setter Property="AllowFreeText" Value="True" />
         <Setter Property="InvalidValue" Value="5e979b53-746b-4a0c-9f5f-00fdd22c91d8" />
         <Setter Property="ItemTemplate">
             <Setter.Value>
@@ -224,13 +225,7 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <ItemsControl ItemsSource="{TemplateBinding NavigationButtons}" >
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
+                                <StackPanel Orientation="Horizontal" x:Name="PART_NavigationButtonsPanel" Focusable="False" />
                                 <Border Grid.Column="1" Cursor="IBeam" Background="White" x:Name="PART_ClickToEdit" />
                             </Grid>
                         </Border>
