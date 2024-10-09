@@ -286,6 +286,7 @@ Public Class Folder
                                     End If
                                 End If
                                 enumShellItems.Next(1, shellItems, fetched)
+                                Thread.Sleep(1)
                             End While
                         End If
                     Catch ex As Exception

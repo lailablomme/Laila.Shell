@@ -270,13 +270,10 @@ Namespace Controls
                     buttons.Reverse()
                     If (folder Is Nothing AndAlso Me.Folder Is Nothing) OrElse folder.Equals(Me.Folder) Then ' if we're not too late with this async
                         PART_NavigationButtons.Visibility = Visibility.Visible
-                        UIHelper.OnUIThreadAsync(
-                            Sub()
-                                PART_NavigationButtonsPanel.Children.Clear()
-                                For Each button In buttons
-                                    PART_NavigationButtonsPanel.Children.Add(button)
-                                Next
-                            End Sub, Threading.DispatcherPriority.ContextIdle)
+                        PART_NavigationButtonsPanel.Children.Clear()
+                        For Each button In buttons
+                            PART_NavigationButtonsPanel.Children.Add(button)
+                        Next
                     End If
                 End Sub, Threading.DispatcherPriority.Render)
         End Sub
