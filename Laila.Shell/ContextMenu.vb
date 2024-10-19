@@ -1,19 +1,22 @@
 ﻿Imports System.ComponentModel
+Imports System.IO
 Imports System.Reflection.Metadata
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Controls.Primitives
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 
 Public Class ContextMenu
     Implements IDisposable
 
-    Public Event Click(id As Integer, verb As String, ByRef isHandled As Boolean)
+    Public Event CommandInvoked(sender As Object, e As CommandInvokedEventArgs)
 
     Public Property DefaultId As String
 
@@ -37,10 +40,12 @@ Public Class ContextMenu
             ' check for paste
             _parent = parent.Parent
             makeContextMenu({parent}, isDefaultOnly)
-            Dim pasteMenuItem As MenuItem = getMenuItems(_hMenu, -1).FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
-            If Not pasteMenuItem Is Nothing Then
-                hasPaste = True
-                pasteHeader = pasteMenuItem.Header
+            If Not IntPtr.Zero.Equals(_hMenu) Then
+                Dim pasteMenuItem As MenuItem = getMenuItems(_hMenu, -1).FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
+                If Not pasteMenuItem Is Nothing Then
+                    hasPaste = True
+                    pasteHeader = pasteMenuItem.Header
+                End If
             End If
             Me.ReleaseContextMenu()
         End If
@@ -59,39 +64,71 @@ Public Class ContextMenu
                     Case "copy" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/copy16.png")
                     Case "cut" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/cut16.png")
                     Case "paste" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/paste16.png")
+                    Case "rename" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/rename16.png")
                     Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
                 End Select
                 button.Content = image
                 button.ToolTip = toolTip
-                'button.Margin = New Thickness(0, 0, 4, 0)
                 button.Tag = tag
+                Return button
+            End Function
+
+        Dim makeToggleButton As Func(Of Object, String, Boolean, Windows.Controls.Primitives.ToggleButton) =
+            Function(tag As Object, toolTip As String, isChecked As Boolean) As Windows.Controls.Primitives.ToggleButton
+                Dim button As System.Windows.Controls.Primitives.ToggleButton = New System.Windows.Controls.Primitives.ToggleButton()
+                Dim image As Image = New Image()
+                image.Width = 16
+                image.Height = 16
+                image.Margin = New Thickness(2)
+                Select Case tag.ToString().Split(vbTab)(1)
+                    Case "laila.shell.(un)pin" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/pin16.png")
+                End Select
+                button.Content = image
+                button.ToolTip = toolTip
+                button.Tag = tag
+                button.IsChecked = isChecked
                 Return button
             End Function
 
         ' make our own menu
         _menu = New Controls.ContextMenu()
-        Dim menuItems As List(Of Control) = getMenuItems(_hMenu, -1)
-        Dim lastMenuItem As Control
-        For Each item In menuItems
-            Select Case item.Tag?.ToString().Split(vbTab)(1)
-                Case "copy", "cut", "paste", "delete", "pintohome"
-                    ' don't add these
-                Case Else
-                    If Not (TypeOf item Is Separator AndAlso Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator) Then
-                        _menu.Items.Add(item)
-                        lastMenuItem = item
-                    End If
-            End Select
-        Next
-        Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "cut")
-        If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-        menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "copy")
-        If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-        menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
-        If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
-            Else If hasPaste Then _menu.Buttons.Add(makeButton("-1" & vbTab & "paste", pasteHeader.Replace("_", "")))
-        menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
-        If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+        If Not IntPtr.Zero.Equals(_hMenu) Then
+            Dim menuItems As List(Of Control) = getMenuItems(_hMenu, -1)
+            Dim lastMenuItem As Control
+            For Each item In menuItems
+                Select Case item.Tag?.ToString().Split(vbTab)(1)
+                    Case "copy", "cut", "paste", "delete", "pintohome", "rename"
+                        ' don't add these
+                    Case Else
+                        If Not (TypeOf item Is Separator AndAlso Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator) Then
+                            _menu.Items.Add(item)
+                            lastMenuItem = item
+                        End If
+                End Select
+            Next
+            _menu.Items.Add(New MenuItem() With {
+                .Header = "Create .ZIP folder",
+                .Icon = Nothing,
+                .Tag = -1 & vbTab & "laila.shell.createzip",
+                .IsEnabled = True,
+                .FontWeight = FontWeights.Normal
+            })
+            Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "cut")
+            If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+            menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "copy")
+            If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+            menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
+            If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
+                Else If hasPaste Then _menu.Buttons.Add(makeButton("-1" & vbTab & "paste", pasteHeader.Replace("_", "")))
+            menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "rename")
+            If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+            menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
+            If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+            If items.Count = 1 Then
+                Dim isPinned As Boolean = PinnedItems.GetIsPinned(items(0))
+                _menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
+            End If
+        End If
 
         AddHandler _menu.Closed,
             Sub(s As Object, e As EventArgs)
@@ -106,9 +143,11 @@ Public Class ContextMenu
             Sub(wireItems As List(Of Control))
                 For Each c As Control In wireItems
                     If (TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0) _
-                        OrElse TypeOf c Is Windows.Controls.Button Then
+                        OrElse TypeOf c Is ButtonBase Then
                         If TypeOf c Is Windows.Controls.Button Then
                             AddHandler CType(c, Windows.Controls.Button).Click, AddressOf menuItem_Click
+                        ElseIf TypeOf c Is Windows.Controls.Primitives.ToggleButton Then
+                            AddHandler CType(c, Windows.Controls.Primitives.ToggleButton).Click, AddressOf menuItem_Click
                         ElseIf TypeOf c Is MenuItem Then
                             AddHandler CType(c, MenuItem).Click, AddressOf menuItem_Click
                         End If
@@ -205,60 +244,68 @@ Public Class ContextMenu
                 End If
 
                 shellFolder.CreateViewObject(IntPtr.Zero, GetType(IContextMenu).GUID, ptrContextMenu)
-                _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
+                If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                    _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
+                End If
             End If
 
-            Dim ptr2 As IntPtr, ptr3 As IntPtr
-            Try
-                Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu2).GUID, ptr2)
-                If Not IntPtr.Zero.Equals(ptr2) Then
-                    _contextMenu2 = Marshal.GetObjectForIUnknown(ptr2)
-                End If
-                Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu3).GUID, ptr3)
-                If Not IntPtr.Zero.Equals(ptr3) Then
-                    _contextMenu3 = Marshal.GetObjectForIUnknown(ptr3)
-                End If
-            Finally
-                If Not IntPtr.Zero.Equals(ptr2) Then
-                    Marshal.Release(ptr2)
-                End If
-                If Not IntPtr.Zero.Equals(ptr3) Then
-                    Marshal.Release(ptr3)
-                End If
-            End Try
+            If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                Dim ptr2 As IntPtr, ptr3 As IntPtr
+                Try
+                    Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu2).GUID, ptr2)
+                    If Not IntPtr.Zero.Equals(ptr2) Then
+                        _contextMenu2 = Marshal.GetObjectForIUnknown(ptr2)
+                    End If
+                    Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu3).GUID, ptr3)
+                    If Not IntPtr.Zero.Equals(ptr3) Then
+                        _contextMenu3 = Marshal.GetObjectForIUnknown(ptr3)
+                    End If
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr2) Then
+                        Marshal.Release(ptr2)
+                    End If
+                    If Not IntPtr.Zero.Equals(ptr3) Then
+                        Marshal.Release(ptr3)
+                    End If
+                End Try
+            End If
 
-            _hMenu = Functions.CreatePopupMenu()
-            Dim flags As Integer = CMF.CMF_NORMAL Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE
-            If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
-            _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-
-            If _firstContextMenuCall Then
-                ' somehow very first call doesn't return all items
-                Functions.DestroyMenu(_hMenu)
+            If Not _contextMenu Is Nothing Then
                 _hMenu = Functions.CreatePopupMenu()
+                Dim flags As Integer = CMF.CMF_NORMAL Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
+                If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
                 _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-                _firstContextMenuCall = False
+
+                If _firstContextMenuCall Then
+                    ' somehow very first call doesn't return all items
+                    Functions.DestroyMenu(_hMenu)
+                    _hMenu = Functions.CreatePopupMenu()
+                    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
+                    _firstContextMenuCall = False
+                End If
             End If
 
-            'Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
-            'Try
-            '    Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
-            '    If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
-            '        shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
-            '        Functions.SHCreateDataObject(folderpidl, lastpidls.Count, lastpidls, IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
-            '        shellExtInit.Initialize(folderpidl2, dataObject, IntPtr.Zero)
-            '    End If
-            'Finally
-            '    If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
-            '        Marshal.Release(shellExtInitPtr)
-            '    End If
-            '    If Not shellExtInit Is Nothing Then
-            '        Marshal.ReleaseComObject(shellExtInit)
-            '    End If
-            '    If Not dataObject Is Nothing Then
-            '        Marshal.ReleaseComObject(dataObject)
-            '    End If
-            'End Try
+            If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
+                Try
+                    Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
+                    If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
+                        shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
+                        Functions.SHCreateDataObject(folderpidl, lastpidls.Count, lastpidls, IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
+                        shellExtInit.Initialize(folderpidl2, dataObject, IntPtr.Zero)
+                    End If
+                Finally
+                    If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
+                        Marshal.Release(shellExtInitPtr)
+                    End If
+                    If Not shellExtInit Is Nothing Then
+                        Marshal.ReleaseComObject(shellExtInit)
+                    End If
+                    If Not dataObject Is Nothing Then
+                        Marshal.ReleaseComObject(dataObject)
+                    End If
+                End Try
+            End If
         Finally
             If Not IntPtr.Zero.Equals(ptrContextMenu) Then
                 Marshal.Release(ptrContextMenu)
@@ -369,12 +416,16 @@ Public Class ContextMenu
 
 
     Private Sub menuItem_Click(c As Control, e2 As EventArgs)
-        Dim isHandled As Boolean = False
-
         _menu.IsOpen = False
-        RaiseEvent Click(c.Tag.ToString().Split(vbTab)(0), c.Tag.ToString().Split(vbTab)(1), isHandled)
 
-        If Not isHandled Then
+        Dim e As CommandInvokedEventArgs = New CommandInvokedEventArgs() With {
+            .Id = c.Tag.ToString().Split(vbTab)(0),
+            .Verb = c.Tag.ToString().Split(vbTab)(1)
+        }
+        If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
+        RaiseEvent CommandInvoked(Me, e)
+
+        If Not e.IsHandled Then
             invokeCommandDelayed(c.Tag)
         End If
     End Sub
@@ -414,6 +465,7 @@ Public Class ContextMenu
         End If
         If Not _contextMenu Is Nothing Then
             Marshal.ReleaseComObject(_contextMenu)
+            _contextMenu = Nothing
         End If
         If Not _contextMenu2 Is Nothing Then
             Marshal.ReleaseComObject(_contextMenu2)
@@ -421,6 +473,59 @@ Public Class ContextMenu
         If Not _contextMenu3 Is Nothing Then
             Marshal.ReleaseComObject(_contextMenu3)
         End If
+    End Sub
+
+    Public Sub DoRename(point As Point, width As Double, item As Item, grid As Grid)
+        Dim doRename As Action(Of String) =
+            Sub(newName As String)
+                If Not item.FullPath.Substring(item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1) = newName Then
+                    Dim fileOperation As IFileOperation
+                    Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
+                    fileOperation.RenameItem(item._shellItem2, newName, Nothing)
+                    fileOperation.PerformOperations()
+                    Marshal.ReleaseComObject(fileOperation)
+                End If
+            End Sub
+
+        ' make textbox
+        Dim textBox As System.Windows.Controls.TextBox
+        textBox = New System.Windows.Controls.TextBox() With {
+            .Margin = New Thickness(point.X, point.Y + 1, 0, 0),
+            .HorizontalAlignment = HorizontalAlignment.Left,
+            .VerticalAlignment = VerticalAlignment.Top,
+            .Width = width
+        }
+        textBox.MaxLength = 260
+        textBox.Text = item.FullPath.Substring(item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1)
+        grid.Children.Add(textBox)
+        textBox.Focus()
+
+        ' select filename without extension
+        textBox.SelectionStart = 0
+        If textBox.Text.Contains(".") Then
+            textBox.SelectionLength = textBox.Text.IndexOf(".")
+        Else
+            textBox.SelectionLength = textBox.Text.Length
+        End If
+
+        ' hook textbox
+        AddHandler textBox.LostFocus,
+            Sub(s2 As Object, e2 As RoutedEventArgs)
+                grid.Children.Remove(textBox)
+                If Not textBox.Tag = "cancel" AndAlso Not String.IsNullOrWhiteSpace(textBox.Text) Then
+                    doRename(textBox.Text)
+                End If
+            End Sub
+        AddHandler textBox.PreviewKeyDown,
+            Sub(s2 As Object, e2 As KeyEventArgs)
+                Select Case e2.Key
+                    Case Key.Enter
+                        grid.Children.Remove(textBox)
+                    Case Key.Escape
+                        textBox.Tag = "cancel"
+                        grid.Children.Remove(textBox)
+                End Select
+            End Sub
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)

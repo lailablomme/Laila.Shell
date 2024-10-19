@@ -1,4 +1,5 @@
 ﻿Imports System.Drawing
+Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
@@ -6,13 +7,13 @@ Imports System.Windows
 Imports System.Windows.Interop
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Microsoft.Win32
 
 Public Class Shell
     Private Shared _desktop As Folder
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
-    Public Shared Event RequestSetSelectedFolder(sender As Object, e As RequestSetSelectedFolderEventArgs)
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
@@ -72,7 +73,8 @@ Public Class Shell
         _specialFolders.Add("Gallery", Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing))
         _specialFolders.Add("OneDrive", Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing))
         _specialFolders.Add("Recycle Bin", Folder.FromParsingName("shell:::{645FF040-5081-101B-9F08-00AA002F954E}", Nothing))
-        '_specialFolders.Add("Recent", Folder.FromParsingName("%APPDATA%\Microsoft\Windows\Recent", Nothing))
+        _specialFolders.Add("Recent", CType(Folder.FromParsingName("%APPDATA%\Microsoft\Windows", Nothing), Folder) _
+                                         .GetItems().First(Function(i) i.FullPath.EndsWith("\Recent")))
         '_specialFolders.Add("Windows Tools", Folder.FromParsingName("shell:::{D20EA4E1-3957-11D2-A40B-0C5020524153}", Nothing))
         '_specialFolders.Add("Libraries", Folder.FromParsingName("shell:::{031E4825-7B94-4DC3-B131-E946B44C8DD5}", Nothing))
         '_specialFolders.Add("User Pinned", Folder.FromParsingName("shell:::{1F3427C8-5C10-4210-AA03-2EE45287D668}", Nothing))
@@ -157,13 +159,4 @@ Public Class Shell
     Friend Shared Sub RaiseFolderNotificationEvent(sender As Object, e As FolderNotificationEventArgs)
         RaiseEvent FolderNotification(sender, e)
     End Sub
-
-    Public Shared Sub SetSelectedFolder(folder As Folder, callback As Action(Of Folder))
-        Dim e As RequestSetSelectedFolderEventArgs = New RequestSetSelectedFolderEventArgs With {
-            .RequestedFolder = folder,
-            .Callback = callback
-        }
-        RaiseEvent RequestSetSelectedFolder(Nothing, e)
-    End Sub
-
 End Class

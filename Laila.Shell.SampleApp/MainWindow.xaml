@@ -1,29 +1,51 @@
-﻿<Window x:Class="MainWindow"
+﻿<metroWindow:MetroWindow x:Class="MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Laila.Shell.SampleApp"
-        xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" x:Name="view"
-        mc:Ignorable="d" Icon="{Binding Folder.Icon[48], ElementName=detailListView}"
-        Height="450" Width="800" Title="{Binding Folder.DisplayName, ElementName=detailListView}">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="4" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" 
+        xmlns:metroWindow="clr-namespace:Laila.MetroWindow.Controls;assembly=Laila.MetroWindow"
+        x:Name="view"
+        mc:Ignorable="d" Icon="{Binding SelectedItem.Folder.Icon[48], ElementName=tabControl}" 
+        Title="{Binding SelectedItem.Folder.DisplayName, ElementName=tabControl}"
+        Height="450" Width="800">
+    <controls:TabControl x:Name="tabControl">
+        <controls:TabControl.ItemTemplate>
+            <DataTemplate>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Image Source="{Binding Folder.Icon[16]}" HorizontalAlignment="Left" />
+                    <TextBlock Grid.Column="1" Text="{Binding Folder.DisplayName}" VerticalAlignment="Center" 
+                               Margin="4,0,0,0" TextTrimming="CharacterEllipsis" />
+                </Grid>
+            </DataTemplate>
+        </controls:TabControl.ItemTemplate>
+        <controls:TabControl.ContentTemplate>
+            <DataTemplate>
+                <Grid Margin="-4" Background="White">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="250" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-        <controls:AddressBar Grid.Row="0" Grid.Column="2" Folder="{Binding Folder, Mode=TwoWay}" />
-        <controls:TreeView Grid.Row="2" x:Name="treeView" 
-                           Folder="{Binding Folder, Mode=TwoWay}" />
-        <GridSplitter Grid.Row="2" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-        <controls:DetailsListView Grid.Row="2" Grid.Column="2" x:Name="detailListView" 
-                                  Folder="{Binding Folder, Mode=TwoWay}" />
-    </Grid>
-</Window>
+                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Background="#eeeeee" Margin="-1" />
+                    <controls:AddressBar Grid.Row="0" Grid.Column="2" Margin="0,5,0,3" Folder="{Binding Folder, Mode=TwoWay}" />
+                    <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" />
+                    <controls:TreeView Grid.Row="2" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
+                    <GridSplitter Grid.Row="2" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                    <controls:DetailsListView Grid.Row="2" Grid.Column="2" x:Name="detailListView" Folder="{Binding Folder, Mode=TwoWay}" />
+                </Grid>
+            </DataTemplate>
+        </controls:TabControl.ContentTemplate>
+    </controls:TabControl>
+</metroWindow:MetroWindow>

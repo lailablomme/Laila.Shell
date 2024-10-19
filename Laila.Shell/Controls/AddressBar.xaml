@@ -5,37 +5,34 @@
                     xmlns:balloon="clr-namespace:Laila.BalloonTip;assembly=Laila.BalloonTip"
                     xmlns:autocomplete="clr-namespace:Laila.AutoCompleteTextBox;assembly=Laila.AutoCompleteTextBox">
 
-    <VisualBrush x:Key="WavyBrush" TileMode="Tile" Viewbox="1,0,3,3" ViewboxUnits="Absolute" Viewport="0,-1,6,4" ViewportUnits="Absolute">
+    <helpers:AddressBarSuggestionProvider x:Key="suggestionProvider" />
+    
+    <VisualBrush x:Key="WavyBrush" Viewbox="0,-1,3.5,5" ViewboxUnits="Absolute" Viewport="0,-1,3.5,4" ViewportUnits="Absolute" TileMode="Tile">
         <VisualBrush.Visual>
-            <Path Data="M 0,1 C 1,0 2,2 3,1 4,0 5,2 6,1" Stroke="Red" StrokeThickness="0.2"/>
+            <Path Data="M 0,2 C 0.5,0 1,0 1.5,2 2,4 2.5,4 3,2" Stroke="Red" StrokeThickness="0.5" StrokeEndLineCap="Square" StrokeStartLineCap="Square" />
         </VisualBrush.Visual>
     </VisualBrush>
 
-    <Style TargetType="{x:Type TextBox}" x:Key="TransparentTextBoxStyle">
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="0" />
-        <Setter Property="Margin" Value="0" />
+    <Style TargetType="ToggleButton" x:Key="laila_AutoComplete_DropDownButtonStyle">
+        <Setter Property="Width" Value="20" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type TextBox}">
-                    <Grid>
-                        <ScrollViewer x:Name="PART_ContentHost"
-                                      Background="Transparent"
-                                      Focusable="True"
-                                      HorizontalScrollBarVisibility="Hidden"
-                                      VerticalScrollBarVisibility="Hidden" />
-                    </Grid>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="PART_Border" Background="Transparent">
+                        <Path Stroke="Black" Data="M 0 0 L 4 4 L 8 0" Margin="1,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" UseLayoutRounding="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" TargetName="PART_Border" Value="#55569DE5" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="Background" TargetName="PART_Border" Value="#55569DE5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-
-    <helpers:AddressBarSuggestionProvider x:Key="suggestionProvider" />
-    
-    <SolidColorBrush Color="#41B1E1" x:Key="autoCompleteTextBoxFocusBrush" />
-
-    <Style TargetType="ListBoxItem" x:Key="SuggestionItemStyle" BasedOn="{StaticResource {x:Type ListBoxItem}}" />
 
     <Style TargetType="{x:Type local:AddressBar}" BasedOn="{StaticResource {x:Type autocomplete:AutoCompleteTextBox}}">
         <Setter Property="Provider" Value="{StaticResource suggestionProvider}" />
@@ -55,40 +52,149 @@
                 </DataTemplate>
             </Setter.Value>
         </Setter>
+        <Setter Property="ToolTipService.IsEnabled" Value="False" />
+        <Setter Property="Background" Value="White" />
+        <Setter Property="Foreground" Value="Black" />
+        <Setter Property="IsTabStop" Value="True" />
         <Setter Property="LoadingContent">
             <Setter.Value>
-                <StackPanel Orientation="Horizontal">
-                    <Viewbox StretchDirection="Both" Stretch="Uniform" Width="16" Height="16" Margin="0,0,4,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Viewbox Grid.Column="0" StretchDirection="Both" Stretch="Uniform" Width="16" Height="16">
                         <local:LoadingSpinner />
                     </Viewbox>
-                    <TextBlock VerticalAlignment="Center">Loading...</TextBlock>
-                </StackPanel>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center">Loading...</TextBlock>
+                </Grid>
             </Setter.Value>
         </Setter>
-        <Setter Property="ToolTipService.IsEnabled" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:AddressBar}">
-                    <Grid>
-                        <Border BorderBrush="#dddddd"
-                            BorderThickness="1,1,1,0"
-                            SnapsToDevicePixels="True"
-                            x:Name="PART_OuterBorder2">
-                            <Border BorderBrush="Gray" 
-                                BorderThickness="0,0,0,1"
-                                SnapsToDevicePixels="True"
-                                x:Name="PART_OuterBorder">
-                                <Border BorderBrush="White"
-                                    BorderThickness="0,0,0,1" 
-                                    Background="{TemplateBinding Background}" 
-                                    SnapsToDevicePixels="True"
-                                    x:Name="PART_Border">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="0" />
-                                        </Grid.RowDefinitions>
-                                        <balloon:BalloonTip PlacementTarget="{Binding ElementName=PART_OuterBorder2}" Placement="Top" IsOpen="{Binding Path=IsBalloonOpen, RelativeSource={RelativeSource Mode=TemplatedParent},Mode=TwoWay}" PopupAnimation="Fade" Timeout="10000">
+                    <Border BorderBrush="White" BorderThickness="2" CornerRadius="5">
+                        <Grid>
+                            <Border BorderBrush="Gray" BorderThickness="0,0,0,1" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore1">
+                                <Border BorderBrush="Transparent" BorderThickness="0,0,0,1" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore2">
+                                    <Grid Background="{TemplateBinding Background}" x:Name="PART_Grid">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <ContentPresenter Grid.Column="0" ContentSource="Icon" x:Name="PART_Icon" Margin="2,0,0,0">
+                                            <ContentPresenter.Style>
+                                                <Style>
+                                                    <Setter Property="ContentPresenter.Opacity" Value="1" />
+                                                    <Setter Property="ContentPresenter.Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedItem, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="{x:Null}">
+                                                            <Setter Property="ContentPresenter.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsDirty, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True">
+                                                            <Setter Property="ContentPresenter.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Icon, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="{x:Null}">
+                                                            <Setter Property="ContentPresenter.Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ContentPresenter.Style>
+                                        </ContentPresenter>
+
+                                        <TextBox Grid.Column="1" x:Name="PART_TextBox" HorizontalAlignment="Stretch" VerticalAlignment="Center" 
+                                             BorderThickness="0" Background="Transparent" Padding="0,1,0,1"
+                                             Foreground="{TemplateBinding Foreground}" Style="{x:Null}"  
+                                             IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                             IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                             MaxLength="{Binding MaxLength, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                             Text="{Binding Text, RelativeSource={RelativeSource Mode=TemplatedParent}, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Grid.Column="1" x:Name="PART_Watermark" Text="{TemplateBinding Watermark}" IsHitTestVisible="False"
+                                           VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" Foreground="Gray" Margin="3,0">
+                                            <TextBlock.Style>
+                                                <Style>
+                                                    <Setter Property="TextBlock.Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="{x:Null}">
+                                                            <Setter Property="TextBlock.Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="">
+                                                            <Setter Property="TextBlock.Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Watermark, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="{x:Null}">
+                                                            <Setter Property="TextBlock.Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Watermark, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="">
+                                                            <Setter Property="TextBlock.Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <ToggleButton Grid.Column="2" x:Name="PART_DropDownButton" 
+                                                  IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource Mode=TemplatedParent}}">
+                                            <ToggleButton.Style>
+                                                <Style TargetType="ToggleButton" BasedOn="{StaticResource laila_AutoComplete_DropDownButtonStyle}">
+                                                    <Setter Property="ToggleButton.Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ShowDropDownButton, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="False">
+                                                            <Setter Property="ToggleButton.Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ToggleButton.Style>
+                                        </ToggleButton>
+
+                                        <Popup x:Name="PART_Popup" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=OneWay}"
+                                       MinWidth="{TemplateBinding ActualWidth}" Focusable="False" AllowsTransparency="True" Placement="Bottom" 
+                                       PlacementTarget="{Binding ElementName=PART_Grid}" PopupAnimation="Fade" StaysOpen="False">
+                                            <Border Background="White" BorderThickness="1" BorderBrush="Gray" CornerRadius="5" Padding="2">
+                                                <Grid>
+                                                    <ListBox x:Name="PART_ListBox" VirtualizingPanel.IsVirtualizing="True"
+                                                         VirtualizingPanel.ScrollUnit="Pixel" 
+                                                         ItemTemplate="{TemplateBinding ItemTemplate}"
+                                                         Focusable="False" BorderThickness="0" Padding="0" 
+                                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                         ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                                         ItemContainerStyle="{DynamicResource laila_AutoComplete_SuggestionItemStyle}">
+                                                        <ListBox.Style>
+                                                            <Style>
+                                                                <Setter Property="ListBox.Visibility" Value="Visible" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsLoadingSuggestions, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True">
+                                                                        <Setter Property="ListBox.Visibility" Value="Collapsed" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ListBox.Style>
+                                                        <ListBox.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <VirtualizingStackPanel />
+                                                            </ItemsPanelTemplate>
+                                                        </ListBox.ItemsPanel>
+                                                    </ListBox>
+                                                    <ContentPresenter ContentSource="LoadingContent">
+                                                        <ContentPresenter.Style>
+                                                            <Style>
+                                                                <Setter Property="ContentPresenter.Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsLoadingSuggestions, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True">
+                                                                        <Setter Property="ContentPresenter.Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ContentPresenter.Style>
+                                                    </ContentPresenter>
+                                                </Grid>
+                                            </Border>
+                                        </Popup>
+
+                                        <balloon:BalloonTip PlacementTarget="{Binding ElementName=PART_Border}" Placement="Top" 
+                                                    IsOpen="{Binding Path=IsBalloonOpen, RelativeSource={RelativeSource Mode=TemplatedParent},Mode=TwoWay}" 
+                                                    PopupAnimation="Fade" Timeout="20000">
                                             <balloon:BalloonTip.ContentTemplate>
                                                 <DataTemplate>
                                                     <Grid>
@@ -99,137 +205,28 @@
                                                         </Grid.ColumnDefinitions>
 
                                                         <Image VerticalAlignment="Top" Source="pack://application:,,,/Laila.AutoCompleteTextBox;component/Images/ERROR24.png" Width="24" Height="24" />
-                                                        <TextBlock Grid.Column="2" Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}, Path=ErrorMessage}" MaxWidth="650" TextWrapping="Wrap" />
+                                                        <TextBlock Grid.Column="2" Text="{Binding ErrorMessage, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}" MaxWidth="650" TextWrapping="Wrap" />
                                                     </Grid>
                                                 </DataTemplate>
                                             </balloon:BalloonTip.ContentTemplate>
                                         </balloon:BalloonTip>
-                                        <Grid Grid.Row="0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <ContentPresenter Grid.Column="0" ContentSource="Icon" x:Name="PART_Icon" Visibility="{TemplateBinding IconVisibility}">
-                                                <ContentPresenter.Style>
-                                                    <Style>
-                                                        <Setter Property="ContentPresenter.Opacity" Value="1" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding SelectedItem, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="{x:Null}">
-                                                                <Setter Property="ContentPresenter.Opacity" Value="0.5" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentPresenter.Style>
-                                            </ContentPresenter>
-                                            <Grid Grid.Column="1">
-                                                <TextBlock x:Name="PART_Watermark"
-                                                       Text="{TemplateBinding Watermark}"
-                                                       Visibility="Collapsed"
-                                                       VerticalAlignment="Center"
-                                                       HorizontalAlignment="Left"
-                                                       Focusable="False"
-                                                       Foreground="Gray"
-                                                       Margin="3,0" />
-                                                <TextBox x:Name="PART_Editor"
-                                                     HorizontalAlignment="Stretch"
-                                                     VerticalAlignment="Center"
-                                                     Style="{StaticResource ResourceKey=TransparentTextBoxStyle}"
-                                                     Foreground="{TemplateBinding Foreground}"
-                                                     IsTabStop="{Binding Path=IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}}"
-                                             />
-                                            </Grid>
-                                            <Button Grid.Column="2" Width="18" BorderThickness="0" x:Name="PART_DropDownButton" Focusable="False">
-                                                <Button.Style>
-                                                    <Style>
-                                                        <Setter Property="Button.Visibility" Value="Collapsed" />
-                                                        <Setter Property="Button.Background" Value="Transparent" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding ShowDropDownButton, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True">
-                                                                <Setter Property="Button.Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                            <Trigger Property="Button.IsMouseOver" Value="True">
-                                                                <Setter Property="Button.Background" Value="#55569DE5"/>
-                                                            </Trigger>
-                                                            <DataTrigger Binding="{Binding Path=IsDropDownOpen, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True">
-                                                                <Setter Property="Button.Background" Value="#55569DE5"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Button.Style>
-                                                <Button.Template>
-                                                    <ControlTemplate>
-                                                        <Border Background="{TemplateBinding Background}" Margin="1,0,0,0">
-                                                            <Path Stroke="Black" Data="M 0 0 L 4 4 L 8 0" Margin="1,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" UseLayoutRounding="True" />
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Button.Template>
-                                            </Button>
-                                        </Grid>
-                                        <Popup x:Name="PART_Popup" 
-                                           IsOpen="{Binding Path=IsDropDownOpen, RelativeSource={RelativeSource Mode=TemplatedParent},Mode=TwoWay}"
-                                           HorizontalOffset="0" Grid.Row="1"
-                                           MinWidth="{TemplateBinding ActualWidth}"
-                                           AllowsTransparency="True" Placement="Bottom" PlacementTarget="{Binding ElementName=PART_Border}"
-                                           PopupAnimation="Fade" 
-                                           Focusable="False">
-                                            <Border Background="White"
-                                                BorderThickness="1"
-                                                BorderBrush="Gray"
-                                                CornerRadius="5"
-                                                Padding="2">
-                                                <Grid>
-                                                    <ListBox x:Name="PART_Selector" VirtualizingStackPanel.IsVirtualizing="False" VirtualizingStackPanel.VirtualizationMode="Recycling"
-                                                         ItemTemplate="{TemplateBinding ItemTemplate}"
-                                                         Focusable="False"
-                                                         BorderThickness="0"
-                                                         Padding="0"
-                                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                                         AlternationCount="2"
-                                                         ItemContainerStyle="{DynamicResource ResourceKey=SuggestionItemStyle}">
-                                                        <ListBox.Style>
-                                                            <Style>
-                                                                <Setter Property="ListBox.Visibility" Value="Visible" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsLoading, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True">
-                                                                        <Setter Property="ListBox.Visibility" Value="Collapsed" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </ListBox.Style>
-                                                    </ListBox>
-                                                    <Border>
-                                                        <Border.Style>
-                                                            <Style>
-                                                                <Setter Property="Border.Visibility" Value="Collapsed" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsLoading, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True">
-                                                                        <Setter Property="Border.Visibility" Value="Visible" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
-                                                        <ContentPresenter ContentSource="LoadingContent"/>
-                                                    </Border>
-                                                </Grid>
-                                            </Border>
-                                        </Popup>
                                     </Grid>
                                 </Border>
                             </Border>
-                        </Border>
-                        <Border Background="White" x:Name="PART_NavigationButtons" Visibility="Collapsed">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Orientation="Horizontal" x:Name="PART_NavigationButtonsPanel" Focusable="False" />
-                                <Border Grid.Column="1" Cursor="IBeam" Background="White" x:Name="PART_ClickToEdit" />
-                            </Grid>
-                        </Border>
-                    </Grid>
+                            <Border BorderBrush="#dddddd" BorderThickness="1,1,1,0" Margin="0,0,0,1" SnapsToDevicePixels="True" x:Name="PART_Border">
+                            </Border>
+                            <Border Background="White" x:Name="PART_NavigationButtons" Visibility="Collapsed">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Orientation="Horizontal" x:Name="PART_NavigationButtonsPanel" Focusable="False" />
+                                    <Border Grid.Column="1" Cursor="IBeam" Background="White" x:Name="PART_ClickToEdit" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsToolTipEnabled" Value="True">
                             <Setter Property="ToolTipService.ToolTip">
@@ -247,18 +244,9 @@
                         <Trigger Property="IsToolTipEnabled" Value="False">
                             <Setter Property="ToolTipService.IsEnabled" Value="False" />
                         </Trigger>
-                        <Trigger Property="IsFocused" SourceName="PART_Editor" Value="true">
-                            <Setter Property="BorderBrush" TargetName="PART_Border" Value="{DynamicResource autoCompleteTextBoxFocusBrush}" />
-                            <Setter Property="BorderBrush" TargetName="PART_OuterBorder" Value="{DynamicResource autoCompleteTextBoxFocusBrush}" />
-                        </Trigger>
-                        <Trigger Property="Text" Value="" SourceName="PART_Editor">
-                            <Setter Property="Visibility" Value="Visible" TargetName="PART_Watermark" />
-                        </Trigger>
-                        <Trigger Property="IconPlacement" Value="Left">
-                            <Setter Property="DockPanel.Dock" Value="Left" TargetName="PART_Icon" />
-                        </Trigger>
-                        <Trigger Property="IconPlacement" Value="Right">
-                            <Setter Property="DockPanel.Dock" Value="Right" TargetName="PART_Icon" />
+                        <Trigger Property="IsFocused" SourceName="PART_TextBox" Value="True">
+                            <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore1" Value="{DynamicResource laila_AutoComplete_FocusBrush}" />
+                            <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore2" Value="{DynamicResource laila_AutoComplete_FocusBrush}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5" TargetName="PART_Border" />
@@ -266,14 +254,14 @@
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
                                 <Condition Property="IsInvalid" Value="True" />
-                                <Condition Property="IsFocused" SourceName="PART_Editor" Value="False" />
+                                <Condition Property="IsFocused" SourceName="PART_TextBox" Value="False" />
                             </MultiTrigger.Conditions>
-                            <Setter Property="TextDecorations"  TargetName="PART_Editor">
+                            <Setter Property="TextDecorations"  TargetName="PART_TextBox">
                                 <Setter.Value>
                                     <TextDecorationCollection>
-                                        <TextDecoration Location="Underline">
+                                        <TextDecoration Location="Underline" PenOffset="1">
                                             <TextDecoration.Pen>
-                                                <Pen Brush="{StaticResource WavyBrush}" Thickness="6"/>
+                                                <Pen Brush="{StaticResource WavyBrush}" Thickness="6" />
                                             </TextDecoration.Pen>
                                         </TextDecoration>
                                     </TextDecorationCollection>
@@ -285,5 +273,4 @@
             </Setter.Value>
         </Setter>
     </Style>
-
 </ResourceDictionary>

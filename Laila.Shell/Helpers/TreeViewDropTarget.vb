@@ -14,7 +14,7 @@ Imports Laila.Shell.Controls
 Public Class TreeViewDropTarget
     Inherits BaseDropTarget
 
-    Private _dataObject As ComTypes.IDataObject
+    Private _dataObject As IDataObject
     Private _treeView As Laila.Shell.Controls.TreeView
     Private _lastOverItem As Item
     Private _dragOpenTimer As Timer
@@ -26,7 +26,7 @@ Public Class TreeViewDropTarget
         _treeView = treeView
     End Sub
 
-    Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
 
@@ -55,7 +55,7 @@ Public Class TreeViewDropTarget
         Return 0
     End Function
 
-    Public Overrides Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -78,7 +78,6 @@ Public Class TreeViewDropTarget
                 OrElse CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
                     Dim sourceItems As List(Of IShellItem) = _fileList.Select(Function(f) CType(Item.FromParsingName(f, Nothing)?._shellItem2, IShellItem)).Where(Function(i) Not i Is Nothing).ToList()
                     Dim sourcePidls As New List(Of IntPtr)()
-                    Dim destPath As String = If(TypeOf overItem Is Folder, overItem.FullPath, IO.Path.GetDirectoryName(overItem.FullPath))
                     For Each item As IShellItem In sourceItems
                         Dim pidl As IntPtr = IntPtr.Zero
                         Dim punk As IntPtr = Marshal.GetIUnknownForObject(item)
@@ -97,7 +96,7 @@ Public Class TreeViewDropTarget
                         h = fileOperation.CopyItems(sourceArray, overItem._shellItem2)
                     End If
                     fileOperation.PerformOperations()
-                    Shell.SetSelectedFolder(If(TypeOf overItem Is Folder, overItem, overItem.LogicalParent), Nothing)
+                    _treeView.Folder = If(TypeOf overItem Is Folder, overItem, overItem.LogicalParent)
                 ElseIf CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
                 End If
 
@@ -130,7 +129,7 @@ Public Class TreeViewDropTarget
         Else
             overTreeViewItem = UIHelper.GetParentOfType(Of ListBoxItem)(overObject)
         End If
-        Return overTreeViewItem
+        Return If(Not overTreeViewItem Is Nothing AndAlso Not TypeOf overTreeViewItem.DataContext Is SeparatorFolder, overTreeViewItem, Nothing)
     End Function
 
     Private Function getDropEffect(overItem As Item) As DROPEFFECT
@@ -139,7 +138,7 @@ Public Class TreeViewDropTarget
                     AndAlso Not (_fileList.Count = 1 AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = overItem.FullPath)),
                 If(overItem.IsExecutable,
                     DROPEFFECT.DROPEFFECT_COPY,
-                    If(Not overItem.Attributes.HasFlag(SFGAO.RDONLY),
+                    If(Not overItem.Attributes.HasFlag(SFGAO.RDONLY) AndAlso TypeOf overItem Is Folder,
                         DROPEFFECT.DROPEFFECT_MOVE,
                         DROPEFFECT.DROPEFFECT_NONE)),
                 DROPEFFECT.DROPEFFECT_NONE)
@@ -207,7 +206,7 @@ Public Class TreeViewDropTarget
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
-                    End Sub), Nothing, 1250, 0)
+                    End Sub), Nothing, 2000, 0)
             End If
         Else
             If Not _dragOpenTimer Is Nothing Then

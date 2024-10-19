@@ -20,7 +20,7 @@ Namespace Behaviors
 
         Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 
-        Private Const COLUMN_MARGIN As Double = 0
+        Private Const COLUMN_MARGIN As Double = 2
 
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(ColumnsInData), GetType(GridViewExtBehavior), New FrameworkPropertyMetadata(Nothing, AddressOf OnColumnsInChanged))
 
@@ -70,6 +70,17 @@ Namespace Behaviors
 
         Public Shared Sub SetMinAutoSizeWidth(obj As DependencyObject, value As Double)
             obj.SetValue(MinAutoSizeWidthProperty, value)
+        End Sub
+
+        Public Shared ReadOnly CanHideProperty As DependencyProperty =
+            DependencyProperty.RegisterAttached("CanHide", GetType(Boolean), GetType(GridViewExtBehavior), New UIPropertyMetadata(True))
+
+        Public Shared Function GetCanHide(obj As DependencyObject) As String
+            Return obj.GetValue(CanHideProperty)
+        End Function
+
+        Public Shared Sub SetCanHide(obj As DependencyObject, value As String)
+            obj.SetValue(CanHideProperty, value)
         End Sub
 
         Public Shared ReadOnly IsVisibleProperty As DependencyProperty =
@@ -172,10 +183,8 @@ Namespace Behaviors
             TypeDescriptor.GetProperties(_listView)("ItemsSource") _
                 .AddValueChanged(_listView,
                     Sub()
-                        If Not _headerRowPresenter Is Nothing Then
-                            _headerRowPresenter.Visibility = Visibility.Collapsed
-                        End If
                         _skipResize = False
+                        resizeVisibleRows()
 
                         If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
                             AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
@@ -204,7 +213,6 @@ Namespace Behaviors
                     Dim hrps As IEnumerable(Of GridViewHeaderRowPresenter) = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)
                     If hrps.Count > 0 Then
                         _headerRowPresenter = hrps(0)
-                        _headerRowPresenter.Visibility = Visibility.Collapsed
                     End If
                     _isLoaded = True
 
@@ -480,7 +488,13 @@ Namespace Behaviors
                 If String.IsNullOrWhiteSpace(headerText) AndAlso TypeOf column.Column.Header Is String Then
                     headerText = column.Column.Header
                 End If
-                Dim menuItem As MenuItem = New MenuItem() With {.Header = headerText, .IsCheckable = True, .StaysOpenOnClick = True, .IsChecked = column.IsVisible}
+                Dim menuItem As MenuItem = New MenuItem() With {
+                    .Header = headerText,
+                    .IsCheckable = True,
+                    .StaysOpenOnClick = True,
+                    .IsChecked = column.IsVisible,
+                    .IsEnabled = GetCanHide(column.Column)
+                }
                 AddHandler menuItem.Checked,
                     Sub(s2 As Object, e2 As EventArgs)
                         column.IsVisible = True
@@ -626,89 +640,93 @@ Namespace Behaviors
 
         Private Sub icgStatusChanged(sender As Object, e As EventArgs)
             If _listView.ItemContainerGenerator.Status = Primitives.GeneratorStatus.ContainersGenerated Then
-                resizeVisibleRows()
+                UIHelper.OnUIThreadAsync(
+                    Async Sub()
+                        Await Task.Delay(5)
+                        resizeVisibleRows()
+                    End Sub)
             End If
         End Sub
 
         Private Sub resizeVisibleRows()
-            Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
-            If Not _skipResize AndAlso rows.Count > 0 AndAlso
+            If Not _headerRowPresenter Is Nothing Then
+                Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
+                If Not _skipResize AndAlso rows.Count > 0 AndAlso
                     (rows.Sum(Function(r) r.DesiredSize.Height) >= _listView.DesiredSize.Height OrElse _listView.Items.Count = rows.Count) Then
-                _skipResize = True
-                resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
-            End If
-
-            Dim headers As List(Of GridViewColumnHeader) =
-                    UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
-            For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
-                headers.Remove(header)
-            Next
-            For Each item In rows.Select(Function(r) r.DataContext).ToList()
-                Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
-                If Not lvi Is Nothing Then
-                    lvi.HorizontalAlignment = HorizontalAlignment.Left
-                    lvi.Width = headers.Sum(Function(h) h.Width)
+                    _skipResize = True
+                    resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
                 End If
-            Next
+
+                Dim headers As List(Of GridViewColumnHeader) =
+                    UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+                For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
+                    headers.Remove(header)
+                Next
+                For Each item In rows.Select(Function(r) r.DataContext).ToList()
+                    Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
+                    If Not lvi Is Nothing Then
+                        lvi.HorizontalAlignment = HorizontalAlignment.Left
+                        lvi.Width = headers.Sum(Function(h) h.Width)
+                    End If
+                Next
+            End If
         End Sub
 
         Private Sub resizeForRows(list As List(Of Object), minimum As Boolean)
-            Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+            If Not _headerRowPresenter Is Nothing Then
+                Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
 
-            _dontWrite = True
-            If Not _activeColumns Is Nothing Then
-                For Each activeCol In _activeColumns.Where(Function(c) Double.IsNaN(c.Width) AndAlso c.IsVisible)
-                    Dim width As Double = 0
-                    If minimum Then
-                        width = activeCol.Column.ActualWidth
-                    End If
+                _dontWrite = True
+                If Not _activeColumns Is Nothing Then
+                    For Each activeCol In _activeColumns.Where(Function(c) Double.IsNaN(c.Width) AndAlso c.IsVisible)
+                        Dim width As Double = 0
+                        If minimum Then
+                            width = activeCol.Column.ActualWidth
+                        End If
 
-                    ' measure header
-                    Dim hc As GridViewColumnHeader = hcs.First(Function(i) activeCol.Column.Equals(i.Column))
-                    hc.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
-                    If Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN) > width Then
-                        width = Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN)
-                    End If
+                        ' measure header
+                        Dim hc As GridViewColumnHeader = hcs.First(Function(i) activeCol.Column.Equals(i.Column))
+                        hc.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
+                        If Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN) > width Then
+                            width = Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN)
+                        End If
 
-                    If list.Count > 0 Then
-                        ' measure available rows
-                        For Each item In list
-                            Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
-                            If Not lvi Is Nothing Then
-                                Dim rp As GridViewRowPresenter = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(lvi).FirstOrDefault()
-                                If Not rp Is Nothing Then
-                                    Dim c As GridViewColumn = activeCol.Column
-                                    Dim el As UIElement = VisualTreeHelper.GetChild(rp, activeCol.OriginalIndex)
-                                    el.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
-                                    If Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN) > width Then
-                                        width = Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN)
+                        If list.Count > 0 Then
+                            ' measure available rows
+                            For Each item In list
+                                Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
+                                If Not lvi Is Nothing Then
+                                    Dim rp As GridViewRowPresenter = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(lvi).FirstOrDefault()
+                                    If Not rp Is Nothing Then
+                                        Dim c As GridViewColumn = activeCol.Column
+                                        Dim el As UIElement = VisualTreeHelper.GetChild(rp, activeCol.OriginalIndex)
+                                        el.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
+                                        If Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN) > width Then
+                                            width = Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN)
+                                        End If
                                     End If
                                 End If
+                            Next
+                        End If
+
+                        If Not Double.IsNaN(GetMaxAutoSizeWidth(activeCol.Column)) Then
+                            If width > GetMaxAutoSizeWidth(activeCol.Column) Then
+                                width = GetMaxAutoSizeWidth(activeCol.Column)
                             End If
-                        Next
-                        _headerRowPresenter.Visibility = Visibility.Visible
-                    Else
-                        _headerRowPresenter.Visibility = Visibility.Collapsed
-                    End If
-
-                    If Not Double.IsNaN(GetMaxAutoSizeWidth(activeCol.Column)) Then
-                        If width > GetMaxAutoSizeWidth(activeCol.Column) Then
-                            width = GetMaxAutoSizeWidth(activeCol.Column)
                         End If
-                    End If
 
-                    If Not Double.IsNaN(GetMinAutoSizeWidth(activeCol.Column)) Then
-                        If width < GetMinAutoSizeWidth(activeCol.Column) Then
-                            width = GetMinAutoSizeWidth(activeCol.Column)
+                        If Not Double.IsNaN(GetMinAutoSizeWidth(activeCol.Column)) Then
+                            If width < GetMinAutoSizeWidth(activeCol.Column) Then
+                                width = GetMinAutoSizeWidth(activeCol.Column)
+                            End If
                         End If
-                    End If
 
-                    If width = 0 Then width = Double.NaN
-                    activeCol.Column.Width = activeCol.Column.ActualWidth
-                    activeCol.Column.Width = width
-                Next
+                        If width = 0 Then width = Double.NaN
+                        activeCol.Column.Width = width
+                    Next
+                End If
+                _dontWrite = False
             End If
-            _dontWrite = False
         End Sub
 
         Private Sub writeState()

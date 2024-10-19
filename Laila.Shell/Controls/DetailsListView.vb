@@ -1,8 +1,16 @@
-﻿Imports System.Windows
+﻿Imports System.IO
+Imports System.Runtime.InteropServices
+Imports System.Security.Cryptography.X509Certificates
+Imports System.Threading
+Imports System.Windows
+Imports System.Windows.Annotations
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Input
 Imports System.Windows.Media
+Imports System.Windows.Shell
+Imports System.Xml
+Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 
 Namespace Controls
@@ -15,6 +23,7 @@ Namespace Controls
 
         Friend PART_ListView As ListBox
         Private PART_Selection As Laila.Shell.Behaviors.SelectionBehavior
+        Private PART_Grid As Grid
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
@@ -23,6 +32,7 @@ Namespace Controls
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
         Private _menu As Laila.Shell.ContextMenu
+        Private _timeSpentTimer As Timer
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(DetailsListView), New FrameworkPropertyMetadata(GetType(DetailsListView)))
@@ -33,6 +43,7 @@ Namespace Controls
 
             PART_ListView = Template.FindName("PART_ListView", Me)
             PART_Selection = Template.FindName("PART_Selection", Me)
+            PART_Grid = Template.FindName("PART_Grid", Me)
 
             Dim listViewItemStyle As Style = New Style()
             listViewItemStyle.TargetType = GetType(ListViewItem)
@@ -80,6 +91,7 @@ Namespace Controls
                 gvc.SetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
                 If column.CanonicalName = "System.ItemNameDisplay" Then
                     gvc.SetValue(Behaviors.GridViewExtBehavior.SortPropertyNameProperty, "ItemNameDisplaySortValue")
+                    gvc.SetValue(Behaviors.GridViewExtBehavior.CanHideProperty, False)
                 End If
                 gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
                 d.Items.Add(gvc)
@@ -184,6 +196,7 @@ Namespace Controls
             textBlockFactory.SetValue(TextBlock.TextAlignmentProperty, column.Alignment)
             textBlockFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center)
             textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis)
+            textBlockFactory.SetValue(TextBlock.PaddingProperty, New Thickness(0, 0, 2, 0))
             textBlockFactory.SetValue(TextBlock.TextProperty, New Binding() With {
                 .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString())),
                 .Mode = BindingMode.OneWay
@@ -248,10 +261,12 @@ Namespace Controls
                     _mouseItemDown = clickedItem
                     If clickedItem Is Nothing Then
                         PART_ListView.Focus()
+                    Else
+                        listViewItem.Focus()
                     End If
                     If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
                         If TypeOf clickedItem Is Folder Then
-                            Shell.SetSelectedFolder(clickedItem, Nothing)
+                            Me.Folder = clickedItem
                         Else
                             _menu = New Laila.Shell.ContextMenu()
                             _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
@@ -273,14 +288,84 @@ Namespace Controls
                         End If
 
                         _menu = New Laila.Shell.ContextMenu()
-                        AddHandler _menu.Click,
-                            Sub(id As Integer, verb As String, ByRef isHandled As Boolean)
-                                Select Case verb
+                        AddHandler _menu.CommandInvoked,
+                            Sub(s As Object, e2 As CommandInvokedEventArgs)
+                                Select Case e2.Verb
                                     Case "open"
                                         If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
-                                            Me.Folder = Me.SelectedItem
-                                            isHandled = True
+                                            Me.Folder = clickedItem
+                                            e2.IsHandled = True
                                         End If
+                                    Case "rename"
+                                        Dim column As Column = Me.Folder.Columns("System.ItemNameDisplay")
+                                        If Not column Is Nothing Then
+                                            Dim headers As IEnumerable(Of GridViewColumnHeader) =
+                                                UIHelper.FindVisualChildren(Of GridViewColumnHeader)(Me.PART_ListView)
+                                            Dim header As GridViewColumnHeader =
+                                                headers.FirstOrDefault(Function(h) Not h.Column Is Nothing _
+                                                    AndAlso h.Column.GetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty) _
+                                                        = String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
+                                            If Not header Is Nothing Then
+                                                Dim width As Double = header.ActualWidth
+                                                Dim ptLeft As Point = Me.PointFromScreen(header.PointToScreen(New Point(0, 0)))
+                                                If header.Column.GetValue(Behaviors.GridViewExtBehavior.ColumnIndexProperty) = 0 Then
+                                                    ptLeft.X += 20
+                                                    width -= 20
+                                                End If
+                                                Dim ptTop As Point = Me.PointFromScreen(listViewItem.PointToScreen(New Point(0, 0)))
+                                                _menu.DoRename(New Point(ptLeft.X + 5, ptTop.Y + 1), width - 5, clickedItem, Me.PART_Grid)
+                                            End If
+                                        End If
+                                        e2.IsHandled = True
+                                    Case "laila.shell.(un)pin"
+                                        If e2.IsChecked Then
+                                            PinnedItems.PinItem(clickedItem)
+                                        Else
+                                            PinnedItems.UnpinItem(clickedItem)
+                                        End If
+                                        e2.IsHandled = True
+                                    Case "laila.shell.createzip"
+                                        Dim zip As IStorage, ptrzip As IntPtr
+                                        Dim pidl As IntPtr, strname As String, pidlsource As IntPtr
+                                        'Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(clickedItem._shellItem2), pidl)
+                                        'CType(clickedItem, Folder)._shellFolder.GetDisplayNameOf(pidl, SHGDN.INFOLDER, strName)
+                                        pidl = Functions.ILCreateFromPath(clickedItem.FullPath)
+                                        pidlsource = Functions.ILCreateFromPath("c:\map\ViewModels")
+                                        'pidl = Functions.ILFindLastID(pidl)
+                                        Dim df As IShellFolder, ptrsource As IntPtr, source As IStorage
+                                        Functions.SHGetDesktopFolder(df)
+                                        df.BindToStorage(pidl, IntPtr.Zero, GetType(IStorage).GUID, ptrzip)
+                                        df.BindToStorage(pidlsource, IntPtr.Zero, GetType(IStorage).GUID, ptrsource)
+                                        source = Marshal.GetTypedObjectForIUnknown(ptrsource, GetType(IStorage))
+                                        '                                        zip = Me.Folder._shellFolder
+                                        'zip = Activator.CreateInstance(Type.GetTypeFromCLSID(New Guid("{E88DCCE0-B7B3-11D1-A9F0-00AA0060FA31}")))
+                                        'Dim h As HRESULT = Functions.StgCreateStorageEx("c:\map\test.zip", STGM.STGM_CREATE Or STGM.STGM_READWRITE Or STGM.STGM_SHARE_EXCLUSIVE,
+                                        ' STGFMT.STGFMT_STORAGE, 0, IntPtr.Zero, 0,
+                                        ' GetType(IStorage).GUID, ptrzip)
+                                        zip = Marshal.GetTypedObjectForIUnknown(ptrzip, GetType(IStorage))
+                                        ' zip.SetClass(New Guid("{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}"))
+                                        Dim folder As IStorage
+                                        'zip.CreateStorage("test", STGM.STGM_CREATE Or STGM.STGM_READWRITE, 0, 0, folder)
+                                        Dim txtfile As ComTypes.IStream, txtfileptr As IntPtr
+                                        'Dim h As HRESULT = zip.CreateStream("file2.txt", STGM.STGM_WRITE, 0, 0, txtfileptr)
+                                        'txtfile = Marshal.GetTypedObjectForIUnknown(txtfileptr, GetType(ComTypes.IStream))
+                                        source.MoveElementTo("file2.txt", zip, "testie.txt", 1)
+                                        Dim bytes() As Byte = Text.Encoding.Unicode.GetBytes("hello world")
+                                        ' Dim bytesWritten As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of Int32))
+                                        'txtfile.SetSize(bytes.Length)
+                                        'txtfile.Write(bytes, bytes.Length, bytesWritten)
+                                        ' txtfile.
+                                        txtfile.Commit(0)
+                                        ' Folder.Commit(0)
+                                        'Marshal.ReleaseComObject(folder)
+                                        'Marshal.ReleaseComObject(txtfile)
+                                        zip.Commit(0)
+                                        Marshal.ReleaseComObject(zip)
+                                        Marshal.ReleaseComObject(source)
+
+
+
+
                                 End Select
                             End Sub
 
@@ -393,19 +478,32 @@ Namespace Controls
             End If
         End Sub
 
-        Friend Sub OnFolderChangedLocal(oldValue As Folder, newValue As Folder)
+        Friend Async Sub OnFolderChangedLocal(oldValue As Folder, newValue As Folder)
             If Not Me.Folder Is Nothing Then
-                saveScrollState()
-                RemoveHandler Me.Folder.LoadingStateChanged, AddressOf folder_LoadingStateChanged
-                UIHelper.OnUIThread(
-                    Sub()
-                        saveScrollState()
-                    End Sub)
+                If Not _timeSpentTimer Is Nothing Then _timeSpentTimer.Dispose()
+                'FrequentFolders.RecordTimeSpent(Me.Folder, (DateTime.Now - _openedAt).TotalSeconds)
+                '    saveScrollState()
+                '    RemoveHandler Me.Folder.LoadingStateChanged, AddressOf folder_LoadingStateChanged
+                '    UIHelper.OnUIThread(
+                '        Sub()
+                '            saveScrollState()
+                '        End Sub)
             End If
 
             If Not newValue Is Nothing Then
-                AddHandler newValue.LoadingStateChanged, AddressOf folder_LoadingStateChanged
+                Me.IsLoading = True
+                Await Task.Delay(45)
+                FrequentFolders.Track(newValue)
+                _timeSpentTimer = New Timer(New TimerCallback(
+                    Sub()
+                        UIHelper.OnUIThread(
+                            Sub()
+                                FrequentFolders.RecordTimeSpent(Me.Folder, 1)
+                            End Sub)
+                    End Sub), Nothing, 1000 * 60, 1000 * 60)
+                Await newValue.GetItemsAsync()
                 Me.ColumnsIn = buildColumnsIn()
+                Me.IsLoading = False
             End If
         End Sub
 

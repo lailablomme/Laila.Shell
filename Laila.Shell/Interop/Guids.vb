@@ -15,5 +15,6 @@
     Public Shared Property IID_IPropertyDescription As Guid = New Guid("6f79d558-3e96-4549-a1d1-7d75d2288814")
     Public Shared Property CLSID_FileOperation As Guid = New Guid("3ad05575-8857-4850-9277-11b85bdb8e09")
     Public Shared Property CLSID_DragDropHelper As Guid = New Guid("4657278a-411b-11d2-839a-00c04fd918d0")
+    Public Shared Property CLSID_ApplicationDocumentLists As Guid = New Guid("86bec222-30f2-47e0-9f25-60d11cd75c28")
     'https://gist.githubusercontent.com/stevemk14ebr/af8053c506ef895cd520f8017a81f913/raw/98944bc6ae995229d5231568a8ae73dd287e8b4f/guids
 End Class

@@ -26,6 +26,7 @@ Public Class Item
     Private _overlaySmall As ImageSource
     Private _overlayLarge As ImageSource
     Private _overlayIconIndex As Integer?
+    Private _treeRootIndex As Long
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -94,6 +95,39 @@ Public Class Item
         _logicalParent = logicalParent
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
+
+    Public Property TreeRootIndex As Long
+        Get
+            Return _treeRootIndex
+        End Get
+        Set(value As Long)
+            SetValue(_treeRootIndex, value)
+            Me.NotifyOfPropertyChange("TreeSortKey")
+        End Set
+    End Property
+
+    Public ReadOnly Property TreeSortKey As String
+        Get
+            If _logicalParent Is Nothing Then
+                Return String.Format("{0:0000000000000000000}", _treeRootIndex)
+            Else
+                Return _logicalParent.TreeSortKey & Me.ItemNameDisplaySortValue & New String(" ", 260 - Me.ItemNameDisplaySortValue.Length)
+            End If
+        End Get
+    End Property
+
+    Public ReadOnly Property TreeMargin As Thickness
+        Get
+            Dim level As Integer = 0
+            Dim lp As Folder = Me.LogicalParent
+            While Not lp Is Nothing
+                level += 1
+                lp = lp.LogicalParent
+            End While
+
+            Return New Thickness(level * 16, 0, 0, 0)
+        End Get
+    End Property
 
     Public Overridable Sub ClearCache()
         If Not _parent Is Nothing Then
@@ -308,7 +342,7 @@ Public Class Item
                 If Not specialFolderAsRoot Is Nothing Then
                     Return specialFolderAsRoot.DisplayName & Me.FullPath.Substring(specialFolderAsRoot.FullPath.Length)
                 Else
-                    Return Me.FullPath
+                    Return Me.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar)
                 End If
             End If
         End Get
@@ -487,9 +521,9 @@ Public Class Item
                 For j = start To parts.Count - 1
                     Dim subFolder As Folder
                     If j = 0 Then
-                        subFolder = (Await folder.GetItems()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
+                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
                     Else
-                        subFolder = (Await folder.GetItems()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
+                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
                     End If
                     folder = subFolder
                     If folder Is Nothing Then Exit For

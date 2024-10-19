@@ -25,7 +25,7 @@ Public Class Drag
     Private Shared _grid As Grid
     Private Shared _dragSourceHelper As IDragSourceHelper
     Public Shared _bitmap As Bitmap
-    Private Shared _dataObject As ComTypes.IDataObject
+    Private Shared _dataObject As IDataObject
     Private Shared _isDragging As Boolean
     Private Shared _dragImage As SHDRAGIMAGE
 
@@ -56,33 +56,10 @@ Public Class Drag
 
                 _dataObject = New DragDataObject()
 
-                Dim format As FORMATETC = New FORMATETC With { ' CFSTR_SHELLIDLIST 
-                    .cfFormat = Functions.RegisterClipboardFormat("Shell IDList Array"),
-                    .ptd = IntPtr.Zero,
-                    .dwAspect = DVASPECT.DVASPECT_CONTENT,
-                    .lindex = -1,
-                    .tymed = TYMED.TYMED_HGLOBAL
-                }
-                Dim medium As STGMEDIUM = New STGMEDIUM With {
-                    .tymed = TYMED.TYMED_HGLOBAL,
-                    .unionmember = Pidl.CreateShellIDListArray(items),
-                    .pUnkForRelease = IntPtr.Zero
-                }
-                _dataObject.SetData(format, medium, False)
-
-                format = New FORMATETC With {
-                    .cfFormat = ClipboardFormat.CF_HDROP,
-                    .ptd = IntPtr.Zero,
-                    .dwAspect = DVASPECT.DVASPECT_CONTENT,
-                    .lindex = -1,
-                    .tymed = TYMED.TYMED_HGLOBAL
-                }
-                medium = New STGMEDIUM With {
-                    .tymed = TYMED.TYMED_HGLOBAL,
-                    .unionmember = createCFHDrop(items.Select(Function(i) i.FullPath).ToArray()),
-                    .pUnkForRelease = IntPtr.Zero
-                }
-                _dataObject.SetData(format, medium, False)
+                ClipboardFormats.CFSTR_SHELLIDLIST.SetData(_dataObject, items)
+                ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(_dataObject, items)
+                ClipboardFormats.CFSTR_FILECONTENTS.SetData(_dataObject, items)
+                ClipboardFormats.CF_HDROP.SetData(_dataObject, items)
 
                 makeDragImageObjects(items)
                 InitializeDragImage()
@@ -102,7 +79,6 @@ Public Class Drag
                 Functions.DoDragDrop(_dataObject, New Drag(Sub() If Not _dataObject Is Nothing Then InitializeDragImage(), button),
                              availableDropEffects, effect)
 
-                Functions.ReleaseStgMedium(medium)
                 Shell._w.Content = Nothing
                 Mouse.OverrideCursor = Nothing
                 CType(_dataObject, IDisposable).Dispose()
@@ -112,33 +88,6 @@ Public Class Drag
             End Try
         End If
     End Sub
-
-    Private Shared Function createCFHDrop(files As String()) As IntPtr
-        Dim sb As StringBuilder = New StringBuilder()
-        For Each file As String In files
-            sb.Append(file & Chr(0))
-        Next
-        sb.Append(Chr(0))
-
-        Dim strPtr As IntPtr = Marshal.StringToHGlobalUni(sb.ToString())
-        Dim strSize As Integer = Functions.GlobalSize(strPtr)
-
-        Dim hGlobal As IntPtr = Functions.GlobalAlloc(GMEM_MOVEABLE, Marshal.SizeOf(Of DROPFILES) + strSize)
-        Dim pGlobal As IntPtr = Functions.GlobalLock(hGlobal)
-
-        ' Write the DROPFILES structure
-        Dim dropfiles As New DROPFILES()
-        dropfiles.pFiles = CType(Marshal.SizeOf(GetType(DROPFILES)), UInteger)
-        dropfiles.fWide = True ' Using Unicode (WCHAR)
-
-        Marshal.StructureToPtr(dropfiles, pGlobal, False)
-        Functions.RtlMoveMemory(IntPtr.Add(pGlobal, dropfiles.pFiles), strPtr, strSize)
-
-        Marshal.FreeHGlobal(strPtr)
-        Functions.GlobalUnlock(pGlobal)
-
-        Return hGlobal
-    End Function
 
     Private Shared Sub makeDragImageObjects(items As IEnumerable(Of Item))
         If items.Count > 5 Then

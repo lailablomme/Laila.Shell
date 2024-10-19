@@ -2,101 +2,194 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Laila.Shell.Controls">
 
+    <Style x:Key="FocusVisual">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <SolidColorBrush x:Key="Item.MouseOver.Background" Color="#1F26A0DA"/>
+    <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#a826A0Da"/>
+    <SolidColorBrush x:Key="Item.SelectedInactive.Background" Color="#3DDADADA"/>
+    <SolidColorBrush x:Key="Item.SelectedInactive.Border" Color="#FFDADADA"/>
+    <SolidColorBrush x:Key="Item.SelectedActive.Background" Color="#3D26A0DA"/>
+    <SolidColorBrush x:Key="Item.SelectedActive.Border" Color="#FF26A0DA"/>
+    
+    <Style x:Key="lailaShell_TreeViewItemStyle" TargetType="ListBoxItem">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Padding" Value="4,1"/>
+        <!--<Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
+        <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>-->
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Separator Width="{Binding ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}}">
+                            <Separator.Style>
+                                <Style>
+                                    <Setter Property="Separator.Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FullPath}" Value="-separator-">
+                                            <Setter Property="Separator.Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Separator.Style>
+                        </Separator>
+                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
+                                Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                            <Border.Style>
+                                <Style>
+                                    <Setter Property="Border.Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FullPath}" Value="-separator-">
+                                            <Setter Property="Border.Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
     <Style TargetType="{x:Type local:TreeView}">
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:TreeView}">
-                    <ListBox ItemsSource="{TemplateBinding Items}" x:Name="PART_ListBox" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    <Grid x:Name="PART_Grid">
+                        <ListBox ItemsSource="{TemplateBinding Items}" x:Name="PART_ListBox" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
                              VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
-                             ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True"
+                             ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0"
                              VirtualizingPanel.ScrollUnit="Pixel">
-                        <ListBox.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <VirtualizingStackPanel />
-                            </ItemsPanelTemplate>
-                        </ListBox.ItemsPanel>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="{Binding TreeMargin}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" />
-                                    <Image Grid.Column="1" Source="{Binding Icon[16]}" Margin="0,0,4,0" Width="16" Height="16">
-                                        <Image.Style>
-                                            <Style>
-                                                <Setter Property="Image.Opacity" Value="1" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                        <Setter Property="Image.Opacity" Value="0.5" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                                        <Setter Property="Image.Opacity" Value="0.5" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Image.Style>
-                                    </Image>
-                                    <Image Grid.Column="1" Source="{Binding OverlaySmall}" Margin="0,0,4,0" Width="16" Height="16">
-                                        <Image.Style>
-                                            <Style>
-                                                <Setter Property="Image.Opacity" Value="1" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                        <Setter Property="Image.Opacity" Value="0.5" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                                        <Setter Property="Image.Opacity" Value="0.5" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Image.Style>
-                                    </Image>
-                                    <Viewbox Grid.Column="1" StretchDirection="Both" Stretch="Uniform" Width="16" Height="16" Margin="0,0,4,0">
-                                        <Viewbox.Style>
-                                            <Style>
-                                                <Setter Property="Control.Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                                        <Setter Property="Control.Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Viewbox.Style>
-                                        <local:LoadingSpinner />
-                                    </Viewbox>
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
-                                            <TextBlock.Style>
-                                                <Style>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsCompressed}" Value="True">
-                                                            <Setter Property="TextBlock.Foreground" Value="Blue" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                        <Image Source="../Images/pin.png" Margin="4,0,0,0" Width="16" Height="16">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.Resources>
+                                <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource lailaShell_TreeViewItemStyle}" />
+                            </ListBox.Resources>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="{Binding TreeMargin}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" />
+                                        <Image Grid.Column="1" Source="{Binding Icon[16]}" Margin="0,0,4,0" Width="16" Height="16">
                                             <Image.Style>
                                                 <Style>
-                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                    <Setter Property="Image.Opacity" Value="1" />
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                            <Setter Property="Image.Opacity" Value="0.5" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Image.Style>
                                         </Image>
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate> 
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                                        <Image Grid.Column="1" Source="{Binding OverlaySmall}" Margin="0,0,4,0" Width="16" Height="16">
+                                            <Image.Style>
+                                                <Style>
+                                                    <Setter Property="Image.Opacity" Value="1" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
+                                        <Viewbox Grid.Column="1" StretchDirection="Both" Stretch="Uniform" Width="16" Height="16" Margin="0,0,4,0">
+                                            <Viewbox.Style>
+                                                <Style>
+                                                    <Setter Property="Control.Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                            <Setter Property="Control.Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Viewbox.Style>
+                                            <local:LoadingSpinner />
+                                        </Viewbox>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsCompressed}" Value="True">
+                                                                <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <Image Source="../Images/pin16.png" Margin="4,0,0,0" Width="16" Height="16">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

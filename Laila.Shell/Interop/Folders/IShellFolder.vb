@@ -14,7 +14,7 @@ Public Interface IShellFolder
     Function BindToObject(ByVal pidl As IntPtr, ByVal pbcReserved As IntPtr, ByRef riid As Guid, ByRef ppvOut As IntPtr) As Integer
 
     <PreserveSig()>
-    Function BindToStorage(ByVal pidl As IntPtr, ByVal pbcReserved As IntPtr, ByRef riid As Guid, ByVal ppvObj As IntPtr) As Integer
+    Function BindToStorage(ByVal pidl As IntPtr, ByVal pbcReserved As IntPtr, ByRef riid As Guid, ByRef ppvObj As IntPtr) As Integer
 
     <PreserveSig()>
     Function CompareIDs(ByVal lParam As UInt32, ByVal pidl1 As IntPtr, ByVal pidl2 As IntPtr) As Integer

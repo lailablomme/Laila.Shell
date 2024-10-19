@@ -173,13 +173,26 @@
     <None Remove="Images\error32.png" />
     <None Remove="Images\monitor16.png" />
     <None Remove="Images\paste16.png" />
-    <None Remove="Images\pin.png" />
+    <None Remove="Images\pin16.png" />
+    <None Remove="Images\rename16.png" />
     <None Remove="Images\sortasc.png" />
     <None Remove="Images\sortdesc.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Laila.AutoCompleteTextBox" Version="1.1.7" />
+    <COMReference Include="Shell32">
+      <WrapperTool>tlbimp</WrapperTool>
+      <VersionMinor>0</VersionMinor>
+      <VersionMajor>1</VersionMajor>
+      <Guid>50a7e9b0-70ef-11d1-b75a-00a0c90564fe</Guid>
+      <Lcid>0</Lcid>
+      <Isolated>false</Isolated>
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Laila.AutoCompleteTextBox" Version="2.0.0" />
     <PackageReference Include="LiteDB" Version="5.0.21" />
 	  <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 	  <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
@@ -196,7 +209,8 @@
     <Resource Include="Images\error32.png" />
     <Resource Include="Images\monitor16.png" />
     <Resource Include="Images\paste16.png" />
-    <Resource Include="Images\pin.png" />
+    <Resource Include="Images\pin16.png" />
+    <Resource Include="Images\rename16.png" />
     <Resource Include="Images\sortasc.png" />
     <Resource Include="Images\sortdesc.png" />
   </ItemGroup>
@@ -224,9 +238,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="FileOperations\" />
     <Folder Include="Interop\ContextMenu\" />
-    <Folder Include="Interop\Items\" />
-    <Folder Include="Interop\Folders\" />
     <Folder Include="Interop\Memory\" />
     <Folder Include="Interop\Windows\" />
     <Folder Include="Interop\Properties\" />

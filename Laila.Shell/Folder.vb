@@ -17,11 +17,8 @@ Public Class Folder
     Friend _shellFolder As IShellFolder
     Private _columnManager As IColumnManager
     Private _isExpanded As Boolean
-    Private _parent As ITreeViewItemData
     Private _isLoading As Boolean
     Private _lock As Object = New Object()
-    Private _treeSortKey As String
-    Friend _rootIndex As Long
     Private _isLoaded As Boolean
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
@@ -52,29 +49,6 @@ Public Class Folder
         End If
     End Sub
 
-    Public ReadOnly Property TreeSortKey As String
-        Get
-            If _logicalParent Is Nothing Then
-                Return String.Format("{0:00000000}", _rootIndex)
-            Else
-                Return _logicalParent.TreeSortKey & Me.ItemNameDisplaySortValue & New String(" ", 260 - Me.ItemNameDisplaySortValue.Length)
-            End If
-        End Get
-    End Property
-
-    Public ReadOnly Property TreeMargin As Thickness
-        Get
-            Dim level As Integer = 0
-            Dim lp As Folder = Me.LogicalParent
-            While Not lp Is Nothing
-                level += 1
-                lp = lp.LogicalParent
-            End While
-
-            Return New Thickness(level * 16, 0, 0, 0)
-        End Get
-    End Property
-
     Public Property IsExpanded As Boolean
         Get
             Return _isExpanded AndAlso (Me.LogicalParent Is Nothing OrElse Me.LogicalParent.IsExpanded)
@@ -83,15 +57,16 @@ Public Class Folder
             SetValue(_isExpanded, value)
 
             If value Then
-                Dim t As Thread = New Thread(New ThreadStart(
-                    Sub()
+                Dim t As Func(Of Task) =
+                    Async Function() As Task
                         SyncLock _lock
                             If _items.Count = 0 Then
                                 updateItems(_items, True)
                             End If
                         End SyncLock
-                    End Sub))
-                t.Start()
+                    End Function
+
+                Task.Run(t)
             End If
         End Set
     End Property
@@ -144,26 +119,21 @@ Public Class Folder
         End Get
     End Property
 
-    Public Overridable ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
+    Public Overridable ReadOnly Property Items As ObservableCollection(Of Item)
         Get
-            Dim t As Thread = New Thread(New ThreadStart(
-                Sub()
-                    RaiseEvent LoadingStateChanged(True)
-                    SyncLock _lock
-                        If _items.Count = 0 Then
-                            updateItems(_items, True)
-                        End If
-                    End SyncLock
-                    RaiseEvent LoadingStateChanged(False)
-                End Sub))
-
-            t.Start()
-
             Return _items
         End Get
     End Property
 
-    Public Overridable Async Function GetItems() As Task(Of List(Of Item))
+    Public Overridable Function GetItems() As List(Of Item)
+        If _items.Count = 0 Then
+            updateItems(_items, False)
+        End If
+
+        Return _items.ToList()
+    End Function
+
+    Public Overridable Async Function GetItemsAsync() As Task(Of List(Of Item))
         Dim func As Func(Of Task(Of List(Of Item))) =
             Async Function() As Task(Of List(Of Item))
                 SyncLock _lock
@@ -172,11 +142,7 @@ Public Class Folder
                     End If
                 End SyncLock
 
-                If _items Is Nothing Then
-                    Return New List(Of Item)
-                Else
-                    Return _items.ToList()
-                End If
+                Return _items.ToList()
             End Function
 
         Return Await Task.Run(func)
@@ -195,8 +161,11 @@ Public Class Folder
                     Sub(item As Item)
                         items.Remove(item)
                     End Sub,
-                    Function(paths As List(Of String)) As List(Of Item)
-                        Return items.Where(Function(i) Not paths.Contains(i.FullPath)).ToList()
+                    Function() As List(Of String)
+                        Return items.Select(Function(f) f.FullPath).ToList()
+                    End Function,
+                    Function(pathsBefore As List(Of String), pathsAfter As List(Of String)) As List(Of Item)
+                        Return items.Where(Function(i) pathsBefore.Contains(i.FullPath) AndAlso Not pathsAfter.Contains(i.FullPath)).ToList()
                     End Function,
                     Function(shellItem2 As IShellItem2)
                         Return New Folder(shellItem2, Me)
@@ -214,14 +183,20 @@ Public Class Folder
 
     Protected Sub updateItems(flags As UInt32,
                               exists As Func(Of Item, Boolean), add As Action(Of Item), remove As Action(Of Item),
-                              getToBeRemoved As Func(Of List(Of String), List(Of Item)),
+                              getPathsBefore As Func(Of List(Of String)), getToBeRemoved As Func(Of List(Of String), List(Of String), List(Of Item)),
                               makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
                               updateProperties As Action(Of String))
         If _shellItem2 Is Nothing Then Return
 
-        Dim paths As List(Of String) = New List(Of String)
+        Dim pathsAfter As List(Of String) = New List(Of String)
+        Dim pathsBefore As List(Of String) = New List(Of String)
         Dim toAdd As List(Of Item) = New List(Of Item)()
         Dim toUpdate As List(Of String) = New List(Of String)()
+
+        UIHelper.OnUIThread(
+            Sub()
+                pathsBefore = getPathsBefore()
+            End Sub)
 
         If Not isWindows7OrLower() Then
             Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
@@ -258,6 +233,7 @@ Public Class Folder
                         Finally
                             If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
                         End Try
+                        Dim count As Integer = 0
                         If Not enumShellItems Is Nothing Then
                             Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
                             enumShellItems.Next(1, shellItems, fetched)
@@ -275,7 +251,7 @@ Public Class Folder
                                     newItem = makeNewItem(shellItems(0))
                                 End If
                                 If Not newItem Is Nothing Then
-                                    paths.Add(newItem.FullPath)
+                                    pathsAfter.Add(newItem.FullPath)
                                 End If
                                 If Not newItem Is Nothing Then
                                     If Not exists(newItem) Then
@@ -286,7 +262,8 @@ Public Class Folder
                                     End If
                                 End If
                                 enumShellItems.Next(1, shellItems, fetched)
-                                Thread.Sleep(1)
+                                If count Mod 100 = 0 Then Thread.Sleep(1)
+                                count += 1
                             End While
                         End If
                     Catch ex As Exception
@@ -295,7 +272,7 @@ Public Class Folder
                         dummy._icon.Add(16, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error16.png"))
                         dummy._icon.Add(32, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error32.png"))
                         toAdd.Add(dummy)
-                        paths.Add(dummy.FullPath)
+                        pathsAfter.Add(dummy.FullPath)
                     Finally
                         If Not enumShellItems Is Nothing Then
                             Marshal.ReleaseComObject(enumShellItems)
@@ -310,7 +287,7 @@ Public Class Folder
             Dim list As IEnumIDList
             _shellFolder.EnumObjects(Nothing, flags, list)
             If Not list Is Nothing Then
-                Dim pidl(0) As IntPtr, fetched As Integer
+                Dim pidl(0) As IntPtr, fetched As Integer, count As Integer = 0
                 While list.Next(1, pidl, fetched) = 0
                     Dim attr2 As Integer = SFGAO.FOLDER
                     _shellFolder.GetAttributesOf(1, pidl, attr2)
@@ -325,13 +302,15 @@ Public Class Folder
                     Else
                         newItem = makeNewItem(shellItem2)
                     End If
-                    paths.Add(newItem.FullPath)
+                    pathsAfter.Add(newItem.FullPath)
                     If Not exists(newItem) Then
                         toAdd.Add(newItem)
                     Else
                         toUpdate.Add(newItem.FullPath)
                         newItem.Dispose()
                     End If
+                    If count Mod 100 = 0 Then Thread.Sleep(1)
+                    count += 1
                 End While
             End If
         End If
@@ -346,7 +325,7 @@ Public Class Folder
                 For Each item In toUpdate
                     updateProperties(item)
                 Next
-                For Each item In getToBeRemoved(paths)
+                For Each item In getToBeRemoved(pathsBefore, pathsAfter)
                     If TypeOf item Is Folder Then
                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                            .Folder = item,
@@ -364,7 +343,7 @@ Public Class Folder
     End Sub
 
 
-    Protected Overrides Async Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+    Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)
 
         If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then
@@ -419,18 +398,16 @@ Public Class Folder
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                        SyncLock _lock
-                            Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                            If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                If TypeOf item Is Folder Then
-                                    Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                        .Folder = item,
-                                        .[Event] = e.Event
-                                    })
-                                End If
-                                _items.Remove(item)
+                        Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                        If Not item Is Nothing Then
+                            If TypeOf item Is Folder Then
+                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                    .Folder = item,
+                                    .[Event] = e.Event
+                                })
                             End If
-                        End SyncLock
+                            _items.Remove(item)
+                        End If
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
@@ -443,18 +420,16 @@ Public Class Folder
                     End If
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                        SyncLock _lock
-                            Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                            If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                        .Folder = item,
-                                        .[Event] = e.Event
-                                    })
-                                _items.Remove(item)
-                            End If
-                        End SyncLock
+                        Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                        If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                            Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                .Folder = item,
+                                .[Event] = e.Event
+                            })
+                            _items.Remove(item)
+                        End If
                     End If
-                Case SHCNE.UPDATEDIR
+                Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing AndAlso _isLoaded Then
                         updateItems(_items, True)
                     End If

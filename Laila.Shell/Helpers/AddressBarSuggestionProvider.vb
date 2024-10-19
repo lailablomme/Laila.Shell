@@ -38,7 +38,7 @@ Namespace Helpers
                     If folder Is Nothing Then folder = Await Item.FromParsingNameDeepGet(folderName)
                     If Not folder Is Nothing Then
                         Return If(filter.EndsWith(IO.Path.DirectorySeparatorChar), New List(Of Item) From {folder}, New List(Of Item)).ToList() _
-                            .Union((Await folder.GetItems()).Where(Function(f) _
+                            .Union((Await folder.GetItemsAsync()).Where(Function(f) _
                                 If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
                                    f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
                                    f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar)) _

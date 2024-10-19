@@ -59,11 +59,11 @@ Public Class DummyFolder
         End Get
     End Property
 
-    Public Overrides Async Function GetItems() As Task(Of List(Of Item))
+    Public Overrides Async Function GetItemsAsync() As Task(Of List(Of Item))
         Return New List(Of Item)
     End Function
 
-    Public Overrides ReadOnly Property ItemsThreaded As ObservableCollection(Of Item)
+    Public Overrides ReadOnly Property Items As ObservableCollection(Of Item)
         Get
             Return Nothing
         End Get

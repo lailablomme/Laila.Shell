@@ -17,7 +17,7 @@ Namespace Helpers
         Private Shared _activeDropTarget As BaseDropTarget
         Private Shared _instance As WpfDragTargetProxy = New WpfDragTargetProxy()
 
-        Private _dataObject As ComTypes.IDataObject
+        Private _dataObject As IDataObject
         Private _dropTargetHelper As IDropTargetHelper
 
         Public Sub New()
@@ -73,10 +73,16 @@ Namespace Helpers
         End Function
 
         Public Shared Function GetDropTargetFromWIN32POINT(ptWIN32 As WIN32POINT) As IDropTarget
-            Return _controls.FirstOrDefault(Function(kp) Not kp.Key.InputHitTest(UIHelper.WIN32POINTToControl(ptWIN32, kp.Key)) Is Nothing).Value
+            Dim kvps As List(Of KeyValuePair(Of Control, BaseDropTarget)) =
+                _controls.Where(Function(kp) Not PresentationSource.FromVisual(kp.Key) Is Nothing _
+                                             AndAlso Not kp.Key.InputHitTest(UIHelper.WIN32POINTToControl(ptWIN32, kp.Key)) Is Nothing).ToList()
+            Return kvps.FirstOrDefault(Function(kvp) _
+                UIHelper.FindVisualChildren(Of Control)(kvp.Key) _
+                     .FirstOrDefault(Function(child) _
+                         kvps.Select(Function(kvp2) kvp2.Key).Contains(child)) Is Nothing).Value
         End Function
 
-        Public Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragEnter
+        Public Function DragEnter(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragEnter
             _dataObject = pDataObj
             Dim dropTarget As BaseDropTarget = GetDropTargetFromWIN32POINT(ptWIN32)
             If Not dropTarget Is Nothing Then
@@ -140,7 +146,7 @@ Namespace Helpers
             End If
         End Function
 
-        Public Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.Drop
+        Public Function Drop(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.Drop
             Dim dropTarget As IDropTarget = GetDropTargetFromWIN32POINT(ptWIN32)
             If Not dropTarget Is Nothing Then
                 _dropTargetHelper.Drop(_dataObject, ptWIN32, pdwEffect)

@@ -37,19 +37,38 @@ Namespace Controls
                 Sub(s As Object, e As SizeChangedEventArgs)
                     Me.ShowNavigationButtons(Me.Folder)
                 End Sub
-            AddHandler PART_ClickToEdit.MouseDown,
+            AddHandler Me.PART_ClickToEdit.MouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
+                    _isSettingTextInternally = True
+                    Me.Text = Me.Folder.AddressBarDisplayName
+                    _isSettingTextInternally = False
                     PART_NavigationButtons.Visibility = Visibility.Hidden
-                    Me.Editor.IsEnabled = True
-                    Me.Editor.Focus()
+                    Me.PART_TextBox.IsEnabled = True
+                    Me.PART_TextBox.SelectionStart = Me.Text.Length
+                    Me.PART_TextBox.Focus()
+                End Sub
+            AddHandler Me.PART_TextBox.PreviewKeyDown,
+                Sub(s As Object, e As KeyEventArgs)
+                    If Not Me.IsDropDownOpen OrElse Me.IsLoadingSuggestions Then
+                        Select Case e.Key
+                            Case Key.Enter
+                                If Not Me.IsDirty Then
+                                    Me.OnItemSelected()
+                                End If
+                            Case Key.Escape
+                                If Not Me.IsDirty Then
+                                    Me.Cancel()
+                                End If
+                        End Select
+                    End If
                 End Sub
         End Sub
 
-        Protected Overrides Sub OnAfterSelect()
-            Me.Editor.IsEnabled = False
+        Protected Overrides Sub OnItemSelected()
+            Me.PART_TextBox.IsEnabled = False
 
             If INVALID_VALUE.Equals(Me.SelectedValue) Then
-                Dim item As Item = Item.FromParsingName(Me.Editor.Text, Nothing)
+                Dim item As Item = Item.FromParsingName(Me.PART_TextBox.Text, Nothing)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                     Dim parent As Folder = item
                     While Not parent Is Nothing
@@ -65,32 +84,16 @@ Namespace Controls
                             End If
                         End If
                     End While
-                    Shell.SetSelectedFolder(item,
-                        Sub(selectedFolder As Folder)
-                            If Not selectedFolder Is Nothing Then
-                                Me.Folder = selectedFolder
-                            Else
-                                Me.Folder = item
-                            End If
-                        End Sub)
+                    Me.Folder = item
                 Else
                     System.Media.SystemSounds.Asterisk.Play()
                     Me.Cancel()
                     Me.ShowNavigationButtons(Me.Folder)
                 End If
             ElseIf Not Me.SelectedItem Is Nothing Then
-                Shell.SetSelectedFolder(Me.SelectedItem,
-                    Sub(selectedFolder As Folder)
-                        If Not selectedFolder Is Nothing Then
-                            Me.Folder = selectedFolder
-                        Else
-                            Me.Folder = Me.SelectedItem
-                        End If
-
-                        If Not PART_NavigationButtons.Visibility = Visibility.Visible Then
-                            PART_NavigationButtons.Visibility = Visibility.Visible
-                        End If
-                    End Sub)
+                Dim doShow As Boolean = Me.SelectedItem.Equals(Me.Folder)
+                Me.Folder = Me.SelectedItem
+                If doShow Then Me.ShowNavigationButtons(Me.Folder)
             Else
                 Me.Cancel()
             End If
@@ -99,184 +102,155 @@ Namespace Controls
         Protected Overrides Sub Cancel()
             MyBase.Cancel()
 
-            Me.Editor.IsEnabled = False
+            Me.PART_TextBox.IsEnabled = False
             Me.ShowNavigationButtons(Me.Folder)
         End Sub
 
-        Protected Overrides Sub OnEditorLostFocusAsync(sender As Object, e As RoutedEventArgs)
+        Protected Overrides Sub TextBox_LostFocus(s As Object, e As RoutedEventArgs)
             Me.Cancel()
         End Sub
 
-        Public Sub ShowNavigationButtons(folder As Folder)
-            UIHelper.OnUIThread(
-                Async Sub()
-                    Dim buttons As List(Of StackPanel) = New List(Of StackPanel)()
-                    Dim totalWidth As Double = 0
-                    Dim buttonStyle As Style = TryFindResource("lailaShell_NavigationButtonStyle")
-                    Dim chevronButtonStyle As Style = TryFindResource("lailaShell_NavigationChevronButtonStyle")
-                    Dim moreButtonStyle As Style = TryFindResource("lailaShell_NavigationMoreButtonStyle")
-                    _contextMenus.Clear()
+        Public Async Function ShowNavigationButtons(folder As Folder) As Task
+            Await Task.Delay(150)
 
-                    Dim standardPanel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal, .Focusable = False}
-                    Dim computerImage As Image = New Image() With {.Width = 16, .Height = 16, .VerticalAlignment = VerticalAlignment.Center}
-                    computerImage.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/monitor16.png")
-                    standardPanel.Children.Add(computerImage)
-                    Dim specialFoldersButton As ToggleButton = New ToggleButton()
-                    If Not chevronButtonStyle Is Nothing Then specialFoldersButton.Style = chevronButtonStyle
-                    Dim specialFoldersContextMenu As ContextMenu = New ContextMenu()
-                    _contextMenus.Add(specialFoldersContextMenu)
-                    specialFoldersContextMenu.PlacementTarget = specialFoldersButton
-                    specialFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
-                    For Each specialFolder In Shell.SpecialFolders.Values.OrderBy(Function(f) f.DisplayName)
-                        Dim specialFoldersMenuItem As MenuItem = New MenuItem()
-                        specialFoldersMenuItem.Header = specialFolder.DisplayName
-                        specialFoldersMenuItem.Tag = specialFolder
-                        specialFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = specialFolder.Icon(16)}
-                        AddHandler specialFoldersMenuItem.Click,
+            Dim buttons As List(Of StackPanel) = New List(Of StackPanel)()
+            Dim totalWidth As Double = 0
+            Dim buttonStyle As Style = TryFindResource("lailaShell_NavigationButtonStyle")
+            Dim chevronButtonStyle As Style = TryFindResource("lailaShell_NavigationChevronButtonStyle")
+            Dim moreButtonStyle As Style = TryFindResource("lailaShell_NavigationMoreButtonStyle")
+            _contextMenus.Clear()
+
+            Dim standardPanel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal, .Focusable = False}
+            Dim computerImage As Image = New Image() With {.Width = 16, .Height = 16, .VerticalAlignment = VerticalAlignment.Center}
+            computerImage.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/monitor16.png")
+            standardPanel.Children.Add(computerImage)
+            Dim specialFoldersButton As ToggleButton = New ToggleButton()
+            If Not chevronButtonStyle Is Nothing Then specialFoldersButton.Style = chevronButtonStyle
+            Dim specialFoldersContextMenu As ContextMenu = New ContextMenu()
+            _contextMenus.Add(specialFoldersContextMenu)
+            specialFoldersContextMenu.PlacementTarget = specialFoldersButton
+            specialFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
+            For Each specialFolder In Shell.SpecialFolders.Values.OrderBy(Function(f) f.DisplayName)
+                Dim specialFoldersMenuItem As MenuItem = New MenuItem()
+                specialFoldersMenuItem.Header = specialFolder.DisplayName
+                specialFoldersMenuItem.Tag = specialFolder
+                specialFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = specialFolder.Icon(16)}
+                AddHandler specialFoldersMenuItem.Click,
                         Sub(s As Object, e As EventArgs)
-                            Shell.SetSelectedFolder(specialFoldersMenuItem.Tag,
-                                Sub(selectedFolder As Folder)
-                                    If Not selectedFolder Is Nothing Then
-                                        Me.Folder = selectedFolder
-                                    Else
-                                        Me.Folder = specialFoldersMenuItem.Tag
-                                    End If
-                                End Sub)
+                            Me.Folder = specialFoldersMenuItem.Tag
                         End Sub
-                        specialFoldersContextMenu.Items.Add(specialFoldersMenuItem)
-                    Next
-                    AddHandler specialFoldersButton.Checked,
+                specialFoldersContextMenu.Items.Add(specialFoldersMenuItem)
+            Next
+            AddHandler specialFoldersButton.Checked,
                             Sub(s As Object, e As EventArgs)
                                 specialFoldersContextMenu.IsOpen = True
                             End Sub
-                    AddHandler specialFoldersContextMenu.Closed,
+            AddHandler specialFoldersContextMenu.Closed,
                             Sub(s As Object, e As EventArgs)
                                 specialFoldersButton.IsChecked = False
                             End Sub
-                    standardPanel.Children.Add(specialFoldersButton)
-                    Dim moreButton As ToggleButton = New ToggleButton()
-                    If Not moreButtonStyle Is Nothing Then moreButton.Style = moreButtonStyle
-                    standardPanel.Children.Add(moreButton)
-                    standardPanel.Measure(New Size(1000, 1000))
-                    totalWidth += standardPanel.DesiredSize.Width
+            standardPanel.Children.Add(specialFoldersButton)
+            Dim moreButton As ToggleButton = New ToggleButton()
+            If Not moreButtonStyle Is Nothing Then moreButton.Style = moreButtonStyle
+            standardPanel.Children.Add(moreButton)
+            standardPanel.Measure(New Size(1000, 1000))
+            totalWidth += standardPanel.DesiredSize.Width
 
-                    Dim currentFolder As Folder = folder
-                    While Not currentFolder Is Nothing
-                        Dim panel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal}
-                        Dim folderButton As Button = New Button()
-                        If Not buttonStyle Is Nothing Then folderButton.Style = buttonStyle
-                        folderButton.Content = currentFolder.DisplayName
-                        folderButton.Tag = currentFolder
-                        AddHandler folderButton.Click,
+            Dim currentFolder As Folder = folder
+            While Not currentFolder Is Nothing
+                Dim panel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal}
+                Dim folderButton As Button = New Button()
+                If Not buttonStyle Is Nothing Then folderButton.Style = buttonStyle
+                folderButton.Content = currentFolder.DisplayName
+                folderButton.Tag = currentFolder
+                AddHandler folderButton.Click,
                     Sub(s As Object, e As EventArgs)
-                        Shell.SetSelectedFolder(folderButton.Tag,
-                                Sub(selectedFolder As Folder)
-                                    If Not selectedFolder Is Nothing Then
-                                        Me.Folder = selectedFolder
-                                    Else
-                                        Me.Folder = folderButton.Tag
-                                    End If
-                                End Sub)
+                        Me.Folder = folderButton.Tag
                     End Sub
-                        panel.Children.Add(folderButton)
-                        Dim subFoldersButton As ToggleButton = New ToggleButton()
-                        If Not chevronButtonStyle Is Nothing Then subFoldersButton.Style = chevronButtonStyle
-                        Dim subFoldersContextMenu As ContextMenu = New ContextMenu()
-                        subFoldersContextMenu.PlacementTarget = subFoldersButton
-                        subFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
-                        _contextMenus.Add(subFoldersContextMenu)
+                panel.Children.Add(folderButton)
+                Dim subFoldersButton As ToggleButton = New ToggleButton()
+                If Not chevronButtonStyle Is Nothing Then subFoldersButton.Style = chevronButtonStyle
+                Dim subFoldersContextMenu As ContextMenu = New ContextMenu()
+                subFoldersContextMenu.PlacementTarget = subFoldersButton
+                subFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
+                _contextMenus.Add(subFoldersContextMenu)
 
-                        For Each subFolder In (Await currentFolder.GetItems()).Where(Function(i) TypeOf i Is Folder)
-                            Dim subFoldersMenuItem As MenuItem = New MenuItem()
-                            subFoldersMenuItem.Header = subFolder.DisplayName
-                            subFoldersMenuItem.Tag = subFolder
-                            subFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = subFolder.Icon(16)}
-                            AddHandler subFoldersMenuItem.Click,
+                For Each subFolder In (Await currentFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder)
+                    Dim subFoldersMenuItem As MenuItem = New MenuItem()
+                    subFoldersMenuItem.Header = subFolder.DisplayName
+                    subFoldersMenuItem.Tag = subFolder
+                    subFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = subFolder.Icon(16)}
+                    AddHandler subFoldersMenuItem.Click,
                                 Sub(s As Object, e As EventArgs)
-                                    Shell.SetSelectedFolder(subFoldersMenuItem.Tag,
-                                        Sub(selectedFolder As Folder)
-                                            If Not selectedFolder Is Nothing Then
-                                                Me.Folder = selectedFolder
-                                            Else
-                                                Me.Folder = subFoldersMenuItem.Tag
-                                            End If
-                                        End Sub)
+                                    Me.Folder = subFoldersMenuItem.Tag
                                 End Sub
-                            subFoldersContextMenu.Items.Add(subFoldersMenuItem)
-                        Next
-                        If subFoldersContextMenu.Items.Count > 0 Then
-                            AddHandler subFoldersContextMenu.Opened,
+                    subFoldersContextMenu.Items.Add(subFoldersMenuItem)
+                Next
+                If subFoldersContextMenu.Items.Count > 0 Then
+                    AddHandler subFoldersContextMenu.Opened,
                                 Sub(s As Object, e As EventArgs)
                                     subFoldersButton.IsChecked = True
                                 End Sub
-                            AddHandler subFoldersButton.Checked,
+                    AddHandler subFoldersButton.Checked,
                                 Sub(s As Object, e As EventArgs)
                                     subFoldersContextMenu.IsOpen = True
                                 End Sub
-                            panel.Children.Add(subFoldersButton)
-                            AddHandler subFoldersContextMenu.Closed,
+                    panel.Children.Add(subFoldersButton)
+                    AddHandler subFoldersContextMenu.Closed,
                                 Sub(s As Object, e As EventArgs)
                                     subFoldersButton.IsChecked = False
                                 End Sub
-                        End If
+                End If
 
-                        panel.Measure(New Size(1000, 1000))
-                        If totalWidth + panel.DesiredSize.Width < Me.ActualWidth - 30 Then
-                            totalWidth += panel.DesiredSize.Width
-                            buttons.Add(panel)
-                        Else
-                            Exit While
-                        End If
-                        currentFolder = currentFolder.LogicalParent
-                    End While
+                panel.Measure(New Size(1000, 1000))
+                If totalWidth + panel.DesiredSize.Width < Me.ActualWidth - 30 Then
+                    totalWidth += panel.DesiredSize.Width
+                    buttons.Add(panel)
+                Else
+                    Exit While
+                End If
+                currentFolder = currentFolder.LogicalParent
+            End While
 
-                    If Not currentFolder Is Nothing Then
-                        Dim moreContextMenu As ContextMenu = New ContextMenu()
-                        moreContextMenu.PlacementTarget = moreButton
-                        moreContextMenu.Placement = Primitives.PlacementMode.Bottom
-                        _contextMenus.Add(moreContextMenu)
-                        While Not currentFolder Is Nothing
-                            Dim moreMenuItem As MenuItem = New MenuItem()
-                            moreMenuItem.Header = currentFolder.DisplayName
-                            moreMenuItem.Tag = currentFolder
-                            moreMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = currentFolder.Icon(16)}
-                            AddHandler moreMenuItem.Click,
+            If Not currentFolder Is Nothing Then
+                Dim moreContextMenu As ContextMenu = New ContextMenu()
+                moreContextMenu.PlacementTarget = moreButton
+                moreContextMenu.Placement = Primitives.PlacementMode.Bottom
+                _contextMenus.Add(moreContextMenu)
+                While Not currentFolder Is Nothing
+                    Dim moreMenuItem As MenuItem = New MenuItem()
+                    moreMenuItem.Header = currentFolder.DisplayName
+                    moreMenuItem.Tag = currentFolder
+                    moreMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = currentFolder.Icon(16)}
+                    AddHandler moreMenuItem.Click,
                         Sub(s As Object, e As EventArgs)
-                            Shell.SetSelectedFolder(moreMenuItem.Tag,
-                                Sub(selectedFolder As Folder)
-                                    If Not selectedFolder Is Nothing Then
-                                        Me.Folder = selectedFolder
-                                    Else
-                                        Me.Folder = moreMenuItem.Tag
-                                    End If
-                                End Sub)
+                            Me.Folder = moreMenuItem.Tag
                         End Sub
-                            moreContextMenu.Items.Add(moreMenuItem)
-                            currentFolder = currentFolder.LogicalParent
-                        End While
-                        AddHandler moreButton.Checked,
+                    moreContextMenu.Items.Add(moreMenuItem)
+                    currentFolder = currentFolder.LogicalParent
+                End While
+                AddHandler moreButton.Checked,
                     Sub(s As Object, e As EventArgs)
                         moreContextMenu.IsOpen = True
                     End Sub
-                        AddHandler moreContextMenu.Closed,
+                AddHandler moreContextMenu.Closed,
                          Sub(s As Object, e As EventArgs)
                              moreButton.IsChecked = False
                          End Sub
-                    Else
-                        moreButton.Visibility = Visibility.Collapsed
-                    End If
+            Else
+                moreButton.Visibility = Visibility.Collapsed
+            End If
 
-                    buttons.Add(standardPanel)
-                    buttons.Reverse()
-                    If (folder Is Nothing AndAlso Me.Folder Is Nothing) OrElse folder.Equals(Me.Folder) Then ' if we're not too late with this async
-                        PART_NavigationButtons.Visibility = Visibility.Visible
-                        PART_NavigationButtonsPanel.Children.Clear()
-                        For Each button In buttons
-                            PART_NavigationButtonsPanel.Children.Add(button)
-                        Next
-                    End If
-                End Sub, Threading.DispatcherPriority.Render)
-        End Sub
+            buttons.Add(standardPanel)
+            buttons.Reverse()
+            If (folder Is Nothing AndAlso Me.Folder Is Nothing) OrElse (Not folder Is Nothing AndAlso folder.Equals(Me.Folder)) Then ' if we're not too late with this async
+                Me.PART_NavigationButtonsPanel.Children.Clear()
+                For Each button In buttons
+                    Me.PART_NavigationButtonsPanel.Children.Add(button)
+                Next
+                Me.PART_NavigationButtons.Visibility = Visibility.Visible
+            End If
+        End Function
 
         Public Property Folder As Folder
             Get

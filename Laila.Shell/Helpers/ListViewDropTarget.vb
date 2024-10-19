@@ -11,7 +11,7 @@ Imports Laila.Shell.ViewModels
 Public Class ListViewDropTarget
     Inherits BaseDropTarget
 
-    Private _dataObject As ComTypes.IDataObject
+    Private _dataObject As IDataObject
     Private _detailsListView As DetailsListView
     Private _lastOverItem As Item
     Private _dragOpenTimer As Timer
@@ -23,7 +23,7 @@ Public Class ListViewDropTarget
         _detailsListView = detailsListView
     End Sub
 
-    Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
 
@@ -48,7 +48,7 @@ Public Class ListViewDropTarget
         Return 0
     End Function
 
-    Public Overrides Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -71,7 +71,6 @@ Public Class ListViewDropTarget
                 OrElse CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
                     Dim sourceItems As List(Of IShellItem) = _fileList.Select(Function(f) CType(Item.FromParsingName(f, Nothing)?._shellItem2, IShellItem)).Where(Function(i) Not i Is Nothing).ToList()
                     Dim sourcePidls As New List(Of IntPtr)()
-                    Dim destPath As String = If(TypeOf overItem Is Folder, overItem.FullPath, IO.Path.GetDirectoryName(overItem.FullPath))
                     For Each item As IShellItem In sourceItems
                         Dim pidl As IntPtr = IntPtr.Zero
                         Dim punk As IntPtr = Marshal.GetIUnknownForObject(item)
@@ -85,12 +84,12 @@ Public Class ListViewDropTarget
                     Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
                     Debug.WriteLine("CoCreateInstance returned " & h.ToString())
                     If CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
-                        h = fileOperation.MoveItems(sourceArray, overItem._shellItem2)
+                        h = fileOperation.MoveItems(sourceArray, If(TypeOf overItem Is Folder, overItem, overItem.LogicalParent)._shellItem2)
                     Else
-                        h = fileOperation.CopyItems(sourceArray, overItem._shellItem2)
+                        h = fileOperation.CopyItems(sourceArray, If(TypeOf overItem Is Folder, overItem, overItem.LogicalParent)._shellItem2)
                     End If
                     fileOperation.PerformOperations()
-                    Shell.SetSelectedFolder(If(TypeOf overItem Is Folder, overItem, overItem.LogicalParent), Nothing)
+                    _detailsListView.Folder = If(TypeOf overItem Is Folder, overItem, overItem.LogicalParent)
                 ElseIf CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
                 End If
 
@@ -207,7 +206,7 @@ Public Class ListViewDropTarget
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
-                    End Sub), Nothing, 1250, 0)
+                    End Sub), Nothing, 2000, 0)
             End If
         Else
             If Not _dragOpenTimer Is Nothing Then

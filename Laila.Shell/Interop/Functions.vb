@@ -7,7 +7,32 @@ Imports System.Runtime.InteropServices.ComTypes
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
-
+    <DllImport("ole32.dll", SetLastError:=True)>
+    Public Shared Function OleSetClipboard(ByVal pDataObj As IDataObject) As Integer
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
+    Public Shared Function ILCreateFromPath(ByVal pszPath As String) As IntPtr
+    End Function
+    <DllImport("ole32.dll", CharSet:=CharSet.Unicode, SetLastError:=True, ExactSpelling:=True)>
+    Public Shared Function StgCreateStorageEx(
+    ByVal pwcsName As String,
+    ByVal grfMode As STGM,
+    ByVal stgfmt As STGFMT,
+    ByVal grfAttrs As UInteger,
+    ByVal pSecurityDescriptor As IntPtr,
+    ByVal reserved As UInteger,
+    ByVal riid As Guid,
+    <Out()> ByRef ppObject As IntPtr
+) As Integer
+    End Function
+    <DllImport("kernel32.dll", SetLastError:=True, CharSet:=CharSet.Unicode)>
+    Public Shared Function GetFileAttributesW(
+        <MarshalAs(UnmanagedType.LPWStr)> ByVal lpFileName As String
+    ) As UInteger
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Auto, SetLastError:=True, BestFitMapping:=False, ThrowOnUnmappableChar:=True)>
+    Public Shared Sub SHAddToRecentDocs(ByVal uFlags As UInt32, <MarshalAs(UnmanagedType.LPWStr)> ByVal path As String)
+    End Sub
     <DllImport("propsys.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
     Public Shared Function PSGetNameFromPropertyKey(ByRef propkey As PROPERTYKEY, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszCanonicalName As String) As Integer
     End Function
@@ -77,7 +102,15 @@ Public Class Functions
         End While
         Return i
     End Function
-
+    <DllImport("kernel32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
+    Public Shared Function GetFileAttributesEx(
+        ByVal lpFileName As String,
+        ByVal fInfoLevelId As Integer,
+        ByRef lpFileInformation As WIN32_FILE_ATTRIBUTE_DATA) As Boolean
+    End Function
+    <DllImport("Kernel32.dll", SetLastError:=True)>
+    Public Shared Function SystemTimeToFileTime(ByRef lpSystemTime As SYSTEMTIME, ByRef lpFileTime As FILETIME) As Boolean
+    End Function
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function OpenClipboard(hWndNewOwner As IntPtr) As Boolean
     End Function
@@ -129,7 +162,7 @@ Public Class Functions
     'Public Shared Function RegisterClipboardFormat(lpString As String) As UInteger
     'End Function
     <DllImport("ole32.dll")>
-    Public Shared Function DoDragDrop(pDataObj As ComTypes.IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
+    Public Shared Function DoDragDrop(pDataObj As IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
     End Function
     <DllImport("ole32.dll")>
     Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
@@ -184,10 +217,10 @@ Public Class Functions
     Public Shared Function ReleaseDC(hWnd As IntPtr, hDC As IntPtr) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
-    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As System.Runtime.InteropServices.ComTypes.IDataObject) As Integer
+    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
-    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As System.Runtime.InteropServices.ComTypes.IDataObject) As Integer
+    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject) As Integer
     End Function
     <DllImport("ole32.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function CoCreateBindCtx(dwFlags As UInt32, reserved As UInt32, pMalloc As IntPtr, ByRef ppbc As IBindCtx) As Integer

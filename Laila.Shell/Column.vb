@@ -48,8 +48,8 @@ Public Class Column
 
     Public ReadOnly Property Alignment As TextAlignment
         Get
-            Return If(CBool(_viewFlags And PROPDESC_VIEW_FLAGS.PDVF_CENTERALIGN), TextAlignment.Center,
-                   If(CBool(_viewFlags And PROPDESC_VIEW_FLAGS.PDVF_RIGHTALIGN), TextAlignment.Right,
+            Return If(_viewFlags.HasFlag(PROPDESC_VIEW_FLAGS.PDVF_CENTERALIGN), TextAlignment.Center,
+                   If(_viewFlags.HasFlag(PROPDESC_VIEW_FLAGS.PDVF_RIGHTALIGN), TextAlignment.Right,
                    TextAlignment.Left))
         End Get
     End Property
@@ -63,7 +63,8 @@ Public Class Column
     Private ReadOnly Property CM_COLUMNINFO As CM_COLUMNINFO
         Get
             If _columnInfo.dwMask = 0 Then
-                _columnInfo.dwMask = CM_MASK.CM_MASK_NAME Or CM_MASK.CM_MASK_DEFAULTWIDTH Or CM_MASK.CM_MASK_IDEALWIDTH Or CM_MASK.CM_MASK_STATE Or CM_MASK.CM_MASK_WIDTH
+                _columnInfo.dwMask = CM_MASK.CM_MASK_NAME Or CM_MASK.CM_MASK_DEFAULTWIDTH Or CM_MASK.CM_MASK_IDEALWIDTH _
+                                     Or CM_MASK.CM_MASK_STATE Or CM_MASK.CM_MASK_WIDTH
                 _columnInfo.cbSize = Marshal.SizeOf(Of CM_COLUMNINFO)
                 _columnManager.GetColumnInfo(_propertyKey, _columnInfo)
             End If
