@@ -75,7 +75,6 @@ Namespace Helpers
         Public Sub CopyTo(pstm As IStream, cb As Long, pcbRead As IntPtr, pcbWritten As IntPtr) Implements IStream.CopyTo
             If _fileStream Is Nothing Then
                 _fileStream = New FileStream(_filePath, FileMode.Open, FileAccess.Read)
-                _fileStream.Seek(0, SeekOrigin.End)
             End If
 
             If cb = -1 Then cb = Long.MaxValue
