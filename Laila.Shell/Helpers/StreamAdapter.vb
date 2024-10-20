@@ -90,7 +90,6 @@ Namespace Helpers
                 bytesWritten += Marshal.ReadInt32(ptrWritten)
             End While
             pstm.Commit(0)
-            Marshal.FinalReleaseComObject(pstm)
 
             If Not IntPtr.Zero.Equals(pcbRead) Then
                 Marshal.WriteInt64(pcbRead, bytesRead)
