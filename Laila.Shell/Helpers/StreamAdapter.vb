@@ -8,16 +8,31 @@ Namespace Helpers
 
         Private _filePath As String
         Private _fileStream As FileStream
+        Private _position As Long = -1
 
         Public Sub New(filePath As String)
             _filePath = filePath
         End Sub
 
-        Public Sub Read(pv() As Byte, cb As Integer, pcbRead As IntPtr) Implements IStream.Read
+        Private Sub openStream()
             If _fileStream Is Nothing Then
                 _fileStream = New FileStream(_filePath, FileMode.Open, FileAccess.Read)
-                _fileStream.Seek(0, SeekOrigin.End)
+                If (_position = -1) Then
+                    _fileStream.Seek(0, SeekOrigin.End)
+                Else
+                    _fileStream.Seek(_position, SeekOrigin.Begin)
+                End If
             End If
+        End Sub
+
+        Private Sub closeStream()
+            _position = _fileStream.Position
+            _fileStream.Dispose()
+            _fileStream = Nothing
+        End Sub
+
+        Public Sub Read(pv() As Byte, cb As Integer, pcbRead As IntPtr) Implements IStream.Read
+            openStream()
 
             If _fileStream.Position + cb > _fileStream.Length Then
                 cb = _fileStream.Length - _fileStream.Position
@@ -28,14 +43,11 @@ Namespace Helpers
                 bytesRead = _fileStream.Read(pv, 0, cb)
             End If
 
-            If bytesRead = 0 Then
-                _fileStream.Dispose()
-                _fileStream = Nothing
-            End If
-
             If pcbRead <> IntPtr.Zero Then
                 Marshal.WriteInt32(pcbRead, bytesRead)
             End If
+
+            closeStream()
         End Sub
 
         Public Sub Write(pv() As Byte, cb As Integer, pcbWritten As IntPtr) Implements IStream.Write
@@ -43,10 +55,7 @@ Namespace Helpers
         End Sub
 
         Public Sub Seek(dlibMove As Long, dwOrigin As Integer, plibNewPosition As IntPtr) Implements IStream.Seek
-            If _fileStream Is Nothing Then
-                _fileStream = New FileStream(_filePath, FileMode.Open, FileAccess.Read)
-                _fileStream.Seek(0, SeekOrigin.End)
-            End If
+            openStream()
 
             Select Case dwOrigin
                 Case 0 ' STREAM_SEEK_SET
@@ -63,19 +72,14 @@ Namespace Helpers
                 Marshal.WriteInt64(plibNewPosition, _fileStream.Position)
             End If
 
-            If _fileStream.Position = _fileStream.Length Then
-                _fileStream.Dispose()
-                _fileStream = Nothing
-            End If
+            closeStream()
         End Sub
 
         Public Sub SetSize(libNewSize As Long) Implements IStream.SetSize
             Throw New NotSupportedException()
         End Sub
         Public Sub CopyTo(pstm As IStream, cb As Long, pcbRead As IntPtr, pcbWritten As IntPtr) Implements IStream.CopyTo
-            If _fileStream Is Nothing Then
-                _fileStream = New FileStream(_filePath, FileMode.Open, FileAccess.Read)
-            End If
+            openStream()
 
             If cb = -1 Then cb = Long.MaxValue
             Dim endPosition As Long = Math.Min(_fileStream.Position + cb, _fileStream.Length)
@@ -98,8 +102,7 @@ Namespace Helpers
                 Marshal.WriteInt64(pcbWritten, bytesWritten)
             End If
 
-            _fileStream.Dispose()
-            _fileStream = Nothing
+            closeStream()
         End Sub
 
         Public Sub Commit(grfCommitFlags As Integer) Implements IStream.Commit
@@ -119,14 +122,13 @@ Namespace Helpers
         End Sub
 
         Public Sub Stat(ByRef pstatstg As STATSTG, grfStatFlag As Integer) Implements IStream.Stat
-            If _fileStream Is Nothing Then
-                _fileStream = New FileStream(_filePath, FileMode.Open, FileAccess.Read)
-                _fileStream.Seek(0, SeekOrigin.End)
-            End If
+            openStream()
 
             ' Provide information about the stream
             pstatstg.cbSize = _fileStream.Length
             pstatstg.type = 2 ' STGTY_STREAM (Stream)
+
+            closeStream()
         End Sub
 
         Public Sub Clone(ByRef ppstm As IStream) Implements IStream.Clone
