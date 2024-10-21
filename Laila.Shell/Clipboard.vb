@@ -12,9 +12,11 @@ Public Class Clipboard
         Dim dataObject As IDataObject = New DragDataObject()
 
         ClipboardFormats.CFSTR_SHELLIDLIST.SetData(dataObject, items)
-        ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(dataObject, items)
-        ClipboardFormats.CFSTR_FILECONTENTS.SetData(dataObject, items)
         ClipboardFormats.CF_HDROP.SetData(dataObject, items)
+        If Not items.ToList().Exists(Function(i) TypeOf i Is Folder) Then
+            ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(dataObject, items)
+            ClipboardFormats.CFSTR_FILECONTENTS.SetData(dataObject, items)
+        End If
         ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_COPY)
 
         Functions.OleSetClipboard(dataObject)
@@ -24,9 +26,11 @@ Public Class Clipboard
         Dim dataObject As IDataObject = New DragDataObject()
 
         ClipboardFormats.CFSTR_SHELLIDLIST.SetData(dataObject, items)
-        ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(dataObject, items)
-        ClipboardFormats.CFSTR_FILECONTENTS.SetData(dataObject, items)
         ClipboardFormats.CF_HDROP.SetData(dataObject, items)
+        If Not items.ToList().Exists(Function(i) TypeOf i Is Folder) Then
+            ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(dataObject, items)
+            ClipboardFormats.CFSTR_FILECONTENTS.SetData(dataObject, items)
+        End If
         ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_MOVE)
 
         Functions.OleSetClipboard(dataObject)

@@ -431,7 +431,16 @@ Public Class Folder
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing AndAlso _isLoaded Then
-                        updateItems(_items, True)
+                        Dim func As Func(Of Task) =
+                            Async Function() As Task
+                                SyncLock _lock
+                                    If _items.Count = 0 Then
+                                        updateItems(_items, False)
+                                    End If
+                                End SyncLock
+                            End Function
+
+                        Task.Run(func)
                     End If
             End Select
         End If

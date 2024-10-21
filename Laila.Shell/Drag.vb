@@ -15,10 +15,6 @@ Public Class Drag
 
     Private Const MAX_COL As Integer = 5
     Private Const MAX_ROW As Integer = 5
-    Private Const GMEM_MOVEABLE As Integer = &H2
-    Private Const GMEM_ZEROINIT As Integer = &H40
-    Private Const GMEM_SHARE As Integer = &H2000
-    Private Const GHND As Integer = GMEM_MOVEABLE Or GMEM_ZEROINIT Or GMEM_SHARE
 
     Public Shared ICON_SIZE As Integer = 128
 
@@ -57,14 +53,17 @@ Public Class Drag
                 _dataObject = New DragDataObject()
 
                 ClipboardFormats.CFSTR_SHELLIDLIST.SetData(_dataObject, items)
-                ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(_dataObject, items)
-                ClipboardFormats.CFSTR_FILECONTENTS.SetData(_dataObject, items)
                 ClipboardFormats.CF_HDROP.SetData(_dataObject, items)
+                If Not items.ToList().Exists(Function(i) TypeOf i Is Folder) Then
+                    ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(_dataObject, items)
+                    ClipboardFormats.CFSTR_FILECONTENTS.SetData(_dataObject, items)
+                End If
 
                 makeDragImageObjects(items)
                 InitializeDragImage()
 
                 Dim availableDropEffects As DROPEFFECT
+                availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_LINK
                 If items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY)) Then
                     availableDropEffects = availableDropEffects Or DROPEFFECT.DROPEFFECT_COPY
                 End If
@@ -76,8 +75,9 @@ Public Class Drag
                 End If
 
                 Dim effect As Integer
-                Functions.DoDragDrop(_dataObject, New Drag(Sub() If Not _dataObject Is Nothing Then InitializeDragImage(), button),
-                             availableDropEffects, effect)
+                Functions.DoDragDrop(_dataObject,
+                                     New Drag(Sub() If Not _dataObject Is Nothing Then InitializeDragImage(), button),
+                                     availableDropEffects, effect)
 
                 Shell._w.Content = Nothing
                 Mouse.OverrideCursor = Nothing
