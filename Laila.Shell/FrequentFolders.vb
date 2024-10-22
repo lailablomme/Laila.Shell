@@ -71,7 +71,7 @@ Public Class FrequentFolders
             Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
             Dim count As Integer = 0
             For Each folder In mostFrequent1
-                Dim f As Folder = Item.FromParsingName(folder.FullPath, Nothing)
+                Dim f As Folder = Item.FromParsingNameDeepGet(folder.FullPath)
                 If Not f Is Nothing AndAlso Not PinnedItems.GetIsPinned(f) Then
                     mostFrequent2.Add(f)
                     count += 1
@@ -86,7 +86,9 @@ Public Class FrequentFolders
     End Function
 
     Private Shared Function getDBFileName() As String
-        Return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell", "FrequentFolders.db")
+        Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
+        If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
+        Return IO.Path.Combine(path, "FrequentFolders.db")
     End Function
 
     Public Class FrequentFolder

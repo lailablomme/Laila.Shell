@@ -792,7 +792,9 @@ Namespace Behaviors
         End Sub
 
         Private Function getStateDBFileName() As String
-            Return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell", "GridViewState.db")
+            Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
+            If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
+            Return IO.Path.Combine(path, "GridViewState.db")
         End Function
 
         Private Function getColumnName(column As GridViewColumn) As String

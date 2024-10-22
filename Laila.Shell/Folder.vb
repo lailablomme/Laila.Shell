@@ -51,7 +51,7 @@ Public Class Folder
 
     Public Property IsExpanded As Boolean
         Get
-            Return _isExpanded AndAlso (Me.LogicalParent Is Nothing OrElse Me.LogicalParent.IsExpanded)
+            Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse Me.LogicalParent.IsExpanded)
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)

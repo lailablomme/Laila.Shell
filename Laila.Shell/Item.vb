@@ -26,7 +26,7 @@ Public Class Item
     Private _overlaySmall As ImageSource
     Private _overlayLarge As ImageSource
     Private _overlayIconIndex As Integer?
-    Private _treeRootIndex As Long
+    Private _treeRootIndex As Long = -1
 
     Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -108,7 +108,7 @@ Public Class Item
 
     Public ReadOnly Property TreeSortKey As String
         Get
-            If _logicalParent Is Nothing Then
+            If _treeRootIndex <> -1 Then
                 Return String.Format("{0:0000000000000000000}", _treeRootIndex)
             Else
                 Return _logicalParent.TreeSortKey & Me.ItemNameDisplaySortValue & New String(" ", 260 - Me.ItemNameDisplaySortValue.Length)
@@ -119,11 +119,14 @@ Public Class Item
     Public ReadOnly Property TreeMargin As Thickness
         Get
             Dim level As Integer = 0
-            Dim lp As Folder = Me.LogicalParent
-            While Not lp Is Nothing
-                level += 1
-                lp = lp.LogicalParent
-            End While
+            If Me.TreeRootIndex = -1 Then
+                Dim lp As Folder = Me.LogicalParent
+                While Not lp Is Nothing
+                    level += 1
+                    If lp.TreeRootIndex <> -1 Then Exit While
+                    lp = lp.LogicalParent
+                End While
+            End If
 
             Return New Thickness(level * 16, 0, 0, 0)
         End Get
@@ -469,10 +472,16 @@ Public Class Item
         End Get
     End Property
 
-
-    Public Shared Async Function FromParsingNameDeepGet(parsingName As String) As Task(Of Item)
+    Public Shared Async Function FromParsingNameDeepGetAsync(parsingName As String) As Task(Of Item)
         ' resolve environment variable?
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
+
+        Dim specialFolder As Folder =
+            Shell.SpecialFolders.Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)?.Clone()
+        If Not specialFolder Is Nothing Then
+            Return specialFolder
+        End If
+
         Dim path As String = parsingName.Trim()
 
         ' get parts of path
@@ -505,14 +514,14 @@ Public Class Item
 
             If isNetworkPath Then
                 ' network path
-                folder = Shell.SpecialFolders("Network")
+                folder = Shell.SpecialFolders("Network").Clone()
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.SpecialFolders("This computer")
+                folder = Shell.SpecialFolders("This computer").Clone()
             Else
                 ' root must be some special folder
                 folder = Shell.SpecialFolders.Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
-                                                                         OrElse f.FullPath.ToLower() = parts(0).ToLower())
+                                                                         OrElse f.FullPath.ToLower() = parts(0).ToLower())?.Clone()
                 start = 1
             End If
 
@@ -524,6 +533,79 @@ Public Class Item
                         subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
                     Else
                         subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
+                    End If
+                    folder = subFolder
+                    If folder Is Nothing Then Exit For
+                Next
+            End If
+
+            Return folder
+        Else
+            Return Nothing
+        End If
+    End Function
+
+    Public Shared Function FromParsingNameDeepGet(parsingName As String) As Item
+        ' resolve environment variable?
+        parsingName = Environment.ExpandEnvironmentVariables(parsingName)
+
+        Dim specialFolder As Folder =
+            Shell.SpecialFolders.Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)?.Clone()
+        If Not specialFolder Is Nothing Then
+            Return specialFolder
+        End If
+
+        Dim path As String = parsingName.Trim()
+
+        ' get parts of path
+        Dim parts As List(Of String)
+        Dim isNetworkPath As Boolean = path.StartsWith("\\")
+        If isNetworkPath Then
+            parts = path.Substring(2).Split(IO.Path.DirectorySeparatorChar).ToList()
+            If parts.Count = 1 AndAlso parts(0).Length = 0 Then
+                parts.RemoveAt(0)
+            ElseIf parts.Count > 0 Then
+                parts(0) = "\\" & parts(0)
+            End If
+        Else
+            parts = New List(Of String)()
+            While Not String.IsNullOrWhiteSpace(path)
+                Debug.WriteLine(path)
+                If path = IO.Path.GetPathRoot(path) Then
+                    parts.Add(path)
+                Else
+                    parts.Add(IO.Path.GetFileName(path))
+                End If
+                path = IO.Path.GetDirectoryName(path)
+            End While
+            parts.Reverse()
+        End If
+
+        If parts.Count > 0 Or isNetworkPath Then
+            Dim folder As Folder
+            Dim j As Integer, start As Integer = 0
+
+            If isNetworkPath Then
+                ' network path
+                folder = Shell.SpecialFolders("Network").Clone()
+            ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
+                ' this is a path on disk
+                folder = Shell.SpecialFolders("This computer").Clone()
+            Else
+                ' root must be some special folder
+                folder = Shell.SpecialFolders.Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
+                                                                         OrElse f.FullPath.ToLower() = parts(0).ToLower())?.Clone()
+                start = 1
+            End If
+
+            ' find folder
+            If Not folder Is Nothing Then
+                For j = start To parts.Count - 1
+                    Dim subFolder As Folder
+                    If j = 0 Then
+                        subFolder = (folder.GetItems()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
+                    Else
+                        subFolder = (folder.GetItems()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
                     End If
                     folder = subFolder
                     If folder Is Nothing Then Exit For
@@ -590,4 +672,12 @@ Public Class Item
         Dispose(disposing:=True)
         GC.SuppressFinalize(Me)
     End Sub
+
+    Public Function Clone() As Item
+        If TypeOf Me Is Folder Then
+            Return New Folder(Folder.GetIShellItem2FromParsingName(Me.FullPath), _logicalParent)
+        Else
+            Return New Item(Item.GetIShellItem2FromParsingName(Me.FullPath), _logicalParent)
+        End If
+    End Function
 End Class

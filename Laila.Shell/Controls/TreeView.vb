@@ -5,8 +5,8 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Controls.Primitives
 Imports System.Windows.Data
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -61,16 +61,20 @@ Namespace Controls
                  End Sub
 
             ' home and galery
-            Shell.SpecialFolders("Home").TreeRootIndex = TreeRootSection.SYSTEM + 0 : Items.Add(Shell.SpecialFolders("Home"))
-            Shell.SpecialFolders("Gallery").TreeRootIndex = TreeRootSection.SYSTEM + 1 : Items.Add(Shell.SpecialFolders("Gallery"))
+            Dim homeFolder As Folder = Shell.SpecialFolders("Home").Clone()
+            homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0 : Items.Add(homeFolder)
+            Dim galleryFolder As Folder = Shell.SpecialFolders("Gallery").Clone()
+            galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1 : Items.Add(galleryFolder)
 
             ' separators
             Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
             Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
 
             ' this computer & network
-            Shell.SpecialFolders("This computer").TreeRootIndex = TreeRootSection.ENVIRONMENT + 0 : Items.Add(Shell.SpecialFolders("This computer"))
-            Shell.SpecialFolders("Network").TreeRootIndex = TreeRootSection.ENVIRONMENT + 1 : Items.Add(Shell.SpecialFolders("Network"))
+            Dim thisComputer As Folder = Shell.SpecialFolders("This computer").Clone()
+            thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0 : Items.Add(thisComputer)
+            Dim network As Folder = Shell.SpecialFolders("Network").Clone()
+            network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1 : Items.Add(network)
 
             updatePinnedItems()
             updateFrequentFolders()
@@ -146,7 +150,7 @@ Namespace Controls
             Dim count As Integer = 0
             For Each pinnedItem In pinnedItemsList
                 Dim existingPinnedItem As Item = Me.Items.FirstOrDefault(Function(i) _
-                    i.FullPath = pinnedItem.FullPath AndAlso i.LogicalParent Is Nothing _
+                    i.FullPath = pinnedItem.FullPath _
                         AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT)
                 If existingPinnedItem Is Nothing Then
                     ' insert new frequent folder
@@ -160,9 +164,10 @@ Namespace Controls
                 End If
                 count += 1
             Next
+
             ' remove pinned items no longer in the list
             For Each pinnedItem As Item In Me.Items.Where(Function(i) _
-                Not TypeOf i Is SeparatorFolder AndAlso i.LogicalParent Is Nothing _
+                Not TypeOf i Is SeparatorFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT _
                         AndAlso Not pinnedItemsList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
                 If (TypeOf pinnedItem Is Folder AndAlso GetIsSelectionDownFolder(pinnedItem)) OrElse pinnedItem.Equals(Me.SelectedItem) Then
@@ -178,7 +183,7 @@ Namespace Controls
             Dim count As Integer = 0
             For Each frequentFolder In frequentFoldersList
                 Dim existingFrequentFolder As Folder = Me.Items.FirstOrDefault(Function(i) _
-                    i.FullPath = frequentFolder.FullPath AndAlso i.LogicalParent Is Nothing _
+                    i.FullPath = frequentFolder.FullPath _
                         AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT)
                 If existingFrequentFolder Is Nothing Then
                     ' insert new frequent folder
@@ -193,7 +198,7 @@ Namespace Controls
             Next
             ' remove frequent folders no longer in the list
             For Each frequentFolder As Folder In Me.Items.Where(Function(i) _
-                Not TypeOf i Is SeparatorFolder AndAlso i.LogicalParent Is Nothing _
+                Not TypeOf i Is SeparatorFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                         AndAlso Not frequentFoldersList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
                 If GetIsSelectionDownFolder(frequentFolder) Then
@@ -231,15 +236,15 @@ Namespace Controls
                 Dim list As List(Of Folder) = New List(Of Folder)()
                 Dim currentFolder As Folder = folder
                 If Not currentFolder Is Nothing Then
-                    While Not currentFolder.LogicalParent Is Nothing
+                    While Not currentFolder.LogicalParent Is Nothing AndAlso currentFolder.TreeRootIndex = -1
                         list.Add(currentFolder)
                         Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
                         currentFolder = currentFolder.LogicalParent
                     End While
 
                     Dim tf As Folder
-                    If Me.Items.ToList().Exists(Function(f1) f1.FullPath = currentFolder.FullPath AndAlso f1.LogicalParent Is Nothing) Then
-                        tf = Me.Items.First(Function(f1) f1.FullPath = currentFolder.FullPath AndAlso f1.LogicalParent Is Nothing)
+                    If Me.Items.ToList().Exists(Function(f1) f1.FullPath = currentFolder.FullPath AndAlso f1.TreeRootIndex <> -1) Then
+                        tf = Me.Items.First(Function(f1) f1.FullPath = currentFolder.FullPath AndAlso f1.TreeRootIndex <> -1)
                     Else
                         tf = Nothing
                     End If
@@ -307,26 +312,28 @@ Namespace Controls
         End Function
 
         Private Sub OnTreeViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
-            If Not _mouseItemDown Is Nothing AndAlso Not Me.SelectedItem Is Nothing AndAlso
+            If Not _mouseItemDown Is Nothing AndAlso
                 (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(PART_ListBox)
                 If Math.Abs(currentPointDown.X - _mousePointDown.X) > 10 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 10 Then
                     Drag.Start({_mouseItemDown}, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
+                    e.Handled = True
                 End If
             End If
         End Sub
 
-        Private Async Sub OnTreeViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
-            _mousePointDown = e.GetPosition(PART_ListBox)
+        Private Sub OnTreeViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
+            _mousePointDown = e.GetPosition(Me.PART_ListBox)
 
-            If Not e.OriginalSource Is Nothing Then
+            If Not e.OriginalSource Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing Then
                 Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
                 Dim clickedItem As Item = treeViewItem?.DataContext
                 If Not TypeOf clickedItem Is SeparatorFolder Then
                     _mouseItemDown = clickedItem
+                    Me.PART_ListBox.Focus()
                     If e.RightButton = MouseButtonState.Pressed Then
                         If Not clickedItem Is Nothing Then
-                            If Me.SelectedItem Is Nothing Then Await Me.SetSelectedFolder(clickedItem)
+                            If Me.SelectedItem Is Nothing Then _selectionHelper.SetSelectedItems({clickedItem})
 
                             Dim parent As Folder = clickedItem.Parent
                             If parent Is Nothing Then parent = Shell.Desktop
@@ -337,7 +344,7 @@ Namespace Controls
                                     Select Case e2.Verb
                                         Case "open"
                                             If TypeOf clickedItem Is Folder Then
-                                                Me.SetSelectedFolder(clickedItem)
+                                                _selectionHelper.SetSelectedItems({clickedItem})
                                                 e2.IsHandled = True
                                             End If
                                         Case "rename"
@@ -365,8 +372,21 @@ Namespace Controls
                     ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 Then
                         If Not clickedItem Is Nothing AndAlso TypeOf clickedItem Is Folder Then
                             CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
+                            e.Handled = True
+                        End If
+                    ElseIf e.LeftButton = MouseButtonState.Pressed Then
+                        If Not clickedItem Is Nothing Then
+                            If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
+                                CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
+                            Else
+                                _selectionHelper.SetSelectedItems({clickedItem})
+                            End If
+                            e.Handled = True
                         End If
                     End If
+
+                    ' this whole trickery to prevent the ListBox from selecting other items while dragging:
+                    Mouse.Capture(Me.PART_ListBox)
                 Else
                     _mouseItemDown = Nothing
                     e.Handled = True
@@ -377,6 +397,7 @@ Namespace Controls
         End Sub
 
         Public Sub OnTreeViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+            Me.PART_ListBox.ReleaseMouseCapture()
             _mouseItemDown = Nothing
         End Sub
 
@@ -470,7 +491,7 @@ Namespace Controls
 
         Private Function filter(i As Object) As Boolean
             Dim item As Item = i
-            Return item.LogicalParent Is Nothing OrElse item.LogicalParent.IsExpanded
+            Return item.TreeRootIndex <> -1 OrElse item.LogicalParent.IsExpanded
         End Function
 
 

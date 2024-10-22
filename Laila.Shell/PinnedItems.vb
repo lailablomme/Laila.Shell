@@ -15,7 +15,7 @@ Public Class PinnedItems
             Return collection.Query() _
                 .OrderBy(Function(f) f.Index).ToList() _
                 .Where(Function(f) IO.Directory.Exists(f.FullPath)) _
-                .Select(Function(f) Item.FromParsingName(f.FullPath, Nothing)) _
+                .Select(Function(f) Item.FromParsingNameDeepGet(f.FullPath)) _
                 .Where(Function(f) Not f Is Nothing) _
                 .Cast(Of Item).ToList()
         End Using
@@ -94,7 +94,9 @@ Public Class PinnedItems
     End Sub
 
     Private Shared Function getDBFileName() As String
-        Return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell", "PinnedItems.db")
+        Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
+        If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
+        Return IO.Path.Combine(path, "PinnedItems.db")
     End Function
 
     Public Class PinnedItem

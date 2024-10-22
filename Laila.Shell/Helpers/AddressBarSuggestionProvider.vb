@@ -27,7 +27,7 @@ Namespace Helpers
                     Dim folder As Folder
                     If folderName Is Nothing Then
                         If Not filter.EndsWith(IO.Path.DirectorySeparatorChar) Then
-                            folder = Shell.SpecialFolders("This computer")
+                            folder = Shell.SpecialFolders("This computer").Clone()
                             fileName = filter
                         Else
                             folderName = filter
@@ -35,7 +35,7 @@ Namespace Helpers
                     ElseIf String.IsNullOrWhiteSpace(folderName) AndAlso filter = IO.Path.GetPathRoot(fileName) Then
                         folderName = filter
                     End If
-                    If folder Is Nothing Then folder = Await Item.FromParsingNameDeepGet(folderName)
+                    If folder Is Nothing Then folder = Await Item.FromParsingNameDeepGetAsync(folderName)
                     If Not folder Is Nothing Then
                         Return If(filter.EndsWith(IO.Path.DirectorySeparatorChar), New List(Of Item) From {folder}, New List(Of Item)).ToList() _
                             .Union((Await folder.GetItemsAsync()).Where(Function(f) _
@@ -47,7 +47,8 @@ Namespace Helpers
                     Else
                         Return Shell.SpecialFolders.Values.Where(Function(f) f.DisplayName.ToLower().StartsWith(fileName.ToLower()) _
                                                                       OrElse f.FullPath.ToLower().StartsWith(fileName.ToLower())) _
-                                                          .OrderBy(Function(f) f.DisplayName).ToList()
+                                                          .OrderBy(Function(f) f.DisplayName) _
+                                                          .Select(Function(f) f.Clone()).ToList()
                     End If
                 End Function
 
