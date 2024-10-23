@@ -68,22 +68,8 @@ Namespace Controls
             Me.PART_TextBox.IsEnabled = False
 
             If INVALID_VALUE.Equals(Me.SelectedValue) Then
-                Dim item As Item = Item.FromParsingName(Me.PART_TextBox.Text, Nothing)
+                Dim item As Item = Item.FromParsingNameDeepGetReverse(Me.PART_TextBox.Text)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                    Dim parent As Folder = item
-                    While Not parent Is Nothing
-                        If parent.LogicalParent Is Nothing AndAlso Not parent.Parent Is Nothing _
-                            AndAlso Not parent.Parent.FullPath = Shell.Desktop.FullPath Then
-                            parent.LogicalParent = parent.Parent
-                        End If
-                        parent = parent.Parent
-                        If Not parent Is Nothing Then
-                            Dim specialFolder As Folder = Shell.SpecialFolders.Values.ToList().FirstOrDefault(Function(f) f.FullPath = parent.FullPath)
-                            If Not specialFolder Is Nothing Then
-                                parent = specialFolder
-                            End If
-                        End If
-                    End While
                     Me.Folder = item
                 Else
                     System.Media.SystemSounds.Asterisk.Play()

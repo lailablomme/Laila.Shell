@@ -618,6 +618,29 @@ Public Class Item
         End If
     End Function
 
+    Public Shared Function FromParsingNameDeepGetReverse(parsingName As String) As Item
+        Dim item As Item = Item.FromParsingName(parsingName, Nothing)
+        If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+            Dim parent As Folder = item
+            While Not parent Is Nothing
+                If parent.LogicalParent Is Nothing AndAlso Not parent.Parent Is Nothing _
+                            AndAlso Not parent.Parent.FullPath = Shell.Desktop.FullPath Then
+                    parent.LogicalParent = parent.Parent
+                End If
+                parent = parent.Parent
+                If Not parent Is Nothing Then
+                    Dim specialFolder As Folder = Shell.SpecialFolders.Values.ToList().FirstOrDefault(Function(f) f.FullPath = parent.FullPath)?.Clone()
+                    If Not specialFolder Is Nothing Then
+                        parent = specialFolder
+                    End If
+                End If
+            End While
+            Return item
+        Else
+            Return Nothing
+        End If
+    End Function
+
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then
             Select Case e.Event

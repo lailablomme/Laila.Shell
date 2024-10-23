@@ -14,8 +14,7 @@ Public Class PinnedItems
             ' return pinned items
             Return collection.Query() _
                 .OrderBy(Function(f) f.Index).ToList() _
-                .Where(Function(f) IO.Directory.Exists(f.FullPath)) _
-                .Select(Function(f) Item.FromParsingNameDeepGet(f.FullPath)) _
+                .Select(Function(f) Item.FromParsingNameDeepGetReverse(f.FullPath)) _
                 .Where(Function(f) Not f Is Nothing) _
                 .Cast(Of Item).ToList()
         End Using
