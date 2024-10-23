@@ -243,10 +243,10 @@ Public Class Folder
                                 Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
                                 Dim newItem As Item
                                 If CBool(attr2 And SFGAO.FOLDER) Then
-                                    UIHelper.OnUIThread(
-                                            Sub()
-                                                newItem = makeNewFolder(shellItems(0))
-                                            End Sub)
+                                    'UIHelper.OnUIThread(
+                                    '        Sub()
+                                    newItem = makeNewFolder(shellItems(0))
+                                    'End Sub)
                                 Else
                                     newItem = makeNewItem(shellItems(0))
                                 End If
@@ -262,7 +262,7 @@ Public Class Folder
                                     End If
                                 End If
                                 enumShellItems.Next(1, shellItems, fetched)
-                                If count Mod 100 = 0 Then Thread.Sleep(1)
+                                'If count Mod 100 = 0 Then Thread.Sleep(1)
                                 count += 1
                             End While
                         End If
