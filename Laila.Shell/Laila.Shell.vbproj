@@ -177,6 +177,7 @@
     <None Remove="Images\rename16.png" />
     <None Remove="Images\sortasc.png" />
     <None Remove="Images\sortdesc.png" />
+    <None Remove="Interop\7z\7z.dll" />
   </ItemGroup>
 
   <ItemGroup>
@@ -189,6 +190,12 @@
       <Isolated>false</Isolated>
       <EmbedInteropTypes>true</EmbedInteropTypes>
     </COMReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="7z.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -242,7 +249,6 @@
     <Folder Include="Interop\ContextMenu\" />
     <Folder Include="Interop\Memory\" />
     <Folder Include="Interop\Windows\" />
-    <Folder Include="Interop\Properties\" />
   </ItemGroup>
 
 </Project>

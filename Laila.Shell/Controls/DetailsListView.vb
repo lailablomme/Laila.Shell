@@ -1,4 +1,5 @@
 ﻿Imports System.IO
+Imports System.IO.Compression
 Imports System.Runtime.InteropServices
 Imports System.Security.Cryptography.X509Certificates
 Imports System.Threading
@@ -12,6 +13,7 @@ Imports System.Windows.Shell
 Imports System.Xml
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.SevenZip
 
 Namespace Controls
     Public Class DetailsListView
@@ -325,47 +327,28 @@ Namespace Controls
                                         End If
                                         e2.IsHandled = True
                                     Case "laila.shell.createzip"
-                                        Dim zip As IStorage, ptrzip As IntPtr
-                                        Dim pidl As IntPtr, strname As String, pidlsource As IntPtr
-                                        'Functions.SHGetIDListFromObject(Marshal.GetIUnknownForObject(clickedItem._shellItem2), pidl)
-                                        'CType(clickedItem, Folder)._shellFolder.GetDisplayNameOf(pidl, SHGDN.INFOLDER, strName)
-                                        pidl = Functions.ILCreateFromPath(clickedItem.FullPath)
-                                        pidlsource = Functions.ILCreateFromPath("c:\map\ViewModels")
-                                        'pidl = Functions.ILFindLastID(pidl)
-                                        Dim df As IShellFolder, ptrsource As IntPtr, source As IStorage
-                                        Functions.SHGetDesktopFolder(df)
-                                        df.BindToStorage(pidl, IntPtr.Zero, GetType(IStorage).GUID, ptrzip)
-                                        df.BindToStorage(pidlsource, IntPtr.Zero, GetType(IStorage).GUID, ptrsource)
-                                        source = Marshal.GetTypedObjectForIUnknown(ptrsource, GetType(IStorage))
-                                        '                                        zip = Me.Folder._shellFolder
-                                        'zip = Activator.CreateInstance(Type.GetTypeFromCLSID(New Guid("{E88DCCE0-B7B3-11D1-A9F0-00AA0060FA31}")))
-                                        'Dim h As HRESULT = Functions.StgCreateStorageEx("c:\map\test.zip", STGM.STGM_CREATE Or STGM.STGM_READWRITE Or STGM.STGM_SHARE_EXCLUSIVE,
-                                        ' STGFMT.STGFMT_STORAGE, 0, IntPtr.Zero, 0,
-                                        ' GetType(IStorage).GUID, ptrzip)
-                                        zip = Marshal.GetTypedObjectForIUnknown(ptrzip, GetType(IStorage))
-                                        ' zip.SetClass(New Guid("{E88DCCE0-B7B3-11d1-A9F0-00AA0060FA31}"))
-                                        Dim folder As IStorage
-                                        'zip.CreateStorage("test", STGM.STGM_CREATE Or STGM.STGM_READWRITE, 0, 0, folder)
-                                        Dim txtfile As ComTypes.IStream, txtfileptr As IntPtr
-                                        'Dim h As HRESULT = zip.CreateStream("file2.txt", STGM.STGM_WRITE, 0, 0, txtfileptr)
-                                        'txtfile = Marshal.GetTypedObjectForIUnknown(txtfileptr, GetType(ComTypes.IStream))
-                                        source.MoveElementTo("file2.txt", zip, "testie.txt", 1)
-                                        Dim bytes() As Byte = Text.Encoding.Unicode.GetBytes("hello world")
-                                        ' Dim bytesWritten As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of Int32))
-                                        'txtfile.SetSize(bytes.Length)
-                                        'txtfile.Write(bytes, bytes.Length, bytesWritten)
-                                        ' txtfile.
-                                        txtfile.Commit(0)
-                                        ' Folder.Commit(0)
-                                        'Marshal.ReleaseComObject(folder)
-                                        'Marshal.ReleaseComObject(txtfile)
-                                        zip.Commit(0)
-                                        Marshal.ReleaseComObject(zip)
-                                        Marshal.ReleaseComObject(source)
-
-
-
-
+                                        Dim outArchive As IOutArchive
+                                        Dim h As HRESULT = SevenZip.Functions.CreateObject(Guids.CLSID_OutArchive, GetType(IOutArchive).GUID, outArchive)
+                                        Dim propKeys() As String = New String() {"m", "x", "mt"}
+                                        Dim propCompressionMethod As PROPVARIANT
+                                        PROPVARIANT.SetValue(propCompressionMethod, "Deflate")
+                                        Dim propCompressionLevel As PROPVARIANT
+                                        PROPVARIANT.SetValue(propCompressionLevel, Convert.ToUInt32(5))
+                                        Dim propThreadCount As PROPVARIANT
+                                        PROPVARIANT.SetValue(propThreadCount, Convert.ToUInt32(1))
+                                        Dim propValues() As PROPVARIANT = New PROPVARIANT() {
+                                           propCompressionMethod, propCompressionLevel, propThreadCount
+                                        }
+                                        Dim vptr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of PROPVARIANT) * propValues.Count)
+                                        For i = 0 To propValues.Count - 1
+                                            Marshal.StructureToPtr(propValues(i), IntPtr.Add(vptr, Marshal.SizeOf(Of PROPVARIANT) * i), False)
+                                        Next
+                                        h = CType(outArchive, ISetProperties).SetProperties _
+                                            (propKeys, vptr, Convert.ToUInt32(propKeys.Length))
+                                        Dim outputStream As New FileOutStream("c:\map\test3.zip")
+                                        Dim updateCallback As New ArchiveUpdateCallback(New List(Of String) From {"c:\map\file1.txt"})
+                                        outArchive.UpdateItems(outputStream, CUInt(1), updateCallback)
+                                        outputStream.Close()
                                 End Select
                             End Sub
 

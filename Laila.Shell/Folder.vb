@@ -26,9 +26,14 @@ Public Class Folder
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
-        Dim ptr2 As IntPtr
-        shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, ptr2)
-        Return Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IShellFolder))
+        Dim result As IShellFolder
+        UIHelper.OnUIThread(
+            Sub()
+                Dim ptr2 As IntPtr
+                shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, ptr2)
+                result = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IShellFolder))
+            End Sub)
+        Return result
     End Function
 
     Friend Shared Function GetIShellFolderFromPidl(pidl As IntPtr, bindingParent As Folder) As IShellFolder
@@ -428,9 +433,7 @@ Public Class Folder
                         Dim func As Func(Of Task) =
                             Async Function() As Task
                                 SyncLock _lock
-                                    If _items.Count = 0 Then
-                                        updateItems(_items, False)
-                                    End If
+                                    updateItems(_items, False)
                                 End SyncLock
                             End Function
 
