@@ -4,7 +4,7 @@ Imports System.IO
 Imports System.Runtime.InteropServices
 
 Namespace SevenZip
-    Public Class FileInStream
+    Public Class SuquentialInStream
         Implements ISequentialInStream
 
         Private fileStream As FileStream

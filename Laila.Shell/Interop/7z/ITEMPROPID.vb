@@ -1,5 +1,5 @@
 ﻿Namespace SevenZip
-    Public Enum PROPID As UInteger
+    Public Enum ITEMPROPID As UInteger
         kpidNoProperty = 0
         kpidMainSubfile = 1
         kpidHandlerItemIndex = 2

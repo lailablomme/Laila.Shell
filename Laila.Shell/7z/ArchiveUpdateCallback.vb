@@ -8,34 +8,36 @@ Namespace SevenZip
         Implements IArchiveUpdateCallback
 
         Private files As List(Of String)
+        Private _existingFileCount As UInt32
 
         ' Constructor that accepts a list of files to be compressed
-        Public Sub New(fileList As List(Of String))
+        Public Sub New(fileList As List(Of String), existingFileCount As UInt32)
             files = fileList
+            _existingFileCount = existingFileCount
         End Sub
 
         ' This method provides file properties such as the path and size
-        Public Function GetProperty(index As UInt32, propID As PROPID, ByRef value As PROPVARIANT) As Integer Implements IArchiveUpdateCallback.GetProperty
-            Dim filePath As String = files(CInt(index))
+        Public Function GetProperty(index As UInt32, propID As ITEMPROPID, ByRef value As PROPVARIANT) As Integer Implements IArchiveUpdateCallback.GetProperty
+            Dim filePath As String = files(CInt(index) - _existingFileCount)
 
             Select Case propID
-                Case PROPID.kpidPath
+                Case ITEMPROPID.kpidPath
                     value = New PROPVARIANT()
                     Dim fileInfo As New FileInfo(filePath)
                     PROPVARIANT.SetValue(value, fileInfo.Name)
-                Case PROPID.kpidSize
+                Case ITEMPROPID.kpidSize
                     Dim fileInfo As New FileInfo(filePath)
                     value = New PROPVARIANT()
                     PROPVARIANT.SetValue(value, CType(fileInfo.Length, ULong))
-                Case PROPID.kpidAttrib
+                Case ITEMPROPID.kpidAttrib
                     Dim fileInfo As New FileInfo(filePath)
                     value = New PROPVARIANT()
                     PROPVARIANT.SetValue(value, CType(fileInfo.Attributes, UInt32))
-                Case PROPID.kpidMTime
+                Case ITEMPROPID.kpidMTime
                     Dim fileInfo As New FileInfo(filePath)
                     value = New PROPVARIANT()
                     PROPVARIANT.SetValue(value, fileInfo.LastWriteTimeUtc)
-                Case PROPID.kpidIsDir
+                Case ITEMPROPID.kpidIsDir
                     value = New PROPVARIANT()
                     PROPVARIANT.SetValue(value, False)
             End Select
@@ -45,9 +47,9 @@ Namespace SevenZip
 
         ' Provides the stream of the file to be compressed
         Public Function GetStream(index As UInt32, ByRef outStream As ISequentialInStream) As Integer Implements IArchiveUpdateCallback.GetStream
-            Dim filePath As String = files(CInt(index))
+            Dim filePath As String = files(CInt(index) - _existingFileCount)
             If File.Exists(filePath) Then
-                outStream = New FileInStream(filePath)
+                outStream = New SuquentialInStream(filePath)
                 Return 0 ' S_OK
             Else
                 outStream = Nothing
@@ -57,9 +59,15 @@ Namespace SevenZip
 
         ' Other methods of IArchiveUpdateCallback can be left unimplemented if not needed
         Public Function GetUpdateItemInfo(index As UInt32, ByRef newData As Integer, ByRef newProperties As Integer, ByRef indexInArchive As UInt32) As Integer Implements IArchiveUpdateCallback.GetUpdateItemInfo
-            newData = 1 ' Always send new data
-            newProperties = 1 ' Always send new properties
-            indexInArchive = UInt32.MaxValue ' New item
+            If index < _existingFileCount Then
+                newData = 0 ' Always send new data
+                newProperties = 0 ' Always send new properties
+                indexInArchive = index
+            Else
+                newData = 1 ' Always send new data
+                newProperties = 1 ' Always send new properties
+                indexInArchive = UInt32.MaxValue ' New item
+            End If
             Return 0 ' S_OK
         End Function
 
