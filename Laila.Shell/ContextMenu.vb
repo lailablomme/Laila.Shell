@@ -376,7 +376,7 @@ Public Class ContextMenu
                     End If
                 End If
 
-                Debug.WriteLine(header & "  " & id)
+                Debug.WriteLine(header & "  " & id & vbTab & cmd.ToString())
 
                 mii = New MENUITEMINFO()
                 mii.cbSize = CUInt(Marshal.SizeOf(mii))
