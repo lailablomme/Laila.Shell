@@ -345,12 +345,14 @@ Public Class ContextMenu
 
             mii = New MENUITEMINFO()
             mii.cbSize = CUInt(Marshal.SizeOf(mii))
-            mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE
+            mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE Or MIIM.MIIM_CHECKMARKS
             Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
             Dim bitmapSource As BitmapSource
             If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
                 bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+            ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
+                bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
             Else
                 bitmapSource = Nothing
             End If
