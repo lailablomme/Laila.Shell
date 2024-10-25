@@ -117,13 +117,6 @@ Public Class ContextMenu
                         End If
                 End Select
             Next
-            _menu.Items.Add(New MenuItem() With {
-                .Header = "Create .ZIP folder",
-                .Icon = Nothing,
-                .Tag = -1 & vbTab & "laila.shell.createzip",
-                .IsEnabled = True,
-                .FontWeight = FontWeights.Normal
-            })
             Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "cut")
             If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
             menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "copy")
