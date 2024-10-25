@@ -7,6 +7,12 @@ Imports System.Runtime.InteropServices.ComTypes
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("kernel32.dll", SetLastError:=True, CharSet:=CharSet.Unicode)>
+    Public Shared Function SetVolumeLabelW(
+    <MarshalAs(UnmanagedType.LPWStr)> lpRootPathName As String,
+    <MarshalAs(UnmanagedType.LPWStr)> lpVolumeName As String
+) As Boolean
+    End Function
     <DllImport("ole32.dll", SetLastError:=True)>
     Public Shared Function OleSetClipboard(ByVal pDataObj As IDataObject) As Integer
     End Function

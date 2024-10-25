@@ -482,14 +482,29 @@ Public Class ContextMenu
     End Sub
 
     Public Sub DoRename(point As Point, width As Double, item As Item, grid As Grid)
+        Dim originalName As String, isDrive As Boolean
+
         Dim doRename As Action(Of String) =
             Sub(newName As String)
-                If Not item.FullPath.Substring(item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1) = newName Then
-                    Dim fileOperation As IFileOperation
-                    Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                    fileOperation.RenameItem(item._shellItem2, newName, Nothing)
-                    fileOperation.PerformOperations()
-                    Marshal.ReleaseComObject(fileOperation)
+                If Not originalName = newName Then
+                    ' rename item
+                    If isDrive Then
+                        Functions.SetVolumeLabelW(item.FullPath, newName)
+                        Shell.RaiseNotificationEvent(Me, New NotificationEventArgs() With {
+                                                             .Item1Path = item.FullPath, .[Event] = SHCNE.UPDATEITEM})
+                    Else
+                        Dim fileOperation As IFileOperation
+                        Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
+                        fileOperation.RenameItem(item._shellItem2, newName, Nothing)
+                        fileOperation.PerformOperations()
+                        Marshal.ReleaseComObject(fileOperation)
+
+                        ' notify pinned items & frequent folders
+                        Dim newFullPath As String =
+                        item.FullPath.Substring(0, item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1) + newName
+                        PinnedItems.RenameItem(item.FullPath, newFullPath)
+                        FrequentFolders.RenameItem(item.FullPath, newFullPath)
+                    End If
                 End If
             End Sub
 
@@ -502,7 +517,13 @@ Public Class ContextMenu
             .Width = width
         }
         textBox.MaxLength = 260
-        textBox.Text = item.FullPath.Substring(item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1)
+        If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
+            isDrive = True
+            item._shellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
+        Else
+            originalName = item.FullPath.Substring(item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1)
+        End If
+        textBox.Text = originalName
         grid.Children.Add(textBox)
         textBox.Focus()
 

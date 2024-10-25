@@ -92,6 +92,19 @@ Public Class PinnedItems
         End Using
     End Sub
 
+    Public Shared Sub RenameItem(oldFullPath As String, newFullPath As String)
+        Using db = New LiteDatabase(getDBFileName())
+            ' update in db
+            Dim collection As ILiteCollection(Of PinnedItem) = db.GetCollection(Of PinnedItem)("PinnedItems")
+            Dim pinnedItems As IEnumerable(Of PinnedItem) = collection.Find(Function(f) f.FullPath.ToLower().Equals(oldFullPath.ToLower()))
+            If pinnedItems.Count = 1 Then
+                Dim pinnedItem As PinnedItem = pinnedItems(0)
+                pinnedItem.FullPath = newFullPath
+                collection.Update(pinnedItem)
+            End If
+        End Using
+    End Sub
+
     Private Shared Function getDBFileName() As String
         Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
         If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)

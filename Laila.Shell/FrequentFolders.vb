@@ -2,6 +2,42 @@
 Imports LiteDB
 
 Public Class FrequentFolders
+    Public Shared Function GetMostFrequent() As IEnumerable(Of Folder)
+        Using db = New LiteDatabase(getDBFileName())
+            Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
+
+            ' only keep folders accessed in the last 10 days
+            Dim foldersToDelete As List(Of FrequentFolder) = collection.Query().ToList()
+            foldersToDelete = foldersToDelete _
+                .OrderByDescending(Function(f) f.LastAccessedDateTime) _
+                .Where(Function(f) (DateTime.Now - f.LastAccessedDateTime).TotalDays > 10) _
+                .Skip(100).ToList()
+            For Each deleteFolder In foldersToDelete
+                collection.Delete(deleteFolder.Id)
+            Next
+
+            ' return most frequent
+            Dim mostFrequent1 As List(Of FrequentFolder) = collection.Query() _
+                .OrderByDescending(Function(f) f.MinutesSpent).ToList() _
+                .Where(Function(f) IO.Directory.Exists(f.FullPath)).ToList()
+
+            Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
+            Dim count As Integer = 0
+            For Each folder In mostFrequent1
+                Dim f As Folder = Item.FromParsingNameDeepGetReverse(folder.FullPath)
+                If Not f Is Nothing AndAlso Not PinnedItems.GetIsPinned(f) Then
+                    mostFrequent2.Add(f)
+                    count += 1
+                    If count = 5 Then Exit For
+                ElseIf Not f Is Nothing Then
+                    f.Dispose()
+                End If
+            Next
+
+            Return mostFrequent2
+        End Using
+    End Function
+
     Public Shared Sub Track(folder As Folder)
         ' register with os
         Functions.SHAddToRecentDocs(SHARD.SHARD_PATHW, folder.FullPath)
@@ -49,41 +85,18 @@ Public Class FrequentFolders
         End Using
     End Sub
 
-    Public Shared Function GetMostFrequent() As IEnumerable(Of Folder)
+    Public Shared Sub RenameItem(oldFullPath As String, newFullPath As String)
         Using db = New LiteDatabase(getDBFileName())
+            ' update in db
             Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
-
-            ' only keep folders accessed in the last 10 days
-            Dim foldersToDelete As List(Of FrequentFolder) = collection.Query().ToList()
-            foldersToDelete = foldersToDelete _
-                .OrderByDescending(Function(f) f.LastAccessedDateTime) _
-                .Where(Function(f) (DateTime.Now - f.LastAccessedDateTime).TotalDays > 10) _
-                .Skip(100).ToList()
-            For Each deleteFolder In foldersToDelete
-                collection.Delete(deleteFolder.Id)
-            Next
-
-            ' return most frequent
-            Dim mostFrequent1 As List(Of FrequentFolder) = collection.Query() _
-                .OrderByDescending(Function(f) f.MinutesSpent).ToList() _
-                .Where(Function(f) IO.Directory.Exists(f.FullPath)).ToList()
-
-            Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
-            Dim count As Integer = 0
-            For Each folder In mostFrequent1
-                Dim f As Folder = Item.FromParsingNameDeepGetReverse(folder.FullPath)
-                If Not f Is Nothing AndAlso Not PinnedItems.GetIsPinned(f) Then
-                    mostFrequent2.Add(f)
-                    count += 1
-                    If count = 5 Then Exit For
-                ElseIf Not f Is Nothing Then
-                    f.Dispose()
-                End If
-            Next
-
-            Return mostFrequent2
+            Dim frequentFolders As IEnumerable(Of FrequentFolder) = collection.Find(Function(f) f.FullPath.ToLower().Equals(oldFullPath.ToLower()))
+            If frequentFolders.Count = 1 Then
+                Dim frequentFolder As FrequentFolder = frequentFolders(0)
+                frequentFolder.FullPath = newFullPath
+                collection.Update(frequentFolder)
+            End If
         End Using
-    End Function
+    End Sub
 
     Private Shared Function getDBFileName() As String
         Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")

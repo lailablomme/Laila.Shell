@@ -15,7 +15,7 @@ Public Interface IShellItem2
     Function GetParent(<MarshalAs(UnmanagedType.Interface)> ByRef ppsi As IShellItem) As Integer
 
     <PreserveSig>
-    Function GetDisplayName(<[In]> sigdnName As Integer, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String) As Integer
+    Function GetDisplayName(<[In]> sigdnName As UInteger, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String) As Integer
 
     Sub GetAttributes(<[In]> sfgaoMask As Integer, ByRef psfgaoAttribs As Integer)
 

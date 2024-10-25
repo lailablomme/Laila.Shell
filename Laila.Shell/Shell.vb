@@ -166,4 +166,8 @@ Public Class Shell
     Friend Shared Sub RaiseFolderNotificationEvent(sender As Object, e As FolderNotificationEventArgs)
         RaiseEvent FolderNotification(sender, e)
     End Sub
+
+    Friend Shared Sub RaiseNotificationEvent(sender As Object, e As NotificationEventArgs)
+        RaiseEvent Notification(sender, e)
+    End Sub
 End Class

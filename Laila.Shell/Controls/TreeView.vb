@@ -387,9 +387,15 @@ Namespace Controls
                             PART_ListBox.ContextMenu = Nothing
                         End If
                     ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 Then
-                        If Not clickedItem Is Nothing AndAlso TypeOf clickedItem Is Folder Then
-                            CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
-                            e.Handled = True
+                        If Not clickedItem Is Nothing Then
+                            If TypeOf clickedItem Is Folder Then
+                                CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
+                                e.Handled = True
+                            Else
+                                _menu = New Laila.Shell.ContextMenu()
+                                _menu.GetContextMenu(clickedItem.Parent, {clickedItem}, False)
+                                _menu.InvokeCommand(_menu.DefaultId)
+                            End If
                         End If
                     ElseIf e.LeftButton = MouseButtonState.Pressed Then
                         If Not clickedItem Is Nothing Then

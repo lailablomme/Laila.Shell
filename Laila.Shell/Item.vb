@@ -630,8 +630,8 @@ Public Class Item
 
     Public Shared Function FromParsingNameDeepGetReverse(parsingName As String) As Item
         Dim item As Item = Item.FromParsingName(parsingName, Nothing)
-        If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-            Dim parent As Folder = item
+        If Not item Is Nothing Then
+            Dim parent As Item = item
             While Not parent Is Nothing
                 If parent.LogicalParent Is Nothing AndAlso Not parent.Parent Is Nothing _
                             AndAlso Not parent.Parent.FullPath = Shell.Desktop.FullPath Then

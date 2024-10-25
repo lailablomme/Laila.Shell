@@ -31,6 +31,9 @@
                             <DataTrigger Binding="{Binding HasSubFolders}" Value="False">
                                 <Setter Property="ToggleButton.Visibility" Value="Hidden" />
                             </DataTrigger>
+                            <DataTrigger Binding="{Binding HasSubFolders}" Value="{x:Null}">
+                                <Setter Property="ToggleButton.Visibility" Value="Hidden" />
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding IsExpanded}" Value="True">
                                 <Setter Property="ToggleButton.Visibility" Value="Visible" />
                             </DataTrigger>
