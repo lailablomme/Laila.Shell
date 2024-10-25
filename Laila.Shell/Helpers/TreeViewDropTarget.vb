@@ -10,6 +10,7 @@ Imports System.Windows.Controls
 Imports System.Windows.Media.Imaging
 Imports System.Windows.Media
 Imports Laila.Shell.Controls
+Imports System.Windows.Input
 
 Public Class TreeViewDropTarget
     Inherits BaseDropTarget
@@ -17,10 +18,11 @@ Public Class TreeViewDropTarget
     Private _dataObject As IDataObject
     Private _treeView As Laila.Shell.Controls.TreeView
     Private _lastOverItem As Item
+    Private _lastDropTarget As IDropTarget
     Private _dragOpenTimer As Timer
     Private _scrollTimer As Timer
     Private _scrollDirection As Boolean?
-    Private _fileList() As String
+    Private _prevSelectedItem As Item
 
     Public Sub New(treeView As Laila.Shell.Controls.TreeView)
         _treeView = treeView
@@ -29,9 +31,8 @@ Public Class TreeViewDropTarget
     Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
-
-        _fileList = Clipboard.GetFileNameList(pDataObj)
-
+        _prevSelectedItem = _treeView.SelectedItem
+        _treeView.PART_ListBox.Focus()
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
@@ -41,16 +42,23 @@ Public Class TreeViewDropTarget
 
     Public Overrides Function DragLeave() As Integer
         Debug.WriteLine("DragLeave")
-        If Not _prevOverTreeViewItem Is Nothing Then
-            _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
-            _prevOverTreeViewItem = Nothing
-        End If
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
         If Not _scrollTimer Is Nothing Then
             _scrollTimer.Dispose()
             _scrollDirection = Nothing
+        End If
+        If Not _lastDropTarget Is Nothing Then
+            Try
+                Return _lastDropTarget.DragLeave()
+            Finally
+                Marshal.ReleaseComObject(_lastDropTarget)
+                _lastDropTarget = Nothing
+                _treeView.SetSelectedItem(_prevSelectedItem)
+            End Try
+        Else
+            _treeView.SetSelectedItem(_prevSelectedItem)
         End If
         Return 0
     End Function
@@ -63,61 +71,21 @@ Public Class TreeViewDropTarget
             _scrollTimer.Dispose()
             _scrollDirection = Nothing
         End If
-
-        If Not _fileList Is Nothing Then
-            Dim overItem As Item = getOverListBoxItem(ptWIN32)?.DataContext
-
-            If CType(pdwEffect, DROPEFFECT) <> DROPEFFECT.DROPEFFECT_NONE _
-            AndAlso CType(pdwEffect, DROPEFFECT) <> DROPEFFECT.DROPEFFECT_SCROLL _
-            AndAlso Not (_fileList.Count = 1 _
-                AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = overItem.FullPath)) Then
-
-                If overItem.IsExecutable Then
-                    overItem.Execute("""" & String.Join(""" """, _fileList) & """")
-                ElseIf CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_MOVE) _
-                OrElse CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
-                    Dim sourceItems As List(Of IShellItem) = _fileList.Select(Function(f) CType(Item.FromParsingName(f, Nothing)?._shellItem2, IShellItem)).Where(Function(i) Not i Is Nothing).ToList()
-                    Dim sourcePidls As New List(Of IntPtr)()
-                    For Each item As IShellItem In sourceItems
-                        Dim pidl As IntPtr = IntPtr.Zero
-                        Dim punk As IntPtr = Marshal.GetIUnknownForObject(item)
-                        Functions.SHGetIDListFromObject(punk, pidl)
-                        sourcePidls.Add(pidl)
-                        Marshal.Release(punk)
-                    Next
-                    Dim sourceArray As IShellItemArray
-                    Functions.SHCreateShellItemArrayFromIDLists(sourcePidls.Count, sourcePidls.ToArray(), sourceArray)
-                    Dim fileOperation As IFileOperation
-                    Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                    Debug.WriteLine("CoCreateInstance returned " & h.ToString())
-                    If CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
-                        h = fileOperation.MoveItems(sourceArray, overItem._shellItem2)
-                    Else
-                        h = fileOperation.CopyItems(sourceArray, overItem._shellItem2)
-                    End If
-                    fileOperation.PerformOperations()
-                    _treeView.Folder = If(TypeOf overItem Is Folder, overItem, overItem.LogicalParent)
-                ElseIf CType(pdwEffect, DROPEFFECT).HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
-                End If
-
-                ' clean up data object
-                Dim format As New FORMATETC With {
-                    .cfFormat = ClipboardFormat.CF_HDROP,
-                    .ptd = IntPtr.Zero,
-                    .dwAspect = DVASPECT.DVASPECT_CONTENT,
-                    .lindex = -1,
-                    .tymed = TYMED.TYMED_HGLOBAL
-                }
-                Dim medium As STGMEDIUM
-                _dataObject.GetData(format, medium)
-                Functions.DragFinish(medium.unionmember)
-            End If
+        If Not _lastDropTarget Is Nothing Then
+            Try
+                Return _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
+            Finally
+                Marshal.ReleaseComObject(_lastDropTarget)
+                _lastDropTarget = Nothing
+                _treeView.SetSelectedItem(_prevSelectedItem)
+            End Try
+        Else
+            _treeView.SetSelectedItem(_prevSelectedItem)
         End If
-
         Return 0
     End Function
 
-    Private Function getOverListBoxItem(ptWIN32 As WIN32POINT) As ListBoxItem
+    Private Function getOverItem(ptWIN32 As WIN32POINT) As Item
         ' translate point to listview
         Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeView)
 
@@ -129,25 +97,9 @@ Public Class TreeViewDropTarget
         Else
             overTreeViewItem = UIHelper.GetParentOfType(Of ListBoxItem)(overObject)
         End If
-        Return If(Not overTreeViewItem Is Nothing AndAlso Not TypeOf overTreeViewItem.DataContext Is SeparatorFolder, overTreeViewItem, Nothing)
+        Return If(Not overTreeViewItem Is Nothing AndAlso Not TypeOf overTreeViewItem.DataContext Is SeparatorFolder,
+            overTreeViewItem.DataContext, Nothing)
     End Function
-
-    Private Function getDropEffect(overItem As Item) As DROPEFFECT
-        If Not _fileList Is Nothing Then
-            Return If(Not overItem Is Nothing _
-                    AndAlso Not (_fileList.Count = 1 AndAlso (_fileList(0) = overItem.FullPath OrElse IO.Path.GetDirectoryName(_fileList(0)) = overItem.FullPath)),
-                If(overItem.IsExecutable,
-                    DROPEFFECT.DROPEFFECT_COPY,
-                    If(Not overItem.Attributes.HasFlag(SFGAO.RDONLY) AndAlso TypeOf overItem Is Folder,
-                        DROPEFFECT.DROPEFFECT_MOVE,
-                        DROPEFFECT.DROPEFFECT_NONE)),
-                DROPEFFECT.DROPEFFECT_NONE)
-        Else
-            Return DROPEFFECT.DROPEFFECT_NONE
-        End If
-    End Function
-
-    Private _prevOverTreeViewItem As TreeViewItem, _isTopOrBottom As Boolean, _offset As Double
 
     Private Function dragPoint(grfKeyState As UInteger, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
         Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeView)
@@ -188,7 +140,7 @@ Public Class TreeViewDropTarget
             End If
         End If
 
-        Dim overItem As Item = getOverListBoxItem(ptWIN32)?.DataContext
+        Dim overItem As Item = getOverItem(ptWIN32)
 
         ' if we're over a folder, open it after two seconds of hovering
         If TypeOf overItem Is Folder Then
@@ -201,8 +153,12 @@ Public Class TreeViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                _treeView.SetSelectedFolder(overItem)
-                                CType(overItem, Folder).IsExpanded = True
+                                If Mouse.LeftButton = MouseButtonState.Pressed _
+                                    OrElse Mouse.RightButton = MouseButtonState.Pressed Then
+                                    _treeView.SetSelectedFolder(overItem)
+                                    CType(overItem, Folder).IsExpanded = True
+                                    _prevSelectedItem = overItem
+                                End If
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
@@ -214,50 +170,70 @@ Public Class TreeViewDropTarget
             End If
         End If
 
-        '' if we're over TreeView2, we might want to add pinned items
-        'Dim overTreeViewItem As TreeViewItem = getOverTreeViewItem(ptWIN32)
-        'If Not overTreeViewItem Is Nothing Then
-        '    Dim parentTreeView As TreeView = UIHelper.GetParentOfType(Of TreeView)(overTreeViewItem)
-        '    Const RESERVED_ITEM_SPACE As Integer = 18
-        '    If Not parentTreeView Is Nothing AndAlso parentTreeView.Equals(_treeView._view.treeView2) Then
-        '        Dim ptOver As Point = UIHelper.WIN32POINTToControl(ptWIN32, overTreeViewItem)
-        '        If ptOver.Y < 2 Or ptOver.Y > overTreeViewItem.ActualHeight - 2 Then
-        '            If _prevOverTreeViewItem Is Nothing OrElse
-        '            Not _prevOverTreeViewItem.Equals(overTreeViewItem) OrElse
-        '            _isTopOrBottom <> ptOver.Y < 2 Then
+        If Not overItem Is Nothing Then
+            If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
+                _lastOverItem = overItem
 
-        '                _isTopOrBottom = ptOver.Y < 2
-        '                If Not _prevOverTreeViewItem Is Nothing AndAlso
-        '                Not _prevOverTreeViewItem.Equals(overTreeViewItem) Then
-        '                    _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
-        '                    _prevOverTreeViewItem = Nothing
-        '                End If
+                Dim dropTarget As IDropTarget, pidl As IntPtr, shellItemPtr As IntPtr, dropTargetPtr As IntPtr
+                Try
+                    shellItemPtr = Marshal.GetIUnknownForObject(overItem._shellItem2)
+                    Functions.SHGetIDListFromObject(shellItemPtr, pidl)
+                    Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl)
+                    overItem.Parent._shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                        dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+                    Else
+                        dropTarget = Nothing
+                    End If
+                Finally
+                    If Not IntPtr.Zero.Equals(shellItemPtr) Then
+                        Marshal.Release(shellItemPtr)
+                    End If
+                    If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                        Marshal.Release(dropTargetPtr)
+                    End If
+                    If Not IntPtr.Zero.Equals(pidl) Then
+                        Marshal.FreeCoTaskMem(pidl)
+                    End If
+                End Try
 
-        '                If ptOver.Y < 2 Then
-        '                    overTreeViewItem.Margin = New Thickness(0, RESERVED_ITEM_SPACE, 0, 0)
-        '                    _prevOverTreeViewItem = overTreeViewItem
-        '                Else
-        '                    overTreeViewItem.Margin = New Thickness(0, 0, 0, RESERVED_ITEM_SPACE)
-        '                    _prevOverTreeViewItem = overTreeViewItem
-        '                End If
-        '            End If
-        '        Else
-        '            If Not _prevOverTreeViewItem Is Nothing Then
-        '                _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
-        '                _prevOverTreeViewItem = Nothing
-        '            End If
-        '        End If
-        '    Else
-        '        If Not _prevOverTreeViewItem Is Nothing Then
-        '            _prevOverTreeViewItem.Margin = New Thickness(0, 0, 0, 0)
-        '            _prevOverTreeViewItem = Nothing
-        '        End If
-        '    End If
-        'End If
-
-        _lastOverItem = overItem
-
-        pdwEffect = getDropEffect(overItem)
+                If Not dropTarget Is Nothing Then
+                    _treeView.SetSelectedItem(overItem)
+                    If Not _lastDropTarget Is Nothing Then
+                        _lastDropTarget.DragLeave()
+                    End If
+                    Try
+                        Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
+                    Catch ex As Exception
+                    Finally
+                        _lastDropTarget = dropTarget
+                    End Try
+                Else
+                    _treeView.SetSelectedItem(Nothing)
+                    pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                    If Not _lastDropTarget Is Nothing Then
+                        Try
+                            _lastDropTarget.DragLeave()
+                        Finally
+                            Marshal.ReleaseComObject(_lastDropTarget)
+                            _lastDropTarget = Nothing
+                        End Try
+                    End If
+                End If
+            ElseIf Not _lastDropTarget Is Nothing Then
+                Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
+            Else
+                pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+            End If
+        Else
+            _treeView.SetSelectedItem(Nothing)
+            _lastOverItem = Nothing
+            If Not _lastDropTarget Is Nothing Then
+                Marshal.ReleaseComObject(_lastDropTarget)
+                _lastDropTarget = Nothing
+            End If
+            pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+        End If
 
         Return HRESULT.Ok
     End Function

@@ -50,14 +50,30 @@ Public Class Drag
             Try
                 Debug.WriteLine("Drag.Start")
 
-                _dataObject = New DragDataObject()
-
-                ClipboardFormats.CFSTR_SHELLIDLIST.SetData(_dataObject, items)
-                ClipboardFormats.CF_HDROP.SetData(_dataObject, items)
-                If Not items.ToList().Exists(Function(i) TypeOf i Is Folder) Then
-                    ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(_dataObject, items)
-                    ClipboardFormats.CFSTR_FILECONTENTS.SetData(_dataObject, items)
-                End If
+                Dim shellItemPtr As IntPtr, folderpidl As IntPtr
+                Dim pidls(items.Count - 1) As IntPtr, lastpidl As IntPtr, pidlsPtr As IntPtr
+                Try
+                    shellItemPtr = Marshal.GetIUnknownForObject(items(0).Parent._shellItem2)
+                    Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
+                Finally
+                    If Not IntPtr.Zero.Equals(shellItemPtr) Then
+                        Marshal.Release(shellItemPtr)
+                    End If
+                End Try
+                pidlsPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of IntPtr) * items.Count)
+                For i = 0 To items.Count - 1
+                    Try
+                        shellItemPtr = Marshal.GetIUnknownForObject(items(i)._shellItem2)
+                        Functions.SHGetIDListFromObject(shellItemPtr, pidls(i))
+                        lastpidl = Functions.ILFindLastID(pidls(i))
+                        Marshal.WriteIntPtr(IntPtr.Add(pidlsPtr, Marshal.SizeOf(Of IntPtr) * i), lastpidl)
+                    Finally
+                        If Not IntPtr.Zero.Equals(shellItemPtr) Then
+                            Marshal.Release(shellItemPtr)
+                        End If
+                    End Try
+                Next
+                Functions.SHCreateDataObject(folderpidl, items.Count, pidlsPtr, IntPtr.Zero, GetType(IDataObject).GUID, _dataObject)
 
                 makeDragImageObjects(items)
                 InitializeDragImage()
@@ -81,7 +97,15 @@ Public Class Drag
 
                 Shell._w.Content = Nothing
                 Mouse.OverrideCursor = Nothing
-                CType(_dataObject, IDisposable).Dispose()
+                If Not IntPtr.Zero.Equals(folderpidl) Then
+                    Marshal.FreeCoTaskMem(folderpidl)
+                End If
+                For i = 0 To pidls.Count - 1
+                    If Not IntPtr.Zero.Equals(pidls(i)) Then
+                        Marshal.FreeCoTaskMem(pidls(i))
+                    End If
+                Next
+                Marshal.ReleaseComObject(_dataObject)
                 _dataObject = Nothing
             Finally
                 _isDragging = False

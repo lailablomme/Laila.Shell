@@ -157,8 +157,8 @@ Public Class Folder
         Me.IsLoading = True
 
         updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE,
-                    Function(item As Item) As Boolean
-                        Return Not items.FirstOrDefault(Function(i) i.FullPath = item.FullPath AndAlso Not i.disposedValue) Is Nothing
+                    Function(fullPath As String) As Boolean
+                        Return Not items.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue) Is Nothing
                     End Function,
                     Sub(item As Item)
                         items.Add(item)
@@ -187,7 +187,7 @@ Public Class Folder
     End Sub
 
     Protected Sub updateItems(flags As UInt32,
-                              exists As Func(Of Item, Boolean), add As Action(Of Item), remove As Action(Of Item),
+                              exists As Func(Of String, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getPathsBefore As Func(Of List(Of String)), getToBeRemoved As Func(Of List(Of String), List(Of String), List(Of Item)),
                               makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
                               updateProperties As Action(Of String))
@@ -245,33 +245,30 @@ Public Class Folder
                                 Dim attr2 As Integer = SFGAO.FOLDER
                                 shellItems(0).GetAttributes(attr2, attr2)
                                 Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
-                                Dim newItem As Item
-                                If CBool(attr2 And SFGAO.FOLDER) Then
-                                    newItem = makeNewFolder(shellItems(0))
-                                Else
-                                    newItem = makeNewItem(shellItems(0))
-                                End If
-                                If Not newItem Is Nothing Then
-                                    pathsAfter.Add(newItem.FullPath)
-                                End If
-                                If Not newItem Is Nothing Then
-                                    If Not exists(newItem) Then
-                                        toAdd.Add(newItem)
+                                pathsAfter.Add(fullPath)
+                                If Not exists(fullPath) Then
+                                    Dim newItem As Item
+                                    If CBool(attr2 And SFGAO.FOLDER) Then
+                                        newItem = makeNewFolder(shellItems(0))
                                     Else
-                                        toUpdate.Add(newItem.FullPath)
-                                        newItem.Dispose()
+                                        newItem = makeNewItem(shellItems(0))
                                     End If
+                                    toAdd.Add(newItem)
+                                Else
+                                    toUpdate.Add(fullPath)
+                                    Marshal.ReleaseComObject(shellItems(0))
                                 End If
                                 enumShellItems.Next(1, shellItems, fetched)
                             End While
                         End If
                     Catch ex As Exception
-                        Dim dummy As DummyFolder = New DummyFolder(ex.Message, Me)
-                        dummy.IsLoading = False
-                        dummy._icon.Add(16, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error16.png"))
-                        dummy._icon.Add(32, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error32.png"))
-                        toAdd.Add(dummy)
-                        pathsAfter.Add(dummy.FullPath)
+                        Dim i = 9
+                        'Dim dummy As DummyFolder = New DummyFolder(ex.Message, Me)
+                        'dummy.IsLoading = False
+                        'dummy._icon.Add(16, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error16.png"))
+                        'dummy._icon.Add(32, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error32.png"))
+                        'toAdd.Add(dummy)
+                        'pathsAfter.Add(dummy.FullPath)
                     Finally
                         If Not enumShellItems Is Nothing Then
                             Marshal.ReleaseComObject(enumShellItems)
@@ -291,22 +288,19 @@ Public Class Folder
                     Dim attr2 As Integer = SFGAO.FOLDER
                     _shellFolder.GetAttributesOf(1, pidl, attr2)
                     Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), _shellFolder)
-                    Dim path As String = Item.GetFullPathFromShellItem2(shellItem2)
-                    Dim newItem As Item
-                    If CBool(attr2 And SFGAO.FOLDER) Then
-                        UIHelper.OnUIThread(
-                                Sub()
-                                    newItem = makeNewFolder(shellItem2)
-                                End Sub)
-                    Else
-                        newItem = makeNewItem(shellItem2)
-                    End If
-                    pathsAfter.Add(newItem.FullPath)
-                    If Not exists(newItem) Then
+                    Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItem2)
+                    pathsAfter.Add(fullPath)
+                    If Not exists(fullPath) Then
+                        Dim newItem As Item
+                        If CBool(attr2 And SFGAO.FOLDER) Then
+                            newItem = makeNewFolder(shellItem2)
+                        Else
+                            newItem = makeNewItem(shellItem2)
+                        End If
                         toAdd.Add(newItem)
                     Else
-                        toUpdate.Add(newItem.FullPath)
-                        newItem.Dispose()
+                        toUpdate.Add(fullPath)
+                        Marshal.ReleaseComObject(shellItem2)
                     End If
                     If count Mod 100 = 0 Then Thread.Sleep(1)
                     count += 1

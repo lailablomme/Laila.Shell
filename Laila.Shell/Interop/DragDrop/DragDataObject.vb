@@ -337,7 +337,14 @@ Public Class DragDataObject
 
     Public Function EnumFormatEtc(ByVal direction As DATADIR, ByRef ppenumFormatEtc As ComTypes.IEnumFORMATETC) As Integer Implements IDataObject.EnumFormatEtc
         Debug.WriteLine("EnumFormatEtc")
-        ppenumFormatEtc = New EnumFORMATETC(_data.Select(Function(v) v.Item1).ToArray())
+        Dim formats As List(Of FORMATETC) = New List(Of FORMATETC)()
+        For Each f In _data.Select(Function(v) v.Item1)
+            If Not formats.Exists(Function(fmt) compare(fmt, f)) Then
+                formats.Add(f)
+            End If
+        Next
+
+        ppenumFormatEtc = New EnumFORMATETC(formats.ToArray())
         Return 0
     End Function
 
@@ -405,6 +412,7 @@ Public Class EnumFORMATETC
     End Function
 
     Public Function Reset() As Integer Implements ComTypes.IEnumFORMATETC.Reset
+        Debug.WriteLine("EnumFORMATETC.Reset")
         currentIndex = 0
     End Function
 
@@ -413,14 +421,20 @@ Public Class EnumFORMATETC
     End Sub
 
     Public Function [Next](celt As Integer, rgelt() As FORMATETC, pceltFetched() As Integer) As Integer Implements ComTypes.IEnumFORMATETC.Next
+        Debug.WriteLine("EnumFORMATETC.Next " & celt)
+        If celt = 64 Then
+            Dim i = 9
+        End If
         Dim fetched As Integer = 0
         While currentIndex < formats.Length AndAlso fetched < celt
             rgelt(fetched) = formats(currentIndex)
             currentIndex += 1
             fetched += 1
         End While
-        ReDim Preserve pceltFetched(0)
-        pceltFetched(0) = fetched
-        Return If(fetched = celt, 0, 1) ' S_OK or S_FALSE
+        'ReDim Preserve pceltFetched(0)
+        If Not pceltFetched Is Nothing Then
+            pceltFetched(0) = fetched
+        End If
+        Return If(fetched <> celt, 1, 0) ' S_OK or S_FALSE
     End Function
 End Class

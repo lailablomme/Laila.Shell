@@ -20,7 +20,7 @@ Namespace Controls
         Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private PART_Grid As Grid
-        Private PART_ListBox As ListBox
+        Friend PART_ListBox As ListBox
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _isSettingSelectedFolder As Boolean
         Private _mousePointDown As Point
@@ -213,11 +213,11 @@ Namespace Controls
         End Function
 
         Protected Overridable Sub OnSelectionChanged()
-            If Not Me.SelectedItem Is Nothing Then
-                If TypeOf Me.SelectedItem Is Folder AndAlso Not Me.SelectedItem.Equals(Me.Folder) Then
-                    Me.Folder = Me.SelectedItem
-                End If
-            End If
+            'If Not Me.SelectedItem Is Nothing Then
+            '    If TypeOf Me.SelectedItem Is Folder AndAlso Not Me.SelectedItem.Equals(Me.Folder) Then
+            '        Me.Folder = Me.SelectedItem
+            '    End If
+            'End If
         End Sub
 
         Public ReadOnly Property SelectedItem As Item
@@ -229,6 +229,14 @@ Namespace Controls
                 End If
             End Get
         End Property
+
+        Public Sub SetSelectedItem(value As Item)
+            If value Is Nothing Then
+                _selectionHelper.SetSelectedItems(New Item() {})
+            Else
+                _selectionHelper.SetSelectedItems(New Item() {value})
+            End If
+        End Sub
 
         Public Async Function SetSelectedFolder(folder As Folder, Optional callback As Action(Of Folder) = Nothing) As Task
             If Not _isSettingSelectedFolder Then
@@ -277,6 +285,7 @@ Namespace Controls
                                         Await func(en.Current, cb)
                                     Else
                                         _selectionHelper.SetSelectedItems({tf})
+                                        Me.Folder = tf
 
                                         If Not callback Is Nothing Then
                                             callback(tf)
@@ -337,7 +346,10 @@ Namespace Controls
                     Me.PART_ListBox.Focus()
                     If e.RightButton = MouseButtonState.Pressed Then
                         If Not clickedItem Is Nothing Then
-                            If Me.SelectedItem Is Nothing Then _selectionHelper.SetSelectedItems({clickedItem})
+                            If Me.SelectedItem Is Nothing Then
+                                _selectionHelper.SetSelectedItems({clickedItem})
+                                If TypeOf clickedItem Is Folder Then Me.SetSelectedFolder(clickedItem)
+                            End If
 
                             Dim parent As Folder = clickedItem.Parent
                             If parent Is Nothing Then parent = Shell.Desktop
@@ -349,6 +361,7 @@ Namespace Controls
                                         Case "open"
                                             If TypeOf clickedItem Is Folder Then
                                                 _selectionHelper.SetSelectedItems({clickedItem})
+                                                Me.SetSelectedFolder(clickedItem)
                                                 e2.IsHandled = True
                                             End If
                                         Case "rename"
@@ -384,6 +397,7 @@ Namespace Controls
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                             Else
                                 _selectionHelper.SetSelectedItems({clickedItem})
+                                If TypeOf clickedItem Is Folder Then Me.SetSelectedFolder(clickedItem)
                             End If
                             e.Handled = True
                         End If

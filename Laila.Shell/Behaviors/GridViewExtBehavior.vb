@@ -20,7 +20,7 @@ Namespace Behaviors
 
         Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 
-        Private Const COLUMN_MARGIN As Double = 2
+        Private Const COLUMN_MARGIN As Double = 5
 
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(ColumnsInData), GetType(GridViewExtBehavior), New FrameworkPropertyMetadata(Nothing, AddressOf OnColumnsInChanged))
 
@@ -157,8 +157,7 @@ Namespace Behaviors
         Private _dontWrite As Boolean = False
         Private _clickedColumn As GridViewColumn
         Private _groupByPropertyNames As List(Of String) = New List(Of String)()
-        Private _skipResize As Boolean
-        Private _timer As Timer
+        Private _scrollViewer As ScrollViewer
 
         Public ReadOnly Property ColumnIndexFor(propertyName As String) As Integer
             Get
@@ -180,40 +179,11 @@ Namespace Behaviors
 
             ' auto resize column when rebound/item added
             AddHandler _listView.ItemContainerGenerator.StatusChanged, AddressOf icgStatusChanged
-            TypeDescriptor.GetProperties(_listView)("ItemsSource") _
-                .AddValueChanged(_listView,
-                    Sub()
-                        _skipResize = False
-                        resizeVisibleRows()
-
-                        If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
-                            AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
-                                    Sub(sender2 As Object, e2 As NotifyCollectionChangedEventArgs)
-                                        Select Case e2.Action
-                                            Case NotifyCollectionChangedAction.Add
-                                                _skipResize = False
-                                        End Select
-                                    End Sub
-                        End If
-
-                        If _isLoaded Then regroup()
-                    End Sub)
-            If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
-                AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
-                        Sub(sender2 As Object, e2 As NotifyCollectionChangedEventArgs)
-                            Select Case e2.Action
-                                Case NotifyCollectionChangedAction.Add
-                                    _skipResize = False
-                            End Select
-                        End Sub
-            End If
 
             AddHandler _listView.Loaded,
                 Sub(sender As Object, e As EventArgs)
-                    Dim hrps As IEnumerable(Of GridViewHeaderRowPresenter) = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)
-                    If hrps.Count > 0 Then
-                        _headerRowPresenter = hrps(0)
-                    End If
+                    _headerRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
+                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
                     _isLoaded = True
 
                     If Not Me.ColumnsIn Is Nothing Then
@@ -258,9 +228,6 @@ Namespace Behaviors
                                 Next
                                 Me.NotifyOfPropertyChange("ColumnIndexFor")
 
-                                _skipResize = False
-                                resizeVisibleRows()
-
                                 ' write state
                                 writeState()
                             End If
@@ -280,8 +247,9 @@ Namespace Behaviors
                         Dim column As GridViewColumn = Me.ColumnsIn.Items.SingleOrDefault(Function(c) getColumnName(c) = columnState.Name)
                         If Not column Is Nothing Then
                             _activeColumns.Add(New ActiveColumnStateData() With {
-                            .Column = column, .IsVisible = columnState.IsVisible, .Width = columnState.Width
-                        })
+                                .Column = column, .IsVisible = columnState.IsVisible, .Width = columnState.Width
+                            })
+                            column.Width = 0
                         End If
                     Next
                 End If
@@ -345,7 +313,7 @@ Namespace Behaviors
                             If e.PropertyName = "Width" Then
                                 If Not _dontWrite Then
                                     ' keep track of autosize columns
-                                    column.Width = column.Column.Width
+                                    column.Width = If(column.Column.Width.Equals(Double.NaN), 0, column.Column.Width)
 
                                     ' write state
                                     writeState()
@@ -390,7 +358,7 @@ Namespace Behaviors
             Dim i As Integer = 0
             For Each column In _activeColumns.Where(Function(c) c.IsVisible)
                 ' init width and visibility
-                column.Column.Width = column.Width
+                column.Column.Width = If(column.Width.Equals(Double.NaN), 0, column.Width)
 
                 SetColumnIndex(column.Column, i)
                 column.OriginalIndex = i
@@ -473,8 +441,6 @@ Namespace Behaviors
                             End If
                         End If
                     End If
-                    _skipResize = False
-                    resizeVisibleRows()
                 End If
             End If
         End Sub
@@ -642,18 +608,15 @@ Namespace Behaviors
             If _listView.ItemContainerGenerator.Status = Primitives.GeneratorStatus.ContainersGenerated Then
                 UIHelper.OnUIThreadAsync(
                     Async Sub()
-                        Await Task.Delay(5)
                         resizeVisibleRows()
-                    End Sub)
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
         End Sub
 
         Private Sub resizeVisibleRows()
             If Not _headerRowPresenter Is Nothing Then
                 Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
-                If Not _skipResize AndAlso rows.Count > 0 AndAlso
-                    (rows.Sum(Function(r) r.DesiredSize.Height) >= _listView.DesiredSize.Height OrElse _listView.Items.Count = rows.Count) Then
-                    _skipResize = True
+                If _scrollViewer.VerticalOffset = 0 AndAlso rows.Count > 0 Then
                     resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
                 End If
 
@@ -721,7 +684,6 @@ Namespace Behaviors
                             End If
                         End If
 
-                        If width = 0 Then width = Double.NaN
                         activeCol.Column.Width = width
                     Next
                 End If

@@ -1,6 +1,10 @@
+Imports System.ComponentModel.DataAnnotations
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Windows
+Imports System.Windows.Annotations
+Imports System.Windows.Forms
+Imports System.Windows.Forms.LinkLabel
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
@@ -86,8 +90,10 @@ Public Class Item
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = GetFullPathFromShellItem2(shellItem2)
-            _attributes = SFGAO.HIDDEN Or SFGAO.COMPRESSED Or SFGAO.CANCOPY Or SFGAO.CANMOVE _
-                Or SFGAO.CANLINK Or SFGAO.HASSUBFOLDER Or SFGAO.ISSLOW
+            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+                Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
+                Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
+                Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
             _shellItem2.GetAttributes(_attributes, _attributes)
         Else
             _fullPath = String.Empty
@@ -133,10 +139,6 @@ Public Class Item
     End Property
 
     Public Overridable Sub ClearCache()
-        If Not _parent Is Nothing Then
-            _parent.Dispose()
-            _parent = Nothing
-        End If
         If Not _imageFactory Is Nothing Then
             Marshal.ReleaseComObject(_imageFactory)
             _imageFactory = Nothing
@@ -152,24 +154,28 @@ Public Class Item
     End Sub
 
     Public Overridable Sub Refresh()
+        Me.ClearCache()
         Dim newShellItem2 As IShellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
         If Not newShellItem2 Is Nothing Then
-            Marshal.ReleaseComObject(_shellItem2)
+            Dim oldShellItem As IShellItem2 = _shellItem2
             _shellItem2 = newShellItem2
-        End If
-        _attributes = SFGAO.HIDDEN Or SFGAO.COMPRESSED Or SFGAO.CANCOPY Or SFGAO.CANMOVE _
-                Or SFGAO.CANLINK Or SFGAO.HASSUBFOLDER Or SFGAO.ISSLOW
-        _shellItem2.GetAttributes(_attributes, _attributes)
-        Me.ClearCache()
-        For Each prop In Me.GetType().GetProperties()
-            If Not prop.Name = "ItemsThreaded" Then
-                Me.NotifyOfPropertyChange(prop.Name)
-            End If
-        Next
-        If Not Me.Parent Is Nothing Then
-            For Each column In Me.Parent.Columns
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
+            Marshal.ReleaseComObject(oldShellItem)
+
+            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+                Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
+                Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
+                Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
+            _shellItem2.GetAttributes(_attributes, _attributes)
+            For Each prop In Me.GetType().GetProperties()
+                If Not prop.Name = "ItemsThreaded" Then
+                    Me.NotifyOfPropertyChange(prop.Name)
+                End If
             Next
+            If Not Me.Parent Is Nothing Then
+                For Each column In Me.Parent.Columns
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
+                Next
+            End If
         End If
     End Sub
 
@@ -194,6 +200,10 @@ Public Class Item
                 If _parent Is Nothing Then
                     ' this is bound to the desktop
                     Dim parentShellItem2 As IShellItem2
+                    Dim d As Boolean = disposedValue
+                    If d Then
+                        Dim i = 9
+                    End If
                     _shellItem2.GetParent(parentShellItem2)
                     If Not parentShellItem2 Is Nothing Then
                         _parent = New Folder(parentShellItem2, Nothing)

@@ -90,17 +90,28 @@ Public Class ContextMenu
                 Return button
             End Function
 
+        Dim osver As Version = Environment.OSVersion.Version
+        Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
+
         ' make our own menu
         _menu = New Controls.ContextMenu()
         If Not IntPtr.Zero.Equals(_hMenu) Then
             Dim menuItems As List(Of Control) = getMenuItems(_hMenu, -1)
             Dim lastMenuItem As Control
             For Each item In menuItems
-                Select Case item.Tag?.ToString().Split(vbTab)(1)
+                Dim verb As String = item.Tag?.ToString().Split(vbTab)(1)
+                Select Case verb
                     Case "copy", "cut", "paste", "delete", "pintohome", "rename"
                         ' don't add these
                     Case Else
-                        If Not (TypeOf item Is Separator AndAlso Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator) Then
+                        Dim isNotDoubleSeparator As Boolean = Not (TypeOf item Is Separator AndAlso
+                            Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator)
+                        Dim isNotDoubleOneDriveItem As Boolean = verb Is Nothing OrElse
+                            Not (isWindows11 AndAlso
+                                (verb.StartsWith("{5250E46F-BB09-D602-5891-F476DC89B70") _
+                                 OrElse verb = "MakeAvailableOffline" _
+                                 OrElse verb = "MakeAvailableOnline"))
+                        If isNotDoubleSeparator AndAlso isNotDoubleOneDriveItem Then
                             _menu.Items.Add(item)
                             lastMenuItem = item
                         End If
