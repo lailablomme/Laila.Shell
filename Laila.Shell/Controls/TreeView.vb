@@ -61,10 +61,14 @@ Namespace Controls
                  End Sub
 
             ' home and galery
-            Dim homeFolder As Folder = Shell.SpecialFolders("Home").Clone()
-            homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0 : Items.Add(homeFolder)
-            Dim galleryFolder As Folder = Shell.SpecialFolders("Gallery").Clone()
-            galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1 : Items.Add(galleryFolder)
+            If Shell.SpecialFolders.ContainsKey("Home") Then
+                Dim homeFolder As Folder = Shell.SpecialFolders("Home").Clone()
+                homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0 : Items.Add(homeFolder)
+            End If
+            If Shell.SpecialFolders.ContainsKey("Gallery") Then
+                Dim galleryFolder As Folder = Shell.SpecialFolders("Gallery").Clone()
+                galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1 : Items.Add(galleryFolder)
+            End If
 
             ' separators
             Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})

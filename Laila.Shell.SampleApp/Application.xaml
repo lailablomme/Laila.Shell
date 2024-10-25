@@ -5,7 +5,7 @@
              xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell"
              xmlns:metroWindowConverters="clr-namespace:Laila.MetroWindow.Converters;assembly=Laila.MetroWindow"
              xmlns:localConverters="clr-namespace:Laila.Shell.SampleApp.Converters"
-             StartupUri="MainWindow.xaml">
+             StartupUri="MainWindow.xaml" DispatcherUnhandledException="Application_DispatcherUnhandledException">
     <Application.Resources>
         <Style TargetType="ToggleButton" x:Key="lailaShell_TreeChevronButtonStyle">
             <Setter Property="Background" Value="Transparent"/>
