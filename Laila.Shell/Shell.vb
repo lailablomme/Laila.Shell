@@ -71,10 +71,17 @@ Public Class Shell
         _specialFolders.Add("This computer", Folder.FromParsingName("shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", Nothing))
         _specialFolders.Add("Network", Folder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing))
         _specialFolders.Add("Gallery", Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing))
-        _specialFolders.Add("OneDrive", Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing))
         _specialFolders.Add("Recycle Bin", Folder.FromParsingName("shell:::{645FF040-5081-101B-9F08-00AA002F954E}", Nothing))
         _specialFolders.Add("Recent", CType(Folder.FromParsingName("%APPDATA%\Microsoft\Windows", Nothing), Folder) _
                                          .GetItems().First(Function(i) i.FullPath.EndsWith("\Recent")))
+        Dim oneDriveFolder As Item = Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing)
+        If Not oneDriveFolder Is Nothing AndAlso TypeOf oneDriveFolder Is Folder Then
+            _specialFolders.Add("OneDrive", oneDriveFolder)
+        End If
+        Dim oneDriveBusinessFolder As Item = Folder.FromParsingName("shell:::{04271989-C4D2-BEC7-A521-3DF166FAB4BA}", Nothing)
+        If Not oneDriveBusinessFolder Is Nothing AndAlso TypeOf oneDriveBusinessFolder Is Folder Then
+            _specialFolders.Add("OneDrive Business", oneDriveBusinessFolder)
+        End If
         '_specialFolders.Add("Windows Tools", Folder.FromParsingName("shell:::{D20EA4E1-3957-11D2-A40B-0C5020524153}", Nothing))
         '_specialFolders.Add("Libraries", Folder.FromParsingName("shell:::{031E4825-7B94-4DC3-B131-E946B44C8DD5}", Nothing))
         '_specialFolders.Add("User Pinned", Folder.FromParsingName("shell:::{1F3427C8-5C10-4210-AA03-2EE45287D668}", Nothing))
@@ -82,7 +89,7 @@ Public Class Shell
         '_specialFolders.Add("Devices and Printers", Folder.FromParsingName("shell:::{A8A91A66-3A7D-4424-8D24-04E180695C7A}", Nothing))
         '_specialFolders.Add("All Tasks", Folder.FromParsingName("shell:::{ED7BA470-8E54-465E-825C-99712043E01C}", Nothing))
         '_specialFolders.Add("Applications", Folder.FromParsingName("shell:::{4234d49b-0245-4df3-b780-3893943456e1}", Nothing))
-        '_specialFolders.Add("Frequent Folders", Folder.FromParsingName("shell:::{3936E9E4-D92C-4EEE-A85A-BC16D5EA0819}", Nothing))
+        _specialFolders.Add("Frequent Folders", Folder.FromParsingName("shell:::{3936E9E4-D92C-4EEE-A85A-BC16D5EA0819}", Nothing))
         '_specialFolders.Add("Installed Updates", Folder.FromParsingName("shell:::{d450a8a1-9568-45c7-9c0e-b4f9fb4537bd}", Nothing))
         '_specialFolders.Add("Network Connections", Folder.FromParsingName("shell:::{7007ACC7-3202-11D1-AAD2-00805FC1270E}", Nothing))
         '_specialFolders.Add("Programs and Features", Folder.FromParsingName("shell:::{7b81be6a-ce2b-4676-a29e-eb907a5126c5}", Nothing))
