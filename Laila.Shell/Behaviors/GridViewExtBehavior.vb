@@ -158,6 +158,7 @@ Namespace Behaviors
         Private _clickedColumn As GridViewColumn
         Private _groupByPropertyNames As List(Of String) = New List(Of String)()
         Private _scrollViewer As ScrollViewer
+        Private _skipResize As Boolean
 
         Public ReadOnly Property ColumnIndexFor(propertyName As String) As Integer
             Get
@@ -179,61 +180,78 @@ Namespace Behaviors
 
             ' auto resize column when rebound/item added
             AddHandler _listView.ItemContainerGenerator.StatusChanged, AddressOf icgStatusChanged
+            TypeDescriptor.GetProperties(_listView)("ItemsSource") _
+                .AddValueChanged(_listView,
+                    Sub()
+                        _skipResize = False
+                        resizeVisibleRows()
 
+                        If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
+                            AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
+                                Sub(sender2 As Object, e2 As NotifyCollectionChangedEventArgs)
+                                    Select Case e2.Action
+                                        Case NotifyCollectionChangedAction.Add
+                                            _skipResize = False
+                                    End Select
+                                End Sub
+                        End If
+
+                        If _isLoaded Then regroup()
+                    End Sub)
             AddHandler _listView.Loaded,
-                Sub(sender As Object, e As EventArgs)
-                    _headerRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
-                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
-                    _isLoaded = True
+               Sub(sender As Object, e As EventArgs)
+                   _headerRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
+                   _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
+                   _isLoaded = True
 
-                    If Not Me.ColumnsIn Is Nothing Then
-                        loadColumns()
-                    End If
+                   If Not Me.ColumnsIn Is Nothing Then
+                       loadColumns()
+                   End If
 
-                    ' hook reorder event
-                    AddHandler _gridView.Columns.CollectionChanged,
-                        Async Sub(s2 As Object, e2 As NotifyCollectionChangedEventArgs)
-                            If e2.Action = NotifyCollectionChangedAction.Move Then
-                                ' move
-                                Dim actualOldIndex As Integer = -1
-                                For i = 0 To e2.OldStartingIndex
-                                    actualOldIndex += 1
-                                    If actualOldIndex + 1 > _activeColumns.Count Then
-                                        Exit For
-                                    End If
-                                    If Not _activeColumns(actualOldIndex).IsVisible Then
-                                        i = i - 1
-                                    End If
-                                Next
-                                Dim actualNewIndex As Integer = -1
-                                For i = 0 To e2.NewStartingIndex
-                                    actualNewIndex += 1
-                                    If actualNewIndex + 1 > _activeColumns.Count Then
-                                        Exit For
-                                    End If
-                                    If Not _activeColumns(actualNewIndex).IsVisible Then
-                                        i = i - 1
-                                    End If
-                                Next
+                   ' hook reorder event
+                   AddHandler _gridView.Columns.CollectionChanged,
+                       Async Sub(s2 As Object, e2 As NotifyCollectionChangedEventArgs)
+                           If e2.Action = NotifyCollectionChangedAction.Move Then
+                               ' move
+                               Dim actualOldIndex As Integer = -1
+                               For i = 0 To e2.OldStartingIndex
+                                   actualOldIndex += 1
+                                   If actualOldIndex + 1 > _activeColumns.Count Then
+                                       Exit For
+                                   End If
+                                   If Not _activeColumns(actualOldIndex).IsVisible Then
+                                       i = i - 1
+                                   End If
+                               Next
+                               Dim actualNewIndex As Integer = -1
+                               For i = 0 To e2.NewStartingIndex
+                                   actualNewIndex += 1
+                                   If actualNewIndex + 1 > _activeColumns.Count Then
+                                       Exit For
+                                   End If
+                                   If Not _activeColumns(actualNewIndex).IsVisible Then
+                                       i = i - 1
+                                   End If
+                               Next
 
-                                Dim column As ActiveColumnStateData = _activeColumns(actualOldIndex)
-                                _activeColumns.RemoveAt(actualOldIndex)
-                                _activeColumns.Insert(actualNewIndex, column)
+                               Dim column As ActiveColumnStateData = _activeColumns(actualOldIndex)
+                               _activeColumns.RemoveAt(actualOldIndex)
+                               _activeColumns.Insert(actualNewIndex, column)
 
-                                ' renumber columns
-                                Dim x As Integer = 0
-                                For Each col In _activeColumns.Where(Function(c) c.IsVisible)
-                                    SetColumnIndex(col.Column, x)
-                                    x += 1
-                                Next
-                                Me.NotifyOfPropertyChange("ColumnIndexFor")
+                               ' renumber columns
+                               Dim x As Integer = 0
+                               For Each col In _activeColumns.Where(Function(c) c.IsVisible)
+                                   SetColumnIndex(col.Column, x)
+                                   x += 1
+                               Next
+                               Me.NotifyOfPropertyChange("ColumnIndexFor")
 
-                                ' write state
-                                writeState()
-                            End If
-                        End Sub
-                End Sub
-        End Sub
+                               ' write state
+                               writeState()
+                           End If
+                       End Sub
+               End Sub
+                                   End Sub
 
         Private Sub loadColumns()
             If _isLoaded Then
@@ -616,8 +634,9 @@ Namespace Behaviors
         Private Sub resizeVisibleRows()
             If Not _headerRowPresenter Is Nothing Then
                 Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
-                If _scrollViewer.VerticalOffset = 0 AndAlso rows.Count > 0 Then
+                If Not _skipResize AndAlso _scrollViewer.VerticalOffset = 0 AndAlso rows.Count > 0 Then
                     resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
+                    _skipResize = True
                 End If
 
                 Dim headers As List(Of GridViewColumnHeader) =
