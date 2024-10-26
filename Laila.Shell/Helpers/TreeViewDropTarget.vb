@@ -178,8 +178,15 @@ Public Class TreeViewDropTarget
                 Try
                     shellItemPtr = Marshal.GetIUnknownForObject(overItem._shellItem2)
                     Functions.SHGetIDListFromObject(shellItemPtr, pidl)
-                    Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl)
-                    overItem.Parent._shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    If Not overItem.Parent Is Nothing Then
+                        Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl)
+                        overItem.Parent._shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    Else
+                        Dim shellFolder As IShellFolder
+                        Functions.SHGetDesktopFolder(shellFolder)
+                        ' desktop
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    End If
                     If Not IntPtr.Zero.Equals(dropTargetPtr) Then
                         dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
                     Else

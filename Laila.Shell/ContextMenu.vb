@@ -194,7 +194,7 @@ Public Class ContextMenu
                 ' user clicked on an item
                 Dim shellFolder As IShellFolder
 
-                If Not (_parent.FullPath = Shell.Desktop.FullPath AndAlso Not items Is Nothing AndAlso items.Count = 1 _
+                If Not (_parent.FullPath = Shell.Desktop.FullPath AndAlso items.Count = 1 _
                 AndAlso items(0).FullPath = Shell.Desktop.FullPath) Then
                     shellFolder = _parent._shellFolder
                     For i = 0 To items.Count - 1
