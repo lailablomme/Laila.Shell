@@ -20,9 +20,6 @@
     
     <Style x:Key="lailaShell_TreeViewItemStyle" TargetType="ListBoxItem">
         <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <Setter Property="Padding" Value="4,1"/>
-        <!--<Setter Property="HorizontalContentAlignment" Value="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-        <Setter Property="VerticalContentAlignment" Value="{Binding VerticalContentAlignment, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>-->
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -44,7 +41,7 @@
                             </Separator.Style>
                         </Separator>
                         <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
-                                Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true">
+                                Background="{TemplateBinding Background}" Padding="4,1,4,1" SnapsToDevicePixels="True" UseLayoutRounding="True">
                             <Border.Style>
                                 <Style>
                                     <Setter Property="Border.Visibility" Value="Visible" />
@@ -189,6 +186,18 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        <Grid x:Name="PART_DragInsertIndicator" Visibility="Collapsed" 
+                              VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="5,0,5,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="2" />
+                            </Grid.ColumnDefinitions>
+
+                            <Line Grid.Column="0" X1="1" Y1="0" X2="1" Y2="6" Stroke="Blue" StrokeThickness="2" />
+                            <Line Grid.Column="1" X1="0" Y1="3" X2="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}}" Y2="3" Stroke="Blue" StrokeThickness="2" />
+                            <Line Grid.Column="2" X1="0" Y1="0" X2="0" Y2="6" Stroke="Blue" StrokeThickness="2" />
+                        </Grid>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

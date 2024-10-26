@@ -25,7 +25,7 @@ Public Class FrequentFolders
             Dim count As Integer = 0
             For Each folder In mostFrequent1
                 Dim f As Folder = Item.FromParsingNameDeepGetReverse(folder.FullPath)
-                If Not f Is Nothing AndAlso Not PinnedItems.GetIsPinned(f) Then
+                If Not f Is Nothing AndAlso Not PinnedItems.GetIsPinned(f.FullPath) Then
                     mostFrequent2.Add(f)
                     count += 1
                     If count = 5 Then Exit For

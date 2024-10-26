@@ -21,6 +21,7 @@ Namespace Controls
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
+        Friend PART_DragInsertIndicator As Grid
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _isSettingSelectedFolder As Boolean
         Private _mousePointDown As Point
@@ -127,6 +128,7 @@ Namespace Controls
 
             PART_ListBox = Template.FindName("PART_ListBox", Me)
             PART_Grid = Template.FindName("PART_Grid", Me)
+            PART_DragInsertIndicator = Template.FindName("PART_DragInsertIndicator", Me)
 
             _selectionHelper = New SelectionHelper(Of Item)(PART_ListBox)
             _selectionHelper.SelectionChanged =
@@ -136,7 +138,6 @@ Namespace Controls
                                     Me.OnSelectionChanged()
                                 End Sub)
                         End Sub
-
 
             AddHandler PART_ListBox.PreviewMouseMove, AddressOf OnTreeViewPreviewMouseMove
             AddHandler PART_ListBox.PreviewMouseLeftButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
@@ -372,9 +373,9 @@ Namespace Controls
                                             e2.IsHandled = True
                                         Case "laila.shell.(un)pin"
                                             If e2.IsChecked Then
-                                                PinnedItems.PinItem(clickedItem)
+                                                PinnedItems.PinItem(clickedItem.FullPath)
                                             Else
-                                                PinnedItems.UnpinItem(clickedItem)
+                                                PinnedItems.UnpinItem(clickedItem.FullPath)
                                             End If
                                             e2.IsHandled = True
                                     End Select

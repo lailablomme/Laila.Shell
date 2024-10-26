@@ -2,7 +2,7 @@
     Public Class PinnedItemEventArgs
         Inherits EventArgs
 
-        Public Property Item As Item
+        Public Property FullPath As String
         Public Property Index As Integer
     End Class
 End Namespace
