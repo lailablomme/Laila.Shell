@@ -94,7 +94,28 @@
                                 </Style>
                             </ListView.Style>
                         </ListView>
-                        <Grid Margin="1" Background="White">
+                        <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <Grid.Style>
+                                <Style>
+                                    <Setter Property="Grid.Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Folder.EnumerationException}" Value="{x:Null}">
+                                            <Setter Property="Grid.Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="25" />
+                                <ColumnDefinition Width="36" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="25" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="1" Grid.ColumnSpan="2" Background="#eeeeee" CornerRadius="5" Margin="-5" />
+                            <Image Grid.Column="1" Source="../Images/error32.png" Width="32" Height="32" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                            <TextBlock Grid.Column="2" Text="{Binding Folder.EnumerationException.Message}" VerticalAlignment="Center" />
+                        </Grid>
+                        <Grid Background="White">
                             <Grid.Style>
                                 <Style>
                                     <Setter Property="Grid.Visibility" Value="Visible" />

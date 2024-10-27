@@ -76,26 +76,32 @@ Namespace Adorners
             Dim z As Integer = 0
             For Each g In _glyphs.Values.Where(Function(gl) gl.Alignment = HorizontalAlignment.Right).OrderBy(Function(i) i.Index).ToList()
                 z += 1
-                Dim y As Double = (_columnHeader.ActualHeight - g.Glyph.Height) / 2
-                Dim x As Double = _columnHeader.ActualWidth - z * 12
-                Dim rect As Rect = New Rect(x, y, g.Glyph.Width, g.Glyph.Height)
-                drawingContext.DrawImage(g.Glyph, rect)
+                If _columnHeader.ActualWidth >= g.Glyph.Width Then
+                    Dim y As Double = (_columnHeader.ActualHeight - g.Glyph.Height) / 2
+                    Dim x As Double = _columnHeader.ActualWidth - z * 12
+                    Dim rect As Rect = New Rect(x, y, g.Glyph.Width, g.Glyph.Height)
+                    drawingContext.DrawImage(g.Glyph, rect)
+                End If
             Next
             z = 0
             For Each g In _glyphs.Values.Where(Function(gl) gl.Alignment = HorizontalAlignment.Left).OrderBy(Function(i) i.Index).ToList()
                 z += 1
-                Dim y As Double = (_columnHeader.ActualHeight - g.Glyph.Height) / 2
-                Dim x As Double = (z - 1) * 12
-                Dim rect As Rect = New Rect(x, y, g.Glyph.Width, g.Glyph.Height)
-                drawingContext.DrawImage(g.Glyph, rect)
+                If _columnHeader.ActualWidth >= g.Glyph.Width Then
+                    Dim y As Double = (_columnHeader.ActualHeight - g.Glyph.Height) / 2
+                    Dim x As Double = (z - 1) * 12
+                    Dim rect As Rect = New Rect(x, y, g.Glyph.Width, g.Glyph.Height)
+                    drawingContext.DrawImage(g.Glyph, rect)
+                End If
             Next
             z = 0
             For Each g In _glyphs.Values.Where(Function(gl) gl.Alignment = HorizontalAlignment.Center).OrderBy(Function(i) i.Index).ToList()
                 z += 1
-                Dim y As Double = 0
-                Dim x As Double = (_columnHeader.ActualWidth - _glyphs.Values.Where(Function(gl) gl.Alignment = HorizontalAlignment.Center).Sum(Function(gl) gl.Glyph.Width)) / 2 + _glyphs.Values.Take(z - 1).Sum(Function(gl) gl.Glyph.Width)
-                Dim rect As Rect = New Rect(x, y, g.Glyph.Width, g.Glyph.Height)
-                drawingContext.DrawImage(g.Glyph, rect)
+                If _columnHeader.ActualWidth >= g.Glyph.Width Then
+                    Dim y As Double = 0
+                    Dim x As Double = (_columnHeader.ActualWidth - _glyphs.Values.Where(Function(gl) gl.Alignment = HorizontalAlignment.Center).Sum(Function(gl) gl.Glyph.Width)) / 2 + _glyphs.Values.Take(z - 1).Sum(Function(gl) gl.Glyph.Width)
+                    Dim rect As Rect = New Rect(x, y, g.Glyph.Width, g.Glyph.Height)
+                    drawingContext.DrawImage(g.Glyph, rect)
+                End If
             Next
         End Sub
 

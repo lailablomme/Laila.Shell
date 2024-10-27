@@ -20,6 +20,8 @@ Public Class Folder
     Private _isLoading As Boolean
     Private _lock As Object = New Object()
     Private _isLoaded As Boolean
+    Private _enumerationException As Exception
+    Private _isEnumerated As Boolean
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -120,8 +122,21 @@ Public Class Folder
 
     Public ReadOnly Property HasSubFolders As Boolean
         Get
-            Return Me.Attributes.HasFlag(SFGAO.HASSUBFOLDER)
+            If _isEnumerated Then
+                Return Not _items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
+            Else
+                Return Me.Attributes.HasFlag(SFGAO.HASSUBFOLDER)
+            End If
         End Get
+    End Property
+
+    Public Property EnumerationException As Exception
+        Get
+            Return _enumerationException
+        End Get
+        Set(value As Exception)
+            SetValue(_enumerationException, value)
+        End Set
     End Property
 
     Public Overridable ReadOnly Property Items As ObservableCollection(Of Item)
@@ -261,14 +276,9 @@ Public Class Folder
                                 enumShellItems.Next(1, shellItems, fetched)
                             End While
                         End If
+                        Me.EnumerationException = Nothing
                     Catch ex As Exception
-                        Dim i = 9
-                        'Dim dummy As DummyFolder = New DummyFolder(ex.Message, Me)
-                        'dummy.IsLoading = False
-                        'dummy._icon.Add(16, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error16.png"))
-                        'dummy._icon.Add(32, New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/error32.png"))
-                        'toAdd.Add(dummy)
-                        'pathsAfter.Add(dummy.FullPath)
+                        Me.EnumerationException = ex
                     Finally
                         If Not enumShellItems Is Nothing Then
                             Marshal.ReleaseComObject(enumShellItems)
@@ -280,34 +290,40 @@ Public Class Folder
                 End If
             End If
         Else
-            Dim list As IEnumIDList
-            _shellFolder.EnumObjects(Nothing, flags, list)
-            If Not list Is Nothing Then
-                Dim pidl(0) As IntPtr, fetched As Integer, count As Integer = 0
-                While list.Next(1, pidl, fetched) = 0
-                    Dim attr2 As Integer = SFGAO.FOLDER
-                    _shellFolder.GetAttributesOf(1, pidl, attr2)
-                    Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), _shellFolder)
-                    Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItem2)
-                    pathsAfter.Add(fullPath)
-                    If Not exists(fullPath) Then
-                        Dim newItem As Item
-                        If CBool(attr2 And SFGAO.FOLDER) Then
-                            newItem = makeNewFolder(shellItem2)
+            Try
+                Dim list As IEnumIDList
+                _shellFolder.EnumObjects(Nothing, flags, list)
+                If Not list Is Nothing Then
+                    Dim pidl(0) As IntPtr, fetched As Integer, count As Integer = 0
+                    While list.Next(1, pidl, fetched) = 0
+                        Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), _shellFolder)
+                        Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItem2)
+                        pathsAfter.Add(fullPath)
+                        If Not exists(fullPath) Then
+                            Dim attr2 As Integer = SFGAO.FOLDER
+                            _shellFolder.GetAttributesOf(1, pidl, attr2)
+                            Dim newItem As Item
+                            If CBool(attr2 And SFGAO.FOLDER) Then
+                                newItem = makeNewFolder(shellItem2)
+                            Else
+                                newItem = makeNewItem(shellItem2)
+                            End If
+                            toAdd.Add(newItem)
                         Else
-                            newItem = makeNewItem(shellItem2)
+                            toUpdate.Add(fullPath)
+                            Marshal.ReleaseComObject(shellItem2)
                         End If
-                        toAdd.Add(newItem)
-                    Else
-                        toUpdate.Add(fullPath)
-                        Marshal.ReleaseComObject(shellItem2)
-                    End If
-                    If count Mod 100 = 0 Then Thread.Sleep(1)
-                    count += 1
-                End While
-            End If
+                        If count Mod 100 = 0 Then Thread.Sleep(1)
+                        count += 1
+                    End While
+                End If
+                Me.EnumerationException = Nothing
+            Catch ex As Exception
+                Me.EnumerationException = ex
+            End Try
         End If
 
+        _isEnumerated = True
         _isLoaded = True
 
         UIHelper.OnUIThread(

@@ -40,7 +40,7 @@ Public Class PinnedItems
         End Using
     End Function
 
-    Public Shared Sub PinItem(fullPath As String, Optional newIndex As Integer = -1)
+    Public Shared Sub PinItem(fullPath As String, Optional newIndex As Long = -1)
         Dim e As PinnedItemEventArgs
 
         Using db = New LiteDatabase(getDBFileName())
@@ -114,12 +114,12 @@ Public Class PinnedItems
     Private Shared Function getDBFileName() As String
         Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
         If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
-        Return IO.Path.Combine(path, "PinnedItems.db")
+        Return IO.Path.Combine(path, "PinnedItems2.db")
     End Function
 
     Public Class PinnedItem
         Public Property Id As Integer
         Public Property FullPath As String
-        Public Property Index As Integer
+        Public Property Index As Long
     End Class
 End Class

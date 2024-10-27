@@ -219,7 +219,9 @@ Public Class ContextMenu
                 End If
 
                 shellFolder.GetUIObjectOf(IntPtr.Zero, lastpidls.Length, lastpidls, GetType(IContextMenu).GUID, 0, ptrContextMenu)
-                _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
+                If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                    _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
+                End If
 
                 folderpidl2 = folderpidl
             Else

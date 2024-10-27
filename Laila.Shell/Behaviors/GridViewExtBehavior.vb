@@ -331,7 +331,7 @@ Namespace Behaviors
                             If e.PropertyName = "Width" Then
                                 If Not _dontWrite Then
                                     ' keep track of autosize columns
-                                    column.Width = If(column.Column.Width.Equals(Double.NaN), 0, column.Column.Width)
+                                    column.Width = column.Column.Width
 
                                     ' write state
                                     writeState()
@@ -395,6 +395,9 @@ Namespace Behaviors
 
                 i += 1
             Next
+
+            _skipResize = False
+            resizeVisibleRows()
 
             ' fix sort glyphs
             Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
@@ -634,7 +637,7 @@ Namespace Behaviors
         Private Sub resizeVisibleRows()
             If Not _headerRowPresenter Is Nothing Then
                 Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
-                If Not _skipResize AndAlso _scrollViewer.VerticalOffset = 0 AndAlso rows.Count > 0 Then
+                If Not _skipResize AndAlso rows.Count > 0 Then
                     resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
                     _skipResize = True
                 End If
@@ -660,7 +663,7 @@ Namespace Behaviors
 
                 _dontWrite = True
                 If Not _activeColumns Is Nothing Then
-                    For Each activeCol In _activeColumns.Where(Function(c) Double.IsNaN(c.Width) AndAlso c.IsVisible)
+                    For Each activeCol In _activeColumns.Where(Function(c) (Double.IsNaN(c.Width) OrElse c.Width = 0) AndAlso c.IsVisible)
                         Dim width As Double = 0
                         If minimum Then
                             width = activeCol.Column.ActualWidth
