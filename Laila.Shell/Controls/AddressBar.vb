@@ -68,7 +68,7 @@ Namespace Controls
             Me.PART_TextBox.IsEnabled = False
 
             If INVALID_VALUE.Equals(Me.SelectedValue) Then
-                Dim item As Item = Item.FromParsingNameDeepGetReverse(Me.PART_TextBox.Text)
+                Dim item As Item = Item.FromParsingName(Me.PART_TextBox.Text, Nothing)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                     Me.Folder = item
                 Else
@@ -195,7 +195,10 @@ Namespace Controls
                 Else
                     Exit While
                 End If
-                currentFolder = currentFolder.LogicalParent
+                currentFolder = currentFolder.Parent
+                If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
+                    currentFolder = Nothing
+                End If
             End While
 
             If Not currentFolder Is Nothing Then
@@ -213,7 +216,10 @@ Namespace Controls
                             Me.Folder = moreMenuItem.Tag
                         End Sub
                     moreContextMenu.Items.Add(moreMenuItem)
-                    currentFolder = currentFolder.LogicalParent
+                    currentFolder = currentFolder.Parent
+                    If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
+                        currentFolder = Nothing
+                    End If
                 End While
                 AddHandler moreButton.Checked,
                     Sub(s As Object, e As EventArgs)

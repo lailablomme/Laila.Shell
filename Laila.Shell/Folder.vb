@@ -1,10 +1,6 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Runtime.InteropServices
 Imports System.Threading
-Imports System.Windows
-Imports System.Windows.Data
-Imports System.Windows.Media
-Imports Laila.Shell.Data
 Imports Laila.Shell.Helpers
 
 Public Class Folder
@@ -48,8 +44,8 @@ Public Class Folder
         End Try
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
-        MyBase.New(shellItem2, logicalParent)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
+        MyBase.New(shellItem2, parent)
 
         If Not shellItem2 Is Nothing Then
             _shellFolder = Folder.GetIShellFolderFromIShellItem2(shellItem2)
@@ -58,7 +54,7 @@ Public Class Folder
 
     Public Property IsExpanded As Boolean
         Get
-            Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse Me.LogicalParent.IsExpanded)
+            Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse Me.Parent.IsExpanded)
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)

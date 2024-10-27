@@ -1,7 +1,6 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Collections.Specialized
 Imports System.ComponentModel
-Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
@@ -54,12 +53,37 @@ Namespace Controls
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
                      Select Case e.Event
                          Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                             If Not Me.SelectedItem Is Nothing AndAlso Not e.Folder.LogicalParent Is Nothing _
+                             If Not Me.SelectedItem Is Nothing AndAlso Not e.Folder.Parent Is Nothing _
                                 AndAlso Me.GetIsSelectionDownFolder(e.Folder) Then
-                                 Await Me.SetSelectedFolder(e.Folder.LogicalParent)
+                                 Await Me.SetSelectedFolder(e.Folder.Parent)
                              End If
                      End Select
                  End Sub
+
+            AddHandler Shell.Notification,
+                Sub(s As Object, e As NotificationEventArgs)
+                    Select Case e.Event
+                        Case SHCNE.RMDIR
+                            If Not Me.Items.FirstOrDefault(Function(i) _
+                                Not i.disposedValue _
+                                AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
+                                AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
+                                AndAlso i.FullPath = e.Item1Path) Is Nothing Then
+                                updatePinnedItems()
+                                updateFrequentFolders()
+                            End If
+                        Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
+                            If Not Me.Items.FirstOrDefault(Function(i) _
+                                Not i.disposedValue _
+                                AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
+                                AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
+                                AndAlso (Not i.Parent Is Nothing AndAlso i.Parent.FullPath = e.Item1Path)) Is Nothing _
+                                OrElse Shell.Desktop.FullPath.Equals(e.Item1Path) Then
+                                updatePinnedItems()
+                                updateFrequentFolders()
+                            End If
+                    End Select
+                End Sub
 
             ' home and galery
             If Shell.SpecialFolders.ContainsKey("Home") Then
@@ -158,14 +182,16 @@ Namespace Controls
                     i.FullPath = pinnedItem.FullPath _
                         AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT)
                 If existingPinnedItem Is Nothing Then
-                    ' insert new frequent folder
+                    ' insert new pinned item
                     pinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
                     pinnedItem.IsPinned = True
                     Me.Items.Add(pinnedItem)
                 Else
-                    ' update exising frequent folder
+                    ' update existing pinned item
                     pinnedItem.Dispose()
-                    existingPinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
+                    If existingPinnedItem.TreeRootIndex <> TreeRootSection.PINNED + count Then
+                        existingPinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
+                    End If
                 End If
                 count += 1
             Next
@@ -195,9 +221,11 @@ Namespace Controls
                     frequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
                     Me.Items.Add(frequentFolder)
                 Else
-                    ' update exising frequent folder
+                    ' update existing frequent folder
                     frequentFolder.Dispose()
-                    existingFrequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
+                    If existingFrequentFolder.TreeRootIndex <> TreeRootSection.FREQUENT + count Then
+                        existingFrequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
+                    End If
                 End If
                 count += 1
             Next
@@ -249,10 +277,12 @@ Namespace Controls
                 Dim list As List(Of Folder) = New List(Of Folder)()
                 Dim currentFolder As Folder = folder
                 If Not currentFolder Is Nothing Then
-                    While Not currentFolder.LogicalParent Is Nothing AndAlso currentFolder.TreeRootIndex = -1
+                    While Not currentFolder.Parent Is Nothing _
+                        AndAlso currentFolder.Parent.FullPath <> Shell.Desktop.FullPath _
+                        AndAlso currentFolder.TreeRootIndex = -1
                         list.Add(currentFolder)
                         Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
-                        currentFolder = currentFolder.LogicalParent
+                        currentFolder = currentFolder.Parent
                     End While
 
                     Dim tf As Folder
@@ -455,7 +485,7 @@ Namespace Controls
                             RemoveHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder))
+                                AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder))
                                 UIHelper.OnUIThreadAsync(
                                     Sub()
                                         If Me.Items.Contains(item2) Then
@@ -508,7 +538,7 @@ Namespace Controls
                     CollectionViewSource.GetDefaultView(Me.Items).Refresh()
                 Case "TreeSortKey"
                     For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                        AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder))
+                        AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder))
                         item2.NotifyOfPropertyChange("TreeSortKey")
                     Next
             End Select
@@ -516,7 +546,8 @@ Namespace Controls
 
         Private Function filter(i As Object) As Boolean
             Dim item As Item = i
-            Return item.TreeRootIndex <> -1 OrElse item.LogicalParent.IsExpanded
+            Dim isVisibleInTree As Boolean? = item?.IsVisibleInTree
+            Return If(isVisibleInTree.HasValue, isVisibleInTree.Value, False)
         End Function
 
 

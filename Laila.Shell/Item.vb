@@ -1,13 +1,8 @@
-Imports System.ComponentModel.DataAnnotations
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Windows
-Imports System.Windows.Annotations
-Imports System.Windows.Forms
-Imports System.Windows.Forms.LinkLabel
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
-Imports Laila.Shell.Helpers
 
 Public Class Item
     Inherits NotifyPropertyChangedBase
@@ -15,12 +10,11 @@ Public Class Item
 
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
-    Private _parent As Folder
     Private _imageFactory As IShellItemImageFactory
     Protected _properties As List(Of [Property]) = New List(Of [Property])
     Protected _fullPath As String
     Friend disposedValue As Boolean
-    Protected _logicalParent As Folder
+    Protected _parent As Folder
     Protected _displayName As String
     Friend _shellItem2 As IShellItem2
     Private _isPinned As Boolean
@@ -32,16 +26,16 @@ Public Class Item
     Private _overlayIconIndex As Integer?
     Private _treeRootIndex As Long = -1
 
-    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder) As Item
+    Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, logicalParent)
+                Return New Folder(shellItem2, parent)
             Else
-                Return New Item(shellItem2, logicalParent)
+                Return New Item(shellItem2, parent)
             End If
         Else
             Return Nothing
@@ -86,7 +80,7 @@ Public Class Item
         Return fullPath
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = GetFullPathFromShellItem2(shellItem2)
@@ -98,9 +92,15 @@ Public Class Item
         Else
             _fullPath = String.Empty
         End If
-        _logicalParent = logicalParent
+        _parent = parent
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
+
+    Public ReadOnly Property IsVisibleInTree As Boolean
+        Get
+            Return Me.TreeRootIndex <> -1 OrElse (Not Me.Parent Is Nothing AndAlso Me.Parent.IsExpanded)
+        End Get
+    End Property
 
     Public Property TreeRootIndex As Long
         Get
@@ -117,7 +117,7 @@ Public Class Item
             If _treeRootIndex <> -1 Then
                 Return String.Format("{0:0000000000000000000}", _treeRootIndex)
             Else
-                Return _logicalParent.TreeSortKey & Me.ItemNameDisplaySortValue & New String(" ", 260 - Me.ItemNameDisplaySortValue.Length)
+                Return _parent.TreeSortKey & Me.ItemNameDisplaySortValue & New String(" ", 260 - Me.ItemNameDisplaySortValue.Length)
             End If
         End Get
     End Property
@@ -126,11 +126,11 @@ Public Class Item
         Get
             Dim level As Integer = 0
             If Me.TreeRootIndex = -1 Then
-                Dim lp As Folder = Me.LogicalParent
+                Dim lp As Folder = Me.Parent
                 While Not lp Is Nothing
                     level += 1
                     If lp.TreeRootIndex <> -1 Then Exit While
-                    lp = lp.LogicalParent
+                    lp = lp.Parent
                 End While
             End If
 
@@ -185,25 +185,13 @@ Public Class Item
         End Get
     End Property
 
-    Public Property LogicalParent As Folder
-        Get
-            Return _logicalParent
-        End Get
-        Friend Set(value As Folder)
-            _logicalParent = value
-        End Set
-    End Property
-
     Public ReadOnly Property Parent As Folder
         Get
             If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
-                If _parent Is Nothing Then
+                If _parent Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                     ' this is bound to the desktop
                     Dim parentShellItem2 As IShellItem2
                     Dim d As Boolean = disposedValue
-                    If d Then
-                        Dim i = 9
-                    End If
                     _shellItem2.GetParent(parentShellItem2)
                     If Not parentShellItem2 Is Nothing Then
                         _parent = New Folder(parentShellItem2, Nothing)
@@ -628,29 +616,6 @@ Public Class Item
         End If
     End Function
 
-    Public Shared Function FromParsingNameDeepGetReverse(parsingName As String) As Item
-        Dim item As Item = Item.FromParsingName(parsingName, Nothing)
-        If Not item Is Nothing Then
-            Dim parent As Item = item
-            While Not parent Is Nothing
-                If parent.LogicalParent Is Nothing AndAlso Not parent.Parent Is Nothing _
-                            AndAlso Not parent.Parent.FullPath = Shell.Desktop.FullPath Then
-                    parent.LogicalParent = parent.Parent
-                End If
-                parent = parent.Parent
-                If Not parent Is Nothing Then
-                    Dim specialFolder As Folder = Shell.SpecialFolders.Values.ToList().FirstOrDefault(Function(f) f.FullPath = parent.FullPath)?.Clone()
-                    If Not specialFolder Is Nothing Then
-                        parent = specialFolder
-                    End If
-                End If
-            End While
-            Return item
-        Else
-            Return Nothing
-        End If
-    End Function
-
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         If Not _shellItem2 Is Nothing AndAlso Not disposedValue Then
             Select Case e.Event
@@ -708,9 +673,9 @@ Public Class Item
 
     Public Function Clone() As Item
         If TypeOf Me Is Folder Then
-            Return New Folder(Folder.GetIShellItem2FromParsingName(Me.FullPath), _logicalParent)
+            Return New Folder(Folder.GetIShellItem2FromParsingName(Me.FullPath), _parent)
         Else
-            Return New Item(Item.GetIShellItem2FromParsingName(Me.FullPath), _logicalParent)
+            Return New Item(Item.GetIShellItem2FromParsingName(Me.FullPath), _parent)
         End If
     End Function
 End Class
