@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Laila.Shell.SampleApp"
         xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" 
+        xmlns:shell="clr-namespace:Laila.Shell;assembly=Laila.Shell" 
         xmlns:metroWindow="clr-namespace:Laila.MetroWindow.Controls;assembly=Laila.MetroWindow"
         x:Name="view"
         mc:Ignorable="d" Icon="{Binding SelectedItem.Folder.Icon[48], ElementName=tabControl}" 
@@ -38,8 +39,66 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
+                    <controls:Navigation x:Name="navigation" Folder="{Binding Folder, Mode=TwoWay}" />
                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Background="#eeeeee" Margin="-1" />
-                    <controls:AddressBar Grid.Row="0" Grid.Column="2" Margin="0,5,0,3" Folder="{Binding Folder, Mode=TwoWay}" />
+                    <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Margin="5,5,0,3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{DynamicResource lailaShell_NavigationButtonStyle}" x:Name="BackButton" Margin="0,0,5,0" Click="BackButton_Click"
+                                    IsEnabled="{Binding CanBack, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}">
+                                <Image Width="16" Height="16">
+                                    <Image.Style>
+                                        <Style>
+                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_left16.png" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=BackButton}" Value="False">
+                                                    <Setter Property="Image.Opacity" Value="0.5" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Button>
+                            <Button Style="{DynamicResource lailaShell_NavigationButtonStyle}" x:Name="ForwardButton" Margin="0,0,5,0" Click="ForwardButton_Click"
+                                    IsEnabled="{Binding CanForward, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}">
+                                <Image Width="16" Height="16">
+                                    <Image.Style>
+                                        <Style>
+                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_right16.png" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=ForwardButton}" Value="False">
+                                                    <Setter Property="Image.Opacity" Value="0.5" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Button>
+                            <Button Style="{DynamicResource lailaShell_NavigationButtonStyle}" x:Name="UpButton" Margin="0,0,5,0" Click="UpButton_Click"
+                                    IsEnabled="{Binding CanUp, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}">
+                                <Image Width="16" Height="16">
+                                    <Image.Style>
+                                        <Style>
+                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_up16.png" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=UpButton}" Value="False">
+                                                    <Setter Property="Image.Opacity" Value="0.5" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Button>
+                            <Button Style="{DynamicResource lailaShell_NavigationButtonStyle}" x:Name="RefreshButton" Margin="0,0,5,0" Click="RefreshButton_Click"
+                                    Tag="{Binding ., ElementName=navigation}">
+                                <Image Source="pack://application:,,,/Laila.Shell;component/Images/refresh16.png" Width="16" Height="16" />
+                            </Button>
+                        </StackPanel>
+                        <controls:AddressBar Grid.Column="1" Folder="{Binding Folder, Mode=TwoWay}" />
+                    </Grid>
                     <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" />
                     <controls:TreeView Grid.Row="2" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
                     <GridSplitter Grid.Row="2" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />

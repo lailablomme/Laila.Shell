@@ -1,11 +1,4 @@
-﻿Imports System.Collections.ObjectModel
-Imports System.ComponentModel
-Imports System.Runtime.InteropServices
-Imports System.Runtime.InteropServices.ComTypes
-Imports System.Windows.Forms
-Imports System.Windows.Interop
-
-Class MainWindow
+﻿Class MainWindow
     Private _model As MainWindowViewModel
 
     Public Sub New()
@@ -15,5 +8,29 @@ Class MainWindow
         ' Add any initialization after the InitializeComponent() call.
         _model = New MainWindowViewModel(Me)
         Me.DataContext = _model
+    End Sub
+
+    Private Sub BackButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim navigation As Laila.Shell.Controls.Navigation = button.Tag
+        navigation.Back()
+    End Sub
+
+    Private Sub ForwardButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim navigation As Laila.Shell.Controls.Navigation = button.Tag
+        navigation.Forward()
+    End Sub
+
+    Private Sub UpButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim navigation As Laila.Shell.Controls.Navigation = button.Tag
+        navigation.Up()
+    End Sub
+
+    Private Sub RefreshButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim navigation As Laila.Shell.Controls.Navigation = button.Tag
+        navigation.Folder.RefreshItemsAsync()
     End Sub
 End Class

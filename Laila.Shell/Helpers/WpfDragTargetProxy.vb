@@ -93,26 +93,24 @@ Namespace Helpers
                 .tymed = TYMED.TYMED_HGLOBAL
             }
             Dim doSet As Boolean = True
-            If dataObject.QueryGetData(Format) = 0 Then
+            If Drag._isDragging AndAlso dataObject.QueryGetData(format) = 0 Then
                 Dim m As STGMEDIUM = New STGMEDIUM()
                 dataObject.GetData(format, m)
                 If m.tymed <> TYMED.TYMED_NULL Then
                     dropDescription = Marshal.PtrToStructure(Of DROPDESCRIPTION)(m.unionmember)
                     'Debug.WriteLine("Drop description type = " & dropDescription.type.ToString())
-                    If Drag._isDragging Then
-                        dropDescription.type = type
-                        dropDescription.szMessage = message
-                        dropDescription.szInsert = insert
-                        Marshal.StructureToPtr(dropDescription, m.unionmember, False)
-                        'Debug.WriteLine("Drop description overwritten to " & type.ToString())
-                        doSet = False
-                    End If
+                    dropDescription.type = type
+                    dropDescription.szMessage = message
+                    dropDescription.szInsert = insert
+                    Marshal.StructureToPtr(dropDescription, m.unionmember, False)
+                    'Debug.WriteLine("Drop description overwritten to " & type.ToString())
+                    doSet = False
                     'Else
                     'Debug.WriteLine("Drop description is NULL         " & type.ToString())
                 End If
-            Else
+                'Else
                 'Debug.WriteLine("Drop description does not exist         " & type.ToString())
-                If type = DROPIMAGETYPE.DROPIMAGE_INVALID Then doSet = False
+                'If type = DROPIMAGETYPE.DROPIMAGE_INVALID Then doSet = False
             End If
             If doSet Then
                 dropDescription = New DROPDESCRIPTION() With {
@@ -122,32 +120,42 @@ Namespace Helpers
                 }
                 Dim ptr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of DROPDESCRIPTION))
                 Marshal.StructureToPtr(dropDescription, ptr, False)
+                Dim format2 As FORMATETC = New FORMATETC() With {
+                .cfFormat = Functions.RegisterClipboardFormat("DropDescription"),
+                .dwAspect = DVASPECT.DVASPECT_CONTENT,
+                .lindex = -1,
+                .ptd = IntPtr.Zero,
+                .tymed = TYMED.TYMED_HGLOBAL
+            }
                 Dim medium As STGMEDIUM = New STGMEDIUM() With {
                     .pUnkForRelease = IntPtr.Zero,
                     .tymed = TYMED.TYMED_HGLOBAL,
                     .unionmember = ptr
                 }
-                Dim h As HRESULT = dataObject.SetData(format, medium, True)
-                'Debug.WriteLine("Drop description set to " & type.ToString() & "   h=" & h.ToString())
+                Dim h As HRESULT = dataObject.SetData(format2, medium, True)
+                Debug.WriteLine("Drop description set to " & type.ToString() & "   h=" & h.ToString())
             End If
             _isDropDescriptionSet = True
         End Sub
 
         Public Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragEnter
             'Debug.WriteLine("WpfDragTargetProxy.DragEnter")
-            Drag.InitializeDragImage()
+            'Drag.InitializeDragImage()
             _dataObject = pDataObj
+
+            If Drag._isDragging Then
+            End If
 
             Dim dropTarget As BaseDropTarget = GetDropTargetFromWIN32POINT(ptWIN32)
             If Not dropTarget Is Nothing Then
                 _activeDropTarget = dropTarget
                 Dim hwnd As IntPtr = _hwnds(_controls.FirstOrDefault(Function(kv) kv.Value.Equals(_activeDropTarget)).Key)
-                'Debug.WriteLine("_dropTargetHelper.DragEnter")
                 _isDropDescriptionSet = False
-                Dim h As HRESULT = _activeDropTarget.DragEnterInternal(pDataObj, grfKeyState, ptWIN32, pdwEffect)
+                Dim h As HRESULT = _activeDropTarget.DragEnter(pDataObj, grfKeyState, ptWIN32, pdwEffect)
                 If Drag.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
                     SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                 End If
+                'Debug.WriteLine("_dropTargetHelper.DragEnter")
                 _dropTargetHelper.DragEnter(hwnd, _dataObject, ptWIN32, pdwEffect)
                 Return h
             Else
@@ -179,7 +187,7 @@ Namespace Helpers
 
                     _activeDropTarget = dropTarget
                     _isDropDescriptionSet = False
-                    Dim h As HRESULT = _activeDropTarget.DragEnterInternal(_dataObject, grfKeyState, ptWIN32, pdwEffect)
+                    Dim h As HRESULT = _activeDropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
                     If Drag.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
                         SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     End If

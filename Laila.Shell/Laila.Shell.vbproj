@@ -164,6 +164,8 @@
 
   <ItemGroup>
     <None Remove="Images\3dots16.png" />
+    <None Remove="Images\arrow_left16.png" />
+    <None Remove="Images\arrow_right16.png" />
     <None Remove="Images\arrow_up16.png" />
     <None Remove="Images\chevron16.png" />
     <None Remove="Images\copy16.png" />
@@ -174,6 +176,7 @@
     <None Remove="Images\monitor16.png" />
     <None Remove="Images\paste16.png" />
     <None Remove="Images\pin16.png" />
+    <None Remove="Images\refresh16.png" />
     <None Remove="Images\rename16.png" />
     <None Remove="Images\sortasc.png" />
     <None Remove="Images\sortdesc.png" />
@@ -207,6 +210,8 @@
 
   <ItemGroup>
     <Resource Include="Images\3dots16.png" />
+    <Resource Include="Images\arrow_left16.png" />
+    <Resource Include="Images\arrow_right16.png" />
     <Resource Include="Images\arrow_up16.png" />
     <Resource Include="Images\chevron16.png" />
     <Resource Include="Images\copy16.png" />
@@ -217,6 +222,7 @@
     <Resource Include="Images\monitor16.png" />
     <Resource Include="Images\paste16.png" />
     <Resource Include="Images\pin16.png" />
+    <Resource Include="Images\refresh16.png" />
     <Resource Include="Images\rename16.png" />
     <Resource Include="Images\sortasc.png" />
     <Resource Include="Images\sortdesc.png" />

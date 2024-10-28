@@ -286,14 +286,16 @@ Public Class TreeViewDropTarget
                             Marshal.FreeCoTaskMem(pidl)
                         End If
                     End Try
-
+                    'Debug.WriteLine("got dropTarget = " & If(dropTarget Is Nothing, "nothing", "something"))
                     If Not dropTarget Is Nothing Then
                         _treeView.SetSelectedItem(overItem)
                         If Not _lastDropTarget Is Nothing Then
                             'Debug.WriteLine("_lastDropTarget.DragLeave()   newPinndedIndex=" & newPinnedIndex)
                             _lastDropTarget.DragLeave()
                         End If
-                        WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
+                        'If Drag.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not WpfDragTargetProxy._isDropDescriptionSet AndAlso Drag._isDragging Then
+                        '    WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
+                        'End If
                         _newPinnedIndex = newPinnedIndex
                         Try
                             'Debug.WriteLine("dropTarget.DragEnter()   newPinndedIndex=" & newPinnedIndex)
@@ -318,9 +320,12 @@ Public Class TreeViewDropTarget
                 ElseIf Not _lastDropTarget Is Nothing Then
                     _newPinnedIndex = newPinnedIndex
                     'Debug.WriteLine("_lastDropTarget.DragOver()   newPinndedIndex=" & newPinnedIndex)
-                    WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
+                    'If Drag.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not WpfDragTargetProxy._isDropDescriptionSet AndAlso Drag._isDragging Then
+                    '    WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
+                    'End If
                     Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
                 Else
+                    'Debug.WriteLine("did nothing")
                     _newPinnedIndex = newPinnedIndex
                     pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                     _treeView.SetSelectedItem(Nothing)

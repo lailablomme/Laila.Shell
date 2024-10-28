@@ -316,7 +316,7 @@ Namespace Controls
                                         Await func(en.Current, cb)
                                     Else
                                         _selectionHelper.SetSelectedItems({tf})
-                                        Me.Folder = tf
+                                        If Not Me.Folder.FullPath = tf?.FullPath Then Me.Folder = tf
 
                                         If Not callback Is Nothing Then
                                             callback(tf)
@@ -341,7 +341,7 @@ Namespace Controls
                             _isSettingSelectedFolder = False
                         End If
                     Else
-                        Me.Folder = folder
+                        If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
 
                         If Not callback Is Nothing Then
                             callback(folder)

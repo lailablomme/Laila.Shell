@@ -1,6 +1,7 @@
 ﻿Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
+Imports System.Security.Cryptography.Xml
 Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
@@ -46,6 +47,7 @@ Public Class Drag
             Try
                 Debug.WriteLine("Drag.Start")
 
+                ' make a DataObject for our list of items
                 Dim shellItemPtr As IntPtr, folderpidl As IntPtr
                 Dim pidls(items.Count - 1) As IntPtr, lastpidl As IntPtr, pidlsPtr As IntPtr
                 Try
@@ -70,6 +72,33 @@ Public Class Drag
                     End Try
                 Next
                 Functions.SHCreateDataObject(folderpidl, items.Count, pidlsPtr, IntPtr.Zero, GetType(IDataObject).GUID, _dataObject)
+
+                ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
+                ' and I don't know what it's doing 
+                Dim initDropTarget As IDropTarget, pidl As IntPtr, dropTargetPtr As IntPtr
+                Try
+                    shellItemPtr = Marshal.GetIUnknownForObject(Shell.Desktop._shellItem2)
+                    Functions.SHGetIDListFromObject(shellItemPtr, pidl)
+                    Dim shellFolder As IShellFolder
+                    Functions.SHGetDesktopFolder(shellFolder)
+                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    initDropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+                    initDropTarget.DragEnter(_dataObject, 0, New WIN32POINT() With {.x = 0, .y = 0}, 0)
+                    initDropTarget.DragLeave()
+                Finally
+                    If Not IntPtr.Zero.Equals(shellItemPtr) Then
+                        Marshal.Release(shellItemPtr)
+                    End If
+                    If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                        Marshal.Release(dropTargetPtr)
+                    End If
+                    If Not IntPtr.Zero.Equals(pidl) Then
+                        Marshal.FreeCoTaskMem(pidl)
+                    End If
+                    If Not initDropTarget Is Nothing Then
+                        Marshal.ReleaseComObject(initDropTarget)
+                    End If
+                End Try
 
                 makeDragImageObjects(items)
                 InitializeDragImage()
@@ -179,10 +208,10 @@ Public Class Drag
             _dragImage.ptOffset.y = ICON_SIZE + 10
             _dragImage.hbmpDragImage = _bitmap.GetHbitmap()
             _dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
+            InitializeDragSourceHelper2()
             Dim h As HRESULT = _dragSourceHelper.InitializeFromBitmap(_dragImage, _dataObject)
             'MsgBox("h=" & h.ToString())
             Debug.WriteLine("InitializeFromBitmap returned " & h.ToString())
-            InitializeDragSourceHelper2()
         End If
     End Sub
 
@@ -219,8 +248,10 @@ Public Class Drag
                 wParam = DROPIMAGETYPE.DROPIMAGE_NONE
             End If
 
-            Dim hwnd As IntPtr = getGlobalDataDWord("DragWindow")
-            Functions.SendMessage(hwnd, WM.USER + 2, wParam, 0)
+            Dim hwnd As IntPtr? = getGlobalDataDWord("DragWindow")
+            If hwnd.HasValue Then
+                Functions.SendMessage(hwnd.Value, WM.USER + 2, wParam, 0)
+            End If
         Else
             If dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
                 Mouse.OverrideCursor = _moveCursor
@@ -263,4 +294,22 @@ Public Class Drag
             Return Nothing
         End If
     End Function
+
+    Private Shared Sub setGlobalDataDWord(dataObject As IDataObject, clipboardFormat As String, val As Integer)
+        Dim ptr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of Integer))
+        Marshal.WriteInt32(ptr, val)
+        Dim format As FORMATETC = New FORMATETC() With {
+            .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
+            .dwAspect = DVASPECT.DVASPECT_CONTENT,
+            .lindex = -1,
+            .ptd = IntPtr.Zero,
+            .tymed = TYMED.TYMED_HGLOBAL
+        }
+        Dim medium As STGMEDIUM = New STGMEDIUM() With {
+            .pUnkForRelease = IntPtr.Zero,
+            .tymed = TYMED.TYMED_HGLOBAL,
+            .unionmember = ptr
+        }
+        dataObject.SetData(format, medium, True)
+    End Sub
 End Class

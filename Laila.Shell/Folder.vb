@@ -141,6 +141,22 @@ Public Class Folder
         End Get
     End Property
 
+    Public Sub RefreshItems()
+        Me.IsLoading = True
+        For Each item In _items.ToList()
+            _items.Remove(item)
+        Next
+        Me.GetItems()
+    End Sub
+
+    Public Async Function RefreshItemsAsync() As Task
+        Me.IsLoading = True
+        For Each item In _items.ToList()
+            _items.Remove(item)
+        Next
+        Await Me.GetItemsAsync()
+    End Function
+
     Public Overridable Function GetItems() As List(Of Item)
         If _items.Count = 0 Then
             updateItems(_items, False)

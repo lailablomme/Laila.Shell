@@ -195,7 +195,6 @@ Public Class ListViewDropTarget
                     If Not _lastDropTarget Is Nothing Then
                         _lastDropTarget.DragLeave()
                     End If
-                    WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     Try
                         Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
                     Finally
@@ -214,7 +213,6 @@ Public Class ListViewDropTarget
                     End If
                 End If
             ElseIf Not _lastDropTarget Is Nothing Then
-                WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                 Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
             Else
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE

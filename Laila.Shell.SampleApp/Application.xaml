@@ -131,10 +131,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                <Setter TargetName="border" Property="Background" Value="#11000000"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Foreground" Value="Gray"/>
+                                <Setter TargetName="border" Property="Background" Value="#22000000"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -166,10 +167,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                <Setter TargetName="border" Property="Background" Value="#11000000"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                <Setter TargetName="border" Property="Background" Value="#22000000"/>
                                 <Setter TargetName="chevronImage" Property="RenderTransform">
                                     <Setter.Value>
                                         <RotateTransform Angle="90"/>
@@ -198,10 +199,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                <Setter TargetName="border" Property="Background" Value="#11000000"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#eeeeee"/>
+                                <Setter TargetName="border" Property="Background" Value="#22000000"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

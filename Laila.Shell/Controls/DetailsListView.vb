@@ -1,4 +1,5 @@
-﻿Imports System.IO
+﻿Imports System.ComponentModel
+Imports System.IO
 Imports System.IO.Compression
 Imports System.Runtime.InteropServices
 Imports System.Security.Cryptography.X509Certificates
@@ -439,8 +440,10 @@ Namespace Controls
         End Sub
 
         Friend Async Sub OnFolderChangedLocal(oldValue As Folder, newValue As Folder)
-            If Not Me.Folder Is Nothing Then
-                If Not _timeSpentTimer Is Nothing Then _timeSpentTimer.Dispose()
+            If Not _timeSpentTimer Is Nothing Then _timeSpentTimer.Dispose()
+
+            If Not oldValue Is Nothing Then
+                RemoveHandler oldValue.PropertyChanged, AddressOf folder_PropertyChanged
             End If
 
             If Not newValue Is Nothing Then
@@ -457,14 +460,18 @@ Namespace Controls
                 Await newValue.GetItemsAsync()
                 Me.ColumnsIn = buildColumnsIn()
                 Me.IsLoading = False
+                AddHandler newValue.PropertyChanged, AddressOf folder_PropertyChanged
             End If
         End Sub
 
-        Private Sub folder_LoadingStateChanged(isLoading As Boolean)
-            UIHelper.OnUIThread(
-                Sub()
-                    Me.IsLoading = isLoading
-                End Sub)
+        Private Sub folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
+            Select Case e.PropertyName
+                Case "IsLoading"
+                    UIHelper.OnUIThread(
+                        Sub()
+                            Me.IsLoading = CType(s, Folder).IsLoading
+                        End Sub)
+            End Select
         End Sub
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)

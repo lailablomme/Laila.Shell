@@ -1,22 +1,16 @@
-﻿Imports System.ComponentModel.Design
-Imports System.Runtime.InteropServices
-Imports System.Runtime.InteropServices.ComTypes
+﻿Imports System.Runtime.InteropServices
+Imports System.Runtime.Serialization
 
-<ComVisible(True), Guid("e5fdcd58-61e1-4c99-9e7b-94882e93fd58"), ProgId("Laila.Shell.DragDataObject")>
-Public Class DragDataObject
+Public Class DataObjectSpy
     Implements Laila.Shell.IDataObject
-    Implements IDisposable
 
-    Private _data As List(Of Tuple(Of FORMATETC, STGMEDIUM, Boolean)) =
-        New List(Of Tuple(Of FORMATETC, STGMEDIUM, Boolean))
-    Private _toRelease As List(Of STGMEDIUM) = New List(Of STGMEDIUM)()
-    Private disposedValue As Boolean
-    Const DV_E_FORMATETC As Integer = &H80040064
+    Private _dataObject As IDataObject
 
-    Public Sub New()
+    Public Sub New(dataObject As IDataObject)
+        _dataObject = dataObject
     End Sub
 
-    Public Function GetData(ByRef format As FORMATETC, ByRef medium As STGMEDIUM) As Integer Implements IDataObject.GetData
+    Public Function GetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) As Integer Implements IDataObject.GetData
         Select Case format.cfFormat
             Case ClipboardFormat.CF_HDROP
                 Debug.WriteLine("GetData CF_HDROP")
@@ -101,41 +95,16 @@ Public Class DragDataObject
         End Select
         Debug.WriteLine("GetData " & format.tymed.ToString() & "," & format.lindex)
 
-        For Each d In _data
-            If compare(d.Item1, format) Then
-                Debug.WriteLine("Found")
-                ' Return Functions.CopyStgMedium(d.Item2, medium)
-                medium = d.Item2
-                Return 0
-            End If
-        Next
-
-        Debug.WriteLine("Not found")
-        Return DV_E_FORMATETC
+        Return _dataObject.GetData(format, medium)
     End Function
 
-    Private Function compare(format As FORMATETC, format2 As FORMATETC) As Boolean
-        Return format2.cfFormat = format.cfFormat AndAlso format2.lindex = format.lindex 'AndAlso format2.tymed = format.tymed 'AndAlso format2.dwAspect = format.dwAspect
-    End Function
-
-    Public Function GetDataHere(ByRef format As FORMATETC, ByRef medium As STGMEDIUM) As Integer Implements IDataObject.GetDataHere
+    Public Function GetDataHere(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) As Integer Implements IDataObject.GetDataHere
         Debug.WriteLine("GetDataHere")
 
-        For Each d In _data
-            If compare(d.Item1, format) Then
-                Debug.WriteLine("Found")
-                medium.pUnkForRelease = d.Item2.pUnkForRelease
-                medium.unionmember = d.Item2.unionmember
-                medium.tymed = d.Item2.tymed
-                Return 0
-            End If
-        Next
-
-        Debug.WriteLine("Not found")
-        Return DV_E_FORMATETC
+        Return _dataObject.GetDataHere(format, medium)
     End Function
 
-    Public Function QueryGetData(ByRef format As FORMATETC) As Integer Implements IDataObject.QueryGetData
+    Public Function QueryGetData(ByRef format As ComTypes.FORMATETC) As Integer Implements IDataObject.QueryGetData
         Select Case format.cfFormat
             Case ClipboardFormat.CF_HDROP
                 Debug.WriteLine("QueryGetData CF_HDROP")
@@ -221,23 +190,14 @@ Public Class DragDataObject
 
         Debug.WriteLine("QueryGetData " & format.tymed.ToString() & "," & format.lindex)
 
-        For Each d In _data
-            If compare(d.Item1, format) Then
-                Debug.WriteLine("Found")
-                Return 0
-            End If
-        Next
-
-        Debug.WriteLine("Not Found")
-        Return &H80040064 ' DV_E_FORMATETC
+        Return _dataObject.QueryGetData(format)
+    End Function
+    Public Function GetCanonicalFormatEtc(ByRef formatIn As ComTypes.FORMATETC, ByRef formatOut As ComTypes.FORMATETC) As Integer Implements IDataObject.GetCanonicalFormatEtc
+        Debug.WriteLine("GetCanonicalFormatEtc")
+        Return _dataObject.GetCanonicalFormatEtc(formatIn, formatOut)
     End Function
 
-    Public Function GetCanonicalFormatEtc(ByRef formatIn As FORMATETC, ByRef formatOut As FORMATETC) As Integer Implements IDataObject.GetCanonicalFormatEtc
-        formatOut = formatIn
-        Return &H80040130 ' DATA_S_SAMEFORMATETC
-    End Function
-
-    Public Function SetData(ByRef format As FORMATETC, ByRef medium As STGMEDIUM, ByVal release As Boolean) As Integer Implements IDataObject.SetData
+    Public Function SetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM, ByVal release As Boolean) As Integer Implements IDataObject.SetData
         Select Case format.cfFormat
             Case ClipboardFormat.CF_HDROP
                 Debug.WriteLine("SetData CF_HDROP")
@@ -321,36 +281,15 @@ Public Class DragDataObject
                 Debug.WriteLine("SetData " & format.cfFormat)
         End Select
 
-        For i = 0 To _data.Count - 1
-            Dim d As Tuple(Of FORMATETC, STGMEDIUM, Boolean) = _data(i)
-            If compare(d.Item1, format) Then
-                If d.Item3 Then
-                    _toRelease.Add(d.Item2)
-                End If
-                _data.Remove(d)
-                Exit For
-            End If
-        Next
-
-        _data.Add(New Tuple(Of FORMATETC, STGMEDIUM, Boolean)(format, medium, release))
-
-        Return 0
+        Return _dataObject.SetData(format, medium, release)
     End Function
 
-    Public Function EnumFormatEtc(ByVal direction As DATADIR, ByRef ppenumFormatEtc As ComTypes.IEnumFORMATETC) As Integer Implements IDataObject.EnumFormatEtc
+    Public Function EnumFormatEtc(ByVal direction As ComTypes.DATADIR, ByRef ppenumFormatEtc As ComTypes.IEnumFORMATETC) As Integer Implements IDataObject.EnumFormatEtc
         Debug.WriteLine("EnumFormatEtc")
-        Dim formats As List(Of FORMATETC) = New List(Of FORMATETC)()
-        For Each f In _data.Select(Function(v) v.Item1)
-            If Not formats.Exists(Function(fmt) compare(fmt, f)) Then
-                formats.Add(f)
-            End If
-        Next
-
-        ppenumFormatEtc = New EnumFORMATETC(formats.ToArray())
-        Return 0
+        Return _dataObject.EnumFormatEtc(direction, ppenumFormatEtc)
     End Function
 
-    Public Function DAdvise(ByRef pFormatetc As FORMATETC, advf As Integer, adviseSink As IAdviseSink, ByRef connection As Integer) As Integer Implements IDataObject.DAdvise
+    Public Function DAdvise(ByRef pFormatetc As ComTypes.FORMATETC, advf As Integer, adviseSink As IAdviseSink, ByRef connection As Integer) As Integer Implements IDataObject.DAdvise
         Debug.WriteLine("DAdvise")
         Return &H80004001 ' E_NOTIMPL
     End Function
@@ -363,80 +302,5 @@ Public Class DragDataObject
     Public Function EnumDAdvise(ByRef enumAdvise As IEnumSTATDATA) As Integer Implements IDataObject.EnumDAdvise
         Debug.WriteLine("EnumDAdvise")
         Return &H80004001 ' E_NOTIMPL
-    End Function
-
-    Protected Overridable Sub Dispose(disposing As Boolean)
-        If Not disposedValue Then
-            If disposing Then
-                ' dispose managed state (managed objects)
-            End If
-
-            ' free unmanaged resources (unmanaged objects) and override finalizer
-            ' set large fields to null
-            Try
-                For Each m In _toRelease.Union(_data.Select(Function(d) d.Item2))
-                    Functions.ReleaseStgMedium(m)
-                Next
-            Catch ex As Exception
-            End Try
-            disposedValue = True
-        End If
-    End Sub
-
-    ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
-    Protected Overrides Sub Finalize()
-        ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
-        Dispose(disposing:=False)
-        MyBase.Finalize()
-    End Sub
-
-    Public Sub Dispose() Implements IDisposable.Dispose
-        ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
-        Dispose(disposing:=True)
-        GC.SuppressFinalize(Me)
-    End Sub
-End Class
-
-Public Class EnumFORMATETC
-    Implements ComTypes.IEnumFORMATETC
-
-    Private formats As FORMATETC()
-    Private currentIndex As Integer
-
-    Public Sub New(formats As FORMATETC())
-        Me.formats = formats
-        Me.currentIndex = 0
-    End Sub
-
-    Public Function Skip(celt As Integer) As Integer Implements ComTypes.IEnumFORMATETC.Skip
-        currentIndex += celt
-        Return If(currentIndex <= formats.Length, 0, 1) ' S_OK or S_FALSE
-    End Function
-
-    Public Function Reset() As Integer Implements ComTypes.IEnumFORMATETC.Reset
-        Debug.WriteLine("EnumFORMATETC.Reset")
-        currentIndex = 0
-    End Function
-
-    Public Sub Clone(ByRef ppenum As ComTypes.IEnumFORMATETC) Implements ComTypes.IEnumFORMATETC.Clone
-        ppenum = New EnumFORMATETC(formats)
-    End Sub
-
-    Public Function [Next](celt As Integer, rgelt() As FORMATETC, pceltFetched() As Integer) As Integer Implements ComTypes.IEnumFORMATETC.Next
-        Debug.WriteLine("EnumFORMATETC.Next " & celt)
-        If celt = 64 Then
-            Dim i = 9
-        End If
-        Dim fetched As Integer = 0
-        While currentIndex < formats.Length AndAlso fetched < celt
-            rgelt(fetched) = formats(currentIndex)
-            currentIndex += 1
-            fetched += 1
-        End While
-        'ReDim Preserve pceltFetched(0)
-        If Not pceltFetched Is Nothing Then
-            pceltFetched(0) = fetched
-        End If
-        Return If(fetched <> celt, 1, 0) ' S_OK or S_FALSE
     End Function
 End Class
