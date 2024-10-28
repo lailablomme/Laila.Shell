@@ -3,6 +3,7 @@ Imports System.Runtime.InteropServices
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Helpers
 
 Public Class Item
     Inherits NotifyPropertyChangedBase
@@ -117,7 +118,9 @@ Public Class Item
             If _treeRootIndex <> -1 Then
                 Return String.Format("{0:0000000000000000000}", _treeRootIndex)
             Else
-                Return _parent.TreeSortKey & Me.ItemNameDisplaySortValue & New String(" ", 260 - Me.ItemNameDisplaySortValue.Length)
+                Dim itemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
+                If itemNameDisplaySortValue Is Nothing Then itemNameDisplaySortValue = ""
+                Return _parent.TreeSortKey & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
             End If
         End Get
     End Property
@@ -167,13 +170,17 @@ Public Class Item
                 Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
             _shellItem2.GetAttributes(_attributes, _attributes)
             For Each prop In Me.GetType().GetProperties()
-                If Not prop.Name = "ItemsThreaded" Then
-                    Me.NotifyOfPropertyChange(prop.Name)
-                End If
+                UIHelper.OnUIThread(
+                    Sub()
+                        Me.NotifyOfPropertyChange(prop.Name)
+                    End Sub)
             Next
             If Not Me.Parent Is Nothing Then
                 For Each column In Me.Parent.Columns
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
+                    UIHelper.OnUIThread(
+                    Sub()
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
+                    End Sub)
                 Next
             End If
         End If

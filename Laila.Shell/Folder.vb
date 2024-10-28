@@ -338,13 +338,14 @@ Public Class Folder
         _isEnumerated = True
         _isLoaded = True
 
+        For Each item In toUpdate
+            updateProperties(item)
+        Next
+
         UIHelper.OnUIThread(
             Sub()
                 For Each item In toAdd
                     add(item)
-                Next
-                For Each item In toUpdate
-                    updateProperties(item)
                 Next
                 For Each item In getToBeRemoved(pathsBefore, pathsAfter)
                     If TypeOf item Is Folder Then
