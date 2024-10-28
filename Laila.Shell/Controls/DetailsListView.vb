@@ -276,7 +276,8 @@ Namespace Controls
                             _menu.InvokeCommand(_menu.DefaultId)
                         End If
                     ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
-                        If Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.Contains(clickedItem) Then
+                        If Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.Contains(clickedItem) _
+                            AndAlso Keyboard.Modifiers = ModifierKeys.None Then
                             e.Handled = True
                         End If
                     ElseIf e.RightButton = MouseButtonState.Pressed AndAlso

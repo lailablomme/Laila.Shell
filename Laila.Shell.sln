@@ -7,6 +7,8 @@ Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "Laila.Shell", "Laila.Shell\
 EndProject
 Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "Laila.Shell.SampleApp2", "Laila.Shell.SampleApp\Laila.Shell.SampleApp2.vbproj", "{3A96A4E8-7DAC-431E-8D3A-035BAE962B18}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Laila.Shell.WinRT", "Laila.Shell.WinRT\Laila.Shell.WinRT.csproj", "{D0B75D20-3C7F-4221-84F7-27031028EC8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		CodeAnalysisDebug|Any CPU = CodeAnalysisDebug|Any CPU
@@ -56,6 +58,16 @@ Global
 		{3A96A4E8-7DAC-431E-8D3A-035BAE962B18}.Release|x64.Build.0 = Release|x64
 		{3A96A4E8-7DAC-431E-8D3A-035BAE962B18}.Release|x86.ActiveCfg = Release|x86
 		{3A96A4E8-7DAC-431E-8D3A-035BAE962B18}.Release|x86.Build.0 = Release|x86
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.CodeAnalysisDebug|Any CPU.ActiveCfg = Debug|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.CodeAnalysisDebug|x64.ActiveCfg = Debug|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.CodeAnalysisDebug|x86.ActiveCfg = Debug|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.Debug|x64.ActiveCfg = Debug|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.Debug|x64.Build.0 = Debug|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.Debug|x86.ActiveCfg = Debug|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.Release|Any CPU.ActiveCfg = Release|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.Release|x64.ActiveCfg = Release|x64
+		{D0B75D20-3C7F-4221-84F7-27031028EC8F}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

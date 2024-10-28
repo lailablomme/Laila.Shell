@@ -1,15 +1,11 @@
 ﻿Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
-Imports System.Security.Cryptography.Xml
-Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
-Imports Laila.Shell.Helpers
-Imports Microsoft
 
 Public Class Drag
     Implements IDropSource

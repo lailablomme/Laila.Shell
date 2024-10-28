@@ -1,6 +1,4 @@
-﻿Imports System.ComponentModel
-Imports System.IO
-Imports System.Reflection.Metadata
+﻿Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows
@@ -11,10 +9,6 @@ Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
-Imports Laila.Shell.Helpers
-Imports Windows.ApplicationModel.Activation
-Imports Windows.ApplicationModel.DataTransfer
-Imports Windows.Storage
 
 Public Class ContextMenu
     Implements IDisposable
@@ -455,9 +449,11 @@ Public Class ContextMenu
     Public Sub InvokeCommand(id As String)
         Select Case id.Split(vbTab)(1)
             Case "Windows.ModernShare"
-                'Dim dataTransferManager As DataTransferManager = DataTransferManager.GetForCurrentView()
-                'AddHandler dataTransferManager.DataRequested, AddressOf dataTransferManager_OnDataRequested
-                'DataTransferManager.ShowShareUI()
+                Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
+                Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
+                Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
+                Dim instance As Object = Activator.CreateInstance(type)
+                methodInfo.Invoke(instance, {_items.ToList().Select(Function(i) i.FullPath).ToList()})
             Case Else
                 Dim cmi As New CMInvokeCommandInfoEx
                 Debug.WriteLine("InvokeCommand " & id)
@@ -483,21 +479,6 @@ Public Class ContextMenu
 
         Me.ReleaseContextMenu()
     End Sub
-
-    'Private Sub dataTransferManager_OnDataRequested(sender As DataTransferManager, args As DataRequestedEventArgs)
-    '    Dim requestData As DataPackage = args.Request.Data
-    '    requestData.Properties.Title = "Share Files"
-    '    requestData.Properties.Description = "Share files using Windows Modern Share."
-
-    '    ' Create a list of files to share
-    '    Dim files As New List(Of IStorageItem)()
-    '    For Each item In _items
-    '        files.Add(StorageFile.GetFileFromPathAsync(item.FullPath).AsTask().Result)
-    '    Next
-
-    '    ' Set the files to the DataPackage
-    '    requestData.SetStorageItems(files)
-    'End Sub
 
     Private Sub ReleaseContextMenu()
         If Not IntPtr.Zero.Equals(_hMenu) Then
