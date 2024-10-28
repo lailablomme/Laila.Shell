@@ -38,10 +38,7 @@ Namespace Controls
 
             Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
             view.Filter = AddressOf filter
-            view.SortDescriptions.Add(New SortDescription() With {
-                .PropertyName = "TreeSortKey",
-                .Direction = ListSortDirection.Ascending
-            })
+            CType(view, ListCollectionView).CustomSort = New TreeViewPropertyComparer("TreeSortKey")
             AddHandler Me.Items.CollectionChanged, AddressOf items_CollectionChanged
 
             AddHandler System.Windows.Application.Current.MainWindow.Closed,
