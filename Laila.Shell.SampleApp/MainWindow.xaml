@@ -48,7 +48,8 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal">
                             <Button Style="{DynamicResource lailaShell_NavigationButtonStyle}" x:Name="BackButton" Margin="0,0,5,0" Click="BackButton_Click"
-                                    IsEnabled="{Binding CanBack, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}">
+                                    IsEnabled="{Binding CanBack, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}"
+                                    ToolTip="{Binding BackText, ElementName=navigation, Mode=OneWay}">
                                 <Image Width="16" Height="16">
                                     <Image.Style>
                                         <Style>
@@ -63,7 +64,8 @@
                                 </Image>
                             </Button>
                             <Button Style="{DynamicResource lailaShell_NavigationButtonStyle}" x:Name="ForwardButton" Margin="0,0,5,0" Click="ForwardButton_Click"
-                                    IsEnabled="{Binding CanForward, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}">
+                                    IsEnabled="{Binding CanForward, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}"
+                                    ToolTip="{Binding ForwardText, ElementName=navigation, Mode=OneWay}">
                                 <Image Width="16" Height="16">
                                     <Image.Style>
                                         <Style>
@@ -78,7 +80,8 @@
                                 </Image>
                             </Button>
                             <Button Style="{DynamicResource lailaShell_NavigationButtonStyle}" x:Name="UpButton" Margin="0,0,5,0" Click="UpButton_Click"
-                                    IsEnabled="{Binding CanUp, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}">
+                                    IsEnabled="{Binding CanUp, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}"
+                                    ToolTip="{Binding UpText, ElementName=navigation, Mode=OneWay}">
                                 <Image Width="16" Height="16">
                                     <Image.Style>
                                         <Style>
@@ -94,6 +97,12 @@
                             </Button>
                             <Button Style="{DynamicResource lailaShell_NavigationButtonStyle}" x:Name="RefreshButton" Margin="0,0,5,0" Click="RefreshButton_Click"
                                     Tag="{Binding ., ElementName=navigation}">
+                                <Button.ToolTip>
+                                    <TextBlock>
+                                        <Run>Refresh</Run>
+                                        <Run Text="{Binding Folder.DisplayName, Mode=OneWay}" />
+                                    </TextBlock>
+                                </Button.ToolTip>
                                 <Image Source="pack://application:,,,/Laila.Shell;component/Images/refresh16.png" Width="16" Height="16" />
                             </Button>
                         </StackPanel>

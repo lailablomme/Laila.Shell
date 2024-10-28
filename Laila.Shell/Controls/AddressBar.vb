@@ -101,14 +101,14 @@ Namespace Controls
 
             Dim buttons As List(Of StackPanel) = New List(Of StackPanel)()
             Dim totalWidth As Double = 0
-            Dim buttonStyle As Style = TryFindResource("lailaShell_NavigationButtonStyle")
-            Dim chevronButtonStyle As Style = TryFindResource("lailaShell_NavigationChevronButtonStyle")
-            Dim moreButtonStyle As Style = TryFindResource("lailaShell_NavigationMoreButtonStyle")
+            Dim buttonStyle As Style = TryFindResource("lailaShell_AddressBarButtonStyle")
+            Dim chevronButtonStyle As Style = TryFindResource("lailaShell_AddressBarChevronButtonStyle")
+            Dim moreButtonStyle As Style = TryFindResource("lailaShell_AddressBarMoreButtonStyle")
             _contextMenus.Clear()
 
             Dim standardPanel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal, .Focusable = False}
-            Dim computerImage As Image = New Image() With {.Width = 16, .Height = 16, .VerticalAlignment = VerticalAlignment.Center}
-            computerImage.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/monitor16.png")
+            Dim computerImage As Image = New Image() With {.Width = 16, .Height = 16, .VerticalAlignment = VerticalAlignment.Center, .Margin = New Thickness(4, 0, 4, 0)}
+            'computerImage.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/monitor16.png")
             standardPanel.Children.Add(computerImage)
             Dim specialFoldersButton As ToggleButton = New ToggleButton()
             If Not chevronButtonStyle Is Nothing Then specialFoldersButton.Style = chevronButtonStyle
@@ -195,6 +195,9 @@ Namespace Controls
                 Else
                     Exit While
                 End If
+                If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
+                    computerImage.Source = currentFolder.Icon(16)
+                End If
                 currentFolder = currentFolder.Parent
                 If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
                     currentFolder = Nothing
@@ -216,6 +219,9 @@ Namespace Controls
                             Me.Folder = moreMenuItem.Tag
                         End Sub
                     moreContextMenu.Items.Add(moreMenuItem)
+                    If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
+                        computerImage.Source = currentFolder.Icon(16)
+                    End If
                     currentFolder = currentFolder.Parent
                     If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
                         currentFolder = Nothing

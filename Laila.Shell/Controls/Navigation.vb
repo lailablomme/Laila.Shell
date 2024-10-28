@@ -9,6 +9,9 @@ Namespace Controls
         Public Shared ReadOnly CanBackProperty As DependencyProperty = DependencyProperty.Register("CanBack", GetType(Boolean), GetType(Navigation), New FrameworkPropertyMetadata(False))
         Public Shared ReadOnly CanForwardProperty As DependencyProperty = DependencyProperty.Register("CanForward", GetType(Boolean), GetType(Navigation), New FrameworkPropertyMetadata(False))
         Public Shared ReadOnly CanUpProperty As DependencyProperty = DependencyProperty.Register("CanUp", GetType(Boolean), GetType(Navigation), New FrameworkPropertyMetadata(False, AddressOf OnCanUpChanged))
+        Public Shared ReadOnly BackTextProperty As DependencyProperty = DependencyProperty.Register("BackText", GetType(String), GetType(Navigation), New FrameworkPropertyMetadata("Back"))
+        Public Shared ReadOnly ForwardTextProperty As DependencyProperty = DependencyProperty.Register("ForwardText", GetType(String), GetType(Navigation), New FrameworkPropertyMetadata("Forward"))
+        Public Shared ReadOnly UpTextProperty As DependencyProperty = DependencyProperty.Register("UpText", GetType(String), GetType(Navigation), New FrameworkPropertyMetadata("Up"))
 
         Private _isFolderChanging As Boolean
         Private _list As List(Of Folder)
@@ -54,6 +57,33 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property BackText As String
+            Get
+                Return GetValue(BackTextProperty)
+            End Get
+            Set(ByVal value As String)
+                SetCurrentValue(BackTextProperty, value)
+            End Set
+        End Property
+
+        Public Property ForwardText As String
+            Get
+                Return GetValue(ForwardTextProperty)
+            End Get
+            Set(ByVal value As String)
+                SetCurrentValue(ForwardTextProperty, value)
+            End Set
+        End Property
+
+        Public Property UpText As String
+            Get
+                Return GetValue(UpTextProperty)
+            End Get
+            Set(ByVal value As String)
+                SetCurrentValue(UpTextProperty, value)
+            End Set
+        End Property
+
         Public Sub Back()
             _isFolderChanging = True
             _pointer -= 1
@@ -87,6 +117,9 @@ Namespace Controls
             Me.CanBack = _pointer > 0
             Me.CanForward = _pointer < _list.Count - 1
             Me.CanUp = Not Me.Folder.Parent Is Nothing
+            Me.BackText = If(_pointer - 1 >= 0, "Back to " & _list(_pointer - 1).DisplayName, "")
+            Me.ForwardText = If(_pointer + 1 <= _list.Count - 1, "Forward to " & _list(_pointer + 1).DisplayName, "")
+            Me.UpText = If(Not Me.Folder.Parent Is Nothing, "Up to " & Me.Folder.Parent.DisplayName, "")
         End Sub
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)

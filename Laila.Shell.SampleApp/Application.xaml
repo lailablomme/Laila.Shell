@@ -112,7 +112,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style TargetType="Button" x:Key="lailaShell_NavigationButtonStyle">
+        <Style TargetType="Button" x:Key="lailaShell_AddressBarButtonStyle">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="Black"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -127,26 +127,25 @@
                             Background="{TemplateBinding Background}"
                             CornerRadius="5"
                             BorderBrush="{TemplateBinding BorderBrush}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="contentPresenter" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#11000000"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Foreground" Value="Gray"/>
-                                <Setter TargetName="border" Property="Background" Value="#22000000"/>
+                                <Setter TargetName="contentPresenter" Property="Opacity" Value="0.5"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style TargetType="ToggleButton" x:Key="lailaShell_NavigationChevronButtonStyle">
+        <Style TargetType="ToggleButton" x:Key="lailaShell_AddressBarChevronButtonStyle">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="Black"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Padding" Value="0,0,1,0"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Panel.ZIndex" Value="1"/>
             <Setter Property="Focusable" Value="False"/>
@@ -159,7 +158,7 @@
                             BorderBrush="{TemplateBinding BorderBrush}">
                             <Image Source="pack://application:,,,/Laila.Shell;component/Images/chevron16.png" Width="16" Height="16" x:Name="chevronImage"
                                    VerticalAlignment="Center" HorizontalAlignment="Center"
-                                   RenderTransformOrigin="0.5,0.5">
+                                   RenderTransformOrigin="0.5,0.5" Margin="2,0,-2,0">
                                 <Image.RenderTransform>
                                     <RotateTransform Angle="0"/>
                                 </Image.RenderTransform>
@@ -170,19 +169,21 @@
                                 <Setter TargetName="border" Property="Background" Value="#11000000"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#22000000"/>
+                                <Setter TargetName="border" Property="Background" Value="#11000000"/>
+                                <Setter TargetName="chevronImage" Property="Opacity" Value="0.5"/>
                                 <Setter TargetName="chevronImage" Property="RenderTransform">
                                     <Setter.Value>
                                         <RotateTransform Angle="90"/>
                                     </Setter.Value>
                                 </Setter>
+                                <Setter TargetName="chevronImage" Property="Margin" Value="0"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style TargetType="ToggleButton" x:Key="lailaShell_NavigationMoreButtonStyle">
+        <Style TargetType="ToggleButton" x:Key="lailaShell_AddressBarMoreButtonStyle">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="Black"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -202,7 +203,33 @@
                                 <Setter TargetName="border" Property="Background" Value="#11000000"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="moreImage" Property="Opacity" Value="0.5"/>
+                                <Setter TargetName="border" Property="Background" Value="#11000000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="Button" x:Key="lailaShell_NavigationButtonStyle">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="5,0,5,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="5"
+                            BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#22000000"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#44000000"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -305,6 +332,9 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="#22000000"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#44000000"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
