@@ -454,9 +454,9 @@ Namespace Controls
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                FrequentFolders.RecordTimeSpent(Me.Folder, 1)
+                                FrequentFolders.RecordTimeSpent(Me.Folder, 2)
                             End Sub)
-                    End Sub), Nothing, 1000 * 60, 1000 * 60)
+                    End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
                 Await newValue.GetItemsAsync()
                 Me.ColumnsIn = buildColumnsIn()
                 Me.IsLoading = False

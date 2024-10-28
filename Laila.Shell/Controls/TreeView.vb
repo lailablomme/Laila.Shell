@@ -195,7 +195,6 @@ Namespace Controls
                 End If
                 count += 1
             Next
-
             ' remove pinned items no longer in the list
             For Each pinnedItem As Item In Me.Items.Where(Function(i) _
                 Not TypeOf i Is SeparatorFolder _
@@ -206,6 +205,18 @@ Namespace Controls
                 End If
                 Me.Items.Remove(pinnedItem)
             Next
+            ' add/remove placeholder
+            Dim placeholderFolder As PinnedAndFrequentPlaceholderFolder =
+                    Me.Items.FirstOrDefault(Function(i) TypeOf i Is PinnedAndFrequentPlaceholderFolder)
+            If Me.Items.Where(Function(i) _
+                Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
+                    AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT).Count > 0 Then
+                If Not placeholderFolder Is Nothing Then Me.Items.Remove(placeholderFolder)
+            Else
+                If placeholderFolder Is Nothing Then
+                    Me.Items.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
+                End If
+            End If
         End Function
 
         Private Async Function updateFrequentFolders() As Task
@@ -231,7 +242,7 @@ Namespace Controls
             Next
             ' remove frequent folders no longer in the list
             For Each frequentFolder As Folder In Me.Items.Where(Function(i) _
-                Not TypeOf i Is SeparatorFolder _
+                Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                         AndAlso Not frequentFoldersList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
                 If GetIsSelectionDownFolder(frequentFolder) Then
@@ -239,6 +250,18 @@ Namespace Controls
                 End If
                 Me.Items.Remove(frequentFolder)
             Next
+            ' add/remove placeholder
+            Dim placeholderFolder As PinnedAndFrequentPlaceholderFolder =
+                    Me.Items.FirstOrDefault(Function(i) TypeOf i Is PinnedAndFrequentPlaceholderFolder)
+            If Me.Items.Where(Function(i) _
+                Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
+                    AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT).Count > 0 Then
+                If Not placeholderFolder Is Nothing Then Me.Items.Remove(placeholderFolder)
+            Else
+                If placeholderFolder Is Nothing Then
+                    Me.Items.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
+                End If
+            End If
         End Function
 
         Protected Overridable Sub OnSelectionChanged()

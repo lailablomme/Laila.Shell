@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="clr-namespace:Laila.Shell.Controls">
+                    xmlns:local="clr-namespace:Laila.Shell.Controls"
+                    xmlns:helpers="clr-namespace:Laila.Shell.Helpers">
 
     <Style x:Key="FocusVisual">
         <Setter Property="Control.Template">
@@ -17,7 +18,7 @@
     <SolidColorBrush x:Key="Item.SelectedInactive.Border" Color="#FFDADADA"/>
     <SolidColorBrush x:Key="Item.SelectedActive.Background" Color="#3D26A0DA"/>
     <SolidColorBrush x:Key="Item.SelectedActive.Border" Color="#FF26A0DA"/>
-    
+
     <Style x:Key="lailaShell_TreeViewItemStyle" TargetType="ListBoxItem">
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Background" Value="Transparent"/>
@@ -28,30 +29,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
                     <Grid>
-                        <Separator Width="{Binding ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}}">
-                            <Separator.Style>
-                                <Style>
-                                    <Setter Property="Separator.Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding FullPath}" Value="-separator-">
-                                            <Setter Property="Separator.Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Separator.Style>
-                        </Separator>
                         <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
                                 Background="{TemplateBinding Background}" Padding="4,1,4,1" SnapsToDevicePixels="True" UseLayoutRounding="True">
-                            <Border.Style>
-                                <Style>
-                                    <Setter Property="Border.Visibility" Value="Visible" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding FullPath}" Value="-separator-">
-                                            <Setter Property="Border.Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                               SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
@@ -86,7 +65,71 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
+    <Style x:Key="lailaShell_TreeViewSeparatorItemStyle" TargetType="ListBoxItem">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Separator Width="{Binding ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}}">
+                        </Separator>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="lailaShell_TreeViewPlaceholderItemStyle" TargetType="ListBoxItem">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="LightYellow" Offset="0"/>
+                    <GradientStop Color="Gold" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="BorderBrush" Value="Goldenrod"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="2" 
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"
+                                Background="{TemplateBinding Background}" Padding="4" 
+                                SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="20" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Image Source="../Images/info16.png" Width="16" Height="16" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                                <TextBlock Grid.Column="1" TextWrapping="Wrap">
+                                    Here you will soon find your 5 most frequent used folders while 
+                                    you can also start pinning any number of items to this area right now 
+                                    by dragging them over here or choosing "Pin item" in it's context menu.
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <helpers:TreeViewItemStyleSelector 
+        x:Key="treeViewItemStyleSelector"
+        TreeViewItemStyle="{StaticResource lailaShell_TreeViewItemStyle}"
+        TreeViewSeparatorItemStyle="{StaticResource lailaShell_TreeViewSeparatorItemStyle}"
+        TreeViewPlaceholderItemStyle="{StaticResource lailaShell_TreeViewPlaceholderItemStyle}" />
+
     <Style TargetType="{x:Type local:TreeView}">
         <Setter Property="Template">
             <Setter.Value>
@@ -94,9 +137,9 @@
                     <Grid x:Name="PART_Grid">
                         <ListBox ItemsSource="{TemplateBinding Items}" x:Name="PART_ListBox" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
-                             VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
+                             VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
                              ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0"
-                             VirtualizingPanel.ScrollUnit="Pixel">
+                             VirtualizingPanel.ScrollUnit="Pixel" ItemContainerStyleSelector="{StaticResource treeViewItemStyleSelector}">
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <VirtualizingStackPanel />
@@ -186,7 +229,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                        <Grid x:Name="PART_DragInsertIndicator" Visibility="Collapsed" 
+                        <Grid x:Name="PART_DragInsertIndicator" Visibility="Collapsed" IsHitTestVisible="False" 
                               VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="5,0,5,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2" />

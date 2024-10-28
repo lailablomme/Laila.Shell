@@ -267,7 +267,7 @@
                                 </VisualStateGroup>
                             </VisualStateManager.VisualStateGroups>
                             <Path Grid.Column="0" x:Name="PathLeft" Data="M 5,27 C 5,28 4,32 0,32 L 5,32" Fill="Transparent" Stroke="Transparent" Width="5" Height="32" />
-                            <Border Grid.Column="1" Grid.ColumnSpan="2" x:Name="Border" Background="Transparent" Margin="0,0,0,0" BorderThickness="0" CornerRadius="5,5,0,0">
+                            <Border Grid.Column="1" Grid.ColumnSpan="2" x:Name="Border" Background="Transparent" Margin="0,0,0,0" BorderThickness="0" CornerRadius="8,8,0,0">
                             </Border>
                             <ContentPresenter Grid.Column="1" x:Name="ContentSite" VerticalAlignment="Center" HorizontalAlignment="Left" 
                                               ContentSource="Header" Margin="6" RecognizesAccessKey="True" />

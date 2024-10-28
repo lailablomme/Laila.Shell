@@ -379,7 +379,7 @@ Public Class Folder
                                 Dim parentFullPath As String
                                 parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                                 If Me.FullPath.Equals(parentFullPath) Then
-                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
                                         Dim attr As SFGAO = SFGAO.FOLDER
                                         item1.GetAttributes(attr, attr)
                                         If attr.HasFlag(SFGAO.FOLDER) Then
@@ -406,7 +406,7 @@ Public Class Folder
                                 Dim parentFullPath As String
                                 parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                                 If Me.FullPath.Equals(parentFullPath) Then
-                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
                                         _items.Add(New Folder(item1, Me))
                                     End If
                                 End If
@@ -418,7 +418,7 @@ Public Class Folder
                         End Try
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
-                    If Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
+                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
                         Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
                         If Not item Is Nothing Then
                             If TypeOf item Is Folder Then
@@ -432,7 +432,7 @@ Public Class Folder
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                        If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
                             Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
                             If Not item1 Is Nothing Then
                                 _items.Add(New Folder(item1, Me))
@@ -442,7 +442,7 @@ Public Class Folder
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
                         Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
-                        If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                        If Not Me.IsLoading AndAlso Not item Is Nothing AndAlso TypeOf item Is Folder Then
                             Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                 .Folder = item,
                                 .[Event] = e.Event

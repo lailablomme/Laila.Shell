@@ -173,6 +173,7 @@
     <None Remove="Images\delete16.png" />
     <None Remove="Images\error16.png" />
     <None Remove="Images\error32.png" />
+    <None Remove="Images\info16.png" />
     <None Remove="Images\monitor16.png" />
     <None Remove="Images\paste16.png" />
     <None Remove="Images\pin16.png" />
@@ -219,6 +220,7 @@
     <Resource Include="Images\delete16.png" />
     <Resource Include="Images\error16.png" />
     <Resource Include="Images\error32.png" />
+    <Resource Include="Images\info16.png" />
     <Resource Include="Images\monitor16.png" />
     <Resource Include="Images\paste16.png" />
     <Resource Include="Images\pin16.png" />
