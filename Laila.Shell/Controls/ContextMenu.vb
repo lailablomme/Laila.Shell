@@ -6,7 +6,7 @@ Imports Laila.Shell.Helpers
 
 Namespace Controls
     Public Class ContextMenu
-        Inherits Windows.Controls.ContextMenu
+        Inherits System.Windows.Controls.ContextMenu
 
         Public Shared ReadOnly ShowButtonsTopOrBottomProperty As DependencyProperty = DependencyProperty.Register("ShowButtonsTopOrBottom", GetType(TopOrBottom),
             GetType(ContextMenu), New FrameworkPropertyMetadata(TopOrBottom.Both, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))

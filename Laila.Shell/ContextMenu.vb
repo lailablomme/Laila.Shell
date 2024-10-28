@@ -12,6 +12,9 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Windows.ApplicationModel.Activation
+Imports Windows.ApplicationModel.DataTransfer
+Imports Windows.Storage
 
 Public Class ContextMenu
     Implements IDisposable
@@ -29,11 +32,14 @@ Public Class ContextMenu
     Private _parent As Folder
     Private _invokedId As String = Nothing
     Private disposedValue As Boolean
+    Private _items As IEnumerable(Of Item)
 
     Public Function GetContextMenu(parent As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean) As System.Windows.Controls.ContextMenu
         If Not _menu Is Nothing Then
             Return _menu
         End If
+
+        _items = items
 
         Dim hasPaste As Boolean, pasteHeader As String
         If Not isDefaultOnly AndAlso (items Is Nothing OrElse items.Count = 0) Then
@@ -53,8 +59,8 @@ Public Class ContextMenu
         _parent = parent
         makeContextMenu(items, isDefaultOnly)
 
-        Dim makeButton As Func(Of Object, String, Windows.Controls.Button) =
-            Function(tag As Object, toolTip As String) As Windows.Controls.Button
+        Dim makeButton As Func(Of Object, String, System.Windows.Controls.Button) =
+            Function(tag As Object, toolTip As String) As System.Windows.Controls.Button
                 Dim button As System.Windows.Controls.Button = New System.Windows.Controls.Button()
                 Dim image As Image = New Image()
                 image.Width = 16
@@ -73,9 +79,9 @@ Public Class ContextMenu
                 Return button
             End Function
 
-        Dim makeToggleButton As Func(Of Object, String, Boolean, Windows.Controls.Primitives.ToggleButton) =
-            Function(tag As Object, toolTip As String, isChecked As Boolean) As Windows.Controls.Primitives.ToggleButton
-                Dim button As System.Windows.Controls.Primitives.ToggleButton = New System.Windows.Controls.Primitives.ToggleButton()
+        Dim makeToggleButton As Func(Of Object, String, Boolean, ToggleButton) =
+            Function(tag As Object, toolTip As String, isChecked As Boolean) As ToggleButton
+                Dim button As ToggleButton = New ToggleButton()
                 Dim image As Image = New Image()
                 image.Width = 16
                 image.Height = 16
@@ -152,10 +158,10 @@ Public Class ContextMenu
                 For Each c As Control In wireItems
                     If (TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0) _
                         OrElse TypeOf c Is ButtonBase Then
-                        If TypeOf c Is Windows.Controls.Button Then
-                            AddHandler CType(c, Windows.Controls.Button).Click, AddressOf menuItem_Click
-                        ElseIf TypeOf c Is Windows.Controls.Primitives.ToggleButton Then
-                            AddHandler CType(c, Windows.Controls.Primitives.ToggleButton).Click, AddressOf menuItem_Click
+                        If TypeOf c Is System.Windows.Controls.Button Then
+                            AddHandler CType(c, System.Windows.Controls.Button).Click, AddressOf menuItem_Click
+                        ElseIf TypeOf c Is ToggleButton Then
+                            AddHandler CType(c, ToggleButton).Click, AddressOf menuItem_Click
                         ElseIf TypeOf c Is MenuItem Then
                             AddHandler CType(c, MenuItem).Click, AddressOf menuItem_Click
                         End If
@@ -447,29 +453,51 @@ Public Class ContextMenu
     End Sub
 
     Public Sub InvokeCommand(id As String)
-        Dim cmi As New CMInvokeCommandInfoEx
-        Debug.WriteLine("InvokeCommand " & id)
-        If Convert.ToInt32(id.Split(vbTab)(0)) >= 0 Then
-            cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
-            cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
-        Else
-            cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
-            cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
-        End If
-        'cmi.lpDirectory = _parent.FullPath
-        'cmi.lpDirectoryW = _parent.FullPath
-        cmi.fMask = CMIC.UNICODE Or CMIC.ASYNCOK
-        If Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then cmi.fMask = cmi.fMask Or CMIC.CONTROL_DOWN
-        If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then cmi.fMask = cmi.fMask Or CMIC.SHIFT_DOWN
-        cmi.nShow = SW.SHOWNORMAL
-        'cmi.hwnd = Shell._hwnd
-        cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
+        Select Case id.Split(vbTab)(1)
+            Case "Windows.ModernShare"
+                'Dim dataTransferManager As DataTransferManager = DataTransferManager.GetForCurrentView()
+                'AddHandler dataTransferManager.DataRequested, AddressOf dataTransferManager_OnDataRequested
+                'DataTransferManager.ShowShareUI()
+            Case Else
+                Dim cmi As New CMInvokeCommandInfoEx
+                Debug.WriteLine("InvokeCommand " & id)
+                If Convert.ToInt32(id.Split(vbTab)(0)) >= 0 Then
+                    cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+                    cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+                Else
+                    cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
+                    cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
+                End If
+                'cmi.lpDirectory = _parent.FullPath
+                'cmi.lpDirectoryW = _parent.FullPath
+                cmi.fMask = CMIC.UNICODE Or CMIC.ASYNCOK
+                If Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then cmi.fMask = cmi.fMask Or CMIC.CONTROL_DOWN
+                If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then cmi.fMask = cmi.fMask Or CMIC.SHIFT_DOWN
+                cmi.nShow = SW.SHOWNORMAL
+                'cmi.hwnd = Shell._hwnd
+                cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
 
-        Dim h As HRESULT = _contextMenu.InvokeCommand(cmi)
-        Debug.WriteLine("InvokeCommand returned " & h.ToString())
+                Dim h As HRESULT = _contextMenu.InvokeCommand(cmi)
+                Debug.WriteLine("InvokeCommand returned " & h.ToString())
+        End Select
 
         Me.ReleaseContextMenu()
     End Sub
+
+    'Private Sub dataTransferManager_OnDataRequested(sender As DataTransferManager, args As DataRequestedEventArgs)
+    '    Dim requestData As DataPackage = args.Request.Data
+    '    requestData.Properties.Title = "Share Files"
+    '    requestData.Properties.Description = "Share files using Windows Modern Share."
+
+    '    ' Create a list of files to share
+    '    Dim files As New List(Of IStorageItem)()
+    '    For Each item In _items
+    '        files.Add(StorageFile.GetFileFromPathAsync(item.FullPath).AsTask().Result)
+    '    Next
+
+    '    ' Set the files to the DataPackage
+    '    requestData.SetStorageItems(files)
+    'End Sub
 
     Private Sub ReleaseContextMenu()
         If Not IntPtr.Zero.Equals(_hMenu) Then

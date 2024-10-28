@@ -7,6 +7,15 @@ Imports System.Runtime.InteropServices.ComTypes
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("shell32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
+    Public Shared Function ShellExecute(hWnd As IntPtr, lpOperation As String, lpFile As String, lpParameters As String, lpDirectory As String, nShowCmd As Integer) As IntPtr
+    End Function
+    <DllImport("user32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
+    Public Shared Function FindWindow(lpClassName As String, lpWindowName As String) As IntPtr
+    End Function
+    <DllImport("user32.dll")>
+    Public Shared Function GetShellWindow() As IntPtr
+    End Function
     <DllImport("kernel32.dll", SetLastError:=True, CharSet:=CharSet.Unicode)>
     Public Shared Function SetVolumeLabelW(
     <MarshalAs(UnmanagedType.LPWStr)> lpRootPathName As String,

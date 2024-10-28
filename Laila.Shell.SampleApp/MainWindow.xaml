@@ -19,9 +19,12 @@
                         <ColumnDefinition Width="20" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Image Source="{Binding Folder.Icon[16]}" HorizontalAlignment="Left" />
+                    <Image Source="{Binding Folder.Icon[16]}" HorizontalAlignment="Left" Width="16" Height="16"
+                           VerticalAlignment="Center" />
+                    <Image Source="{Binding Folder.OverlaySmall}" HorizontalAlignment="Left" Width="16" Height="16"
+                           VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Text="{Binding Folder.DisplayName}" VerticalAlignment="Center" 
-                               Margin="4,0,0,0" TextTrimming="CharacterEllipsis" />
+                               TextTrimming="CharacterEllipsis" />
                 </Grid>
             </DataTemplate>
         </controls:TabControl.ItemTemplate>
