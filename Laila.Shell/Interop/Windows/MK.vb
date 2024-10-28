@@ -1,5 +1,5 @@
 ﻿<Flags>
-Public Enum MK
+Public Enum MK As Int32
     MK_LBUTTON = &H1
     MK_RBUTTON = &H2
     MK_SHIFT = &H4

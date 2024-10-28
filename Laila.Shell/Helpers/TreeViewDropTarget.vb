@@ -30,8 +30,7 @@ Public Class TreeViewDropTarget
         _treeView = treeView
     End Sub
 
-    Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
-        Debug.WriteLine("DragEnter")
+    Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         _dataObject = pDataObj
         _fileNameList = Clipboard.GetFileNameList(pDataObj)
         _prevSelectedItem = _treeView.SelectedItem
@@ -39,12 +38,11 @@ Public Class TreeViewDropTarget
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
-    Public Overrides Function DragOver(grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function DragOver(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
     Public Overrides Function DragLeave() As Integer
-        Debug.WriteLine("DragLeave")
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -54,6 +52,7 @@ Public Class TreeViewDropTarget
         End If
         _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
         _newPinnedIndex = -2
+        _lastOverItem = Nothing
         If Not _lastDropTarget Is Nothing Then
             Try
                 Return _lastDropTarget.DragLeave()
@@ -68,7 +67,7 @@ Public Class TreeViewDropTarget
         Return 0
     End Function
 
-    Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -94,6 +93,7 @@ Public Class TreeViewDropTarget
                 AndAlso i.TreeRootIndex < Controls.TreeView.TreeRootSection.FREQUENT _
                 AndAlso i.FullPath = _fileNameList(0))
         End If
+        _lastOverItem = Nothing
         If Not _lastDropTarget Is Nothing Then
             Try
                 Return _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
@@ -145,7 +145,7 @@ Public Class TreeViewDropTarget
             overTreeViewItem, Nothing)
     End Function
 
-    Private Function dragPoint(grfKeyState As UInteger, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
+    Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
         Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeView)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
@@ -186,34 +186,7 @@ Public Class TreeViewDropTarget
 
         Dim overListBoxItem As ListBoxItem = getOverListBoxItem(ptWIN32)
         Dim overItem As Item = overListBoxItem?.DataContext
-
-        ' if we're over a folder, open it after two seconds of hovering
-        If TypeOf overItem Is Folder Then
-            If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
-                If Not _dragOpenTimer Is Nothing Then
-                    _dragOpenTimer.Dispose()
-                End If
-
-                _dragOpenTimer = New Timer(New TimerCallback(
-                    Sub()
-                        UIHelper.OnUIThread(
-                            Sub()
-                                If Mouse.LeftButton = MouseButtonState.Pressed _
-                                    OrElse Mouse.RightButton = MouseButtonState.Pressed Then
-                                    _treeView.SetSelectedFolder(overItem)
-                                    CType(overItem, Folder).IsExpanded = True
-                                    _prevSelectedItem = overItem
-                                End If
-                            End Sub)
-                        _dragOpenTimer.Dispose()
-                        _dragOpenTimer = Nothing
-                    End Sub), Nothing, 2000, 0)
-            End If
-        Else
-            If Not _dragOpenTimer Is Nothing Then
-                _dragOpenTimer.Dispose()
-            End If
-        End If
+        Dim newPinnedIndex As Long = -2
 
         If Not overItem Is Nothing Then
             If _fileNameList.Count > 0 _
@@ -226,34 +199,62 @@ Public Class TreeViewDropTarget
                         New Thickness(0, _treeView.PointFromScreen(overListBoxItem.PointToScreen(
                             New Point(0, 0))).Y - 3, 0, 0)
                     If overItem.TreeRootIndex >= Controls.TreeView.TreeRootSection.FREQUENT Then
-                        Debug.WriteLine("* Over first frequent item")
-                        _newPinnedIndex = -1
+                        'Debug.WriteLine("* Over first frequent item")
+                        newPinnedIndex = -1
                     Else
-                        Debug.WriteLine("* Over pinned item")
-                        _newPinnedIndex = overItem.TreeRootIndex - Controls.TreeView.TreeRootSection.PINNED
+                        'Debug.WriteLine("* Over pinned item")
+                        newPinnedIndex = overItem.TreeRootIndex - Controls.TreeView.TreeRootSection.PINNED
                     End If
                 ElseIf ptItem.Y >= overListBoxItem.ActualHeight - 3 AndAlso overItem.TreeRootIndex < Controls.TreeView.TreeRootSection.FREQUENT Then
+                    'Debug.WriteLine("* Over lower part")
                     _treeView.PART_DragInsertIndicator.Visibility = Visibility.Visible
                     _treeView.PART_DragInsertIndicator.Margin =
                         New Thickness(0, _treeView.PointFromScreen(overListBoxItem.PointToScreen(
                             New Point(0, overListBoxItem.ActualHeight))).Y - 3, 0, 0)
-                    _newPinnedIndex = overItem.TreeRootIndex - Controls.TreeView.TreeRootSection.PINNED + 1
-                    If _newPinnedIndex < 0 Then _newPinnedIndex = 0
+                    newPinnedIndex = overItem.TreeRootIndex - Controls.TreeView.TreeRootSection.PINNED + 1
+                    If newPinnedIndex < 0 Then _newPinnedIndex = 0
                 Else
-                    Debug.WriteLine("* Full over item")
+                    'Debug.WriteLine("* Full over item")
                     _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
-                    _newPinnedIndex = -2
+                    newPinnedIndex = -2
                 End If
             Else
-                Debug.WriteLine("* Not over pinned item")
+                'Debug.WriteLine("* Not over pinned item")
                 _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
-                _newPinnedIndex = -2
+                newPinnedIndex = -2
             End If
 
-            Debug.WriteLine("_newPinnedIndex=" & _newPinnedIndex & "   overItem.TreeRootIndex=" & overItem.TreeRootIndex)
+            'Debug.WriteLine("_newPinnedIndex=" & newPinnedIndex & "   overItem.TreeRootIndex=" & overItem.TreeRootIndex)
 
-            If _newPinnedIndex = -2 Then
+            ' if we're over a folder, open it after two seconds of hovering
+            If TypeOf overItem Is Folder AndAlso newPinnedIndex = -2 Then
                 If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
+                    If Not _dragOpenTimer Is Nothing Then
+                        _dragOpenTimer.Dispose()
+                    End If
+
+                    _dragOpenTimer = New Timer(New TimerCallback(
+                    Sub()
+                        UIHelper.OnUIThread(
+                            Sub()
+                                _treeView.SetSelectedFolder(overItem)
+                                CType(overItem, Folder).IsExpanded = True
+                                _prevSelectedItem = overItem
+                            End Sub)
+                        _dragOpenTimer.Dispose()
+                        _dragOpenTimer = Nothing
+                    End Sub), Nothing, 2000, 0)
+                End If
+            Else
+                If Not _dragOpenTimer Is Nothing Then
+                    _dragOpenTimer.Dispose()
+                End If
+            End If
+
+            If newPinnedIndex = -2 Then
+                If _lastOverItem Is Nothing _
+                    OrElse Not _lastOverItem.Equals(overItem) _
+                    OrElse _newPinnedIndex <> newPinnedIndex Then
                     _lastOverItem = overItem
 
                     Dim dropTarget As IDropTarget, pidl As IntPtr, shellItemPtr As IntPtr, dropTargetPtr As IntPtr
@@ -289,11 +290,14 @@ Public Class TreeViewDropTarget
                     If Not dropTarget Is Nothing Then
                         _treeView.SetSelectedItem(overItem)
                         If Not _lastDropTarget Is Nothing Then
+                            'Debug.WriteLine("_lastDropTarget.DragLeave()   newPinndedIndex=" & newPinnedIndex)
                             _lastDropTarget.DragLeave()
                         End If
+                        WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
+                        _newPinnedIndex = newPinnedIndex
                         Try
+                            'Debug.WriteLine("dropTarget.DragEnter()   newPinndedIndex=" & newPinnedIndex)
                             Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
-                        Catch ex As Exception
                         Finally
                             _lastDropTarget = dropTarget
                         End Try
@@ -302,36 +306,49 @@ Public Class TreeViewDropTarget
                         pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                         If Not _lastDropTarget Is Nothing Then
                             Try
+                                'Debug.WriteLine("_lastDropTarget.DragLeave2()   newPinndedIndex=" & newPinnedIndex)
                                 _lastDropTarget.DragLeave()
                             Finally
                                 Marshal.ReleaseComObject(_lastDropTarget)
                                 _lastDropTarget = Nothing
                             End Try
                         End If
+                        _newPinnedIndex = newPinnedIndex
                     End If
                 ElseIf Not _lastDropTarget Is Nothing Then
+                    _newPinnedIndex = newPinnedIndex
+                    'Debug.WriteLine("_lastDropTarget.DragOver()   newPinndedIndex=" & newPinnedIndex)
+                    WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
                 Else
+                    _newPinnedIndex = newPinnedIndex
                     pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                     _treeView.SetSelectedItem(Nothing)
                 End If
             Else
-                pdwEffect = DROPEFFECT.DROPEFFECT_COPY
+                pdwEffect = DROPEFFECT.DROPEFFECT_LINK
                 _treeView.SetSelectedItem(Nothing)
                 If Not _lastDropTarget Is Nothing Then
                     Try
+                        'Debug.WriteLine("_lastDropTarget.DragLeave()   newPinndedIndex=" & newPinnedIndex)
                         _lastDropTarget.DragLeave()
                     Finally
                         Marshal.ReleaseComObject(_lastDropTarget)
                         _lastDropTarget = Nothing
                     End Try
                 End If
+                WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
+                _newPinnedIndex = newPinnedIndex
             End If
         Else
+            If Not _dragOpenTimer Is Nothing Then
+                _dragOpenTimer.Dispose()
+            End If
             _treeView.SetSelectedItem(Nothing)
             _lastOverItem = Nothing
             If Not _lastDropTarget Is Nothing Then
                 Try
+                    'Debug.WriteLine("_lastDropTarget.DragLeave()   newPinndedIndex=" & newPinnedIndex)
                     _lastDropTarget.DragLeave()
                 Finally
                     Marshal.ReleaseComObject(_lastDropTarget)
@@ -339,7 +356,8 @@ Public Class TreeViewDropTarget
                 End Try
             End If
             pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-            Debug.WriteLine("_newPinnedIndex=NO ITEM")
+            _newPinnedIndex = newPinnedIndex
+            'Debug.WriteLine("_newPinnedIndex=NO ITEM")
         End If
 
         Return HRESULT.Ok

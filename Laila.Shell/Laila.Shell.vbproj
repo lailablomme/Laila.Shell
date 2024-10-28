@@ -10,7 +10,7 @@
 	<Platforms>x64</Platforms>
 	<EnableRegFreeCom>true</EnableRegFreeCom>
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
- </PropertyGroup>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <RemoveIntegerChecks>False</RemoveIntegerChecks>

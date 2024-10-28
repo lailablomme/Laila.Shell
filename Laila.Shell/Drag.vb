@@ -1,5 +1,4 @@
-﻿Imports System.Drawing
-Imports System.IO
+﻿Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Text
@@ -9,20 +8,18 @@ Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
+Imports Microsoft
 
 Public Class Drag
     Implements IDropSource
-
-    Private Const MAX_COL As Integer = 5
-    Private Const MAX_ROW As Integer = 5
 
     Public Shared ICON_SIZE As Integer = 128
 
     Private Shared _grid As Grid
     Private Shared _dragSourceHelper As IDragSourceHelper
-    Public Shared _bitmap As Bitmap
+    Public Shared _bitmap As System.Drawing.Bitmap
     Private Shared _dataObject As IDataObject
-    Private Shared _isDragging As Boolean
+    Public Shared _isDragging As Boolean
     Private Shared _dragImage As SHDRAGIMAGE
 
     Private _initializeDragImageAction As Action
@@ -40,7 +37,6 @@ Public Class Drag
         _moveCursor = New Cursor(moveCursorStream)
         _linkCursor = New Cursor(linkCursorStream)
         _initializeDragImageAction = initializeDragImageAction
-        _lastEffect = -1
     End Sub
 
     Public Shared Sub Start(items As IEnumerable(Of Item), button As MK)
@@ -114,56 +110,56 @@ Public Class Drag
     End Sub
 
     Private Shared Sub makeDragImageObjects(items As IEnumerable(Of Item))
-        If items.Count > 5 Then
-            ICON_SIZE = 64
-        Else
-            ICON_SIZE = 128
-        End If
-
         _grid = New Grid()
         Shell._w.Content = _grid
         _grid.VerticalAlignment = VerticalAlignment.Top
-        _grid.HorizontalAlignment = Windows.HorizontalAlignment.Left
-        _grid.Width = MAX_ROW * ICON_SIZE
-        _grid.Height = MAX_COL * ICON_SIZE
+        _grid.HorizontalAlignment = HorizontalAlignment.Left
+        _grid.Width = ICON_SIZE + 20
+        _grid.Height = ICON_SIZE + 20
         _grid.Background = System.Windows.Media.Brushes.Purple
         _grid.UseLayoutRounding = True
         _grid.SnapsToDevicePixels = True
-        'Dim brush As LinearGradientBrush = New LinearGradientBrush(Colors.White, Colors.Transparent, 45)
-        'grid.OpacityMask = brush
 
-        Dim left As Double, top As Double, count = 1
-        Dim images As List(Of System.Windows.Controls.Image) = New List(Of System.Windows.Controls.Image)()
+        Dim border As Border = New Border()
+        border.Background = Brushes.White
+        border.CornerRadius = New CornerRadius(5)
+        border.BorderThickness = New Thickness(2)
+        border.BorderBrush = Brushes.Black
+        _grid.Children.Add(border)
+
         For Each item In items
             Dim img As System.Windows.Controls.Image = New System.Windows.Controls.Image()
             img.Width = ICON_SIZE
             img.Height = ICON_SIZE
             img.Source = item.Icon(ICON_SIZE)
-            img.Margin = New Windows.Thickness(left, top, 0, 0)
+            img.Margin = New Thickness(10)
             img.VerticalAlignment = VerticalAlignment.Top
-            img.HorizontalAlignment = Windows.HorizontalAlignment.Left
+            img.HorizontalAlignment = HorizontalAlignment.Left
             img.UseLayoutRounding = True
             img.SnapsToDevicePixels = True
-
-            left += ICON_SIZE
-            If count Mod MAX_COL = 0 Then
-                top += ICON_SIZE
-                left = 0
-            End If
-            count += 1
-            If count > MAX_COL * MAX_ROW Then
-                Exit For
-            End If
-
-            images.Add(img)
-        Next
-
-        images.Reverse()
-        For Each img In images
             _grid.Children.Add(img)
         Next
 
-        _grid.Measure(New Windows.Size(ICON_SIZE * MAX_COL, ICON_SIZE * MAX_ROW))
+        If items.Count > 1 Then
+            Dim tbBorder As Border = New Border()
+            tbBorder.VerticalAlignment = VerticalAlignment.Center
+            tbBorder.HorizontalAlignment = HorizontalAlignment.Center
+            tbBorder.BorderThickness = New Thickness(2)
+            tbBorder.BorderBrush = Brushes.White
+
+            Dim textBlock As TextBlock = New TextBlock()
+            textBlock.Text = items.Count
+            textBlock.Padding = New Thickness(5, 1, 5, 1)
+            textBlock.Background = Brushes.Blue
+            textBlock.Foreground = Brushes.White
+            textBlock.FontWeight = FontWeights.Bold
+            textBlock.FontSize = 18
+
+            tbBorder.Child = textBlock
+            _grid.Children.Add(tbBorder)
+        End If
+
+        _grid.Measure(New Size(Double.MaxValue, Double.MaxValue))
         System.Windows.Application.Current.Dispatcher.Invoke(
             Sub()
             End Sub, Threading.DispatcherPriority.ContextIdle)
@@ -172,62 +168,27 @@ Public Class Drag
         _bitmap = ImageHelper.GetBitmap(renderedImage)
     End Sub
 
-    Private Shared Sub addDropDescription(dataObject As ComTypes.IDataObject, dwEffect As DROPEFFECT)
-        Dim i As Integer = Functions.RegisterClipboardFormat("DropDescription")
-        While i > Short.MaxValue
-            i -= 65536
-        End While
-
-        Dim formatEtc As New FORMATETC With {
-            .cfFormat = i,
-            .ptd = IntPtr.Zero,
-            .dwAspect = DVASPECT.DVASPECT_CONTENT,
-            .lindex = -1,
-            .tymed = TYMED.TYMED_HGLOBAL
-        }
-
-        Dim dropDescription As DROPDESCRIPTION
-        If dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
-            dropDescription.szMessage = "Copy here"
-            dropDescription.type = DropImageType.DROPIMAGE_COPY
-        ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
-            dropDescription.szMessage = "Move here"
-            dropDescription.type = DropImageType.DROPIMAGE_MOVE
-        ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
-            dropDescription.szMessage = "Create shortcut here"
-            dropDescription.type = DropImageType.DROPIMAGE_LINK
-        Else
-            dropDescription.szMessage = ""
-            dropDescription.type = DropImageType.DROPIMAGE_NONE
-        End If
-        dropDescription.szInsert = ""
-
-        Dim ptr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(GetType(DROPDESCRIPTION)))
-        Marshal.StructureToPtr(dropDescription, ptr, False)
-
-        Dim medium As System.Runtime.InteropServices.ComTypes.STGMEDIUM
-        medium.pUnkForRelease = IntPtr.Zero
-        medium.tymed = ComTypes.TYMED.TYMED_HGLOBAL
-        medium.unionmember = ptr
-
-        dataObject.SetData(formatEtc, medium, True)
-    End Sub
-
     Friend Shared Sub InitializeDragImage()
         If _isDragging Then
             Debug.WriteLine("InitializeDragImage")
             Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
                     &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
-            Dim dragSourceHelper2 As IDragSourceHelper2 = _dragSourceHelper
-            dragSourceHelper2.SetFlags(1)
             _dragImage.sizeDragImage.Width = _bitmap.Width
             _dragImage.sizeDragImage.Height = _bitmap.Height
-            _dragImage.ptOffset.x = ICON_SIZE / 2
-            _dragImage.ptOffset.y = ICON_SIZE / 2
+            _dragImage.ptOffset.x = (ICON_SIZE + 20) / 2
+            _dragImage.ptOffset.y = ICON_SIZE + 10
             _dragImage.hbmpDragImage = _bitmap.GetHbitmap()
             _dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
-            Debug.WriteLine("InitializeFromBitmap returned " & _dragSourceHelper.InitializeFromBitmap(_dragImage, _dataObject))
+            Dim h As HRESULT = _dragSourceHelper.InitializeFromBitmap(_dragImage, _dataObject)
+            'MsgBox("h=" & h.ToString())
+            Debug.WriteLine("InitializeFromBitmap returned " & h.ToString())
+            InitializeDragSourceHelper2()
         End If
+    End Sub
+
+    Friend Shared Sub InitializeDragSourceHelper2()
+        Dim dragSourceHelper2 As IDragSourceHelper2 = _dragSourceHelper
+        dragSourceHelper2.SetFlags(1)
     End Sub
 
     Public Function QueryContinueDrag(<[In]> <MarshalAs(UnmanagedType.Bool)> fEscapePressed As Boolean, <[In]> grfKeyState As Integer) As Integer Implements IDropSource.QueryContinueDrag
@@ -242,10 +203,25 @@ Public Class Drag
         Return DragDropResult.S_OK
     End Function
 
-    Private _lastEffect As DROPEFFECT
     Public Function GiveFeedback(<[In]> dwEffect As DROPEFFECT) As Integer Implements IDropSource.GiveFeedback
-        If _lastEffect <> dwEffect Then
-            _lastEffect = dwEffect
+        Dim isShowingLayered As Integer? = getGlobalDataDWord("IsShowingLayered")
+        If isShowingLayered.HasValue AndAlso isShowingLayered.Value = 1 Then
+            Mouse.OverrideCursor = Nothing
+
+            Dim wParam As IntPtr
+            If dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
+                wParam = DROPIMAGETYPE.DROPIMAGE_MOVE
+            ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
+                wParam = DROPIMAGETYPE.DROPIMAGE_COPY
+            ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
+                wParam = DROPIMAGETYPE.DROPIMAGE_LINK
+            Else
+                wParam = DROPIMAGETYPE.DROPIMAGE_NONE
+            End If
+
+            Dim hwnd As IntPtr = getGlobalDataDWord("DragWindow")
+            Functions.SendMessage(hwnd, WM.USER + 2, wParam, 0)
+        Else
             If dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
                 Mouse.OverrideCursor = _moveCursor
             ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
@@ -258,5 +234,33 @@ Public Class Drag
         End If
 
         Return DragDropResult.S_OK
+    End Function
+
+    Public Shared Function GetHasGlobalData(dataObject As IDataObject, clipboardFormat As String)
+        Dim format As FORMATETC = New FORMATETC() With {
+            .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
+            .dwAspect = DVASPECT.DVASPECT_CONTENT,
+            .lindex = -1,
+            .ptd = IntPtr.Zero,
+            .tymed = TYMED.TYMED_HGLOBAL
+        }
+        Return dataObject.QueryGetData(format) = 0
+    End Function
+
+    Private Function getGlobalDataDWord(clipboardFormat As String) As Integer?
+        Dim format As FORMATETC = New FORMATETC() With {
+            .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
+            .dwAspect = DVASPECT.DVASPECT_CONTENT,
+            .lindex = -1,
+            .ptd = IntPtr.Zero,
+            .tymed = TYMED.TYMED_HGLOBAL
+        }
+        Dim medium As STGMEDIUM
+        Dim result As Integer = _dataObject.GetData(format, medium)
+        If result = 0 Then
+            Return Marshal.ReadInt32(medium.unionmember)
+        Else
+            Return Nothing
+        End If
     End Function
 End Class

@@ -394,23 +394,27 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property IsExecutable As Boolean
+    Public Overridable Property IsLoading As Boolean
         Get
-            Dim executableExtensions As List(Of String) = New List(Of String)() From {
-                ".exe", ".bat", ".cmd", ".com", ".msi"
-            }
-            Return executableExtensions.Contains(IO.Path.GetExtension(Me.FullPath).ToLower())
+            Return False
         End Get
+        Set(value As Boolean)
+        End Set
     End Property
 
-    Public Sub Execute(Optional arguments As String = Nothing)
-        Dim psi As ProcessStartInfo = New ProcessStartInfo() With {
-            .FileName = Me.FullPath,
-            .Arguments = arguments,
-            .UseShellExecute = True
-        }
-        Process.Start(psi)
-    End Sub
+    Public Overridable Property IsExpanded As Boolean
+        Get
+            Return False
+        End Get
+        Set(value As Boolean)
+        End Set
+    End Property
+
+    Public Overridable ReadOnly Property HasSubFolders As Boolean
+        Get
+            Return False
+        End Get
+    End Property
 
     'Public Overridable ReadOnly Property Properties(key As PROPERTYKEY) As [Property]
     '    Get

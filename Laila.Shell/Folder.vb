@@ -52,7 +52,7 @@ Public Class Folder
         End If
     End Sub
 
-    Public Property IsExpanded As Boolean
+    Public Overrides Property IsExpanded As Boolean
         Get
             Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse Me.Parent.IsExpanded)
         End Get
@@ -74,7 +74,7 @@ Public Class Folder
         End Set
     End Property
 
-    Public Property IsLoading As Boolean
+    Public Overrides Property IsLoading As Boolean
         Get
             Return _isLoading
         End Get
@@ -116,7 +116,7 @@ Public Class Folder
         End Get
     End Property
 
-    Public ReadOnly Property HasSubFolders As Boolean
+    Public Overrides ReadOnly Property HasSubFolders As Boolean
         Get
             If _isEnumerated Then
                 Return Not _items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing

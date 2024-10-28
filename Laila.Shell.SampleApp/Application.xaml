@@ -473,7 +473,10 @@
                             <Trigger Property="GlowStyle" Value="Glowing">
                                 <Setter Property="Effect" TargetName="PART_MainBorder">
                                     <Setter.Value>
-                                        <DropShadowEffect BlurRadius="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}}" ShadowDepth="0" Color="{Binding Path=GlowColor, RelativeSource={RelativeSource TemplatedParent}}" />
+                                        <DropShadowEffect BlurRadius="{Binding Path=GlowSize, 
+                                            RelativeSource={RelativeSource Mode=TemplatedParent}, FallbackValue=15}" 
+                                                          ShadowDepth="0" Color="{Binding Path=GlowColor, 
+                                            RelativeSource={RelativeSource Mode=TemplatedParent}, FallbackValue=Gray}" />
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
@@ -482,7 +485,12 @@
                                 <Setter Property="Height" TargetName="row0" Value="0" />
                                 <Setter Property="Effect" TargetName="PART_MainBorder">
                                     <Setter.Value>
-                                        <DropShadowEffect Opacity="0.5" BlurRadius="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource borderSizeConverter}}" ShadowDepth="{TemplateBinding GlowSize}" Color="{Binding Path=GlowColor, RelativeSource={RelativeSource TemplatedParent}}" />
+                                        <DropShadowEffect Opacity="0.5" BlurRadius="{Binding Path=GlowSize, 
+                                            RelativeSource={RelativeSource TemplatedParent}, 
+                                            Converter={StaticResource borderSizeConverter}, FallbackValue=15}" 
+                                                          ShadowDepth="{TemplateBinding GlowSize}" 
+                                                          Color="{Binding Path=GlowColor, 
+                                            RelativeSource={RelativeSource TemplatedParent}, FallbackValue=Gray}" />
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>

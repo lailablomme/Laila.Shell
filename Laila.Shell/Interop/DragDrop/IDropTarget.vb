@@ -7,13 +7,13 @@ Public Interface IDropTarget
     <PreserveSig>
     Function DragEnter(
         ByVal pDataObj As IDataObject,
-        ByVal grfKeyState As Integer,
+        ByVal grfKeyState As MK,
         ByVal pt As WIN32POINT,
         ByRef pdwEffect As Integer) As Integer
 
     <PreserveSig>
     Function DragOver(
-        ByVal grfKeyState As Integer,
+        ByVal grfKeyState As MK,
         ByVal pt As WIN32POINT,
         ByRef pdwEffect As Integer) As Integer
 
@@ -23,7 +23,7 @@ Public Interface IDropTarget
     <PreserveSig>
     Function Drop(
         ByVal pDataObj As IDataObject,
-        ByVal grfKeyState As Integer,
+        ByVal grfKeyState As MK,
         ByVal pt As WIN32POINT,
         ByRef pdwEffect As Integer) As Integer
 End Interface

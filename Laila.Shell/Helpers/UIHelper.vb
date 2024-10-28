@@ -27,10 +27,10 @@ Namespace Helpers
             End If
         End Function
 
-        Public Shared Sub OnUIThread(action As Action, Optional priority As DispatcherPriority = DispatcherPriority.Normal)
+        Public Shared Sub OnUIThread(action As Action, Optional priority As DispatcherPriority = DispatcherPriority.Normal, Optional doForceInvoke As Boolean = False)
             Dim appl As System.Windows.Application = System.Windows.Application.Current
             If Not appl Is Nothing Then
-                If appl.Dispatcher.CheckAccess AndAlso priority = DispatcherPriority.Normal Then
+                If Not doForceInvoke AndAlso appl.Dispatcher.CheckAccess AndAlso priority = DispatcherPriority.Normal Then
                     action()
                 Else
                     appl.Dispatcher.Invoke(

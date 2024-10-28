@@ -21,14 +21,14 @@ Public Class ListViewDropTarget
         _detailsListView = detailsListView
     End Sub
 
-    Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
         _detailsListView.PART_ListView.Focus()
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
-    Public Overrides Function DragOver(grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function DragOver(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
@@ -41,6 +41,7 @@ Public Class ListViewDropTarget
             _scrollTimer.Dispose()
             _scrollDirection = Nothing
         End If
+        _lastOverItem = Nothing
         If Not _lastDropTarget Is Nothing Then
             Try
                 Return _lastDropTarget.DragLeave()
@@ -52,7 +53,7 @@ Public Class ListViewDropTarget
         Return 0
     End Function
 
-    Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As Integer, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -60,6 +61,7 @@ Public Class ListViewDropTarget
             _scrollTimer.Dispose()
             _scrollDirection = Nothing
         End If
+        _lastOverItem = Nothing
         If Not _lastDropTarget Is Nothing Then
             Try
                 Return _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
@@ -90,7 +92,7 @@ Public Class ListViewDropTarget
         End If
     End Function
 
-    Private Function dragPoint(grfKeyState As UInteger, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
+    Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
         Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListView.PART_ListView)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
@@ -142,10 +144,7 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                If Mouse.LeftButton = MouseButtonState.Pressed _
-                                    OrElse Mouse.RightButton = MouseButtonState.Pressed Then
-                                    _detailsListView.Folder = overItem
-                                End If
+                                _detailsListView.Folder = overItem
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
@@ -196,9 +195,9 @@ Public Class ListViewDropTarget
                     If Not _lastDropTarget Is Nothing Then
                         _lastDropTarget.DragLeave()
                     End If
+                    WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     Try
                         Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
-                    Catch ex As Exception
                     Finally
                         _lastDropTarget = dropTarget
                     End Try
@@ -215,6 +214,7 @@ Public Class ListViewDropTarget
                     End If
                 End If
             ElseIf Not _lastDropTarget Is Nothing Then
+                WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                 Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
             Else
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
@@ -223,8 +223,12 @@ Public Class ListViewDropTarget
             _detailsListView.SetSelectedItem(Nothing)
             _lastOverItem = Nothing
             If Not _lastDropTarget Is Nothing Then
-                Marshal.ReleaseComObject(_lastDropTarget)
-                _lastDropTarget = Nothing
+                Try
+                    _lastDropTarget.DragLeave()
+                Finally
+                    Marshal.ReleaseComObject(_lastDropTarget)
+                    _lastDropTarget = Nothing
+                End Try
             End If
             pdwEffect = DROPEFFECT.DROPEFFECT_NONE
         End If

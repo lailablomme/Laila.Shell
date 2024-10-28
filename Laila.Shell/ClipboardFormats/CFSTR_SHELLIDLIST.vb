@@ -18,8 +18,14 @@ Namespace ClipboardFormats
                 If dataObject.QueryGetData(format) = 0 Then
                     Dim medium As STGMEDIUM
                     dataObject.GetData(format, medium)
-
-                    Return Pidl.GetItemsFromShellIDListArray(medium.unionmember)
+                    Dim ptr As IntPtr = medium.unionmember
+                    Dim test As Integer = Marshal.ReadInt32(medium.unionmember)
+                    If test >= &H10000 OrElse test <= -1 Then
+                        ' windows explorer gives a pointer to a pointer to a shellidlist,
+                        ' however SHCreateDataObject does not
+                        ptr = Marshal.ReadIntPtr(medium.unionmember)
+                    End If
+                    Return Pidl.GetItemsFromShellIDListArray(ptr)
                 Else
                     Return Nothing
                 End If
@@ -29,6 +35,7 @@ Namespace ClipboardFormats
         End Function
 
         Public Shared Sub SetData(dataObject As IDataObject, items As IEnumerable(Of Item))
+            Dim ptr As IntPtr = Pidl.CreateShellIDListArray(items)
             Dim format As FORMATETC = New FORMATETC With {
                 .cfFormat = Functions.RegisterClipboardFormat(CFSTR_SHELLIDLIST),
                 .ptd = IntPtr.Zero,
@@ -38,7 +45,7 @@ Namespace ClipboardFormats
             }
             Dim medium As STGMEDIUM = New STGMEDIUM With {
                 .tymed = TYMED.TYMED_HGLOBAL,
-                .unionmember = Pidl.CreateShellIDListArray(items),
+                .unionmember = ptr,
                 .pUnkForRelease = IntPtr.Zero
             }
             dataObject.SetData(format, medium, True)
