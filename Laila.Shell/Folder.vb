@@ -14,6 +14,7 @@ Public Class Folder
     Private _columnManager As IColumnManager
     Private _isExpanded As Boolean
     Private _isLoading As Boolean
+    Private _isRefreshingItems As Boolean
     Private _lock As Object = New Object()
     Private _isLoaded As Boolean
     Private _enumerationException As Exception
@@ -83,6 +84,15 @@ Public Class Folder
         End Set
     End Property
 
+    Public Property IsRefreshingItems As Boolean
+        Get
+            Return _isRefreshingItems
+        End Get
+        Set(value As Boolean)
+            SetValue(_isRefreshingItems, value)
+        End Set
+    End Property
+
     Public ReadOnly Property Columns(canonicalName As String) As Column
         Get
             Return Me.Columns.SingleOrDefault(Function(c) canonicalName.Equals(c.CanonicalName))
@@ -142,19 +152,21 @@ Public Class Folder
     End Property
 
     Public Sub RefreshItems()
-        Me.IsLoading = True
+        Me.IsRefreshingItems = True
         For Each item In _items.ToList()
             _items.Remove(item)
         Next
         Me.GetItems()
+        Me.IsRefreshingItems = False
     End Sub
 
     Public Async Function RefreshItemsAsync() As Task
-        Me.IsLoading = True
+        Me.IsRefreshingItems = True
         For Each item In _items.ToList()
             _items.Remove(item)
         Next
         Await Me.GetItemsAsync()
+        Me.IsRefreshingItems = False
     End Function
 
     Public Overridable Function GetItems() As List(Of Item)

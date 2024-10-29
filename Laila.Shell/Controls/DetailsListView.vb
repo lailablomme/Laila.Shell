@@ -450,7 +450,11 @@ Namespace Controls
             If Not newValue Is Nothing Then
                 Me.IsLoading = True
                 Await Task.Delay(45)
-                FrequentFolders.Track(newValue)
+                Dim func As Func(Of Task) =
+                    Async Function() As Task
+                        FrequentFolders.Track(newValue)
+                    End Function
+                Task.Run(func)
                 _timeSpentTimer = New Timer(New TimerCallback(
                     Sub()
                         UIHelper.OnUIThread(
@@ -467,10 +471,10 @@ Namespace Controls
 
         Private Sub folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
-                Case "IsLoading"
+                Case "IsRefreshingItems"
                     UIHelper.OnUIThread(
                         Sub()
-                            Me.IsLoading = CType(s, Folder).IsLoading
+                            Me.IsLoading = CType(s, Folder).IsRefreshingItems
                         End Sub)
             End Select
         End Sub

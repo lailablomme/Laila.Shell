@@ -333,10 +333,14 @@ Public Class Item
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
-            If String.IsNullOrWhiteSpace(_displayName) Then
-                _shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
-            End If
-            'Debug.WriteLine(_displayName)
+            Try
+                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
+                    _shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                End If
+            Catch ex As Exception
+                ' sometimes the treeview will try to sort us just as we're in the process of disposing
+            End Try
+
             Return _displayName
         End Get
     End Property
