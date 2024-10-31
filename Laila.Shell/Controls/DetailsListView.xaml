@@ -115,21 +115,19 @@
                             <Image Grid.Column="1" Source="../Images/error32.png" Width="32" Height="32" VerticalAlignment="Top" HorizontalAlignment="Left" />
                             <TextBlock Grid.Column="2" Text="{Binding Folder.EnumerationException.Message}" VerticalAlignment="Center" />
                         </Grid>
-                        <Grid Background="White">
-                            <Grid.Style>
+                        <Viewbox StretchDirection="Both" Stretch="Uniform" Width="64" Height="64" x:Name="loadingViewBox" IsHitTestVisible="False">
+                            <Viewbox.Style>
                                 <Style>
-                                    <Setter Property="Grid.Visibility" Value="Visible" />
+                                    <Setter Property="Viewbox.Visibility" Value="Visible" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsLoading, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="False">
-                                            <Setter Property="Grid.Visibility" Value="Collapsed" />
+                                            <Setter Property="Viewbox.Visibility" Value="Collapsed" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </Grid.Style>
-                            <Viewbox StretchDirection="Both" Stretch="Uniform" Width="64" Height="64" x:Name="loadingViewBox">
-                                <local:LoadingSpinner />
-                            </Viewbox>
-                        </Grid>
+                            </Viewbox.Style>
+                            <local:LoadingSpinner />
+                        </Viewbox>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

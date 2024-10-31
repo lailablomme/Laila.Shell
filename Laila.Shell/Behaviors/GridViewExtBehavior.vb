@@ -254,6 +254,7 @@ Namespace Behaviors
                                    End Sub
 
         Private Sub loadColumns()
+            Debug.WriteLine("loadColumns()")
             If _isLoaded Then
                 _activeColumns = New List(Of ActiveColumnStateData)()
 
@@ -305,24 +306,26 @@ Namespace Behaviors
 
                 ' set sort from state
                 Dim view As ICollectionView = _listView.Items
-                resetSortDescriptions(view)
-                If Not gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(gridViewState.SortPropertyName) Then
-                    view.SortDescriptions.Add(New SortDescription() With {
+                Using view.DeferRefresh()
+                    resetSortDescriptions(view)
+                    If Not gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(gridViewState.SortPropertyName) Then
+                        view.SortDescriptions.Add(New SortDescription() With {
                         .PropertyName = gridViewState.SortPropertyName,
                         .Direction = gridViewState.SortDirection
                     })
-                Else
-                    Dim initialSortPropertyName As String = GetSortPropertyName(_activeColumns(0).Column)
-                    If String.IsNullOrWhiteSpace(initialSortPropertyName) Then
-                        initialSortPropertyName = GetPropertyName(_activeColumns(0).Column)
-                    End If
-                    view.SortDescriptions.Add(New SortDescription() With {
+                    Else
+                        Dim initialSortPropertyName As String = GetSortPropertyName(_activeColumns(0).Column)
+                        If String.IsNullOrWhiteSpace(initialSortPropertyName) Then
+                            initialSortPropertyName = GetPropertyName(_activeColumns(0).Column)
+                        End If
+                        view.SortDescriptions.Add(New SortDescription() With {
                         .PropertyName = initialSortPropertyName,
                         .Direction = ListSortDirection.Ascending
                     })
-                End If
+                    End If
 
-                showHideColumns()
+                    showHideColumns()
+                End Using
 
                 For Each column In _activeColumns
                     ' hook column resize event
@@ -369,6 +372,7 @@ Namespace Behaviors
         End Sub
 
         Private Sub showHideColumns()
+            Debug.WriteLine("showHideColumns()")
             ' clear columns
             _gridView.Columns.Clear()
 

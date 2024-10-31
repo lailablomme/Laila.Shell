@@ -524,7 +524,7 @@ Namespace Controls
             Select Case e.Action
                 Case NotifyCollectionChangedAction.Add
                     For Each item In e.NewItems
-                        If TypeOf item Is Folder AndAlso Not TypeOf item Is DummyFolder Then
+                        If TypeOf item Is Folder AndAlso (CType(item, Folder).Parent Is Nothing OrElse CType(item, Folder).Parent.IsExpanded) Then
                             Me.Items.Add(item)
                         End If
                     Next
@@ -536,7 +536,7 @@ Namespace Controls
                     Next
                 Case NotifyCollectionChangedAction.Replace
                     For Each item In e.NewItems
-                        If TypeOf item Is Folder AndAlso Not TypeOf item Is DummyFolder Then
+                        If TypeOf item Is Folder Then
                             Me.Items.Add(item)
                         End If
                     Next
@@ -555,6 +555,11 @@ Namespace Controls
 
             Select Case e.PropertyName
                 Case "IsExpanded"
+                    For Each item In folder.Items
+                        If TypeOf item Is Folder AndAlso Not Me.Items.Contains(item) Then
+                            Me.Items.Add(item)
+                        End If
+                    Next
                     CollectionViewSource.GetDefaultView(Me.Items).Refresh()
                 Case "TreeSortKey"
                     For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _

@@ -16,6 +16,7 @@ Namespace Controls
         Private Const INVALID_VALUE As String = "5e979b53-746b-4a0c-9f5f-00fdd22c91d8"
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
+        Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private PART_NavigationButtonsPanel As StackPanel
         Private PART_NavigationButtons As Border
@@ -97,6 +98,8 @@ Namespace Controls
         End Sub
 
         Public Async Function ShowNavigationButtons(folder As Folder) As Task
+            Me.IsLoading = True
+
             Await Task.Delay(150)
 
             Dim buttons As List(Of StackPanel) = New List(Of StackPanel)()
@@ -248,6 +251,8 @@ Namespace Controls
                 Next
                 Me.PART_NavigationButtons.Visibility = Visibility.Visible
             End If
+
+            Me.IsLoading = False
         End Function
 
         Public Property Folder As Folder
@@ -264,5 +269,14 @@ Namespace Controls
             ab.SelectedItem = e.NewValue
             ab.ShowNavigationButtons(e.NewValue)
         End Sub
+
+        Public Property IsLoading As Boolean
+            Get
+                Return GetValue(IsLoadingProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(IsLoadingProperty, value)
+            End Set
+        End Property
     End Class
 End Namespace
