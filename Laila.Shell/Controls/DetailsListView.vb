@@ -464,6 +464,7 @@ Namespace Controls
                             End Sub)
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
                 BindingOperations.ClearBinding(Me.PART_ListView, ListView.ItemsSourceProperty)
+                CType(Me.PART_ListView.View, GridView).Columns.Clear()
                 Await newValue.GetItemsAsync()
                 Me.ColumnsIn = buildColumnsIn()
                 BindingOperations.SetBinding(Me.PART_ListView, ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
