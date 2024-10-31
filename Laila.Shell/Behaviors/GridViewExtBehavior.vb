@@ -304,6 +304,8 @@ Namespace Behaviors
                     End If
                 Next
 
+                showHideColumns()
+
                 ' set sort from state
                 Dim view As ICollectionView = _listView.Items
                 Using view.DeferRefresh()
@@ -323,8 +325,6 @@ Namespace Behaviors
                         .Direction = ListSortDirection.Ascending
                     })
                     End If
-
-                    showHideColumns()
                 End Using
 
                 For Each column In _activeColumns
