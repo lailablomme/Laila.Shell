@@ -159,6 +159,8 @@ Namespace Behaviors
         Private _groupByPropertyNames As List(Of String) = New List(Of String)()
         Private _scrollViewer As ScrollViewer
         Private _skipResize As Boolean
+        Private _isInitialResize As Boolean = True
+        Private _resizeTimer As Timer
 
         Public ReadOnly Property ColumnIndexFor(propertyName As String) As Integer
             Get
@@ -183,18 +185,19 @@ Namespace Behaviors
             TypeDescriptor.GetProperties(_listView)("ItemsSource") _
                 .AddValueChanged(_listView,
                     Sub()
+                        _isInitialResize = True
                         _skipResize = False
                         resizeVisibleRows()
 
-                        If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
-                            AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
-                                Sub(sender2 As Object, e2 As NotifyCollectionChangedEventArgs)
-                                    Select Case e2.Action
-                                        Case NotifyCollectionChangedAction.Add
-                                            _skipResize = False
-                                    End Select
-                                End Sub
-                        End If
+                        'If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
+                        '    AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
+                        '        Sub(sender2 As Object, e2 As NotifyCollectionChangedEventArgs)
+                        '            Select Case e2.Action
+                        '                Case NotifyCollectionChangedAction.Add
+                        '                    _skipResize = False
+                        '            End Select
+                        '        End Sub
+                        'End If
 
                         If _isLoaded Then regroup()
                     End Sub)
@@ -327,6 +330,8 @@ Namespace Behaviors
                     End If
                 End Using
 
+                fixSortGlyphs()
+
                 For Each column In _activeColumns
                     ' hook column resize event
                     AddHandler CType(column.Column, INotifyPropertyChanged).PropertyChanged,
@@ -402,7 +407,9 @@ Namespace Behaviors
 
             _skipResize = False
             resizeVisibleRows()
+        End Sub
 
+        Private Sub fixSortGlyphs()
             ' fix sort glyphs
             Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
             Dim view As ICollectionView = _listView.Items
@@ -490,6 +497,7 @@ Namespace Behaviors
                     Sub(s2 As Object, e2 As EventArgs)
                         column.IsVisible = True
                         showHideColumns()
+                        fixSortGlyphs()
 
                         ' write state
                         writeState()
@@ -506,6 +514,7 @@ Namespace Behaviors
                         Else
                             column.IsVisible = False
                             showHideColumns()
+                            fixSortGlyphs()
 
                             ' write state
                             writeState()
@@ -640,24 +649,29 @@ Namespace Behaviors
 
         Private Sub resizeVisibleRows()
             If Not _headerRowPresenter Is Nothing Then
-                Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
-                If Not _skipResize AndAlso rows.Count > 0 Then
-                    resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
-                    _skipResize = True
-                End If
+                If Not _skipResize Then
+                    Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
+                    Dim isFullGrid As Boolean = rows.Sum(Function(r) r.DesiredSize.Height) <= _listView.ActualHeight
+                    If rows.Count > 0 AndAlso (_isInitialResize OrElse isFullGrid) Then
+                        resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
 
-                Dim headers As List(Of GridViewColumnHeader) =
-                    UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
-                For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
-                    headers.Remove(header)
-                Next
-                For Each item In rows.Select(Function(r) r.DataContext).ToList()
-                    Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
-                    If Not lvi Is Nothing Then
-                        lvi.HorizontalAlignment = HorizontalAlignment.Left
-                        lvi.Width = headers.Sum(Function(h) h.Width)
+                        Dim headers As List(Of GridViewColumnHeader) =
+                                            UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+                        For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
+                            headers.Remove(header)
+                        Next
+                        For Each item In rows.Select(Function(r) r.DataContext).ToList()
+                            Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
+                            If Not lvi Is Nothing Then
+                                lvi.HorizontalAlignment = HorizontalAlignment.Left
+                                lvi.Width = headers.Sum(Function(h) h.Width)
+                            End If
+                        Next
+
+                        If isFullGrid OrElse rows.Count = _listView.Items.Count Then _isInitialResize = False
+                        _skipResize = True
                     End If
-                Next
+                End If
             End If
         End Sub
 

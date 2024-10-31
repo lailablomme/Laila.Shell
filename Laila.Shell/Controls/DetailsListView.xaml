@@ -9,7 +9,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:DetailsListView}">
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True">
-                        <ListView ItemsSource="{Binding Folder.Items, RelativeSource={RelativeSource Mode=TemplatedParent}}" x:Name="PART_ListView" SelectionMode="Extended" 
+                        <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" FocusVisualStyle="{x:Null}"  
                                   VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
                                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 

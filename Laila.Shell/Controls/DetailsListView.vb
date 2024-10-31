@@ -24,7 +24,7 @@ Namespace Controls
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(DetailsListView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
-        Friend PART_ListView As ListBox
+        Friend PART_ListView As ListView
         Private PART_Selection As Laila.Shell.Behaviors.SelectionBehavior
         Private PART_Grid As Grid
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
@@ -445,10 +445,11 @@ Namespace Controls
 
             If Not oldValue Is Nothing Then
                 RemoveHandler oldValue.PropertyChanged, AddressOf folder_PropertyChanged
+                Dim view As CollectionView = CollectionViewSource.GetDefaultView(oldValue.Items)
+                view.SortDescriptions.Clear()
             End If
 
             If Not newValue Is Nothing Then
-                Me.IsLoading = True
                 Await Task.Delay(45)
                 Dim func As Func(Of Task) =
                     Async Function() As Task
@@ -462,11 +463,14 @@ Namespace Controls
                                 FrequentFolders.RecordTimeSpent(Me.Folder, 2)
                             End Sub)
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
+                BindingOperations.ClearBinding(Me.PART_ListView, ListView.ItemsSourceProperty)
                 Await newValue.GetItemsAsync()
                 Me.ColumnsIn = buildColumnsIn()
-                Me.IsLoading = False
+                BindingOperations.SetBinding(Me.PART_ListView, ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
                 AddHandler newValue.PropertyChanged, AddressOf folder_PropertyChanged
             End If
+
+            Me.IsLoading = False
         End Sub
 
         Private Sub folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
@@ -481,6 +485,7 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim dlv As DetailsListView = TryCast(d, DetailsListView)
+            dlv.IsLoading = True
             dlv.OnFolderChangedLocal(e.OldValue, e.NewValue)
         End Sub
 

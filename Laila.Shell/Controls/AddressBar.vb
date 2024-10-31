@@ -21,6 +21,7 @@ Namespace Controls
         Private PART_NavigationButtonsPanel As StackPanel
         Private PART_NavigationButtons As Border
         Private PART_ClickToEdit As Border
+        Private _lastWidth As Double
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(AddressBar), New FrameworkPropertyMetadata(GetType(AddressBar)))
@@ -74,12 +75,16 @@ Namespace Controls
                 Else
                     System.Media.SystemSounds.Asterisk.Play()
                     Me.Cancel()
+                    Me.IsLoading = True
                     Me.ShowNavigationButtons(Me.Folder)
                 End If
             ElseIf Not Me.SelectedItem Is Nothing Then
                 Dim doShow As Boolean = Me.SelectedItem.Equals(Me.Folder)
                 Me.Folder = Me.SelectedItem
-                If doShow Then Me.ShowNavigationButtons(Me.Folder)
+                If doShow Then
+                    Me.IsLoading = True
+                    Me.ShowNavigationButtons(Me.Folder)
+                End If
             Else
                 Me.Cancel()
             End If
@@ -89,6 +94,7 @@ Namespace Controls
             MyBase.Cancel()
 
             Me.PART_TextBox.IsEnabled = False
+            Me.IsLoading = True
             Me.ShowNavigationButtons(Me.Folder)
         End Sub
 
@@ -97,8 +103,6 @@ Namespace Controls
         End Sub
 
         Public Async Function ShowNavigationButtons(folder As Folder) As Task
-            Me.IsLoading = True
-
             Await Task.Delay(150)
 
             Dim buttons As List(Of StackPanel) = New List(Of StackPanel)()
@@ -202,37 +206,36 @@ Namespace Controls
                 standardPanel.Children.Add(moreButton)
                 standardPanel.Measure(New Size(1000, 1000))
 
-                AddHandler moreButton.Checked,
-                    Sub(s As Object, e As EventArgs)
-                        Dim moreContextMenu As ContextMenu = New ContextMenu()
-                        moreContextMenu.PlacementTarget = moreButton
-                        moreContextMenu.Placement = Primitives.PlacementMode.Bottom
+                Dim moreContextMenu As ContextMenu = New ContextMenu()
+                moreContextMenu.PlacementTarget = moreButton
+                moreContextMenu.Placement = Primitives.PlacementMode.Bottom
 
-                        AddHandler moreContextMenu.Closed,
+                AddHandler moreContextMenu.Closed,
                             Sub(s2 As Object, e2 As EventArgs)
                                 moreButton.IsChecked = False
                             End Sub
 
-                        Dim moreCurrentFolder As Folder = moreContextMenu.Tag
-                        While Not moreCurrentFolder Is Nothing
-                            Dim moreMenuItem As MenuItem = New MenuItem()
-                            moreMenuItem.Header = moreCurrentFolder.DisplayName
-                            moreMenuItem.Tag = moreCurrentFolder
-                            moreMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = moreCurrentFolder.Icon(16)}
-                            AddHandler moreMenuItem.Click,
+                While Not currentFolder Is Nothing
+                    Dim moreMenuItem As MenuItem = New MenuItem()
+                    moreMenuItem.Header = currentFolder.DisplayName
+                    moreMenuItem.Tag = currentFolder
+                    moreMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = currentFolder.Icon(16)}
+                    AddHandler moreMenuItem.Click,
                                 Sub(s2 As Object, e2 As EventArgs)
                                     Me.Folder = moreMenuItem.Tag
                                 End Sub
-                            moreContextMenu.Items.Add(moreMenuItem)
-                            If moreCurrentFolder.Parent Is Nothing OrElse moreCurrentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
-                                computerImage.Source = currentFolder.Icon(16)
-                            End If
-                            moreCurrentFolder = moreCurrentFolder.Parent
-                            If Not moreCurrentFolder Is Nothing AndAlso moreCurrentFolder.FullPath = Shell.Desktop.FullPath Then
-                                moreCurrentFolder = Nothing
-                            End If
-                        End While
+                    moreContextMenu.Items.Add(moreMenuItem)
+                    If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
+                        computerImage.Source = currentFolder.Icon(16)
+                    End If
+                    currentFolder = currentFolder.Parent
+                    If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
+                        currentFolder = Nothing
+                    End If
+                End While
 
+                AddHandler moreButton.Checked,
+                    Sub(s As Object, e As EventArgs)
                         moreContextMenu.IsOpen = True
                     End Sub
             End If
@@ -245,6 +248,7 @@ Namespace Controls
                     Me.PART_NavigationButtonsPanel.Children.Add(button)
                 Next
                 Me.PART_NavigationButtons.Visibility = Visibility.Visible
+                _lastWidth = totalWidth
             End If
 
             Me.IsLoading = False
@@ -262,6 +266,7 @@ Namespace Controls
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim ab As AddressBar = TryCast(d, AddressBar)
             ab.SelectedItem = e.NewValue
+            ab.IsLoading = True
             ab.ShowNavigationButtons(e.NewValue)
         End Sub
 

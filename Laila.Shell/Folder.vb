@@ -195,6 +195,8 @@ Public Class Folder
     Protected Sub updateItems(items As ObservableCollection(Of Item), isFromThread As Boolean)
         Me.IsLoading = True
 
+        Thread.Sleep(75)
+
         updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE,
                     Function(fullPath As String) As Boolean
                         Return Not items.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue) Is Nothing
@@ -359,6 +361,7 @@ Public Class Folder
                 For Each item In toAdd
                     add(item)
                 Next
+
                 For Each item In getToBeRemoved(pathsBefore, pathsAfter)
                     If TypeOf item Is Folder Then
                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {

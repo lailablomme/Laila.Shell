@@ -289,9 +289,11 @@ Namespace Controls
 
         Public Async Function SetSelectedFolder(folder As Folder, Optional callback As Action(Of Folder) = Nothing) As Task
             If Not _isSettingSelectedFolder Then
-                Await Task.Delay(100)
+                Me.Folder = folder
 
                 _isSettingSelectedFolder = True
+
+                Await Task.Delay(100)
 
                 Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
                 Dim list As List(Of Folder) = New List(Of Folder)()
@@ -336,7 +338,7 @@ Namespace Controls
                                         Await func(en.Current, cb)
                                     Else
                                         _selectionHelper.SetSelectedItems({tf})
-                                        If Not Me.Folder.FullPath = tf?.FullPath Then Me.Folder = tf
+                                        'If Not Me.Folder.FullPath = tf?.FullPath Then Me.Folder = tf
 
                                         If Not callback Is Nothing Then
                                             callback(tf)
@@ -361,7 +363,7 @@ Namespace Controls
                             _isSettingSelectedFolder = False
                         End If
                     Else
-                        If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
+                        'If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
 
                         If Not callback Is Nothing Then
                             callback(folder)
