@@ -24,7 +24,7 @@ Namespace Controls
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
-        Friend PART_ListView As ListView
+        Friend PART_ListView As System.Windows.Controls.ListView
         Private PART_Grid As Grid
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
@@ -450,13 +450,13 @@ Namespace Controls
 
         Protected Overridable Sub ClearBinding()
             If Not Me.PART_ListView Is Nothing Then
-                BindingOperations.ClearBinding(Me.PART_ListView, ListView.ItemsSourceProperty)
+                BindingOperations.ClearBinding(Me.PART_ListView, System.Windows.Controls.ListView.ItemsSourceProperty)
             End If
         End Sub
 
         Protected Overridable Sub MakeBinding()
             If Not Me.PART_ListView Is Nothing Then
-                BindingOperations.SetBinding(Me.PART_ListView, ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
+                BindingOperations.SetBinding(Me.PART_ListView, System.Windows.Controls.ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
             End If
         End Sub
 

@@ -102,6 +102,7 @@ Public Class Shell
         FolderViews.Add("Extra large icons", GetType(ExtraLargeIconsView))
         FolderViews.Add("Large icons", GetType(LargeIconsView))
         FolderViews.Add("Normal icons", GetType(NormalIconsView))
+        FolderViews.Add("List", GetType(ListView))
         FolderViews.Add("Details", GetType(DetailsView))
     End Sub
 
