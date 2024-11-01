@@ -99,6 +99,7 @@ Public Class Shell
         '_specialFolders.Add("Public", Folder.FromParsingName("shell:::{4336a54d-038b-4685-ab02-99bb52d3fb8b}", Nothing))
         '_specialFolders.Add("Recent Items", Folder.FromParsingName("shell:::{4564b25e-30cd-4787-82ba-39e73a750b14}", Nothing))
 
+        FolderViews.Add("Extra large icons", GetType(ExtraLargeIconsView))
         FolderViews.Add("Large icons", GetType(LargeIconsView))
         FolderViews.Add("Normal icons", GetType(NormalIconsView))
         FolderViews.Add("Details", GetType(DetailsView))

@@ -580,7 +580,9 @@ Public Class ContextMenu
             .Height = size.Height,
             .MaxLength = 260,
             .TextWrapping = TextWrapping.Wrap,
-            .TextAlignment = textAlignment
+            .TextAlignment = textAlignment,
+            .UseLayoutRounding = True,
+            .SnapsToDevicePixels = True
         }
         textBox.SetValue(Panel.ZIndexProperty, 100)
         If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
