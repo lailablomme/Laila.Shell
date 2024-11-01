@@ -263,17 +263,6 @@ Public Class Drag
         Return DragDropResult.S_OK
     End Function
 
-    Public Shared Function GetHasGlobalData(dataObject As IDataObject, clipboardFormat As String)
-        Dim format As FORMATETC = New FORMATETC() With {
-            .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
-            .dwAspect = DVASPECT.DVASPECT_CONTENT,
-            .lindex = -1,
-            .ptd = IntPtr.Zero,
-            .tymed = TYMED.TYMED_HGLOBAL
-        }
-        Return dataObject.QueryGetData(format) = 0
-    End Function
-
     Private Function getGlobalDataDWord(clipboardFormat As String) As Integer?
         Dim format As FORMATETC = New FORMATETC() With {
             .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),

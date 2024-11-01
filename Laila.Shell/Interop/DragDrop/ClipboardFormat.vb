@@ -1,4 +1,4 @@
-﻿Public Enum ClipboardFormat
+﻿Public Enum ClipboardFormat As Short
     CF_TEXT = 1
     CF_BITMAP = 2
     CF_METAFILEPICT = 3

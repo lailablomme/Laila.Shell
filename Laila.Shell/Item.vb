@@ -21,7 +21,6 @@ Public Class Item
     Private _isPinned As Boolean
     Private _isCut As Boolean
     Private _attributes As SFGAO
-    Friend _icon As Dictionary(Of Integer, ImageSource) = New Dictionary(Of Integer, ImageSource)()
     Private _overlaySmall As ImageSource
     Private _overlayLarge As ImageSource
     Private _overlayIconIndex As Integer?
@@ -151,7 +150,6 @@ Public Class Item
         Next
         _properties = New List(Of [Property])()
         _displayName = Nothing
-        _icon = New Dictionary(Of Integer, ImageSource)()
         _overlaySmall = Nothing
         _overlayLarge = Nothing
     End Sub
@@ -229,7 +227,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlaySmall As ImageSource
         Get
-            If _overlaySmall Is Nothing And Not _overlayIconIndex.HasValue Then
+            If _overlaySmall Is Nothing Then
                 _overlaySmall = getOverlay(False)
             End If
             Return _overlaySmall
@@ -238,7 +236,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlayLarge As ImageSource
         Get
-            If _overlayLarge Is Nothing And Not _overlayIconIndex.HasValue Then
+            If _overlayLarge Is Nothing Then
                 _overlayLarge = getOverlay(True)
             End If
             Return _overlayLarge
@@ -248,18 +246,27 @@ Public Class Item
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                If Not _icon.ContainsKey(size) Then
-                    Dim ptr As IntPtr
-                    Try
-                        CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
-                        _icon.Add(size, Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()))
-                    Finally
-                        Functions.DeleteObject(ptr)
-                    End Try
-                End If
-                Return _icon(size)
-            Else
-                Return Nothing
+                Dim ptr As IntPtr
+                Try
+                    CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
+                    Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                Finally
+                    Functions.DeleteObject(ptr)
+                End Try
+            End If
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
+        Get
+            If Not disposedValue Then
+                Dim ptr As IntPtr
+                Try
+                    CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
+                    Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                Finally
+                    Functions.DeleteObject(ptr)
+                End Try
             End If
         End Get
     End Property

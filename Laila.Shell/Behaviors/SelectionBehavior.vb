@@ -45,6 +45,7 @@ Namespace Behaviors
                     }
                     _panel = _listView.Parent
                     _grid = New Grid()
+                    _grid.SetValue(Panel.ZIndexProperty, 2)
                     _grid.HorizontalAlignment = HorizontalAlignment.Left
                     _grid.VerticalAlignment = VerticalAlignment.Top
                     _grid.ClipToBounds = True
@@ -62,15 +63,16 @@ Namespace Behaviors
                         If Not _listView.SelectedItems.Contains(clickedItem) _
                             AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing _
                             AndAlso UIHelper.GetParentOfType(Of GridViewHeaderRowPresenter)(e.OriginalSource) Is Nothing Then
-                            Dim hrp As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
-                            _headerHeight = hrp.ActualHeight
+                            If TypeOf _listView.View Is GridView Then
+                                Dim hrp As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
+                                _headerHeight = hrp.ActualHeight
+                            End If
 
                             _ptMin = New Point(_listView.BorderThickness.Left, _listView.BorderThickness.Top + _headerHeight)
                             _ptMax = New Point(_listView.ActualWidth - _listView.BorderThickness.Right - 1,
                                                _listView.ActualHeight - _listView.BorderThickness.Bottom - 1)
-                            Dim scrollBars As IEnumerable(Of ScrollBar) = UIHelper.FindVisualChildren(Of ScrollBar)(_sv)
-                            Dim vs As ScrollBar = scrollBars.First(Function(sb) sb.Name = "PART_VerticalScrollBar")
-                            Dim hs As ScrollBar = scrollBars.First(Function(sb) sb.Name = "PART_HorizontalScrollBar")
+                            Dim vs As ScrollBar = _sv.Template.FindName("PART_VerticalScrollBar", _sv)
+                            Dim hs As ScrollBar = _sv.Template.FindName("PART_HorizontalScrollBar", _sv)
                             If vs.Visibility = Visibility.Visible Then _
                                 _ptMax.X = _listView.PointFromScreen(vs.PointToScreen(New Point(0, 0))).X - 1
                             If hs.Visibility = Visibility.Visible Then _

@@ -19,6 +19,7 @@ Public Class Folder
     Private _isLoaded As Boolean
     Private _enumerationException As Exception
     Private _isEnumerated As Boolean
+    Private _updatesQueued As Integer
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -192,7 +193,7 @@ Public Class Folder
         Return Await Task.Run(func)
     End Function
 
-    Protected Sub updateItems(items As ObservableCollection(Of Item), isFromThread As Boolean)
+    Protected Sub updateItems(items As ObservableCollection(Of Item), isFromThread As Boolean, Optional doRefreshItems As Boolean = True)
         Me.IsLoading = True
 
         Thread.Sleep(75)
@@ -224,14 +225,14 @@ Public Class Folder
                         If Not item Is Nothing Then
                             item.Refresh()
                         End If
-                    End Sub)
+                    End Sub, doRefreshItems)
     End Sub
 
     Protected Sub updateItems(flags As UInt32,
                               exists As Func(Of String, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getPathsBefore As Func(Of List(Of String)), getToBeRemoved As Func(Of List(Of String), List(Of String), List(Of Item)),
                               makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
-                              updateProperties As Action(Of String))
+                              updateProperties As Action(Of String), doRefreshItems As Boolean)
         If _shellItem2 Is Nothing Then Return
 
         Dim pathsAfter As List(Of String) = New List(Of String)
@@ -352,9 +353,11 @@ Public Class Folder
         _isEnumerated = True
         _isLoaded = True
 
-        For Each item In toUpdate
-            updateProperties(item)
-        Next
+        If doRefreshItems Then
+            For Each item In toUpdate
+                updateProperties(item)
+            Next
+        End If
 
         UIHelper.OnUIThread(
             Sub()
@@ -467,15 +470,22 @@ Public Class Folder
                         End If
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                    If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) AndAlso Not _items Is Nothing AndAlso _isLoaded Then
-                        Dim func As Func(Of Task) =
-                            Async Function() As Task
-                                SyncLock _lock
-                                    updateItems(_items, False)
-                                End SyncLock
-                            End Function
+                    If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) _
+                        AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _updatesQueued < 2 Then
+                        UIHelper.OnUIThread(
+                            Async Sub()
+                                _updatesQueued += 1
 
-                        Task.Run(func)
+                                Dim func As Func(Of Task) =
+                                    Async Function() As Task
+                                        SyncLock _lock
+                                            updateItems(_items, False, False)
+                                        End SyncLock
+                                    End Function
+                                Await Task.Run(func)
+
+                                _updatesQueued -= 1
+                            End Sub)
                     End If
             End Select
         End If

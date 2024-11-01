@@ -152,7 +152,7 @@ Namespace Helpers
                 Dim hwnd As IntPtr = _hwnds(_controls.FirstOrDefault(Function(kv) kv.Value.Equals(_activeDropTarget)).Key)
                 _isDropDescriptionSet = False
                 Dim h As HRESULT = _activeDropTarget.DragEnter(pDataObj, grfKeyState, ptWIN32, pdwEffect)
-                If Drag.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
+                If Clipboard.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
                     SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                 End If
                 'Debug.WriteLine("_dropTargetHelper.DragEnter")
@@ -172,7 +172,7 @@ Namespace Helpers
                 If Not _activeDropTarget Is Nothing AndAlso dropTarget.Equals(_activeDropTarget) Then
                     _isDropDescriptionSet = False
                     Dim h As HRESULT = _activeDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
-                    If Drag.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
+                    If Clipboard.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
                         SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     End If
                     'Debug.WriteLine("_dropTargetHelper.DragOver")
@@ -188,7 +188,7 @@ Namespace Helpers
                     _activeDropTarget = dropTarget
                     _isDropDescriptionSet = False
                     Dim h As HRESULT = _activeDropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
-                    If Drag.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
+                    If Clipboard.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
                         SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     End If
                     'Debug.WriteLine("_dropTargetHelper.DragEnter")

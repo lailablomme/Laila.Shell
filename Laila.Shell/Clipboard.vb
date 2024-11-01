@@ -44,4 +44,25 @@ Public Class Clipboard
         End If
         Return files
     End Function
+
+    Public Shared Function GetHasGlobalData(clipboardFormat As String)
+        Dim dataObject As IDataObject
+        Functions.OleGetClipboard(dataObject)
+        Return GetHasGlobalData(dataObject, clipboardFormat)
+    End Function
+
+    Public Shared Function GetHasGlobalData(dataObject As IDataObject, clipboardFormat As String)
+        Return GetHasGlobalData(dataObject, Functions.RegisterClipboardFormat(clipboardFormat))
+    End Function
+
+    Public Shared Function GetHasGlobalData(dataObject As IDataObject, clipboardFormat As Short)
+        Dim format As FORMATETC = New FORMATETC() With {
+            .cfFormat = clipboardFormat,
+            .dwAspect = DVASPECT.DVASPECT_CONTENT,
+            .lindex = -1,
+            .ptd = IntPtr.Zero,
+            .tymed = TYMED.TYMED_HGLOBAL
+        }
+        Return dataObject.QueryGetData(format) = 0
+    End Function
 End Class

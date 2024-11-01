@@ -35,19 +35,52 @@ Public Class ContextMenu
 
         _items = items
 
-        Dim hasPaste As Boolean, pasteHeader As String
+        Dim hasPaste As Boolean
         If Not isDefaultOnly AndAlso (items Is Nothing OrElse items.Count = 0) Then
-            ' check for paste
-            _parent = parent.Parent
-            makeContextMenu({parent}, isDefaultOnly)
-            If Not IntPtr.Zero.Equals(_hMenu) Then
-                Dim pasteMenuItem As MenuItem = getMenuItems(_hMenu, -1).FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
-                If Not pasteMenuItem Is Nothing Then
-                    hasPaste = True
-                    pasteHeader = pasteMenuItem.Header
+            ' check for paste by checking if it would accept a drop
+            Dim dataObject As IDataObject
+            Functions.OleGetClipboard(dataObject)
+
+            Dim dropTarget As IDropTarget, pidl As IntPtr, shellItemPtr As IntPtr, dropTargetPtr As IntPtr
+            Try
+                shellItemPtr = Marshal.GetIUnknownForObject(parent._shellItem2)
+                Functions.SHGetIDListFromObject(shellItemPtr, pidl)
+                If Not parent.Parent Is Nothing Then
+                    Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl)
+                    parent.Parent._shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                Else
+                    Dim shellFolder As IShellFolder
+                    Functions.SHGetDesktopFolder(shellFolder)
+                    ' desktop
+                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                 End If
-            End If
-            Me.ReleaseContextMenu()
+                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                    dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+                Else
+                    dropTarget = Nothing
+                End If
+
+                If Not dropTarget Is Nothing Then
+                    Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
+                    Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
+                    dropTarget.DragLeave()
+
+                    hasPaste = hr = HRESULT.Ok AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
+                End If
+            Finally
+                If Not IntPtr.Zero.Equals(shellItemPtr) Then
+                    Marshal.Release(shellItemPtr)
+                End If
+                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                    Marshal.Release(dropTargetPtr)
+                End If
+                If Not IntPtr.Zero.Equals(pidl) Then
+                    Marshal.FreeCoTaskMem(pidl)
+                End If
+                If Not dropTarget Is Nothing Then
+                    Marshal.ReleaseComObject(dropTarget)
+                End If
+            End Try
         End If
 
         _parent = parent
@@ -124,7 +157,7 @@ Public Class ContextMenu
             If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
             menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
             If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
-                Else If hasPaste Then _menu.Buttons.Add(makeButton("-1" & vbTab & "paste", pasteHeader.Replace("_", "")))
+                Else If hasPaste Then _menu.Buttons.Add(makeButton("-1" & vbTab & "paste", "Paste"))
             menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "rename")
             If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
             menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
@@ -137,6 +170,19 @@ Public Class ContextMenu
                     _menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
                 End If
             End If
+        End If
+
+        If items Is Nothing OrElse items.Count = 0 Then
+            Dim viewMenuItem As MenuItem = New MenuItem() With {.Header = "View"}
+            For Each item In [Enum].GetValues(GetType(View))
+                Dim viewSubMenuItem As MenuItem = New MenuItem() With {
+                    .Header = item.ToString(),
+                    .Tag = "-1" & vbTab & "laila.shell.view." & item.ToString()
+                }
+                viewMenuItem.Items.Add(viewSubMenuItem)
+            Next
+            _menu.Items.Insert(0, viewMenuItem)
+            If _menu.Items.Count > 1 Then _menu.Items.Insert(1, New Separator())
         End If
 
         AddHandler _menu.Closed,

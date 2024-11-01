@@ -7,6 +7,9 @@ Imports System.Runtime.InteropServices.ComTypes
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("ole32.dll")>
+    Public Shared Function OleGetClipboard(ByRef dataObject As System.Runtime.InteropServices.ComTypes.IDataObject) As Integer
+    End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
     Public Shared Function ShellExecute(hWnd As IntPtr, lpOperation As String, lpFile As String, lpParameters As String, lpDirectory As String, nShowCmd As Integer) As IntPtr
     End Function

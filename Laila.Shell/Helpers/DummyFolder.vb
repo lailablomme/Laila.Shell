@@ -30,10 +30,7 @@ Public Class DummyFolder
 
     Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
         Get
-            If Not _icon.ContainsKey(size) Then
-                Return Nothing
-            End If
-            Return _icon(size)
+            Return Nothing
         End Get
     End Property
 
