@@ -578,6 +578,7 @@ Public Class ContextMenu
             .VerticalAlignment = VerticalAlignment.Top,
             .Width = width
         }
+        textBox.SetValue(Panel.ZIndexProperty, 100)
         textBox.MaxLength = 260
         If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
             isDrive = True
