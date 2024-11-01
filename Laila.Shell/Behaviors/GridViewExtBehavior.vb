@@ -21,6 +21,7 @@ Namespace Behaviors
         Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 
         Private Const COLUMN_MARGIN As Double = 5
+        Private Const MARGIN_LEFT As Double = 20
 
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(ColumnsInData), GetType(GridViewExtBehavior), New FrameworkPropertyMetadata(Nothing, AddressOf OnColumnsInChanged))
 
@@ -204,7 +205,19 @@ Namespace Behaviors
             AddHandler _listView.Loaded,
                Sub(sender As Object, e As EventArgs)
                    _headerRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
+                   Dim headerRowScrollViewer As ScrollViewer = _headerRowPresenter.Parent
+                   Dim headerRowGrid As Grid = New Grid()
+                   headerRowGrid.ColumnDefinitions.Add(New ColumnDefinition() With {.Width = New GridLength(MARGIN_LEFT, GridUnitType.Pixel)})
+                   headerRowGrid.ColumnDefinitions.Add(New ColumnDefinition() With {.Width = New GridLength(1, GridUnitType.Star)})
+                   headerRowScrollViewer.Content = headerRowGrid
+                   _headerRowPresenter.SetValue(Grid.ColumnProperty, 1)
+                   headerRowGrid.Children.Add(_headerRowPresenter)
+                   Dim headerRowMarginPresenter As GridViewHeaderRowPresenter = New GridViewHeaderRowPresenter()
+                   headerRowMarginPresenter.SetValue(Grid.ColumnProperty, 0)
+                   headerRowGrid.Children.Add(headerRowMarginPresenter)
+
                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
+                   UIHelper.FindVisualChildren(Of VirtualizingStackPanel)(_listView)(0).Margin = New Thickness(MARGIN_LEFT, 0, 0, 0)
                    _isLoaded = True
 
                    If Not Me.ColumnsIn Is Nothing Then
@@ -725,6 +738,7 @@ Namespace Behaviors
                         End If
 
                         activeCol.Column.Width = width
+                        hcs.FirstOrDefault(Function(hc1) Not hc1.Column Is Nothing AndAlso hc1.Column.Equals(activeCol.Column)).Width = width
                     Next
                 End If
                 _dontWrite = False
