@@ -51,9 +51,9 @@ Namespace Helpers
             End If
         End Sub
 
-        Public Shared Function WIN32POINTToControl(ptWIN32 As WIN32POINT, control As Control) As Point
+        Public Shared Function WIN32POINTToUIElement(ptWIN32 As WIN32POINT, element As UIElement) As Point
             Dim pt As Point = New Point(ptWIN32.x, ptWIN32.y)
-            Return control.PointFromScreen(pt)
+            Return element.PointFromScreen(pt)
         End Function
 
         Public Shared Function GetParent(obj As DependencyObject) As DependencyObject

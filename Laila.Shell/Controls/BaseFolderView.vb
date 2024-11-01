@@ -17,17 +17,14 @@ Imports Laila.Shell.Helpers
 Imports Laila.Shell.SevenZip
 
 Namespace Controls
-    Public Class DetailsListView
+    Public MustInherit Class BaseFolderView
         Inherits Control
 
-        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
-        Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(DetailsListView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(DetailsListView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly ViewProperty As DependencyProperty = DependencyProperty.Register("View", GetType(View), GetType(DetailsListView), New FrameworkPropertyMetadata(View.Details, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnViewChanged))
+        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
+        Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
-        Friend PART_DetailsListView As ListView
-        Friend PART_NormalIconsListView As ListView
-        Friend PART_LargeIconsListView As ListView
+        Friend PART_ListView As ListView
         Private PART_Grid As Grid
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
@@ -35,73 +32,39 @@ Namespace Controls
         Private _scrollState As Dictionary(Of String, ScrollState) = New Dictionary(Of String, ScrollState)()
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
-        Private _dropTarget As IDropTarget
         Private _menu As Laila.Shell.ContextMenu
         Private _timeSpentTimer As Timer
 
         Shared Sub New()
-            DefaultStyleKeyProperty.OverrideMetadata(GetType(DetailsListView), New FrameworkPropertyMetadata(GetType(DetailsListView)))
+            DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
         End Sub
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
-            PART_DetailsListView = Template.FindName("PART_DetailsListView", Me)
-            PART_NormalIconsListView = Template.FindName("PART_NormalIconsListView", Me)
-            PART_LargeIconsListView = Template.FindName("PART_LargeIconsListView", Me)
-            'PART_Selection = Template.FindName("PART_Selection", Me)
-            PART_Grid = Template.FindName("PART_Grid", Me)
+            Me.PART_ListView = Template.FindName("PART_ListView", Me)
+            Me.PART_Grid = Template.FindName("PART_Grid", Me)
 
             Dim listViewItemStyle As Style = New Style()
             listViewItemStyle.TargetType = GetType(ListViewItem)
-            listViewItemStyle.BasedOn = PART_DetailsListView.TryFindResource(GetType(ListViewItem))
+            listViewItemStyle.BasedOn = PART_ListView.TryFindResource(GetType(ListViewItem))
             listViewItemStyle.Setters.Add(New Setter(ListViewItem.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch))
-            PART_DetailsListView.Resources.Add(GetType(ListViewItem), listViewItemStyle)
+            PART_ListView.Resources.Add(GetType(ListViewItem), listViewItemStyle)
 
-            AddHandler PART_DetailsListView.Loaded,
-                Sub(s As Object, e As EventArgs)
-                    wireActiveListView()
-
-                    _dropTarget = New ListViewDropTarget(Me)
-                    WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
-                End Sub
-
-            AddHandler System.Windows.Application.Current.MainWindow.Closed,
-                Sub()
-                    WpfDragTargetProxy.RevokeDragDrop(Me)
-                End Sub
-
-            AddHandler PART_DetailsListView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
-            AddHandler PART_DetailsListView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
-            AddHandler PART_DetailsListView.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
-            AddHandler PART_DetailsListView.MouseLeave, AddressOf OnListViewMouseLeave
-            AddHandler PART_NormalIconsListView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
-            AddHandler PART_NormalIconsListView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
-            AddHandler PART_NormalIconsListView.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
-            AddHandler PART_NormalIconsListView.MouseLeave, AddressOf OnListViewMouseLeave
-            AddHandler PART_LargeIconsListView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
-            AddHandler PART_LargeIconsListView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
-            AddHandler PART_LargeIconsListView.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
-            AddHandler PART_LargeIconsListView.MouseLeave, AddressOf OnListViewMouseLeave
-            AddHandler Me.PreviewKeyDown, AddressOf OnListViewKeyDown
-        End Sub
-
-        Private Sub wireActiveListView()
-            If Not _selectionHelper Is Nothing Then
-                _selectionHelper.Unhook()
+            If Not Me.Folder Is Nothing Then
+                Me.MakeBinding()
             End If
 
-            Me.PART_DetailsListView.SetValue(Panel.ZIndexProperty, 0)
-            Me.PART_NormalIconsListView.SetValue(Panel.ZIndexProperty, 0)
-            Me.PART_LargeIconsListView.SetValue(Panel.ZIndexProperty, 0)
+            AddHandler PART_ListView.Loaded,
+                Sub(s As Object, e As EventArgs)
+                    _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
+                End Sub
 
-            Select Case Me.View
-                Case View.Details : Me.PART_DetailsListView.SetValue(Panel.ZIndexProperty, 1)
-                Case View.NormalIcons : Me.PART_NormalIconsListView.SetValue(Panel.ZIndexProperty, 1)
-                Case View.LargeIcons : Me.PART_LargeIconsListView.SetValue(Panel.ZIndexProperty, 1)
-            End Select
-
-            _selectionHelper = New SelectionHelper(Of Item)(Me.ActiveListView)
+            AddHandler Me.PART_ListView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
+            AddHandler Me.PART_ListView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
+            AddHandler Me.PART_ListView.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
+            AddHandler Me.PART_ListView.MouseLeave, AddressOf OnListViewMouseLeave
+            AddHandler Me.PreviewKeyDown, AddressOf OnListViewKeyDown
         End Sub
 
         Public Function buildColumnsIn() As Behaviors.GridViewExtBehavior.ColumnsInData
@@ -285,7 +248,7 @@ Namespace Controls
                 Dim clickedItem As Item = listViewItem?.DataContext
                 _mouseItemDown = clickedItem
                 If clickedItem Is Nothing Then
-                    Me.ActiveListView.Focus()
+                    Me.PART_ListView.Focus()
                 Else
                     listViewItem.Focus()
                 End If
@@ -317,7 +280,7 @@ Namespace Controls
                     AddHandler _menu.CommandInvoked,
                         Sub(s As Object, e2 As CommandInvokedEventArgs)
                             If e2.Verb.StartsWith("laila.shell.view.") Then
-                                Me.View = [Enum].Parse(GetType(View), e2.Verb.Substring("laila.shell.view.".Length))
+                                Me.Host.View = e2.Verb.Substring("laila.shell.view.".Length)
                                 e2.IsHandled = True
                             Else
                                 Select Case e2.Verb
@@ -327,25 +290,9 @@ Namespace Controls
                                             e2.IsHandled = True
                                         End If
                                     Case "rename"
-                                        Dim column As Column = Me.Folder.Columns("System.ItemNameDisplay")
-                                        If Not column Is Nothing Then
-                                            Dim headers As IEnumerable(Of GridViewColumnHeader) =
-                                            UIHelper.FindVisualChildren(Of GridViewColumnHeader)(Me.PART_DetailsListView)
-                                            Dim header As GridViewColumnHeader =
-                                            headers.FirstOrDefault(Function(h) Not h.Column Is Nothing _
-                                                AndAlso h.Column.GetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty) _
-                                                    = String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
-                                            If Not header Is Nothing Then
-                                                Dim width As Double = header.ActualWidth
-                                                Dim ptLeft As Point = Me.PointFromScreen(header.PointToScreen(New Point(0, 0)))
-                                                If header.Column.GetValue(Behaviors.GridViewExtBehavior.ColumnIndexProperty) = 0 Then
-                                                    ptLeft.X += 20
-                                                    width -= 20
-                                                End If
-                                                Dim ptTop As Point = Me.PointFromScreen(listViewItem.PointToScreen(New Point(0, 0)))
-                                                _menu.DoRename(New Point(ptLeft.X + 5, ptTop.Y + 1), width - 5, clickedItem, Me.PART_Grid)
-                                            End If
-                                        End If
+                                        Dim point As Point, size As Size, textAlignment As TextAlignment
+                                        Me.GetItemNameCoordinates(listViewItem, textAlignment, point, size)
+                                        _menu.DoRename(point, size, textAlignment, clickedItem, Me.PART_Grid)
                                         e2.IsHandled = True
                                     Case "laila.shell.(un)pin"
                                         If e2.IsChecked Then
@@ -359,7 +306,7 @@ Namespace Controls
                         End Sub
 
                     Dim contextMenu As Controls.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
-                    Me.ActiveListView.ContextMenu = contextMenu
+                    Me.PART_ListView.ContextMenu = contextMenu
                     e.Handled = True
                 ElseIf clickedItem Is Nothing AndAlso
                         UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
@@ -369,6 +316,9 @@ Namespace Controls
                 _mouseItemDown = Nothing
             End If
         End Sub
+
+        Protected MustOverride Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
+                                                          ByRef point As Point, ByRef size As Size)
 
         Public Sub OnListViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
             _mouseItemDown = Nothing
@@ -409,6 +359,8 @@ Namespace Controls
             End If
         End Sub
 
+        Public Property Host As FolderView
+
         Public Property Folder As Folder
             Get
                 Return GetValue(FolderProperty)
@@ -427,27 +379,6 @@ Namespace Controls
             End Set
         End Property
 
-        Public Property View As View
-            Get
-                Return GetValue(ViewProperty)
-            End Get
-            Set(ByVal value As View)
-                SetCurrentValue(ViewProperty, value)
-            End Set
-        End Property
-
-        Public ReadOnly Property ActiveListView As ListView
-            Get
-                Select Case Me.View
-                    Case View.Details : Return Me.PART_DetailsListView
-                    Case View.NormalIcons : Return Me.PART_NormalIconsListView
-                    Case View.LargeIcons : Return Me.PART_LargeIconsListView
-                    Case Else
-                        Throw New InvalidOperationException(String.Format("Unknown view '{0}'.", Me.View.ToString()))
-                End Select
-            End Get
-        End Property
-
         Public Property ColumnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
             Get
                 Return GetValue(ColumnsInProperty)
@@ -458,7 +389,7 @@ Namespace Controls
         End Property
 
         Private Function getScrollViewer() As ScrollViewer
-            Return UIHelper.FindVisualChildren(Of ScrollViewer)(PART_DetailsListView)(0)
+            Return UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
         End Function
 
         Private Sub saveScrollState()
@@ -492,8 +423,6 @@ Namespace Controls
 
             If Not oldValue Is Nothing Then
                 RemoveHandler oldValue.PropertyChanged, AddressOf folder_PropertyChanged
-                Dim view As CollectionView = CollectionViewSource.GetDefaultView(oldValue.Items)
-                view.SortDescriptions.Clear()
             End If
 
             If Not newValue Is Nothing Then
@@ -510,48 +439,25 @@ Namespace Controls
                                 FrequentFolders.RecordTimeSpent(Me.Folder, 2)
                             End Sub)
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
-                clearBinding()
+                ClearBinding()
                 Await newValue.GetItemsAsync()
-                If Me.View <> View.Details Then
-                    Dim view As CollectionView = CollectionViewSource.GetDefaultView(newValue.Items)
-                    view.SortDescriptions.Add(New SortDescription() With {
-                        .PropertyName = "ItemNameDisplaySortValue",
-                        .Direction = ListSortDirection.Ascending
-                    })
-                End If
-                Me.setBinding()
+                Me.MakeBinding()
                 AddHandler newValue.PropertyChanged, AddressOf folder_PropertyChanged
             End If
 
             Me.IsLoading = False
         End Sub
 
-        Private Sub clearBinding()
-            clearBinding(Me.View)
+        Protected Overridable Sub ClearBinding()
+            If Not Me.PART_ListView Is Nothing Then
+                BindingOperations.ClearBinding(Me.PART_ListView, ListView.ItemsSourceProperty)
+            End If
         End Sub
 
-        Private Sub clearBinding(oldValue As View)
-            Select Case Me.View
-                Case View.Details
-                    BindingOperations.ClearBinding(Me.PART_DetailsListView, ListView.ItemsSourceProperty)
-                    CType(Me.PART_DetailsListView.View, GridView).Columns.Clear()
-                Case View.NormalIcons
-                    BindingOperations.ClearBinding(Me.PART_NormalIconsListView, ListView.ItemsSourceProperty)
-                Case View.LargeIcons
-                    BindingOperations.ClearBinding(Me.PART_NormalIconsListView, ListView.ItemsSourceProperty)
-            End Select
-        End Sub
-
-        Private Sub setBinding()
-            Select Case Me.View
-                Case View.Details
-                    Me.ColumnsIn = buildColumnsIn()
-                    BindingOperations.SetBinding(Me.PART_DetailsListView, ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
-                Case View.NormalIcons
-                    BindingOperations.SetBinding(Me.PART_NormalIconsListView, ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
-                Case View.LargeIcons
-                    BindingOperations.SetBinding(Me.PART_LargeIconsListView, ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
-            End Select
+        Protected Overridable Sub MakeBinding()
+            If Not Me.PART_ListView Is Nothing Then
+                BindingOperations.SetBinding(Me.PART_ListView, ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
+            End If
         End Sub
 
         Private Sub folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
@@ -565,16 +471,9 @@ Namespace Controls
         End Sub
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim dlv As DetailsListView = TryCast(d, DetailsListView)
+            Dim dlv As BaseFolderView = TryCast(d, BaseFolderView)
             dlv.IsLoading = True
             dlv.OnFolderChangedLocal(e.OldValue, e.NewValue)
-        End Sub
-
-        Shared Sub OnViewChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim dlv As DetailsListView = TryCast(d, DetailsListView)
-            dlv.clearBinding(e.OldValue)
-            dlv.wireActiveListView()
-            dlv.setBinding()
         End Sub
 
         Private Class ScrollState

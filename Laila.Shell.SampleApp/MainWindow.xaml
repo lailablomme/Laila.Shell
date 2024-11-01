@@ -114,7 +114,7 @@
                     <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" />
                     <controls:TreeView Grid.Row="2" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
                     <GridSplitter Grid.Row="2" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-                    <controls:DetailsListView Grid.Row="2" Grid.Column="2" x:Name="detailListView" Folder="{Binding Folder, Mode=TwoWay}" />
+                    <controls:FolderView Grid.Row="2" Grid.Column="2" x:Name="folderView" View="Details" Folder="{Binding Folder, Mode=TwoWay}" />
                 </Grid>
             </DataTemplate>
         </controls:TabControl.ContentTemplate>

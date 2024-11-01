@@ -12,8 +12,8 @@ Namespace Helpers
     Public Class WpfDragTargetProxy
         Implements IDropTarget
 
-        Private Shared _controls As Dictionary(Of Control, BaseDropTarget) = New Dictionary(Of Control, BaseDropTarget)()
-        Private Shared _hwnds As Dictionary(Of Control, IntPtr) = New Dictionary(Of Control, IntPtr)()
+        Private Shared _controls As Dictionary(Of UIElement, BaseDropTarget) = New Dictionary(Of UIElement, BaseDropTarget)()
+        Private Shared _hwnds As Dictionary(Of UIElement, IntPtr) = New Dictionary(Of UIElement, IntPtr)()
         Private Shared _activeDropTarget As BaseDropTarget
         Private Shared _instance As WpfDragTargetProxy = New WpfDragTargetProxy()
         Public Shared _isDropDescriptionSet As Boolean = False
@@ -26,9 +26,9 @@ Namespace Helpers
                 &H1, GetType(IDropTargetHelper).GUID, _dropTargetHelper)
         End Sub
 
-        Public Shared Sub RegisterDragDrop(control As Control, dropTarget As BaseDropTarget)
-            If Not _controls.ContainsKey(control) Then
-                Dim hwnd As IntPtr = GetHwndFromControl(control)
+        Public Shared Sub RegisterDragDrop(element As UIElement, dropTarget As BaseDropTarget)
+            If Not _controls.ContainsKey(element) Then
+                Dim hwnd As IntPtr = GetHwndFromControl(element)
                 If Not _controls.Keys.ToList().Exists(Function(c) GetHwndFromControl(c).Equals(hwnd)) Then
                     Functions.RevokeDragDrop(hwnd)
                     Dim h As HRESULT = Functions.RegisterDragDrop(hwnd, _instance)
@@ -39,18 +39,18 @@ Namespace Helpers
                         Throw ex
                     End If
                 End If
-                _controls.Add(control, dropTarget)
-                _hwnds.Add(control, hwnd)
+                _controls.Add(element, dropTarget)
+                _hwnds.Add(element, hwnd)
             Else
                 Throw New InvalidOperationException("This control is already registered.")
             End If
         End Sub
 
-        Public Shared Sub RevokeDragDrop(control As Control)
-            If _controls.ContainsKey(control) Then
-                Dim hwnd As IntPtr = _hwnds(control)
-                _controls.Remove(control)
-                _hwnds.Remove(control)
+        Public Shared Sub RevokeDragDrop(element As UIElement)
+            If _controls.ContainsKey(element) Then
+                Dim hwnd As IntPtr = _hwnds(element)
+                _controls.Remove(element)
+                _hwnds.Remove(element)
                 If Not _controls.Keys.ToList().Exists(Function(c) GetHwndFromControl(c).Equals(hwnd)) Then
                     Dim h As HRESULT = Functions.RevokeDragDrop(hwnd)
                     Debug.WriteLine("RevokeDragDrop returned " & h.ToString())
@@ -65,18 +65,18 @@ Namespace Helpers
             End If
         End Sub
 
-        Public Shared Function GetHwndFromControl(control As Control) As IntPtr
-            If _hwnds.ContainsKey(control) Then
-                Return _hwnds(control)
+        Public Shared Function GetHwndFromControl(element As UIElement) As IntPtr
+            If _hwnds.ContainsKey(element) Then
+                Return _hwnds(element)
             Else
-                Return CType(HwndSource.FromVisual(control), HwndSource).Handle
+                Return CType(HwndSource.FromVisual(element), HwndSource).Handle
             End If
         End Function
 
         Public Shared Function GetDropTargetFromWIN32POINT(ptWIN32 As WIN32POINT) As IDropTarget
-            Dim kvps As List(Of KeyValuePair(Of Control, BaseDropTarget)) =
+            Dim kvps As List(Of KeyValuePair(Of UIElement, BaseDropTarget)) =
                 _controls.Where(Function(kp) Not PresentationSource.FromVisual(kp.Key) Is Nothing _
-                                             AndAlso Not kp.Key.InputHitTest(UIHelper.WIN32POINTToControl(ptWIN32, kp.Key)) Is Nothing).ToList()
+                                             AndAlso Not kp.Key.InputHitTest(UIHelper.WIN32POINTToUIElement(ptWIN32, kp.Key)) Is Nothing).ToList()
             Return kvps.FirstOrDefault(Function(kvp) _
                 UIHelper.FindVisualChildren(Of Control)(kvp.Key) _
                      .FirstOrDefault(Function(child) _

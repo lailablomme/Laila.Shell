@@ -10,21 +10,21 @@ Public Class ListViewDropTarget
     Inherits BaseDropTarget
 
     Private _dataObject As IDataObject
-    Private _detailsListView As DetailsListView
+    Private _folderView As FolderView
     Private _lastOverItem As Item
     Private _lastDropTarget As IDropTarget
     Private _dragOpenTimer As Timer
     Private _scrollTimer As Timer
     Private _scrollDirection As Boolean?
 
-    Public Sub New(detailsListView As DetailsListView)
-        _detailsListView = detailsListView
+    Public Sub New(folderView As FolderView)
+        _folderView = folderView
     End Sub
 
     Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
-        _detailsListView.ActiveListView.Focus()
+        _folderView.ActiveView.PART_ListView.Focus()
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
@@ -75,10 +75,10 @@ Public Class ListViewDropTarget
 
     Private Function getOverItem(ptWIN32 As WIN32POINT) As Item
         ' translate point to listview
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListView.ActiveListView)
+        Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListView)
 
         ' find which item we're over
-        Dim overObject As IInputElement = _detailsListView.ActiveListView.InputHitTest(pt)
+        Dim overObject As IInputElement = _folderView.ActiveView.PART_ListView.InputHitTest(pt)
         Dim overListViewItem As ListViewItem
         If TypeOf overObject Is ListViewItem Then
             overListViewItem = overObject
@@ -88,12 +88,12 @@ Public Class ListViewDropTarget
         If Not overListViewItem Is Nothing Then
             Return overListViewItem.DataContext
         Else
-            Return _detailsListView.Folder
+            Return _folderView.Folder
         End If
     End Function
 
     Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _detailsListView.ActiveListView)
+        Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListView)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
                 _scrollDirection = False
@@ -104,12 +104,12 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListView.ActiveListView)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListView)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
                             End Sub)
                     End Sub), Nothing, 350, 350)
             End If
-        ElseIf pt.Y > _detailsListView.ActiveListView.ActualHeight - 100 Then
+        ElseIf pt.Y > _folderView.ActiveView.PART_ListView.ActualHeight - 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> True Then
                 _scrollDirection = True
                 If Not _scrollTimer Is Nothing Then
@@ -119,7 +119,7 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_detailsListView.ActiveListView)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListView)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
                             End Sub)
                     End Sub), Nothing, 350, 350)
@@ -134,7 +134,7 @@ Public Class ListViewDropTarget
         Dim overItem As Item = getOverItem(ptWIN32)
 
         ' if we're over a folder, open it after two seconds of hovering
-        If TypeOf overItem Is Folder AndAlso Not overItem.Equals(_detailsListView.Folder) Then
+        If TypeOf overItem Is Folder AndAlso Not overItem.Equals(_folderView.Folder) Then
             If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 If Not _dragOpenTimer Is Nothing Then
                     _dragOpenTimer.Dispose()
@@ -144,7 +144,7 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                _detailsListView.Folder = overItem
+                                _folderView.Folder = overItem
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
@@ -191,7 +191,7 @@ Public Class ListViewDropTarget
                 End Try
 
                 If Not dropTarget Is Nothing Then
-                    _detailsListView.SetSelectedItem(overItem)
+                    _folderView.ActiveView.SetSelectedItem(overItem)
                     If Not _lastDropTarget Is Nothing Then
                         _lastDropTarget.DragLeave()
                     End If
@@ -201,7 +201,7 @@ Public Class ListViewDropTarget
                         _lastDropTarget = dropTarget
                     End Try
                 Else
-                    _detailsListView.SetSelectedItem(Nothing)
+                    _folderView.ActiveView.SetSelectedItem(Nothing)
                     pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                     If Not _lastDropTarget Is Nothing Then
                         Try
@@ -218,7 +218,7 @@ Public Class ListViewDropTarget
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
             End If
         Else
-            _detailsListView.SetSelectedItem(Nothing)
+            _folderView.ActiveView.SetSelectedItem(Nothing)
             _lastOverItem = Nothing
             If Not _lastDropTarget Is Nothing Then
                 Try

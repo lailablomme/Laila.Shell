@@ -5,8 +5,11 @@
         <ResourceDictionary Source="/Laila.Shell;component/Controls/AddressBar.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ContextMenu.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/TreeView.xaml" />
-        <ResourceDictionary Source="/Laila.Shell;component/Controls/DetailsListView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/TabControl.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/FolderView.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/DetailsView.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/NormalIconsView.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/LargeIconsView.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

@@ -1,0 +1,102 @@
+﻿Imports System.Windows
+Imports System.Windows.Controls
+Imports System.Windows.Data
+Imports System.Windows.Media
+Imports Laila.Shell.Helpers
+
+Namespace Controls
+    Public Class FolderView
+        Inherits Control
+
+        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
+        Public Shared ReadOnly ViewProperty As DependencyProperty = DependencyProperty.Register("View", GetType(String), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnViewChanged))
+
+        Shared Sub New()
+            DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
+        End Sub
+
+        Private _views As Dictionary(Of String, Control) = New Dictionary(Of String, Control)()
+        Private _activeView As BaseFolderView
+        Private _dropTarget As IDropTarget
+        Private PART_Grid As Grid
+
+        Public Sub New()
+            AddHandler Me.Loaded,
+                Sub(s As Object, e As EventArgs)
+                    _dropTarget = New ListViewDropTarget(Me)
+                    WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
+                End Sub
+
+            AddHandler System.Windows.Application.Current.MainWindow.Closed,
+                Sub()
+                    WpfDragTargetProxy.RevokeDragDrop(Me)
+                End Sub
+        End Sub
+
+        Public Overrides Sub OnApplyTemplate()
+            MyBase.OnApplyTemplate()
+
+            Me.PART_Grid = Me.Template.FindName("PART_Grid", Me)
+
+            If Not Me.ActiveView Is Nothing Then
+                Me.PART_Grid.Children.Add(Me.ActiveView)
+            End If
+        End Sub
+
+        Public Property ActiveView As BaseFolderView
+            Get
+                Return _activeView
+            End Get
+            Set(value As BaseFolderView)
+                _activeView = value
+            End Set
+        End Property
+
+        Public Property Folder As Folder
+            Get
+                Return GetValue(FolderProperty)
+            End Get
+            Set(ByVal value As Folder)
+                SetCurrentValue(FolderProperty, value)
+            End Set
+        End Property
+
+        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            If Not e.OldValue Is Nothing Then
+                Dim view As CollectionView = CollectionViewSource.GetDefaultView(e.OldValue.Items)
+                view.SortDescriptions.Clear()
+            End If
+        End Sub
+
+        Public Property View As String
+            Get
+                Return GetValue(ViewProperty)
+            End Get
+            Set(ByVal value As String)
+                SetCurrentValue(ViewProperty, value)
+            End Set
+        End Property
+
+        Shared Sub OnViewChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim fv As FolderView = d
+            If Not e.OldValue Is Nothing Then
+                BindingOperations.ClearBinding(fv._views(e.OldValue), BaseFolderView.FolderProperty)
+            End If
+            For Each v In fv._views.Values
+                v.SetValue(Panel.ZIndexProperty, 0)
+            Next
+            If Not fv._views.ContainsKey(e.NewValue) Then
+                fv.ActiveView = Activator.CreateInstance(Shell.FolderViews(e.NewValue))
+                fv.ActiveView.Host = fv
+                fv._views.Add(e.NewValue, fv.ActiveView)
+                If Not fv.PART_Grid Is Nothing Then
+                    fv.PART_Grid.Children.Add(fv.ActiveView)
+                End If
+            Else
+                fv.ActiveView = fv._views(e.NewValue)
+            End If
+            fv.ActiveView.SetValue(Panel.ZIndexProperty, 1)
+            BindingOperations.SetBinding(fv.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = fv})
+        End Sub
+    End Class
+End Namespace

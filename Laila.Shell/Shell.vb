@@ -5,6 +5,7 @@ Imports System.Text
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Interop
+Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Microsoft.Win32
@@ -19,6 +20,7 @@ Public Class Shell
     Friend Shared _w As Window
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Public Shared _hwnd As IntPtr
+    Private Shared _folderViews As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
 
     Shared Sub New()
         Functions.OleInitialize(IntPtr.Zero)
@@ -96,6 +98,10 @@ Public Class Shell
         '_specialFolders.Add("Programs and Features", Folder.FromParsingName("shell:::{7b81be6a-ce2b-4676-a29e-eb907a5126c5}", Nothing))
         '_specialFolders.Add("Public", Folder.FromParsingName("shell:::{4336a54d-038b-4685-ab02-99bb52d3fb8b}", Nothing))
         '_specialFolders.Add("Recent Items", Folder.FromParsingName("shell:::{4564b25e-30cd-4787-82ba-39e73a750b14}", Nothing))
+
+        FolderViews.Add("Large icons", GetType(LargeIconsView))
+        FolderViews.Add("Normal icons", GetType(NormalIconsView))
+        FolderViews.Add("Details", GetType(DetailsView))
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
@@ -151,6 +157,12 @@ Public Class Shell
     Public Shared ReadOnly Property SpecialFolders As Dictionary(Of String, Folder)
         Get
             Return _specialFolders
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property FolderViews As Dictionary(Of String, Type)
+        Get
+            Return _folderViews
         End Get
     End Property
 

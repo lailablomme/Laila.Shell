@@ -174,10 +174,10 @@ Public Class ContextMenu
 
         If items Is Nothing OrElse items.Count = 0 Then
             Dim viewMenuItem As MenuItem = New MenuItem() With {.Header = "View"}
-            For Each item In [Enum].GetValues(GetType(View))
+            For Each item In Shell.FolderViews.Keys
                 Dim viewSubMenuItem As MenuItem = New MenuItem() With {
-                    .Header = item.ToString(),
-                    .Tag = "-1" & vbTab & "laila.shell.view." & item.ToString()
+                    .Header = item,
+                    .Tag = "-1" & vbTab & "laila.shell.view." & item
                 }
                 viewMenuItem.Items.Add(viewSubMenuItem)
             Next
@@ -543,7 +543,7 @@ Public Class ContextMenu
         End If
     End Sub
 
-    Public Sub DoRename(point As Point, width As Double, item As Item, grid As Grid)
+    Public Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, item As Item, grid As Grid)
         Dim originalName As String, isDrive As Boolean
 
         Dim doRename As Action(Of String) =
@@ -573,18 +573,21 @@ Public Class ContextMenu
         ' make textbox
         Dim textBox As System.Windows.Controls.TextBox
         textBox = New System.Windows.Controls.TextBox() With {
-            .Margin = New Thickness(point.X, point.Y + 1, 0, 0),
+            .Margin = New Thickness(point.X, point.Y, 0, 0),
             .HorizontalAlignment = HorizontalAlignment.Left,
             .VerticalAlignment = VerticalAlignment.Top,
-            .Width = width
+            .Width = size.Width,
+            .Height = size.Height,
+            .MaxLength = 260,
+            .TextWrapping = TextWrapping.Wrap,
+            .TextAlignment = textAlignment
         }
         textBox.SetValue(Panel.ZIndexProperty, 100)
-        textBox.MaxLength = 260
         If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
             isDrive = True
             item._shellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
         Else
-            originalName = item.FullPath.Substring(item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1)
+            originalName = item.DisplayName
         End If
         textBox.Text = originalName
         grid.Children.Add(textBox)

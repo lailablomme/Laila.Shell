@@ -421,7 +421,8 @@ Namespace Controls
                                             Dim pt As Point = Me.PointFromScreen(treeViewItem.PointToScreen(New Point(0, 0)))
                                             pt.X += clickedItem.TreeMargin.Left + 37
                                             pt.Y -= 1
-                                            _menu.DoRename(pt, Me.ActualWidth - pt.X - 2, clickedItem, Me.PART_Grid)
+                                            _menu.DoRename(pt, New Size(Me.ActualWidth - pt.X - 2, treeViewItem.ActualHeight),
+                                                           TextAlignment.Left, clickedItem, Me.PART_Grid)
                                             e2.IsHandled = True
                                         Case "laila.shell.(un)pin"
                                             If e2.IsChecked Then

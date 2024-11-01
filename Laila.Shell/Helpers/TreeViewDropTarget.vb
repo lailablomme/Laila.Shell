@@ -112,7 +112,7 @@ Public Class TreeViewDropTarget
 
     Private Function getOverListBoxItem(ptWIN32 As WIN32POINT) As ListBoxItem
         ' translate point to listview
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeView)
+        Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _treeView)
 
         ' find which item we're over
         Dim overTreeViewItem As ListBoxItem
@@ -146,7 +146,7 @@ Public Class TreeViewDropTarget
     End Function
 
     Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
-        Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _treeView)
+        Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _treeView)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
                 _scrollDirection = False
@@ -192,7 +192,7 @@ Public Class TreeViewDropTarget
             If _fileNameList.Count > 0 _
                 AndAlso overItem.TreeRootIndex >= Controls.TreeView.TreeRootSection.PINNED - 1 _
                 AndAlso overItem.TreeRootIndex <= Controls.TreeView.TreeRootSection.FREQUENT Then
-                Dim ptItem As Point = UIHelper.WIN32POINTToControl(ptWIN32, overListBoxItem)
+                Dim ptItem As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, overListBoxItem)
                 If (ptItem.Y <= 3 AndAlso overItem.TreeRootIndex >= Controls.TreeView.TreeRootSection.PINNED _
                     AndAlso Not TypeOf overItem Is SeparatorFolder) _
                     OrElse TypeOf overItem Is PinnedAndFrequentPlaceholderFolder Then

@@ -10,16 +10,18 @@ Namespace Adorners
 
         Public Shared Sub Add(columnHeader As GridViewColumnHeader, code As String, index As Integer, imageSource As String, alignment As HorizontalAlignment)
             Dim adornerLayer As AdornerLayer = System.Windows.Documents.AdornerLayer.GetAdornerLayer(columnHeader)
-            Dim adorners As Adorner() = adornerLayer.GetAdorners(columnHeader)
-            Dim adorner As GridViewColumnHeaderGlyphAdorner
-            If Not adorners Is Nothing AndAlso adorners.Count = 1 AndAlso TypeOf adorners(0) Is GridViewColumnHeaderGlyphAdorner Then
-                adorner = adorners(0)
-            Else
-                adorner = New GridViewColumnHeaderGlyphAdorner(columnHeader)
-                adornerLayer.Add(adorner)
+            If Not adornerLayer Is Nothing Then
+                Dim adorners As Adorner() = adornerLayer.GetAdorners(columnHeader)
+                Dim adorner As GridViewColumnHeaderGlyphAdorner
+                If Not adorners Is Nothing AndAlso adorners.Count = 1 AndAlso TypeOf adorners(0) Is GridViewColumnHeaderGlyphAdorner Then
+                    adorner = adorners(0)
+                Else
+                    adorner = New GridViewColumnHeaderGlyphAdorner(columnHeader)
+                    adornerLayer.Add(adorner)
+                End If
+                Dim isc As ImageSourceConverter = New ImageSourceConverter()
+                adorner.add(code, New GridViewColumnHeaderGlyph(index, isc.ConvertFromInvariantString(imageSource), alignment))
             End If
-            Dim isc As ImageSourceConverter = New ImageSourceConverter()
-            adorner.add(code, New GridViewColumnHeaderGlyph(index, isc.ConvertFromInvariantString(imageSource), alignment))
         End Sub
 
         Public Shared Sub Remove(columnHeader As GridViewColumnHeader, code As String)

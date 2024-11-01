@@ -38,7 +38,7 @@ Namespace Helpers
 
         Private Function getOverItem(ptWIN32 As WIN32POINT) As Controls.TabControl.TabData
             ' translate point to listview
-            Dim pt As Point = UIHelper.WIN32POINTToControl(ptWIN32, _tabControl)
+            Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _tabControl)
 
             ' find which item we're over
             Dim overObject As IInputElement = _tabControl.InputHitTest(pt)
