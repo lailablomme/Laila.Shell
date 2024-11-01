@@ -9,6 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
 	<EnableRegFreeCom>true</EnableRegFreeCom>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+	<ApplicationIcon>0050-folder_search.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +22,10 @@
       <Isolated>false</Isolated>
       <EmbedInteropTypes>true</EmbedInteropTypes>
     </COMReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="0050-folder_search.ico" />
   </ItemGroup>
   
   <ItemGroup>
