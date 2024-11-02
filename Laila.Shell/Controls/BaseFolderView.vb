@@ -445,16 +445,7 @@ Namespace Controls
                 Await newValue.GetItemsAsync()
                 Me.MakeBinding()
                 AddHandler newValue.PropertyChanged, AddressOf folder_PropertyChanged
-                UIHelper.OnUIThread(
-                    Sub()
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
-                UIHelper.OnUIThread(
-                    Sub()
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
-                UIHelper.OnUIThread(
-                    Sub()
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
-                UIHelper.OnUIThread(
+                UIHelper.OnUIThreadAsync(
                     Sub()
                         _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, _lastScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
                         _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))

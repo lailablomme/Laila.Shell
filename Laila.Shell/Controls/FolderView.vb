@@ -65,6 +65,7 @@ Namespace Controls
             If Not e.OldValue Is Nothing Then
                 Dim view As CollectionView = CollectionViewSource.GetDefaultView(e.OldValue.Items)
                 view.SortDescriptions.Clear()
+                CType(e.OldValue, Folder).ReleaseImages()
             End If
         End Sub
 

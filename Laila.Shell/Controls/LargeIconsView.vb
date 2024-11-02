@@ -1,7 +1,10 @@
 ﻿Imports System.ComponentModel
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports System.Windows.Media
+Imports Laila.Shell.Helpers
 
 Namespace Controls
     Public Class LargeIconsView

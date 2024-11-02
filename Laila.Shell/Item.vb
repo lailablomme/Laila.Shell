@@ -25,6 +25,8 @@ Public Class Item
     Private _overlayLarge As ImageSource
     Private _overlayIconIndex As Integer?
     Private _treeRootIndex As Long = -1
+    Friend _icons As Dictionary(Of Integer, ImageSource) = New Dictionary(Of Integer, ImageSource)()
+    Friend _images As Dictionary(Of Integer, ImageSource) = New Dictionary(Of Integer, ImageSource)()
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -249,28 +251,36 @@ Public Class Item
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                Dim ptr As IntPtr
-                Try
-                    CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
-                    Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                Finally
-                    Functions.DeleteObject(ptr)
-                End Try
+                If Not _icons.ContainsKey(size) Then
+                    Dim ptr As IntPtr
+                    Try
+                        CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
+                        _icons(size) = Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    Finally
+                        Functions.DeleteObject(ptr)
+                    End Try
+                End If
             End If
+
+                Return _icons(size)
         End Get
     End Property
 
     Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                Dim ptr As IntPtr
-                Try
-                    CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
-                    Return Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                Finally
-                    Functions.DeleteObject(ptr)
-                End Try
+                If Not _images.ContainsKey(size) Then
+                    Dim ptr As IntPtr
+                    Try
+                        CType(_shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
+                        _images(size) = Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    Finally
+                        Functions.DeleteObject(ptr)
+                    End Try
+                End If
             End If
+
+            Return _images(size)
         End Get
     End Property
 

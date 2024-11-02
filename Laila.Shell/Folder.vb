@@ -2,6 +2,7 @@
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
+Imports System.Windows.Media
 Imports Laila.Shell.Helpers
 
 Public Class Folder
@@ -501,8 +502,21 @@ Public Class Folder
         Return osVersion.Major < 6 OrElse (osVersion.Major = 6 AndAlso osVersion.Minor <= 1)
     End Function
 
+    Public Sub ReleaseImages()
+        _icons = New Dictionary(Of Integer, ImageSource)()
+        _images = New Dictionary(Of Integer, ImageSource)()
+
+        For Each item In Me.Items
+            item._icons = New Dictionary(Of Integer, ImageSource)()
+            item._images = New Dictionary(Of Integer, ImageSource)()
+        Next
+    End Sub
+
     Protected Overrides Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
+            For Each item In Me.Items
+                item.Dispose()
+            Next
         End If
 
         If Not _shellFolder Is Nothing Then
