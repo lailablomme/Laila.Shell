@@ -469,12 +469,32 @@ Public Class Item
                 .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                 .pid = 13
             }
-            Dim propertyNames() As String = Me.PropertiesByKey(PKEY_System_PropList_ContentViewModeForBrowse).Text.Substring(5).Split(";")
-            Dim properties As List(Of [Property]) = New List(Of [Property])()
-            For Each propCanonicalName In propertyNames
-                properties.Add(Me.PropertiesByCanonicalName(propCanonicalName.TrimStart("~")))
-            Next
-            Return properties.ToArray()
+            Dim system_PropList_ContentViewModeForBrowse As String = Me.PropertiesByKey(PKEY_System_PropList_ContentViewModeForBrowse).Text
+            If Not String.IsNullOrWhiteSpace(system_PropList_ContentViewModeForBrowse) Then
+                Dim propertyNames() As String = system_PropList_ContentViewModeForBrowse.Substring(5).Split(";")
+                Dim properties As List(Of [Property]) = New List(Of [Property])()
+                For Each propCanonicalName In propertyNames
+                    Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName.TrimStart("~"))
+                    If Not prop Is Nothing Then
+                        properties.Add(prop)
+                    Else
+                        properties.Add(Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"))
+                    End If
+                Next
+                While properties.Count < 6
+                    properties.Add(Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"))
+                End While
+                Return properties.ToArray()
+            Else
+                Return {
+                    Me.PropertiesByCanonicalName("System.ItemNameDisplay"),
+                    Me.PropertiesByCanonicalName("System.ItemTypeText"),
+                    Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"),
+                    Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"),
+                    Me.PropertiesByCanonicalName("System.DateModified"),
+                    Me.PropertiesByCanonicalName("System.Size")
+                }
+            End If
         End Get
     End Property
 
@@ -484,17 +504,22 @@ Public Class Item
                 .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                 .pid = 4
             }
-            Dim properties() As String = Me.PropertiesByKey(PKEY_System_InfoTipText).Text.Substring(5).Split(";")
-            Dim text As List(Of String) = New List(Of String)()
-            Dim i As Integer = 0
-            For Each propCanonicalName In properties
-                Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
-                If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
-                    text.Add(prop.DescriptionDisplayName & ": " & prop.Text)
-                End If
-                i += 1
-            Next
-            Return String.Join(vbCrLf, text)
+            Dim system_InfoTipText As String = Me.PropertiesByKey(PKEY_System_InfoTipText).Text
+            If Not String.IsNullOrWhiteSpace(system_InfoTipText) Then
+                Dim properties() As String = system_InfoTipText.Substring(5).Split(";")
+                Dim text As List(Of String) = New List(Of String)()
+                Dim i As Integer = 0
+                For Each propCanonicalName In properties
+                    Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
+                    If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
+                        text.Add(prop.DescriptionDisplayName & ": " & prop.Text)
+                    End If
+                    i += 1
+                Next
+                Return String.Join(vbCrLf, text)
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
@@ -504,19 +529,24 @@ Public Class Item
                 .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                 .pid = 3
             }
-            Dim properties() As String = Me.PropertiesByKey(PKEY_System_PropList_TileInfo).Text.Substring(5).Split(";")
-            Dim text As List(Of String) = New List(Of String)()
-            Dim i As Integer = 0
-            For Each propCanonicalName In properties
-                If Not propCanonicalName.StartsWith("*") Then
-                    Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
-                    If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
-                        text.Add(If(i >= 2, prop.DescriptionDisplayName & ": ", "") & prop.Text)
+            Dim system_PropList_TileInfo As String = Me.PropertiesByKey(PKEY_System_PropList_TileInfo).Text
+            If Not String.IsNullOrWhiteSpace(system_PropList_TileInfo) Then
+                Dim properties() As String = system_PropList_TileInfo.Substring(5).Split(";")
+                Dim text As List(Of String) = New List(Of String)()
+                Dim i As Integer = 0
+                For Each propCanonicalName In properties
+                    If Not propCanonicalName.StartsWith("*") Then
+                        Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
+                        If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
+                            text.Add(If(i >= 2, prop.DescriptionDisplayName & ": ", "") & prop.Text)
+                        End If
                     End If
-                End If
-                i += 1
-            Next
-            Return String.Join(vbCrLf, text)
+                    i += 1
+                Next
+                Return String.Join(vbCrLf, text)
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 

@@ -143,6 +143,7 @@ Public Class ContextMenu
                         Dim isNotDoubleOneDriveItem As Boolean = verb Is Nothing OrElse
                             Not (isWindows11 AndAlso
                                 (verb.StartsWith("{5250E46F-BB09-D602-5891-F476DC89B70") _
+                                 OrElse verb.StartsWith("{1FA0E654-C9F2-4A1F-9800-B9A75D744B0") _
                                  OrElse verb = "MakeAvailableOffline" _
                                  OrElse verb = "MakeAvailableOnline"))
                         If isNotDoubleSeparator AndAlso isNotInitialSeparator AndAlso isNotDoubleOneDriveItem Then

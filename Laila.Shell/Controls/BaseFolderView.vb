@@ -234,7 +234,8 @@ Namespace Controls
             Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
             Dim overItem As Item = listViewItem?.DataContext
             If Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
-                listViewItem.ToolTip = overItem.InfoTip
+                Dim toolTip As String = overItem.InfoTip
+                listViewItem.ToolTip = If(String.IsNullOrWhiteSpace(toolTip), Nothing, toolTip)
                 _mouseItemOver = overItem
             End If
 
