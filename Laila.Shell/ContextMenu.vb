@@ -543,7 +543,7 @@ Public Class ContextMenu
         End If
     End Sub
 
-    Public Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, item As Item, grid As Grid)
+    Public Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
         Dim originalName As String, isDrive As Boolean
 
         Dim doRename As Action(Of String) =
@@ -582,7 +582,8 @@ Public Class ContextMenu
             .TextWrapping = TextWrapping.Wrap,
             .TextAlignment = textAlignment,
             .UseLayoutRounding = True,
-            .SnapsToDevicePixels = True
+            .SnapsToDevicePixels = True,
+            .FontSize = fontSize
         }
         textBox.SetValue(Panel.ZIndexProperty, 100)
         If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then

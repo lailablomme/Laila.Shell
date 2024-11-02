@@ -26,7 +26,7 @@ Namespace Controls
         End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
-                                                       ByRef point As Point, ByRef size As Size)
+                                                       ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
             Dim column As Column = Me.Folder.Columns("System.ItemNameDisplay")
             If Not column Is Nothing Then
                 Dim headers As IEnumerable(Of GridViewColumnHeader) =
@@ -51,6 +51,7 @@ Namespace Controls
                 End If
             End If
             textAlignment = TextAlignment.Left
+            fontSize = Me.FontSize
         End Sub
     End Class
 End Namespace

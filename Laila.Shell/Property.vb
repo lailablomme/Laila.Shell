@@ -77,6 +77,14 @@ Public Class [Property]
         End Get
     End Property
 
+    Public ReadOnly Property DescriptionDisplayNameWithColon As String
+        Get
+            Dim displayName As StringBuilder = New StringBuilder()
+            Me.Description.GetDisplayName(displayName)
+            Return displayName.ToString() & ":"
+        End Get
+    End Property
+
     Public ReadOnly Property Description As IPropertyDescription
         Get
             If _propertyDescription Is Nothing Then

@@ -22,7 +22,7 @@ Namespace Controls
         End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
-                                                       ByRef point As Point, ByRef size As Size)
+                                                       ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
             point = Me.PointFromScreen(listViewItem.PointToScreen(New Point(0, 0)))
             point.X += 16 + 4 + 48 + 4 + 4
             point.Y += 1
@@ -30,6 +30,7 @@ Namespace Controls
             size.Width = 200 + 4
             size.Height = 17
             textAlignment = TextAlignment.Left
+            fontSize = Me.FontSize
         End Sub
     End Class
 End Namespace

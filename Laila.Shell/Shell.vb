@@ -106,6 +106,7 @@ Public Class Shell
         FolderViews.Add("List", GetType(ListView))
         FolderViews.Add("Details", GetType(DetailsView))
         FolderViews.Add("Tiles", GetType(TileView))
+        FolderViews.Add("Content", GetType(ContentView))
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr

@@ -463,12 +463,27 @@ Public Class Item
     '    End Get
     'End Property
 
+    Public ReadOnly Property ContentViewModeForBrowseProperties As [Property]()
+        Get
+            Dim PKEY_System_PropList_ContentViewModeForBrowse As New PROPERTYKEY() With {
+                .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
+                .pid = 13
+            }
+            Dim propertyNames() As String = Me.PropertiesByKey(PKEY_System_PropList_ContentViewModeForBrowse).Text.Substring(5).Split(";")
+            Dim properties As List(Of [Property]) = New List(Of [Property])()
+            For Each propCanonicalName In propertyNames
+                properties.Add(Me.PropertiesByCanonicalName(propCanonicalName.TrimStart("~")))
+            Next
+            Return properties.ToArray()
+        End Get
+    End Property
+
     Public ReadOnly Property InfoTip As String
         Get
             Dim PKEY_System_InfoTipText As New PROPERTYKEY() With {
-                        .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
-                        .pid = 4
-                    }
+                .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
+                .pid = 4
+            }
             Dim properties() As String = Me.PropertiesByKey(PKEY_System_InfoTipText).Text.Substring(5).Split(";")
             Dim text As List(Of String) = New List(Of String)()
             Dim i As Integer = 0

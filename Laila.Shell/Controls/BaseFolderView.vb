@@ -298,9 +298,9 @@ Namespace Controls
                                             e2.IsHandled = True
                                         End If
                                     Case "rename"
-                                        Dim point As Point, size As Size, textAlignment As TextAlignment
-                                        Me.GetItemNameCoordinates(listViewItem, textAlignment, point, size)
-                                        _menu.DoRename(point, size, textAlignment, clickedItem, Me.PART_Grid)
+                                        Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
+                                        Me.GetItemNameCoordinates(listViewItem, textAlignment, point, size, fontSize)
+                                        _menu.DoRename(point, size, textAlignment, fontSize, clickedItem, Me.PART_Grid)
                                         e2.IsHandled = True
                                     Case "laila.shell.(un)pin"
                                         If e2.IsChecked Then
@@ -326,7 +326,7 @@ Namespace Controls
         End Sub
 
         Protected MustOverride Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
-                                                          ByRef point As Point, ByRef size As Size)
+                                                          ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
 
         Public Sub OnListViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
             _mouseItemDown = Nothing

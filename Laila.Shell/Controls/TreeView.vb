@@ -422,7 +422,7 @@ Namespace Controls
                                             pt.X += clickedItem.TreeMargin.Left + 37
                                             pt.Y -= 1
                                             _menu.DoRename(pt, New Size(Me.ActualWidth - pt.X - 2, treeViewItem.ActualHeight),
-                                                           TextAlignment.Left, clickedItem, Me.PART_Grid)
+                                                           TextAlignment.Left, Me.FontSize, clickedItem, Me.PART_Grid)
                                             e2.IsHandled = True
                                         Case "laila.shell.(un)pin"
                                             If e2.IsChecked Then

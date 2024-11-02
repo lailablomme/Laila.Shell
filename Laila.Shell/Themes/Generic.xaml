@@ -14,6 +14,7 @@
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ExtraLargeIconsView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ListView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/TileView.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/ContentView.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>
