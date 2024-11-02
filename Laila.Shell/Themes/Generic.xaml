@@ -8,6 +8,7 @@
         <ResourceDictionary Source="/Laila.Shell;component/Controls/TabControl.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/FolderView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/DetailsView.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/SmallIconsView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/NormalIconsView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/LargeIconsView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ExtraLargeIconsView.xaml" />

@@ -4,11 +4,11 @@ Imports System.Windows.Controls
 Imports System.Windows.Data
 
 Namespace Controls
-    Public Class ListView
+    Public Class SmallIconsView
         Inherits BaseFolderView
 
         Shared Sub New()
-            DefaultStyleKeyProperty.OverrideMetadata(GetType(ListView), New FrameworkPropertyMetadata(GetType(ListView)))
+            DefaultStyleKeyProperty.OverrideMetadata(GetType(SmallIconsView), New FrameworkPropertyMetadata(GetType(SmallIconsView)))
         End Sub
 
         Protected Overrides Sub MakeBinding()
