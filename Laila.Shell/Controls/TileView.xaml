@@ -2,6 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Laila.Shell.Controls"
                     xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
+                    xmlns:converters="clr-namespace:Laila.Shell.Converters"
                     xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
@@ -156,7 +157,11 @@
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
+                                                <Grid.Resources>
+                                                    <converters:DoubleConverter x:Key="doubleConverter" />
+                                                </Grid.Resources>
                                                 <TextBlock Grid.Row="0" TextWrapping="Wrap" MaxWidth="200" MaxHeight="34" 
                                                        Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
                                                     <TextBlock.Style>
@@ -169,7 +174,21 @@
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
-                                                <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="Gray" 
+                                                <ProgressBar Grid.Row="1" Maximum="100" Width="200" Height="14" Margin="0,2,0,2"
+                                                             Value="{Binding PropertiesByCanonicalName[System.PercentFull].Value, 
+                                                                Mode=OneWay, Converter={StaticResource doubleConverter}}">
+                                                    <ProgressBar.Style>
+                                                        <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+                                                            <Setter Property="ProgressBar.Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDrive}" Value="True">
+                                                                    <Setter Property="ProgressBar.Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ProgressBar.Style>
+                                                </ProgressBar>
+                                                <TextBlock Grid.Row="2" TextWrapping="Wrap" Foreground="Gray" 
                                                            Text="{Binding TileViewProperties}" TextTrimming="CharacterEllipsis"
                                                            MaxWidth="200">
                                                 </TextBlock>

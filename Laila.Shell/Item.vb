@@ -367,9 +367,15 @@ Public Class Item
         End Get
     End Property
 
+    Public ReadOnly Property IsDrive As Boolean
+        Get
+            Return Me.FullPath.Equals(Path.GetPathRoot(Me.FullPath))
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property ItemNameDisplaySortValue As String
         Get
-            If Me.FullPath.Equals(Path.GetPathRoot(Me.FullPath)) Then
+            If Me.IsDrive Then
                 Return Me.FullPath
             Else
                 Return Me.DisplayName
@@ -464,8 +470,10 @@ Public Class Item
             Dim text As List(Of String) = New List(Of String)()
             Dim i As Integer = 0
             For Each propCanonicalName In properties
-                Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
-                text.Add(If(i >= 2, prop.DescriptionDisplayName & ": ", "") & prop.Text)
+                If Not propCanonicalName.StartsWith("*") Then
+                    Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
+                    text.Add(If(i >= 2, prop.DescriptionDisplayName & ": ", "") & prop.Text)
+                End If
                 i += 1
             Next
             Return String.Join(vbCrLf, text)
