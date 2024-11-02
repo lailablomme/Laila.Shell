@@ -44,6 +44,7 @@ Public Class [Property]
 
     Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, item As Item)
         _canonicalName = canonicalName
+        propertyDescription.GetPropertyKey(_propertyKey)
         _item = item
     End Sub
 
@@ -64,6 +65,14 @@ Public Class [Property]
     Public ReadOnly Property Key As PROPERTYKEY
         Get
             Return _propertyKey
+        End Get
+    End Property
+
+    Public ReadOnly Property DescriptionDisplayName As String
+        Get
+            Dim displayName As StringBuilder = New StringBuilder()
+            Me.Description.GetDisplayName(displayName)
+            Return displayName.ToString()
         End Get
     End Property
 

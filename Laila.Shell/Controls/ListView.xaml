@@ -102,9 +102,25 @@
                                             <Grid.ColumnDefinitions >
                                                 <ColumnDefinition Width="16" />
                                                 <ColumnDefinition Width="4" />
+                                                <ColumnDefinition Width="16" />
+                                                <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="Auto" SharedSizeGroup="A" />
                                             </Grid.ColumnDefinitions>
-                                            <Image Source="{Binding Icon[16]}" Width="16" Height="16" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                            <Image Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}"
+                                                   Width="14" Height="16">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
+                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Image Grid.Column="2" Source="{Binding Icon[16]}" Width="16" Height="16" 
+                                                   UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>
@@ -118,7 +134,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Source="{Binding OverlaySmall}" Width="16" Height="16" 
+                                            <Image Grid.Column="2" Source="{Binding OverlaySmall}" Width="16" Height="16" 
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                     VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                 <Image.Style>
@@ -134,7 +150,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <TextBlock Grid.Column="2" MaxWidth="200"
+                                            <TextBlock Grid.Column="4" MaxWidth="200"
                                                        Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
                                                     <Style>

@@ -1,5 +1,6 @@
 ﻿Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
+Imports System.Text
 Imports Microsoft.WindowsAPICodePack.Shell.PropertySystem
 
 ' https://learn.microsoft.com/en-us/windows/win32/api/propsys/nn-propsys-ipropertydescription
@@ -15,7 +16,7 @@ Public Interface IPropertyDescription
     Function GetPropertyType(ByRef pvartype As VarEnum) As HRESULT
     <MethodImpl(MethodImplOptions.InternalCall, MethodCodeType:=MethodCodeType.Runtime)>
     <PreserveSig>
-    Function GetDisplayName(ByRef ppszName As IntPtr) As HRESULT
+    Function GetDisplayName(ByRef ppszName As StringBuilder) As HRESULT
     <PreserveSig>
     <MethodImpl(MethodImplOptions.InternalCall, MethodCodeType:=MethodCodeType.Runtime)>
     Function GetEditInvitation(ByRef ppszInvite As IntPtr) As HRESULT

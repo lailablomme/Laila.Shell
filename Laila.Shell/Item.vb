@@ -454,6 +454,24 @@ Public Class Item
     '    End Get
     'End Property
 
+    Public ReadOnly Property TileViewProperties As String
+        Get
+            Dim PKEY_System_PropList_TileInfo As New PROPERTYKEY() With {
+                .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
+                .pid = 3
+            }
+            Dim properties() As String = Me.PropertiesByKey(PKEY_System_PropList_TileInfo).Text.Substring(5).Split(";")
+            Dim text As List(Of String) = New List(Of String)()
+            Dim i As Integer = 0
+            For Each propCanonicalName In properties
+                Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
+                text.Add(If(i >= 2, prop.DescriptionDisplayName & ": ", "") & prop.Text)
+                i += 1
+            Next
+            Return String.Join(vbCrLf, text)
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
             Dim parts() As String = propertyKey.Split(":")

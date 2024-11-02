@@ -5,10 +5,10 @@
                     xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
-    <Style TargetType="{x:Type local:ExtraLargeIconsView}">
+    <Style TargetType="{x:Type local:TileView}">
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:ExtraLargeIconsView}">
+                <ControlTemplate TargetType="{x:Type local:TileView}">
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" FocusVisualStyle="{x:Null}"  
@@ -97,13 +97,30 @@
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Padding="2" Width="220" VerticalAlignment="Top">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="216" />
-                                                <RowDefinition Height="Auto" SharedSizeGroup="A" />
-                                            </Grid.RowDefinitions>
-                                            <Image Source="{Binding Image[256]}" Width="216" Height="216" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                    <Border Padding="2">
+                                        <Grid Height="48">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="16" />
+                                                <ColumnDefinition Width="4" />
+                                                <ColumnDefinition Width="48" />
+                                                <ColumnDefinition Width="4" />
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="A" />
+                                            </Grid.ColumnDefinitions>
+                                            <Image Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}"
+                                                   Width="16" Height="16">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
+                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Image Grid.Column="2" Source="{Binding Image[96]}" Width="48" Height="48" 
+                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>
@@ -117,7 +134,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Border Width="216" Height="216">
+                                            <Border Grid.Column="2" Width="48" Height="48" VerticalAlignment="Center">
                                                 <Image Source="{Binding OverlayLarge}" Width="40" Height="40" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                        VerticalAlignment="Bottom" HorizontalAlignment="Left">
@@ -135,52 +152,28 @@
                                                     </Image.Style>
                                                 </Image>
                                             </Border>
-                                            <Grid Grid.Row="1" HorizontalAlignment="Center">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-
-                                                <Image Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}"
-                                                       Width="12" Height="11" Margin="0,3,2,0" VerticalAlignment="Top">
-                                                    <Image.Style>
-                                                        <Style>
-                                                            <Setter Property="Image.Visibility" Value="Collapsed" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
-                                                                    <Setter Property="Image.Visibility" Value="Visible" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}" Value="{x:Null}">
-                                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Image.Style>
-                                                </Image>
-                                                <TextBlock Grid.Column="1" MaxHeight="55" TextWrapping="Wrap"
-                                                           TextTrimming="CharacterEllipsis">
+                                            <Grid Grid.Column="4" VerticalAlignment="Center" MaxHeight="51">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <TextBlock Grid.Row="0" TextWrapping="Wrap" MaxWidth="200" MaxHeight="34" 
+                                                       Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
                                                     <TextBlock.Style>
                                                         <Style>
-                                                            <Setter Property="TextBlock.MaxWidth" Value="202" />
-                                                            <Setter Property="TextBlock.TextAlignment" Value="Left" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsCompressed}" Value="True">
                                                                     <Setter Property="TextBlock.Foreground" Value="Blue" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="False">
-                                                                    <Setter Property="TextBlock.MaxWidth" Value="216" />
-                                                                    <Setter Property="TextBlock.TextAlignment" Value="Center" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}" Value="{x:Null}">
-                                                                    <Setter Property="TextBlock.MaxWidth" Value="216" />
-                                                                    <Setter Property="TextBlock.TextAlignment" Value="Center" />
-                                                                </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
-                                                    <Run Text="{Binding DisplayName, Mode=OneWay}" />
                                                 </TextBlock>
-                                            </Grid>
+                                                <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="Gray" 
+                                                           Text="{Binding TileViewProperties}" TextTrimming="CharacterEllipsis"
+                                                           MaxWidth="200">
+                                                </TextBlock>
+                                            </Grid> 
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

@@ -135,18 +135,52 @@
                                                     </Image.Style>
                                                 </Image>
                                             </Border>
-                                            <TextBlock Grid.Row="1" Width="96" MaxHeight="55" TextWrapping="Wrap" TextAlignment="Center"
-                                                       Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
-                                                <TextBlock.Style>
-                                                    <Style>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCompressed}" Value="True">
-                                                                <Setter Property="TextBlock.Foreground" Value="Blue" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                            <Grid Grid.Row="1" HorizontalAlignment="Center">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <Image Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}"
+                                                       Width="12" Height="11" Margin="0,3,2,0" VerticalAlignment="Top">
+                                                    <Image.Style>
+                                                        <Style>
+                                                            <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
+                                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}" Value="{x:Null}">
+                                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Image.Style>
+                                                </Image>
+                                                <TextBlock Grid.Column="1" MaxHeight="55" TextWrapping="Wrap"
+                                                           TextTrimming="CharacterEllipsis">
+                                                    <TextBlock.Style>
+                                                        <Style>
+                                                            <Setter Property="TextBlock.MaxWidth" Value="82" />
+                                                            <Setter Property="TextBlock.TextAlignment" Value="Left" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsCompressed}" Value="True">
+                                                                    <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="False">
+                                                                    <Setter Property="TextBlock.MaxWidth" Value="96" />
+                                                                    <Setter Property="TextBlock.TextAlignment" Value="Center" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}" Value="{x:Null}">
+                                                                    <Setter Property="TextBlock.MaxWidth" Value="96" />
+                                                                    <Setter Property="TextBlock.TextAlignment" Value="Center" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                    <Run Text="{Binding DisplayName, Mode=OneWay}" />
+                                                </TextBlock>
+                                            </Grid>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
