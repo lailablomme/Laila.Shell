@@ -15,7 +15,7 @@ Public Class System_StorageProviderUIStatusProperty
     Private _System_StorageProviderCustomStatesKey As PROPERTYKEY
     Private _System_ItemCustomState_StateListDescription As IPropertyDescription
     Private _System_ItemCustomState_StateListKey As PROPERTYKEY
-
+    Private _icon16 As ImageSource
 
     Public Sub New(item As Item)
         MyBase.New(PropertyKey, item)
@@ -49,6 +49,9 @@ Public Class System_StorageProviderUIStatusProperty
                 End If
                 If Not propertyStore Is Nothing Then
                     Marshal.ReleaseComObject(propertyStore)
+                End If
+                If Not persistSerializedPropStorage Is Nothing Then
+                    Marshal.ReleaseComObject(persistSerializedPropStorage)
                 End If
             End Try
 
@@ -150,21 +153,25 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Overrides ReadOnly Property Icon16 As ImageSource
         Get
-            If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                Using rawValue As PROPVARIANT = Me.RawValue
-                    Dim imageReference As String, icon As IntPtr
-                    Dim index As UInt32
-                    Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(rawValue, _system_StorageProviderStateDescription, index)
-                    propertyEnumType2.GetImageReference(imageReference)
-                    If Not String.IsNullOrWhiteSpace(imageReference) Then
-                        Dim s() As String = Split(imageReference, ",")
-                        Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                        Return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                    End If
-                End Using
+            If _icon16 Is Nothing Then
+                If Me.DisplayType = PropertyDisplayType.Enumerated Then
+                    Using rawValue As PROPVARIANT = Me.RawValue
+                        Dim imageReference As String, icon As IntPtr
+                        Dim index As UInt32
+                        Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(rawValue, _system_StorageProviderStateDescription, index)
+                        propertyEnumType2.GetImageReference(imageReference)
+                        If Not String.IsNullOrWhiteSpace(imageReference) Then
+                            Dim s() As String = Split(imageReference, ",")
+                            Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
+                            If Not IntPtr.Zero.Equals(icon) Then
+                                _icon16 = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            End If
+                        End If
+                    End Using
+                End If
             End If
 
-            Return Nothing
+            Return _icon16
         End Get
     End Property
 

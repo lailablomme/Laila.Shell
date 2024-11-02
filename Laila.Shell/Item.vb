@@ -155,33 +155,36 @@ Public Class Item
     End Sub
 
     Public Overridable Sub Refresh()
+        Dim oldProperties As List(Of [Property]) = _properties
         Me.ClearCache()
-        Dim newShellItem2 As IShellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
-        If Not newShellItem2 Is Nothing Then
-            Dim oldShellItem As IShellItem2 = _shellItem2
-            _shellItem2 = newShellItem2
-            Marshal.ReleaseComObject(oldShellItem)
+        Dim bindCtxPtr As IntPtr
+        Try
+            Functions.CreateBindCtx(0, bindCtxPtr)
+            _shellItem2.Update(bindCtxPtr)
+        Finally
+            If Not IntPtr.Zero.Equals(bindCtxPtr) Then
+                Marshal.Release(bindCtxPtr)
+            End If
+        End Try
 
-            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+        _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                 Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
-            _shellItem2.GetAttributes(_attributes, _attributes)
-            For Each prop In Me.GetType().GetProperties()
-                UIHelper.OnUIThread(
-                    Sub()
-                        Me.NotifyOfPropertyChange(prop.Name)
-                    End Sub)
-            Next
-            If Not Me.Parent Is Nothing Then
-                For Each column In Me.Parent.Columns
-                    UIHelper.OnUIThread(
-                    Sub()
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
-                    End Sub)
-                Next
-            End If
-        End If
+        _shellItem2.GetAttributes(_attributes, _attributes)
+        For Each prop In Me.GetType().GetProperties()
+            UIHelper.OnUIThread(
+                Sub()
+                    Me.NotifyOfPropertyChange(prop.Name)
+                End Sub)
+        Next
+        For Each prop In oldProperties
+            UIHelper.OnUIThread(
+                Sub()
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.CanonicalName))
+                End Sub)
+        Next
     End Sub
 
     Public ReadOnly Property FullPath As String
@@ -460,6 +463,26 @@ Public Class Item
     '    End Get
     'End Property
 
+    Public ReadOnly Property InfoTip As String
+        Get
+            Dim PKEY_System_InfoTipText As New PROPERTYKEY() With {
+                        .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
+                        .pid = 4
+                    }
+            Dim properties() As String = Me.PropertiesByKey(PKEY_System_InfoTipText).Text.Substring(5).Split(";")
+            Dim text As List(Of String) = New List(Of String)()
+            Dim i As Integer = 0
+            For Each propCanonicalName In properties
+                Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
+                If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
+                    text.Add(prop.DescriptionDisplayName & ": " & prop.Text)
+                End If
+                i += 1
+            Next
+            Return String.Join(vbCrLf, text)
+        End Get
+    End Property
+
     Public ReadOnly Property TileViewProperties As String
         Get
             Dim PKEY_System_PropList_TileInfo As New PROPERTYKEY() With {
@@ -472,7 +495,9 @@ Public Class Item
             For Each propCanonicalName In properties
                 If Not propCanonicalName.StartsWith("*") Then
                     Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
-                    text.Add(If(i >= 2, prop.DescriptionDisplayName & ": ", "") & prop.Text)
+                    If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
+                        text.Add(If(i >= 2, prop.DescriptionDisplayName & ": ", "") & prop.Text)
+                    End If
                 End If
                 i += 1
             Next
@@ -512,7 +537,7 @@ Public Class Item
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
             If [property] Is Nothing Then
                 [property] = [Property].FromCanonicalName(canonicalName, Me)
-                _properties.Add([property])
+                If Not [property] Is Nothing Then _properties.Add([property])
             End If
             Return [property]
         End Get

@@ -32,6 +32,7 @@ Namespace Controls
         Private _scrollState As Dictionary(Of String, ScrollState) = New Dictionary(Of String, ScrollState)()
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
+        Private _mouseItemOver As Item
         Private _menu As Laila.Shell.ContextMenu
         Private _timeSpentTimer As Timer
 
@@ -230,8 +231,15 @@ Namespace Controls
         End Sub
 
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
+            Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
+            Dim overItem As Item = listViewItem?.DataContext
+            If Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
+                listViewItem.ToolTip = overItem.InfoTip
+                _mouseItemOver = overItem
+            End If
+
             If Not _mouseItemDown Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso
-                            (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
+                (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(Me)
                 If Math.Abs(currentPointDown.X - _mousePointDown.X) > 10 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 10 Then
                     Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))

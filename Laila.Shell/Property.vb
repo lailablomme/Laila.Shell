@@ -19,6 +19,7 @@ Public Class [Property]
     Private _hasIcon As Boolean?
     Protected disposedValue As Boolean
     Private _rawValue As PROPVARIANT
+    Private _icon16 As ImageSource
 
     Public Shared Function FromCanonicalName(canonicalName As String, Optional item As Item = Nothing) As [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
@@ -29,7 +30,7 @@ Public Class [Property]
             If Not propertyDescription Is Nothing Then
                 Return New [Property](canonicalName, propertyDescription, item)
             Else
-                Throw New Exception(String.Format("Property '{0}' not found.", canonicalName))
+                Return Nothing
             End If
         End If
     End Function
@@ -120,10 +121,12 @@ Public Class [Property]
         Get
             If String.IsNullOrWhiteSpace(_text) Then
                 Using rawValue As PROPVARIANT = Me.RawValue
-                    Dim buffer As StringBuilder = New StringBuilder()
-                    buffer.Append(New String(" ", 2050))
-                    Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
-                    _text = buffer.ToString()
+                    If rawValue.vt > 0 Then
+                        Dim buffer As StringBuilder = New StringBuilder()
+                        buffer.Append(New String(" ", 2050))
+                        Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
+                        _text = buffer.ToString()
+                    End If
                 End Using
             End If
             Return _text
@@ -175,21 +178,23 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property Icon16 As ImageSource
         Get
-            If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                Using rawValue As PROPVARIANT = Me.RawValue
-                    Dim imageReference As String, icon As IntPtr
-                    Dim index As UInt32
-                    Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(rawValue, Me.Description, index)
-                    propertyEnumType2.GetImageReference(imageReference)
-                    If Not String.IsNullOrWhiteSpace(imageReference) Then
-                        Dim s() As String = Split(imageReference, ",")
-                        Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                        Return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                    End If
-                End Using
+            If _icon16 Is Nothing Then
+                If Me.DisplayType = PropertyDisplayType.Enumerated Then
+                    Using rawValue As PROPVARIANT = Me.RawValue
+                        Dim imageReference As String, icon As IntPtr
+                        Dim index As UInt32
+                        Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(rawValue, Me.Description, index)
+                        propertyEnumType2.GetImageReference(imageReference)
+                        If Not String.IsNullOrWhiteSpace(imageReference) Then
+                            Dim s() As String = Split(imageReference, ",")
+                            Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
+                            _icon16 = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        End If
+                    End Using
+                End If
             End If
 
-            Return Nothing
+            Return _icon16
         End Get
     End Property
 
