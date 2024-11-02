@@ -71,6 +71,7 @@ Namespace Controls
             If INVALID_VALUE.Equals(Me.SelectedValue) Then
                 Dim item As Item = Item.FromParsingName(Me.PART_TextBox.Text, Nothing)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                    CType(item, Folder).LastScrollOffset = New Point()
                     Me.Folder = item
                 Else
                     System.Media.SystemSounds.Asterisk.Play()
@@ -80,6 +81,7 @@ Namespace Controls
                 End If
             ElseIf Not Me.SelectedItem Is Nothing Then
                 Dim doShow As Boolean = Me.SelectedItem.Equals(Me.Folder)
+                CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
                 Me.Folder = Me.SelectedItem
                 If doShow Then
                     Me.IsLoading = True
@@ -127,6 +129,7 @@ Namespace Controls
                 specialFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = specialFolder.Icon(16)}
                 AddHandler specialFoldersMenuItem.Click,
                         Sub(s As Object, e As EventArgs)
+                            CType(specialFoldersMenuItem.Tag, Folder).LastScrollOffset = New Point()
                             Me.Folder = specialFoldersMenuItem.Tag
                         End Sub
                 specialFoldersContextMenu.Items.Add(specialFoldersMenuItem)
@@ -150,6 +153,7 @@ Namespace Controls
                 folderButton.Tag = currentFolder
                 AddHandler folderButton.Click,
                     Sub(s As Object, e As EventArgs)
+                        CType(folderButton.Tag, Folder).LastScrollOffset = New Point()
                         Me.Folder = folderButton.Tag
                     End Sub
                 panel.Children.Add(folderButton)
@@ -174,6 +178,7 @@ Namespace Controls
                             subFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = subFolder.Icon(16)}
                             AddHandler subFoldersMenuItem.Click,
                                 Sub(s2 As Object, e2 As EventArgs)
+                                    CType(subFoldersMenuItem.Tag, Folder).LastScrollOffset = New Point()
                                     Me.Folder = subFoldersMenuItem.Tag
                                 End Sub
                             subFoldersContextMenu.Items.Add(subFoldersMenuItem)
@@ -222,6 +227,7 @@ Namespace Controls
                     moreMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = currentFolder.Icon(16)}
                     AddHandler moreMenuItem.Click,
                                 Sub(s2 As Object, e2 As EventArgs)
+                                    CType(moreMenuItem.Tag, Folder).LastScrollOffset = New Point()
                                     Me.Folder = moreMenuItem.Tag
                                 End Sub
                     moreContextMenu.Items.Add(moreMenuItem)

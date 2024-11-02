@@ -99,6 +99,7 @@ Namespace Controls
         End Sub
 
         Public Sub Up()
+            Me.Folder.Parent.LastScrollOffset = New Point()
             Me.Folder = Me.Folder.Parent
         End Sub
 

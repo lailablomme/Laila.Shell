@@ -401,7 +401,10 @@ Namespace Controls
                         If Not clickedItem Is Nothing Then
                             If Me.SelectedItem Is Nothing Then
                                 _selectionHelper.SetSelectedItems({clickedItem})
-                                If TypeOf clickedItem Is Folder Then Me.SetSelectedFolder(clickedItem)
+                                If TypeOf clickedItem Is Folder Then
+                                    CType(clickedItem, Folder).LastScrollOffset = New Point()
+                                    Me.SetSelectedFolder(clickedItem)
+                                End If
                             End If
 
                             Dim parent As Folder = clickedItem.Parent

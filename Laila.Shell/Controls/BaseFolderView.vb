@@ -29,12 +29,15 @@ Namespace Controls
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
-        Private _scrollState As Dictionary(Of String, ScrollState) = New Dictionary(Of String, ScrollState)()
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
         Private _menu As Laila.Shell.ContextMenu
         Private _timeSpentTimer As Timer
+        Private _scrollViewer As ScrollViewer
+        Private _lastScrollOffset As Point
+        Private _lastScrollSize As Size
+        Private _doForceScrollOffset As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -59,6 +62,20 @@ Namespace Controls
             AddHandler PART_ListView.Loaded,
                 Sub(s As Object, e As EventArgs)
                     _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
+                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
+
+                    AddHandler _scrollViewer.ScrollChanged,
+                        Sub(s2 As Object, e2 As ScrollChangedEventArgs)
+                            If Not _doForceScrollOffset Then
+                                If Not Me.Folder Is Nothing Then
+                                    _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
+                                    _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
+                                End If
+                            Else
+                                _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, _lastScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
+                                _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
+                            End If
+                        End Sub
                 End Sub
 
             AddHandler Me.PART_ListView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
@@ -263,6 +280,7 @@ Namespace Controls
                 End If
                 If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
                     If TypeOf clickedItem Is Folder Then
+                        CType(clickedItem, Folder).LastScrollOffset = New Point()
                         Me.Folder = clickedItem
                     Else
                         _menu = New Laila.Shell.ContextMenu()
@@ -397,41 +415,13 @@ Namespace Controls
             End Set
         End Property
 
-        Private Function getScrollViewer() As ScrollViewer
-            Return UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
-        End Function
-
-        Private Sub saveScrollState()
-            If _scrollState.ContainsKey(Me.Folder.FullPath) Then
-                _scrollState.Remove(Me.Folder.FullPath)
-            End If
-            _scrollState.Add(
-                Me.Folder.FullPath,
-                New ScrollState() With
-                {
-                    .OffsetY = getScrollViewer().VerticalOffset,
-                    .SelectedItems = Me.SelectedItems.ToList()
-                })
-        End Sub
-
-        Private Sub loadScrollState()
-            If _scrollState.ContainsKey(Me.Folder.FullPath) Then
-                Dim state As ScrollState = _scrollState(Me.Folder.FullPath)
-                getScrollViewer().ScrollToVerticalOffset(state.OffsetY)
-                Me.SetSelectedItems(state.SelectedItems)
-
-                Dim index As Integer = _scrollState.Keys.ToList().IndexOf(Me.Folder.FullPath)
-                While _scrollState.Count > index
-                    _scrollState.Remove(_scrollState.Keys.ElementAt(_scrollState.Count - 1))
-                End While
-            End If
-        End Sub
-
         Friend Async Sub OnFolderChangedLocal(oldValue As Folder, newValue As Folder)
             If Not _timeSpentTimer Is Nothing Then _timeSpentTimer.Dispose()
 
             If Not oldValue Is Nothing Then
                 RemoveHandler oldValue.PropertyChanged, AddressOf folder_PropertyChanged
+                oldValue.LastScrollOffset = _lastScrollOffset
+                oldValue.LastScrollSize = _lastScrollSize
             End If
 
             If Not newValue Is Nothing Then
@@ -448,10 +438,28 @@ Namespace Controls
                                 FrequentFolders.RecordTimeSpent(Me.Folder, 2)
                             End Sub)
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
+                _lastScrollOffset = newValue.LastScrollOffset
+                _lastScrollSize = newValue.LastScrollSize
+                _doForceScrollOffset = True
                 ClearBinding()
                 Await newValue.GetItemsAsync()
                 Me.MakeBinding()
                 AddHandler newValue.PropertyChanged, AddressOf folder_PropertyChanged
+                UIHelper.OnUIThread(
+                    Sub()
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                UIHelper.OnUIThread(
+                    Sub()
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                UIHelper.OnUIThread(
+                    Sub()
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                UIHelper.OnUIThread(
+                    Sub()
+                        _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, _lastScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
+                        _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
+                        _doForceScrollOffset = False
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
 
             Me.IsLoading = False

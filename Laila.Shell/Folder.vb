@@ -1,12 +1,16 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Runtime.InteropServices
 Imports System.Threading
+Imports System.Windows
 Imports Laila.Shell.Helpers
 
 Public Class Folder
     Inherits Item
 
     Public Event LoadingStateChanged(isLoading As Boolean)
+
+    Public Property LastScrollOffset As Point
+    Public Property LastScrollSize As Size
 
     Private _columns As List(Of Column)
     Friend _items As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()

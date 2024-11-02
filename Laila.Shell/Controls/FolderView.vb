@@ -96,6 +96,7 @@ Namespace Controls
                 fv.ActiveView = fv._views(e.NewValue)
             End If
             fv.ActiveView.SetValue(Panel.ZIndexProperty, 1)
+            fv.Folder.LastScrollOffset = New Point()
             BindingOperations.SetBinding(fv.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = fv})
         End Sub
     End Class
