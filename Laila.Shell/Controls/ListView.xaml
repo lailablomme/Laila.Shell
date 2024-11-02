@@ -134,7 +134,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <TextBlock Grid.Column="2"
+                                            <TextBlock Grid.Column="2" MaxWidth="200"
                                                        Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
                                                     <Style>
