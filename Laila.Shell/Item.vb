@@ -230,9 +230,31 @@ Public Class Item
         End Get
     End Property
 
+    Public Overridable ReadOnly Property OverlaySmallAsync As ImageSource
+        Get
+            Dim result As ImageSource
+            UIHelper.OnUIThread(
+                Sub()
+                    result = getOverlay(False)
+                End Sub)
+            Return result
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property OverlayLarge As ImageSource
         Get
             Return getOverlay(True)
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property OverlayLargeAsync As ImageSource
+        Get
+            Dim result As ImageSource
+            UIHelper.OnUIThread(
+                Sub()
+                    result = getOverlay(True)
+                End Sub)
+            Return result
         End Get
     End Property
 
@@ -266,23 +288,29 @@ Public Class Item
     Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                Dim result As ImageSource
-                UIHelper.OnUIThread(
-                    Sub()
-                        Dim ptr As IntPtr
-                        Try
-                            CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
-                            Dim bs As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                            bs.Freeze()
-                            result = bs
-                        Finally
-                            Functions.DeleteObject(ptr)
-                        End Try
-                    End Sub)
-                Return result
+                Dim ptr As IntPtr
+                Try
+                    CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
+                    Dim bs As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    bs.Freeze()
+                    Return bs
+                Finally
+                    Functions.DeleteObject(ptr)
+                End Try
             Else
                 Return Nothing
             End If
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property ImageAsync(size As Integer) As ImageSource
+        Get
+            Dim result As ImageSource
+            UIHelper.OnUIThread(
+                Sub()
+                    result = Me.Image(size)
+                End Sub)
+            Return result
         End Get
     End Property
 
@@ -581,17 +609,21 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
-            Dim parts() As String = propertyKey.Split(":")
-            Dim key As PROPERTYKEY
-            key.fmtid = New Guid(parts(0))
-            key.pid = parts(1)
+            Dim [property] As [Property]
+            UIHelper.OnUIThread(
+                Sub()
+                    Dim parts() As String = propertyKey.Split(":")
+                    Dim key As PROPERTYKEY
+                    key.fmtid = New Guid(parts(0))
+                    key.pid = parts(1)
 
-            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
-            If [property] Is Nothing Then
-                [property] = [Property].FromKey(key, Me)
-                _properties.Add([property])
-            End If
-            Return [property]
+                    [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
+                    If [property] Is Nothing Then
+                        [property] = [Property].FromKey(key, Me)
+                        _properties.Add([property])
+                    End If
+                End Sub)
+            Return [Property]
         End Get
     End Property
 

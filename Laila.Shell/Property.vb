@@ -182,22 +182,29 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property Icon16 As ImageSource
         Get
+            If Me.DisplayType = PropertyDisplayType.Enumerated Then
+                Dim imageReference As String, icon As IntPtr
+                Dim index As UInt32
+                Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
+                propertyEnumType2.GetImageReference(imageReference)
+                If Not String.IsNullOrWhiteSpace(imageReference) Then
+                    Dim s() As String = Split(imageReference, ",")
+                    Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
+                    Return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                End If
+            Else
+                Return Nothing
+            End If
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property Icon16Async As ImageSource
+        Get
             Dim result As ImageSource
             UIHelper.OnUIThread(
                 Sub()
-                    If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                        Dim imageReference As String, icon As IntPtr
-                        Dim index As UInt32
-                        Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
-                        propertyEnumType2.GetImageReference(imageReference)
-                        If Not String.IsNullOrWhiteSpace(imageReference) Then
-                            Dim s() As String = Split(imageReference, ",")
-                            Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                            result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        End If
-                    End If
+                    result = Me.Icon16
                 End Sub)
-
             Return result
         End Get
     End Property

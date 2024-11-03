@@ -16,6 +16,7 @@ Public Class System_StorageProviderUIStatusProperty
     Private _System_StorageProviderCustomStatesKey As PROPERTYKEY
     Private _System_ItemCustomState_StateListDescription As IPropertyDescription
     Private _System_ItemCustomState_StateListKey As PROPERTYKEY
+    Private _rawValue As PROPVARIANT
 
     Public Sub New(item As Item)
         MyBase.New(PropertyKey, item)
@@ -32,45 +33,45 @@ Public Class System_StorageProviderUIStatusProperty
 
     Friend Overrides ReadOnly Property RawValue As PROPVARIANT
         Get
-            Dim result As PROPVARIANT = MyBase.RawValue
+            If _rawValue.vt = 0 Then
+                Dim rv As PROPVARIANT = MyBase.RawValue
 
             Dim ptr As IntPtr, propertyStore As IPropertyStore, persistSerializedPropStorage As IPersistSerializedPropStorage
-            Try
-                Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
-                propertyStore = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
-                persistSerializedPropStorage = propertyStore
-                persistSerializedPropStorage.SetFlags(0)
-                persistSerializedPropStorage.SetPropertyStorage(result.union.bstrblobVal.pData, result.union.bstrblobVal.cbSize)
-                propertyStore.GetValue(_system_StorageProviderStateKey, result)
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-                If Not propertyStore Is Nothing Then
-                    Marshal.ReleaseComObject(propertyStore)
-                End If
-                If Not persistSerializedPropStorage Is Nothing Then
-                    Marshal.ReleaseComObject(persistSerializedPropStorage)
-                End If
-            End Try
+                Try
+                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
+                    propertyStore = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
+                    persistSerializedPropStorage = propertyStore
+                    persistSerializedPropStorage.SetFlags(0)
+                    persistSerializedPropStorage.SetPropertyStorage(rv.union.bstrblobVal.pData, rv.union.bstrblobVal.cbSize)
+                    propertyStore.GetValue(_system_StorageProviderStateKey, _rawValue)
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr) Then
+                        Marshal.Release(ptr)
+                    End If
+                    If Not propertyStore Is Nothing Then
+                        Marshal.ReleaseComObject(propertyStore)
+                    End If
+                    If Not persistSerializedPropStorage Is Nothing Then
+                        Marshal.ReleaseComObject(persistSerializedPropStorage)
+                    End If
+                End Try
+            End If
 
-            Return result
+            Return _rawValue
         End Get
     End Property
 
     Public ReadOnly Property Value As Object
         Get
-            Using rawValue As PROPVARIANT = Me.RawValue
-                If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                    Dim index As UInt32
-                    Dim propertyEnumType As IPropertyEnumType = getSelectedPropertyEnumType(rawValue, _system_StorageProviderStateDescription, index)
-                    If Not propertyEnumType Is Nothing Then
-                        Return index
-                    End If
-                Else
-                    Return getValue(rawValue)
+            If Me.DisplayType = PropertyDisplayType.Enumerated Then
+                Dim index As UInt32
+                Dim propertyEnumType As IPropertyEnumType = getSelectedPropertyEnumType(Me.RawValue, _system_StorageProviderStateDescription, index)
+                If Not propertyEnumType Is Nothing Then
+                    Return index
                 End If
-            End Using
+            Else
+                Return getValue(rawValue)
+            End If
 
             Return Nothing
         End Get
@@ -84,7 +85,6 @@ Public Class System_StorageProviderUIStatusProperty
                 buffer.Append(New String(" ", 2050))
                 Functions.PSFormatForDisplay(_system_StorageProviderStateKey, rawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
                 _text = buffer.ToString()
-                rawValue.Dispose()
 
                 rawValue = MyBase.RawValue
 
@@ -96,7 +96,6 @@ Public Class System_StorageProviderUIStatusProperty
                     persistSerializedPropStorage = propertyStore
                     persistSerializedPropStorage.SetFlags(0)
                     persistSerializedPropStorage.SetPropertyStorage(rawValue.union.bstrblobVal.pData, rawValue.union.bstrblobVal.cbSize)
-                    rawValue.Dispose()
                     propertyStore.GetValue(_System_StorageProviderCustomStatesKey, rawValue)
                 Finally
                     If Not IntPtr.Zero.Equals(ptr) Then
@@ -152,26 +151,31 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Overrides ReadOnly Property Icon16 As ImageSource
         Get
+            If Me.DisplayType = PropertyDisplayType.Enumerated Then
+                Dim imageReference As String, icon As IntPtr
+                Dim index As UInt32
+                Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, _system_StorageProviderStateDescription, index)
+                propertyEnumType2.GetImageReference(imageReference)
+                If Not String.IsNullOrWhiteSpace(imageReference) Then
+                    Dim s() As String = Split(imageReference, ",")
+                    Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
+                    If Not IntPtr.Zero.Equals(icon) Then
+                        Return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    End If
+                End If
+            Else
+                Return Nothing
+            End If
+        End Get
+    End Property
+
+    Public Overrides ReadOnly Property Icon16Async As ImageSource
+        Get
             Dim result As ImageSource
             UIHelper.OnUIThread(
                 Sub()
-                    If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                        Using rawValue As PROPVARIANT = Me.RawValue
-                            Dim imageReference As String, icon As IntPtr
-                            Dim index As UInt32
-                            Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(rawValue, _system_StorageProviderStateDescription, index)
-                            propertyEnumType2.GetImageReference(imageReference)
-                            If Not String.IsNullOrWhiteSpace(imageReference) Then
-                                Dim s() As String = Split(imageReference, ",")
-                                Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                                If Not IntPtr.Zero.Equals(icon) Then
-                                    result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                End If
-                            End If
-                        End Using
-                    End If
+                    result = Me.Icon16
                 End Sub)
-
             Return result
         End Get
     End Property
@@ -179,6 +183,7 @@ Public Class System_StorageProviderUIStatusProperty
     Protected Overrides Sub Dispose(disposing As Boolean)
         MyBase.Dispose(disposing)
 
+        _rawValue.Dispose()
         If Not _system_StorageProviderStateDescription Is Nothing Then
             Marshal.ReleaseComObject(_system_StorageProviderStateDescription)
         End If

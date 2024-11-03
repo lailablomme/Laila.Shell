@@ -139,7 +139,8 @@ Namespace Controls
                     imageFactory1.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center)
                     imageFactory1.SetValue(Image.SourceProperty, New Binding() With {
                         .Path = New PropertyPath(bindTo),
-                        .Mode = BindingMode.OneWay
+                        .Mode = BindingMode.OneWay,
+                        .IsAsync = True
                     })
                     Dim style As Style = New Style(GetType(Image))
                     style.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Collapsed))
@@ -175,8 +176,8 @@ Namespace Controls
                     imageFactory1.SetValue(Image.StyleProperty, style)
                     Return imageFactory1
                 End Function
-            gridFactory.AppendChild(getIconFactory("Icon[16]"))
-            gridFactory.AppendChild(getIconFactory("OverlaySmall"))
+            gridFactory.AppendChild(getIconFactory("IconAsync[16]"))
+            gridFactory.AppendChild(getIconFactory("OverlaySmallAsync"))
 
             If [property].HasIcon Then
                 Dim imageFactory2 As FrameworkElementFactory = New FrameworkElementFactory(GetType(Image))
@@ -187,8 +188,9 @@ Namespace Controls
                 imageFactory2.SetValue(Image.HorizontalAlignmentProperty, HorizontalAlignment.Left)
                 imageFactory2.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center)
                 imageFactory2.SetValue(Image.SourceProperty, New Binding() With {
-                    .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Icon16", column.PROPERTYKEY.ToString())),
-                    .Mode = BindingMode.OneWay
+                    .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Icon16Async", column.PROPERTYKEY.ToString())),
+                    .Mode = BindingMode.OneWay,
+                    .IsAsync = True
                 })
                 Dim imageStyle As Style = New Style(GetType(Image))
                 imageStyle.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(1)))

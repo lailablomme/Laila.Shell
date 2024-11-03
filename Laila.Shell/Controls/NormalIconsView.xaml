@@ -103,7 +103,7 @@
                                                 <RowDefinition Height="48" />
                                                 <RowDefinition Height="Auto" SharedSizeGroup="A" />
                                             </Grid.RowDefinitions>
-                                            <Image Source="{Binding Image[96]}" Width="48" Height="48" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                            <Image Source="{Binding ImageAsync[96], IsAsync=True}" Width="48" Height="48" UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>
@@ -118,7 +118,7 @@
                                                 </Image.Style>
                                             </Image>
                                             <Border Width="48" Height="48">
-                                                <Image Source="{Binding OverlayLarge}" Width="40" Height="40" 
+                                                <Image Source="{Binding OverlayLargeAsync, IsAsync=True}" Width="40" Height="40" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                        VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                     <Image.Style>
@@ -141,7 +141,7 @@
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
 
-                                                <Image Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}"
+                                                <Image Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16Async, IsAsync=True}"
                                                        Width="12" Height="11" Margin="0,3,2,0" VerticalAlignment="Top">
                                                     <Image.Style>
                                                         <Style>
@@ -150,7 +150,7 @@
                                                                 <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
                                                                     <Setter Property="Image.Visibility" Value="Visible" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}" Value="{x:Null}">
+                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16Async, IsAsync=True}" Value="{x:Null}">
                                                                     <Setter Property="Image.Visibility" Value="Collapsed" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
@@ -171,7 +171,7 @@
                                                                     <Setter Property="TextBlock.MaxWidth" Value="65" />
                                                                     <Setter Property="TextBlock.TextAlignment" Value="Center" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}" Value="{x:Null}">
+                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16Async, IsAsync=True}" Value="{x:Null}">
                                                                     <Setter Property="TextBlock.MaxWidth" Value="65" />
                                                                     <Setter Property="TextBlock.TextAlignment" Value="Center" />
                                                                 </DataTrigger>
