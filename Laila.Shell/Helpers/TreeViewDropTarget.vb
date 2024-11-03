@@ -261,8 +261,9 @@ Public Class TreeViewDropTarget
                     _lastOverItem = overItem
 
                     Dim dropTarget As IDropTarget, pidl As IntPtr, shellItemPtr As IntPtr, dropTargetPtr As IntPtr
+                    Dim shellItem2 As IShellItem2 = overItem.ShellItem22
                     Try
-                        shellItemPtr = Marshal.GetIUnknownForObject(overItem.ShellItem2)
+                        shellItemPtr = Marshal.GetIUnknownForObject(shellItem2)
                         Functions.SHGetIDListFromObject(shellItemPtr, pidl)
                         If Not overItem.Parent Is Nothing Then
                             Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = overItem.Parent.ShellFolder
@@ -293,6 +294,9 @@ Public Class TreeViewDropTarget
                         End If
                         If Not IntPtr.Zero.Equals(pidl) Then
                             Marshal.FreeCoTaskMem(pidl)
+                        End If
+                        If Not shellItem2 Is Nothing Then
+                            Marshal.ReleaseComObject(shellItem2)
                         End If
                     End Try
                     'Debug.WriteLine("got dropTarget = " & If(dropTarget Is Nothing, "nothing", "something"))

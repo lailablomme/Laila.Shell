@@ -12,10 +12,14 @@ Public Class Pidl
         Dim pidls As List(Of Pidl) = New List(Of Pidl)()
         For Each item In items
             Dim pidl As IntPtr = IntPtr.Zero
-            Dim punk As IntPtr = Marshal.GetIUnknownForObject(item.ShellItem2)
+            Dim shellItem2 As IShellItem2 = item.ShellItem22
+            Dim punk As IntPtr = Marshal.GetIUnknownForObject(shellItem2)
             Functions.SHGetIDListFromObject(punk, pidl)
             pidls.Add(New Pidl(pidl))
             Marshal.Release(punk)
+            If Not shellItem2 Is Nothing Then
+                Marshal.ReleaseComObject(shellItem2)
+            End If
         Next
 
         Dim mem As MemoryStream = New MemoryStream()
@@ -72,7 +76,13 @@ Public Class Pidl
             For i = 0 To count - 1
                 offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
                 Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
-                result.Add(Item.FromParsingName(Item.GetFullPathFromShellItem2(shellItem2), Nothing))
+                Try
+                    result.Add(Item.FromParsingName(Item.GetFullPathFromShellItem2(shellItem2), Nothing))
+                Finally
+                    If Not shellItem2 Is Nothing Then
+                        Marshal.ReleaseComObject(shellItem2)
+                    End If
+                End Try
             Next
         Finally
             If Not parentShellFolder Is Nothing Then

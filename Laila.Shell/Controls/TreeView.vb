@@ -298,10 +298,13 @@ Namespace Controls
                 Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
                 Dim list As List(Of Folder) = New List(Of Folder)()
                 Dim currentFolder As Folder = folder
+                Dim noRecursive As List(Of String) = New List(Of String)()
                 If Not currentFolder Is Nothing Then
                     While Not currentFolder.Parent Is Nothing _
                         AndAlso currentFolder.Parent.FullPath <> Shell.Desktop.FullPath _
-                        AndAlso currentFolder.TreeRootIndex = -1
+                        AndAlso currentFolder.TreeRootIndex = -1 _
+                        AndAlso Not noRecursive.Contains(currentFolder.FullPath)
+                        noRecursive.Add(currentFolder.FullPath)
                         list.Add(currentFolder)
                         Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
                         currentFolder = currentFolder.Parent

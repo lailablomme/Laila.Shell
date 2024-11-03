@@ -42,8 +42,9 @@ Public Class ContextMenu
             Functions.OleGetClipboard(dataObject)
 
             Dim dropTarget As IDropTarget, pidl As IntPtr, shellItemPtr As IntPtr, dropTargetPtr As IntPtr
+            Dim shellItem2 As IShellItem2 = parent.ShellItem22
             Try
-                shellItemPtr = Marshal.GetIUnknownForObject(parent.ShellItem2)
+                shellItemPtr = Marshal.GetIUnknownForObject(shellItem2)
                 Functions.SHGetIDListFromObject(shellItemPtr, pidl)
                 If Not parent.Parent Is Nothing Then
                     Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = parent.Parent.ShellFolder
@@ -85,6 +86,9 @@ Public Class ContextMenu
                 End If
                 If Not dropTarget Is Nothing Then
                     Marshal.ReleaseComObject(dropTarget)
+                End If
+                If Not shellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(shellItem2)
                 End If
             End Try
         End If
@@ -234,13 +238,16 @@ Public Class ContextMenu
 
     Private Sub makeContextMenu(items As IEnumerable(Of Item), isDefaultOnly As Boolean)
         Dim ptrContextMenu As IntPtr
-        Dim folderpidl As IntPtr, folderpidl2 As IntPtr, shellItemPtr As IntPtr
+        Dim folderpidl As IntPtr, folderpidl2 As IntPtr, shellItemPtr As IntPtr, shellItem2 As IShellItem2 = _parent.ShellItem22
         Try
-            shellItemPtr = Marshal.GetIUnknownForObject(_parent.ShellItem2)
+            shellItemPtr = Marshal.GetIUnknownForObject(shellItem2)
             Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
         Finally
             If Not IntPtr.Zero.Equals(shellItemPtr) Then
                 Marshal.Release(shellItemPtr)
+            End If
+            If Not shellItem2 Is Nothing Then
+                Marshal.ReleaseComObject(shellItem2)
             End If
         End Try
 
@@ -257,11 +264,15 @@ Public Class ContextMenu
                         shellFolder = _parent.ShellFolder
                         For i = 0 To items.Count - 1
                             Try
-                                shellItemPtr = Marshal.GetIUnknownForObject(items(i).ShellItem2)
+                                shellItem2 = items(i).ShellItem22
+                                shellItemPtr = Marshal.GetIUnknownForObject(shellItem2)
                                 Functions.SHGetIDListFromObject(shellItemPtr, pidls(i))
                             Finally
                                 If Not IntPtr.Zero.Equals(shellItemPtr) Then
                                     Marshal.Release(shellItemPtr)
+                                End If
+                                If Not shellItem2 Is Nothing Then
+                                    Marshal.ReleaseComObject(shellItem2)
                                 End If
                             End Try
                             lastpidls(i) = Functions.ILFindLastID(pidls(i))
@@ -297,11 +308,15 @@ Public Class ContextMenu
                         ' this is any other folder
                         folderpidl2 = folderpidl
                         Try
-                            shellItemPtr = Marshal.GetIUnknownForObject(_parent.Parent.ShellItem2)
+                            shellItem2 = _parent.Parent.ShellItem22
+                            shellItemPtr = Marshal.GetIUnknownForObject(shellItem2)
                             Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
                         Finally
                             If Not IntPtr.Zero.Equals(shellItemPtr) Then
                                 Marshal.Release(shellItemPtr)
+                            End If
+                            If Not shellItem2 Is Nothing Then
+                                Marshal.ReleaseComObject(shellItem2)
                             End If
                         End Try
                         lastpidls(0) = Functions.ILFindLastID(folderpidl2)
@@ -569,7 +584,14 @@ Public Class ContextMenu
                     Else
                         Dim fileOperation As IFileOperation
                         Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                        fileOperation.RenameItem(item.ShellItem2, newName, Nothing)
+                        Dim shellItem2 As IShellItem2 = item.ShellItem22
+                        Try
+                            fileOperation.RenameItem(shellItem2, newName, Nothing)
+                        Finally
+                            If Not shellItem2 Is Nothing Then
+                                Marshal.ReleaseComObject(shellItem2)
+                            End If
+                        End Try
                         fileOperation.PerformOperations()
                         Marshal.ReleaseComObject(fileOperation)
 
@@ -600,7 +622,14 @@ Public Class ContextMenu
         textBox.SetValue(Panel.ZIndexProperty, 100)
         If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
             isDrive = True
-            item.ShellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
+            Dim shellItem2 As IShellItem2 = item.ShellItem22
+            Try
+                shellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
+            Finally
+                If Not shellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(shellItem2)
+                End If
+            End Try
         Else
             originalName = item.DisplayName
         End If

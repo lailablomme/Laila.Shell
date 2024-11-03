@@ -18,12 +18,9 @@ Public Class Item
     Friend disposedValue As Boolean
     Protected _parent As Folder
     Protected _displayName As String
-    Friend _cachedShellItem2 As IShellItem2
     Private _isPinned As Boolean
     Private _isCut As Boolean
     Private _attributes As SFGAO
-    Private _overlaySmall As ImageSource
-    Private _overlayLarge As ImageSource
     Private _overlayIconIndex As Integer?
     Private _treeRootIndex As Long = -1
 
@@ -34,9 +31,9 @@ Public Class Item
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, parent)
+                Return New Folder(parsingName, parent)
             Else
-                Return New Item(shellItem2, parent)
+                Return New Item(parsingName, parent)
             End If
         Else
             Return Nothing
@@ -62,7 +59,6 @@ Public Class Item
     Friend Shared Function GetIShellItem2FromParsingName(parsingName As String) As IShellItem2
         Dim ptr As IntPtr
         Try
-            parsingName = Environment.ExpandEnvironmentVariables(parsingName)
             Functions.SHCreateItemFromParsingName(parsingName, IntPtr.Zero, Guids.IID_IShellItem2, ptr)
             Return If(Not IntPtr.Zero.Equals(ptr), Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2)), Nothing)
         Finally
@@ -81,29 +77,38 @@ Public Class Item
         Return fullPath
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
-        _cachedShellItem2 = shellItem2
-        If Not shellItem2 Is Nothing Then
-            _fullPath = GetFullPathFromShellItem2(shellItem2)
-            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+    Public Sub New(fullPath As String, parent As Folder)
+        Dim shellItem2 As IShellItem2
+        Try
+            If Not String.IsNullOrWhiteSpace(fullPath) Then
+                _fullPath = fullPath
+                '_fullPath = Environment.ExpandEnvironmentVariables(fullPath)
+                'If _fullPath.StartsWith("::{") AndAlso _fullPath.EndsWith("}") Then
+                '    _fullPath = "shell:" & fullPath
+                'End If
+                shellItem2 = Me.ShellItem22
+                _fullPath = Item.GetFullPathFromShellItem2(shellItem2)
+                '_fullPath = GetFullPathFromShellItem2(shellItem2)
+                _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                 Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
-            _cachedShellItem2.GetAttributes(_attributes, _attributes)
-        Else
-            _fullPath = String.Empty
-        End If
+                shellItem2.GetAttributes(_attributes, _attributes)
+            Else
+                _fullPath = String.Empty
+            End If
+        Finally
+            If Not shellItem2 Is Nothing Then
+                Marshal.ReleaseComObject(shellItem2)
+            End If
+        End Try
         _parent = parent
         AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
 
-    Public ReadOnly Property ShellItem2 As IShellItem2
+    Public ReadOnly Property ShellItem22 As IShellItem2
         Get
-            If _cachedShellItem2 Is Nothing AndAlso Not disposedValue Then
-                _cachedShellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
-            End If
-
-            Return _cachedShellItem2
+            Return Item.GetIShellItem2FromParsingName(_fullPath)
         End Get
     End Property
 
@@ -152,10 +157,6 @@ Public Class Item
     End Property
 
     Public Overridable Sub ClearCache()
-        If Not _cachedShellItem2 Is Nothing Then
-            Marshal.ReleaseComObject(_cachedShellItem2)
-            _cachedShellItem2 = Nothing
-        End If
         If Not _imageFactory Is Nothing Then
             Marshal.ReleaseComObject(_imageFactory)
             _imageFactory = Nothing
@@ -165,8 +166,6 @@ Public Class Item
         Next
         _properties = New HashSet(Of [Property])()
         _displayName = Nothing
-        _overlaySmall = Nothing
-        _overlayLarge = Nothing
     End Sub
 
     Public Overridable Sub Refresh()
@@ -177,7 +176,14 @@ Public Class Item
                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                 Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
-        Me.ShellItem2.GetAttributes(_attributes, _attributes)
+        Dim shellItem2 As IShellItem2 = Me.ShellItem22
+        Try
+            shellItem2.GetAttributes(_attributes, _attributes)
+        Finally
+            If Not shellItem2 Is Nothing Then
+                Marshal.ReleaseComObject(shellItem2)
+            End If
+        End Try
         For Each prop In Me.GetType().GetProperties()
             UIHelper.OnUIThread(
                 Sub()
@@ -202,13 +208,24 @@ Public Class Item
     Public ReadOnly Property Parent As Folder
         Get
             If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
-                If _parent Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                If _parent Is Nothing AndAlso Not disposedValue Then
                     ' this is bound to the desktop
                     Dim parentShellItem2 As IShellItem2
                     Dim d As Boolean = disposedValue
-                    Me.ShellItem2.GetParent(parentShellItem2)
+                    Dim shellItem2 As IShellItem2 = Me.ShellItem22
+                    Try
+                        If Not shellItem2 Is Nothing Then
+                            shellItem2.GetParent(parentShellItem2)
+                        End If
+                    Finally
+                        If Not shellItem2 Is Nothing Then
+                            Marshal.ReleaseComObject(shellItem2)
+                        End If
+                    End Try
+
                     If Not parentShellItem2 Is Nothing Then
-                        _parent = New Folder(parentShellItem2, Nothing)
+                        _parent = New Folder(Item.GetFullPathFromShellItem2(parentShellItem2), Nothing)
+                        Marshal.ReleaseComObject(parentShellItem2)
                     End If
                 End If
 
@@ -236,33 +253,30 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlaySmall As ImageSource
         Get
-            If _overlaySmall Is Nothing Then
-                _overlaySmall = getOverlay(False)
-            End If
-            Return _overlaySmall
+            Return getOverlay(False)
         End Get
     End Property
 
     Public Overridable ReadOnly Property OverlayLarge As ImageSource
         Get
-            If _overlayLarge Is Nothing Then
-                _overlayLarge = getOverlay(True)
-            End If
-            Return _overlayLarge
+            Return getOverlay(True)
         End Get
     End Property
 
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                Dim ptr As IntPtr
+                Dim ptr As IntPtr, shellItem2 As IShellItem2 = Me.ShellItem22
                 Try
-                    CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
+                    CType(shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, ptr)
                     Dim bs As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     bs.Freeze()
                     Return bs
                 Finally
                     Functions.DeleteObject(ptr)
+                    If Not shellItem2 Is Nothing Then
+                        Marshal.ReleaseComObject(shellItem2)
+                    End If
                 End Try
             Else
                 Return Nothing
@@ -273,14 +287,17 @@ Public Class Item
     Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                Dim ptr As IntPtr
+                Dim ptr As IntPtr, shellItem2 As IShellItem2 = Me.ShellItem22
                 Try
-                    CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
+                    CType(shellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
                     Dim bs As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     bs.Freeze()
                     Return bs
                 Finally
                     Functions.DeleteObject(ptr)
+                    If Not shellItem2 Is Nothing Then
+                        Marshal.ReleaseComObject(shellItem2)
+                    End If
                 End Try
             Else
                 Return Nothing
@@ -290,9 +307,18 @@ Public Class Item
 
     Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
         If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
-            Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr
-            ptr = Marshal.GetIUnknownForObject(Me.ShellItem2)
-            Functions.SHGetIDListFromObject(ptr, pidl)
+            Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr, shellItem2 As IShellItem2 = Me.ShellItem22
+            Try
+                ptr = Marshal.GetIUnknownForObject(shellItem2)
+                Functions.SHGetIDListFromObject(ptr, pidl)
+            Finally
+                If Not shellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(shellItem2)
+                End If
+                If Not IntPtr.Zero.Equals(ptr) Then
+                    Marshal.Release(ptr)
+                End If
+            End Try
             lastpidl = Functions.ILFindLastID(pidl)
 
             Dim shellFolder As IShellFolder = If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder)
@@ -323,6 +349,9 @@ Public Class Item
                 Marshal.Release(ptr)
                 If Not shellFolder Is Nothing Then
                     Marshal.ReleaseComObject(shellFolder)
+                End If
+                If Not IntPtr.Zero.Equals(pidl) Then
+                    Marshal.FreeHGlobal(pidl)
                 End If
             End Try
         End If
@@ -364,7 +393,14 @@ Public Class Item
         Get
             Try
                 If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
-                    Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                    Dim shellItem2 As IShellItem2 = Me.ShellItem22
+                    Try
+                        shellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                    Finally
+                        If Not shellItem2 Is Nothing Then
+                            Marshal.ReleaseComObject(shellItem2)
+                        End If
+                    End Try
                 End If
             Catch ex As Exception
                 ' sometimes the treeview will try to sort us just as we're in the process of disposing
@@ -407,8 +443,14 @@ Public Class Item
 
     Public ReadOnly Property RelativePath As String
         Get
-            Dim result As String
-            Me.ShellItem2.GetDisplayName(SHGDN.FORPARSING Or SHGDN.INFOLDER, result)
+            Dim result As String, shellItem2 As IShellItem2 = Me.ShellItem22
+            Try
+                shellItem2.GetDisplayName(SHGDN.FORPARSING Or SHGDN.INFOLDER, result)
+            Finally
+                If Not shellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(shellItem2)
+                End If
+            End Try
             Return result
         End Get
     End Property
@@ -756,7 +798,7 @@ Public Class Item
     End Function
 
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
-        If Not Me.ShellItem2 Is Nothing AndAlso Not disposedValue Then
+        If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                     If Me.FullPath.Equals(e.Item1Path) Then
@@ -787,13 +829,6 @@ Public Class Item
                 Marshal.ReleaseComObject(_imageFactory)
                 _imageFactory = Nothing
             End If
-            If Not _cachedShellItem2 Is Nothing Then
-                Marshal.ReleaseComObject(_cachedShellItem2)
-                _cachedShellItem2 = Nothing
-            End If
-            'If Not _list Is Nothing Then
-            '    _list.Remove(Me)
-            'End If
         End If
     End Sub
 
@@ -812,9 +847,9 @@ Public Class Item
 
     Public Function Clone() As Item
         If TypeOf Me Is Folder Then
-            Return New Folder(Folder.GetIShellItem2FromParsingName(Me.FullPath), _parent)
+            Return New Folder(Me.FullPath, _parent)
         Else
-            Return New Item(Item.GetIShellItem2FromParsingName(Me.FullPath), _parent)
+            Return New Item(Me.FullPath, _parent)
         End If
     End Function
 End Class

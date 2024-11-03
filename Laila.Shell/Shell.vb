@@ -80,7 +80,7 @@ Public Class Shell
         addSpecialFolder("Network", Folder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing))
         addSpecialFolder("Gallery", Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing))
         addSpecialFolder("Recycle Bin", Folder.FromParsingName("shell:::{645FF040-5081-101B-9F08-00AA002F954E}", Nothing))
-        addSpecialFolder("Recent", CType(Folder.FromParsingName("%APPDATA%\Microsoft\Windows", Nothing), Folder) _
+        addSpecialFolder("Recent", CType(Folder.FromParsingName(Environment.ExpandEnvironmentVariables("%APPDATA%\Microsoft\Windows"), Nothing), Folder) _
                                          .GetItems().First(Function(i) i.FullPath.EndsWith("\Recent")))
         addSpecialFolder("OneDrive", Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing))
         addSpecialFolder("OneDrive Business", Folder.FromParsingName("shell:::{04271989-C4D2-BEC7-A521-3DF166FAB4BA}", Nothing))
@@ -92,7 +92,7 @@ Public Class Shell
         '_specialFolders.Add("All Tasks", Folder.FromParsingName("shell:::{ED7BA470-8E54-465E-825C-99712043E01C}", Nothing))
         '_specialFolders.Add("Applications", Folder.FromParsingName("shell:::{4234d49b-0245-4df3-b780-3893943456e1}", Nothing))
         addSpecialFolder("Frequent Folders", Folder.FromParsingName("shell:::{3936E9E4-D92C-4EEE-A85A-BC16D5EA0819}", Nothing))
-        addSpecialFolder("User Profile", Folder.FromParsingName("%USERPROFILE%", Nothing))
+        addSpecialFolder("User Profile", Folder.FromParsingName(Environment.ExpandEnvironmentVariables("%USERPROFILE%"), Nothing))
         '_specialFolders.Add("Installed Updates", Folder.FromParsingName("shell:::{d450a8a1-9568-45c7-9c0e-b4f9fb4537bd}", Nothing))
         '_specialFolders.Add("Network Connections", Folder.FromParsingName("shell:::{7007ACC7-3202-11D1-AAD2-00805FC1270E}", Nothing))
         '_specialFolders.Add("Programs and Features", Folder.FromParsingName("shell:::{7b81be6a-ce2b-4676-a29e-eb907a5126c5}", Nothing))

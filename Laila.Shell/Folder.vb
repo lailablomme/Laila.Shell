@@ -49,13 +49,20 @@ Public Class Folder
     '    End Try
     'End Function
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
-        MyBase.New(shellItem2, parent)
+    Public Sub New(fullPath As String, parent As Folder)
+        MyBase.New(fullPath, parent)
     End Sub
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+            Dim shellItem2 As IShellItem2 = Me.ShellItem22
+            Try
+                Return Folder.GetIShellFolderFromIShellItem2(shellItem2)
+            Finally
+                If Not shellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(shellItem2)
+                End If
+            End Try
         End Get
     End Property
 
@@ -247,11 +254,11 @@ Public Class Folder
                     Function(pathsBefore As List(Of String), pathsAfter As List(Of String)) As List(Of Item)
                         Return items.Where(Function(i) pathsBefore.Contains(i.FullPath) AndAlso Not pathsAfter.Contains(i.FullPath)).ToList()
                     End Function,
-                    Function(shellItem2 As IShellItem2)
-                        Return New Folder(shellItem2, Me)
+                    Function(fullPath As String)
+                        Return New Folder(fullPath, Me)
                     End Function,
-                    Function(shellItem2 As IShellItem2)
-                        Return New Item(shellItem2, Me)
+                    Function(fullPath As String)
+                        Return New Item(fullPath, Me)
                     End Function,
                     Sub(path As String)
                         Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
@@ -264,7 +271,7 @@ Public Class Folder
     Protected Sub updateItems(flags As UInt32,
                               exists As Func(Of String, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getPathsBefore As Func(Of List(Of String)), getToBeRemoved As Func(Of List(Of String), List(Of String), List(Of Item)),
-                              makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
+                              makeNewFolder As Func(Of String, Item), makeNewItem As Func(Of String, Item),
                               updateProperties As Action(Of String), doRefreshItems As Boolean)
         If disposedValue Then Return
 
@@ -304,14 +311,17 @@ Public Class Folder
 
                         bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
 
-                        Dim ptr2 As IntPtr
+                        Dim ptr2 As IntPtr, shellItem2 As IShellItem2 = Me.ShellItem22
                         Try
-                            Me.ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                            shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
                             If Not IntPtr.Zero.Equals(ptr2) Then
                                 enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
                             End If
                         Finally
                             If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
+                            If Not shellItem2 Is Nothing Then
+                                Marshal.ReleaseComObject(shellItem2)
+                            End If
                         End Try
                         If Not enumShellItems Is Nothing Then
                             Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
@@ -324,9 +334,9 @@ Public Class Folder
                                 If Not exists(fullPath) Then
                                     Dim newItem As Item
                                     If CBool(attr2 And SFGAO.FOLDER) Then
-                                        newItem = makeNewFolder(shellItems(0))
+                                        newItem = makeNewFolder(fullPath)
                                     Else
-                                        newItem = makeNewItem(shellItems(0))
+                                        newItem = makeNewItem(fullPath)
                                     End If
                                     toAdd.Add(newItem)
                                 Else
@@ -365,9 +375,9 @@ Public Class Folder
                                 shellFolder.GetAttributesOf(1, pidl, attr2)
                                 Dim newItem As Item
                                 If CBool(attr2 And SFGAO.FOLDER) Then
-                                    newItem = makeNewFolder(shellItem2)
+                                    newItem = makeNewFolder(fullPath)
                                 Else
-                                    newItem = makeNewItem(shellItem2)
+                                    newItem = makeNewItem(fullPath)
                                 End If
                                 toAdd.Add(newItem)
                             Else
@@ -429,7 +439,7 @@ Public Class Folder
     Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)
 
-        If Not Me.ShellItem2 Is Nothing AndAlso Not disposedValue Then
+        If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.CREATE
                     If Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then

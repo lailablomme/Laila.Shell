@@ -98,8 +98,15 @@ Public Class [Property]
         Get
             Dim result As PROPVARIANT
             Try
-                If Not _item.ShellItem2 Is Nothing AndAlso Not _item.disposedValue Then
-                    _item.ShellItem2.GetProperty(_propertyKey, result)
+                If Not _item.disposedValue Then
+                    Dim shellItem2 As IShellItem2 = _item.ShellItem22
+                    Try
+                        shellItem2.GetProperty(_propertyKey, result)
+                    Finally
+                        If Not shellItem2 Is Nothing Then
+                            Marshal.ReleaseComObject(shellItem2)
+                        End If
+                    End Try
                 End If
             Catch ex As COMException
             End Try
