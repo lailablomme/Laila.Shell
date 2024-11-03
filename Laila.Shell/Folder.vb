@@ -49,20 +49,13 @@ Public Class Folder
     '    End Try
     'End Function
 
-    Public Sub New(fullPath As String, parent As Folder)
-        MyBase.New(fullPath, parent)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
+        MyBase.New(shellItem2, parent)
     End Sub
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            Dim shellItem2 As IShellItem2 = Me.ShellItem22
-            Try
-                Return Folder.GetIShellFolderFromIShellItem2(shellItem2)
-            Finally
-                If Not shellItem2 Is Nothing Then
-                    Marshal.ReleaseComObject(shellItem2)
-                End If
-            End Try
+            Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
         End Get
     End Property
 
@@ -254,11 +247,11 @@ Public Class Folder
                     Function(pathsBefore As List(Of String), pathsAfter As List(Of String)) As List(Of Item)
                         Return items.Where(Function(i) pathsBefore.Contains(i.FullPath) AndAlso Not pathsAfter.Contains(i.FullPath)).ToList()
                     End Function,
-                    Function(fullPath As String)
-                        Return New Folder(fullPath, Me)
+                    Function(shellItem2 As IShellItem2)
+                        Return New Folder(shellItem2, Me)
                     End Function,
-                    Function(fullPath As String)
-                        Return New Item(fullPath, Me)
+                    Function(shellItem2 As IShellItem2)
+                        Return New Item(shellItem2, Me)
                     End Function,
                     Sub(path As String)
                         Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
@@ -271,7 +264,7 @@ Public Class Folder
     Protected Sub updateItems(flags As UInt32,
                               exists As Func(Of String, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getPathsBefore As Func(Of List(Of String)), getToBeRemoved As Func(Of List(Of String), List(Of String), List(Of Item)),
-                              makeNewFolder As Func(Of String, Item), makeNewItem As Func(Of String, Item),
+                              makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
                               updateProperties As Action(Of String), doRefreshItems As Boolean)
         If disposedValue Then Return
 
@@ -311,17 +304,14 @@ Public Class Folder
 
                         bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
 
-                        Dim ptr2 As IntPtr, shellItem2 As IShellItem2 = Me.ShellItem22
+                        Dim ptr2 As IntPtr
                         Try
-                            shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                            Me.ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
                             If Not IntPtr.Zero.Equals(ptr2) Then
                                 enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
                             End If
                         Finally
                             If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
-                            If Not shellItem2 Is Nothing Then
-                                Marshal.ReleaseComObject(shellItem2)
-                            End If
                         End Try
                         If Not enumShellItems Is Nothing Then
                             Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
@@ -333,12 +323,15 @@ Public Class Folder
                                 pathsAfter.Add(fullPath)
                                 If Not exists(fullPath) Then
                                     Dim newItem As Item
-                                    If CBool(attr2 And SFGAO.FOLDER) Then
-                                        newItem = makeNewFolder(fullPath)
-                                    Else
-                                        newItem = makeNewItem(fullPath)
-                                    End If
-                                    toAdd.Add(newItem)
+                                    Try
+                                        If CBool(attr2 And SFGAO.FOLDER) Then
+                                            newItem = makeNewFolder(shellItems(0))
+                                        Else
+                                            newItem = makeNewItem(shellItems(0))
+                                        End If
+                                        toAdd.Add(newItem)
+                                    Catch ex As Exception
+                                    End Try
                                 Else
                                     toUpdate.Add(fullPath)
                                     Marshal.ReleaseComObject(shellItems(0))
@@ -374,12 +367,15 @@ Public Class Folder
                                 Dim attr2 As Integer = SFGAO.FOLDER
                                 shellFolder.GetAttributesOf(1, pidl, attr2)
                                 Dim newItem As Item
-                                If CBool(attr2 And SFGAO.FOLDER) Then
-                                    newItem = makeNewFolder(fullPath)
-                                Else
-                                    newItem = makeNewItem(fullPath)
-                                End If
-                                toAdd.Add(newItem)
+                                Try
+                                    If CBool(attr2 And SFGAO.FOLDER) Then
+                                        newItem = makeNewFolder(shellItem2)
+                                    Else
+                                        newItem = makeNewItem(shellItem2)
+                                    End If
+                                    toAdd.Add(newItem)
+                                Catch ex As Exception
+                                End Try
                             Else
                                 toUpdate.Add(fullPath)
                                 Marshal.ReleaseComObject(shellItem2)

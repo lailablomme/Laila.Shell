@@ -96,37 +96,27 @@ Public Class [Property]
 
     Friend Overridable ReadOnly Property RawValue As PROPVARIANT
         Get
-            Dim result As PROPVARIANT
             Try
-                If Not _item.disposedValue Then
-                    Dim shellItem2 As IShellItem2 = _item.ShellItem22
-                    Try
-                        shellItem2.GetProperty(_propertyKey, result)
-                    Finally
-                        If Not shellItem2 Is Nothing Then
-                            Marshal.ReleaseComObject(shellItem2)
-                        End If
-                    End Try
+                If Not _item.disposedValue AndAlso _rawValue.vt = 0 Then
+                    _item.ShellItem2.GetProperty(_propertyKey, _rawValue)
                 End If
             Catch ex As COMException
             End Try
-            Return result
+            Return _rawValue
         End Get
     End Property
 
     Public ReadOnly Property Value As Object
         Get
-            Using rawValue As PROPVARIANT = Me.RawValue
-                If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                    Dim index As UInt32
-                    Dim propertyEnumType As IPropertyEnumType = getSelectedPropertyEnumType(rawValue, Me.Description, index)
-                    If Not propertyEnumType Is Nothing Then
-                        Return index
-                    End If
-                Else
-                    Return getValue(rawValue)
+            If Me.DisplayType = PropertyDisplayType.Enumerated Then
+                Dim index As UInt32
+                Dim propertyEnumType As IPropertyEnumType = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
+                If Not propertyEnumType Is Nothing Then
+                    Return index
                 End If
-            End Using
+            Else
+                Return getValue(rawValue)
+            End If
 
             Return Nothing
         End Get
@@ -135,14 +125,12 @@ Public Class [Property]
     Public Overridable ReadOnly Property Text As String
         Get
             If String.IsNullOrWhiteSpace(_text) Then
-                Using rawValue As PROPVARIANT = Me.RawValue
-                    If rawValue.vt > 0 Then
-                        Dim buffer As StringBuilder = New StringBuilder()
-                        buffer.Append(New String(" ", 2050))
-                        Functions.PSFormatForDisplay(_propertyKey, rawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
-                        _text = buffer.ToString()
-                    End If
-                End Using
+                If Me.RawValue.vt > 0 Then
+                    Dim buffer As StringBuilder = New StringBuilder()
+                    buffer.Append(New String(" ", 2050))
+                    Functions.PSFormatForDisplay(_propertyKey, Me.RawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
+                    _text = buffer.ToString()
+                End If
             End If
             Return _text
         End Get
@@ -195,17 +183,15 @@ Public Class [Property]
         Get
             If _icon16 Is Nothing Then
                 If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                    Using rawValue As PROPVARIANT = Me.RawValue
-                        Dim imageReference As String, icon As IntPtr
-                        Dim index As UInt32
-                        Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(rawValue, Me.Description, index)
-                        propertyEnumType2.GetImageReference(imageReference)
-                        If Not String.IsNullOrWhiteSpace(imageReference) Then
-                            Dim s() As String = Split(imageReference, ",")
-                            Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                            _icon16 = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        End If
-                    End Using
+                    Dim imageReference As String, icon As IntPtr
+                    Dim index As UInt32
+                    Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
+                    propertyEnumType2.GetImageReference(imageReference)
+                    If Not String.IsNullOrWhiteSpace(imageReference) Then
+                        Dim s() As String = Split(imageReference, ",")
+                        Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
+                        _icon16 = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    End If
                 End If
             End If
 
@@ -297,6 +283,7 @@ Public Class [Property]
         If Not disposedValue Then
             If disposing Then
                 ' dispose managed state (managed objects)
+                _rawValue.Dispose()
             End If
 
             ' free unmanaged resources (unmanaged objects) and override finalizer

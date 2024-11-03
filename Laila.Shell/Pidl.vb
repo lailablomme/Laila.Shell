@@ -12,14 +12,10 @@ Public Class Pidl
         Dim pidls As List(Of Pidl) = New List(Of Pidl)()
         For Each item In items
             Dim pidl As IntPtr = IntPtr.Zero
-            Dim shellItem2 As IShellItem2 = item.ShellItem22
-            Dim punk As IntPtr = Marshal.GetIUnknownForObject(shellItem2)
+            Dim punk As IntPtr = Marshal.GetIUnknownForObject(item.ShellItem2)
             Functions.SHGetIDListFromObject(punk, pidl)
             pidls.Add(New Pidl(pidl))
             Marshal.Release(punk)
-            If Not shellItem2 Is Nothing Then
-                Marshal.ReleaseComObject(shellItem2)
-            End If
         Next
 
         Dim mem As MemoryStream = New MemoryStream()

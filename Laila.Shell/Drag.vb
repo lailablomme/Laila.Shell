@@ -44,24 +44,20 @@ Public Class Drag
                 Debug.WriteLine("Drag.Start")
 
                 ' make a DataObject for our list of items
-                Dim shellItemPtr As IntPtr, folderpidl As IntPtr, shellItem2 As IShellItem2 = items(0).Parent.ShellItem22
+                Dim shellItemPtr As IntPtr, folderpidl As IntPtr
                 Dim pidls(items.Count - 1) As IntPtr, lastpidl As IntPtr, pidlsPtr As IntPtr
                 Try
-                    shellItemPtr = Marshal.GetIUnknownForObject(shellItem2)
+                    shellItemPtr = Marshal.GetIUnknownForObject(items(0).Parent.ShellItem2)
                     Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
                 Finally
                     If Not IntPtr.Zero.Equals(shellItemPtr) Then
                         Marshal.Release(shellItemPtr)
                     End If
-                    If Not shellItem2 Is Nothing Then
-                        Marshal.ReleaseComObject(shellItem2)
-                    End If
                 End Try
                 pidlsPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of IntPtr) * items.Count)
                 For i = 0 To items.Count - 1
                     Try
-                        shellItem2 = items(i).ShellItem22
-                        shellItemPtr = Marshal.GetIUnknownForObject(shellItem2)
+                        shellItemPtr = Marshal.GetIUnknownForObject(items(i).ShellItem2)
                         Functions.SHGetIDListFromObject(shellItemPtr, pidls(i))
                         lastpidl = Functions.ILFindLastID(pidls(i))
                         Marshal.WriteIntPtr(IntPtr.Add(pidlsPtr, Marshal.SizeOf(Of IntPtr) * i), lastpidl)
@@ -69,18 +65,15 @@ Public Class Drag
                         If Not IntPtr.Zero.Equals(shellItemPtr) Then
                             Marshal.Release(shellItemPtr)
                         End If
-                        If Not shellItem2 Is Nothing Then
-                            Marshal.ReleaseComObject(shellItem2)
-                        End If
                     End Try
                 Next
                 Functions.SHCreateDataObject(folderpidl, items.Count, pidlsPtr, IntPtr.Zero, GetType(IDataObject).GUID, _dataObject)
 
                 ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
                 ' and I don't know what it's doing 
-                Dim initDropTarget As IDropTarget, pidl As IntPtr, dropTargetPtr As IntPtr, shellItem22 As IShellItem2 = Shell.Desktop.ShellItem22
+                Dim initDropTarget As IDropTarget, pidl As IntPtr, dropTargetPtr As IntPtr
                 Try
-                    shellItemPtr = Marshal.GetIUnknownForObject(shellItem22)
+                    shellItemPtr = Marshal.GetIUnknownForObject(Shell.Desktop.ShellItem2)
                     Functions.SHGetIDListFromObject(shellItemPtr, pidl)
                     Dim shellFolder As IShellFolder
                     Functions.SHGetDesktopFolder(shellFolder)
@@ -100,9 +93,6 @@ Public Class Drag
                     End If
                     If Not initDropTarget Is Nothing Then
                         Marshal.ReleaseComObject(initDropTarget)
-                    End If
-                    If Not shellItem2 Is Nothing Then
-                        Marshal.ReleaseComObject(shellItem22)
                     End If
                 End Try
 
