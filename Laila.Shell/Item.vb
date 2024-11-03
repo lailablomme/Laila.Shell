@@ -370,7 +370,7 @@ Public Class Item
     Public Overridable ReadOnly Property DisplayName As String
         Get
             Try
-                Debug.WriteLine("GetDisplayName for " & Me.FullPath)
+                'Debug.WriteLine("GetDisplayName for " & Me.FullPath)
                 If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                 End If
