@@ -393,7 +393,7 @@ Namespace Controls
 
             If Not e.OriginalSource Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing Then
                 Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
-                Dim clickedItem As Item = treeViewItem?.DataContext
+                Dim clickedItem As Item = TryCast(treeViewItem?.DataContext, Item)
                 If Not TypeOf clickedItem Is SeparatorFolder Then
                     _mouseItemDown = clickedItem
                     Me.PART_ListBox.Focus()

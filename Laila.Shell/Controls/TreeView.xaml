@@ -103,7 +103,7 @@
                     <Grid>
                         <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="2" 
                                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"
-                                Background="{TemplateBinding Background}" Padding="4" 
+                                Background="{TemplateBinding Background}" Padding="4" IsHitTestVisible="False"
                                 SnapsToDevicePixels="True" UseLayoutRounding="True">
                             <Grid>
                                 <Grid.ColumnDefinitions>

@@ -71,6 +71,10 @@ Namespace Controls
                                     _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
                                     _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
                                 End If
+                                UIHelper.OnUIThreadAsync(
+                                    Sub()
+                                        GC.Collect()
+                                    End Sub)
                             Else
                                 _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, _lastScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
                                 _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
@@ -249,7 +253,7 @@ Namespace Controls
 
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
             Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
-            Dim overItem As Item = listViewItem?.DataContext
+            Dim overItem As Item = TryCast(listViewItem?.DataContext, Item)
             If Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
                 Dim toolTip As String = overItem.InfoTip
                 listViewItem.ToolTip = If(String.IsNullOrWhiteSpace(toolTip), Nothing, toolTip)
@@ -271,7 +275,7 @@ Namespace Controls
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then
                 Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
-                Dim clickedItem As Item = listViewItem?.DataContext
+                Dim clickedItem As Item = TryCast(listViewItem?.DataContext, Item)
                 _mouseItemDown = clickedItem
                 If clickedItem Is Nothing Then
                     Me.PART_ListView.Focus()

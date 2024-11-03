@@ -12,7 +12,7 @@ Public Class Pidl
         Dim pidls As List(Of Pidl) = New List(Of Pidl)()
         For Each item In items
             Dim pidl As IntPtr = IntPtr.Zero
-            Dim punk As IntPtr = Marshal.GetIUnknownForObject(item._shellItem2)
+            Dim punk As IntPtr = Marshal.GetIUnknownForObject(item.ShellItem2)
             Functions.SHGetIDListFromObject(punk, pidl)
             pidls.Add(New Pidl(pidl))
             Marshal.Release(punk)
@@ -64,15 +64,21 @@ Public Class Pidl
         If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) = 0 Then
             parentShellFolder = Nothing
         Else
-            parentShellFolder = New Folder(Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), Nothing), Nothing)._shellFolder
+            parentShellFolder = New Folder(Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), Nothing), Nothing).ShellFolder
         End If
 
         ' read items
-        For i = 0 To count - 1
-            offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
-            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
-            result.Add(Item.FromParsingName(Item.GetFullPathFromShellItem2(shellItem2), Nothing))
-        Next
+        Try
+            For i = 0 To count - 1
+                offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
+                Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
+                result.Add(Item.FromParsingName(Item.GetFullPathFromShellItem2(shellItem2), Nothing))
+            Next
+        Finally
+            If Not parentShellFolder Is Nothing Then
+                Marshal.ReleaseComObject(parentShellFolder)
+            End If
+        End Try
 
         Return result
     End Function

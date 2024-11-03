@@ -98,8 +98,8 @@ Public Class [Property]
         Get
             Dim result As PROPVARIANT
             Try
-                If Not _item._shellItem2 Is Nothing AndAlso Not _item.disposedValue Then
-                    _item._shellItem2.GetProperty(_propertyKey, result)
+                If Not _item.ShellItem2 Is Nothing AndAlso Not _item.disposedValue Then
+                    _item.ShellItem2.GetProperty(_propertyKey, result)
                 End If
             Catch ex As COMException
             End Try

@@ -47,7 +47,7 @@ Public Class Drag
                 Dim shellItemPtr As IntPtr, folderpidl As IntPtr
                 Dim pidls(items.Count - 1) As IntPtr, lastpidl As IntPtr, pidlsPtr As IntPtr
                 Try
-                    shellItemPtr = Marshal.GetIUnknownForObject(items(0).Parent._shellItem2)
+                    shellItemPtr = Marshal.GetIUnknownForObject(items(0).Parent.ShellItem2)
                     Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
                 Finally
                     If Not IntPtr.Zero.Equals(shellItemPtr) Then
@@ -57,7 +57,7 @@ Public Class Drag
                 pidlsPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of IntPtr) * items.Count)
                 For i = 0 To items.Count - 1
                     Try
-                        shellItemPtr = Marshal.GetIUnknownForObject(items(i)._shellItem2)
+                        shellItemPtr = Marshal.GetIUnknownForObject(items(i).ShellItem2)
                         Functions.SHGetIDListFromObject(shellItemPtr, pidls(i))
                         lastpidl = Functions.ILFindLastID(pidls(i))
                         Marshal.WriteIntPtr(IntPtr.Add(pidlsPtr, Marshal.SizeOf(Of IntPtr) * i), lastpidl)
@@ -73,7 +73,7 @@ Public Class Drag
                 ' and I don't know what it's doing 
                 Dim initDropTarget As IDropTarget, pidl As IntPtr, dropTargetPtr As IntPtr
                 Try
-                    shellItemPtr = Marshal.GetIUnknownForObject(Shell.Desktop._shellItem2)
+                    shellItemPtr = Marshal.GetIUnknownForObject(Shell.Desktop.ShellItem2)
                     Functions.SHGetIDListFromObject(shellItemPtr, pidl)
                     Dim shellFolder As IShellFolder
                     Functions.SHGetDesktopFolder(shellFolder)

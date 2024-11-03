@@ -426,21 +426,11 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type local:MainWindow}">
                         <ControlTemplate.Resources>
+                            <metroWindowConverters:ShadowMarginConverter x:Key="shadowMarginConverter" />
                             <metroWindowConverters:GlowMarginConverter x:Key="glowMarginConverter" />
                             <metroWindowConverters:BorderSizeConverter x:Key="borderSizeConverter" />
                         </ControlTemplate.Resources>
-                        <Grid x:Name="PART_RootGrid">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition x:Name="col0" Width="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource glowMarginConverter}}" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition x:Name="col2" Width="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource glowMarginConverter}}" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition x:Name="row0"  Height="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource glowMarginConverter}}" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition x:Name="row2" Height="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource glowMarginConverter}}" />
-                            </Grid.RowDefinitions>
-
+                        <Border x:Name="PART_RootBorder" Padding="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource glowMarginConverter}}">
                             <Border Grid.Row="1" Grid.Column="1" x:Name="PART_MainBorder" CornerRadius="10"  
                                     Background="{TemplateBinding Background}" BorderBrush="DarkViolet" BorderThickness="1">
                                 <Border CornerRadius="10" ClipToBounds="True" x:Name="PART_ClippingBorder">
@@ -486,18 +476,18 @@
 
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
                                                     <Button Style="{DynamicResource metroWindowButtonStyle}" 
-                                                x:Name="PART_MinimizeButton">0</Button>
+                                                        x:Name="PART_MinimizeButton">0</Button>
                                                     <Button Style="{DynamicResource metroWindowButtonStyle}" 
-                                                x:Name="PART_MaximizeRestoreButton">1</Button>
+                                                        x:Name="PART_MaximizeRestoreButton">1</Button>
                                                     <Button Style="{DynamicResource metroWindowCloseButtonStyle}" 
-                                                x:Name="PART_CloseButton">r</Button>
+                                                        x:Name="PART_CloseButton">r</Button>
                                                 </StackPanel>
                                             </Grid>
                                         </ContentControl>
                                     </Grid>
                                 </Border>
                             </Border>
-                        </Grid>
+                        </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="GlowStyle" Value="Glowing">
                                 <Setter Property="Effect" TargetName="PART_MainBorder">
@@ -510,8 +500,7 @@
                                 </Setter>
                             </Trigger>
                             <Trigger Property="GlowStyle" Value="Shadow">
-                                <Setter Property="Width" TargetName="col0" Value="0" />
-                                <Setter Property="Height" TargetName="row0" Value="0" />
+                                <Setter Property="Padding" TargetName="PART_RootBorder" Value="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource shadowMarginConverter}}" />
                                 <Setter Property="Effect" TargetName="PART_MainBorder">
                                     <Setter.Value>
                                         <DropShadowEffect Opacity="0.5" BlurRadius="{Binding Path=GlowSize, 
@@ -525,17 +514,12 @@
                             </Trigger>
                             <Trigger Property="GlowStyle" Value="None">
                                 <Setter Property="Effect" TargetName="PART_MainBorder" Value="{x:Null}" />
-                                <Setter Property="Width" TargetName="col0" Value="0" />
-                                <Setter Property="Width" TargetName="col2" Value="0" />
-                                <Setter Property="Height" TargetName="row0" Value="0" />
-                                <Setter Property="Height" TargetName="row2" Value="0" />
+                                <Setter Property="Padding" TargetName="PART_RootBorder" Value="0" />
                             </Trigger>
-                            <Trigger Property="WindowState" Value="Maximized">
-                                <Setter Property="Effect" TargetName="PART_MainBorder" Value="{x:Null}" />
-                                <Setter Property="Width" TargetName="col0" Value="0" />
-                                <Setter Property="Width" TargetName="col2" Value="0" />
-                                <Setter Property="Height" TargetName="row0" Value="0" />
-                                <Setter Property="Height" TargetName="row2" Value="0" />
+                            <Trigger Property="ActualWindowState" Value="Maximized">
+                                <Setter Property="CornerRadius" TargetName="PART_MainBorder" Value="0" />
+                                <Setter Property="CornerRadius" TargetName="PART_ClippingBorder" Value="0" />
+                                <Setter Property="Clip" TargetName="PART_ClippingBorder" Value="{x:Null}" />
                             </Trigger>
                             <DataTrigger Binding="{Binding ResizeMode, RelativeSource={RelativeSource Mode=Self}}" Value="NoResize">
                                 <Setter Property="Visibility" TargetName="PART_MinimizeButton" Value="Collapsed" />

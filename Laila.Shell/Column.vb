@@ -4,16 +4,15 @@ Imports System.Windows
 
 Public Class Column
     Private _columnInfo As CM_COLUMNINFO
-    Friend _columnManager As IColumnManager
     Private _propertyKey As PROPERTYKEY
     Private _index As Integer
     Friend _propertyDescription As IPropertyDescription
     Private _viewFlags As PROPDESC_VIEW_FLAGS
     Private _canonicalName As String
 
-    Friend Sub New(propertyKey As PROPERTYKEY, columnManager As IColumnManager, index As Integer)
+    Friend Sub New(propertyKey As PROPERTYKEY, columnInfo As CM_COLUMNINFO, index As Integer)
         _propertyKey = propertyKey
-        _columnManager = columnManager
+        _columnInfo = columnInfo
         _index = index
 
         Dim ptr2 As IntPtr
@@ -62,12 +61,6 @@ Public Class Column
 
     Private ReadOnly Property CM_COLUMNINFO As CM_COLUMNINFO
         Get
-            If _columnInfo.dwMask = 0 Then
-                _columnInfo.dwMask = CM_MASK.CM_MASK_NAME Or CM_MASK.CM_MASK_DEFAULTWIDTH Or CM_MASK.CM_MASK_IDEALWIDTH _
-                                     Or CM_MASK.CM_MASK_STATE Or CM_MASK.CM_MASK_WIDTH
-                _columnInfo.cbSize = Marshal.SizeOf(Of CM_COLUMNINFO)
-                _columnManager.GetColumnInfo(_propertyKey, _columnInfo)
-            End If
             Return _columnInfo
         End Get
     End Property

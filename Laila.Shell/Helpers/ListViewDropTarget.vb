@@ -2,6 +2,7 @@
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
 Imports System.Windows.Input
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Helpers
@@ -162,11 +163,17 @@ Public Class ListViewDropTarget
 
                 Dim dropTarget As IDropTarget, pidl As IntPtr, shellItemPtr As IntPtr, dropTargetPtr As IntPtr
                 Try
-                    shellItemPtr = Marshal.GetIUnknownForObject(overItem._shellItem2)
+                    shellItemPtr = Marshal.GetIUnknownForObject(overItem.ShellItem2)
                     Functions.SHGetIDListFromObject(shellItemPtr, pidl)
                     If Not overItem.Parent Is Nothing Then
-                        Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl)
-                        overItem.Parent._shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                        Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = overItem.Parent.ShellFolder
+                        Try
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                        Finally
+                            If Not shellFolder Is Nothing Then
+                                Marshal.ReleaseComObject(shellFolder)
+                            End If
+                        End Try
                     Else
                         Dim shellFolder As IShellFolder
                         Functions.SHGetDesktopFolder(shellFolder)
