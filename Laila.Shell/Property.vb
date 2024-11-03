@@ -6,6 +6,7 @@ Imports System.Text
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Helpers
 Imports MS.WindowsAPICodePack.Internal
 
 Public Class [Property]
@@ -181,21 +182,23 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property Icon16 As ImageSource
         Get
-            If _icon16 Is Nothing Then
-                If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                    Dim imageReference As String, icon As IntPtr
-                    Dim index As UInt32
-                    Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
-                    propertyEnumType2.GetImageReference(imageReference)
-                    If Not String.IsNullOrWhiteSpace(imageReference) Then
-                        Dim s() As String = Split(imageReference, ",")
-                        Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                        _icon16 = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+            Dim result As ImageSource
+            UIHelper.OnUIThread(
+                Sub()
+                    If Me.DisplayType = PropertyDisplayType.Enumerated Then
+                        Dim imageReference As String, icon As IntPtr
+                        Dim index As UInt32
+                        Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
+                        propertyEnumType2.GetImageReference(imageReference)
+                        If Not String.IsNullOrWhiteSpace(imageReference) Then
+                            Dim s() As String = Split(imageReference, ",")
+                            Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
+                            result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        End If
                     End If
-                End If
-            End If
+                End Sub)
 
-            Return _icon16
+            Return result
         End Get
     End Property
 

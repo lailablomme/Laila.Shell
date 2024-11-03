@@ -103,7 +103,7 @@
                                                 <RowDefinition Height="96" />
                                                 <RowDefinition Height="Auto" SharedSizeGroup="A" />
                                             </Grid.RowDefinitions>
-                                            <Image Source="{Binding Image[128]}" Width="96" Height="96" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                            <Image Source="{Binding Image[128], IsAsync=True}" Width="96" Height="96" UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>

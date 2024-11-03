@@ -248,24 +248,38 @@ Public Class Item
                 Finally
                     Functions.DeleteObject(ptr)
                 End Try
-            Else
-                Return Nothing
             End If
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property IconAsync(size As Integer) As ImageSource
+        Get
+            Dim result As ImageSource
+            UIHelper.OnUIThread(
+                Sub()
+                    result = Me.Icon(size)
+                End Sub)
+            Return result
         End Get
     End Property
 
     Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                Dim ptr As IntPtr
-                Try
-                    CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
-                    Dim bs As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                    bs.Freeze()
-                    Return bs
-                Finally
-                    Functions.DeleteObject(ptr)
-                End Try
+                Dim result As ImageSource
+                UIHelper.OnUIThread(
+                    Sub()
+                        Dim ptr As IntPtr
+                        Try
+                            CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, ptr)
+                            Dim bs As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(ptr, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            bs.Freeze()
+                            result = bs
+                        Finally
+                            Functions.DeleteObject(ptr)
+                        End Try
+                    End Sub)
+                Return result
             Else
                 Return Nothing
             End If
@@ -356,6 +370,7 @@ Public Class Item
     Public Overridable ReadOnly Property DisplayName As String
         Get
             Try
+                Debug.WriteLine("GetDisplayName for " & Me.FullPath)
                 If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                 End If
