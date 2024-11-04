@@ -147,6 +147,8 @@ Public Class Item
     End Property
 
     Public Overridable Sub ClearCache()
+        Marshal.ReleaseComObject(_shellItem2)
+        _shellItem2 = Nothing
         For Each [property] In _properties
             [property].Dispose()
         Next
@@ -816,10 +818,6 @@ Public Class Item
                 Me.ClearCache()
             End If
             ' free unmanaged resources (unmanaged objects) and override finalizer
-            If Not _shellItem2 Is Nothing Then
-                Marshal.ReleaseComObject(_shellItem2)
-                _shellItem2 = Nothing
-            End If
         End If
     End Sub
 
