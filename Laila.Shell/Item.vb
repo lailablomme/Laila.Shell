@@ -12,7 +12,6 @@ Public Class Item
 
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
-    Private _imageFactory As IShellItemImageFactory
     Protected _properties As HashSet(Of [Property]) = New HashSet(Of [Property])
     Protected _fullPath As String
     Friend disposedValue As Boolean
@@ -96,7 +95,7 @@ Public Class Item
 
     Public ReadOnly Property ShellItem2 As IShellItem2
         Get
-            If _shellItem2 Is Nothing Then
+            If Not disposedValue AndAlso _shellItem2 Is Nothing Then
                 _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
             End If
             Return _shellItem2
@@ -148,10 +147,6 @@ Public Class Item
     End Property
 
     Public Overridable Sub ClearCache()
-        If Not _imageFactory Is Nothing Then
-            Marshal.ReleaseComObject(_imageFactory)
-            _imageFactory = Nothing
-        End If
         For Each [property] In _properties
             [property].Dispose()
         Next
@@ -192,7 +187,7 @@ Public Class Item
     Public ReadOnly Property Parent As Folder
         Get
             If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
-                If _parent Is Nothing AndAlso Not disposedValue Then
+                If (_parent Is Nothing OrElse _parent.disposedValue) AndAlso Not disposedValue Then
                     Dim parentShellItem2 As IShellItem2
                     If Not Me.ShellItem2 Is Nothing Then
                         Me.ShellItem2.GetParent(parentShellItem2)
@@ -821,9 +816,9 @@ Public Class Item
                 Me.ClearCache()
             End If
             ' free unmanaged resources (unmanaged objects) and override finalizer
-            If Not _imageFactory Is Nothing Then
-                Marshal.ReleaseComObject(_imageFactory)
-                _imageFactory = Nothing
+            If Not _shellItem2 Is Nothing Then
+                Marshal.ReleaseComObject(_shellItem2)
+                _shellItem2 = Nothing
             End If
         End If
     End Sub

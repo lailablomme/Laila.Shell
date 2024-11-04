@@ -23,6 +23,7 @@ Public Class Folder
     Private _enumerationException As Exception
     Private _isEnumerated As Boolean
     Private _updatesQueued As Integer
+    Private _isActive As Boolean
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -77,9 +78,35 @@ Public Class Folder
                     End Function
 
                 Task.Run(t)
+            ElseIf Not Me.IsActive Then
+                Me.DisposeItems()
             End If
         End Set
     End Property
+
+    Public Property IsActive As Boolean
+        Get
+            Return _isActive
+        End Get
+        Set(value As Boolean)
+            SetValue(_isActive, value)
+
+            If Not Me.IsActive AndAlso Not Me.IsExpanded Then
+                Me.DisposeItems()
+            End If
+        End Set
+    End Property
+
+    Public Sub DisposeItems()
+        For Each item In _items.ToList()
+            If Not TypeOf item Is Folder OrElse
+                (Not CType(item, Folder).IsActive AndAlso Not CType(item, Folder).IsExpanded) Then
+                _items.Remove(item)
+                item.Dispose()
+            End If
+        Next
+        _isEnumerated = False
+    End Sub
 
     Public Overrides Property IsLoading As Boolean
         Get
@@ -189,6 +216,7 @@ Public Class Folder
             _items.Remove(item)
             item.Dispose()
         Next
+        _isEnumerated = False
         Me.GetItems()
         Me.IsRefreshingItems = False
     End Sub
@@ -199,15 +227,15 @@ Public Class Folder
             _items.Remove(item)
             item.Dispose()
         Next
+        _isEnumerated = False
         Await Me.GetItemsAsync()
         Me.IsRefreshingItems = False
     End Function
 
     Public Overridable Function GetItems() As List(Of Item)
-        If _items.Count = 0 Then
+        If Not _isEnumerated Then
             updateItems(_items, False)
         End If
-
         Return _items.ToList()
     End Function
 
@@ -215,7 +243,7 @@ Public Class Folder
         Dim func As Func(Of Task(Of List(Of Item))) =
             Async Function() As Task(Of List(Of Item))
                 SyncLock _lock
-                    If _items.Count = 0 Then
+                    If Not _isEnumerated Then
                         updateItems(_items, False)
                     End If
                 End SyncLock
@@ -548,9 +576,7 @@ Public Class Folder
 
     Protected Overrides Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
-            For Each item In Me.Items
-                item.Dispose()
-            Next
+            Me.DisposeItems()
         End If
 
         MyBase.Dispose(disposing)

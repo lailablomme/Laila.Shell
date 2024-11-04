@@ -62,9 +62,13 @@ Namespace Controls
         End Property
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            If Not e.NewValue Is Nothing Then
+                CType(e.NewValue, Folder).IsActive = True
+            End If
             If Not e.OldValue Is Nothing Then
                 Dim view As CollectionView = CollectionViewSource.GetDefaultView(e.OldValue.Items)
                 view.SortDescriptions.Clear()
+                CType(e.OldValue, Folder).IsActive = False
             End If
         End Sub
 
