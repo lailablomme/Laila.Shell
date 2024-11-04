@@ -157,9 +157,7 @@ Namespace Controls
                 standardPanel.Children.Add(specialFoldersButton)
 
                 Dim currentFolder As Folder = folder
-                Dim noDoubles As List(Of String) = New List(Of String)()
-                While Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath)
-                    noDoubles.Add(currentFolder.FullPath)
+                While Not currentFolder Is Nothing
                     Dim panel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal}
                     Dim folderButton As Button = New Button()
                     If Not buttonStyle Is Nothing Then folderButton.Style = buttonStyle
@@ -224,7 +222,7 @@ Namespace Controls
                     End If
                 End While
 
-                If Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath) Then
+                If Not currentFolder Is Nothing Then
                     Dim moreButton As ToggleButton = New ToggleButton()
                     If Not moreButtonStyle Is Nothing Then moreButton.Style = moreButtonStyle
                     moreButton.Tag = currentFolder
@@ -240,8 +238,7 @@ Namespace Controls
                                 moreButton.IsChecked = False
                             End Sub
 
-                    While Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath)
-                        noDoubles.Add(currentFolder.FullPath)
+                    While Not currentFolder Is Nothing
                         Dim moreMenuItem As MenuItem = New MenuItem()
                         moreMenuItem.Header = currentFolder.DisplayName
                         moreMenuItem.Tag = currentFolder
