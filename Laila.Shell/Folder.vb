@@ -483,6 +483,8 @@ Public Class Folder
                 Me.NotifyOfPropertyChange("HasSubFolders")
 
                 Me.IsLoading = False
+
+                Me.MaybeDispose()
             End Sub)
     End Sub
 
