@@ -23,7 +23,8 @@ Public Class Folder
     Private _enumerationException As Exception
     Private _isEnumerated As Boolean
     Private _updatesQueued As Integer
-    Private _isActive As Boolean
+    Private _isActiveInFolderView As Boolean
+    Private _isVisibleInAddressBar As Boolean
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -60,6 +61,12 @@ Public Class Folder
         End Get
     End Property
 
+    Public ReadOnly Property IsRootFolder As Boolean
+        Get
+            Return Shell.SpecialFolders.Values.Contains(Me) Or Me.TreeRootIndex <> -1
+        End Get
+    End Property
+
     Public Overrides Property IsExpanded As Boolean
         Get
             Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse Me.Parent.IsExpanded)
@@ -78,34 +85,54 @@ Public Class Folder
                     End Function
 
                 Task.Run(t)
-            ElseIf Not Me.IsActive Then
-                Me.DisposeItems()
             End If
+
+            Me.MaybeDispose()
         End Set
     End Property
 
-    Public Property IsActive As Boolean
+    Public Property IsActiveInFolderView As Boolean
         Get
-            Return _isActive
+            Return _isActiveInFolderView
         End Get
         Set(value As Boolean)
-            SetValue(_isActive, value)
+            SetValue(_isActiveInFolderView, value)
 
-            If Not Me.IsActive AndAlso Not Me.IsExpanded Then
-                Me.DisposeItems()
-            End If
+            Me.MaybeDispose()
         End Set
     End Property
 
-    Public Sub DisposeItems()
-        For Each item In _items.ToList()
-            If Not TypeOf item Is Folder OrElse
-                (Not CType(item, Folder).IsActive AndAlso Not CType(item, Folder).IsExpanded) Then
-                _items.Remove(item)
-                item.Dispose()
+    Public Property IsVisibleInAddressBar As Boolean
+        Get
+            Return _isVisibleInAddressBar
+        End Get
+        Set(value As Boolean)
+            SetValue(_isVisibleInAddressBar, value)
+
+            Me.MaybeDispose()
+        End Set
+    End Property
+
+    Public Sub MaybeDispose()
+        If Not Me.IsActiveInFolderView AndAlso Not Me.IsVisibleInAddressBar AndAlso Not Me.IsExpanded Then
+            Me.DisposeItems()
+            If Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree _
+                AndAlso (Me.Parent Is Nothing OrElse Not Me.Parent.IsActiveInFolderView) Then
+                Me.Dispose()
             End If
-        Next
-        _isEnumerated = False
+        End If
+    End Sub
+
+    Public Sub DisposeItems()
+        If _isEnumerated AndAlso Not Me.IsLoading Then
+            For Each item In _items.ToList()
+                If Not TypeOf item Is Folder OrElse Not CType(item, Folder).IsActiveInFolderView Then
+                    item.Dispose()
+                End If
+                _items.Remove(item)
+            Next
+            _isEnumerated = False
+        End If
     End Sub
 
     Public Overrides Property IsLoading As Boolean

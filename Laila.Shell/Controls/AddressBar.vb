@@ -3,6 +3,7 @@ Imports Laila.Shell.Helpers
 Imports System.Collections.Specialized
 Imports System.ComponentModel
 Imports System.Environment
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
@@ -22,6 +23,8 @@ Namespace Controls
         Private PART_NavigationButtons As Border
         Private PART_ClickToEdit As Border
         Private _lastWidth As Double
+        Private _visibleFolders As List(Of Folder) = New List(Of Folder)
+        Private ReadOnly _lock As New SemaphoreSlim(1, 1)
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(AddressBar), New FrameworkPropertyMetadata(GetType(AddressBar)))
@@ -107,133 +110,111 @@ Namespace Controls
         Public Async Function ShowNavigationButtons(folder As Folder) As Task
             Await Task.Delay(150)
 
-            Dim buttons As List(Of StackPanel) = New List(Of StackPanel)()
-            Dim totalWidth As Double = 0
-            Dim buttonStyle As Style = TryFindResource("lailaShell_AddressBarButtonStyle")
-            Dim chevronButtonStyle As Style = TryFindResource("lailaShell_AddressBarChevronButtonStyle")
-            Dim moreButtonStyle As Style = TryFindResource("lailaShell_AddressBarMoreButtonStyle")
+            _lock.WaitAsync()
+            Try
+                For Each f In _visibleFolders
+                    f.IsVisibleInAddressBar = False
+                Next
+                _visibleFolders.Clear()
 
-            Dim standardPanel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal, .Focusable = False}
-            Dim computerImage As Image = New Image() With {.Width = 16, .Height = 16, .VerticalAlignment = VerticalAlignment.Center, .Margin = New Thickness(4, 0, 4, 0)}
-            'computerImage.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/monitor16.png")
-            standardPanel.Children.Add(computerImage)
-            Dim specialFoldersButton As ToggleButton = New ToggleButton()
-            If Not chevronButtonStyle Is Nothing Then specialFoldersButton.Style = chevronButtonStyle
-            Dim specialFoldersContextMenu As ContextMenu = New ContextMenu()
-            specialFoldersContextMenu.PlacementTarget = specialFoldersButton
-            specialFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
-            For Each specialFolder In Shell.SpecialFolders.Values.OrderBy(Function(f) f.DisplayName)
-                Dim specialFoldersMenuItem As MenuItem = New MenuItem()
-                specialFoldersMenuItem.Header = specialFolder.DisplayName
-                specialFoldersMenuItem.Tag = specialFolder
-                specialFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = specialFolder.Icon(16)}
-                AddHandler specialFoldersMenuItem.Click,
+                folder.IsVisibleInAddressBar = True
+
+                Dim buttons As List(Of StackPanel) = New List(Of StackPanel)()
+                Dim totalWidth As Double = 0
+                Dim buttonStyle As Style = TryFindResource("lailaShell_AddressBarButtonStyle")
+                Dim chevronButtonStyle As Style = TryFindResource("lailaShell_AddressBarChevronButtonStyle")
+                Dim moreButtonStyle As Style = TryFindResource("lailaShell_AddressBarMoreButtonStyle")
+
+                Dim standardPanel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal, .Focusable = False}
+                Dim computerImage As Image = New Image() With {.Width = 16, .Height = 16, .VerticalAlignment = VerticalAlignment.Center, .Margin = New Thickness(4, 0, 4, 0)}
+                'computerImage.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/monitor16.png")
+                standardPanel.Children.Add(computerImage)
+                Dim specialFoldersButton As ToggleButton = New ToggleButton()
+                If Not chevronButtonStyle Is Nothing Then specialFoldersButton.Style = chevronButtonStyle
+                Dim specialFoldersContextMenu As ContextMenu = New ContextMenu()
+                specialFoldersContextMenu.PlacementTarget = specialFoldersButton
+                specialFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
+                For Each specialFolder In Shell.SpecialFolders.Values.OrderBy(Function(f) f.DisplayName)
+                    Dim specialFoldersMenuItem As MenuItem = New MenuItem()
+                    specialFoldersMenuItem.Header = specialFolder.DisplayName
+                    specialFoldersMenuItem.Tag = specialFolder
+                    specialFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = specialFolder.Icon(16)}
+                    AddHandler specialFoldersMenuItem.Click,
                         Sub(s As Object, e As EventArgs)
                             CType(specialFoldersMenuItem.Tag, Folder).LastScrollOffset = New Point()
                             Me.Folder = specialFoldersMenuItem.Tag
                         End Sub
-                specialFoldersContextMenu.Items.Add(specialFoldersMenuItem)
-            Next
-            AddHandler specialFoldersButton.Checked,
+                    specialFoldersContextMenu.Items.Add(specialFoldersMenuItem)
+                Next
+                AddHandler specialFoldersButton.Checked,
                             Sub(s As Object, e As EventArgs)
                                 specialFoldersContextMenu.IsOpen = True
                             End Sub
-            AddHandler specialFoldersContextMenu.Closed,
+                AddHandler specialFoldersContextMenu.Closed,
                             Sub(s As Object, e As EventArgs)
                                 specialFoldersButton.IsChecked = False
                             End Sub
-            standardPanel.Children.Add(specialFoldersButton)
+                standardPanel.Children.Add(specialFoldersButton)
 
-            Dim currentFolder As Folder = folder
-            Dim noDoubles As List(Of String) = New List(Of String)()
-            While Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath)
-                noDoubles.Add(currentFolder.FullPath)
-                Dim panel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal}
-                Dim folderButton As Button = New Button()
-                If Not buttonStyle Is Nothing Then folderButton.Style = buttonStyle
-                folderButton.Content = currentFolder.DisplayName
-                folderButton.Tag = currentFolder
-                AddHandler folderButton.Click,
+                Dim currentFolder As Folder = folder
+                Dim noDoubles As List(Of String) = New List(Of String)()
+                While Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath)
+                    noDoubles.Add(currentFolder.FullPath)
+                    Dim panel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal}
+                    Dim folderButton As Button = New Button()
+                    If Not buttonStyle Is Nothing Then folderButton.Style = buttonStyle
+                    folderButton.Content = currentFolder.DisplayName
+                    folderButton.Tag = currentFolder
+                    _visibleFolders.Add(currentFolder)
+                    currentFolder.IsVisibleInAddressBar = True
+                    AddHandler folderButton.Click,
                     Sub(s As Object, e As EventArgs)
                         CType(folderButton.Tag, Folder).LastScrollOffset = New Point()
                         Me.Folder = folderButton.Tag
                     End Sub
-                panel.Children.Add(folderButton)
-                Dim subFoldersButton As ToggleButton = New ToggleButton()
-                If Not chevronButtonStyle Is Nothing Then subFoldersButton.Style = chevronButtonStyle
-                subFoldersButton.Tag = currentFolder
-                AddHandler subFoldersButton.Checked,
-                    Async Sub(s As Object, e As EventArgs)
-                        Dim subFoldersContextMenu As ContextMenu = New ContextMenu()
-                        subFoldersContextMenu.PlacementTarget = subFoldersButton
-                        subFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
+                    panel.Children.Add(folderButton)
+                    Dim subFoldersButton As ToggleButton = New ToggleButton()
+                    If Not chevronButtonStyle Is Nothing Then subFoldersButton.Style = chevronButtonStyle
+                    subFoldersButton.Tag = currentFolder
+                    AddHandler subFoldersButton.Checked,
+                        Async Sub(s As Object, e As EventArgs)
+                            Dim subFoldersContextMenu As ContextMenu = New ContextMenu()
+                            subFoldersContextMenu.PlacementTarget = subFoldersButton
+                            subFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
 
-                        AddHandler subFoldersContextMenu.Closed,
+                            AddHandler subFoldersContextMenu.Closed,
                             Sub(s2 As Object, e2 As EventArgs)
+                                For Each item In subFoldersContextMenu.Items
+                                    CType(CType(item, MenuItem).Tag, Folder).IsVisibleInAddressBar = False
+                                Next
                                 subFoldersButton.IsChecked = False
                             End Sub
 
-                        For Each subFolder In (Await CType(subFoldersButton.Tag, Folder).GetItemsAsync()).Where(Function(i) TypeOf i Is Folder)
-                            Dim subFoldersMenuItem As MenuItem = New MenuItem()
-                            subFoldersMenuItem.Header = subFolder.DisplayName
-                            subFoldersMenuItem.Tag = subFolder
-                            subFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = subFolder.Icon(16)}
-                            AddHandler subFoldersMenuItem.Click,
+                            For Each subFolder In (Await CType(subFoldersButton.Tag, Folder).GetItemsAsync()).Where(Function(i) TypeOf i Is Folder)
+                                Dim subFoldersMenuItem As MenuItem = New MenuItem()
+                                subFoldersMenuItem.Header = subFolder.DisplayName
+                                subFoldersMenuItem.Tag = subFolder
+                                CType(subFolder, Folder).IsVisibleInAddressBar = True
+                                subFoldersMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = subFolder.Icon(16)}
+                                AddHandler subFoldersMenuItem.Click,
                                 Sub(s2 As Object, e2 As EventArgs)
                                     CType(subFoldersMenuItem.Tag, Folder).LastScrollOffset = New Point()
                                     Me.Folder = subFoldersMenuItem.Tag
                                 End Sub
-                            subFoldersContextMenu.Items.Add(subFoldersMenuItem)
-                        Next
+                                subFoldersContextMenu.Items.Add(subFoldersMenuItem)
+                            Next
 
-                        subFoldersContextMenu.IsOpen = True
-                    End Sub
-                panel.Children.Add(subFoldersButton)
+                            subFoldersContextMenu.IsOpen = True
+                        End Sub
+                    panel.Children.Add(subFoldersButton)
 
-                panel.Measure(New Size(1000, 1000))
-                If totalWidth + panel.DesiredSize.Width < Me.ActualWidth - 60 Then
-                    totalWidth += panel.DesiredSize.Width
-                    buttons.Add(panel)
-                Else
-                    Exit While
-                End If
-                If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
-                    computerImage.Source = currentFolder.Icon(16)
-                End If
-                currentFolder = currentFolder.Parent
-                If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
-                    currentFolder = Nothing
-                End If
-            End While
-
-            If Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath) Then
-                Dim moreButton As ToggleButton = New ToggleButton()
-                If Not moreButtonStyle Is Nothing Then moreButton.Style = moreButtonStyle
-                moreButton.Tag = currentFolder
-                standardPanel.Children.Add(moreButton)
-                standardPanel.Measure(New Size(1000, 1000))
-
-                Dim moreContextMenu As ContextMenu = New ContextMenu()
-                moreContextMenu.PlacementTarget = moreButton
-                moreContextMenu.Placement = Primitives.PlacementMode.Bottom
-
-                AddHandler moreContextMenu.Closed,
-                            Sub(s2 As Object, e2 As EventArgs)
-                                moreButton.IsChecked = False
-                            End Sub
-
-                While Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath)
-                    noDoubles.Add(currentFolder.FullPath)
-                    Dim moreMenuItem As MenuItem = New MenuItem()
-                    moreMenuItem.Header = currentFolder.DisplayName
-                    moreMenuItem.Tag = currentFolder
-                    moreMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = currentFolder.Icon(16)}
-                    AddHandler moreMenuItem.Click,
-                                Sub(s2 As Object, e2 As EventArgs)
-                                    CType(moreMenuItem.Tag, Folder).LastScrollOffset = New Point()
-                                    Me.Folder = moreMenuItem.Tag
-                                End Sub
-                    moreContextMenu.Items.Add(moreMenuItem)
+                    panel.Measure(New Size(1000, 1000))
+                    If totalWidth + panel.DesiredSize.Width < Me.ActualWidth - 60 Then
+                        totalWidth += panel.DesiredSize.Width
+                        buttons.Add(panel)
+                    Else
+                        Exit While
+                    End If
                     If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
                         computerImage.Source = currentFolder.Icon(16)
                     End If
@@ -243,24 +224,66 @@ Namespace Controls
                     End If
                 End While
 
-                AddHandler moreButton.Checked,
+                If Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath) Then
+                    Dim moreButton As ToggleButton = New ToggleButton()
+                    If Not moreButtonStyle Is Nothing Then moreButton.Style = moreButtonStyle
+                    moreButton.Tag = currentFolder
+                    standardPanel.Children.Add(moreButton)
+                    standardPanel.Measure(New Size(1000, 1000))
+
+                    Dim moreContextMenu As ContextMenu = New ContextMenu()
+                    moreContextMenu.PlacementTarget = moreButton
+                    moreContextMenu.Placement = Primitives.PlacementMode.Bottom
+
+                    AddHandler moreContextMenu.Closed,
+                            Sub(s2 As Object, e2 As EventArgs)
+                                moreButton.IsChecked = False
+                            End Sub
+
+                    While Not currentFolder Is Nothing AndAlso Not noDoubles.Contains(currentFolder.FullPath)
+                        noDoubles.Add(currentFolder.FullPath)
+                        Dim moreMenuItem As MenuItem = New MenuItem()
+                        moreMenuItem.Header = currentFolder.DisplayName
+                        moreMenuItem.Tag = currentFolder
+                        _visibleFolders.Add(currentFolder)
+                        currentFolder.IsVisibleInAddressBar = True
+                        moreMenuItem.Icon = New Image() With {.Width = 16, .Height = 16, .Source = currentFolder.Icon(16)}
+                        AddHandler moreMenuItem.Click,
+                                Sub(s2 As Object, e2 As EventArgs)
+                                    CType(moreMenuItem.Tag, Folder).LastScrollOffset = New Point()
+                                    Me.Folder = moreMenuItem.Tag
+                                End Sub
+                        moreContextMenu.Items.Add(moreMenuItem)
+                        If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
+                            computerImage.Source = currentFolder.Icon(16)
+                        End If
+                        currentFolder = currentFolder.Parent
+                        If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
+                            currentFolder = Nothing
+                        End If
+                    End While
+
+                    AddHandler moreButton.Checked,
                     Sub(s As Object, e As EventArgs)
                         moreContextMenu.IsOpen = True
                     End Sub
-            End If
+                End If
 
-            buttons.Add(standardPanel)
-            buttons.Reverse()
-            If (folder Is Nothing AndAlso Me.Folder Is Nothing) OrElse (Not folder Is Nothing AndAlso folder.Equals(Me.Folder)) Then ' if we're not too late with this async
-                Me.PART_NavigationButtonsPanel.Children.Clear()
-                For Each button In buttons
-                    Me.PART_NavigationButtonsPanel.Children.Add(button)
-                Next
-                Me.PART_NavigationButtons.Visibility = Visibility.Visible
-                _lastWidth = totalWidth
-            End If
+                buttons.Add(standardPanel)
+                buttons.Reverse()
+                If (folder Is Nothing AndAlso Me.Folder Is Nothing) OrElse (Not folder Is Nothing AndAlso folder.Equals(Me.Folder)) Then ' if we're not too late with this async
+                    Me.PART_NavigationButtonsPanel.Children.Clear()
+                    For Each button In buttons
+                        Me.PART_NavigationButtonsPanel.Children.Add(button)
+                    Next
+                    Me.PART_NavigationButtons.Visibility = Visibility.Visible
+                    _lastWidth = totalWidth
+                End If
 
-            Me.IsLoading = False
+                Me.IsLoading = False
+            Finally
+                _lock.Release()
+            End Try
         End Function
 
         Public Property Folder As Folder
