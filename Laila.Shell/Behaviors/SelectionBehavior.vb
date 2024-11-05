@@ -25,6 +25,7 @@ Namespace Behaviors
         Private _scrollTimer As Timer
         Private _panel As Panel
         Private _grid As Grid
+        Private _isLoaded As Boolean
 
         Protected Overrides Sub OnAttached()
             MyBase.OnAttached()
@@ -34,24 +35,28 @@ Namespace Behaviors
 
             AddHandler _listView.Loaded,
                 Sub(s As Object, e As EventArgs)
-                    _sv = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
-                    _selectionRectangle = New Border() With {
-                        .BorderBrush = Brushes.SkyBlue,
-                        .BorderThickness = New Thickness(1),
-                        .Background = New SolidColorBrush(Color.FromArgb(75, Colors.SkyBlue.R, Colors.SkyBlue.G, Colors.SkyBlue.B)),
-                        .Visibility = Visibility.Collapsed,
-                        .HorizontalAlignment = HorizontalAlignment.Left,
-                        .VerticalAlignment = VerticalAlignment.Top
-                    }
-                    _panel = _listView.Parent
-                    _grid = New Grid()
-                    _grid.SetValue(Panel.ZIndexProperty, 2)
-                    _grid.HorizontalAlignment = HorizontalAlignment.Left
-                    _grid.VerticalAlignment = VerticalAlignment.Top
-                    _grid.ClipToBounds = True
-                    _grid.Children.Add(_selectionRectangle)
-                    _grid.Children.Add(_control)
-                    _panel.Children.Add(_grid)
+                    If Not _isLoaded Then
+                        _isLoaded = True
+
+                        _sv = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
+                        _selectionRectangle = New Border() With {
+                            .BorderBrush = Brushes.SkyBlue,
+                            .BorderThickness = New Thickness(1),
+                            .Background = New SolidColorBrush(Color.FromArgb(75, Colors.SkyBlue.R, Colors.SkyBlue.G, Colors.SkyBlue.B)),
+                            .Visibility = Visibility.Collapsed,
+                            .HorizontalAlignment = HorizontalAlignment.Left,
+                            .VerticalAlignment = VerticalAlignment.Top
+                        }
+                        _panel = _listView.Parent
+                        _grid = New Grid()
+                        _grid.SetValue(Panel.ZIndexProperty, 2)
+                        _grid.HorizontalAlignment = HorizontalAlignment.Left
+                        _grid.VerticalAlignment = VerticalAlignment.Top
+                        _grid.ClipToBounds = True
+                        _grid.Children.Add(_selectionRectangle)
+                        _grid.Children.Add(_control)
+                        _panel.Children.Add(_grid)
+                    End If
                 End Sub
 
             AddHandler _listView.PreviewMouseDown,

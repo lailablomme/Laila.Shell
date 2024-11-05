@@ -204,6 +204,8 @@ Namespace Behaviors
                     End Sub)
             AddHandler _listView.Loaded,
                Sub(sender As Object, e As EventArgs)
+                   If _isLoaded Then Return
+
                    _headerRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
                    Dim headerRowScrollViewer As ScrollViewer = _headerRowPresenter.Parent
                    Dim headerRowGrid As Grid = New Grid()
@@ -267,7 +269,7 @@ Namespace Behaviors
                            End If
                        End Sub
                End Sub
-                                   End Sub
+        End Sub
 
         Private Sub loadColumns()
             Debug.WriteLine("loadColumns()")

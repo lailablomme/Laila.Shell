@@ -22,7 +22,6 @@ Namespace Controls
         Private PART_NavigationButtonsPanel As StackPanel
         Private PART_NavigationButtons As Border
         Private PART_ClickToEdit As Border
-        Private _lastWidth As Double
         Private _visibleFolders As List(Of Folder) = New List(Of Folder)
         Private ReadOnly _lock As New SemaphoreSlim(1, 1)
 
@@ -274,7 +273,6 @@ Namespace Controls
                         Me.PART_NavigationButtonsPanel.Children.Add(button)
                     Next
                     Me.PART_NavigationButtons.Visibility = Visibility.Visible
-                    _lastWidth = totalWidth
                 End If
 
                 Me.IsLoading = False

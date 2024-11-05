@@ -38,6 +38,7 @@ Namespace Controls
         Private _lastScrollOffset As Point
         Private _lastScrollSize As Size
         Private _doForceScrollOffset As Boolean
+        Private _isLoaded As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -61,10 +62,13 @@ Namespace Controls
 
             AddHandler PART_ListView.Loaded,
                 Sub(s As Object, e As EventArgs)
-                    _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
-                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
+                    If Not _isLoaded Then
+                        _isLoaded = True
 
-                    AddHandler _scrollViewer.ScrollChanged,
+                        _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
+                        _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
+
+                        AddHandler _scrollViewer.ScrollChanged,
                         Sub(s2 As Object, e2 As ScrollChangedEventArgs)
                             If Not _doForceScrollOffset Then
                                 If Not Me.Folder Is Nothing Then
@@ -80,6 +84,7 @@ Namespace Controls
                                 _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
                             End If
                         End Sub
+                    End If
                 End Sub
 
             AddHandler Me.PART_ListView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove

@@ -19,12 +19,17 @@ Namespace Controls
         Private _activeView As BaseFolderView
         Private _dropTarget As IDropTarget
         Private PART_Grid As Grid
+        Private _isLoaded As Boolean
 
         Public Sub New()
             AddHandler Me.Loaded,
                 Sub(s As Object, e As EventArgs)
-                    _dropTarget = New ListViewDropTarget(Me)
-                    WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
+                    If Not _isLoaded Then
+                        _isLoaded = True
+
+                        _dropTarget = New ListViewDropTarget(Me)
+                        WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
+                    End If
                 End Sub
 
             AddHandler System.Windows.Application.Current.MainWindow.Closed,

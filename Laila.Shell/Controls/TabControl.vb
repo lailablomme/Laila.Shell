@@ -19,6 +19,7 @@ Namespace Controls
         Private PART_TabColumn As ColumnDefinition
         Private _items As ObservableCollection(Of TabData) = New ObservableCollection(Of TabData)()
         Private _dropTarget As IDropTarget
+        Private _isLoaded As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(TabControl), New FrameworkPropertyMetadata(GetType(TabControl)))
@@ -32,10 +33,14 @@ Namespace Controls
 
             AddHandler Me.Loaded,
                 Sub(s As Object, e As EventArgs)
-                    setDesiredTabWidth()
+                    If Not _isLoaded Then
+                        _isLoaded = True
 
-                    _dropTarget = New TabControlDropTarget(Me)
-                    WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
+                        setDesiredTabWidth()
+
+                        _dropTarget = New TabControlDropTarget(Me)
+                        WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
+                    End If
                 End Sub
         End Sub
 

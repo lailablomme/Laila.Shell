@@ -322,10 +322,10 @@ Namespace Controls
 
                         Dim func As Func(Of Folder, Func(Of Boolean, Task), Task) =
                             Async Function(item As Folder, callback2 As Func(Of Boolean, Task)) As Task
+                                tf.IsExpanded = True
                                 Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
                                 If Not tf2 Is Nothing Then
                                     Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
-                                    tf.IsExpanded = True
                                     tf = tf2
                                     Await callback2(False)
                                 Else
