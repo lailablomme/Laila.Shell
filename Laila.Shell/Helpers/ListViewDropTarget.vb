@@ -94,6 +94,8 @@ Public Class ListViewDropTarget
     End Function
 
     Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
+        Debug.WriteLine("dragPoint")
+
         Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListView)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
@@ -198,9 +200,13 @@ Public Class ListViewDropTarget
                 End Try
 
                 If Not dropTarget Is Nothing Then
+                    Debug.WriteLine("Got dropTarget")
                     _folderView.ActiveView.SetSelectedItem(overItem)
                     If Not _lastDropTarget Is Nothing Then
+                        Debug.WriteLine("      Got _lastDropTarget")
                         _lastDropTarget.DragLeave()
+                    Else
+                        Debug.WriteLine("      No _lastDropTarget")
                     End If
                     Try
                         Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
@@ -208,10 +214,12 @@ Public Class ListViewDropTarget
                         _lastDropTarget = dropTarget
                     End Try
                 Else
+                    Debug.WriteLine("No dropTarget")
                     _folderView.ActiveView.SetSelectedItem(Nothing)
                     pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                     If Not _lastDropTarget Is Nothing Then
                         Try
+                            Debug.WriteLine("   Got _lastDropTarget")
                             _lastDropTarget.DragLeave()
                         Finally
                             Marshal.ReleaseComObject(_lastDropTarget)
@@ -220,11 +228,14 @@ Public Class ListViewDropTarget
                     End If
                 End If
             ElseIf Not _lastDropTarget Is Nothing Then
+                Debug.WriteLine("DragOver")
                 Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
             Else
+                Debug.WriteLine("DROPEFFECT_NONE")
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
             End If
         Else
+            Debug.WriteLine("overItem=Nothing")
             _folderView.ActiveView.SetSelectedItem(Nothing)
             _lastOverItem = Nothing
             If Not _lastDropTarget Is Nothing Then
