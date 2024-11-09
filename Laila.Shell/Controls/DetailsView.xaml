@@ -17,7 +17,7 @@
                                   VirtualizingPanel.ScrollUnit="Pixel">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel />
+                                    <VirtualizingStackPanel x:Name="PART_StackPanel" />
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
                             <ListView.Resources>

@@ -25,6 +25,7 @@ Public Class Folder
     Private _updatesQueued As Integer
     Private _isActiveInFolderView As Boolean
     Private _isVisibleInAddressBar As Boolean
+    Private _isInHistory As Boolean
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -113,11 +114,23 @@ Public Class Folder
         End Set
     End Property
 
+    Public Property IsInHistory As Boolean
+        Get
+            Return _isInHistory
+        End Get
+        Set(value As Boolean)
+            SetValue(_isInHistory, value)
+
+            Me.MaybeDispose()
+        End Set
+    End Property
+
     Public Overrides Sub MaybeDispose()
         If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded Then
             Me.DisposeItems()
             If Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
-                AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) Then
+                AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) _
+                AndAlso Not Me.IsInHistory Then
                 Me.Dispose()
             End If
         End If

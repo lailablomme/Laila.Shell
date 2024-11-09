@@ -112,9 +112,13 @@ Namespace Controls
                 ElseIf _pointer = _list.Count - 1 Then
                     _list.Add(Me.Folder)
                 Else
+                    For Each item In _list.Skip(_pointer + 1)
+                        item.IsInHistory = False
+                    Next
                     _list = _list.Take(_pointer + 1).ToList()
                     _list.Add(Me.Folder)
                 End If
+                Me.Folder.IsInHistory = True
                 _pointer = _list.Count - 1
             End If
             Using parent = Me.Folder.GetParent()

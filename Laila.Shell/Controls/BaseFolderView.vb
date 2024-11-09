@@ -26,6 +26,7 @@ Namespace Controls
 
         Friend PART_ListView As System.Windows.Controls.ListView
         Private PART_Grid As Grid
+        Private PART_StackPanel As Panel
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
@@ -49,6 +50,7 @@ Namespace Controls
 
             Me.PART_ListView = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
+            Me.PART_StackPanel = Template.FindName("PART_StackPanel", Me)
 
             Dim listViewItemStyle As Style = New Style()
             listViewItemStyle.TargetType = GetType(ListViewItem)
@@ -461,6 +463,9 @@ Namespace Controls
                         _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, _lastScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
                         _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
                         _doForceScrollOffset = False
+                        If Not Me.PART_StackPanel Is Nothing Then
+                            Me.PART_StackPanel.Visibility = Visibility.Visible
+                        End If
                     End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
 
@@ -470,6 +475,9 @@ Namespace Controls
         Protected Overridable Sub ClearBinding()
             If Not Me.PART_ListView Is Nothing Then
                 BindingOperations.ClearBinding(Me.PART_ListView, System.Windows.Controls.ListView.ItemsSourceProperty)
+            End If
+            If Not Me.PART_StackPanel Is Nothing Then
+                Me.PART_StackPanel.Visibility = Visibility.Collapsed
             End If
         End Sub
 
