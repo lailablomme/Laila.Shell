@@ -1,4 +1,5 @@
-﻿Imports System.Drawing
+﻿Imports System.Collections.ObjectModel
+Imports System.Drawing
 Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
@@ -21,6 +22,9 @@ Public Class Shell
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Public Shared _hwnd As IntPtr
     Private Shared _folderViews As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
+    Private Shared _itemsCache As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
+    Private Shared _isDebugVisible As Boolean = False
+    Private Shared _debugWindow As DebugTools.DebugWindow
 
     Shared Sub New()
         Functions.OleInitialize(IntPtr.Zero)
@@ -107,6 +111,11 @@ Public Class Shell
         FolderViews.Add("Details", GetType(DetailsView))
         FolderViews.Add("Tiles", GetType(TileView))
         FolderViews.Add("Content", GetType(ContentView))
+
+        If _isDebugVisible Then
+            _debugWindow = New DebugTools.DebugWindow()
+            _debugWindow.Show()
+        End If
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
@@ -188,4 +197,10 @@ Public Class Shell
     Friend Shared Sub RaiseNotificationEvent(sender As Object, e As NotificationEventArgs)
         RaiseEvent Notification(sender, e)
     End Sub
+
+    Public Shared ReadOnly Property ItemsCache As ObservableCollection(Of Item)
+        Get
+            Return _itemsCache
+        End Get
+    End Property
 End Class

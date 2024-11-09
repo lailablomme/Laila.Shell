@@ -167,21 +167,23 @@ Public Class ListViewDropTarget
                 Try
                     shellItemPtr = Marshal.GetIUnknownForObject(overItem.ShellItem2)
                     Functions.SHGetIDListFromObject(shellItemPtr, pidl)
-                    If Not overItem.Parent Is Nothing Then
-                        Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = overItem.Parent.ShellFolder
-                        Try
-                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                        Finally
-                            If Not shellFolder Is Nothing Then
-                                Marshal.ReleaseComObject(shellFolder)
-                            End If
-                        End Try
-                    Else
-                        Dim shellFolder As IShellFolder
-                        Functions.SHGetDesktopFolder(shellFolder)
-                        ' desktop
-                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                    End If
+                    Using parent = overItem.GetParent()
+                        If Not parent Is Nothing Then
+                            Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = parent.ShellFolder
+                            Try
+                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                            Finally
+                                If Not shellFolder Is Nothing Then
+                                    Marshal.ReleaseComObject(shellFolder)
+                                End If
+                            End Try
+                        Else
+                            Dim shellFolder As IShellFolder
+                            Functions.SHGetDesktopFolder(shellFolder)
+                            ' desktop
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                        End If
+                    End Using
                     If Not IntPtr.Zero.Equals(dropTargetPtr) Then
                         dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
                     Else

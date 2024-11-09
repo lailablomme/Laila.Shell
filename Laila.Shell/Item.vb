@@ -15,7 +15,7 @@ Public Class Item
     Protected _properties As HashSet(Of [Property]) = New HashSet(Of [Property])
     Protected _fullPath As String
     Friend disposedValue As Boolean
-    Protected _parent As Folder
+    Friend _logicalParent As Folder
     Protected _displayName As String
     Private _isPinned As Boolean
     Private _isCut As Boolean
@@ -23,6 +23,7 @@ Public Class Item
     Private _overlayIconIndex As Integer?
     Private _treeRootIndex As Long = -1
     Private _shellItem2 As IShellItem2
+    Private _lock As Object = New Object()
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -77,7 +78,7 @@ Public Class Item
         Return fullPath
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = Item.GetFullPathFromShellItem2(shellItem2)
@@ -86,27 +87,39 @@ Public Class Item
             Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
             Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
             shellItem2.GetAttributes(_attributes, _attributes)
+            AddHandler Shell.Notification, AddressOf shell_Notification
+            UIHelper.OnUIThread(
+                Sub()
+                    Shell.ItemsCache.Add(Me)
+                End Sub)
         Else
             _fullPath = String.Empty
         End If
-        _parent = parent
-        AddHandler Shell.Notification, AddressOf shell_Notification
+        _logicalParent = logicalParent
     End Sub
 
     Public ReadOnly Property ShellItem2 As IShellItem2
         Get
-            If Not disposedValue AndAlso _shellItem2 Is Nothing Then
-                _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
-            End If
-            Return _shellItem2
+            SyncLock _lock
+                If Not disposedValue AndAlso _shellItem2 Is Nothing Then
+                    _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+                End If
+                Return _shellItem2
+            End SyncLock
         End Get
     End Property
 
     Public ReadOnly Property IsVisibleInTree As Boolean
         Get
-            Return Me.TreeRootIndex <> -1 OrElse (Not Me.Parent Is Nothing AndAlso Me.Parent.IsExpanded)
+            Return Me.TreeRootIndex <> -1 OrElse (Not _logicalParent Is Nothing AndAlso _logicalParent.IsExpanded)
         End Get
     End Property
+
+    Public Overridable Sub MaybeDispose()
+        If Not _logicalParent.IsActiveInFolderView AndAlso Not Me.IsVisibleInTree Then
+            Me.Dispose()
+        End If
+    End Sub
 
     Public Property TreeRootIndex As Long
         Get
@@ -115,6 +128,7 @@ Public Class Item
         Set(value As Long)
             SetValue(_treeRootIndex, value)
             Me.NotifyOfPropertyChange("TreeSortKey")
+            Me.MaybeDispose()
         End Set
     End Property
 
@@ -125,7 +139,7 @@ Public Class Item
             Else
                 Dim itemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
                 If itemNameDisplaySortValue Is Nothing Then itemNameDisplaySortValue = ""
-                Return _parent.TreeSortKey & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
+                Return _logicalParent.TreeSortKey & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
             End If
         End Get
     End Property
@@ -134,11 +148,11 @@ Public Class Item
         Get
             Dim level As Integer = 0
             If Me.TreeRootIndex = -1 Then
-                Dim lp As Folder = Me.Parent
+                Dim lp As Folder = _logicalParent
                 While Not lp Is Nothing
                     level += 1
                     If lp.TreeRootIndex <> -1 Then Exit While
-                    lp = lp.Parent
+                    lp = lp._logicalParent
                 End While
             End If
 
@@ -147,8 +161,10 @@ Public Class Item
     End Property
 
     Public Overridable Sub ClearCache()
-        Marshal.ReleaseComObject(_shellItem2)
-        _shellItem2 = Nothing
+        SyncLock _lock
+            Marshal.ReleaseComObject(_shellItem2)
+            _shellItem2 = Nothing
+        End SyncLock
         For Each [property] In _properties
             [property].Dispose()
         Next
@@ -186,25 +202,39 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property Parent As Folder
-        Get
-            If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
-                If (_parent Is Nothing OrElse _parent.disposedValue) AndAlso Not disposedValue Then
-                    Dim parentShellItem2 As IShellItem2
-                    If Not Me.ShellItem2 Is Nothing Then
-                        Me.ShellItem2.GetParent(parentShellItem2)
-                    End If
-                    If Not parentShellItem2 Is Nothing Then
-                        _parent = New Folder(parentShellItem2, Nothing)
-                    End If
-                End If
+    'Public ReadOnly Property Parent As Folder
+    '    Get
+    '        If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
+    '            If (_parent Is Nothing OrElse _parent.disposedValue) AndAlso Not disposedValue Then
+    '                Dim parentShellItem2 As IShellItem2
+    '                If Not Me.ShellItem2 Is Nothing Then
+    '                    Me.ShellItem2.GetParent(parentShellItem2)
+    '                End If
+    '                If Not parentShellItem2 Is Nothing Then
+    '                    _parent = New Folder(parentShellItem2, Nothing)
+    '                End If
+    '            End If
 
-                Return _parent
-            Else
-                Return Nothing
+    '            Return _parent
+    '        Else
+    '            Return Nothing
+    '        End If
+    '    End Get
+    'End Property
+
+    Public Function GetParent() As Folder
+        If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
+            Dim parentShellItem2 As IShellItem2
+            If Not Me.ShellItem2 Is Nothing Then
+                Me.ShellItem2.GetParent(parentShellItem2)
             End If
-        End Get
-    End Property
+            If Not parentShellItem2 Is Nothing Then
+                Return New Folder(parentShellItem2, Nothing)
+            End If
+        End If
+
+        Return Nothing
+    End Function
 
     Public ReadOnly Property PrimarySort As Integer
         Get
@@ -324,7 +354,8 @@ Public Class Item
             End Try
             lastpidl = Functions.ILFindLastID(pidl)
 
-            Dim shellFolder As IShellFolder = If(Not Me.Parent Is Nothing, Me.Parent.ShellFolder, Shell.Desktop.ShellFolder)
+            Dim parent As Folder = Me.GetParent()
+            Dim shellFolder As IShellFolder = If(Not parent Is Nothing, parent.ShellFolder, Shell.Desktop.ShellFolder)
             Try
                 ptr = Marshal.GetIUnknownForObject(shellFolder)
                 Dim ptr2 As IntPtr, shellIconOverlay As IShellIconOverlay
@@ -355,6 +386,9 @@ Public Class Item
                 End If
                 If Not IntPtr.Zero.Equals(pidl) Then
                     Marshal.FreeHGlobal(pidl)
+                End If
+                If Not parent Is Nothing Then
+                    parent.Dispose()
                 End If
             End Try
         End If
@@ -816,6 +850,15 @@ Public Class Item
                 ' dispose managed state (managed objects)
                 RemoveHandler Shell.Notification, AddressOf shell_Notification
                 Me.ClearCache()
+
+                UIHelper.OnUIThread(
+                    Sub()
+                        If Not _logicalParent Is Nothing Then
+                            _logicalParent._items.Remove(Me)
+                            _logicalParent._isEnumerated = False
+                        End If
+                        Shell.ItemsCache.Remove(Me)
+                    End Sub)
             End If
             ' free unmanaged resources (unmanaged objects) and override finalizer
         End If
@@ -836,9 +879,9 @@ Public Class Item
 
     Public Function Clone() As Item
         If TypeOf Me Is Folder Then
-            Return New Folder(Me.ShellItem2, _parent)
+            Return New Folder(Me.ShellItem2, _logicalParent) With {._shellItem2 = Nothing}
         Else
-            Return New Item(Me.ShellItem2, _parent)
+            Return New Item(Me.ShellItem2, _logicalParent) With {._shellItem2 = Nothing}
         End If
     End Function
 End Class

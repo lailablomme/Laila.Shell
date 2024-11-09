@@ -14,6 +14,7 @@ Imports Laila.Shell.PinnedItems
 Namespace Controls
     Public Class TreeView
         Inherits Control
+        Implements IDisposable
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -28,6 +29,7 @@ Namespace Controls
         Private _dropTarget As IDropTarget
         Private _menu As Laila.Shell.ContextMenu
         Private _fequentUpdateTimer As Timer
+        Private disposedValue As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(TreeView), New FrameworkPropertyMetadata(GetType(TreeView)))
@@ -50,9 +52,9 @@ Namespace Controls
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
                      Select Case e.Event
                          Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                             If Not Me.SelectedItem Is Nothing AndAlso Not e.Folder.Parent Is Nothing _
+                             If Not Me.SelectedItem Is Nothing AndAlso Not e.Folder._logicalParent Is Nothing _
                                 AndAlso Me.GetIsSelectionDownFolder(e.Folder) Then
-                                 Await Me.SetSelectedFolder(e.Folder.Parent)
+                                 Await Me.SetSelectedFolder(e.Folder._logicalParent)
                              End If
                      End Select
                  End Sub
@@ -70,11 +72,15 @@ Namespace Controls
                                 updateFrequentFolders()
                             End If
                         Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                            If Not Me.Items.FirstOrDefault(Function(i) _
-                                Not i.disposedValue _
-                                AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
-                                AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                                AndAlso (Not i.Parent Is Nothing AndAlso i.Parent.FullPath = e.Item1Path)) Is Nothing _
+                            If Not Me.Items.FirstOrDefault(
+                                Function(i)
+                                    Using parent = i.GetParent()
+                                        Return Not i.disposedValue _
+                                            AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
+                                            AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
+                                            AndAlso (Not parent Is Nothing AndAlso parent.FullPath = e.Item1Path)
+                                    End Using
+                                End Function) Is Nothing _
                                 OrElse Shell.Desktop.FullPath.Equals(e.Item1Path) Then
                                 updatePinnedItems()
                                 updateFrequentFolders()
@@ -300,15 +306,20 @@ Namespace Controls
                 Dim currentFolder As Folder = folder
                 Dim noRecursive As List(Of String) = New List(Of String)()
                 If Not currentFolder Is Nothing Then
-                    While Not currentFolder.Parent Is Nothing _
-                        AndAlso currentFolder.Parent.FullPath <> Shell.Desktop.FullPath _
+                    Dim parent As Folder = currentFolder.GetParent()
+                    While Not parent Is Nothing _
+                        AndAlso parent.FullPath <> Shell.Desktop.FullPath _
                         AndAlso currentFolder.TreeRootIndex = -1 _
                         AndAlso Not noRecursive.Contains(currentFolder.FullPath)
                         noRecursive.Add(currentFolder.FullPath)
                         list.Add(currentFolder)
                         Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
-                        currentFolder = currentFolder.Parent
+                        currentFolder = parent
+                        parent = currentFolder.GetParent()
                     End While
+                    If Not parent Is Nothing Then
+                        parent.Dispose()
+                    End If
 
                     Dim tf As Folder
                     If Me.Items.ToList().Exists(Function(f1) f1.FullPath = currentFolder.FullPath AndAlso f1.TreeRootIndex <> -1) Then
@@ -316,6 +327,7 @@ Namespace Controls
                     Else
                         tf = Nothing
                     End If
+                    currentFolder.MaybeDispose()
 
                     If Not tf Is Nothing Then
                         list.Reverse()
@@ -324,6 +336,7 @@ Namespace Controls
                             Async Function(item As Folder, callback2 As Func(Of Boolean, Task)) As Task
                                 tf.IsExpanded = True
                                 Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
+                                item.MaybeDispose()
                                 If Not tf2 Is Nothing Then
                                     Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
                                     tf = tf2
@@ -410,8 +423,7 @@ Namespace Controls
                                 End If
                             End If
 
-                            Dim parent As Folder = clickedItem.Parent
-                            If parent Is Nothing Then parent = Shell.Desktop
+                            Dim parent As Folder = clickedItem.GetParent()
 
                             _menu = New Laila.Shell.ContextMenu()
                             AddHandler _menu.CommandInvoked,
@@ -440,9 +452,11 @@ Namespace Controls
                                     End Select
                                 End Sub
 
-                            Dim contextMenu As Controls.ContextMenu = _menu.GetContextMenu(parent, {clickedItem}, False)
+                            Dim contextMenu As Controls.ContextMenu = _menu.GetContextMenu(If(parent Is Nothing, Shell.Desktop, parent), {clickedItem}, False)
                             PART_ListBox.ContextMenu = contextMenu
                             e.Handled = True
+
+                            If Not parent Is Nothing Then parent.Dispose()
                         Else
                             PART_ListBox.ContextMenu = Nothing
                         End If
@@ -452,9 +466,11 @@ Namespace Controls
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                                 e.Handled = True
                             Else
-                                _menu = New Laila.Shell.ContextMenu()
-                                _menu.GetContextMenu(clickedItem.Parent, {clickedItem}, False)
-                                _menu.InvokeCommand(_menu.DefaultId)
+                                Using parent = clickedItem.GetParent()
+                                    _menu = New Laila.Shell.ContextMenu()
+                                    _menu.GetContextMenu(parent, {clickedItem}, False)
+                                    _menu.InvokeCommand(_menu.DefaultId)
+                                End Using
                             End If
                         End If
                     ElseIf e.LeftButton = MouseButtonState.Pressed Then
@@ -514,7 +530,7 @@ Namespace Controls
                             RemoveHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder))
+                                AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder))
                                 UIHelper.OnUIThreadAsync(
                                     Sub()
                                         If Me.Items.Contains(item2) Then
@@ -533,7 +549,7 @@ Namespace Controls
             Select Case e.Action
                 Case NotifyCollectionChangedAction.Add
                     For Each item In e.NewItems
-                        If TypeOf item Is Folder AndAlso (CType(item, Folder).Parent Is Nothing OrElse CType(item, Folder).Parent.IsExpanded) Then
+                        If TypeOf item Is Folder AndAlso (CType(item, Folder)._logicalParent Is Nothing OrElse CType(item, Folder)._logicalParent.IsExpanded) Then
                             Me.Items.Add(item)
                         End If
                     Next
@@ -572,7 +588,7 @@ Namespace Controls
                     CollectionViewSource.GetDefaultView(Me.Items).Refresh()
                 Case "TreeSortKey"
                     For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                        AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder))
+                        AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder))
                         item2.NotifyOfPropertyChange("TreeSortKey")
                     Next
             End Select
@@ -614,5 +630,31 @@ Namespace Controls
             FREQUENT = Long.MaxValue - 100
             ENVIRONMENT = Long.MaxValue - 5
         End Enum
+
+        Protected Overridable Sub Dispose(disposing As Boolean)
+            If Not disposedValue Then
+                If disposing Then
+                    ' dispose managed state (managed objects)
+                    For Each item In Me.Items.ToList()
+                        If Not TypeOf item Is SeparatorFolder Then
+                            item.TreeRootIndex = -1
+                            item.IsExpanded = False
+                            item._logicalParent = Nothing
+                            item.MaybeDispose()
+                        End If
+                    Next
+                End If
+
+                ' free unmanaged resources (unmanaged objects) and override finalizer
+                ' set large fields to null
+                disposedValue = True
+            End If
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+            Dispose(disposing:=True)
+            GC.SuppressFinalize(Me)
+        End Sub
     End Class
 End Namespace

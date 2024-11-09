@@ -47,8 +47,10 @@ Public Class Drag
                 Dim shellItemPtr As IntPtr, folderpidl As IntPtr
                 Dim pidls(items.Count - 1) As IntPtr, lastpidl As IntPtr, pidlsPtr As IntPtr
                 Try
-                    shellItemPtr = Marshal.GetIUnknownForObject(items(0).Parent.ShellItem2)
-                    Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
+                    Using parent = items(0).GetParent()
+                        shellItemPtr = Marshal.GetIUnknownForObject(parent.ShellItem2)
+                        Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
+                    End Using
                 Finally
                     If Not IntPtr.Zero.Equals(shellItemPtr) Then
                         Marshal.Release(shellItemPtr)

@@ -13,6 +13,7 @@ Imports System.Windows.Media
 Namespace Controls
     Public Class AddressBar
         Inherits Laila.AutoCompleteTextBox.AutoCompleteTextBox
+        Implements IDisposable
 
         Private Const INVALID_VALUE As String = "5e979b53-746b-4a0c-9f5f-00fdd22c91d8"
 
@@ -23,6 +24,7 @@ Namespace Controls
         Private PART_NavigationButtons As Border
         Private PART_ClickToEdit As Border
         Private _visibleFolders As List(Of Folder) = New List(Of Folder)
+        Private disposedValue As Boolean
         Private ReadOnly _lock As New SemaphoreSlim(1, 1)
 
         Shared Sub New()
@@ -75,6 +77,8 @@ Namespace Controls
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                     CType(item, Folder).LastScrollOffset = New Point()
                     Me.Folder = item
+                    Me.SelectedItem = item
+                    CType(item, Folder).IsVisibleInAddressBar = True
                 Else
                     System.Media.SystemSounds.Asterisk.Play()
                     Me.Cancel()
@@ -100,6 +104,23 @@ Namespace Controls
             Me.PART_TextBox.IsEnabled = False
             Me.IsLoading = True
             Me.ShowNavigationButtons(Me.Folder)
+
+            clearSuggestionItems()
+        End Sub
+
+        Private Sub clearSuggestionItems()
+            Dim provider As AddressBarSuggestionProvider = Me.Provider
+            provider._lock.Wait()
+            Try
+                If Not provider._items Is Nothing Then
+                    For Each item In provider._items
+                        item.MaybeDispose()
+                    Next
+                End If
+                provider._items = Nothing
+            Finally
+                provider._lock.Release()
+            End Try
         End Sub
 
         Protected Overrides Sub TextBox_LostFocus(s As Object, e As RoutedEventArgs)
@@ -170,10 +191,11 @@ Namespace Controls
                         Me.Folder = folderButton.Tag
                     End Sub
                     panel.Children.Add(folderButton)
-                    Dim subFoldersButton As ToggleButton = New ToggleButton()
-                    If Not chevronButtonStyle Is Nothing Then subFoldersButton.Style = chevronButtonStyle
-                    subFoldersButton.Tag = currentFolder
-                    AddHandler subFoldersButton.Checked,
+                    If (Await currentFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count > 0 Then
+                        Dim subFoldersButton As ToggleButton = New ToggleButton()
+                        If Not chevronButtonStyle Is Nothing Then subFoldersButton.Style = chevronButtonStyle
+                        subFoldersButton.Tag = currentFolder
+                        AddHandler subFoldersButton.Checked,
                         Async Sub(s As Object, e As EventArgs)
                             Dim subFoldersContextMenu As ContextMenu = New ContextMenu()
                             subFoldersContextMenu.PlacementTarget = subFoldersButton
@@ -203,7 +225,9 @@ Namespace Controls
 
                             subFoldersContextMenu.IsOpen = True
                         End Sub
-                    panel.Children.Add(subFoldersButton)
+                        panel.Children.Add(subFoldersButton)
+                    End If
+                    currentFolder.MaybeDispose()
 
                     panel.Measure(New Size(1000, 1000))
                     If totalWidth + panel.DesiredSize.Width < Me.ActualWidth - 60 Then
@@ -212,11 +236,13 @@ Namespace Controls
                     Else
                         Exit While
                     End If
-                    If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
+                    Dim parent As Folder = currentFolder.GetParent()
+                    If parent Is Nothing OrElse parent.FullPath = Shell.Desktop.FullPath Then
                         computerImage.Source = currentFolder.Icon(16)
                     End If
-                    currentFolder = currentFolder.Parent
+                    currentFolder = parent
                     If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
+                        currentFolder.Dispose()
                         currentFolder = Nothing
                     End If
                 End While
@@ -250,11 +276,13 @@ Namespace Controls
                                     Me.Folder = moreMenuItem.Tag
                                 End Sub
                         moreContextMenu.Items.Add(moreMenuItem)
-                        If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
+                        Dim parent As Folder = currentFolder.GetParent()
+                        If parent Is Nothing OrElse parent.FullPath = Shell.Desktop.FullPath Then
                             computerImage.Source = currentFolder.Icon(16)
                         End If
-                        currentFolder = currentFolder.Parent
+                        currentFolder = parent
                         If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
+                            currentFolder.Dispose()
                             currentFolder = Nothing
                         End If
                     End While
@@ -276,6 +304,7 @@ Namespace Controls
                 End If
 
                 Me.IsLoading = False
+                clearSuggestionItems()
             Finally
                 _lock.Release()
             End Try
@@ -305,5 +334,29 @@ Namespace Controls
                 SetCurrentValue(IsLoadingProperty, value)
             End Set
         End Property
+
+        Protected Overridable Sub Dispose(disposing As Boolean)
+            If Not disposedValue Then
+                If disposing Then
+                    ' dispose managed state (managed objects)
+                    For Each f In _visibleFolders
+                        f.IsVisibleInAddressBar = False
+                    Next
+                    _visibleFolders.Clear()
+
+                    clearSuggestionItems()
+                End If
+
+                ' free unmanaged resources (unmanaged objects) and override finalizer
+                ' set large fields to null
+                disposedValue = True
+            End If
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+            Dispose(disposing:=True)
+            GC.SuppressFinalize(Me)
+        End Sub
     End Class
 End Namespace

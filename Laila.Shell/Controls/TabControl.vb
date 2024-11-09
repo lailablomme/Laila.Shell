@@ -119,6 +119,15 @@ Namespace Controls
                         For Each item In e.OldItems
                             Dim cp As ContentPresenter = findChildContentPresenter(item)
                             If Not cp Is Nothing Then
+                                For Each treeView In UIHelper.FindVisualChildren(Of TreeView)(cp)
+                                    treeView.Dispose()
+                                Next
+                                For Each folderView In UIHelper.FindVisualChildren(Of FolderView)(cp)
+                                    folderView.Dispose()
+                                Next
+                                For Each addressBar In UIHelper.FindVisualChildren(Of AddressBar)(cp)
+                                    addressBar.Dispose()
+                                Next
                                 PART_ItemsHolder.Children.Remove(cp)
                             End If
                         Next
@@ -292,7 +301,7 @@ Namespace Controls
         End Sub
 
         Public Class TabData
-            Public Property Folder As Folder = Shell.SpecialFolders("This computer")
+            Public Property Folder As Folder = Shell.SpecialFolders("This computer").Clone()
         End Class
     End Class
 End Namespace

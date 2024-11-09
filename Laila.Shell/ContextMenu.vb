@@ -45,21 +45,23 @@ Public Class ContextMenu
             Try
                 shellItemPtr = Marshal.GetIUnknownForObject(parent.ShellItem2)
                 Functions.SHGetIDListFromObject(shellItemPtr, pidl)
-                If Not parent.Parent Is Nothing Then
-                    Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = parent.Parent.ShellFolder
-                    Try
-                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                    Finally
-                        If Not shellFolder Is Nothing Then
-                            Marshal.ReleaseComObject(shellFolder)
-                        End If
-                    End Try
-                Else
-                    Dim shellFolder As IShellFolder
-                    Functions.SHGetDesktopFolder(shellFolder)
-                    ' desktop
-                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                End If
+                Using parent2 As Folder = parent.GetParent()
+                    If Not parent2 Is Nothing Then
+                        Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = parent2.ShellFolder
+                        Try
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                        Finally
+                            If Not shellFolder Is Nothing Then
+                                Marshal.ReleaseComObject(shellFolder)
+                            End If
+                        End Try
+                    Else
+                        Dim shellFolder As IShellFolder
+                        Functions.SHGetDesktopFolder(shellFolder)
+                        ' desktop
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    End If
+                End Using
                 If Not IntPtr.Zero.Equals(dropTargetPtr) Then
                     dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
                 Else
@@ -284,7 +286,7 @@ Public Class ContextMenu
                     folderpidl2 = folderpidl
                 Else
                     ' user clicked on the background
-                    If _parent.Parent Is Nothing Then
+                    If _parent.FullPath.Equals(Shell.Desktop.FullPath) Then
                         ' this is the desktop
                         Dim eaten As Integer
                         Functions.SHGetDesktopFolder(shellFolder)
@@ -297,8 +299,10 @@ Public Class ContextMenu
                         ' this is any other folder
                         folderpidl2 = folderpidl
                         Try
-                            shellItemPtr = Marshal.GetIUnknownForObject(_parent.Parent.ShellItem2)
-                            Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
+                            Using parent2 = _parent.GetParent()
+                                shellItemPtr = Marshal.GetIUnknownForObject(parent2.ShellItem2)
+                                Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
+                            End Using
                         Finally
                             If Not IntPtr.Zero.Equals(shellItemPtr) Then
                                 Marshal.Release(shellItemPtr)

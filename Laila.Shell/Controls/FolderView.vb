@@ -7,6 +7,7 @@ Imports Laila.Shell.Helpers
 Namespace Controls
     Public Class FolderView
         Inherits Control
+        Implements IDisposable
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ViewProperty As DependencyProperty = DependencyProperty.Register("View", GetType(String), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnViewChanged))
@@ -20,6 +21,7 @@ Namespace Controls
         Private _dropTarget As IDropTarget
         Private PART_Grid As Grid
         Private _isLoaded As Boolean
+        Private disposedValue As Boolean
 
         Public Sub New()
             AddHandler Me.Loaded,
@@ -107,6 +109,27 @@ Namespace Controls
             fv.ActiveView.SetValue(Panel.ZIndexProperty, 1)
             fv.Folder.LastScrollOffset = New Point()
             BindingOperations.SetBinding(fv.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = fv})
+        End Sub
+
+        Protected Overridable Sub Dispose(disposing As Boolean)
+            If Not disposedValue Then
+                If disposing Then
+                    ' dispose managed state (managed objects)
+                    If Not Me.Folder Is Nothing Then
+                        Me.Folder.IsActiveInFolderView = False
+                    End If
+                End If
+
+                ' free unmanaged resources (unmanaged objects) and override finalizer
+                ' set large fields to null
+                disposedValue = True
+            End If
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+            Dispose(disposing:=True)
+            GC.SuppressFinalize(Me)
         End Sub
     End Class
 End Namespace

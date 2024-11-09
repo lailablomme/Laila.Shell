@@ -21,7 +21,7 @@ Public Class Folder
     Private _lock As Object = New Object()
     Private _isLoaded As Boolean
     Private _enumerationException As Exception
-    Private _isEnumerated As Boolean
+    Friend _isEnumerated As Boolean
     Private _updatesQueued As Integer
     Private _isActiveInFolderView As Boolean
     Private _isVisibleInAddressBar As Boolean
@@ -69,7 +69,7 @@ Public Class Folder
 
     Public Overrides Property IsExpanded As Boolean
         Get
-            Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse Me.Parent.IsExpanded)
+            Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse Me._logicalParent Is Nothing OrElse Me._logicalParent.IsExpanded)
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)
@@ -113,11 +113,11 @@ Public Class Folder
         End Set
     End Property
 
-    Public Sub MaybeDispose()
-        If Not Me.IsActiveInFolderView AndAlso Not Me.IsVisibleInAddressBar AndAlso Not Me.IsExpanded Then
+    Public Overrides Sub MaybeDispose()
+        If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded Then
             Me.DisposeItems()
-            If Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree _
-                AndAlso (Me.Parent Is Nothing OrElse Not Me.Parent.IsActiveInFolderView) Then
+            If Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
+                AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) Then
                 Me.Dispose()
             End If
         End If
@@ -126,10 +126,7 @@ Public Class Folder
     Public Sub DisposeItems()
         If _isEnumerated AndAlso Not Me.IsLoading Then
             For Each item In _items.ToList()
-                If Not TypeOf item Is Folder OrElse Not CType(item, Folder).IsActiveInFolderView Then
-                    item.Dispose()
-                End If
-                _items.Remove(item)
+                item.MaybeDispose()
             Next
             _isEnumerated = False
         End If
