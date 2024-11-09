@@ -18,7 +18,7 @@
                                   VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel Margin="20,0,0,0" SpacingMode="None" />
+                                    <vwp:VirtualizingWrapPanel Margin="20,0,0,0" SpacingMode="None" x:Name="PART_StackPanel" />
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
                             <ListView.Resources>

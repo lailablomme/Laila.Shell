@@ -18,7 +18,7 @@
                                   VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel Margin="20,0,0,0" x:Name="vsp" />
+                                    <VirtualizingStackPanel Margin="20,0,0,0" x:Name="PART_StackPanel" />
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
                             <ListView.Resources>
@@ -102,7 +102,7 @@
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border>
-                                        <Grid Width="{Binding ActualWidth, ElementName=vsp}" Margin="-5,0,-10,0">
+                                        <Grid Width="{Binding ActualWidth, ElementName=PART_StackPanel}" Margin="-5,0,-10,0">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="16" />
                                                 <ColumnDefinition Width="4" />
@@ -241,7 +241,7 @@
                                                                     <DataTrigger.Binding>
                                                                         <MultiBinding Converter="{StaticResource collapseTrimmedTextBlockConverter}">
                                                                             <Binding Path="." ElementName="textBlockProperty2" />
-                                                                            <Binding Path="ActualWidth" ElementName="vsp" />
+                                                                            <Binding Path="ActualWidth" ElementName="PART_StackPanel" />
                                                                             <Binding Path="ActualWidth" ElementName="PART_PropertiesGrid" />
                                                                         </MultiBinding>
                                                                     </DataTrigger.Binding>
@@ -272,7 +272,7 @@
                                                                     <DataTrigger.Binding>
                                                                         <MultiBinding Converter="{StaticResource collapseTrimmedTextBlockConverter}">
                                                                             <Binding Path="." ElementName="textBlockProperty3" />
-                                                                            <Binding Path="ActualWidth" ElementName="vsp" />
+                                                                            <Binding Path="ActualWidth" ElementName="PART_StackPanel" />
                                                                             <Binding Path="ActualWidth" ElementName="PART_PropertiesGrid" />
                                                                         </MultiBinding>
                                                                     </DataTrigger.Binding>
