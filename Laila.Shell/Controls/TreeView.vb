@@ -304,7 +304,7 @@ Namespace Controls
                 Dim currentFolder As Folder = folder
                 Dim noRecursive As List(Of String) = New List(Of String)()
                 If Not currentFolder Is Nothing Then
-                    Dim parent As Folder = currentFolder.GetParent()
+                    Dim parent As Folder = If(currentFolder._logicalParent Is Nothing, currentFolder.GetParent(), currentFolder._logicalParent)
                     While Not parent Is Nothing _
                         AndAlso parent.FullPath <> Shell.Desktop.FullPath _
                         AndAlso currentFolder.TreeRootIndex = -1 _
@@ -313,7 +313,7 @@ Namespace Controls
                         list.Add(currentFolder)
                         Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
                         currentFolder = parent
-                        parent = currentFolder.GetParent()
+                        parent = If(currentFolder._logicalParent Is Nothing, currentFolder.GetParent(), currentFolder._logicalParent)
                     End While
                     If Not parent Is Nothing Then
                         parent.Dispose()
