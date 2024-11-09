@@ -664,29 +664,30 @@ Namespace Behaviors
 
         Private Sub resizeVisibleRows()
             If Not _headerRowPresenter Is Nothing Then
+                Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
+
                 If Not _skipResize Then
-                    Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
                     Dim isFullGrid As Boolean = rows.Sum(Function(r) r.DesiredSize.Height) <= _listView.ActualHeight
                     If rows.Count > 0 AndAlso (_isInitialResize OrElse isFullGrid) Then
                         resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
-
-                        Dim headers As List(Of GridViewColumnHeader) =
-                                            UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
-                        For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
-                            headers.Remove(header)
-                        Next
-                        For Each item In rows.Select(Function(r) r.DataContext).ToList()
-                            Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
-                            If Not lvi Is Nothing Then
-                                lvi.HorizontalAlignment = HorizontalAlignment.Left
-                                lvi.Width = headers.Sum(Function(h) h.Width)
-                            End If
-                        Next
 
                         If isFullGrid OrElse rows.Count = _listView.Items.Count Then _isInitialResize = False
                         _skipResize = True
                     End If
                 End If
+
+                Dim headers As List(Of GridViewColumnHeader) =
+                                            UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+                For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
+                    headers.Remove(header)
+                Next
+                For Each item In rows.Select(Function(r) r.DataContext).ToList()
+                    Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
+                    If Not lvi Is Nothing Then
+                        lvi.HorizontalAlignment = HorizontalAlignment.Left
+                        lvi.Width = headers.Sum(Function(h) h.Width)
+                    End If
+                Next
             End If
         End Sub
 
