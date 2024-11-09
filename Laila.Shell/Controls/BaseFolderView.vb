@@ -34,7 +34,7 @@ Namespace Controls
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
-        Private _menu As Laila.Shell.ContextMenu
+        Private _menu As Laila.Shell.Menus
         Private _timeSpentTimer As Timer
         Private _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
@@ -291,8 +291,7 @@ Namespace Controls
                         CType(clickedItem, Folder).LastScrollOffset = New Point()
                         Me.Folder = clickedItem
                     Else
-                        _menu = New Laila.Shell.ContextMenu()
-                        _menu.GetContextMenu(Me.Folder, Me.SelectedItems, True)
+                        _menu = New Laila.Shell.Menus() With {.IsDefaultOnly = True, .Folder = Me.Folder, .SelectedItems = Me.SelectedItems}
                         _menu.InvokeCommand(_menu.DefaultId)
                     End If
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
@@ -312,7 +311,7 @@ Namespace Controls
                         Me.SelectedItems = Nothing
                     End If
 
-                    _menu = New Laila.Shell.ContextMenu()
+                    _menu = New Laila.Shell.Menus() With {.IsDefaultOnly = False, .Folder = Me.Folder, .SelectedItems = Me.SelectedItems}
                     AddHandler _menu.CommandInvoked,
                         Sub(s As Object, e2 As CommandInvokedEventArgs)
                             If e2.Verb.StartsWith("laila.shell.view.") Then
@@ -341,8 +340,7 @@ Namespace Controls
                             End If
                         End Sub
 
-                    Dim contextMenu As Controls.ContextMenu = _menu.GetContextMenu(Me.Folder, Me.SelectedItems, False)
-                    Me.PART_ListView.ContextMenu = contextMenu
+                    Me.PART_ListView.ContextMenu = _menu.ItemContextMenu
                     e.Handled = True
                 ElseIf clickedItem Is Nothing AndAlso
                         UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then

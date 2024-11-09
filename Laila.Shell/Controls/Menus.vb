@@ -8,10 +8,18 @@ Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 
-Public Class ContextMenu
+Public Class Menus
+    Inherits FrameworkElement
     Implements IDisposable
+
+    Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
+    Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
+    Public Shared ReadOnly ItemContextMenuProperty As DependencyProperty = DependencyProperty.Register("ItemContextMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+    Public Shared ReadOnly NewItemMenuProperty As DependencyProperty = DependencyProperty.Register("NewItemMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+    Public Shared ReadOnly IsDefaultOnlyProperty As DependencyProperty = DependencyProperty.Register("IsDefaultOnly", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
     Public Event CommandInvoked(sender As Object, e As CommandInvokedEventArgs)
 
@@ -28,7 +36,11 @@ Public Class ContextMenu
     Private disposedValue As Boolean
     Private _items As IEnumerable(Of Item)
 
-    Public Function GetContextMenu(parent As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean) As System.Windows.Controls.ContextMenu
+    Shared Sub New()
+        DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
+    End Sub
+
+    Private Function getContextMenu(parent As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean) As Laila.Shell.Controls.ContextMenu
         If Not _menu Is Nothing Then
             Return _menu
         End If
@@ -171,7 +183,7 @@ Public Class ContextMenu
             If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
             menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
             If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-            If items.Count = 1 Then
+            If Not items Is Nothing AndAlso items.Count = 1 Then
                 Dim test As Item = Item.FromParsingName(items(0).FullPath, Nothing)
                 If Not test Is Nothing Then ' this won't work for all items 
                     test.Dispose()
@@ -199,7 +211,7 @@ Public Class ContextMenu
                 If Not _invokedId Is Nothing Then
                     Me.InvokeCommand(_invokedId)
                 Else
-                    Me.ReleaseContextMenu()
+                    Me.releaseContextMenu()
                 End If
             End Sub
 
@@ -232,6 +244,27 @@ Public Class ContextMenu
         'InvokeCommand(contextMenu, Nothing, idTPM & vbTab)
 
         Return _menu ' New ContextMenu() 
+    End Function
+
+    Private Function getNewItemMenu(contextMenu As Laila.Shell.Controls.ContextMenu)
+        If Not contextMenu Is Nothing Then
+            Dim newMenuItem As MenuItem = contextMenu.Items.Cast(Of Control) _
+            .FirstOrDefault(Function(c) TypeOf c Is MenuItem _
+                AndAlso Not c.Tag Is Nothing _
+                AndAlso c.Tag.ToString().Split(vbTab)(1) = "New")
+
+            If Not newMenuItem Is Nothing Then
+                Dim menu As Laila.Shell.Controls.ContextMenu = New Controls.ContextMenu()
+                For Each control In newMenuItem.Items
+                    menu.Items.Add(control)
+                Next
+                Return menu
+            Else
+                Return Nothing
+            End If
+        Else
+            Return Nothing
+        End If
     End Function
 
     Private Sub makeContextMenu(items As IEnumerable(Of Item), isDefaultOnly As Boolean)
@@ -496,7 +529,6 @@ Public Class ContextMenu
         Return result
     End Function
 
-
     Private Sub menuItem_Click(c As Control, e2 As EventArgs)
         _menu.IsOpen = False
 
@@ -547,10 +579,10 @@ Public Class ContextMenu
                 Debug.WriteLine("InvokeCommand returned " & h.ToString())
         End Select
 
-        Me.ReleaseContextMenu()
+        Me.releaseContextMenu()
     End Sub
 
-    Private Sub ReleaseContextMenu()
+    Private Sub releaseContextMenu()
         If Not IntPtr.Zero.Equals(_hMenu) Then
             Functions.DestroyMenu(_hMenu)
         End If
@@ -647,6 +679,68 @@ Public Class ContextMenu
                         grid.Children.Remove(textBox)
                 End Select
             End Sub
+    End Sub
+
+    Public Property Folder As Folder
+        Get
+            Return GetValue(FolderProperty)
+        End Get
+        Set(value As Folder)
+            SetValue(FolderProperty, value)
+        End Set
+    End Property
+
+    Public Property SelectedItems As IEnumerable(Of Item)
+        Get
+            Return GetValue(SelectedItemsProperty)
+        End Get
+        Set(value As IEnumerable(Of Item))
+            SetValue(SelectedItemsProperty, value)
+        End Set
+    End Property
+
+    Public Property IsDefaultOnly As Boolean
+        Get
+            Return GetValue(IsDefaultOnlyProperty)
+        End Get
+        Set(value As Boolean)
+            SetValue(IsDefaultOnlyProperty, value)
+        End Set
+    End Property
+
+    Public Property ItemContextMenu As Laila.Shell.Controls.ContextMenu
+        Get
+            Return GetValue(ItemContextMenuProperty)
+        End Get
+        Set(value As Laila.Shell.Controls.ContextMenu)
+            SetValue(ItemContextMenuProperty, value)
+        End Set
+    End Property
+
+    Public Property NewItemMenu As Laila.Shell.Controls.ContextMenu
+        Get
+            Return GetValue(NewItemMenuProperty)
+        End Get
+        Set(value As Laila.Shell.Controls.ContextMenu)
+            SetValue(NewItemMenuProperty, value)
+        End Set
+    End Property
+
+    Private Sub updateContextMenu()
+        Me.releaseContextMenu()
+
+        Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
+        Me.NewItemMenu = getNewItemMenu(Me.ContextMenu)
+    End Sub
+
+    Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Dim icm As Menus = TryCast(d, Menus)
+        icm.updateContextMenu()
+    End Sub
+
+    Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Dim icm As Menus = TryCast(d, Menus)
+        icm.updateContextMenu()
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)

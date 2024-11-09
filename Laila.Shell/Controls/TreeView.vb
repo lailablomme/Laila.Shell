@@ -27,7 +27,7 @@ Namespace Controls
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
-        Private _menu As Laila.Shell.ContextMenu
+        Private _menu As Laila.Shell.Menus
         Private _fequentUpdateTimer As Timer
         Private disposedValue As Boolean
 
@@ -423,7 +423,11 @@ Namespace Controls
 
                             Dim parent As Folder = clickedItem.GetParent()
 
-                            _menu = New Laila.Shell.ContextMenu()
+                            _menu = New Laila.Shell.Menus() With {
+                                .IsDefaultOnly = False,
+                                .Folder = If(parent Is Nothing, Shell.Desktop, parent),
+                                .SelectedItems = {clickedItem}
+                            }
                             AddHandler _menu.CommandInvoked,
                                 Sub(s As Object, e2 As CommandInvokedEventArgs)
                                     Select Case e2.Verb
@@ -450,8 +454,7 @@ Namespace Controls
                                     End Select
                                 End Sub
 
-                            Dim contextMenu As Controls.ContextMenu = _menu.GetContextMenu(If(parent Is Nothing, Shell.Desktop, parent), {clickedItem}, False)
-                            PART_ListBox.ContextMenu = contextMenu
+                            PART_ListBox.ContextMenu = _menu.ItemContextMenu
                             e.Handled = True
 
                             If Not parent Is Nothing Then parent.Dispose()
@@ -465,8 +468,7 @@ Namespace Controls
                                 e.Handled = True
                             Else
                                 Using parent = clickedItem.GetParent()
-                                    _menu = New Laila.Shell.ContextMenu()
-                                    _menu.GetContextMenu(parent, {clickedItem}, False)
+                                    _menu = New Laila.Shell.Menus() With {.IsDefaultOnly = True, .Folder = parent, .SelectedItems = {clickedItem}}
                                     _menu.InvokeCommand(_menu.DefaultId)
                                 End Using
                             End If
