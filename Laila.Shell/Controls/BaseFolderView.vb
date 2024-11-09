@@ -23,6 +23,7 @@ Namespace Controls
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
 
         Friend PART_ListView As System.Windows.Controls.ListView
         Private PART_Grid As Grid
@@ -63,19 +64,23 @@ Namespace Controls
                         Me.PART_StackPanel.Visibility = Visibility.Hidden
 
                         _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
-                        _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
+                        _selectionHelper.SelectionChanged =
+                            Sub()
+                                Me.SelectedItems = _selectionHelper.SelectedItems
+                            End Sub
 
+                        _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
                         AddHandler _scrollViewer.ScrollChanged,
-                        Sub(s2 As Object, e2 As ScrollChangedEventArgs)
-                            If Not Me.Folder Is Nothing Then
-                                _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
-                                _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
-                            End If
-                            UIHelper.OnUIThreadAsync(
+                            Sub(s2 As Object, e2 As ScrollChangedEventArgs)
+                                If Not Me.Folder Is Nothing Then
+                                    _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
+                                    _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
+                                End If
+                                UIHelper.OnUIThreadAsync(
                                 Sub()
                                     GC.Collect()
                                 End Sub)
-                        End Sub
+                            End Sub
                     End If
                 End Sub
 
@@ -291,7 +296,8 @@ Namespace Controls
                         _menu.InvokeCommand(_menu.DefaultId)
                     End If
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
-                    If Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.Contains(clickedItem) _
+                    If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
+                            AndAlso Me.SelectedItems.Contains(clickedItem) _
                             AndAlso Keyboard.Modifiers = ModifierKeys.None Then
                         e.Handled = True
                     End If
@@ -299,11 +305,11 @@ Namespace Controls
                         UIHelper.GetParentOfType(Of Primitives.ScrollBar)(e.OriginalSource) Is Nothing AndAlso
                         UIHelper.GetParentOfType(Of GridViewHeaderRowPresenter)(e.OriginalSource) Is Nothing Then
 
-                    If (Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem)) _
+                    If (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 OrElse Not Me.SelectedItems.Contains(clickedItem)) _
                             AndAlso Not clickedItem Is Nothing Then
-                        Me.SetSelectedItem(clickedItem)
+                        Me.SelectedItems = {clickedItem}
                     ElseIf clickedItem Is Nothing Then
-                        Me.SetSelectedItem(Nothing)
+                        Me.SelectedItems = Nothing
                     End If
 
                     _menu = New Laila.Shell.ContextMenu()
@@ -340,7 +346,7 @@ Namespace Controls
                     e.Handled = True
                 ElseIf clickedItem Is Nothing AndAlso
                         UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
-                    Me.SetSelectedItem(Nothing)
+                    Me.SelectedItems = Nothing
                 End If
             Else
                 _mouseItemDown = Nothing
@@ -358,21 +364,14 @@ Namespace Controls
             _mouseItemDown = Nothing
         End Sub
 
-        Public Overridable ReadOnly Property SelectedItems As IEnumerable(Of Item)
+        Public Overridable Property SelectedItems As IEnumerable(Of Item)
             Get
-                If Not _selectionHelper Is Nothing Then
-                    Return _selectionHelper.SelectedItems
-                Else
-                    Return {}
-                End If
+                Return GetValue(SelectedItemsProperty)
             End Get
+            Set(value As IEnumerable(Of Item))
+                SetCurrentValue(SelectedItemsProperty, value)
+            End Set
         End Property
-
-        Public Sub SetSelectedItems(value As IEnumerable(Of Item))
-            If Not _selectionHelper Is Nothing Then
-                _selectionHelper.SetSelectedItems(value)
-            End If
-        End Sub
 
         Public ReadOnly Property SelectedItem As Item
             Get
@@ -380,14 +379,6 @@ Namespace Controls
                 Return If(Not selectedItems Is Nothing AndAlso selectedItems.Count = 1, selectedItems(0), Nothing)
             End Get
         End Property
-
-        Public Sub SetSelectedItem(value As Item)
-            If value Is Nothing Then
-                Me.SetSelectedItems(New Item() {})
-            Else
-                Me.SetSelectedItems(New Item() {value})
-            End If
-        End Sub
 
         Public Property Host As FolderView
 
@@ -490,6 +481,11 @@ Namespace Controls
             Dim dlv As BaseFolderView = TryCast(d, BaseFolderView)
             dlv.IsLoading = True
             dlv.OnFolderChangedLocal(e.OldValue, e.NewValue)
+        End Sub
+
+        Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim dlv As BaseFolderView = TryCast(d, BaseFolderView)
+            dlv._selectionHelper.SetSelectedItems(e.NewValue)
         End Sub
 
         Private Class ScrollState

@@ -11,6 +11,7 @@ Namespace Controls
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ViewProperty As DependencyProperty = DependencyProperty.Register("View", GetType(String), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnViewChanged))
+        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
@@ -59,6 +60,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Overridable Property SelectedItems As IEnumerable(Of Item)
+            Get
+                Return GetValue(SelectedItemsProperty)
+            End Get
+            Set(value As IEnumerable(Of Item))
+                SetCurrentValue(SelectedItemsProperty, value)
+            End Set
+        End Property
+
         Public Property Folder As Folder
             Get
                 Return GetValue(FolderProperty)
@@ -92,6 +102,7 @@ Namespace Controls
             Dim fv As FolderView = d
             If Not e.OldValue Is Nothing Then
                 BindingOperations.ClearBinding(fv._views(e.OldValue), BaseFolderView.FolderProperty)
+                BindingOperations.ClearBinding(fv._views(e.OldValue), BaseFolderView.SelectedItemsProperty)
             End If
             For Each v In fv._views.Values
                 v.SetValue(Panel.ZIndexProperty, 0)
@@ -109,6 +120,7 @@ Namespace Controls
             fv.ActiveView.SetValue(Panel.ZIndexProperty, 1)
             fv.Folder.LastScrollOffset = New Point()
             BindingOperations.SetBinding(fv.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = fv})
+            BindingOperations.SetBinding(fv.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = fv})
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)

@@ -118,7 +118,7 @@ Namespace Helpers
                 End If
 
                 ' clean
-                Dim selectedItems As IEnumerable(Of TData) = value.Where(Function(v) Not v Is Nothing)
+                Dim selectedItems As IEnumerable(Of TData) = If(value Is Nothing, {}, value.Where(Function(v) Not v Is Nothing))
 
                 ' turn off notifications  
                 _isWorking = True

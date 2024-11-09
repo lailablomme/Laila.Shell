@@ -203,7 +203,7 @@ Public Class ListViewDropTarget
 
                 If Not dropTarget Is Nothing Then
                     Debug.WriteLine("Got dropTarget")
-                    _folderView.ActiveView.SetSelectedItem(overItem)
+                    _folderView.ActiveView.SelectedItems = {overItem}
                     If Not _lastDropTarget Is Nothing Then
                         Debug.WriteLine("      Got _lastDropTarget")
                         _lastDropTarget.DragLeave()
@@ -217,7 +217,7 @@ Public Class ListViewDropTarget
                     End Try
                 Else
                     Debug.WriteLine("No dropTarget")
-                    _folderView.ActiveView.SetSelectedItem(Nothing)
+                    _folderView.ActiveView.SelectedItems = Nothing
                     pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                     If Not _lastDropTarget Is Nothing Then
                         Try
@@ -238,7 +238,7 @@ Public Class ListViewDropTarget
             End If
         Else
             Debug.WriteLine("overItem=Nothing")
-            _folderView.ActiveView.SetSelectedItem(Nothing)
+            _folderView.ActiveView.SelectedItems = Nothing
             _lastOverItem = Nothing
             If Not _lastDropTarget Is Nothing Then
                 Try
