@@ -23,6 +23,12 @@ Namespace Controls
         Public Shared ReadOnly IsDefaultOnlyProperty As DependencyProperty = DependencyProperty.Register("IsDefaultOnly", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoAutoDisposeProperty As DependencyProperty = DependencyProperty.Register("DoAutoDispose", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoAutoUpdateProperty As DependencyProperty = DependencyProperty.Register("DoAutoUpdate", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly CanCutProperty As DependencyProperty = DependencyProperty.Register("CanCut", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly CanCopyProperty As DependencyProperty = DependencyProperty.Register("CanCopy", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly CanPasteProperty As DependencyProperty = DependencyProperty.Register("CanPaste", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly CanRenameProperty As DependencyProperty = DependencyProperty.Register("CanRename", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly CanDeleteProperty As DependencyProperty = DependencyProperty.Register("CanDelete", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly CanShareProperty As DependencyProperty = DependencyProperty.Register("CanShare", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Public Event CommandInvoked(sender As Object, e As CommandInvokedEventArgs)
 
@@ -592,7 +598,7 @@ Namespace Controls
         End Sub
 
         Public Sub InvokeCommand(id As String)
-            Me.InvokeCommand(_contextMenu, id)
+            Me.InvokeCommand(_selectedItemsContextMenu, id)
         End Sub
 
         Public Sub InvokeCommand(contextMenu As IContextMenu, id As String)
@@ -666,7 +672,7 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
+        Public Shared Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
             Dim originalName As String, isDrive As Boolean
 
             Dim doRename As Action(Of String) =
@@ -675,8 +681,8 @@ Namespace Controls
                     ' rename item
                     If isDrive Then
                         Functions.SetVolumeLabelW(item.FullPath, newName)
-                        Shell.RaiseNotificationEvent(Me, New NotificationEventArgs() With {
-                                                             .Item1Path = item.FullPath, .[Event] = SHCNE.UPDATEITEM})
+                        Shell.RaiseNotificationEvent(Nothing, New NotificationEventArgs() With {
+                                                     .Item1Path = item.FullPath, .[Event] = SHCNE.UPDATEITEM})
                     Else
                         Dim fileOperation As IFileOperation
                         Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
@@ -696,18 +702,18 @@ Namespace Controls
             ' make textbox
             Dim textBox As System.Windows.Controls.TextBox
             textBox = New System.Windows.Controls.TextBox() With {
-            .Margin = New Thickness(point.X, point.Y, 0, 0),
-            .HorizontalAlignment = HorizontalAlignment.Left,
-            .VerticalAlignment = VerticalAlignment.Top,
-            .Width = size.Width,
-            .Height = size.Height,
-            .MaxLength = 260,
-            .TextWrapping = TextWrapping.Wrap,
-            .TextAlignment = textAlignment,
-            .UseLayoutRounding = True,
-            .SnapsToDevicePixels = True,
-            .FontSize = fontSize
-        }
+                .Margin = New Thickness(point.X, point.Y, 0, 0),
+                .HorizontalAlignment = HorizontalAlignment.Left,
+                .VerticalAlignment = VerticalAlignment.Top,
+                .Width = size.Width,
+                .Height = size.Height,
+                .MaxLength = 260,
+                .TextWrapping = TextWrapping.Wrap,
+                .TextAlignment = textAlignment,
+                .UseLayoutRounding = True,
+                .SnapsToDevicePixels = True,
+                .FontSize = fontSize
+            }
             textBox.SetValue(Panel.ZIndexProperty, 100)
             If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
                 isDrive = True
@@ -746,6 +752,60 @@ Namespace Controls
                 End Select
             End Sub
         End Sub
+
+        Public Property CanCut As Boolean
+            Get
+                Return GetValue(CanCutProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(CanCutProperty, value)
+            End Set
+        End Property
+
+        Public Property CanCopy As Boolean
+            Get
+                Return GetValue(CanCopyProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(CanCopyProperty, value)
+            End Set
+        End Property
+
+        Public Property CanPaste As Boolean
+            Get
+                Return GetValue(CanPasteProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(CanPasteProperty, value)
+            End Set
+        End Property
+
+        Public Property CanRename As Boolean
+            Get
+                Return GetValue(CanRenameProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(CanRenameProperty, value)
+            End Set
+        End Property
+
+        Public Property CanDelete As Boolean
+            Get
+                Return GetValue(CanDeleteProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(CanDeleteProperty, value)
+            End Set
+        End Property
+
+        Public Property CanShare As Boolean
+            Get
+                Return GetValue(CanShareProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(CanShareProperty, value)
+            End Set
+        End Property
 
         Public Property Folder As Folder
             Get
@@ -820,6 +880,7 @@ Namespace Controls
                 Me.NewItemMenu = getNewItemMenu(Me.ItemContextMenu)
                 _newItemContextMenu = _contextMenu
                 _newItemhMenu = _hMenu
+                _selectedItemsContextMenu = _contextMenu
                 _contextMenu = Nothing
                 _hMenu = IntPtr.Zero
 
@@ -854,6 +915,27 @@ Namespace Controls
                     Marshal.ReleaseComObject(_contextMenu3)
                     _contextMenu3 = Nothing
                 End If
+
+                Me.CanCut = Not Me.ItemContextMenu Is Nothing _
+                    AndAlso Me.ItemContextMenu.Buttons.Exists(
+                        Function(b) b.Tag.ToString().Split(vbTab)(1) = "cut")
+                Me.CanCopy = Not Me.ItemContextMenu Is Nothing _
+                    AndAlso Me.ItemContextMenu.Buttons.Exists(
+                        Function(b) b.Tag.ToString().Split(vbTab)(1) = "copy")
+                Me.CanPaste = Not Me.ItemContextMenu Is Nothing _
+                    AndAlso Me.ItemContextMenu.Buttons.Exists(
+                        Function(b) b.Tag.ToString().Split(vbTab)(1) = "paste")
+                Me.CanRename = Not Me.ItemContextMenu Is Nothing _
+                    AndAlso Me.ItemContextMenu.Buttons.Exists(
+                        Function(b) b.Tag.ToString().Split(vbTab)(1) = "rename")
+                Me.CanDelete = Not Me.ItemContextMenu Is Nothing _
+                    AndAlso Me.ItemContextMenu.Buttons.Exists(
+                        Function(b) b.Tag.ToString().Split(vbTab)(1) = "delete")
+                Me.CanShare = Not Me.ItemContextMenu Is Nothing _
+                    AndAlso Not Me.ItemContextMenu.Items.Cast(Of Control).FirstOrDefault(
+                        Function(c) TypeOf c Is MenuItem _
+                            AndAlso Not CType(c, MenuItem).Tag Is Nothing _
+                            AndAlso CType(c, MenuItem).Tag.ToString().Split(vbTab)(1) = "Windows.ModernShare") Is Nothing
             End If
         End Sub
 

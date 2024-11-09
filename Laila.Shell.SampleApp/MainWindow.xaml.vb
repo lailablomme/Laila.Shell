@@ -1,4 +1,6 @@
-﻿Class MainWindow
+﻿Imports System.Windows.Controls.Primitives
+
+Class MainWindow
     Private _model As MainWindowViewModel
 
     Public Sub New()
@@ -34,15 +36,53 @@
         navigation.Folder.RefreshItemsAsync()
     End Sub
 
-    Private Sub newItemMenuButton_Click(sender As Object, e As RoutedEventArgs)
-        Dim button As Button = sender
+    Private Sub NewItemMenuButton_Checked(sender As Object, e As RoutedEventArgs)
+        Dim button As ToggleButton = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
         If Not menus.NewItemMenu Is Nothing Then
+            AddHandler menus.NewItemMenu.Closed,
+                Sub(s2 As Object, e2 As EventArgs)
+                    button.IsChecked = False
+                End Sub
             menus.NewItemMenu.Placement = Primitives.PlacementMode.Bottom
             menus.NewItemMenu.PlacementTarget = button
             menus.NewItemMenu.IsOpen = True
-        Else
-            MsgBox("no new items")
         End If
+    End Sub
+
+    Private Sub CutButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim menus As Laila.Shell.Controls.Menus = button.Tag
+        menus.InvokeCommand("-1" & vbTab & "cut")
+    End Sub
+
+    Private Sub CopyButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim menus As Laila.Shell.Controls.Menus = button.Tag
+        menus.InvokeCommand("-1" & vbTab & "copy")
+    End Sub
+
+    Private Sub PasteButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim menus As Laila.Shell.Controls.Menus = button.Tag
+        menus.InvokeCommand("-1" & vbTab & "paste")
+    End Sub
+
+    Private Sub RenameButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim folderView As Laila.Shell.Controls.FolderView = button.Tag
+        folderView.DoRename()
+    End Sub
+
+    Private Sub ShareButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim menus As Laila.Shell.Controls.Menus = button.Tag
+        menus.InvokeCommand("-1" & vbTab & "Windows.ModernShare")
+    End Sub
+
+    Private Sub DeleteButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim menus As Laila.Shell.Controls.Menus = button.Tag
+        menus.InvokeCommand("-1" & vbTab & "delete")
     End Sub
 End Class

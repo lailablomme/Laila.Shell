@@ -68,6 +68,7 @@ Namespace Controls
                             Sub()
                                 Me.SelectedItems = _selectionHelper.SelectedItems
                             End Sub
+                        _selectionHelper.SetSelectedItems(Me.SelectedItems)
 
                         _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
                         AddHandler _scrollViewer.ScrollChanged,
@@ -339,9 +340,7 @@ Namespace Controls
                                             e2.IsHandled = True
                                         End If
                                     Case "rename"
-                                        Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
-                                        Me.GetItemNameCoordinates(listViewItem, textAlignment, point, size, fontSize)
-                                        _menu.DoRename(point, size, textAlignment, fontSize, clickedItem, Me.PART_Grid)
+                                        Me.DoRename()
                                         e2.IsHandled = True
                                     Case "laila.shell.(un)pin"
                                         If e2.IsChecked Then
@@ -367,6 +366,17 @@ Namespace Controls
 
         Protected MustOverride Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
                                                           ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
+
+        Public Sub DoRename()
+            Dim listViewItem As ListViewItem = Me.PART_ListView.ItemContainerGenerator.ContainerFromItem(Me.SelectedItem)
+            DoRename(listViewItem)
+        End Sub
+
+        Public Sub DoRename(listViewItem As ListViewItem)
+            Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
+            Me.GetItemNameCoordinates(listViewItem, textAlignment, point, size, fontSize)
+            Menus.DoRename(point, size, textAlignment, fontSize, listViewItem.DataContext, Me.PART_Grid)
+        End Sub
 
         Public Sub OnListViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
             _mouseItemDown = Nothing
@@ -497,7 +507,9 @@ Namespace Controls
 
         Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim dlv As BaseFolderView = TryCast(d, BaseFolderView)
-            dlv._selectionHelper.SetSelectedItems(e.NewValue)
+            If Not dlv._selectionHelper Is Nothing Then
+                dlv._selectionHelper.SetSelectedItems(e.NewValue)
+            End If
         End Sub
 
         Private Class ScrollState

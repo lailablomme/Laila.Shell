@@ -51,6 +51,10 @@ Namespace Controls
             End If
         End Sub
 
+        Public Sub DoRename()
+            Me.ActiveView.DoRename()
+        End Sub
+
         Public Property ActiveView As BaseFolderView
             Get
                 Return _activeView
