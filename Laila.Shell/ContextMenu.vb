@@ -21,7 +21,7 @@ Public Class ContextMenu
     Private _contextMenu2 As IContextMenu2
     Private _contextMenu3 As IContextMenu3
     Private _hMenu As IntPtr
-    Private _firstContextMenuCall As Boolean = True
+    Private Shared _firstContextMenuCall As Boolean = True
     Private _menu As Controls.ContextMenu
     Private _parent As Folder
     Private _invokedId As String = Nothing
@@ -248,12 +248,15 @@ Public Class ContextMenu
 
         Dim pidls(If(items Is Nothing OrElse items.Count = 0, 0, items.Count - 1)) As IntPtr
         Dim lastpidls(If(items Is Nothing OrElse items.Count = 0, 0, items.Count - 1)) As IntPtr
+        Dim flags As Integer = CMF.CMF_NORMAL
 
         Try
             Dim shellFolder As IShellFolder
             Try
                 If Not items Is Nothing AndAlso items.Count > 0 Then
                     ' user clicked on an item
+                    flags = flags Or CMF.CMF_ITEMMENU
+
                     If Not (_parent.FullPath = Shell.Desktop.FullPath AndAlso items.Count = 1 _
                 AndAlso items(0).FullPath = Shell.Desktop.FullPath) Then
                         shellFolder = _parent.ShellFolder
@@ -343,21 +346,6 @@ Public Class ContextMenu
                 End Try
             End If
 
-            If Not _contextMenu Is Nothing Then
-                _hMenu = Functions.CreatePopupMenu()
-                Dim flags As Integer = CMF.CMF_NORMAL Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
-                If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
-                _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-
-                If _firstContextMenuCall Then
-                    ' somehow very first call doesn't return all items
-                    Functions.DestroyMenu(_hMenu)
-                    _hMenu = Functions.CreatePopupMenu()
-                    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-                    _firstContextMenuCall = False
-                End If
-            End If
-
             If Not IntPtr.Zero.Equals(ptrContextMenu) Then
                 Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
                 Try
@@ -378,6 +366,25 @@ Public Class ContextMenu
                         Marshal.ReleaseComObject(dataObject)
                     End If
                 End Try
+            End If
+
+            If Not _contextMenu Is Nothing Then
+                _hMenu = Functions.CreatePopupMenu()
+                flags = flags Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
+                If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
+                If _firstContextMenuCall Then
+                    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags Or CMF.CMF_VERBSONLY)
+                Else
+                    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
+                End If
+
+                If _firstContextMenuCall Then
+                    ' somehow very first call doesn't return all items
+                    Functions.DestroyMenu(_hMenu)
+                    _hMenu = Functions.CreatePopupMenu()
+                    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
+                    _firstContextMenuCall = False
+                End If
             End If
         Finally
             If Not IntPtr.Zero.Equals(ptrContextMenu) Then
@@ -553,9 +560,11 @@ Public Class ContextMenu
         End If
         If Not _contextMenu2 Is Nothing Then
             Marshal.ReleaseComObject(_contextMenu2)
+            _contextMenu2 = Nothing
         End If
         If Not _contextMenu3 Is Nothing Then
             Marshal.ReleaseComObject(_contextMenu3)
+            _contextMenu3 = Nothing
         End If
     End Sub
 

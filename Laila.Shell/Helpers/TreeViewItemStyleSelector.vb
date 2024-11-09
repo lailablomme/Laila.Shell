@@ -14,8 +14,10 @@ Namespace Helpers
                 Return Me.TreeViewSeparatorItemStyle
             ElseIf TypeOf item Is PinnedAndFrequentPlaceholderFolder Then
                 Return Me.TreeViewPlaceholderItemStyle
-            Else
+            ElseIf TypeOf item Is Folder Or TypeOf item Is Item Then
                 Return Me.TreeViewItemStyle
+            Else
+                Return Nothing
             End If
         End Function
     End Class
