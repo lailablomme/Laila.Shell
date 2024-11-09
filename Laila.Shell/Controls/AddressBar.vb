@@ -40,7 +40,7 @@ Namespace Controls
 
             AddHandler Me.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)
-                    Me.ShowNavigationButtons(Me.Folder)
+                    Me.ShowNavigationButtons(Me.Folder, False)
                 End Sub
             AddHandler Me.PART_ClickToEdit.MouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
@@ -83,7 +83,7 @@ Namespace Controls
                     System.Media.SystemSounds.Asterisk.Play()
                     Me.Cancel()
                     Me.IsLoading = True
-                    Me.ShowNavigationButtons(Me.Folder)
+                    Me.ShowNavigationButtons(Me.Folder, False)
                 End If
             ElseIf Not Me.SelectedItem Is Nothing Then
                 Dim doShow As Boolean = Me.SelectedItem.Equals(Me.Folder)
@@ -91,7 +91,7 @@ Namespace Controls
                 Me.Folder = Me.SelectedItem
                 If doShow Then
                     Me.IsLoading = True
-                    Me.ShowNavigationButtons(Me.Folder)
+                    Me.ShowNavigationButtons(Me.Folder, False)
                 End If
             Else
                 Me.Cancel()
@@ -103,7 +103,7 @@ Namespace Controls
 
             Me.PART_TextBox.IsEnabled = False
             Me.IsLoading = True
-            Me.ShowNavigationButtons(Me.Folder)
+            Me.ShowNavigationButtons(Me.Folder, False)
 
             clearSuggestionItems()
         End Sub
@@ -127,13 +127,13 @@ Namespace Controls
             Me.Cancel()
         End Sub
 
-        Public Async Function ShowNavigationButtons(folder As Folder) As Task
-            Await Task.Delay(150)
+        Public Async Function ShowNavigationButtons(folder As Folder, isWithDelay As Boolean) As Task
+            If isWithDelay Then Await Task.Delay(150)
 
-            _lock.WaitAsync()
+            Await _lock.WaitAsync()
             Try
                 For Each f In _visibleFolders
-                    f.IsVisibleInAddressBar = False
+                    If Not f.Equals(folder) Then f.IsVisibleInAddressBar = False
                 Next
                 _visibleFolders.Clear()
 
@@ -323,7 +323,7 @@ Namespace Controls
             Dim ab As AddressBar = TryCast(d, AddressBar)
             ab.SelectedItem = e.NewValue
             ab.IsLoading = True
-            ab.ShowNavigationButtons(e.NewValue)
+            ab.ShowNavigationButtons(e.NewValue, True)
         End Sub
 
         Public Property IsLoading As Boolean
