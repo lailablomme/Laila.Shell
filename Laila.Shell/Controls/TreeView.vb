@@ -27,7 +27,7 @@ Namespace Controls
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
-        Private _menu As Laila.Shell.Menus
+        Private _menu As Laila.Shell.Controls.Menus
         Private _fequentUpdateTimer As Timer
         Private disposedValue As Boolean
 
@@ -423,11 +423,14 @@ Namespace Controls
 
                             Dim parent As Folder = clickedItem.GetParent()
 
-                            _menu = New Laila.Shell.Menus() With {
+                            _menu = New Laila.Shell.Controls.Menus() With {
+                                .DoAutoUpdate = False,
                                 .IsDefaultOnly = False,
                                 .Folder = If(parent Is Nothing, Shell.Desktop, parent),
-                                .SelectedItems = {clickedItem}
+                                .SelectedItems = {clickedItem},
+                                .DoAutoDispose = True
                             }
+                            _menu.Update()
                             AddHandler _menu.CommandInvoked,
                                 Sub(s As Object, e2 As CommandInvokedEventArgs)
                                     Select Case e2.Verb
@@ -468,8 +471,15 @@ Namespace Controls
                                 e.Handled = True
                             Else
                                 Using parent = clickedItem.GetParent()
-                                    _menu = New Laila.Shell.Menus() With {.IsDefaultOnly = True, .Folder = parent, .SelectedItems = {clickedItem}}
-                                    _menu.InvokeCommand(_menu.DefaultId)
+                                    Dim menu As Menus = New Menus() With {
+                                        .DoAutoUpdate = False,
+                                        .IsDefaultOnly = True,
+                                        .Folder = parent,
+                                        .SelectedItems = {clickedItem},
+                                        .DoAutoDispose = True
+                                    }
+                                    menu.Update()
+                                    menu.InvokeCommand(_menu.DefaultId)
                                 End Using
                             End If
                         End If

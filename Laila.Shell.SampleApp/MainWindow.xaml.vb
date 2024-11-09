@@ -33,4 +33,16 @@
         Dim navigation As Laila.Shell.Controls.Navigation = button.Tag
         navigation.Folder.RefreshItemsAsync()
     End Sub
+
+    Private Sub newItemMenuButton_Click(sender As Object, e As RoutedEventArgs)
+        Dim button As Button = sender
+        Dim menus As Laila.Shell.Controls.Menus = button.Tag
+        If Not menus.NewItemMenu Is Nothing Then
+            menus.NewItemMenu.Placement = Primitives.PlacementMode.Bottom
+            menus.NewItemMenu.PlacementTarget = button
+            menus.NewItemMenu.IsOpen = True
+        Else
+            MsgBox("no new items")
+        End If
+    End Sub
 End Class

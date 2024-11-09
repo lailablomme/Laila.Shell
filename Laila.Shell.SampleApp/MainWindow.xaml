@@ -34,6 +34,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
@@ -111,10 +112,15 @@
                         </StackPanel>
                         <controls:AddressBar Grid.Column="1" Folder="{Binding Folder, Mode=TwoWay}" />
                     </Grid>
-                    <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" />
-                    <controls:TreeView Grid.Row="2" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
-                    <GridSplitter Grid.Row="2" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-                    <controls:FolderView Grid.Row="2" Grid.Column="2" x:Name="folderView" View="Details" Folder="{Binding Folder, Mode=TwoWay}" />
+                    <controls:Menus x:Name="menus" Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}" />
+                    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3">
+                        <Button x:Name="newItemMenuButton" Tag="{Binding ., ElementName=menus}" 
+                                Click="newItemMenuButton_Click" HorizontalAlignment="Left">New</Button>
+                    </Grid>
+                    <Separator Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" />
+                    <controls:TreeView Grid.Row="3" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
+                    <GridSplitter Grid.Row="3" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                    <controls:FolderView Grid.Row="3" Grid.Column="2" x:Name="folderView" View="Details" Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}" />
                 </Grid>
             </DataTemplate>
         </controls:TabControl.ContentTemplate>

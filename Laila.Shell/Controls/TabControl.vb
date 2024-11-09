@@ -301,7 +301,28 @@ Namespace Controls
         End Sub
 
         Public Class TabData
-            Public Property Folder As Folder = Shell.SpecialFolders("This computer").Clone()
+            Inherits NotifyPropertyChangedBase
+
+            Private _folder As Folder = Shell.SpecialFolders("This computer").Clone()
+            Private _selectedItems As IEnumerable(Of Item)
+
+            Public Property Folder As Folder
+                Get
+                    Return _folder
+                End Get
+                Set(value As Folder)
+                    SetValue(_folder, value)
+                End Set
+            End Property
+
+            Public Property SelectedItems As IEnumerable(Of Item)
+                Get
+                    Return _selectedItems
+                End Get
+                Set(value As IEnumerable(Of Item))
+                    SetValue(_selectedItems, value)
+                End Set
+            End Property
         End Class
     End Class
 End Namespace

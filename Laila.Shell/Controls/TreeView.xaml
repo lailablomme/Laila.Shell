@@ -28,9 +28,9 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Grid Height="22">
+                    <Grid Height="20">
                         <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
-                                Background="{TemplateBinding Background}" Padding="4,1,4,1" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                               SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
@@ -75,7 +75,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Grid Height="22">
+                    <Grid Height="20">
                         <Separator Width="{Binding ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}}">
                         </Separator>
                     </Grid>

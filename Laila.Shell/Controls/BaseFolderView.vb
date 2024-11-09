@@ -34,7 +34,7 @@ Namespace Controls
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
-        Private _menu As Laila.Shell.Menus
+        Private _menu As Laila.Shell.Controls.Menus
         Private _timeSpentTimer As Timer
         Private _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
@@ -291,8 +291,15 @@ Namespace Controls
                         CType(clickedItem, Folder).LastScrollOffset = New Point()
                         Me.Folder = clickedItem
                     Else
-                        _menu = New Laila.Shell.Menus() With {.IsDefaultOnly = True, .Folder = Me.Folder, .SelectedItems = Me.SelectedItems}
-                        _menu.InvokeCommand(_menu.DefaultId)
+                        Dim menu As Menus = New Menus() With {
+                            .DoAutoUpdate = False,
+                            .IsDefaultOnly = True,
+                            .Folder = Me.Folder,
+                            .SelectedItems = Me.SelectedItems,
+                            .DoAutoDispose = True
+                        }
+                        menu.Update()
+                        menu.InvokeCommand(_menu.DefaultId)
                     End If
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                     If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
@@ -311,7 +318,14 @@ Namespace Controls
                         Me.SelectedItems = Nothing
                     End If
 
-                    _menu = New Laila.Shell.Menus() With {.IsDefaultOnly = False, .Folder = Me.Folder, .SelectedItems = Me.SelectedItems}
+                    _menu = New Laila.Shell.Controls.Menus() With {
+                        .DoAutoUpdate = False,
+                        .IsDefaultOnly = False,
+                        .Folder = Me.Folder,
+                        .SelectedItems = Me.SelectedItems,
+                        .DoAutoDispose = True
+                    }
+                    _menu.Update()
                     AddHandler _menu.CommandInvoked,
                         Sub(s As Object, e2 As CommandInvokedEventArgs)
                             If e2.Verb.StartsWith("laila.shell.view.") Then
