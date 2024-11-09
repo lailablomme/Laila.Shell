@@ -38,7 +38,6 @@ Namespace Controls
         Private _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
         Private _lastScrollSize As Size
-        Private _doForceScrollOffset As Boolean
         Private _isLoaded As Boolean
 
         Shared Sub New()
@@ -50,7 +49,6 @@ Namespace Controls
 
             Me.PART_ListView = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
-            Me.PART_StackPanel = Template.FindName("PART_StackPanel", Me)
 
             Dim listViewItemStyle As Style = New Style()
             listViewItemStyle.TargetType = GetType(ListViewItem)
@@ -67,24 +65,22 @@ Namespace Controls
                     If Not _isLoaded Then
                         _isLoaded = True
 
+                        Me.PART_StackPanel = UIHelper.FindVisualChildren(Of Panel)(Me.PART_ListView).FirstOrDefault(Function(c) c.Name = "PART_StackPanel")
+                        Me.PART_StackPanel.Visibility = Visibility.Hidden
+
                         _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
                         _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
 
                         AddHandler _scrollViewer.ScrollChanged,
                         Sub(s2 As Object, e2 As ScrollChangedEventArgs)
-                            If Not _doForceScrollOffset Then
-                                If Not Me.Folder Is Nothing Then
-                                    _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
-                                    _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
-                                End If
-                                UIHelper.OnUIThreadAsync(
-                                    Sub()
-                                        GC.Collect()
-                                    End Sub)
-                            Else
-                                _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, _lastScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
-                                _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
+                            If Not Me.Folder Is Nothing Then
+                                _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
+                                _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
                             End If
+                            UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    GC.Collect()
+                                End Sub)
                         End Sub
                     End If
                 End Sub
@@ -451,18 +447,17 @@ Namespace Controls
                                 FrequentFolders.RecordTimeSpent(Me.Folder, 2)
                             End Sub)
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
-                _lastScrollOffset = newValue.LastScrollOffset
-                _lastScrollSize = newValue.LastScrollSize
-                _doForceScrollOffset = True
                 ClearBinding()
                 Await newValue.GetItemsAsync()
                 Me.MakeBinding()
                 AddHandler newValue.PropertyChanged, AddressOf folder_PropertyChanged
                 UIHelper.OnUIThreadAsync(
-                    Sub()
+                    Async Sub()
+                        Await Task.Delay(5)
+                        _lastScrollOffset = newValue.LastScrollOffset
+                        _lastScrollSize = newValue.LastScrollSize
                         _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, _lastScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
                         _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
-                        _doForceScrollOffset = False
                         If Not Me.PART_StackPanel Is Nothing Then
                             Me.PART_StackPanel.Visibility = Visibility.Visible
                         End If
@@ -477,7 +472,7 @@ Namespace Controls
                 BindingOperations.ClearBinding(Me.PART_ListView, System.Windows.Controls.ListView.ItemsSourceProperty)
             End If
             If Not Me.PART_StackPanel Is Nothing Then
-                Me.PART_StackPanel.Visibility = Visibility.Collapsed
+                Me.PART_StackPanel.Visibility = Visibility.Hidden
             End If
         End Sub
 
