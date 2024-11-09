@@ -50,12 +50,6 @@ Namespace Controls
             Me.PART_ListView = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
 
-            Dim listViewItemStyle As Style = New Style()
-            listViewItemStyle.TargetType = GetType(ListViewItem)
-            listViewItemStyle.BasedOn = PART_ListView.TryFindResource(GetType(ListViewItem))
-            listViewItemStyle.Setters.Add(New Setter(ListViewItem.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch))
-            PART_ListView.Resources.Add(GetType(ListViewItem), listViewItemStyle)
-
             If Not Me.Folder Is Nothing Then
                 Me.MakeBinding()
             End If
