@@ -741,7 +741,6 @@ Namespace Behaviors
                         End If
 
                         activeCol.Column.Width = width
-                        hcs.FirstOrDefault(Function(hc1) Not hc1.Column Is Nothing AndAlso hc1.Column.Equals(activeCol.Column)).Width = width
                     Next
                 End If
                 _dontWrite = False
