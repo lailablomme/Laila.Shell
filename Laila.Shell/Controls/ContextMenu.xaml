@@ -9,7 +9,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type controls:ContextMenu}">
-                    <Border Padding="3" x:Name="PART_Menu" Opacity="0" BorderBrush="#999999" BorderThickness="1" Background="#F0F0F0">
+                    <Border Padding="3" x:Name="PART_Menu" Opacity="0" BorderBrush="#999999" BorderThickness="1" 
+                            Background="#F0F0F0" Margin="0,0,6,6" UseLayoutRounding="True" SnapsToDevicePixels="True">
                         <Border.Triggers>
                             <EventTrigger RoutedEvent="Rectangle.Loaded">
                                 <BeginStoryboard>
@@ -19,6 +20,9 @@
                                 </BeginStoryboard>
                             </EventTrigger>
                         </Border.Triggers>
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="3" Color="Black" ShadowDepth="3" Opacity="0.5" />
+                        </Border.Effect>
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -26,15 +30,12 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <Border Grid.Row="1" HorizontalAlignment="Left" BorderBrush="#A0A0A0" BorderThickness="0,0,1,0" Width="28"
-                                    UseLayoutRounding="True" SnapsToDevicePixels="True" />
-
                             <Border x:Name="borderTop" Grid.Row="0" Background="#dfdfdf" Padding="2" Visibility="Visible">
                                 <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsTop" />
                             </Border>
                             <ScrollViewer Grid.Row="1" x:Name="PART_ScrollViewer"
                                           HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
-                                <ItemsPresenter Grid.Row="1" Margin="{TemplateBinding Padding}" x:Name="PART_ItemsPresenter" />
+                                <ItemsPresenter Margin="0,0,0,1" x:Name="PART_ItemsPresenter" />
                             </ScrollViewer>
                             <Border x:Name="borderBottom" Grid.Row="2" Background="#dfdfdf" Padding="2" Visibility="Visible">
                                 <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsBottom" />

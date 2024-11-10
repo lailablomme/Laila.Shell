@@ -169,6 +169,7 @@
     <None Remove="Images\arrow_left16.png" />
     <None Remove="Images\arrow_right16.png" />
     <None Remove="Images\arrow_up16.png" />
+    <None Remove="Images\check16.png" />
     <None Remove="Images\chevron16.png" />
     <None Remove="Images\copy16.png" />
     <None Remove="Images\cut16.png" />
@@ -220,6 +221,7 @@
     <Resource Include="Images\arrow_left16.png" />
     <Resource Include="Images\arrow_right16.png" />
     <Resource Include="Images\arrow_up16.png" />
+    <Resource Include="Images\check16.png" />
     <Resource Include="Images\chevron16.png" />
     <Resource Include="Images\copy16.png" />
     <Resource Include="Images\cut16.png" />
