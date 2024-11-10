@@ -1035,10 +1035,36 @@ Namespace Controls
                         moreMenuItem.Items.Add(menuItem)
                     Next
                 End If
+                sortMenu.Items.Add(New Separator())
+                Dim sortAscendingMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Ascending",
+                    .IsCheckable = True,
+                    .Tag = "SortAscending"
+                }
+                sortMenu.Items.Add(sortAscendingMenuItem)
+                AddHandler sortAscendingMenuItem.Checked,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        If Not _isCheckingSortInternally Then
+                            Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
+                        End If
+                    End Sub
+                Dim sortDescendingMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Descending",
+                    .IsCheckable = True,
+                    .Tag = "SortDescending"
+                }
+                sortMenu.Items.Add(sortDescendingMenuItem)
+                AddHandler sortDescendingMenuItem.Checked,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        If Not _isCheckingSortInternally Then
+                            Me.Folder.ItemsSortDirection = ListSortDirection.Descending
+                        End If
+                    End Sub
 
                 Me.SortMenu = sortMenu
                 initializeSortMenu()
             End If
+
             If Not Me.SelectedItems Is Nothing _
                 OrElse Not EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(_lastItems, Me.SelectedItems) Then
                 releaseContextMenu()
@@ -1104,15 +1130,21 @@ Namespace Controls
                     End If
                     Dim moreMenuItem As MenuItem = Nothing
                     For Each item In Me.SortMenu.Items
-                        If CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
-                            CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & pKey
-                        ElseIf CType(item, MenuItem).Tag.ToString() = "SortMore" Then
-                            moreMenuItem = item
+                        If TypeOf item Is MenuItem Then
+                            If CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
+                                CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & pKey
+                            ElseIf CType(item, MenuItem).Tag.ToString() = "SortMore" Then
+                                moreMenuItem = item
+                            ElseIf CType(item, MenuItem).Tag.ToString() = "SortAscending" Then
+                                CType(item, MenuItem).IsChecked = Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
+                            ElseIf CType(item, MenuItem).Tag.ToString() = "SortDescending" Then
+                                CType(item, MenuItem).IsChecked = Me.Folder.ItemsSortDirection = ListSortDirection.Descending
+                            End If
                         End If
                     Next
                     If Not moreMenuItem Is Nothing Then
                         For Each item In moreMenuItem.Items
-                            If CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
+                            If TypeOf item Is MenuItem AndAlso CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
                                 CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & pKey
                             End If
                         Next
@@ -1124,7 +1156,7 @@ Namespace Controls
 
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
-                Case "ItemsSortPropertyName"
+                Case "ItemsSortPropertyName", "ItemsSortDirection"
                     initializeSortMenu()
             End Select
         End Sub

@@ -512,7 +512,7 @@ Public Class Folder
             Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
             Dim desc As SortDescription = New SortDescription() With {
                 .PropertyName = value,
-                .Direction = ListSortDirection.Ascending
+                .Direction = Me.ItemsSortDirection
             }
             If view.SortDescriptions.Count = 0 Then
                 view.SortDescriptions.Add(desc)
@@ -520,6 +520,30 @@ Public Class Folder
                 view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
             End If
             Me.NotifyOfPropertyChange("ItemsSortPropertyName")
+        End Set
+    End Property
+
+    Public Property ItemsSortDirection As ListSortDirection
+        Get
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            If view.SortDescriptions.Count > 0 Then
+                Return view.SortDescriptions(view.SortDescriptions.Count - 1).Direction
+            Else
+                Return ListSortDirection.Ascending
+            End If
+        End Get
+        Set(value As ListSortDirection)
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            Dim desc As SortDescription = New SortDescription() With {
+                .PropertyName = Me.ItemsSortPropertyName,
+                .Direction = value
+            }
+            If view.SortDescriptions.Count = 0 Then
+                view.SortDescriptions.Add(desc)
+            Else
+                view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
+            End If
+            Me.NotifyOfPropertyChange("ItemsSortDirection")
         End Set
     End Property
 

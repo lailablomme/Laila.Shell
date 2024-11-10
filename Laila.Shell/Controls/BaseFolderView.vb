@@ -510,7 +510,7 @@ Namespace Controls
                         Sub()
                             Me.IsLoading = CType(s, Folder).IsRefreshingItems
                         End Sub)
-                Case "ItemsSortPropertyName"
+                Case "ItemsSortPropertyName", "ItemsSortDirection"
                     If Not Me.PART_Ext Is Nothing Then
                         Me.PART_Ext.UpdateSortGlyphs()
                     End If
@@ -519,6 +519,7 @@ Namespace Controls
                         folderViewState = New FolderViewState()
                     End If
                     folderViewState.SortPropertyName = Me.Folder.ItemsSortPropertyName
+                    folderViewState.SortDirection = Me.Folder.ItemsSortDirection
                     folderViewState.Persist(Me.Folder.FullPath)
             End Select
         End Sub

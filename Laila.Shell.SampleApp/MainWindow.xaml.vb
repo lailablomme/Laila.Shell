@@ -1,7 +1,11 @@
-﻿Imports System.Windows.Controls.Primitives
+﻿Imports System.IO
+Imports System.Windows.Controls.Primitives
+Imports Laila.MetroWindow.Data
 Imports Laila.Shell.Controls
 
 Class MainWindow
+    Private Const WINDOWPOSITION_FILENAME As String = "Laila.Shell.SampleApp.WindowPosition.dat"
+
     Private _model As MainWindowViewModel
 
     Public Sub New()
@@ -11,6 +15,18 @@ Class MainWindow
         ' Add any initialization after the InitializeComponent() call.
         _model = New MainWindowViewModel(Me)
         Me.DataContext = _model
+    End Sub
+
+    Public Overrides Sub OnLoadPosition()
+        ' load position from disk
+        If File.Exists(Path.Combine(Path.GetTempPath(), WINDOWPOSITION_FILENAME)) Then
+            Me.Position = WindowPositionData.Deserialize(File.ReadAllText(Path.Combine(Path.GetTempPath(), WINDOWPOSITION_FILENAME)))
+        End If
+    End Sub
+
+    Public Overrides Sub OnSavePosition()
+        ' write position to disk
+        IO.File.WriteAllText(Path.Combine(Path.GetTempPath(), WINDOWPOSITION_FILENAME), Me.Position.Serialize())
     End Sub
 
     Private Sub BackButton_Click(sender As Object, e As RoutedEventArgs)

@@ -88,6 +88,7 @@ Namespace Controls
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(CType(e.NewValue, Folder).FullPath)
                 If Not folderViewState Is Nothing Then
                     CType(e.NewValue, Folder).ItemsSortPropertyName = folderViewState.SortPropertyName
+                    CType(e.NewValue, Folder).ItemsSortDirection = folderViewState.SortDirection
                 Else
                     CType(e.NewValue, Folder).ItemsSortPropertyName = "ItemNameDisplaySortValue"
                 End If
