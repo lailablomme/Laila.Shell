@@ -301,7 +301,7 @@ Namespace Controls
                             .DoAutoDispose = True
                         }
                         menu.Update()
-                        menu.InvokeCommand(_menu.DefaultId)
+                        menu.InvokeCommand(menu.DefaultId)
                     End If
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                     If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
