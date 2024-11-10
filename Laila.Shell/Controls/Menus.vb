@@ -899,12 +899,6 @@ Namespace Controls
 
             If Not Me.SelectedItems Is Nothing OrElse Not EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(_lastItems, Me.SelectedItems) Then
                 Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
-
-                _lastItems = Me.SelectedItems
-                didGetMenu = True
-            End If
-
-            If didGetMenu Then
                 _selectedItemsContextMenu = _contextMenu
                 _selectedItemshMenu = _hMenu
                 _contextMenu = Nothing
@@ -919,6 +913,11 @@ Namespace Controls
                     _contextMenu3 = Nothing
                 End If
 
+                _lastItems = Me.SelectedItems
+                didGetMenu = True
+            End If
+
+            If didGetMenu Then
                 Me.CanCut = Not Me.ItemContextMenu Is Nothing _
                     AndAlso Me.ItemContextMenu.Buttons.Exists(
                         Function(b) b.Tag.ToString().Split(vbTab)(1) = "cut")
