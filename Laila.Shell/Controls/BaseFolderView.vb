@@ -28,6 +28,7 @@ Namespace Controls
         Friend PART_ListView As System.Windows.Controls.ListView
         Private PART_Grid As Grid
         Private PART_StackPanel As Panel
+        Private PART_Ext As Behaviors.GridViewExtBehavior
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
@@ -59,6 +60,14 @@ Namespace Controls
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
                         _isLoaded = True
+
+                        Me.PART_Ext = Microsoft.Xaml.Behaviors.Interaction.GetBehaviors(Me.PART_ListView).FirstOrDefault(Function(b) TypeOf b Is Behaviors.GridViewExtBehavior)
+                        If Not Me.PART_Ext Is Nothing Then
+                            AddHandler Me.PART_Ext.SortChanged,
+                                Sub(s2 As Object, e2 As EventArgs)
+                                    Me.Folder.NotifyOfPropertyChange("ItemsSortPropertyName")
+                                End Sub
+                        End If
 
                         Me.PART_StackPanel = UIHelper.FindVisualChildren(Of Panel)(Me.PART_ListView).FirstOrDefault(Function(c) c.Name = "PART_StackPanel")
                         Me.PART_StackPanel.Visibility = Visibility.Hidden
@@ -104,13 +113,21 @@ Namespace Controls
                 Dim gvc As GridViewColumn = New GridViewColumn()
                 gvc.Header = column.DisplayName
                 gvc.CellTemplate = getCellTemplate(column, [property])
-                gvc.SetValue(Behaviors.GridViewExtBehavior.IsVisibleProperty, CBool(column.State And CM_STATE.VISIBLE))
+                gvc.SetValue(Behaviors.GridViewExtBehavior.IsVisibleProperty, column.IsVisible)
                 gvc.SetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
                 If column.CanonicalName = "System.ItemNameDisplay" Then
                     gvc.SetValue(Behaviors.GridViewExtBehavior.SortPropertyNameProperty, "ItemNameDisplaySortValue")
                     gvc.SetValue(Behaviors.GridViewExtBehavior.CanHideProperty, False)
                 End If
                 gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
+
+                Dim isVisibleDescriptor As DependencyPropertyDescriptor =
+                    DependencyPropertyDescriptor.FromProperty(Behaviors.GridViewExtBehavior.IsVisibleProperty, gvc.GetType())
+                isVisibleDescriptor.AddValueChanged(gvc,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        column.IsVisible = gvc.GetValue(Behaviors.GridViewExtBehavior.IsVisibleProperty)
+                    End Sub)
+
                 d.Items.Add(gvc)
             Next
 
@@ -265,8 +282,8 @@ Namespace Controls
                 _mouseItemOver = overItem
             End If
 
-            If Not _mouseItemDown Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso
-                (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
+            If Not _mouseItemDown Is Nothing AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
+                AndAlso (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(Me)
                 If Math.Abs(currentPointDown.X - _mousePointDown.X) > 10 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 10 Then
                     Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
@@ -493,6 +510,16 @@ Namespace Controls
                         Sub()
                             Me.IsLoading = CType(s, Folder).IsRefreshingItems
                         End Sub)
+                Case "ItemsSortPropertyName"
+                    If Not Me.PART_Ext Is Nothing Then
+                        Me.PART_Ext.UpdateSortGlyphs()
+                    End If
+                    Dim folderViewState As FolderViewState = FolderViewState.FromViewName(Me.Folder.FullPath)
+                    If folderViewState Is Nothing Then
+                        folderViewState = New FolderViewState()
+                    End If
+                    folderViewState.SortPropertyName = Me.Folder.ItemsSortPropertyName
+                    folderViewState.Persist(Me.Folder.FullPath)
             End Select
         End Sub
 

@@ -11,16 +11,6 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(SmallIconsView), New FrameworkPropertyMetadata(GetType(SmallIconsView)))
         End Sub
 
-        Protected Overrides Sub MakeBinding()
-            MyBase.MakeBinding()
-
-            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Folder.Items)
-            view.SortDescriptions.Add(New SortDescription() With {
-                .PropertyName = "ItemNameDisplaySortValue",
-                .Direction = ListSortDirection.Ascending
-            })
-        End Sub
-
         Protected Overrides Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
             point = Me.PointFromScreen(listViewItem.PointToScreen(New Point(0, 0)))

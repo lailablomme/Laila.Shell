@@ -1,4 +1,6 @@
-﻿Imports System.Reflection
+﻿Imports System.ComponentModel
+Imports System.ComponentModel.Design
+Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
@@ -6,6 +8,7 @@ Imports System.Threading.Channels
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
+Imports System.Windows.Data
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
 Imports System.Windows.Media
@@ -23,6 +26,7 @@ Namespace Controls
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged, AddressOf OnSelectedItemsCoerce))
         Public Shared ReadOnly ItemContextMenuProperty As DependencyProperty = DependencyProperty.Register("ItemContextMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly NewItemMenuProperty As DependencyProperty = DependencyProperty.Register("NewItemMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly SortMenuProperty As DependencyProperty = DependencyProperty.Register("SortMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsDefaultOnlyProperty As DependencyProperty = DependencyProperty.Register("IsDefaultOnly", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoAutoDisposeProperty As DependencyProperty = DependencyProperty.Register("DoAutoDispose", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanCutProperty As DependencyProperty = DependencyProperty.Register("CanCut", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -53,6 +57,7 @@ Namespace Controls
         Private _lastItems As IEnumerable(Of Item)
         Private _lastFolder As Folder
         Private _updateTimer As Timer
+        Private _isCheckingSortInternally As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
@@ -227,6 +232,8 @@ Namespace Controls
                     ElseIf Me.DoAutoDispose Then
                         Me.Dispose()
                     Else
+                        _lastFolder = Nothing
+                        _lastItems = Nothing
                         Me.Update()
                     End If
                 End Sub
@@ -293,6 +300,8 @@ Namespace Controls
                             ElseIf Me.DoAutoDispose Then
                                 Me.Dispose()
                             Else
+                                _lastFolder = Nothing
+                                _lastItems = Nothing
                                 Me.Update()
                             End If
                         End Sub
@@ -639,6 +648,8 @@ Namespace Controls
             If Me.DoAutoDispose Then
                 Me.Dispose()
             Else
+                _lastFolder = Nothing
+                _lastItems = Nothing
                 Me.Update()
             End If
         End Sub
@@ -878,6 +889,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property SortMenu As Laila.Shell.Controls.ContextMenu
+            Get
+                Return GetValue(SortMenuProperty)
+            End Get
+            Set(value As Laila.Shell.Controls.ContextMenu)
+                SetValue(SortMenuProperty, value)
+            End Set
+        End Property
+
         Public Sub Update()
             Dim didGetMenu As Boolean
 
@@ -911,9 +931,114 @@ Namespace Controls
                 _lastFolder = Me.Folder
                 didGetMenu = True
 
-                Debug.WriteLine("Full details: " & Me.Folder.PropertiesByKeyAsText("C9944A21-A406-48FE-8225-AEC7E24C211B:2").Text)
-            End If
+                Dim primaryProperties As List(Of String) = New List(Of String)()
+                Dim additionalProperties As List(Of String) = New List(Of String)()
+                Dim descriptions As Dictionary(Of String, String) = New Dictionary(Of String, String)()
 
+                Dim viewState As FolderViewState = FolderViewState.FromViewName(Me.Folder.FullPath)
+                If Not viewState Is Nothing AndAlso Not viewState.Columns Is Nothing AndAlso Not viewState.Columns.Count = 0 Then
+                    For Each viewStateColumn In viewState.Columns.Where(Function(c) c.IsVisible)
+                        Dim pKey As String = viewStateColumn.Name.Substring(viewStateColumn.Name.IndexOf("[") + 1)
+                        pKey = pKey.Substring(0, pKey.IndexOf("]"))
+                        Dim column As Column = Me.Folder.Columns.FirstOrDefault(Function(c) c.PROPERTYKEY.ToString() = pKey)
+                        If Not column Is Nothing Then
+                            primaryProperties.Add(column.PROPERTYKEY.ToString())
+                            descriptions.Add(column.PROPERTYKEY.ToString(), column.DisplayName)
+                        End If
+                    Next
+                Else
+                    For Each column In Me.Folder.Columns.Where(Function(c) c.IsVisible)
+                        primaryProperties.Add(column.PROPERTYKEY.ToString())
+                        descriptions.Add(column.PROPERTYKEY.ToString(), column.DisplayName)
+                    Next
+                End If
+
+                Dim getProperties As Action(Of Item, PROPERTYKEY) =
+                    Sub(item As Item, pKey As PROPERTYKEY)
+                        Dim text As String = item.PropertiesByKey(pKey).Text
+                        If String.IsNullOrWhiteSpace(text) Then text = "prop:System.ItemTypeText;System.Size"
+                        For Each propName In text.Substring(5).Split(";")
+                            propName = propName.TrimStart("*")
+                            Dim prop As [Property] = item.PropertiesByCanonicalName(propName)
+                            If Not prop Is Nothing _
+                                AndAlso Not primaryProperties.Contains(prop.Key.ToString()) _
+                                AndAlso Not additionalProperties.Contains(prop.Key.ToString()) Then
+                                additionalProperties.Add(prop.Key.ToString())
+                                descriptions.Add(prop.Key.ToString(), prop.DescriptionDisplayName)
+                            End If
+                        Next
+                    End Sub
+                Dim PKEY_System_InfoTipText As New PROPERTYKEY() With {
+                    .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
+                    .pid = 4
+                }
+                Dim PKEY_System_PropList_TileInfo As New PROPERTYKEY() With {
+                    .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
+                    .pid = 3
+                }
+                Dim uniqueTypes As List(Of String) = New List(Of String)()
+                For Each item In Me.Folder.GetItems()
+                    Dim itemTypeText As String = item.PropertiesByCanonicalName("System.ItemTypeText").Text
+                    If Not uniqueTypes.Contains(itemTypeText) Then
+                        uniqueTypes.Add(itemTypeText)
+                        getProperties(item, PKEY_System_InfoTipText)
+                        getProperties(item, PKEY_System_PropList_TileInfo)
+                    End If
+                Next
+
+                Dim sortMenu As ContextMenu = New ContextMenu()
+                Dim moreMenuItem As MenuItem
+                Dim PKEY_System_ItemNameDisplay As String = Me.Folder.PropertiesByCanonicalName("System.ItemNameDisplay").Key.ToString()
+                Dim menuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
+                    Sub(s2 As Object, e2 As RoutedEventArgs)
+                        If Not _isCheckingSortInternally Then
+                            If CType(s2, MenuItem).Tag.ToString().Substring(5).IndexOf(":") >= 0 Then
+                                Me.Folder.ItemsSortPropertyName =
+                                    String.Format("PropertiesByKeyAsText[{0}].Value",
+                                                  CType(s2, MenuItem).Tag.ToString().Substring(5))
+                            Else
+                                Me.Folder.ItemsSortPropertyName = CType(s2, MenuItem).Tag.ToString().Substring(5)
+                            End If
+                        End If
+                    End Sub)
+                Dim menuItemUncheckedAction As RoutedEventHandler = New RoutedEventHandler(
+                    Sub(s2 As Object, e2 As RoutedEventArgs)
+                        If Not _isCheckingSortInternally Then
+                            _isCheckingSortInternally = True
+                            CType(s2, MenuItem).IsChecked = True
+                            _isCheckingSortInternally = False
+                        End If
+                    End Sub)
+                For Each propName In primaryProperties
+                    Dim menuItem As MenuItem = New MenuItem() With {
+                        .Header = descriptions(propName),
+                        .IsChecked = False,
+                        .Tag = "Sort:" & If(propName = PKEY_System_ItemNameDisplay, "ItemNameDisplaySortValue", propName),
+                        .IsCheckable = True
+                    }
+                    AddHandler menuItem.Checked, menuItemCheckedAction
+                    AddHandler menuItem.Unchecked, menuItemUncheckedAction
+                    sortMenu.Items.Add(menuItem)
+                Next
+                If additionalProperties.Count > 0 Then
+                    moreMenuItem = New MenuItem() With {.Header = "More", .Tag = "SortMore"}
+                    sortMenu.Items.Add(moreMenuItem)
+                    For Each propName In additionalProperties
+                        Dim menuItem As MenuItem = New MenuItem() With {
+                            .Header = descriptions(propName),
+                            .IsChecked = False,
+                            .Tag = "Sort:" & If(propName = PKEY_System_ItemNameDisplay, "ItemNameDisplaySortValue", propName),
+                            .IsCheckable = True
+                        }
+                        AddHandler menuItem.Checked, menuItemCheckedAction
+                        AddHandler menuItem.Unchecked, menuItemUncheckedAction
+                        moreMenuItem.Items.Add(menuItem)
+                    Next
+                End If
+
+                Me.SortMenu = sortMenu
+                initializeSortMenu()
+            End If
             If Not Me.SelectedItems Is Nothing _
                 OrElse Not EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(_lastItems, Me.SelectedItems) Then
                 releaseContextMenu()
@@ -968,6 +1093,42 @@ Namespace Controls
             End If
         End Sub
 
+        Private Sub initializeSortMenu()
+            If Not Me.SortMenu Is Nothing Then
+                _isCheckingSortInternally = True
+                Dim pKey As String = Me.Folder.ItemsSortPropertyName
+                If Not String.IsNullOrWhiteSpace(pKey) Then
+                    If pKey.IndexOf("[") >= 0 Then
+                        pKey = pKey.Substring(pKey.IndexOf("[") + 1)
+                        pKey = pKey.Substring(0, pKey.IndexOf("]"))
+                    End If
+                    Dim moreMenuItem As MenuItem = Nothing
+                    For Each item In Me.SortMenu.Items
+                        If CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
+                            CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & pKey
+                        ElseIf CType(item, MenuItem).Tag.ToString() = "SortMore" Then
+                            moreMenuItem = item
+                        End If
+                    Next
+                    If Not moreMenuItem Is Nothing Then
+                        For Each item In moreMenuItem.Items
+                            If CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
+                                CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & pKey
+                            End If
+                        Next
+                    End If
+                End If
+                _isCheckingSortInternally = False
+            End If
+        End Sub
+
+        Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
+            Select Case e.PropertyName
+                Case "ItemsSortPropertyName"
+                    initializeSortMenu()
+            End Select
+        End Sub
+
         Private Sub onSelectionChanged()
             If Not _updateTimer Is Nothing Then
                 _updateTimer.Dispose()
@@ -991,6 +1152,12 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim icm As Menus = TryCast(d, Menus)
+            If Not e.OldValue Is Nothing Then
+                RemoveHandler CType(e.OldValue, Folder).PropertyChanged, AddressOf icm.folder_PropertyChanged
+            End If
+            If Not e.NewValue Is Nothing Then
+                AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf icm.folder_PropertyChanged
+            End If
             icm.onSelectionChanged()
         End Sub
 

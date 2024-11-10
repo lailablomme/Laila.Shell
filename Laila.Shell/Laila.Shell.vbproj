@@ -183,6 +183,7 @@
     <None Remove="Images\refresh16.png" />
     <None Remove="Images\rename16.png" />
     <None Remove="Images\share16.png" />
+    <None Remove="Images\sort16.png" />
     <None Remove="Images\sortasc.png" />
     <None Remove="Images\sortdesc.png" />
     <None Remove="Interop\7z\7z.dll" />
@@ -233,6 +234,7 @@
     <Resource Include="Images\refresh16.png" />
     <Resource Include="Images\rename16.png" />
     <Resource Include="Images\share16.png" />
+    <Resource Include="Images\sort16.png" />
     <Resource Include="Images\sortasc.png" />
     <Resource Include="Images\sortdesc.png" />
   </ItemGroup>

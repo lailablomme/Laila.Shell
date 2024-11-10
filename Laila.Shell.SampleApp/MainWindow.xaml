@@ -235,6 +235,27 @@
                                     </Image.Style>
                                 </Image>
                             </Button>
+                            <Line X1="0" Y1="0" X2="0" Y2="32" Stroke="Gray" Margin="0,0,5,0" />
+                            <ToggleButton x:Name="SortMenuButton" Margin="0,0,5,0" Checked="SortMenuButton_Checked"
+                                          Tag="{Binding ., ElementName=menus}" ToolTip="Options for sorting and grouping.">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SortMenu, ElementName=menus}" Value="{x:Null}">
+                                                <Setter Property="ToggleButton.IsEnabled" Value="False" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEnabled, ElementName=SortMenuButton}" Value="False">
+                                                <Setter Property="ToggleButton.Opacity" Value="0.30" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToggleButton.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/sort16.png" />
+                                    <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">Sorting</TextBlock>
+                                    <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                </StackPanel>
+                            </ToggleButton>
                         </StackPanel>
                     </Grid>
                     <Separator Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" />

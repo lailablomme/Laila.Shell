@@ -26,16 +26,20 @@ Namespace Adorners
 
         Public Shared Sub Remove(columnHeader As GridViewColumnHeader, code As String)
             Dim adornerLayer As AdornerLayer = System.Windows.Documents.AdornerLayer.GetAdornerLayer(columnHeader)
-            Dim adorners As Adorner() = adornerLayer.GetAdorners(columnHeader)
-            Dim adorner As GridViewColumnHeaderGlyphAdorner
-            If Not adorners Is Nothing AndAlso adorners.Count = 1 AndAlso TypeOf adorners(0) Is GridViewColumnHeaderGlyphAdorner Then
-                adorner = adorners(0)
-                adorner.remove(code)
+            If Not adornerLayer Is Nothing Then
+                Dim adorners As Adorner() = adornerLayer.GetAdorners(columnHeader)
+                Dim adorner As GridViewColumnHeaderGlyphAdorner
+                If Not adorners Is Nothing AndAlso adorners.Count = 1 AndAlso TypeOf adorners(0) Is GridViewColumnHeaderGlyphAdorner Then
+                    adorner = adorners(0)
+                    If adorner._glyphs.ContainsKey(code) Then
+                        adorner.remove(code)
+                    End If
+                End If
             End If
         End Sub
 
         Private _columnHeader As GridViewColumnHeader
-        Private _glyphs As Dictionary(Of String, GridViewColumnHeaderGlyph) = New Dictionary(Of String, GridViewColumnHeaderGlyph)
+        Friend _glyphs As Dictionary(Of String, GridViewColumnHeaderGlyph) = New Dictionary(Of String, GridViewColumnHeaderGlyph)
 
         Public Sub New(columnHeader As GridViewColumnHeader)
             MyBase.New(columnHeader)
@@ -107,7 +111,7 @@ Namespace Adorners
             Next
         End Sub
 
-        Private Class GridViewColumnHeaderGlyph
+        Friend Class GridViewColumnHeaderGlyph
             Public Property Index As Integer
             Public Property Glyph As ImageSource
             Public Property Alignment As HorizontalAlignment

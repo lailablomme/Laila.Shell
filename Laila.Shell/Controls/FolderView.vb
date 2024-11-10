@@ -85,6 +85,12 @@ Namespace Controls
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             If Not e.NewValue Is Nothing Then
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
+                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(CType(e.NewValue, Folder).FullPath)
+                If Not folderViewState Is Nothing Then
+                    CType(e.NewValue, Folder).ItemsSortPropertyName = folderViewState.SortPropertyName
+                Else
+                    CType(e.NewValue, Folder).ItemsSortPropertyName = "ItemNameDisplaySortValue"
+                End If
             End If
             If Not e.OldValue Is Nothing Then
                 Dim view As CollectionView = CollectionViewSource.GetDefaultView(e.OldValue.Items)

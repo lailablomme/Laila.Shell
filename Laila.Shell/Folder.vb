@@ -1,7 +1,9 @@
 ﻿Imports System.Collections.ObjectModel
+Imports System.ComponentModel
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
+Imports System.Windows.Data
 Imports System.Windows.Media
 Imports Laila.Shell.Helpers
 
@@ -192,6 +194,7 @@ Public Class Folder
             If _columns Is Nothing Then
                 _columns = New List(Of Column)()
 
+                ' get columns from shell
                 Dim columnManager As IColumnManager = Me.ColumnManager
                 Try
                     Dim count As Integer
@@ -495,6 +498,30 @@ Public Class Folder
                 Me.IsLoading = False
             End Sub)
     End Sub
+
+    Public Property ItemsSortPropertyName As String
+        Get
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            If view.SortDescriptions.Count > 0 Then
+                Return view.SortDescriptions(view.SortDescriptions.Count - 1).PropertyName
+            Else
+                Return Nothing
+            End If
+        End Get
+        Set(value As String)
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            Dim desc As SortDescription = New SortDescription() With {
+                .PropertyName = value,
+                .Direction = ListSortDirection.Ascending
+            }
+            If view.SortDescriptions.Count = 0 Then
+                view.SortDescriptions.Add(desc)
+            Else
+                view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
+            End If
+            Me.NotifyOfPropertyChange("ItemsSortPropertyName")
+        End Set
+    End Property
 
 
     Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)

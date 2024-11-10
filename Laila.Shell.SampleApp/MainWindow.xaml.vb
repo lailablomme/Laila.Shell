@@ -1,4 +1,5 @@
 ﻿Imports System.Windows.Controls.Primitives
+Imports Laila.Shell.Controls
 
 Class MainWindow
     Private _model As MainWindowViewModel
@@ -84,5 +85,23 @@ Class MainWindow
         Dim button As Button = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
         menus.InvokeCommand("-1" & vbTab & "delete")
+    End Sub
+
+    Private _lastSortMenu As Laila.Shell.Controls.ContextMenu
+    Private Sub SortMenuButton_Checked(sender As Object, e As RoutedEventArgs)
+        Dim button As ToggleButton = sender
+        Dim menus As Laila.Shell.Controls.Menus = button.Tag
+        If Not menus.SortMenu Is Nothing Then
+            If Not EqualityComparer(Of Laila.Shell.Controls.ContextMenu).Default.Equals(menus.SortMenu, _lastSortMenu) Then
+                AddHandler menus.SortMenu.Closed,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        button.IsChecked = False
+                    End Sub
+                _lastSortMenu = menus.SortMenu
+            End If
+            menus.SortMenu.Placement = Primitives.PlacementMode.Bottom
+            menus.SortMenu.PlacementTarget = button
+            menus.SortMenu.IsOpen = True
+        End If
     End Sub
 End Class

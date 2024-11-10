@@ -3,17 +3,21 @@ Imports System.Runtime.InteropServices
 Imports System.Windows
 
 Public Class Column
+    Inherits NotifyPropertyChangedBase
+
     Private _columnInfo As CM_COLUMNINFO
     Private _propertyKey As PROPERTYKEY
     Private _index As Integer
     Friend _propertyDescription As IPropertyDescription
     Private _viewFlags As PROPDESC_VIEW_FLAGS
     Private _canonicalName As String
+    Private _isVisible As Boolean
 
     Friend Sub New(propertyKey As PROPERTYKEY, columnInfo As CM_COLUMNINFO, index As Integer)
         _propertyKey = propertyKey
         _columnInfo = columnInfo
         _index = index
+        _isVisible = Me.State.HasFlag(CM_STATE.VISIBLE)
 
         Dim ptr2 As IntPtr
         Try
@@ -93,5 +97,14 @@ Public Class Column
         Get
             Return Me.CM_COLUMNINFO.wszName
         End Get
+    End Property
+
+    Public Property IsVisible As Boolean
+        Get
+            Return _isVisible
+        End Get
+        Set(value As Boolean)
+            SetValue(_isVisible, value)
+        End Set
     End Property
 End Class

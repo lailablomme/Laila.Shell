@@ -6,6 +6,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Documents
+Imports System.Windows.Forms.AxHost
 Imports System.Windows.Media
 Imports System.Xml.Serialization
 Imports Laila.Shell.Adorners
@@ -19,6 +20,7 @@ Namespace Behaviors
         Implements INotifyPropertyChanged
 
         Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
+        Public Event SortChanged As EventHandler
 
         Private Const COLUMN_MARGIN As Double = 5
         Private Const MARGIN_LEFT As Double = 20
@@ -278,7 +280,7 @@ Namespace Behaviors
 
                 Dim gridViewState As GridViewStateData = readState(Me.ColumnsIn.ViewName)
 
-                If Not gridViewState Is Nothing Then
+                If Not gridViewState Is Nothing AndAlso Not gridViewState.Columns Is Nothing Then
                     ' restore column order from state
                     For Each columnState In gridViewState.Columns
                         Dim column As GridViewColumn = Me.ColumnsIn.Items.SingleOrDefault(Function(c) getColumnName(c) = columnState.Name)
@@ -345,7 +347,7 @@ Namespace Behaviors
                     End If
                 End Using
 
-                fixSortGlyphs()
+                UpdateSortGlyphs()
 
                 For Each column In _activeColumns
                     ' hook column resize event
@@ -424,9 +426,13 @@ Namespace Behaviors
             resizeVisibleRows()
         End Sub
 
-        Private Sub fixSortGlyphs()
+        Public Sub UpdateSortGlyphs()
             ' fix sort glyphs
             Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+            For Each ch In hcs
+                GridViewColumnHeaderGlyphAdorner.Remove(ch, "GridViewExtBehavior.Sort")
+            Next
+
             Dim view As ICollectionView = _listView.Items
             If view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count Then
                 Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
@@ -478,6 +484,7 @@ Namespace Behaviors
                             ' apply sort
                             applySort(_listView.Items, propertyName, -1, _listView, headerClicked)
                             writeState()
+                            RaiseEvent SortChanged(Me, New EventArgs())
 
                             ' set focus back to item
                             _listView.ScrollIntoView(_listView.SelectedItem)
@@ -512,7 +519,7 @@ Namespace Behaviors
                     Sub(s2 As Object, e2 As EventArgs)
                         column.IsVisible = True
                         showHideColumns()
-                        fixSortGlyphs()
+                        UpdateSortGlyphs()
 
                         ' write state
                         writeState()
@@ -529,7 +536,7 @@ Namespace Behaviors
                         Else
                             column.IsVisible = False
                             showHideColumns()
-                            fixSortGlyphs()
+                            UpdateSortGlyphs()
 
                             ' write state
                             writeState()
@@ -770,50 +777,17 @@ Namespace Behaviors
         End Sub
 
         Protected Overridable Function readState(viewName As String) As GridViewStateData
-            Dim dbFileName As String = getStateDBFileName()
-            Dim viewId As String = Convert.ToBase64String(Text.Encoding.UTF8.GetBytes(viewName))
-
-            If Not File.Exists(dbFileName) Then
-                Return Nothing
-            End If
-
-            Using mem As MemoryStream = New MemoryStream()
-                Using db = New LiteDatabase(dbFileName)
-                    Dim info As LiteFileInfo(Of String) = db.FileStorage.FindById(viewId)
-                    If Not info Is Nothing Then
-                        info.CopyTo(mem)
-                        mem.Seek(0, SeekOrigin.Begin)
-                        Dim s As XmlSerializer = New XmlSerializer(GetType(GridViewStateData))
-                        Return s.Deserialize(mem)
-                    End If
-                End Using
-            End Using
+            Return FolderViewState.FromViewName(viewName)
         End Function
 
         Protected Overridable Sub WriteState(viewName As String, state As GridViewStateData)
-            Dim dbFileName As String = getStateDBFileName()
-            Dim viewId As String = Convert.ToBase64String(Text.Encoding.UTF8.GetBytes(viewName))
-
-            If Not Directory.Exists(Path.GetDirectoryName(dbFileName)) Then
-                Directory.CreateDirectory(Path.GetDirectoryName(dbFileName))
-            End If
-
-            Dim s As XmlSerializer = New XmlSerializer(GetType(GridViewStateData))
-            Using mem As MemoryStream = New MemoryStream()
-                s.Serialize(mem, state)
-                mem.Seek(0, SeekOrigin.Begin)
-
-                Using db = New LiteDatabase(dbFileName)
-                    db.FileStorage.Upload(viewId, "state.xml", mem)
-                End Using
-            End Using
+            Dim folderViewState As FolderViewState = New FolderViewState() With {
+                .Columns = state.Columns,
+                .SortDirection = state.SortDirection,
+                .SortPropertyName = state.SortPropertyName
+            }
+            folderViewState.Persist(viewName)
         End Sub
-
-        Private Function getStateDBFileName() As String
-            Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
-            If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
-            Return IO.Path.Combine(path, "GridViewState.db")
-        End Function
 
         Private Function getColumnName(column As GridViewColumn) As String
             Dim name As String =
