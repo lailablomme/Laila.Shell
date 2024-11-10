@@ -893,11 +893,14 @@ Namespace Controls
                     _contextMenu3 = Nothing
                 End If
 
+                _lastFolder = Me.Folder
                 didGetMenu = True
             End If
 
             If Not Me.SelectedItems Is Nothing OrElse Not EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(_lastItems, Me.SelectedItems) Then
                 Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
+
+                _lastItems = Me.SelectedItems
                 didGetMenu = True
             End If
 
