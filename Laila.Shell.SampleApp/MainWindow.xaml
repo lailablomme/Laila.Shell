@@ -114,7 +114,7 @@
                         <controls:AddressBar Grid.Column="1" Folder="{Binding Folder, Mode=TwoWay}" />
                     </Grid>
                     <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" />
-                    <controls:Menus x:Name="menus" Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}" />
+                    <controls:Menus x:Name="menus" UpdateDelay="100" Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}" />
                     <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="White" Margin="-1" />
                     <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="5,0,0,1" Height="26">
                         <StackPanel Orientation="Horizontal">

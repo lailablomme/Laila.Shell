@@ -294,13 +294,11 @@ Namespace Controls
                         Me.Folder = clickedItem
                     Else
                         Dim menu As Menus = New Menus() With {
-                            .DoAutoUpdate = False,
                             .IsDefaultOnly = True,
                             .Folder = Me.Folder,
                             .SelectedItems = Me.SelectedItems,
                             .DoAutoDispose = True
                         }
-                        menu.Update()
                         menu.InvokeCommand(menu.DefaultId)
                     End If
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
@@ -321,13 +319,11 @@ Namespace Controls
                     End If
 
                     _menu = New Laila.Shell.Controls.Menus() With {
-                        .DoAutoUpdate = False,
                         .IsDefaultOnly = False,
                         .Folder = Me.Folder,
                         .SelectedItems = Me.SelectedItems,
                         .DoAutoDispose = True
                     }
-                    _menu.Update()
                     AddHandler _menu.CommandInvoked,
                         Sub(s As Object, e2 As CommandInvokedEventArgs)
                             If e2.Verb.StartsWith("laila.shell.view.") Then

@@ -424,13 +424,11 @@ Namespace Controls
                             Dim parent As Folder = clickedItem.GetParent()
 
                             _menu = New Laila.Shell.Controls.Menus() With {
-                                .DoAutoUpdate = False,
                                 .IsDefaultOnly = False,
                                 .Folder = If(parent Is Nothing, Shell.Desktop, parent),
                                 .SelectedItems = {clickedItem},
                                 .DoAutoDispose = True
                             }
-                            _menu.Update()
                             AddHandler _menu.CommandInvoked,
                                 Sub(s As Object, e2 As CommandInvokedEventArgs)
                                     Select Case e2.Verb
@@ -472,13 +470,11 @@ Namespace Controls
                             Else
                                 Using parent = clickedItem.GetParent()
                                     Dim menu As Menus = New Menus() With {
-                                        .DoAutoUpdate = False,
                                         .IsDefaultOnly = True,
                                         .Folder = parent,
                                         .SelectedItems = {clickedItem},
                                         .DoAutoDispose = True
                                     }
-                                    menu.Update()
                                     menu.InvokeCommand(_menu.DefaultId)
                                 End Using
                             End If

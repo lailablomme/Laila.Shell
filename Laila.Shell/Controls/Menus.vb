@@ -1,6 +1,7 @@
 ﻿Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
+Imports System.Threading
 Imports System.Threading.Channels
 Imports System.Windows
 Imports System.Windows.Controls
@@ -11,6 +12,7 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
+Imports Laila.Shell.Helpers
 
 Namespace Controls
     Public Class Menus
@@ -23,13 +25,13 @@ Namespace Controls
         Public Shared ReadOnly NewItemMenuProperty As DependencyProperty = DependencyProperty.Register("NewItemMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsDefaultOnlyProperty As DependencyProperty = DependencyProperty.Register("IsDefaultOnly", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoAutoDisposeProperty As DependencyProperty = DependencyProperty.Register("DoAutoDispose", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoAutoUpdateProperty As DependencyProperty = DependencyProperty.Register("DoAutoUpdate", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanCutProperty As DependencyProperty = DependencyProperty.Register("CanCut", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanCopyProperty As DependencyProperty = DependencyProperty.Register("CanCopy", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanPasteProperty As DependencyProperty = DependencyProperty.Register("CanPaste", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanRenameProperty As DependencyProperty = DependencyProperty.Register("CanRename", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanDeleteProperty As DependencyProperty = DependencyProperty.Register("CanDelete", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanShareProperty As DependencyProperty = DependencyProperty.Register("CanShare", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly UpdateDelayProperty As DependencyProperty = DependencyProperty.Register("UpdateDelay", GetType(Integer?), GetType(Menus), New FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Public Event CommandInvoked(sender As Object, e As CommandInvokedEventArgs)
 
@@ -50,6 +52,7 @@ Namespace Controls
         Private disposedValue As Boolean
         Private _lastItems As IEnumerable(Of Item)
         Private _lastFolder As Folder
+        Private _updateTimer As Timer
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
@@ -640,11 +643,8 @@ Namespace Controls
             End If
         End Sub
 
-        Private Sub releaseContextMenu()
-            Debug.WriteLine("releaseContextMenu()")
-            If Not IntPtr.Zero.Equals(_hMenu) Then
-                Functions.DestroyMenu(_hMenu)
-            End If
+        Private Sub releaseContextMenuFull()
+            releaseContextMenu()
             If Not IntPtr.Zero.Equals(_newItemhMenu) Then
                 Functions.DestroyMenu(_newItemhMenu)
             End If
@@ -658,6 +658,13 @@ Namespace Controls
             If Not _selectedItemsContextMenu Is Nothing Then
                 Marshal.ReleaseComObject(_selectedItemsContextMenu)
                 _selectedItemsContextMenu = Nothing
+            End If
+        End Sub
+
+        Private Sub releaseContextMenu()
+            Debug.WriteLine("releaseContextMenu()")
+            If Not IntPtr.Zero.Equals(_hMenu) Then
+                Functions.DestroyMenu(_hMenu)
             End If
             If Not _contextMenu Is Nothing Then
                 Marshal.ReleaseComObject(_contextMenu)
@@ -844,12 +851,12 @@ Namespace Controls
             End Set
         End Property
 
-        Public Property DoAutoUpdate As Boolean
+        Public Property UpdateDelay As Integer?
             Get
-                Return GetValue(DoAutoUpdateProperty)
+                Return GetValue(UpdateDelayProperty)
             End Get
-            Set(value As Boolean)
-                SetValue(DoAutoUpdateProperty, value)
+            Set(value As Integer?)
+                SetValue(UpdateDelayProperty, value)
             End Set
         End Property
 
@@ -876,6 +883,13 @@ Namespace Controls
 
             If Not Me.IsDefaultOnly AndAlso Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
                 releaseContextMenu()
+                If Not IntPtr.Zero.Equals(_newItemhMenu) Then
+                    Functions.DestroyMenu(_newItemhMenu)
+                End If
+                If Not _newItemContextMenu Is Nothing Then
+                    Marshal.ReleaseComObject(_newItemContextMenu)
+                    _newItemContextMenu = Nothing
+                End If
 
                 Me.ItemContextMenu = getContextMenu(Me.Folder, Nothing, False)
                 Me.NewItemMenu = getNewItemMenu(Me.ItemContextMenu)
@@ -902,6 +916,15 @@ Namespace Controls
 
             If Not Me.SelectedItems Is Nothing _
                 OrElse Not EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(_lastItems, Me.SelectedItems) Then
+                releaseContextMenu()
+                If Not IntPtr.Zero.Equals(_selectedItemshMenu) Then
+                    Functions.DestroyMenu(_selectedItemshMenu)
+                End If
+                If Not _selectedItemsContextMenu Is Nothing Then
+                    Marshal.ReleaseComObject(_selectedItemsContextMenu)
+                    _selectedItemsContextMenu = Nothing
+                End If
+
                 Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
                 _selectedItemsContextMenu = _contextMenu
                 _selectedItemshMenu = _hMenu
@@ -946,7 +969,22 @@ Namespace Controls
         End Sub
 
         Private Sub onSelectionChanged()
-            If Me.DoAutoUpdate Then
+            If Not _updateTimer Is Nothing Then
+                _updateTimer.Dispose()
+            End If
+
+            If Me.UpdateDelay.HasValue AndAlso Me.UpdateDelay > 0 Then
+                _updateTimer = New Timer(New TimerCallback(
+                    Sub()
+                        UIHelper.OnUIThread(
+                            Sub()
+                                Me.Update()
+
+                                _updateTimer.Dispose()
+                                _updateTimer = Nothing
+                            End Sub)
+                    End Sub), Nothing, Me.UpdateDelay.Value, Timeout.Infinite)
+            ElseIf Me.UpdateDelay.HasValue Then
                 Me.Update()
             End If
         End Sub
@@ -982,7 +1020,7 @@ Namespace Controls
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer
                 ' set large fields to null
-                'Me.ReleaseContextMenu()
+                releaseContextMenuFull()
                 disposedValue = True
             End If
         End Sub
