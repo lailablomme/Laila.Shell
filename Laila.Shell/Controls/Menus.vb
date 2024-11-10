@@ -1,6 +1,7 @@
 ﻿Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
+Imports System.Threading.Channels
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
@@ -17,7 +18,7 @@ Namespace Controls
         Implements IDisposable
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
-        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
+        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged, AddressOf OnSelectedItemsCoerce))
         Public Shared ReadOnly ItemContextMenuProperty As DependencyProperty = DependencyProperty.Register("ItemContextMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly NewItemMenuProperty As DependencyProperty = DependencyProperty.Register("NewItemMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsDefaultOnlyProperty As DependencyProperty = DependencyProperty.Register("IsDefaultOnly", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -895,9 +896,12 @@ Namespace Controls
 
                 _lastFolder = Me.Folder
                 didGetMenu = True
+
+                Debug.WriteLine("Full details: " & Me.Folder.PropertiesByKeyAsText("C9944A21-A406-48FE-8225-AEC7E24C211B:2").Text)
             End If
 
-            If Not Me.SelectedItems Is Nothing OrElse Not EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(_lastItems, Me.SelectedItems) Then
+            If Not Me.SelectedItems Is Nothing _
+                OrElse Not EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(_lastItems, Me.SelectedItems) Then
                 Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
                 _selectedItemsContextMenu = _contextMenu
                 _selectedItemshMenu = _hMenu
@@ -956,6 +960,19 @@ Namespace Controls
             Dim icm As Menus = TryCast(d, Menus)
             icm.onSelectionChanged()
         End Sub
+
+        Shared Function OnSelectedItemsCoerce(ByVal d As DependencyObject, baseValue As Object) As Object
+            If Not baseValue Is Nothing Then
+                Dim items As IEnumerable(Of Item) = baseValue
+                If items.Count = 0 Then
+                    Return Nothing
+                Else
+                    Return baseValue
+                End If
+            Else
+                Return baseValue
+            End If
+        End Function
 
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then
