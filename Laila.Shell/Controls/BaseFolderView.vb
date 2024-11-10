@@ -287,7 +287,8 @@ Namespace Controls
                 Else
                     listViewItem.Focus()
                 End If
-                If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Me.SelectedItems.Contains(clickedItem) Then
+                If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 _
+                    AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Contains(clickedItem) Then
                     If TypeOf clickedItem Is Folder Then
                         CType(clickedItem, Folder).LastScrollOffset = New Point()
                         Me.Folder = clickedItem
