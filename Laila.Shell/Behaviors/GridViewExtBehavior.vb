@@ -165,6 +165,7 @@ Namespace Behaviors
         Private _skipResize As Boolean
         Private _isInitialResize As Boolean = True
         Private _resizeTimer As Timer
+        Private _gridViewState As GridViewStateData
 
         Public ReadOnly Property ColumnIndexFor(propertyName As String) As Integer
             Get
@@ -224,7 +225,6 @@ Namespace Behaviors
                    headerRowGrid.Children.Add(headerRowMarginPresenter)
 
                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
-                   UIHelper.FindVisualChildren(Of VirtualizingStackPanel)(_listView)(0).Margin = New Thickness(MARGIN_LEFT, 0, 0, 0)
                    _isLoaded = True
 
                    If Not Me.ColumnsIn Is Nothing Then
@@ -281,11 +281,11 @@ Namespace Behaviors
             If _isLoaded Then
                 _activeColumns = New List(Of ActiveColumnStateData)()
 
-                Dim gridViewState As GridViewStateData = readState(Me.ColumnsIn.ViewName)
+                _gridViewState = readState(Me.ColumnsIn.ViewName)
 
-                If Not gridViewState Is Nothing AndAlso Not gridViewState.Columns Is Nothing Then
+                If Not _gridViewState Is Nothing AndAlso Not _gridViewState.Columns Is Nothing Then
                     ' restore column order from state
-                    For Each columnState In gridViewState.Columns
+                    For Each columnState In _gridViewState.Columns
                         Dim column As GridViewColumn = Me.ColumnsIn.Items.SingleOrDefault(Function(c) getColumnName(c) = columnState.Name)
                         If Not column Is Nothing Then
                             _activeColumns.Add(New ActiveColumnStateData() With {
@@ -333,10 +333,10 @@ Namespace Behaviors
                 Dim view As ICollectionView = _listView.Items
                 Using view.DeferRefresh()
                     resetSortDescriptions(view)
-                    If Not gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(gridViewState.SortPropertyName) Then
+                    If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(_gridViewState.SortPropertyName) Then
                         view.SortDescriptions.Add(New SortDescription() With {
-                        .PropertyName = gridViewState.SortPropertyName,
-                        .Direction = gridViewState.SortDirection
+                        .PropertyName = _gridViewState.SortPropertyName,
+                        .Direction = _gridViewState.SortDirection
                     })
                     Else
                         Dim initialSortPropertyName As String = GetSortPropertyName(_activeColumns(0).Column)
@@ -369,8 +369,8 @@ Namespace Behaviors
                 Next
 
                 ' set initial group by
-                If Not gridViewState Is Nothing AndAlso Not String.IsNullOrWhiteSpace(gridViewState.GroupByPropertyName) Then
-                    _groupByPropertyName = gridViewState.GroupByPropertyName
+                If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrWhiteSpace(_gridViewState.GroupByPropertyName) Then
+                    _groupByPropertyName = _gridViewState.GroupByPropertyName
                     regroup()
                 ElseIf Not String.IsNullOrWhiteSpace(Me.ColumnsIn.InitialGroupByPropertyName) Then
                     _groupByPropertyName = Me.ColumnsIn.InitialGroupByPropertyName
@@ -770,27 +770,24 @@ Namespace Behaviors
 
         Private Sub writeState()
             ' build state
-            Dim gridViewState As GridViewStateData = New GridViewStateData()
-            gridViewState.Columns = New List(Of ColumnStateData)()
+            _gridViewState.Columns = New List(Of ColumnStateData)()
             For Each column In _activeColumns
                 Dim columnState As ColumnStateData = New ColumnStateData()
                 columnState.Name = getColumnName(column.Column)
                 columnState.IsVisible = column.IsVisible
                 columnState.Width = column.Width
-                gridViewState.Columns.Add(columnState)
+                _gridViewState.Columns.Add(columnState)
             Next
 
             Dim view As ICollectionView = _listView.Items
             If view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count Then
                 Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
-                gridViewState.SortPropertyName = currentSort.PropertyName
-                gridViewState.SortDirection = currentSort.Direction
+                _gridViewState.SortPropertyName = currentSort.PropertyName
+                _gridViewState.SortDirection = currentSort.Direction
             End If
-            If Not String.IsNullOrWhiteSpace(_groupByPropertyName) Then
-                gridViewState.GroupByPropertyName = _groupByPropertyName
-            End If
+            _gridViewState.GroupByPropertyName = _groupByPropertyName
 
-            Me.WriteState(Me.ColumnsIn.ViewName, gridViewState)
+            Me.WriteState(Me.ColumnsIn.ViewName, _gridViewState)
         End Sub
 
         Protected Overridable Function readState(viewName As String) As GridViewStateData
@@ -798,13 +795,7 @@ Namespace Behaviors
         End Function
 
         Protected Overridable Sub WriteState(viewName As String, state As GridViewStateData)
-            Dim folderViewState As FolderViewState = New FolderViewState() With {
-                .Columns = state.Columns,
-                .SortDirection = state.SortDirection,
-                .SortPropertyName = state.SortPropertyName,
-                .GroupByPropertyName = state.GroupByPropertyName
-            }
-            folderViewState.Persist(viewName)
+            CType(state, FolderViewState).Persist(viewName)
         End Sub
 
         Private Function getColumnName(column As GridViewColumn) As String

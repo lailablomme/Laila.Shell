@@ -120,4 +120,22 @@ Class MainWindow
             menus.SortMenu.IsOpen = True
         End If
     End Sub
+
+    Private _lastViewMenu As Laila.Shell.Controls.ContextMenu
+    Private Sub ViewMenuButton_Checked(sender As Object, e As RoutedEventArgs)
+        Dim button As ToggleButton = sender
+        Dim menus As Laila.Shell.Controls.Menus = button.Tag
+        If Not menus.ViewMenu Is Nothing Then
+            If Not EqualityComparer(Of Laila.Shell.Controls.ContextMenu).Default.Equals(menus.ViewMenu, _lastViewMenu) Then
+                AddHandler menus.ViewMenu.Closed,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        button.IsChecked = False
+                    End Sub
+                _lastViewMenu = menus.ViewMenu
+            End If
+            menus.ViewMenu.Placement = Primitives.PlacementMode.Bottom
+            menus.ViewMenu.PlacementTarget = button
+            menus.ViewMenu.IsOpen = True
+        End If
+    End Sub
 End Class

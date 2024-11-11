@@ -21,7 +21,7 @@ Public Class Shell
     Friend Shared _w As Window
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Public Shared _hwnd As IntPtr
-    Private Shared _folderViews As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
+    Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
     Private Shared _itemsCache As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
     Private Shared _isDebugVisible As Boolean = False
     Private Shared _debugWindow As DebugTools.DebugWindow
@@ -103,14 +103,14 @@ Public Class Shell
         '_specialFolders.Add("Public", Folder.FromParsingName("shell:::{4336a54d-038b-4685-ab02-99bb52d3fb8b}", Nothing))
         '_specialFolders.Add("Recent Items", Folder.FromParsingName("shell:::{4564b25e-30cd-4787-82ba-39e73a750b14}", Nothing))
 
-        FolderViews.Add("Extra large icons", GetType(ExtraLargeIconsView))
-        FolderViews.Add("Large icons", GetType(LargeIconsView))
-        FolderViews.Add("Normal icons", GetType(NormalIconsView))
-        FolderViews.Add("Small icons", GetType(SmallIconsView))
-        FolderViews.Add("List", GetType(ListView))
-        FolderViews.Add("Details", GetType(DetailsView))
-        FolderViews.Add("Tiles", GetType(TileView))
-        FolderViews.Add("Content", GetType(ContentView))
+        FolderViews.Add("Extra large icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/extralargeicons16.png", GetType(ExtraLargeIconsView)))
+        FolderViews.Add("Large icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/largeicons16.png", GetType(LargeIconsView)))
+        FolderViews.Add("Normal icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/normalicons16.png", GetType(NormalIconsView)))
+        FolderViews.Add("Small icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/smallicons16.png", GetType(SmallIconsView)))
+        FolderViews.Add("List", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/list16.png", GetType(ListView)))
+        FolderViews.Add("Details", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/details16.png", GetType(DetailsView)))
+        FolderViews.Add("Tiles", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/tiles16.png", GetType(TileView)))
+        FolderViews.Add("Content", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/content16.png", GetType(ContentView)))
 
         If _isDebugVisible Then
             _debugWindow = New DebugTools.DebugWindow()
@@ -174,7 +174,7 @@ Public Class Shell
         End Get
     End Property
 
-    Public Shared ReadOnly Property FolderViews As Dictionary(Of String, Type)
+    Public Shared ReadOnly Property FolderViews As Dictionary(Of String, Tuple(Of String, Type))
         Get
             Return _folderViews
         End Get

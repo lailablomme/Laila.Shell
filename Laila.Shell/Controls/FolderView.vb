@@ -1,4 +1,5 @@
-﻿Imports System.Windows
+﻿Imports System.ComponentModel
+Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Media
@@ -10,7 +11,6 @@ Namespace Controls
         Implements IDisposable
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
-        Public Shared ReadOnly ViewProperty As DependencyProperty = DependencyProperty.Register("View", GetType(String), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnViewChanged))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
@@ -83,54 +83,51 @@ Namespace Controls
         End Property
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim fv As FolderView = d
             If Not e.NewValue Is Nothing Then
+                AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(CType(e.NewValue, Folder).FullPath)
-                If Not folderViewState Is Nothing Then
-                    CType(e.NewValue, Folder).ItemsSortPropertyName = folderViewState.SortPropertyName
-                    CType(e.NewValue, Folder).ItemsSortDirection = folderViewState.SortDirection
-                    CType(e.NewValue, Folder).ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
-                Else
-                    CType(e.NewValue, Folder).ItemsSortPropertyName = "ItemNameDisplaySortValue"
-                End If
+                CType(e.NewValue, Folder).ItemsSortPropertyName = folderViewState.SortPropertyName
+                CType(e.NewValue, Folder).ItemsSortDirection = folderViewState.SortDirection
+                CType(e.NewValue, Folder).ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
+                CType(e.NewValue, Folder).View = folderViewState.View
             End If
             If Not e.OldValue Is Nothing Then
                 CType(e.OldValue, Folder).IsActiveInFolderView = False
+                RemoveHandler CType(e.OldValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
             End If
         End Sub
 
-        Public Property View As String
-            Get
-                Return GetValue(ViewProperty)
-            End Get
-            Set(ByVal value As String)
-                SetCurrentValue(ViewProperty, value)
-            End Set
-        End Property
+        Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
+            Select Case e.PropertyName
+                Case "View"
+                    changeView(Me.Folder.View)
+            End Select
+        End Sub
 
-        Shared Sub OnViewChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim fv As FolderView = d
-            If Not e.OldValue Is Nothing Then
-                BindingOperations.ClearBinding(fv._views(e.OldValue), BaseFolderView.FolderProperty)
-                BindingOperations.ClearBinding(fv._views(e.OldValue), BaseFolderView.SelectedItemsProperty)
+        Private Sub changeView(newValue As String)
+            If Not Me.ActiveView Is Nothing Then
+                BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.FolderProperty)
+                BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
             End If
-            For Each v In fv._views.Values
+            For Each v In _views.Values
                 v.SetValue(Panel.ZIndexProperty, 0)
             Next
-            If Not fv._views.ContainsKey(e.NewValue) Then
-                fv.ActiveView = Activator.CreateInstance(Shell.FolderViews(e.NewValue))
-                fv.ActiveView.Host = fv
-                fv._views.Add(e.NewValue, fv.ActiveView)
-                If Not fv.PART_Grid Is Nothing Then
-                    fv.PART_Grid.Children.Add(fv.ActiveView)
+            If Not _views.ContainsKey(newValue) Then
+                Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(newValue).Item2)
+                'Me.ActiveView.Host = me
+                _views.Add(newValue, Me.ActiveView)
+                If Not Me.PART_Grid Is Nothing Then
+                    Me.PART_Grid.Children.Add(Me.ActiveView)
                 End If
             Else
-                fv.ActiveView = fv._views(e.NewValue)
+                Me.ActiveView = _views(newValue)
             End If
-            fv.ActiveView.SetValue(Panel.ZIndexProperty, 1)
-            fv.Folder.LastScrollOffset = New Point()
-            BindingOperations.SetBinding(fv.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = fv})
-            BindingOperations.SetBinding(fv.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = fv})
+            Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
+            Me.Folder.LastScrollOffset = New Point()
+            BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = Me})
+            BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)

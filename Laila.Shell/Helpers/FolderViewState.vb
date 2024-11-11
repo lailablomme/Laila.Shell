@@ -7,12 +7,19 @@ Namespace Helpers
     Public Class FolderViewState
         Inherits Behaviors.GridViewExtBehavior.GridViewStateData
 
+        Public Property View As String
+
+        Public Sub New()
+            Me.View = "Details"
+            Me.SortPropertyName = "ItemNameDisplaySortValue"
+        End Sub
+
         Public Shared Function FromViewName(viewName As String) As FolderViewState
             Dim dbFileName As String = GetStateDBFileName()
             Dim viewId As String = Convert.ToBase64String(Text.Encoding.UTF8.GetBytes(viewName))
 
             If Not File.Exists(dbFileName) Then
-                Return Nothing
+                Return New FolderViewState()
             End If
 
             Using mem As MemoryStream = New MemoryStream()
@@ -24,7 +31,7 @@ Namespace Helpers
                         Dim s As XmlSerializer = New XmlSerializer(GetType(FolderViewState))
                         Return s.Deserialize(mem)
                     Else
-                        Return Nothing
+                        Return New FolderViewState()
                     End If
                 End Using
             End Using

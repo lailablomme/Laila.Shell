@@ -171,22 +171,31 @@
     <None Remove="Images\arrow_up16.png" />
     <None Remove="Images\check16.png" />
     <None Remove="Images\chevron16.png" />
+    <None Remove="Images\content16.png" />
     <None Remove="Images\copy16.png" />
     <None Remove="Images\cut16.png" />
     <None Remove="Images\delete16.png" />
+    <None Remove="Images\details16.png" />
     <None Remove="Images\dropdown_arrow.png" />
     <None Remove="Images\error16.png" />
     <None Remove="Images\error32.png" />
+    <None Remove="Images\extralargeicons16.png" />
     <None Remove="Images\info16.png" />
+    <None Remove="Images\largeicons16.png" />
+    <None Remove="Images\list16.png" />
     <None Remove="Images\monitor16.png" />
+    <None Remove="Images\normalicons16.png" />
     <None Remove="Images\paste16.png" />
     <None Remove="Images\pin16.png" />
     <None Remove="Images\refresh16.png" />
     <None Remove="Images\rename16.png" />
     <None Remove="Images\share16.png" />
+    <None Remove="Images\smallicons16.png" />
     <None Remove="Images\sort16.png" />
     <None Remove="Images\sortasc.png" />
     <None Remove="Images\sortdesc.png" />
+    <None Remove="Images\tiles16.png" />
+    <None Remove="Images\view16.png" />
     <None Remove="Interop\7z\7z.dll" />
   </ItemGroup>
 
@@ -223,22 +232,31 @@
     <Resource Include="Images\arrow_up16.png" />
     <Resource Include="Images\check16.png" />
     <Resource Include="Images\chevron16.png" />
+    <Resource Include="Images\content16.png" />
     <Resource Include="Images\copy16.png" />
     <Resource Include="Images\cut16.png" />
     <Resource Include="Images\delete16.png" />
+    <Resource Include="Images\details16.png" />
     <Resource Include="Images\dropdown_arrow.png" />
     <Resource Include="Images\error16.png" />
     <Resource Include="Images\error32.png" />
+    <Resource Include="Images\extralargeicons16.png" />
     <Resource Include="Images\info16.png" />
+    <Resource Include="Images\largeicons16.png" />
+    <Resource Include="Images\list16.png" />
     <Resource Include="Images\monitor16.png" />
+    <Resource Include="Images\normalicons16.png" />
     <Resource Include="Images\paste16.png" />
     <Resource Include="Images\pin16.png" />
     <Resource Include="Images\refresh16.png" />
     <Resource Include="Images\rename16.png" />
     <Resource Include="Images\share16.png" />
+    <Resource Include="Images\smallicons16.png" />
     <Resource Include="Images\sort16.png" />
     <Resource Include="Images\sortasc.png" />
     <Resource Include="Images\sortdesc.png" />
+    <Resource Include="Images\tiles16.png" />
+    <Resource Include="Images\view16.png" />
   </ItemGroup>
 
   <ItemGroup>

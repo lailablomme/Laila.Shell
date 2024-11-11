@@ -256,12 +256,32 @@
                                     <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
                                 </StackPanel>
                             </ToggleButton>
+                            <ToggleButton x:Name="ViewMenuButton" Margin="0,0,5,0" Checked="ViewMenuButton_Checked"
+                                          Tag="{Binding ., ElementName=menus}" ToolTip="Options for sorting and grouping.">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ViewMenu, ElementName=menus}" Value="{x:Null}">
+                                                <Setter Property="ToggleButton.IsEnabled" Value="False" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEnabled, ElementName=ViewMenuButton}" Value="False">
+                                                <Setter Property="ToggleButton.Opacity" Value="0.30" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToggleButton.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/view16.png" />
+                                    <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">View</TextBlock>
+                                    <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                </StackPanel>
+                            </ToggleButton>
                         </StackPanel>
                     </Grid>
                     <Separator Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" />
                     <controls:TreeView Grid.Row="4" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
                     <GridSplitter Grid.Row="4" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-                    <controls:FolderView Grid.Row="4" Grid.Column="2" x:Name="folderView" View="Details" Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}" />
+                    <controls:FolderView Grid.Row="4" Grid.Column="2" x:Name="folderView" Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}" />
                 </Grid>
             </DataTemplate>
         </controls:TabControl.ContentTemplate>

@@ -87,13 +87,6 @@
                             </ListView.Resources>
                             <ListView.GroupStyle>
                                 <GroupStyle>
-                                    <GroupStyle.HeaderTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Name}" 
-                               FontWeight="Bold" />
-                                            <!-- Control group header margin here -->
-                                        </DataTemplate>
-                                    </GroupStyle.HeaderTemplate>
                                     <GroupStyle.ContainerStyle>
                                         <Style TargetType="{x:Type GroupItem}">
                                             <Setter Property="Template">

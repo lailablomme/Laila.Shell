@@ -24,6 +24,8 @@ Public Class Item
     Private _treeRootIndex As Long = -1
     Private _shellItem2 As IShellItem2
     Private _lock As Object = New Object()
+    Private _objectId As Long = -1
+    Private Shared _objectCount As Long = 0
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -79,6 +81,8 @@ Public Class Item
     End Function
 
     Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
+        _objectCount += 1
+        _objectId = _objectCount
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
             _fullPath = Item.GetFullPathFromShellItem2(shellItem2)

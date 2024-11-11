@@ -17,42 +17,23 @@
                                   VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel Margin="20,0,0,0" SpacingMode="None" />
+                                    <vwp:VirtualizingWrapPanel Margin="20,0,-25,0" SpacingMode="None" />
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
-                            <ListView.Resources>
-                                <GroupStyle x:Key="groupByStyle">
+                            <ListView.GroupStyle>
+                                <GroupStyle>
                                     <GroupStyle.ContainerStyle>
                                         <Style TargetType="{x:Type GroupItem}">
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True">
+                                                        <Expander IsExpanded="True" Style="{DynamicResource lailaShell_GroupByExpanderStyle}">
                                                             <Expander.Header>
                                                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="Black" FontSize="14" VerticalAlignment="Center" />
-                                                                    <TextBlock FontSize="14" Foreground="Black" VerticalAlignment="Bottom" Margin="5,0,0,0">(</TextBlock>
-                                                                    <TextBlock Text="{Binding ItemCount}" FontSize="14" Foreground="Black" VerticalAlignment="Bottom" />
-                                                                    <TextBlock FontSize="14" Foreground="Black" VerticalAlignment="Bottom">
-                                                                        <TextBlock.Style>
-                                                                            <Style>
-                                                                                <Setter Property="TextBlock.Text" Value=" items" />
-                                                                                <Style.Triggers>
-                                                                                    <DataTrigger Binding="{Binding ItemCount}" Value="1">
-                                                                                        <Setter Property="TextBlock.Text" Value=" item" />
-                                                                                    </DataTrigger>
-                                                                                </Style.Triggers>
-                                                                            </Style>
-                                                                        </TextBlock.Style>
-                                                                    </TextBlock>
-                                                                    <TextBlock FontSize="14" Foreground="Black" VerticalAlignment="Bottom">)</TextBlock>
+                                                                    <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Expander.Header>
-                                                            <Border Padding="10,0,0,2" Margin="0,0,0,0">
-                                                                <Border BorderThickness="1,0,0,1" BorderBrush="Silver" Padding="10,0,0,0">
-                                                                    <ItemsPresenter Margin="0,0,0,0" />
-                                                                </Border>
-                                                            </Border>
+                                                            <ItemsPresenter />
                                                         </Expander>
                                                     </ControlTemplate>
                                                 </Setter.Value>
@@ -60,7 +41,7 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
-                            </ListView.Resources>
+                            </ListView.GroupStyle>
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior />
                             </i:Interaction.Behaviors>

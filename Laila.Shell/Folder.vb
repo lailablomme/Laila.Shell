@@ -28,6 +28,7 @@ Public Class Folder
     Private _isActiveInFolderView As Boolean
     Private _isVisibleInAddressBar As Boolean
     Private _isInHistory As Boolean
+    Private _view As String
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -572,6 +573,14 @@ Public Class Folder
         End Set
     End Property
 
+    Public Property View As String
+        Get
+            Return _view
+        End Get
+        Set(value As String)
+            SetValue(_view, value)
+        End Set
+    End Property
 
     Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)

@@ -27,6 +27,7 @@ Namespace Controls
         Public Shared ReadOnly ItemContextMenuProperty As DependencyProperty = DependencyProperty.Register("ItemContextMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly NewItemMenuProperty As DependencyProperty = DependencyProperty.Register("NewItemMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SortMenuProperty As DependencyProperty = DependencyProperty.Register("SortMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ViewMenuProperty As DependencyProperty = DependencyProperty.Register("ViewMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsDefaultOnlyProperty As DependencyProperty = DependencyProperty.Register("IsDefaultOnly", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoAutoDisposeProperty As DependencyProperty = DependencyProperty.Register("DoAutoDispose", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanCutProperty As DependencyProperty = DependencyProperty.Register("CanCut", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -57,10 +58,39 @@ Namespace Controls
         Private _lastItems As IEnumerable(Of Item)
         Private _lastFolder As Folder
         Private _updateTimer As Timer
-        Private _isCheckingSortInternally As Boolean
+        Private _isCheckingInternally As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
+        End Sub
+
+        Public Sub New()
+            Dim viewMenu As ContextMenu = New ContextMenu()
+            For Each item In Shell.FolderViews
+                Dim viewSubMenuItem As MenuItem = New MenuItem() With {
+                    .Header = item.Key,
+                    .Icon = New Image() With {.Source = New BitmapImage(New Uri(item.Value.Item1, UriKind.Absolute))},
+                    .Tag = "View:" & item.Key,
+                    .IsCheckable = True
+                }
+                AddHandler viewSubMenuItem.Checked,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        If Not _isCheckingInternally Then
+                            Me.Folder.View = item.Key
+                        End If
+                    End Sub
+                AddHandler viewSubMenuItem.Unchecked,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        If Not _isCheckingInternally Then
+                            _isCheckingInternally = True
+                            viewSubMenuItem.IsChecked = True
+                            _isCheckingInternally = False
+                        End If
+                    End Sub
+                viewMenu.Items.Add(viewSubMenuItem)
+            Next
+            Me.ViewMenu = viewMenu
+            initializeViewMenu()
         End Sub
 
         Private Function getContextMenu(parent As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean) As Laila.Shell.Controls.ContextMenu
@@ -126,41 +156,41 @@ Namespace Controls
             makeContextMenu(items, isDefaultOnly)
 
             Dim makeButton As Func(Of Object, String, System.Windows.Controls.Button) =
-            Function(tag As Object, toolTip As String) As System.Windows.Controls.Button
-                Dim button As System.Windows.Controls.Button = New System.Windows.Controls.Button()
-                Dim image As Image = New Image()
-                image.Width = 16
-                image.Height = 16
-                image.Margin = New Thickness(2)
-                Select Case tag.ToString().Split(vbTab)(1)
-                    Case "copy" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/copy16.png")
-                    Case "cut" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/cut16.png")
-                    Case "paste" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/paste16.png")
-                    Case "rename" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/rename16.png")
-                    Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
-                End Select
-                button.Content = image
-                button.ToolTip = toolTip
-                button.Tag = tag
-                Return button
-            End Function
+                Function(tag As Object, toolTip As String) As System.Windows.Controls.Button
+                    Dim button As System.Windows.Controls.Button = New System.Windows.Controls.Button()
+                    Dim image As Image = New Image()
+                    image.Width = 16
+                    image.Height = 16
+                    image.Margin = New Thickness(2)
+                    Select Case tag.ToString().Split(vbTab)(1)
+                        Case "copy" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/copy16.png")
+                        Case "cut" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/cut16.png")
+                        Case "paste" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/paste16.png")
+                        Case "rename" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/rename16.png")
+                        Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
+                    End Select
+                    button.Content = image
+                    button.ToolTip = toolTip
+                    button.Tag = tag
+                    Return button
+                End Function
 
             Dim makeToggleButton As Func(Of Object, String, Boolean, ToggleButton) =
-            Function(tag As Object, toolTip As String, isChecked As Boolean) As ToggleButton
-                Dim button As ToggleButton = New ToggleButton()
-                Dim image As Image = New Image()
-                image.Width = 16
-                image.Height = 16
-                image.Margin = New Thickness(2)
-                Select Case tag.ToString().Split(vbTab)(1)
-                    Case "laila.shell.(un)pin" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/pin16.png")
-                End Select
-                button.Content = image
-                button.ToolTip = toolTip
-                button.Tag = tag
-                button.IsChecked = isChecked
-                Return button
-            End Function
+                Function(tag As Object, toolTip As String, isChecked As Boolean) As ToggleButton
+                    Dim button As ToggleButton = New ToggleButton()
+                    Dim image As Image = New Image()
+                    image.Width = 16
+                    image.Height = 16
+                    image.Margin = New Thickness(2)
+                    Select Case tag.ToString().Split(vbTab)(1)
+                        Case "laila.shell.(un)pin" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/pin16.png")
+                    End Select
+                    button.Content = image
+                    button.ToolTip = toolTip
+                    button.Tag = tag
+                    button.IsChecked = isChecked
+                    Return button
+                End Function
 
             Dim osver As Version = Environment.OSVersion.Version
             Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
@@ -210,19 +240,6 @@ Namespace Controls
                         _menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
                     End If
                 End If
-            End If
-
-            If items Is Nothing OrElse items.Count = 0 Then
-                Dim viewMenuItem As MenuItem = New MenuItem() With {.Header = "View"}
-                For Each item In Shell.FolderViews.Keys
-                    Dim viewSubMenuItem As MenuItem = New MenuItem() With {
-                    .Header = item,
-                    .Tag = "-1" & vbTab & "laila.shell.view." & item
-                }
-                    viewMenuItem.Items.Add(viewSubMenuItem)
-                Next
-                _menu.Items.Insert(0, viewMenuItem)
-                If _menu.Items.Count > 1 Then _menu.Items.Insert(1, New Separator())
             End If
 
             AddHandler _menu.Closed,
@@ -452,19 +469,15 @@ Namespace Controls
                     _hMenu = Functions.CreatePopupMenu()
                     flags = flags Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
                     If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
-                    If _firstContextMenuCall Then
-                        _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags Or CMF.CMF_VERBSONLY)
-                    Else
-                        _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-                    End If
+                    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
 
-                    If _firstContextMenuCall Then
-                        ' somehow very first call doesn't return all items
-                        Functions.DestroyMenu(_hMenu)
-                        _hMenu = Functions.CreatePopupMenu()
-                        _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-                        _firstContextMenuCall = False
-                    End If
+                    'If _firstContextMenuCall Then
+                    '    ' somehow very first call doesn't return all items
+                    '    Functions.DestroyMenu(_hMenu)
+                    '    _hMenu = Functions.CreatePopupMenu()
+                    '    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
+                    '    _firstContextMenuCall = False
+                    'End If
                 End If
             Finally
                 If Not IntPtr.Zero.Equals(ptrContextMenu) Then
@@ -898,6 +911,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property ViewMenu As Laila.Shell.Controls.ContextMenu
+            Get
+                Return GetValue(ViewMenuProperty)
+            End Get
+            Set(value As Laila.Shell.Controls.ContextMenu)
+                SetValue(ViewMenuProperty, value)
+            End Set
+        End Property
+
         Public Sub Update()
             Dim didGetMenu As Boolean
 
@@ -930,6 +952,40 @@ Namespace Controls
 
                 _lastFolder = Me.Folder
                 didGetMenu = True
+
+                If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
+                    Dim viewMenuItem As MenuItem = New MenuItem() With {
+                        .Header = "View",
+                        .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/view16.png", UriKind.Absolute))}
+                    }
+                    For Each item In Shell.FolderViews
+                        Dim viewSubMenuItem As MenuItem = New MenuItem() With {
+                            .Header = item.Key,
+                            .Icon = New Image() With {.Source = New BitmapImage(New Uri(item.Value.Item1, UriKind.Absolute))},
+                            .Tag = "View:" & item.Key,
+                            .IsCheckable = True,
+                            .IsChecked = item.Key = Me.Folder.View
+                        }
+                        AddHandler viewSubMenuItem.Checked,
+                            Sub(s2 As Object, e2 As EventArgs)
+                                If Not _isCheckingInternally Then
+                                    Me.Folder.View = item.Key
+                                End If
+                            End Sub
+                        AddHandler viewSubMenuItem.Unchecked,
+                            Sub(s2 As Object, e2 As EventArgs)
+                                If Not _isCheckingInternally Then
+                                    _isCheckingInternally = True
+                                    viewSubMenuItem.IsChecked = True
+                                    _isCheckingInternally = False
+                                End If
+                            End Sub
+                        viewMenuItem.Items.Add(viewSubMenuItem)
+                    Next
+                    _menu.Items.Insert(0, viewMenuItem)
+                    If _menu.Items.Count > 1 Then _menu.Items.Insert(1, New Separator())
+                End If
+                initializeViewMenu()
 
                 Dim primaryProperties As List(Of String) = New List(Of String)()
                 Dim additionalProperties As List(Of String) = New List(Of String)()
@@ -991,7 +1047,7 @@ Namespace Controls
                 Dim PKEY_System_ItemNameDisplay As String = Me.Folder.PropertiesByCanonicalName("System.ItemNameDisplay").Key.ToString()
                 Dim sortMenuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
                     Sub(s2 As Object, e2 As RoutedEventArgs)
-                        If Not _isCheckingSortInternally Then
+                        If Not _isCheckingInternally Then
                             If CType(s2, MenuItem).Tag.ToString().Substring(5).IndexOf(":") >= 0 Then
                                 Me.Folder.ItemsSortPropertyName =
                                     String.Format("PropertiesByKeyAsText[{0}].Value",
@@ -1003,10 +1059,10 @@ Namespace Controls
                     End Sub)
                 Dim menuItemUncheckedAction As RoutedEventHandler = New RoutedEventHandler(
                     Sub(s2 As Object, e2 As RoutedEventArgs)
-                        If Not _isCheckingSortInternally Then
-                            _isCheckingSortInternally = True
+                        If Not _isCheckingInternally Then
+                            _isCheckingInternally = True
                             CType(s2, MenuItem).IsChecked = True
-                            _isCheckingSortInternally = False
+                            _isCheckingInternally = False
                         End If
                     End Sub)
                 For Each propName In primaryProperties
@@ -1042,7 +1098,7 @@ Namespace Controls
                 sortMenu.Items.Add(sortAscendingMenuItem)
                 AddHandler sortAscendingMenuItem.Checked,
                     Sub(s2 As Object, e2 As EventArgs)
-                        If Not _isCheckingSortInternally Then
+                        If Not _isCheckingInternally Then
                             Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
                         End If
                     End Sub
@@ -1055,7 +1111,7 @@ Namespace Controls
                 sortMenu.Items.Add(sortDescendingMenuItem)
                 AddHandler sortDescendingMenuItem.Checked,
                     Sub(s2 As Object, e2 As EventArgs)
-                        If Not _isCheckingSortInternally Then
+                        If Not _isCheckingInternally Then
                             Me.Folder.ItemsSortDirection = ListSortDirection.Descending
                         End If
                     End Sub
@@ -1063,7 +1119,7 @@ Namespace Controls
                 sortMenu.Items.Add(New Separator())
                 Dim groupByMenuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
                     Sub(s2 As Object, e2 As RoutedEventArgs)
-                        If Not _isCheckingSortInternally Then
+                        If Not _isCheckingInternally Then
                             Me.Folder.ItemsGroupByPropertyName =
                                     String.Format("PropertiesByKeyAsText[{0}].Value",
                                                   CType(s2, MenuItem).Tag.ToString().Substring(6))
@@ -1166,7 +1222,7 @@ Namespace Controls
 
         Private Sub initializeSortMenu()
             If Not Me.SortMenu Is Nothing Then
-                _isCheckingSortInternally = True
+                _isCheckingInternally = True
                 Dim sortPropertyName As String = Me.Folder.ItemsSortPropertyName
                 Dim groupByPropertyName As String = Me.Folder.ItemsGroupByPropertyName
                 If Not String.IsNullOrWhiteSpace(sortPropertyName) Then
@@ -1217,7 +1273,19 @@ Namespace Controls
                         End If
                     Next
                 End If
-                _isCheckingSortInternally = False
+                _isCheckingInternally = False
+            End If
+        End Sub
+
+        Private Sub initializeViewMenu()
+            If Not Me.ViewMenu Is Nothing AndAlso Not Me.Folder Is Nothing Then
+                _isCheckingInternally = True
+                For Each item In Me.ViewMenu.Items
+                    If TypeOf item Is MenuItem AndAlso CType(item, MenuItem).Tag.ToString().StartsWith("View:") Then
+                        CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString().Substring(5) = Me.Folder.View
+                    End If
+                Next
+                _isCheckingInternally = False
             End If
         End Sub
 
@@ -1225,6 +1293,8 @@ Namespace Controls
             Select Case e.PropertyName
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName"
                     initializeSortMenu()
+                Case "View"
+                    initializeViewMenu()
             End Select
         End Sub
 

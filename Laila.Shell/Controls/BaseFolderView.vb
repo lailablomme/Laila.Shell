@@ -346,28 +346,28 @@ Namespace Controls
                     }
                     AddHandler _menu.CommandInvoked,
                         Sub(s As Object, e2 As CommandInvokedEventArgs)
-                            If e2.Verb.StartsWith("laila.shell.view.") Then
-                                Me.Host.View = e2.Verb.Substring("laila.shell.view.".Length)
-                                e2.IsHandled = True
-                            Else
-                                Select Case e2.Verb
-                                    Case "open"
-                                        If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
-                                            Me.Folder = clickedItem
-                                            e2.IsHandled = True
-                                        End If
-                                    Case "rename"
-                                        Me.DoRename()
+                            'If e2.Verb.StartsWith("laila.shell.view.") Then
+                            '    Me.Host.View = e2.Verb.Substring("laila.shell.view.".Length)
+                            '    e2.IsHandled = True
+                            'Else
+                            Select Case e2.Verb
+                                Case "open"
+                                    If Not Me.SelectedItem Is Nothing AndAlso TypeOf Me.SelectedItem Is Folder Then
+                                        Me.Folder = clickedItem
                                         e2.IsHandled = True
-                                    Case "laila.shell.(un)pin"
-                                        If e2.IsChecked Then
-                                            PinnedItems.PinItem(clickedItem.FullPath)
-                                        Else
-                                            PinnedItems.UnpinItem(clickedItem.FullPath)
-                                        End If
-                                        e2.IsHandled = True
-                                End Select
-                            End If
+                                    End If
+                                Case "rename"
+                                    Me.DoRename()
+                                    e2.IsHandled = True
+                                Case "laila.shell.(un)pin"
+                                    If e2.IsChecked Then
+                                        PinnedItems.PinItem(clickedItem.FullPath)
+                                    Else
+                                        PinnedItems.UnpinItem(clickedItem.FullPath)
+                                    End If
+                                    e2.IsHandled = True
+                            End Select
+                            'End If
                         End Sub
 
                     Me.PART_ListView.ContextMenu = _menu.ItemContextMenu
@@ -511,18 +511,20 @@ Namespace Controls
                         Sub()
                             Me.IsLoading = CType(s, Folder).IsRefreshingItems
                         End Sub)
-                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName"
+                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
                     If Not Me.PART_Ext Is Nothing Then
                         Me.PART_Ext.UpdateSortGlyphs()
                     End If
-                    Dim folderViewState As FolderViewState = FolderViewState.FromViewName(Me.Folder.FullPath)
+                    Dim folder As Folder = CType(s, Folder)
+                    Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
                     If folderViewState Is Nothing Then
                         folderViewState = New FolderViewState()
                     End If
-                    folderViewState.SortPropertyName = Me.Folder.ItemsSortPropertyName
-                    folderViewState.SortDirection = Me.Folder.ItemsSortDirection
-                    folderViewState.GroupByPropertyName = Me.Folder.ItemsGroupByPropertyName
-                    folderViewState.Persist(Me.Folder.FullPath)
+                    folderViewState.SortPropertyName = folder.ItemsSortPropertyName
+                    folderViewState.SortDirection = folder.ItemsSortDirection
+                    folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
+                    folderViewState.View = folder.View
+                    folderViewState.Persist(folder.FullPath)
             End Select
         End Sub
 
