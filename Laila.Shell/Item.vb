@@ -23,7 +23,6 @@ Public Class Item
     Private _overlayIconIndex As Integer?
     Private _treeRootIndex As Long = -1
     Private _shellItem2 As IShellItem2
-    Private _lock As Object = New Object()
     Private _objectId As Long = -1
     Private Shared _objectCount As Long = 0
 
@@ -104,12 +103,10 @@ Public Class Item
 
     Public ReadOnly Property ShellItem2 As IShellItem2
         Get
-            SyncLock _lock
-                If Not disposedValue AndAlso _shellItem2 Is Nothing Then
-                    _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
-                End If
-                Return _shellItem2
-            End SyncLock
+            If Not disposedValue AndAlso _shellItem2 Is Nothing Then
+                _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+            End If
+            Return _shellItem2
         End Get
     End Property
 
@@ -165,12 +162,11 @@ Public Class Item
     End Property
 
     Public Overridable Sub ClearCache()
-        SyncLock _lock
-            If Not _shellItem2 Is Nothing Then
-                Marshal.ReleaseComObject(_shellItem2)
-                _shellItem2 = Nothing
-            End If
-        End SyncLock
+        If Not _shellItem2 Is Nothing Then
+            Dim oldShellItem As IShellItem = _shellItem2
+            _shellItem2 = Nothing
+            Marshal.ReleaseComObject(oldShellItem)
+        End If
         For Each [property] In _properties
             [property].Dispose()
         Next

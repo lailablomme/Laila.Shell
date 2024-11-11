@@ -51,7 +51,6 @@ Namespace Controls
         Private _newItemhMenu As IntPtr
         Private _selectedItemshMenu As IntPtr
         Private Shared _firstContextMenuCall As Boolean = True
-        Private _menu As Controls.ContextMenu
         Private _parent As Folder
         Private _invokedId As String = Nothing
         Private disposedValue As Boolean
@@ -196,7 +195,7 @@ Namespace Controls
             Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
 
             ' make our own menu
-            _menu = New Controls.ContextMenu()
+            Dim menu As Controls.ContextMenu = New Controls.ContextMenu()
             If Not IntPtr.Zero.Equals(_hMenu) Then
                 Dim menuItems As List(Of Control) = getMenuItems(_hMenu, -1)
                 Dim lastMenuItem As Control
@@ -208,7 +207,7 @@ Namespace Controls
                         Case Else
                             Dim isNotDoubleSeparator As Boolean = Not (TypeOf item Is Separator AndAlso
                             (Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator))
-                            Dim isNotInitialSeparator As Boolean = Not (TypeOf item Is Separator AndAlso _menu.Items.Count = 0)
+                            Dim isNotInitialSeparator As Boolean = Not (TypeOf item Is Separator AndAlso menu.Items.Count = 0)
                             Dim isNotDoubleOneDriveItem As Boolean = verb Is Nothing OrElse
                             Not (isWindows11 AndAlso
                                 (verb.StartsWith("{5250E46F-BB09-D602-5891-F476DC89B70") _
@@ -216,33 +215,33 @@ Namespace Controls
                                  OrElse verb = "MakeAvailableOffline" _
                                  OrElse verb = "MakeAvailableOnline"))
                             If isNotDoubleSeparator AndAlso isNotInitialSeparator AndAlso isNotDoubleOneDriveItem Then
-                                _menu.Items.Add(item)
+                                menu.Items.Add(item)
                                 lastMenuItem = item
                             End If
                     End Select
                 Next
                 Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "cut")
-                If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
                 menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "copy")
-                If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
                 menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
-                If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
-                Else If hasPaste Then _menu.Buttons.Add(makeButton("-1" & vbTab & "paste", "Paste"))
+                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
+                Else If hasPaste Then menu.Buttons.Add(makeButton("-1" & vbTab & "paste", "Paste"))
                 menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "rename")
-                If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
                 menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
-                If Not menuItem Is Nothing Then _menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
                 If Not items Is Nothing AndAlso items.Count = 1 Then
                     Dim test As Item = Item.FromParsingName(items(0).FullPath, Nothing)
                     If Not test Is Nothing Then ' this won't work for all items 
                         test.Dispose()
                         Dim isPinned As Boolean = PinnedItems.GetIsPinned(items(0).FullPath)
-                        _menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
+                        menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
                     End If
                 End If
             End If
 
-            AddHandler _menu.Closed,
+            AddHandler menu.Closed,
                 Sub(s As Object, e As EventArgs)
                     If Not _invokedId Is Nothing Then
                         Me.InvokeCommand(_selectedItemsContextMenu, _invokedId)
@@ -272,18 +271,14 @@ Namespace Controls
                         End If
                     Next
                 End Sub
-            wireMenuItems(_menu.Items.Cast(Of Control).ToList())
-            wireMenuItems(_menu.Buttons.Cast(Of Control).ToList())
-
-            If _menu.Items.Count = 0 Then
-                _menu = Nothing
-            End If
+            wireMenuItems(menu.Items.Cast(Of Control).ToList())
+            wireMenuItems(menu.Buttons.Cast(Of Control).ToList())
 
             'Dim idTPM As Integer = Functions.TrackPopupMenuEx(hMenu, &H100, 0, 0, Shell._hwnd, IntPtr.Zero) - 1
             'Debug.WriteLine("TrackPopupMenuEx returns " & idTPM)
             'InvokeCommand(contextMenu, Nothing, idTPM & vbTab)
 
-            Return _menu ' New ContextMenu() 
+            Return menu ' New ContextMenu() 
         End Function
 
         Private Function getNewItemMenu(contextMenu As Laila.Shell.Controls.ContextMenu)
@@ -590,7 +585,7 @@ Namespace Controls
         End Function
 
         Private Sub newMenuItem_Click(c As Control, e2 As EventArgs)
-            _menu.IsOpen = False
+            Me.NewItemMenu.IsOpen = False
 
             Dim e As CommandInvokedEventArgs = New CommandInvokedEventArgs() With {
                 .Id = c.Tag.ToString().Split(vbTab)(0),
@@ -605,7 +600,7 @@ Namespace Controls
         End Sub
 
         Private Sub menuItem_Click(c As Control, e2 As EventArgs)
-            _menu.IsOpen = False
+            Me.ItemContextMenu.IsOpen = False
 
             Dim e As CommandInvokedEventArgs = New CommandInvokedEventArgs() With {
                 .Id = c.Tag.ToString().Split(vbTab)(0),
@@ -982,8 +977,8 @@ Namespace Controls
                             End Sub
                         viewMenuItem.Items.Add(viewSubMenuItem)
                     Next
-                    _menu.Items.Insert(0, viewMenuItem)
-                    If _menu.Items.Count > 1 Then _menu.Items.Insert(1, New Separator())
+                    Me.ItemContextMenu.Items.Insert(0, viewMenuItem)
+                    If Me.ItemContextMenu.Items.Count > 1 Then Me.ItemContextMenu.Items.Insert(1, New Separator())
                 End If
                 initializeViewMenu()
 

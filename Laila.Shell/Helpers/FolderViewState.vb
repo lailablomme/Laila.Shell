@@ -1,7 +1,6 @@
-﻿Imports Laila.Shell.Behaviors.GridViewExtBehavior
-Imports LiteDB
-Imports System.IO
+﻿Imports System.IO
 Imports System.Xml.Serialization
+Imports LiteDB
 
 Namespace Helpers
     Public Class FolderViewState
