@@ -17,11 +17,16 @@
                                   VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel Margin="20,0,-25,0" SpacingMode="None" Orientation="Vertical" x:Name="PART_StackPanel" />
+                                    <vwp:VirtualizingWrapPanel Orientation="Vertical" Margin="20,0,-25,0" SpacingMode="None" />
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
                             <ListView.GroupStyle>
                                 <GroupStyle>
+                                    <GroupStyle.Panel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </GroupStyle.Panel>
                                     <GroupStyle.ContainerStyle>
                                         <Style TargetType="{x:Type GroupItem}">
                                             <Setter Property="Template">

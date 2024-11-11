@@ -98,7 +98,9 @@ Public Class Item
         Else
             _fullPath = String.Empty
         End If
-        _logicalParent = logicalParent
+        If Not logicalParent Is Nothing Then
+            _logicalParent = logicalParent
+        End If
     End Sub
 
     Public ReadOnly Property ShellItem2 As IShellItem2
@@ -187,7 +189,9 @@ Public Class Item
             For Each prop In Me.GetType().GetProperties()
                 UIHelper.OnUIThread(
                 Sub()
-                    Me.NotifyOfPropertyChange(prop.Name)
+                    If prop.Name <> "View" Then
+                        Me.NotifyOfPropertyChange(prop.Name)
+                    End If
                 End Sub)
             Next
             For Each prop In oldProperties

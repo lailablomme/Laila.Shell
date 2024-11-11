@@ -63,13 +63,13 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public ReadOnly Property Value As Object
         Get
-            If Me.DisplayType = PropertyDisplayType.Enumerated Then
+            If Not disposedValue AndAlso Me.DisplayType = PropertyDisplayType.Enumerated Then
                 Dim index As UInt32
                 Dim propertyEnumType As IPropertyEnumType = getSelectedPropertyEnumType(Me.RawValue, _system_StorageProviderStateDescription, index)
                 If Not propertyEnumType Is Nothing Then
                     Return index
                 End If
-            Else
+            ElseIf Not disposedValue Then
                 Return getValue(rawValue)
             End If
 
@@ -79,7 +79,7 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Overrides ReadOnly Property Text As String
         Get
-            If String.IsNullOrWhiteSpace(_text) Then
+            If Not disposedValue AndAlso String.IsNullOrWhiteSpace(_text) Then
                 Dim rawValue As PROPVARIANT = Me.RawValue
                 Dim buffer As StringBuilder = New StringBuilder()
                 buffer.Append(New String(" ", 2050))
@@ -151,7 +151,7 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Overrides ReadOnly Property Icon16 As ImageSource
         Get
-            If Me.DisplayType = PropertyDisplayType.Enumerated Then
+            If Not disposedValue AndAlso Me.DisplayType = PropertyDisplayType.Enumerated Then
                 Dim imageReference As String, icon As IntPtr
                 Dim index As UInt32
                 Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, _system_StorageProviderStateDescription, index)

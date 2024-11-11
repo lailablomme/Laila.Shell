@@ -316,7 +316,7 @@ Namespace Controls
                         parent = If(currentFolder._logicalParent Is Nothing, currentFolder.GetParent(), currentFolder._logicalParent)
                     End While
                     If Not parent Is Nothing Then
-                        parent.Dispose()
+                        parent.MaybeDispose()
                     End If
 
                     Dim tf As Folder
@@ -326,6 +326,16 @@ Namespace Controls
                         tf = Nothing
                     End If
                     currentFolder.MaybeDispose()
+
+                    Dim finish As Action(Of Folder) =
+                        Sub(finishFolder As Folder)
+                            For Each item In list
+                                item.MaybeDispose()
+                            Next
+                            If Not callback Is Nothing Then
+                                callback(finishFolder)
+                            End If
+                        End Sub
 
                     If Not tf Is Nothing Then
                         list.Reverse()
@@ -353,20 +363,12 @@ Namespace Controls
                                     Else
                                         _selectionHelper.SetSelectedItems({tf})
                                         If Not Me.Folder.FullPath = tf?.FullPath Then Me.Folder = tf
-
-                                        If Not callback Is Nothing Then
-                                            callback(tf)
-                                        End If
-
+                                        finish(tf)
                                         _isSettingSelectedFolder = False
                                     End If
                                 Else
                                     _selectionHelper.SetSelectedItems({})
-
-                                    If Not callback Is Nothing Then
-                                        callback(Nothing)
-                                    End If
-
+                                    finish(Nothing)
                                     _isSettingSelectedFolder = False
                                 End If
                             End Function
@@ -378,11 +380,7 @@ Namespace Controls
                         End If
                     Else
                         If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
-
-                        If Not callback Is Nothing Then
-                            callback(folder)
-                        End If
-
+                        finish(folder)
                         _isSettingSelectedFolder = False
                     End If
                 Else

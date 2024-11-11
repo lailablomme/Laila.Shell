@@ -18,7 +18,7 @@
                                   VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel Margin="20,0,-25,0" x:Name="PART_StackPanel" />
+                                    <VirtualizingStackPanel Margin="20,0,-25,0" />
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
                             <ListView.GroupStyle>

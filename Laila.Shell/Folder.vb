@@ -20,7 +20,7 @@ Public Class Folder
     Private _isExpanded As Boolean
     Private _isLoading As Boolean
     Private _isRefreshingItems As Boolean
-    Private _lock As Object = New Object()
+    Friend _lock As Object = New Object()
     Private _isLoaded As Boolean
     Private _enumerationException As Exception
     Friend _isEnumerated As Boolean
@@ -133,7 +133,7 @@ Public Class Folder
             Me.DisposeItems()
             If Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
                 AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) _
-                AndAlso Not Me.IsInHistory Then
+                AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
                 Me.Dispose()
             End If
         End If
@@ -297,8 +297,6 @@ Public Class Folder
 
     Protected Sub updateItems(items As ObservableCollection(Of Item), isFromThread As Boolean, Optional doRefreshItems As Boolean = True)
         Me.IsLoading = True
-
-        Thread.Sleep(75)
 
         updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE,
                     Function(fullPath As String) As Boolean

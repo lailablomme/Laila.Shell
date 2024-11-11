@@ -213,8 +213,8 @@ Namespace Controls
             End If
         End Sub
 
-        Protected Overrides Sub MakeBinding()
-            MyBase.MakeBinding()
+        Protected Overrides Sub MakeBinding(folder As Folder)
+            MyBase.MakeBinding(folder)
 
             If Not Me.PART_ListView Is Nothing Then
                 Me.ColumnsIn = buildColumnsIn()

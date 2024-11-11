@@ -82,7 +82,7 @@ Namespace Controls
             End Set
         End Property
 
-        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim fv As FolderView = d
             If Not e.NewValue Is Nothing Then
                 AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
@@ -125,7 +125,6 @@ Namespace Controls
                 Me.ActiveView = _views(newValue)
             End If
             Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
-            Me.Folder.LastScrollOffset = New Point()
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
         End Sub

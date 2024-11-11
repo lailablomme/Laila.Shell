@@ -53,7 +53,7 @@ Namespace Controls
             Me.PART_ListView.Visibility = Visibility.Hidden
 
             If Not Me.Folder Is Nothing Then
-                Me.MakeBinding()
+                Me.MakeBinding(Me.Folder)
             End If
 
             AddHandler PART_ListView.Loaded,
@@ -255,9 +255,9 @@ Namespace Controls
             End If
         End Sub
 
-        Protected Overridable Sub MakeBinding()
+        Protected Overridable Sub MakeBinding(folder As Folder)
             If Not Me.PART_ListView Is Nothing Then
-                Me.PART_ListView.ItemsSource = Me.Folder.Items
+                Me.PART_ListView.ItemsSource = folder.Items
             End If
         End Sub
 
@@ -331,16 +331,24 @@ Namespace Controls
                 ' load items
                 Await newValue.GetItemsAsync()
 
-                ' bind view
-                bfv.MakeBinding()
-
                 ' get notified of folder property changes
                 AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
+
+                ' the following is due to a bug in the VirtualizingWrapPanel which needs yet to be fixed
+                If Not bfv.PART_ListView Is Nothing Then
+                    bfv.PART_ListView.ItemsSource = Nothing
+                    Await Task.Delay(50)
+                    bfv.PART_ListView.ItemsSource = Nothing
+                    Await Task.Delay(50)
+                End If
+
+                ' bind view
+                bfv.MakeBinding(e.NewValue)
 
                 ' async because otherwise we're a tad too early
                 UIHelper.OnUIThreadAsync(
                     Async Sub()
-                        Await Task.Delay(5)
+                        Await Task.Delay(50)
 
                         ' restore folder scroll position
                         bfv._lastScrollOffset = newValue.LastScrollOffset
