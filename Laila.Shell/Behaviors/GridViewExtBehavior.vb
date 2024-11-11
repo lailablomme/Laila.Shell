@@ -21,6 +21,7 @@ Namespace Behaviors
 
         Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
         Public Event SortChanged As EventHandler
+        Public Event GroupByChanged As EventHandler
 
         Private Const COLUMN_MARGIN As Double = 5
         Private Const MARGIN_LEFT As Double = 20
@@ -159,7 +160,7 @@ Namespace Behaviors
         Private _activeColumns As List(Of ActiveColumnStateData)
         Private _dontWrite As Boolean = False
         Private _clickedColumn As GridViewColumn
-        Private _groupByPropertyNames As List(Of String) = New List(Of String)()
+        Private _groupByPropertyName As String
         Private _scrollViewer As ScrollViewer
         Private _skipResize As Boolean
         Private _isInitialResize As Boolean = True
@@ -218,6 +219,8 @@ Namespace Behaviors
                    headerRowGrid.Children.Add(_headerRowPresenter)
                    Dim headerRowMarginPresenter As GridViewHeaderRowPresenter = New GridViewHeaderRowPresenter()
                    headerRowMarginPresenter.SetValue(Grid.ColumnProperty, 0)
+                   headerRowMarginPresenter.SetValue(GridViewHeaderRowPresenter.MarginProperty, New Thickness(0, 0, -5, 0))
+                   headerRowMarginPresenter.SetValue(Panel.ZIndexProperty, -1)
                    headerRowGrid.Children.Add(headerRowMarginPresenter)
 
                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
@@ -366,8 +369,14 @@ Namespace Behaviors
                 Next
 
                 ' set initial group by
-                If Not String.IsNullOrWhiteSpace(Me.ColumnsIn.InitialGroupByPropertyNames) Then
-                    _groupByPropertyNames = New List(Of String)(Me.ColumnsIn.InitialGroupByPropertyNames.Split(","c))
+                If Not gridViewState Is Nothing AndAlso Not String.IsNullOrWhiteSpace(gridViewState.GroupByPropertyName) Then
+                    _groupByPropertyName = gridViewState.GroupByPropertyName
+                    regroup()
+                ElseIf Not String.IsNullOrWhiteSpace(Me.ColumnsIn.InitialGroupByPropertyName) Then
+                    _groupByPropertyName = Me.ColumnsIn.InitialGroupByPropertyName
+                    regroup()
+                Else
+                    _groupByPropertyName = Nothing
                     regroup()
                 End If
             End If
@@ -574,15 +583,25 @@ Namespace Behaviors
                     AddHandler groupMenuItem.Checked,
                         Sub(s2 As Object, e2 As EventArgs)
                             If Not _clickedColumn Is Nothing Then
-                                _groupByPropertyNames.Add(propertyName)
+                                _groupByPropertyName = propertyName
                                 regroup()
+
+                                RaiseEvent GroupByChanged(Me, New EventArgs())
+
+                                ' write state
+                                writeState()
                             End If
                         End Sub
                     AddHandler groupMenuItem.Unchecked,
                         Sub(s2 As Object, e2 As EventArgs)
                             If Not _clickedColumn Is Nothing Then
-                                _groupByPropertyNames.Remove(propertyName)
+                                _groupByPropertyName = Nothing
                                 regroup()
+
+                                RaiseEvent GroupByChanged(Me, New EventArgs())
+
+                                ' write state
+                                writeState()
                             End If
                         End Sub
                     menu.Items.Insert(0, groupMenuItem)
@@ -594,7 +613,7 @@ Namespace Behaviors
                     _clickedColumn = Nothing
                     If Not String.IsNullOrEmpty(propertyName) Then
                         groupMenuItem.IsEnabled = True
-                        groupMenuItem.IsChecked = _groupByPropertyNames.Contains(propertyName)
+                        groupMenuItem.IsChecked = _groupByPropertyName = propertyName
                     Else
                         groupMenuItem.IsEnabled = False
                         groupMenuItem.IsChecked = False
@@ -640,24 +659,17 @@ Namespace Behaviors
         Private Sub regroup()
             Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
             If Not view Is Nothing Then
-                If view.GroupDescriptions.Count > 0 Then
+                If Not String.IsNullOrWhiteSpace(_groupByPropertyName) Then
+                    Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(_groupByPropertyName)
+                    If Not view.GroupDescriptions Is Nothing AndAlso view.GroupDescriptions.Count > 0 Then
+                        view.GroupDescriptions(0) = groupDescription
+                    Else
+                        view.GroupDescriptions.Add(groupDescription)
+                    End If
+                ElseIf Not view.GroupDescriptions Is Nothing Then
                     view.GroupDescriptions.Clear()
                 End If
-                If _groupByPropertyNames.Count > 0 Then
-                    If _listView.GroupStyle.Count = 0 Then
-                        _listView.GroupStyle.Add(_listView.FindResource("groupByStyle"))
-                    End If
-                Else
-                    If _listView.GroupStyle.Count > 0 Then
-                        _listView.GroupStyle.Clear()
-                    End If
-                End If
-                For Each item In _groupByPropertyNames
-                    Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(item)
-                    view.GroupDescriptions.Add(groupDescription)
-                Next
             End If
-            _headerRowPresenter.Margin = New Thickness(_groupByPropertyNames.Count * 21, 0, 0, 0)
         End Sub
 
         Private Sub icgStatusChanged(sender As Object, e As EventArgs)
@@ -675,7 +687,7 @@ Namespace Behaviors
 
                 If Not _skipResize Then
                     Dim isFullGrid As Boolean = rows.Sum(Function(r) r.DesiredSize.Height) <= _listView.ActualHeight
-                    If rows.Count > 0 AndAlso (_isInitialResize OrElse isFullGrid) Then
+                    If (rows.Count > 0 OrElse _listView.Items.Count = 0) AndAlso (_isInitialResize OrElse isFullGrid) Then
                         resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
 
                         If isFullGrid OrElse rows.Count = _listView.Items.Count Then _isInitialResize = False
@@ -711,10 +723,12 @@ Namespace Behaviors
                         End If
 
                         ' measure header
-                        Dim hc As GridViewColumnHeader = hcs.First(Function(i) activeCol.Column.Equals(i.Column))
-                        hc.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
-                        If Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN) > width Then
-                            width = Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN)
+                        Dim hc As GridViewColumnHeader = hcs.FirstOrDefault(Function(i) activeCol.Column.Equals(i.Column))
+                        If Not hc Is Nothing Then
+                            hc.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
+                            If Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN) > width Then
+                                width = Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN)
+                            End If
                         End If
 
                         If list.Count > 0 Then
@@ -772,6 +786,9 @@ Namespace Behaviors
                 gridViewState.SortPropertyName = currentSort.PropertyName
                 gridViewState.SortDirection = currentSort.Direction
             End If
+            If Not String.IsNullOrWhiteSpace(_groupByPropertyName) Then
+                gridViewState.GroupByPropertyName = _groupByPropertyName
+            End If
 
             Me.WriteState(Me.ColumnsIn.ViewName, gridViewState)
         End Sub
@@ -784,7 +801,8 @@ Namespace Behaviors
             Dim folderViewState As FolderViewState = New FolderViewState() With {
                 .Columns = state.Columns,
                 .SortDirection = state.SortDirection,
-                .SortPropertyName = state.SortPropertyName
+                .SortPropertyName = state.SortPropertyName,
+                .GroupByPropertyName = state.GroupByPropertyName
             }
             folderViewState.Persist(viewName)
         End Sub
@@ -816,6 +834,7 @@ Namespace Behaviors
             Public Property Columns As List(Of ColumnStateData)
             Public Property SortPropertyName As String
             Public Property SortDirection As ListSortDirection
+            Public Property GroupByPropertyName As String
         End Class
 
         Public Class ColumnStateData
@@ -834,7 +853,7 @@ Namespace Behaviors
         Public Class ColumnsInData
             Public Property ViewName As String
             Public Property Items As List(Of GridViewColumn)
-            Public Property InitialGroupByPropertyNames As String
+            Public Property InitialGroupByPropertyName As String
             Public Property PrimarySortProperties As String = ""
         End Class
     End Class

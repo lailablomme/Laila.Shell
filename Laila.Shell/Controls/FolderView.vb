@@ -89,13 +89,12 @@ Namespace Controls
                 If Not folderViewState Is Nothing Then
                     CType(e.NewValue, Folder).ItemsSortPropertyName = folderViewState.SortPropertyName
                     CType(e.NewValue, Folder).ItemsSortDirection = folderViewState.SortDirection
+                    CType(e.NewValue, Folder).ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
                 Else
                     CType(e.NewValue, Folder).ItemsSortPropertyName = "ItemNameDisplaySortValue"
                 End If
             End If
             If Not e.OldValue Is Nothing Then
-                Dim view As CollectionView = CollectionViewSource.GetDefaultView(e.OldValue.Items)
-                view.SortDescriptions.Clear()
                 CType(e.OldValue, Folder).IsActiveInFolderView = False
             End If
         End Sub

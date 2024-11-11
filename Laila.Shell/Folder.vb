@@ -547,6 +547,31 @@ Public Class Folder
         End Set
     End Property
 
+    Public Property ItemsGroupByPropertyName As String
+        Get
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            If Not view.GroupDescriptions Is Nothing AndAlso view.GroupDescriptions.Count > 0 Then
+                Return CType(view.GroupDescriptions(0), PropertyGroupDescription).PropertyName
+            Else
+                Return Nothing
+            End If
+        End Get
+        Set(value As String)
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            If Not String.IsNullOrWhiteSpace(value) Then
+                Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(value)
+                If view.GroupDescriptions.Count > 0 Then
+                    view.GroupDescriptions(0) = groupDescription
+                Else
+                    view.GroupDescriptions.Add(groupDescription)
+                End If
+            ElseIf Not view.GroupDescriptions Is Nothing Then
+                view.GroupDescriptions.Clear()
+            End If
+            Me.NotifyOfPropertyChange("ItemsGroupByPropertyName")
+        End Set
+    End Property
+
 
     Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)

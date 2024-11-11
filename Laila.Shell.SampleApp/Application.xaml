@@ -262,6 +262,57 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style TargetType="ToggleButton" x:Key="lailaShell_GroupByExpanderToggleButtonStyle">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Grid Width="20" Height="20" Background="Transparent">
+                            <Image Width="9" Height="5" Margin="4,0,0,0" x:Name="Arrow"
+                                   Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="Arrow" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <RotateTransform Angle="-90"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="Arrow" Property="Margin" Value="8,13,0,0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="Expander" x:Key="lailaShell_GroupByExpanderStyle">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                            <StackPanel>
+                                <DockPanel>
+                                    <ToggleButton DockPanel.Dock="Left" 
+                                              Style="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}" 
+                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" />
+                                    <ContentPresenter ContentSource="Header" Margin="2,0,0,0"
+                                                      VerticalAlignment="Center"/>
+                                </DockPanel>
+                                <ContentPresenter x:Name="ExpanderContent" 
+                                                  Visibility="Collapsed"
+                                                  ContentSource="Content" 
+                                                  Margin="0,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ExpanderContent" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="{x:Type TabItem}">
             <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
             <Setter Property="Template">

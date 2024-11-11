@@ -27,7 +27,7 @@ Namespace Controls
 
         Friend PART_ListView As System.Windows.Controls.ListView
         Private PART_Grid As Grid
-        Private PART_StackPanel As Panel
+        'Private PART_StackPanel As Panel
         Private PART_Ext As Behaviors.GridViewExtBehavior
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
@@ -52,6 +52,8 @@ Namespace Controls
             Me.PART_ListView = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
 
+            Me.PART_ListView.Visibility = Visibility.Hidden
+
             If Not Me.Folder Is Nothing Then
                 Me.MakeBinding()
             End If
@@ -67,10 +69,11 @@ Namespace Controls
                                 Sub(s2 As Object, e2 As EventArgs)
                                     Me.Folder.NotifyOfPropertyChange("ItemsSortPropertyName")
                                 End Sub
+                            AddHandler Me.PART_Ext.GroupByChanged,
+                                Sub(s2 As Object, e2 As EventArgs)
+                                    Me.Folder.NotifyOfPropertyChange("ItemsGroupByPropertyName")
+                                End Sub
                         End If
-
-                        Me.PART_StackPanel = UIHelper.FindVisualChildren(Of Panel)(Me.PART_ListView).FirstOrDefault(Function(c) c.Name = "PART_StackPanel")
-                        Me.PART_StackPanel.Visibility = Visibility.Hidden
 
                         _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
                         _selectionHelper.SelectionChanged =
@@ -452,6 +455,7 @@ Namespace Controls
                 RemoveHandler oldValue.PropertyChanged, AddressOf folder_PropertyChanged
                 oldValue.LastScrollOffset = _lastScrollOffset
                 oldValue.LastScrollSize = _lastScrollSize
+                ClearBinding()
             End If
 
             If Not newValue Is Nothing Then
@@ -468,7 +472,6 @@ Namespace Controls
                                 FrequentFolders.RecordTimeSpent(Me.Folder, 2)
                             End Sub)
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
-                ClearBinding()
                 Await newValue.GetItemsAsync()
                 Me.MakeBinding()
                 AddHandler newValue.PropertyChanged, AddressOf folder_PropertyChanged
@@ -479,27 +482,25 @@ Namespace Controls
                         _lastScrollSize = newValue.LastScrollSize
                         _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, _lastScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
                         _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, _lastScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
-                        If Not Me.PART_StackPanel Is Nothing Then
-                            Me.PART_StackPanel.Visibility = Visibility.Visible
-                        End If
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                        Me.PART_ListView.Visibility = Visibility.Visible
+                    End Sub, Threading.DispatcherPriority.Render)
             End If
 
             Me.IsLoading = False
         End Sub
 
         Protected Overridable Sub ClearBinding()
+            Me.PART_ListView.Visibility = Visibility.Hidden
             If Not Me.PART_ListView Is Nothing Then
-                BindingOperations.ClearBinding(Me.PART_ListView, System.Windows.Controls.ListView.ItemsSourceProperty)
-            End If
-            If Not Me.PART_StackPanel Is Nothing Then
-                Me.PART_StackPanel.Visibility = Visibility.Hidden
+                'BindingOperations.ClearBinding(Me.PART_ListView, System.Windows.Controls.ListView.ItemsSourceProperty)
+                Me.PART_ListView.ItemsSource = Nothing
             End If
         End Sub
 
         Protected Overridable Sub MakeBinding()
             If Not Me.PART_ListView Is Nothing Then
-                BindingOperations.SetBinding(Me.PART_ListView, System.Windows.Controls.ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
+                'BindingOperations.SetBinding(Me.PART_ListView, System.Windows.Controls.ListView.ItemsSourceProperty, New Binding("Folder.Items") With {.Source = Me})
+                Me.PART_ListView.ItemsSource = Me.Folder.Items
             End If
         End Sub
 
@@ -510,7 +511,7 @@ Namespace Controls
                         Sub()
                             Me.IsLoading = CType(s, Folder).IsRefreshingItems
                         End Sub)
-                Case "ItemsSortPropertyName", "ItemsSortDirection"
+                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName"
                     If Not Me.PART_Ext Is Nothing Then
                         Me.PART_Ext.UpdateSortGlyphs()
                     End If
@@ -520,6 +521,7 @@ Namespace Controls
                     End If
                     folderViewState.SortPropertyName = Me.Folder.ItemsSortPropertyName
                     folderViewState.SortDirection = Me.Folder.ItemsSortDirection
+                    folderViewState.GroupByPropertyName = Me.Folder.ItemsGroupByPropertyName
                     folderViewState.Persist(Me.Folder.FullPath)
             End Select
         End Sub

@@ -162,8 +162,10 @@ Public Class Item
 
     Public Overridable Sub ClearCache()
         SyncLock _lock
-            Marshal.ReleaseComObject(_shellItem2)
-            _shellItem2 = Nothing
+            If Not _shellItem2 Is Nothing Then
+                Marshal.ReleaseComObject(_shellItem2)
+                _shellItem2 = Nothing
+            End If
         End SyncLock
         For Each [property] In _properties
             [property].Dispose()
@@ -176,24 +178,28 @@ Public Class Item
         Dim oldProperties As HashSet(Of [Property]) = _properties
         Me.ClearCache()
 
-        _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+        If Not Me.ShellItem2 Is Nothing Then
+            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                 Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
-        Me.ShellItem2.GetAttributes(_attributes, _attributes)
-        For Each prop In Me.GetType().GetProperties()
-            UIHelper.OnUIThread(
+            Me.ShellItem2.GetAttributes(_attributes, _attributes)
+            For Each prop In Me.GetType().GetProperties()
+                UIHelper.OnUIThread(
                 Sub()
                     Me.NotifyOfPropertyChange(prop.Name)
                 End Sub)
-        Next
-        For Each prop In oldProperties
-            UIHelper.OnUIThread(
-                Sub()
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.CanonicalName))
-                End Sub)
-        Next
+            Next
+            For Each prop In oldProperties
+                UIHelper.OnUIThread(
+                    Sub()
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.CanonicalName))
+                    End Sub)
+            Next
+        Else
+            Me.Dispose()
+        End If
     End Sub
 
     Public ReadOnly Property FullPath As String

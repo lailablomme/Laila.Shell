@@ -989,7 +989,7 @@ Namespace Controls
                 Dim sortMenu As ContextMenu = New ContextMenu()
                 Dim moreMenuItem As MenuItem
                 Dim PKEY_System_ItemNameDisplay As String = Me.Folder.PropertiesByCanonicalName("System.ItemNameDisplay").Key.ToString()
-                Dim menuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
+                Dim sortMenuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
                     Sub(s2 As Object, e2 As RoutedEventArgs)
                         If Not _isCheckingSortInternally Then
                             If CType(s2, MenuItem).Tag.ToString().Substring(5).IndexOf(":") >= 0 Then
@@ -1012,11 +1012,10 @@ Namespace Controls
                 For Each propName In primaryProperties
                     Dim menuItem As MenuItem = New MenuItem() With {
                         .Header = descriptions(propName),
-                        .IsChecked = False,
                         .Tag = "Sort:" & If(propName = PKEY_System_ItemNameDisplay, "ItemNameDisplaySortValue", propName),
                         .IsCheckable = True
                     }
-                    AddHandler menuItem.Checked, menuItemCheckedAction
+                    AddHandler menuItem.Checked, sortMenuItemCheckedAction
                     AddHandler menuItem.Unchecked, menuItemUncheckedAction
                     sortMenu.Items.Add(menuItem)
                 Next
@@ -1026,11 +1025,10 @@ Namespace Controls
                     For Each propName In additionalProperties
                         Dim menuItem As MenuItem = New MenuItem() With {
                             .Header = descriptions(propName),
-                            .IsChecked = False,
                             .Tag = "Sort:" & If(propName = PKEY_System_ItemNameDisplay, "ItemNameDisplaySortValue", propName),
                             .IsCheckable = True
                         }
-                        AddHandler menuItem.Checked, menuItemCheckedAction
+                        AddHandler menuItem.Checked, sortMenuItemCheckedAction
                         AddHandler menuItem.Unchecked, menuItemUncheckedAction
                         moreMenuItem.Items.Add(menuItem)
                     Next
@@ -1048,6 +1046,7 @@ Namespace Controls
                             Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
                         End If
                     End Sub
+                AddHandler sortAscendingMenuItem.Unchecked, menuItemUncheckedAction
                 Dim sortDescendingMenuItem As MenuItem = New MenuItem() With {
                     .Header = "Descending",
                     .IsCheckable = True,
@@ -1060,6 +1059,52 @@ Namespace Controls
                             Me.Folder.ItemsSortDirection = ListSortDirection.Descending
                         End If
                     End Sub
+                AddHandler sortDescendingMenuItem.Unchecked, menuItemUncheckedAction
+                sortMenu.Items.Add(New Separator())
+                Dim groupByMenuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
+                    Sub(s2 As Object, e2 As RoutedEventArgs)
+                        If Not _isCheckingSortInternally Then
+                            Me.Folder.ItemsGroupByPropertyName =
+                                    String.Format("PropertiesByKeyAsText[{0}].Value",
+                                                  CType(s2, MenuItem).Tag.ToString().Substring(6))
+                        End If
+                    End Sub)
+                Dim groupByMoreMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Group by",
+                    .Tag = "GroupByMore"
+                }
+                sortMenu.Items.Add(groupByMoreMenuItem)
+                For Each propName In primaryProperties
+                    Dim menuItem As MenuItem = New MenuItem() With {
+                        .Header = descriptions(propName),
+                        .Tag = "Group:" & propName,
+                        .IsCheckable = True
+                    }
+                    AddHandler menuItem.Checked, groupByMenuItemCheckedAction
+                    AddHandler menuItem.Unchecked, menuItemUncheckedAction
+                    groupByMoreMenuItem.Items.Add(menuItem)
+                Next
+                For Each propName In additionalProperties
+                    Dim menuItem As MenuItem = New MenuItem() With {
+                        .Header = descriptions(propName),
+                        .Tag = "Group:" & propName,
+                        .IsCheckable = True
+                    }
+                    AddHandler menuItem.Checked, groupByMenuItemCheckedAction
+                    AddHandler menuItem.Unchecked, menuItemUncheckedAction
+                    groupByMoreMenuItem.Items.Add(menuItem)
+                Next
+                Dim groupByNoneMenuItem As MenuItem = New MenuItem() With {
+                        .Header = "(None)",
+                        .Tag = "Group:",
+                        .IsCheckable = True
+                    }
+                AddHandler groupByNoneMenuItem.Checked,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        Me.Folder.ItemsGroupByPropertyName = Nothing
+                    End Sub
+                AddHandler groupByNoneMenuItem.Unchecked, menuItemUncheckedAction
+                groupByMoreMenuItem.Items.Add(groupByNoneMenuItem)
 
                 Me.SortMenu = sortMenu
                 initializeSortMenu()
@@ -1122,33 +1167,55 @@ Namespace Controls
         Private Sub initializeSortMenu()
             If Not Me.SortMenu Is Nothing Then
                 _isCheckingSortInternally = True
-                Dim pKey As String = Me.Folder.ItemsSortPropertyName
-                If Not String.IsNullOrWhiteSpace(pKey) Then
-                    If pKey.IndexOf("[") >= 0 Then
-                        pKey = pKey.Substring(pKey.IndexOf("[") + 1)
-                        pKey = pKey.Substring(0, pKey.IndexOf("]"))
+                Dim sortPropertyName As String = Me.Folder.ItemsSortPropertyName
+                Dim groupByPropertyName As String = Me.Folder.ItemsGroupByPropertyName
+                If Not String.IsNullOrWhiteSpace(sortPropertyName) Then
+                    If sortPropertyName.IndexOf("[") >= 0 Then
+                        sortPropertyName = sortPropertyName.Substring(sortPropertyName.IndexOf("[") + 1)
+                        sortPropertyName = sortPropertyName.Substring(0, sortPropertyName.IndexOf("]"))
                     End If
-                    Dim moreMenuItem As MenuItem = Nothing
-                    For Each item In Me.SortMenu.Items
-                        If TypeOf item Is MenuItem Then
-                            If CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
-                                CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & pKey
-                            ElseIf CType(item, MenuItem).Tag.ToString() = "SortMore" Then
-                                moreMenuItem = item
-                            ElseIf CType(item, MenuItem).Tag.ToString() = "SortAscending" Then
-                                CType(item, MenuItem).IsChecked = Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
-                            ElseIf CType(item, MenuItem).Tag.ToString() = "SortDescending" Then
-                                CType(item, MenuItem).IsChecked = Me.Folder.ItemsSortDirection = ListSortDirection.Descending
+                End If
+                If Not String.IsNullOrWhiteSpace(groupByPropertyName) Then
+                    If groupByPropertyName.IndexOf("[") >= 0 Then
+                        groupByPropertyName = groupByPropertyName.Substring(groupByPropertyName.IndexOf("[") + 1)
+                        groupByPropertyName = groupByPropertyName.Substring(0, groupByPropertyName.IndexOf("]"))
+                    End If
+                End If
+                Dim sortMoreMenuItem As MenuItem = Nothing
+                Dim groupByMoreMenuItem As MenuItem = Nothing
+                For Each item In Me.SortMenu.Items
+                    If TypeOf item Is MenuItem Then
+                        If CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
+                            CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & sortPropertyName
+                        ElseIf CType(item, MenuItem).Tag.ToString() = "SortMore" Then
+                            sortMoreMenuItem = item
+                        ElseIf CType(item, MenuItem).Tag.ToString() = "GroupByMore" Then
+                            groupByMoreMenuItem = item
+                        ElseIf CType(item, MenuItem).Tag.ToString() = "SortAscending" Then
+                            CType(item, MenuItem).IsChecked = Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
+                        ElseIf CType(item, MenuItem).Tag.ToString() = "SortDescending" Then
+                            CType(item, MenuItem).IsChecked = Me.Folder.ItemsSortDirection = ListSortDirection.Descending
+                        End If
+                    End If
+                Next
+                If Not sortMoreMenuItem Is Nothing Then
+                    For Each item In sortMoreMenuItem.Items
+                        If TypeOf item Is MenuItem AndAlso CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
+                            CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & sortPropertyName
+                        End If
+                    Next
+                End If
+                If Not groupByMoreMenuItem Is Nothing Then
+                    For Each item In groupByMoreMenuItem.Items
+                        If TypeOf item Is MenuItem AndAlso CType(item, MenuItem).Tag.ToString().StartsWith("Group:") Then
+                            If CType(item, MenuItem).Tag.ToString() = "Group:" Then
+                                CType(item, MenuItem).Visibility = If(Not String.IsNullOrWhiteSpace(groupByPropertyName), Visibility.Visible, Visibility.Collapsed)
+                                CType(item, MenuItem).IsChecked = False
+                            Else
+                                CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Group:" & groupByPropertyName
                             End If
                         End If
                     Next
-                    If Not moreMenuItem Is Nothing Then
-                        For Each item In moreMenuItem.Items
-                            If TypeOf item Is MenuItem AndAlso CType(item, MenuItem).Tag.ToString().StartsWith("Sort:") Then
-                                CType(item, MenuItem).IsChecked = CType(item, MenuItem).Tag.ToString() = "Sort:" & pKey
-                            End If
-                        Next
-                    End If
                 End If
                 _isCheckingSortInternally = False
             End If
@@ -1156,7 +1223,7 @@ Namespace Controls
 
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
-                Case "ItemsSortPropertyName", "ItemsSortDirection"
+                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName"
                     initializeSortMenu()
             End Select
         End Sub
