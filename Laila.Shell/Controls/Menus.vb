@@ -228,7 +228,8 @@ Namespace Controls
                 If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
                 Else If hasPaste Then menu.Buttons.Add(makeButton("-1" & vbTab & "paste", "Paste"))
                 menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "rename")
-                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+                If Not menuItem Is Nothing AndAlso Not items Is Nothing AndAlso items.Count = 1 Then _
+                    menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
                 menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
                 If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
                 'If Not items Is Nothing AndAlso items.Count = 1 Then

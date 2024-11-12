@@ -129,14 +129,20 @@ Public Class Folder
         End Set
     End Property
 
-    Public Overrides Sub MaybeDispose()
-        Me.DisposeItems()
-        If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
-            AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
-            AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) _
-            AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
-            Me.Dispose()
-        End If
+    Public Overrides Async Sub MaybeDispose()
+        Dim func As Func(Of Task) =
+            Async Function() As Task
+                Await Task.Delay(1000)
+
+                Me.DisposeItems()
+                If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
+                    AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
+                    AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) _
+                    AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
+                    Me.Dispose()
+                End If
+            End Function
+        Await Task.Run(func)
     End Sub
 
     Public Sub DisposeItems()
