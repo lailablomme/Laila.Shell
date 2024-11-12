@@ -436,7 +436,7 @@ Namespace Controls
                                         Case "open"
                                             If TypeOf clickedItem Is Folder Then
                                                 _selectionHelper.SetSelectedItems({clickedItem})
-                                                Me.SetSelectedFolder(clickedItem)
+                                                Me.Folder = clickedItem
                                                 e2.IsHandled = True
                                             End If
                                         Case "rename"
@@ -489,7 +489,7 @@ Namespace Controls
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                             Else
                                 _selectionHelper.SetSelectedItems({clickedItem})
-                                If TypeOf clickedItem Is Folder Then Me.SetSelectedFolder(clickedItem)
+                                If TypeOf clickedItem Is Folder Then Me.Folder = clickedItem
                             End If
                             e.Handled = True
                         End If

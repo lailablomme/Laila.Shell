@@ -144,7 +144,6 @@ Public Class Folder
             For Each item In _items.ToList()
                 item.MaybeDispose()
             Next
-            _isEnumerated = False
         End If
     End Sub
 
