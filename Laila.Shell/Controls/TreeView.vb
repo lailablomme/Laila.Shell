@@ -74,12 +74,15 @@ Namespace Controls
                         Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                             If Not Me.Items.FirstOrDefault(
                                 Function(i)
-                                    Using parent = i.GetParent()
-                                        Return Not i.disposedValue _
-                                            AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
+                                    If Not i.disposedValue Then
+                                        Using parent = i.GetParent()
+                                            Return i.TreeRootIndex >= TreeRootSection.PINNED _
                                             AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                                             AndAlso (Not parent Is Nothing AndAlso parent.FullPath = e.Item1Path)
-                                    End Using
+                                        End Using
+                                    Else
+                                        Return False
+                                    End If
                                 End Function) Is Nothing _
                                 OrElse Shell.Desktop.FullPath.Equals(e.Item1Path) Then
                                 updatePinnedItems()
@@ -456,7 +459,10 @@ Namespace Controls
                             PART_ListBox.ContextMenu = _menu.ItemContextMenu
                             e.Handled = True
 
-                            If Not parent Is Nothing Then parent.Dispose()
+                            AddHandler PART_ListBox.ContextMenu.Closed,
+                                Sub(s2 As Object, e2 As Object)
+                                    If Not parent Is Nothing Then parent.Dispose()
+                                End Sub
                         Else
                             PART_ListBox.ContextMenu = Nothing
                         End If

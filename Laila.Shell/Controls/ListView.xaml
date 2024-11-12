@@ -20,8 +20,8 @@
                                     <vwp:VirtualizingWrapPanel Orientation="Vertical" Margin="20,0,-25,0" SpacingMode="None" />
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
-                            <ListView.GroupStyle>
-                                <GroupStyle>
+                            <ListView.Resources>
+                                <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.Panel>
                                         <ItemsPanelTemplate>
                                             <VirtualizingStackPanel Orientation="Horizontal" />
@@ -46,7 +46,7 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
-                            </ListView.GroupStyle>
+                            </ListView.Resources>
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior />
                             </i:Interaction.Behaviors>

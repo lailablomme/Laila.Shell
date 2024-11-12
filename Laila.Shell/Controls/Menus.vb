@@ -231,14 +231,14 @@ Namespace Controls
                 If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
                 menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
                 If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-                If Not items Is Nothing AndAlso items.Count = 1 Then
-                    Dim test As Item = Item.FromParsingName(items(0).FullPath, Nothing)
-                    If Not test Is Nothing Then ' this won't work for all items 
-                        test.Dispose()
-                        Dim isPinned As Boolean = PinnedItems.GetIsPinned(items(0).FullPath)
-                        menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
-                    End If
-                End If
+                'If Not items Is Nothing AndAlso items.Count = 1 Then
+                '    Dim test As Item = Item.FromParsingName(items(0).FullPath, Nothing)
+                '    If Not test Is Nothing Then ' this won't work for all items 
+                '        test.Dispose()
+                '        Dim isPinned As Boolean = PinnedItems.GetIsPinned(items(0).FullPath)
+                '        menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
+                '    End If
+                'End If
             End If
 
             AddHandler menu.Closed,
@@ -1317,10 +1317,12 @@ Namespace Controls
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Me.Update()
+                                'Me.Update()
 
-                                _updateTimer.Dispose()
-                                _updateTimer = Nothing
+                                If Not _updateTimer Is Nothing Then
+                                    _updateTimer.Dispose()
+                                    _updateTimer = Nothing
+                                End If
                             End Sub)
                     End Sub), Nothing, Me.UpdateDelay.Value, Timeout.Infinite)
             ElseIf Me.UpdateDelay.HasValue Then

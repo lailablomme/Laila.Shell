@@ -29,6 +29,7 @@ Public Class Folder
     Private _isVisibleInAddressBar As Boolean
     Private _isInHistory As Boolean
     Private _view As String
+    Private _hasSubFolders As Boolean?
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -67,7 +68,7 @@ Public Class Folder
 
     Public ReadOnly Property IsRootFolder As Boolean
         Get
-            Return Shell.SpecialFolders.Values.Contains(Me) Or Me.TreeRootIndex <> -1
+            Return Shell.SpecialFolders.Values.Contains(Me) OrElse Me.TreeRootIndex <> -1
         End Get
     End Property
 
@@ -129,18 +130,17 @@ Public Class Folder
     End Property
 
     Public Overrides Sub MaybeDispose()
-        If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded Then
-            Me.DisposeItems()
-            If Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
-                AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) _
-                AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
-                Me.Dispose()
-            End If
+        Me.DisposeItems()
+        If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
+            AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
+            AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) _
+            AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
+            Me.Dispose()
         End If
     End Sub
 
     Public Sub DisposeItems()
-        If _isEnumerated AndAlso Not Me.IsLoading Then
+        If Not Me.IsLoading Then
             For Each item In _items.ToList()
                 item.MaybeDispose()
             Next
@@ -229,7 +229,11 @@ Public Class Folder
     Public Overrides ReadOnly Property HasSubFolders As Boolean
         Get
             If _isEnumerated Then
-                Return Not _items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
+                _hasSubFolders = Not _items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
+            End If
+
+            If _hasSubFolders.HasValue Then
+                Return _hasSubFolders.Value
             Else
                 Return Me.Attributes.HasFlag(SFGAO.HASSUBFOLDER)
             End If
@@ -323,7 +327,10 @@ Public Class Folder
                     Sub(path As String)
                         Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
                         If Not item Is Nothing Then
-                            item.Refresh()
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    item.Refresh()
+                                End Sub)
                         End If
                     End Sub, doRefreshItems)
     End Sub
@@ -373,9 +380,12 @@ Public Class Folder
 
                         Dim ptr2 As IntPtr
                         Try
-                            Me.ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
-                            If Not IntPtr.Zero.Equals(ptr2) Then
-                                enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+                            Dim shellItem2 As IShellItem2 = Me.ShellItem2
+                            If Not shellItem2 Is Nothing Then
+                                shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                                If Not IntPtr.Zero.Equals(ptr2) Then
+                                    enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+                                End If
                             End If
                         Finally
                             If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)

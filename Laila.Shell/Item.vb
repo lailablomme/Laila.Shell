@@ -25,6 +25,7 @@ Public Class Item
     Private _shellItem2 As IShellItem2
     Private _objectId As Long = -1
     Private Shared _objectCount As Long = 0
+    Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -165,10 +166,10 @@ Public Class Item
 
     Public Overridable Sub ClearCache()
         If Not _shellItem2 Is Nothing Then
-            Dim oldShellItem As IShellItem = _shellItem2
+            _expiredShellItem2.Add(_shellItem2)
             _shellItem2 = Nothing
-            Marshal.ReleaseComObject(oldShellItem)
         End If
+
         For Each [property] In _properties
             [property].Dispose()
         Next
@@ -859,7 +860,11 @@ Public Class Item
             If disposing Then
                 ' dispose managed state (managed objects)
                 RemoveHandler Shell.Notification, AddressOf shell_Notification
+
                 Me.ClearCache()
+                For Each item In _expiredShellItem2
+                    Marshal.ReleaseComObject(item)
+                Next
 
                 UIHelper.OnUIThread(
                     Sub()

@@ -84,9 +84,7 @@
                                         </Setter.Value>
                                     </Setter>
                                 </Style>
-                            </ListView.Resources>
-                            <ListView.GroupStyle>
-                                <GroupStyle>
+                                <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.ContainerStyle>
                                         <Style TargetType="{x:Type GroupItem}">
                                             <Setter Property="Template">
@@ -106,7 +104,7 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
-                            </ListView.GroupStyle>
+                            </ListView.Resources>
                             <ListView.View>
                                 <GridView></GridView>
                             </ListView.View>

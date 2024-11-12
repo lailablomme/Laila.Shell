@@ -194,15 +194,15 @@ Namespace Behaviors
                         _skipResize = False
                         resizeVisibleRows()
 
-                        'If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
-                        '    AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
-                        '        Sub(sender2 As Object, e2 As NotifyCollectionChangedEventArgs)
-                        '            Select Case e2.Action
-                        '                Case NotifyCollectionChangedAction.Add
-                        '                    _skipResize = False
-                        '            End Select
-                        '        End Sub
-                        'End If
+                        If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
+                            AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
+                                Sub(sender2 As Object, e2 As NotifyCollectionChangedEventArgs)
+                                    Select Case e2.Action
+                                        Case NotifyCollectionChangedAction.Add
+                                            _skipResize = False
+                                    End Select
+                                End Sub
+                        End If
 
                         If _isLoaded Then regroup()
                     End Sub)
@@ -690,7 +690,7 @@ Namespace Behaviors
                     If (rows.Count > 0 OrElse _listView.Items.Count = 0) AndAlso (_isInitialResize OrElse isFullGrid) Then
                         resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
 
-                        If isFullGrid OrElse rows.Count = _listView.Items.Count Then _isInitialResize = False
+                        If (isFullGrid OrElse rows.Count = _listView.Items.Count) AndAlso rows.Count > 0 Then _isInitialResize = False
                         _skipResize = True
                     End If
                 End If

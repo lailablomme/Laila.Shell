@@ -242,7 +242,7 @@ Namespace Controls
                     End If
                     currentFolder = parent
                     If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
-                        currentFolder.Dispose()
+                        currentFolder.MaybeDispose()
                         currentFolder = Nothing
                     End If
                 End While
@@ -282,7 +282,7 @@ Namespace Controls
                         End If
                         currentFolder = parent
                         If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
-                            currentFolder.Dispose()
+                            currentFolder.MaybeDispose()
                             currentFolder = Nothing
                         End If
                     End While

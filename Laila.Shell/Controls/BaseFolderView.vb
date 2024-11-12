@@ -257,6 +257,12 @@ Namespace Controls
 
         Protected Overridable Sub MakeBinding(folder As Folder)
             If Not Me.PART_ListView Is Nothing Then
+                If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
+                    Me.PART_ListView.GroupStyle.Add(Me.PART_ListView.Resources("groupStyle"))
+                Else
+                    Me.PART_ListView.GroupStyle.Clear()
+                End If
+
                 Me.PART_ListView.ItemsSource = folder.Items
             End If
         End Sub
@@ -279,6 +285,12 @@ Namespace Controls
                     folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
                     folderViewState.View = folder.View
                     folderViewState.Persist(folder.FullPath)
+
+                    If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
+                        Me.PART_ListView.GroupStyle.Add(Me.PART_ListView.Resources("groupStyle"))
+                    Else
+                        Me.PART_ListView.GroupStyle.Clear()
+                    End If
             End Select
         End Sub
 
@@ -333,14 +345,6 @@ Namespace Controls
 
                 ' get notified of folder property changes
                 AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
-
-                ' the following is due to a bug in the VirtualizingWrapPanel which needs yet to be fixed
-                If Not bfv.PART_ListView Is Nothing Then
-                    bfv.PART_ListView.ItemsSource = Nothing
-                    Await Task.Delay(50)
-                    bfv.PART_ListView.ItemsSource = Nothing
-                    Await Task.Delay(50)
-                End If
 
                 ' bind view
                 bfv.MakeBinding(e.NewValue)
