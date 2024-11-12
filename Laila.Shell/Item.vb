@@ -469,7 +469,7 @@ Public Class Item
 
     Public ReadOnly Property IsDrive As Boolean
         Get
-            Return Me.FullPath.Equals(Path.GetPathRoot(Me.FullPath))
+            Return Me.FullPath.Equals(Path.GetPathRoot(Me.FullPath)) AndAlso Not Me.FullPath.StartsWith("\\")
         End Get
     End Property
 

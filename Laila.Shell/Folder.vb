@@ -84,7 +84,7 @@ Public Class Folder
                     Async Function() As Task
                         SyncLock _lock
                             If _items.Count = 0 Then
-                                updateItems(_items, True)
+                                updateItems(_items,, True)
                             End If
                         End SyncLock
                     End Function
@@ -279,7 +279,7 @@ Public Class Folder
 
     Public Overridable Function GetItems() As List(Of Item)
         If Not _isEnumerated Then
-            updateItems(_items, False)
+            updateItems(_items, , False)
         End If
         Return _items.ToList()
     End Function
@@ -289,7 +289,7 @@ Public Class Folder
             Async Function() As Task(Of List(Of Item))
                 SyncLock _lock
                     If Not _isEnumerated Then
-                        updateItems(_items, False)
+                        updateItems(_items,, True)
                     End If
                 End SyncLock
 
@@ -299,10 +299,13 @@ Public Class Folder
         Return Await Task.Run(func)
     End Function
 
-    Protected Sub updateItems(items As ObservableCollection(Of Item), isFromThread As Boolean, Optional doRefreshItems As Boolean = True)
+    Protected Sub updateItems(items As ObservableCollection(Of Item), Optional doRefreshItems As Boolean = True, Optional isAsync As Boolean = False)
         Me.IsLoading = True
 
-        updateItems(SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE,
+        Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE
+        If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
+
+        updateItems(flags,
                     Function(fullPath As String) As Boolean
                         Return Not items.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue) Is Nothing
                     End Function,
@@ -327,19 +330,16 @@ Public Class Folder
                     Sub(path As String)
                         Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
                         If Not item Is Nothing Then
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    item.Refresh()
-                                End Sub)
+                            item.Refresh()
                         End If
-                    End Sub, doRefreshItems)
+                    End Sub, doRefreshItems, isAsync)
     End Sub
 
     Protected Sub updateItems(flags As UInt32,
                               exists As Func(Of String, Boolean), add As Action(Of Item), remove As Action(Of Item),
                               getPathsBefore As Func(Of List(Of String)), getToBeRemoved As Func(Of List(Of String), List(Of String), List(Of Item)),
                               makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
-                              updateProperties As Action(Of String), doRefreshItems As Boolean)
+                              updateProperties As Action(Of String), doRefreshItems As Boolean, isAsync As Boolean)
         If disposedValue Then Return
 
         Dim pathsAfter As List(Of String) = New List(Of String)
@@ -686,7 +686,7 @@ Public Class Folder
                                 Dim func As Func(Of Task) =
                                     Async Function() As Task
                                         SyncLock _lock
-                                            updateItems(_items, False, False)
+                                            updateItems(_items, False, True)
                                         End SyncLock
                                     End Function
                                 Await Task.Run(func)

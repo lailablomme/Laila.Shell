@@ -1317,7 +1317,7 @@ Namespace Controls
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                'Me.Update()
+                                Me.Update()
 
                                 If Not _updateTimer Is Nothing Then
                                     _updateTimer.Dispose()
