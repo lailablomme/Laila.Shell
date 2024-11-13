@@ -340,8 +340,8 @@ Namespace Controls
                 End If
             End Try
 
-            Dim pidls(If(items Is Nothing OrElse items.Count = 0, -1, items.Count - 1)) As IntPtr
-            Dim lastpidls(If(items Is Nothing OrElse items.Count = 0, -1, items.Count - 1)) As IntPtr
+            Dim pidls(If(items Is Nothing OrElse items.Count = 0, 0, items.Count - 1)) As IntPtr
+            Dim lastpidls(If(items Is Nothing OrElse items.Count = 0, 0, items.Count - 1)) As IntPtr
             Dim flags As Integer = CMF.CMF_NORMAL
 
             Try
@@ -352,7 +352,7 @@ Namespace Controls
                         flags = flags Or CMF.CMF_ITEMMENU
 
                         If Not (_parent.FullPath = Shell.Desktop.FullPath AndAlso items.Count = 1 _
-                AndAlso items(0).FullPath = Shell.Desktop.FullPath) Then
+                            AndAlso items(0).FullPath = Shell.Desktop.FullPath) Then
                             shellFolder = _parent.ShellFolder
                             For i = 0 To items.Count - 1
                                 Try
@@ -388,7 +388,9 @@ Namespace Controls
                             Dim eaten As Integer
                             Functions.SHGetDesktopFolder(shellFolder)
                             shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, IO.Path.GetDirectoryName(_parent.FullPath), eaten, folderpidl, 0)
-                            shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, _parent.FullPath, eaten, folderpidl2, 0)
+                            shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, _parent.FullPath, eaten, pidls(0), 0)
+                            lastpidls(0) = Functions.ILFindLastID(pidls(0))
+                            folderpidl2 = pidls(0)
                         Else
                             shellFolder = _parent.ShellFolder
                             ' this is any other folder
@@ -403,7 +405,7 @@ Namespace Controls
                                     Marshal.Release(shellItemPtr)
                                 End If
                             End Try
-                            'lastpidls(0) = Functions.ILFindLastID(folderpidl2)
+                            lastpidls(0) = Functions.ILFindLastID(folderpidl2)
                         End If
 
                         shellFolder.CreateViewObject(IntPtr.Zero, GetType(IContextMenu).GUID, ptrContextMenu)
@@ -444,9 +446,8 @@ Namespace Controls
                         Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
                         If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
                             shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
-                            If Not (items Is Nothing OrElse items.Count = 0) Then _
-                                Functions.SHCreateDataObject(folderpidl, lastpidls.Count, lastpidls, IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
-                            shellExtInit.Initialize(folderpidl2, If(items Is Nothing OrElse items.Count = 0, Nothing, dataObject), IntPtr.Zero)
+                            Functions.SHCreateDataObject(folderpidl, lastpidls.Count, lastpidls, IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
+                            shellExtInit.Initialize(folderpidl2, dataObject, IntPtr.Zero)
                         End If
                     Finally
                         If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
