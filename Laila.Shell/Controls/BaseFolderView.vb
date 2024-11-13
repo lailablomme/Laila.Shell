@@ -277,14 +277,11 @@ Namespace Controls
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
                     Dim folder As Folder = CType(s, Folder)
                     Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
-                    If folderViewState Is Nothing Then
-                        folderViewState = New FolderViewState()
-                    End If
                     folderViewState.SortPropertyName = folder.ItemsSortPropertyName
                     folderViewState.SortDirection = folder.ItemsSortDirection
                     folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
                     folderViewState.View = folder.View
-                    folderViewState.Persist(folder.FullPath)
+                    folderViewState.Persist()
 
                     If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
                         Me.PART_ListView.GroupStyle.Add(Me.PART_ListView.Resources("groupStyle"))

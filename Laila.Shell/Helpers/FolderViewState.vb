@@ -1,4 +1,6 @@
 ﻿Imports System.IO
+Imports System.Security.Cryptography
+Imports System.Text
 Imports System.Xml.Serialization
 Imports LiteDB
 
@@ -6,6 +8,7 @@ Namespace Helpers
     Public Class FolderViewState
         Inherits Behaviors.GridViewExtBehavior.GridViewStateData
 
+        Public Property ViewName As String
         Public Property View As String
 
         Public Sub New()
@@ -14,51 +17,54 @@ Namespace Helpers
         End Sub
 
         Public Shared Function FromViewName(viewName As String) As FolderViewState
-            Dim dbFileName As String = GetStateDBFileName()
-            Dim viewId As String = Convert.ToBase64String(Text.Encoding.UTF8.GetBytes(viewName))
+            Dim result As FolderViewState
 
-            If Not File.Exists(dbFileName) Then
-                Return New FolderViewState()
+            Dim dbPath As String = GetStateDBPath()
+            Dim viewId As String = getMD5Hash(viewName)
+
+            If Not File.Exists(Path.Combine(dbPath, viewId)) Then
+                result = New FolderViewState()
+            Else
+                Using stream As FileStream = New FileStream(Path.Combine(dbPath, viewId), FileMode.Open, FileAccess.Read)
+                    Dim s As XmlSerializer = New XmlSerializer(GetType(FolderViewState))
+                    result = s.Deserialize(stream)
+                End Using
             End If
 
-            Using mem As MemoryStream = New MemoryStream()
-                Using db = New LiteDatabase(dbFileName)
-                    Dim info As LiteFileInfo(Of String) = db.FileStorage.FindById(viewId)
-                    If Not info Is Nothing Then
-                        info.CopyTo(mem)
-                        mem.Seek(0, SeekOrigin.Begin)
-                        Dim s As XmlSerializer = New XmlSerializer(GetType(FolderViewState))
-                        Return s.Deserialize(mem)
-                    Else
-                        Return New FolderViewState()
-                    End If
-                End Using
-            End Using
+            result.ViewName = viewName
+            Return result
         End Function
 
-        Public Sub Persist(viewName As String)
-            Dim dbFileName As String = GetStateDBFileName()
-            Dim viewId As String = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(viewName))
+        Public Sub Persist()
+            Dim dbPath As String = GetStateDBPath()
+            Dim viewId As String = getMD5Hash(ViewName)
 
-            If Not Directory.Exists(Path.GetDirectoryName(dbFileName)) Then
-                Directory.CreateDirectory(Path.GetDirectoryName(dbFileName))
-            End If
-
-            Dim s As XmlSerializer = New XmlSerializer(GetType(FolderViewState))
-            Using mem As MemoryStream = New MemoryStream()
-                s.Serialize(mem, Me)
-                mem.Seek(0, SeekOrigin.Begin)
-
-                Using db = New LiteDatabase(dbFileName)
-                    db.FileStorage.Upload(viewId, "state.xml", mem)
-                End Using
+            Using stream As FileStream = New FileStream(Path.Combine(dbPath, viewId), FileMode.Create, FileAccess.Write)
+                Dim s As XmlSerializer = New XmlSerializer(GetType(FolderViewState))
+                s.Serialize(stream, Me)
             End Using
         End Sub
 
-        Public Shared Function GetStateDBFileName() As String
-            Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
+        Private Shared Function getMD5Hash(input As String) As String
+            Using md5 As MD5 = MD5.Create()
+                ' Convert the input string to a byte array and compute the hash
+                Dim inputBytes As Byte() = Encoding.UTF8.GetBytes(input)
+                Dim hashBytes As Byte() = md5.ComputeHash(inputBytes)
+
+                ' Convert the byte array to a hexadecimal string
+                Dim sb As New StringBuilder()
+                For Each b As Byte In hashBytes
+                    sb.Append(b.ToString("x2"))
+                Next
+
+                Return sb.ToString()
+            End Using
+        End Function
+
+        Public Shared Function GetStateDBPath() As String
+            Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell", "FolderViewState")
             If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
-            Return IO.Path.Combine(path, "FolderViewState.db")
+            Return path
         End Function
     End Class
 End Namespace

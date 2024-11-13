@@ -795,7 +795,7 @@ Namespace Behaviors
         End Function
 
         Protected Overridable Sub WriteState(viewName As String, state As GridViewStateData)
-            CType(state, FolderViewState).Persist(viewName)
+            CType(state, FolderViewState).Persist()
         End Sub
 
         Private Function getColumnName(column As GridViewColumn) As String
