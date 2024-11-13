@@ -101,7 +101,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Grid.Column="2" Source="{Binding ImageAsync[96], IsAsync=True}" Width="48" Height="48" 
+                                            <Image Grid.Column="2" Source="{Binding ImageAsync[48], IsAsync=True}" Width="48" Height="48" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center">
                                                 <Image.Style>
                                                     <Style>

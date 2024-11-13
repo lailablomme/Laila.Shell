@@ -84,7 +84,7 @@
                                                 <RowDefinition Height="216" />
                                                 <RowDefinition Height="Auto" SharedSizeGroup="A" />
                                             </Grid.RowDefinitions>
-                                            <Image Source="{Binding ImageAsync[256], IsAsync=True}" Width="216" Height="216" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                            <Image Source="{Binding ImageAsync[216], IsAsync=True}" Width="216" Height="216" UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>
