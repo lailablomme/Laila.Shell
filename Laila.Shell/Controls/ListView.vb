@@ -8,8 +8,23 @@ Namespace Controls
     Public Class ListView
         Inherits BaseFolderView
 
+        Private _isLoaded As Boolean
+
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ListView), New FrameworkPropertyMetadata(GetType(ListView)))
+        End Sub
+
+        Public Overrides Sub OnApplyTemplate()
+            MyBase.OnApplyTemplate()
+
+            AddHandler PART_ListView.Loaded,
+                Sub(s As Object, e As EventArgs)
+                    If Not _isLoaded Then
+                        _isLoaded = True
+
+                        If Not Me.Folder Is Nothing Then setWrapPanel(Me.Folder)
+                    End If
+                End Sub
         End Sub
 
         Protected Overrides Sub Folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
@@ -28,22 +43,24 @@ Namespace Controls
         End Sub
 
         Private Sub setWrapPanel(folder As Folder)
-            Dim wrapPanelFactory As FrameworkElementFactory
-            If folder.ItemsGroupByPropertyName Is Nothing Then
-                wrapPanelFactory = New FrameworkElementFactory(GetType(VirtualizingWrapPanel))
-                wrapPanelFactory.SetValue(VirtualizingWrapPanel.OrientationProperty, Orientation.Vertical)
-                wrapPanelFactory.SetValue(VirtualizingWrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
-                wrapPanelFactory.SetValue(VirtualizingWrapPanel.AllowDifferentSizedItemsProperty, True)
-                wrapPanelFactory.SetValue(VirtualizingWrapPanel.SpacingModeProperty, SpacingMode.None)
-            Else
-                wrapPanelFactory = New FrameworkElementFactory(GetType(WrapPanel))
-                wrapPanelFactory.SetValue(WrapPanel.OrientationProperty, Orientation.Vertical)
-                wrapPanelFactory.SetValue(WrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
-            End If
+            If Not Me.PART_ListView Is Nothing Then
+                Dim wrapPanelFactory As FrameworkElementFactory
+                If folder.ItemsGroupByPropertyName Is Nothing Then
+                    wrapPanelFactory = New FrameworkElementFactory(GetType(VirtualizingWrapPanel))
+                    wrapPanelFactory.SetValue(VirtualizingWrapPanel.OrientationProperty, Orientation.Vertical)
+                    wrapPanelFactory.SetValue(VirtualizingWrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
+                    wrapPanelFactory.SetValue(VirtualizingWrapPanel.AllowDifferentSizedItemsProperty, True)
+                    wrapPanelFactory.SetValue(VirtualizingWrapPanel.SpacingModeProperty, SpacingMode.None)
+                Else
+                    wrapPanelFactory = New FrameworkElementFactory(GetType(WrapPanel))
+                    wrapPanelFactory.SetValue(WrapPanel.OrientationProperty, Orientation.Vertical)
+                    wrapPanelFactory.SetValue(WrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
+                End If
 
-            Dim itemsPanelTemplate As New ItemsPanelTemplate()
-            itemsPanelTemplate.VisualTree = wrapPanelFactory
-            Me.PART_ListView.ItemsPanel = itemsPanelTemplate
+                Dim itemsPanelTemplate As New ItemsPanelTemplate()
+                itemsPanelTemplate.VisualTree = wrapPanelFactory
+                Me.PART_ListView.ItemsPanel = itemsPanelTemplate
+            End If
         End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
