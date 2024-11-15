@@ -135,8 +135,8 @@ Namespace Controls
                         Me.SelectedItems = {clickedItem}
                         hookMenus()
                         If Not _menus Is Nothing Then
-                            _menus.Update()
-                            _menus.InvokeCommand(_menus.DefaultId)
+                            Dim contextMenu As ContextMenu = _menus.GetDefaultContextMenu()
+                            _menus.InvokeCommand(contextMenu, _menus.DefaultId)
                         End If
                     End Using
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then

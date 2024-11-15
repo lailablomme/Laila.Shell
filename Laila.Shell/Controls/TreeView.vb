@@ -425,7 +425,6 @@ Namespace Controls
                             Dim parent As Folder = clickedItem.GetParent()
 
                             _menu = New Laila.Shell.Controls.Menus() With {
-                                .IsDefaultOnly = False,
                                 .Folder = If(parent Is Nothing, Shell.Desktop, parent),
                                 .SelectedItems = {clickedItem},
                                 .DoAutoDispose = True
@@ -474,7 +473,6 @@ Namespace Controls
                             Else
                                 Using parent = clickedItem.GetParent()
                                     Dim menu As Menus = New Menus() With {
-                                        .IsDefaultOnly = True,
                                         .Folder = parent,
                                         .SelectedItems = {clickedItem},
                                         .DoAutoDispose = True

@@ -28,7 +28,6 @@ Namespace Controls
         Public Shared ReadOnly NewItemMenuProperty As DependencyProperty = DependencyProperty.Register("NewItemMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SortMenuProperty As DependencyProperty = DependencyProperty.Register("SortMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ViewMenuProperty As DependencyProperty = DependencyProperty.Register("ViewMenu", GetType(Laila.Shell.Controls.ContextMenu), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly IsDefaultOnlyProperty As DependencyProperty = DependencyProperty.Register("IsDefaultOnly", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoAutoDisposeProperty As DependencyProperty = DependencyProperty.Register("DoAutoDispose", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanCutProperty As DependencyProperty = DependencyProperty.Register("CanCut", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanCopyProperty As DependencyProperty = DependencyProperty.Register("CanCopy", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -593,9 +592,11 @@ Namespace Controls
                     End Select
                 End If
 
+                releaseContextMenu(contextMenu)
+
                 If Me.DoAutoDispose Then
                     Me.Dispose()
-                Else
+                ElseIf contextMenu.Equals(Me.NewItemMenu) OrElse contextMenu.Equals(Me.ItemContextMenu) Then
                     If EqualityComparer(Of Folder).Default.Equals(lastFolder, Me.Folder) Then _lastFolder = Nothing
                     If EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(lastSelectedItems, Me.SelectedItems) Then _lastItems = Nothing
                     Me.Update()
@@ -779,15 +780,6 @@ Namespace Controls
             End Set
         End Property
 
-        Public Property IsDefaultOnly As Boolean
-            Get
-                Return GetValue(IsDefaultOnlyProperty)
-            End Get
-            Set(value As Boolean)
-                SetValue(IsDefaultOnlyProperty, value)
-            End Set
-        End Property
-
         Public Property DoAutoDispose As Boolean
             Get
                 Return GetValue(DoAutoDisposeProperty)
@@ -842,13 +834,17 @@ Namespace Controls
             End Set
         End Property
 
+        Public Function GetDefaultContextMenu() As ContextMenu
+            Return getContextMenu(Me.Folder, Me.SelectedItems, True)
+        End Function
+
         Public Sub Update()
             Debug.WriteLine("Menus.Update()")
 
             Dim didGetMenu As Boolean
 
             Using Shell.OverrideCursor(Cursors.Wait)
-                If Not Me.IsDefaultOnly AndAlso Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
+                If Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
                     _lastFolder = Me.Folder
 
                     releaseContextMenu(Me.NewItemMenu)
@@ -910,7 +906,7 @@ Namespace Controls
                         releaseContextMenu(Me.ItemContextMenu)
                     End If
 
-                    Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
+                    Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, False)
 
                     didGetMenu = True
                 End If
