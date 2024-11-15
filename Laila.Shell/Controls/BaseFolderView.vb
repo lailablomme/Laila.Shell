@@ -136,6 +136,9 @@ Namespace Controls
                         Me.SelectedItems = {clickedItem}
                         If TypeOf clickedItem Is Folder Then
                             Me.Folder = clickedItem
+                            UIHelper.OnUIThread(
+                                Sub()
+                                End Sub, Threading.DispatcherPriority.Render)
                         Else
                             hookMenus()
                             If Not _menus Is Nothing Then
