@@ -12,6 +12,7 @@ Namespace Controls
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
@@ -82,6 +83,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property Menus As Menus
+            Get
+                Return GetValue(MenusProperty)
+            End Get
+            Set(ByVal value As Menus)
+                SetCurrentValue(MenusProperty, value)
+            End Set
+        End Property
+
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim fv As FolderView = d
             If Not e.NewValue Is Nothing Then
@@ -110,6 +120,7 @@ Namespace Controls
             If Not Me.ActiveView Is Nothing Then
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.FolderProperty)
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
+                BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.MenusProperty)
             End If
             For Each v In _views.Values
                 v.SetValue(Panel.ZIndexProperty, 0)
@@ -127,6 +138,7 @@ Namespace Controls
             Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
+            BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.MenusProperty, New Binding("Menus") With {.Source = Me})
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)

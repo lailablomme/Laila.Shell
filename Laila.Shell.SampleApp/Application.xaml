@@ -711,7 +711,7 @@
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="3" Color="Black" ShadowDepth="3" Opacity="0.5" />
                 </Border.Effect>
-                <ScrollViewer x:Name="PART_ScrollViewer"
+                <ScrollViewer x:Name="PART_ScrollViewer" RenderOptions.ClearTypeHint="Enabled"
                               HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
                     <ContentPresenter />
                 </ScrollViewer>
@@ -880,7 +880,7 @@
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="3" Color="Black" ShadowDepth="3" Opacity="0.5" />
                             </Border.Effect>
-                            <ScrollViewer Grid.Row="1" x:Name="PART_ScrollViewer"
+                            <ScrollViewer Grid.Row="1" x:Name="PART_ScrollViewer" RenderOptions.ClearTypeHint="Enabled"
                                         HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
                                 <ItemsPresenter Margin="0,0,0,1" x:Name="PART_ItemsPresenter" />
                             </ScrollViewer>

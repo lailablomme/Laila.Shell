@@ -5,6 +5,7 @@ Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows
+Imports System.Windows.Input
 Imports System.Windows.Interop
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
@@ -25,6 +26,10 @@ Public Class Shell
     Private Shared _itemsCache As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
     Private Shared _isDebugVisible As Boolean = False
     Private Shared _debugWindow As DebugTools.DebugWindow
+    Private Shared _overrideCursorFunc As Func(Of Cursor, IDisposable) =
+        Function(cursor As Cursor) As IDisposable
+            Return New OverrideCursor(cursor)
+        End Function
 
     Shared Sub New()
         Functions.OleInitialize(IntPtr.Zero)
@@ -202,5 +207,14 @@ Public Class Shell
         Get
             Return _itemsCache
         End Get
+    End Property
+
+    Public Shared Property OverrideCursor As Func(Of Cursor, IDisposable)
+        Get
+            Return _overrideCursorFunc
+        End Get
+        Set(value As Func(Of Cursor, IDisposable))
+            _overrideCursorFunc = value
+        End Set
     End Property
 End Class

@@ -24,6 +24,7 @@ Namespace Controls
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
+        Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend PART_ListView As System.Windows.Controls.ListView
         Private PART_Grid As Grid
@@ -33,7 +34,7 @@ Namespace Controls
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
-        Private _menu As Laila.Shell.Controls.Menus
+        Private _menus As Laila.Shell.Controls.Menus
         Private _timeSpentTimer As Timer
         Private _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
@@ -129,20 +130,15 @@ Namespace Controls
                 Else
                     listViewItem.Focus()
                 End If
-                If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 _
-                    AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Contains(clickedItem) Then
-                    If TypeOf clickedItem Is Folder Then
-                        CType(clickedItem, Folder).LastScrollOffset = New Point()
-                        Me.Folder = clickedItem
-                    Else
-                        Dim menu As Menus = New Menus() With {
-                            .IsDefaultOnly = True,
-                            .Folder = Me.Folder,
-                            .SelectedItems = Me.SelectedItems,
-                            .DoAutoDispose = True
-                        }
-                        menu.InvokeCommand(menu.DefaultId)
-                    End If
+                If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Not clickedItem Is Nothing Then
+                    Using Shell.OverrideCursor(Cursors.Wait)
+                        Me.SelectedItems = {clickedItem}
+                        hookMenus()
+                        If Not _menus Is Nothing Then
+                            _menus.Update()
+                            _menus.InvokeCommand(_menus.DefaultId)
+                        End If
+                    End Using
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                     If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
                             AndAlso Me.SelectedItems.Contains(clickedItem) _
@@ -160,36 +156,11 @@ Namespace Controls
                         Me.SelectedItems = Nothing
                     End If
 
-                    _menu = New Laila.Shell.Controls.Menus() With {
-                        .IsDefaultOnly = False,
-                        .Folder = Me.Folder,
-                        .SelectedItems = Me.SelectedItems,
-                        .DoAutoDispose = True
-                    }
-                    AddHandler _menu.CommandInvoked,
-                        Sub(s As Object, e2 As CommandInvokedEventArgs)
-                            Select Case e2.Verb
-                                Case "open"
-                                    If Not Me.SelectedItems Is Nothing _
-                                        AndAlso Me.SelectedItems.Count = 1 _
-                                        AndAlso TypeOf Me.SelectedItems(0) Is Folder Then
-                                        Me.Folder = clickedItem
-                                        e2.IsHandled = True
-                                    End If
-                                Case "rename"
-                                    Me.DoRename()
-                                    e2.IsHandled = True
-                                Case "laila.shell.(un)pin"
-                                    If e2.IsChecked Then
-                                        PinnedItems.PinItem(clickedItem.FullPath)
-                                    Else
-                                        PinnedItems.UnpinItem(clickedItem.FullPath)
-                                    End If
-                                    e2.IsHandled = True
-                            End Select
-                        End Sub
-
-                    Me.PART_ListView.ContextMenu = _menu.ItemContextMenu
+                    hookMenus()
+                    If Not _menus Is Nothing Then
+                        _menus.Update()
+                        Me.PART_ListView.ContextMenu = _menus.ItemContextMenu
+                    End If
                     e.Handled = True
                 ElseIf clickedItem Is Nothing AndAlso
                         UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
@@ -206,6 +177,34 @@ Namespace Controls
 
         Public Sub OnListViewMouseLeave(sender As Object, e As MouseEventArgs)
             _mouseItemDown = Nothing
+        End Sub
+
+        Private Sub hookMenus()
+            If Not EqualityComparer(Of Menus).Default.Equals(_menus, Me.Menus) Then
+                _menus = Me.Menus
+                AddHandler _menus.CommandInvoked,
+                    Sub(s As Object, e2 As CommandInvokedEventArgs)
+                        Select Case e2.Verb
+                            Case "open"
+                                If Not Me.SelectedItems Is Nothing _
+                                        AndAlso Me.SelectedItems.Count = 1 _
+                                        AndAlso TypeOf Me.SelectedItems(0) Is Folder Then
+                                    Me.Folder = Me.SelectedItems(0)
+                                    e2.IsHandled = True
+                                End If
+                            Case "rename"
+                                Me.DoRename()
+                                e2.IsHandled = True
+                            Case "laila.shell.(un)pin"
+                                If e2.IsChecked Then
+                                    PinnedItems.PinItem(Me.SelectedItems(0).FullPath)
+                                Else
+                                    PinnedItems.UnpinItem(Me.SelectedItems(0).FullPath)
+                                End If
+                                e2.IsHandled = True
+                        End Select
+                    End Sub
+            End If
         End Sub
 
         Protected MustOverride Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
@@ -237,6 +236,15 @@ Namespace Controls
             End Get
             Set(ByVal value As Folder)
                 SetCurrentValue(FolderProperty, value)
+            End Set
+        End Property
+
+        Public Property Menus As Menus
+            Get
+                Return GetValue(MenusProperty)
+            End Get
+            Set(ByVal value As Menus)
+                SetCurrentValue(MenusProperty, value)
             End Set
         End Property
 

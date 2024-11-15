@@ -33,7 +33,7 @@
                             <Border x:Name="borderTop" Grid.Row="0" Background="#dfdfdf" Padding="2" Visibility="Visible">
                                 <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsTop" />
                             </Border>
-                            <ScrollViewer Grid.Row="1" x:Name="PART_ScrollViewer"
+                            <ScrollViewer Grid.Row="1" x:Name="PART_ScrollViewer" RenderOptions.ClearTypeHint="Enabled"
                                           HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
                                 <ItemsPresenter Margin="0,0,0,1" x:Name="PART_ItemsPresenter" />
                             </ScrollViewer>
