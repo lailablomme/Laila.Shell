@@ -331,7 +331,7 @@ Public Class Folder
         Return Await Task.Run(func)
     End Function
 
-    Protected Sub updateItems(items As ObservableCollection(Of Item), Optional doRefreshItems As Boolean = True, Optional isAsync As Boolean = False)
+    Protected Sub updateItems(items As ObservableCollection(Of Item), Optional doRefreshItems As Boolean = False, Optional isAsync As Boolean = False)
         Me.IsLoading = True
 
         Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE

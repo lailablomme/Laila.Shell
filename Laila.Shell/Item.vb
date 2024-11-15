@@ -118,8 +118,16 @@ Public Class Item
 
     Public ReadOnly Property ShellItem2 As IShellItem2
         Get
-            If Not disposedValue AndAlso _shellItem2 Is Nothing Then
-                _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
+            If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                Dim ptr As IntPtr
+                Try
+                    Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                    _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr) Then
+                        Marshal.Release(ptr)
+                    End If
+                End Try
             End If
             Return _shellItem2
         End Get
