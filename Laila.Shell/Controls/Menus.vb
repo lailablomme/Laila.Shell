@@ -108,13 +108,7 @@ Namespace Controls
                     Using parent2 As Folder = parent.GetParent()
                         If Not parent2 Is Nothing Then
                             Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = parent2.ShellFolder
-                            Try
-                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                            Finally
-                                If Not shellFolder Is Nothing Then
-                                    Marshal.ReleaseComObject(shellFolder)
-                                End If
-                            End Try
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                         Else
                             Dim shellFolder As IShellFolder
                             Functions.SHGetDesktopFolder(shellFolder)
@@ -330,94 +324,43 @@ Namespace Controls
 
         Private Sub makeContextMenu(items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             Dim ptrContextMenu As IntPtr
-            Dim folderpidl As IntPtr, folderpidl2 As IntPtr, shellItemPtr As IntPtr
-            Try
-                shellItemPtr = Marshal.GetIUnknownForObject(_parent.ShellItem2)
-                Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
-            Finally
-                If Not IntPtr.Zero.Equals(shellItemPtr) Then
-                    Marshal.Release(shellItemPtr)
-                End If
-            End Try
-
-            Dim pidls(If(items Is Nothing OrElse items.Count = 0, 0, items.Count - 1)) As IntPtr
-            Dim lastpidls(If(items Is Nothing OrElse items.Count = 0, 0, items.Count - 1)) As IntPtr
+            Dim folderPidl As Pidl, isFolderPidlClone As Boolean, shellItemPtr As IntPtr
+            Dim itemPidls As Pidl()
             Dim flags As Integer = CMF.CMF_NORMAL
 
             Try
-                Dim shellFolder As IShellFolder
-                Try
-                    If Not items Is Nothing AndAlso items.Count > 0 Then
-                        ' user clicked on an item
-                        flags = flags Or CMF.CMF_ITEMMENU
+                'Dim shellFolder As IShellFolder
+                If Not items Is Nothing AndAlso items.Count > 0 Then
+                    ' user clicked on an item
+                    flags = flags Or CMF.CMF_ITEMMENU
 
-                        If Not (_parent.FullPath = Shell.Desktop.FullPath AndAlso items.Count = 1 _
-                            AndAlso items(0).FullPath = Shell.Desktop.FullPath) Then
-                            shellFolder = _parent.ShellFolder
-                            For i = 0 To items.Count - 1
-                                Try
-                                    shellItemPtr = Marshal.GetIUnknownForObject(items(i).ShellItem2)
-                                    Functions.SHGetIDListFromObject(shellItemPtr, pidls(i))
-                                Finally
-                                    If Not IntPtr.Zero.Equals(shellItemPtr) Then
-                                        Marshal.Release(shellItemPtr)
-                                    End If
-                                End Try
-                                lastpidls(i) = Functions.ILFindLastID(pidls(i))
-                            Next
-                        Else
-                            Dim eaten As Integer
-                            Functions.SHGetDesktopFolder(shellFolder)
-                            shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, IO.Path.GetDirectoryName(_parent.FullPath), eaten, folderpidl, 0)
-                            For i = 0 To items.Count - 1
-                                shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, items(i).FullPath, eaten, pidls(i), 0)
-                                lastpidls(i) = Functions.ILFindLastID(pidls(i))
-                            Next
-                        End If
+                    folderPidl = _parent.Pidl
+                    itemPidls = items.Select(Function(i) i.Pidl).ToArray()
 
-                        shellFolder.GetUIObjectOf(IntPtr.Zero, lastpidls.Length, lastpidls, GetType(IContextMenu).GUID, 0, ptrContextMenu)
-                        If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                            _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
-                        End If
-
-                        folderpidl2 = folderpidl
+                    _parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, ptrContextMenu)
+                    If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                        _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
+                    End If
+                Else
+                    ' user clicked on the background
+                    If _parent.FullPath = Shell.Desktop.FullPath Then
+                        ' this is the desktop
+                        folderPidl = Shell.Desktop.Pidl
+                        itemPidls = {Shell.Desktop.Pidl}
                     Else
-                        ' user clicked on the background
-                        If _parent.FullPath.Equals(Shell.Desktop.FullPath) Then
-                            ' this is the desktop
-                            Dim eaten As Integer
-                            Functions.SHGetDesktopFolder(shellFolder)
-                            shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, IO.Path.GetDirectoryName(_parent.FullPath), eaten, folderpidl, 0)
-                            shellFolder.ParseDisplayName(IntPtr.Zero, IntPtr.Zero, _parent.FullPath, eaten, pidls(0), 0)
-                            lastpidls(0) = Functions.ILFindLastID(pidls(0))
-                            folderpidl2 = pidls(0)
-                        Else
-                            shellFolder = _parent.ShellFolder
-                            ' this is any other folder
-                            folderpidl2 = folderpidl
-                            Try
-                                Using parent2 = _parent.GetParent()
-                                    shellItemPtr = Marshal.GetIUnknownForObject(parent2.ShellItem2)
-                                    Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
-                                End Using
-                            Finally
-                                If Not IntPtr.Zero.Equals(shellItemPtr) Then
-                                    Marshal.Release(shellItemPtr)
-                                End If
-                            End Try
-                            lastpidls(0) = Functions.ILFindLastID(folderpidl2)
-                        End If
+                        ' this is any other folder
+                        Using parent2 = _parent.GetParent()
+                            folderPidl = parent2.Pidl.Clone()
+                        End Using
+                        isFolderPidlClone = True
+                        itemPidls = {_parent.Pidl}
+                    End If
 
-                        shellFolder.CreateViewObject(IntPtr.Zero, GetType(IContextMenu).GUID, ptrContextMenu)
-                        If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                            _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
-                        End If
+                    _parent.ShellFolder.CreateViewObject(IntPtr.Zero, GetType(IContextMenu).GUID, ptrContextMenu)
+                    If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                        _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
                     End If
-                Finally
-                    If Not shellFolder Is Nothing Then
-                        Marshal.ReleaseComObject(shellFolder)
-                    End If
-                End Try
+                End If
 
                 If Not IntPtr.Zero.Equals(ptrContextMenu) Then
                     Dim ptr2 As IntPtr, ptr3 As IntPtr
@@ -446,8 +389,10 @@ Namespace Controls
                         Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
                         If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
                             shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
-                            Functions.SHCreateDataObject(folderpidl, lastpidls.Count, lastpidls, IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
-                            shellExtInit.Initialize(folderpidl2, dataObject, IntPtr.Zero)
+                            If Not isFolderPidlClone Then folderPidl = folderPidl.Clone()
+                            itemPidls = itemPidls.Select(Function(p) p.Clone()).ToArray()
+                            Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
+                            shellExtInit.Initialize(folderPidl.AbsolutePIDL, dataObject, IntPtr.Zero)
                         End If
                     Finally
                         If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
@@ -459,7 +404,13 @@ Namespace Controls
                         If Not dataObject Is Nothing Then
                             Marshal.ReleaseComObject(dataObject)
                         End If
+                        folderPidl.Dispose()
+                        For Each p In itemPidls
+                            p.Dispose()
+                        Next
                     End Try
+                ElseIf isFolderPidlClone Then
+                    folderPidl.Dispose()
                 End If
 
                 If Not _contextMenu Is Nothing Then
@@ -467,23 +418,11 @@ Namespace Controls
                     flags = flags Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
                     If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
                     _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-
-                    'If _firstContextMenuCall Then
-                    '    ' somehow very first call doesn't return all items
-                    '    Functions.DestroyMenu(_hMenu)
-                    '    _hMenu = Functions.CreatePopupMenu()
-                    '    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-                    '    _firstContextMenuCall = False
-                    'End If
                 End If
             Finally
                 If Not IntPtr.Zero.Equals(ptrContextMenu) Then
                     Marshal.Release(ptrContextMenu)
                 End If
-                For i = 0 To pidls.Count - 1
-                    Marshal.FreeCoTaskMem(pidls(i))
-                Next
-                Marshal.FreeCoTaskMem(folderpidl)
             End Try
         End Sub
 

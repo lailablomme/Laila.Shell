@@ -26,6 +26,7 @@ Public Class Item
     Private _objectId As Long = -1
     Private Shared _objectCount As Long = 0
     Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
+    Private _pidl As Pidl
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -85,6 +86,17 @@ Public Class Item
         _objectId = _objectCount
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
+            Dim ptr As IntPtr, pidl As IntPtr
+            Try
+                ptr = Marshal.GetIUnknownForObject(_shellItem2)
+                Functions.SHGetIDListFromObject(ptr, pidl)
+            Finally
+                If Not IntPtr.Zero.Equals(ptr) Then
+                    Marshal.Release(ptr)
+                End If
+            End Try
+
+            _pidl = New Pidl(pidl)
             _fullPath = Item.GetFullPathFromShellItem2(shellItem2)
             _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
             Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
@@ -110,6 +122,12 @@ Public Class Item
                 _shellItem2 = Item.GetIShellItem2FromParsingName(_fullPath)
             End If
             Return _shellItem2
+        End Get
+    End Property
+
+    Public ReadOnly Property Pidl As Pidl
+        Get
+            Return _pidl
         End Get
     End Property
 
@@ -392,9 +410,6 @@ Public Class Item
                 End Try
             Finally
                 Marshal.Release(ptr)
-                If Not shellFolder Is Nothing Then
-                    Marshal.ReleaseComObject(shellFolder)
-                End If
                 If Not IntPtr.Zero.Equals(pidl) Then
                     Marshal.FreeHGlobal(pidl)
                 End If
@@ -866,6 +881,10 @@ Public Class Item
                     Marshal.ReleaseComObject(item)
                 Next
 
+                'If Me.FullPath = "C:\" AndAlso Not _logicalParent Is Nothing Then
+                '    Dim i = 9
+                'End If
+
                 UIHelper.OnUIThread(
                     Sub()
                         If Not _logicalParent Is Nothing Then
@@ -874,6 +893,8 @@ Public Class Item
                         End If
                         Shell.ItemsCache.Remove(Me)
                     End Sub)
+
+                Me.Pidl.Dispose()
             End If
             ' free unmanaged resources (unmanaged objects) and override finalizer
         End If

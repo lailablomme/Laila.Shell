@@ -73,7 +73,7 @@ Public Class Shell
                 End If
             End Sub
         addSpecialFolder("Home", Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing))
-        addSpecialFolder("Desktop", Folder.FromParsingName("shell:::{" & Guids.KnownFolder_Desktop.ToString() & "}", Nothing))
+        addSpecialFolder("Desktop", Folder.FromDesktop())
         addSpecialFolder("Documents", Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing))
         addSpecialFolder("Pictures", Folder.FromParsingName("shell:::{24ad3ad4-a569-4530-98e1-ab02f9417aa8}", Nothing))
         addSpecialFolder("Downloads", Folder.FromParsingName("shell:::{088e3905-0323-4b02-9826-5d99428e115f}", Nothing))

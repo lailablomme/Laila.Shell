@@ -170,13 +170,7 @@ Public Class ListViewDropTarget
                     Using parent = overItem.GetParent()
                         If Not parent Is Nothing Then
                             Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = parent.ShellFolder
-                            Try
-                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                            Finally
-                                If Not shellFolder Is Nothing Then
-                                    Marshal.ReleaseComObject(shellFolder)
-                                End If
-                            End Try
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                         Else
                             Dim shellFolder As IShellFolder
                             Functions.SHGetDesktopFolder(shellFolder)

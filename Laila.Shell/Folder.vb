@@ -4,6 +4,7 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
 Imports System.Windows.Media
 Imports Laila.Shell.Helpers
 
@@ -30,9 +31,31 @@ Public Class Folder
     Private _isInHistory As Boolean
     Private _view As String
     Private _hasSubFolders As Boolean?
+    Private _shellFolder As IShellFolder
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
+    End Function
+
+    Public Shared Function FromDesktop() As Folder
+        Dim ptr As IntPtr, pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
+        Try
+            Functions.SHGetDesktopFolder(shellFolder)
+            ptr = Marshal.GetIUnknownForObject(shellFolder)
+            Functions.SHGetIDListFromObject(ptr, pidl)
+            Marshal.Release(ptr)
+            Functions.SHCreateItemFromIDList(pidl, GetType(IShellItem2).GUID, ptr)
+            shellItem2 = Marshal.GetObjectForIUnknown(ptr)
+        Finally
+            If Not IntPtr.Zero.Equals(ptr) Then
+                Marshal.Release(ptr)
+            End If
+            If Not IntPtr.Zero.Equals(pidl) Then
+                Marshal.FreeCoTaskMem(pidl)
+            End If
+        End Try
+
+        Return New Folder(shellFolder, shellItem2, Nothing)
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
@@ -56,13 +79,26 @@ Public Class Folder
     '    End Try
     'End Function
 
+    Public Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder)
+        MyBase.New(shellItem2, parent)
+
+        shellFolder = shellFolder
+    End Sub
+
     Public Sub New(shellItem2 As IShellItem2, parent As Folder)
         MyBase.New(shellItem2, parent)
+
+        If Not shellItem2 Is Nothing Then
+            _shellFolder = Folder.GetIShellFolderFromIShellItem2(shellItem2)
+        End If
     End Sub
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+            If Not disposedValue AndAlso _shellFolder Is Nothing Then
+                _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+            End If
+            Return _shellFolder
         End Get
     End Property
 
@@ -129,20 +165,14 @@ Public Class Folder
         End Set
     End Property
 
-    Public Overrides Async Sub MaybeDispose()
-        Dim func As Func(Of Task) =
-            Async Function() As Task
-                Await Task.Delay(1000)
-
-                Me.DisposeItems()
-                If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
-                    AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
-                    AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) _
-                    AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
-                    Me.Dispose()
-                End If
-            End Function
-        Await Task.Run(func)
+    Public Overrides Sub MaybeDispose()
+        Me.DisposeItems()
+        If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
+            AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
+            AndAlso (Me._logicalParent Is Nothing OrElse Not Me._logicalParent.IsActiveInFolderView) _
+            AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
+            Me.Dispose()
+        End If
     End Sub
 
     Public Sub DisposeItems()
@@ -185,9 +215,6 @@ Public Class Folder
                 Dim shellView As IShellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
                 Return shellView
             Finally
-                If Not shellFolder Is Nothing Then
-                    Marshal.ReleaseComObject(shellFolder)
-                End If
                 If Not IntPtr.Zero.Equals(ptr) Then
                     Marshal.Release(ptr)
                 End If
@@ -474,10 +501,6 @@ Public Class Folder
                 Me.EnumerationException = Nothing
             Catch ex As Exception
                 Me.EnumerationException = ex
-            Finally
-                If Not shellFolder Is Nothing Then
-                    Marshal.ReleaseComObject(shellFolder)
-                End If
             End Try
         End If
 
@@ -712,6 +735,10 @@ Public Class Folder
     Protected Overrides Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
             Me.DisposeItems()
+
+            If Not _shellFolder Is Nothing Then
+                Marshal.ReleaseComObject(_shellFolder)
+            End If
         End If
 
         MyBase.Dispose(disposing)

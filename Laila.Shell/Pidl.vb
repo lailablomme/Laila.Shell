@@ -1,11 +1,17 @@
 ﻿Imports System.IO
 Imports System.Runtime.InteropServices
+Imports Laila.Shell.Helpers
 
 Public Class Pidl
+    Implements IDisposable
+
     Private _pidl As IntPtr
+    Private _lastId As IntPtr
+    Private disposedValue As Boolean
 
     Public Sub New(pidl As IntPtr)
         _pidl = pidl
+        _lastId = Functions.ILFindLastID(_pidl)
     End Sub
 
     Public Shared Function CreateShellIDListArray(items As IEnumerable(Of Item)) As IntPtr
@@ -68,23 +74,17 @@ Public Class Pidl
         End If
 
         ' read items
-        Try
-            For i = 0 To count - 1
-                offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
-                Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
-                Try
-                    result.Add(Item.FromParsingName(Item.GetFullPathFromShellItem2(shellItem2), Nothing))
-                Finally
-                    If Not shellItem2 Is Nothing Then
-                        Marshal.ReleaseComObject(shellItem2)
-                    End If
-                End Try
-            Next
-        Finally
-            If Not parentShellFolder Is Nothing Then
-                Marshal.ReleaseComObject(parentShellFolder)
-            End If
-        End Try
+        For i = 0 To count - 1
+            offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
+            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
+            Try
+                result.Add(Item.FromParsingName(Item.GetFullPathFromShellItem2(shellItem2), Nothing))
+            Finally
+                If Not shellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(shellItem2)
+                End If
+            End Try
+        Next
 
         Return result
     End Function
@@ -138,4 +138,55 @@ Public Class Pidl
             Return result
         End Get
     End Property
+
+    Public ReadOnly Property AbsolutePIDL As IntPtr
+        Get
+            Return _pidl
+        End Get
+    End Property
+
+    Public ReadOnly Property RelativePIDL As IntPtr
+        Get
+            Return _lastId
+        End Get
+    End Property
+
+    Public Function Equals(pidl As Pidl) As Boolean
+        Return Functions.ILIsEqual(Me.AbsolutePIDL, pidl.AbsolutePIDL)
+    End Function
+
+    Public Function Clone() As Pidl
+        Dim bytes As Byte() = Me.Bytes
+        Dim ptr As IntPtr = Marshal.AllocCoTaskMem(bytes.Count)
+        For i = 0 To bytes.Length - 1
+            Marshal.Copy(bytes, 0, ptr, bytes.Length)
+        Next
+        Return New Pidl(ptr)
+    End Function
+
+    Protected Overridable Sub Dispose(disposing As Boolean)
+        If Not disposedValue Then
+            disposedValue = True
+
+            If disposing Then
+                ' dispose managed state (managed objects)
+            End If
+
+            ' free unmanaged resources (unmanaged objects) and override finalizer
+            Marshal.FreeCoTaskMem(_pidl)
+        End If
+    End Sub
+
+    ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
+    'Protected Overrides Sub Finalize()
+    '    ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+    '    Dispose(disposing:=False)
+    '    MyBase.Finalize()
+    'End Sub
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+        Dispose(disposing:=True)
+        GC.SuppressFinalize(Me)
+    End Sub
 End Class
