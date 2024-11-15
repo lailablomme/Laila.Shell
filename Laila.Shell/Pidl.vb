@@ -164,6 +164,12 @@ Public Class Pidl
         Return New Pidl(ptr)
     End Function
 
+    Public ReadOnly Property IsZero As Boolean
+        Get
+            Return IntPtr.Zero.Equals(Me.AbsolutePIDL)
+        End Get
+    End Property
+
     Protected Overridable Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
             disposedValue = True

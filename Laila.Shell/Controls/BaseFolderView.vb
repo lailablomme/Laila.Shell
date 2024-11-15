@@ -218,6 +218,24 @@ Namespace Controls
         Protected MustOverride Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
                                                           ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
 
+        Public Async Function DoRename(pidl As Pidl) As Task(Of Boolean)
+            If Not Me.Folder Is Nothing Then
+                Dim item As Item = (Await Me.Folder.GetItemsAsync()).FirstOrDefault(Function(i) i.Pidl.Equals(pidl))
+                If Not item Is Nothing Then
+                    Me.SelectedItems = {item}
+                    UIHelper.OnUIThread(
+                        Sub()
+                        End Sub, Threading.DispatcherPriority.ContextIdle)
+                    Dim listViewItem As ListViewItem = Me.PART_ListView.ItemContainerGenerator.ContainerFromItem(item)
+                    If Not listViewItem Is Nothing Then
+                        DoRename(listViewItem)
+                        Return True
+                    End If
+                End If
+            End If
+            Return False
+        End Function
+
         Public Sub DoRename()
             Dim listViewItem As ListViewItem = Me.PART_ListView.ItemContainerGenerator.ContainerFromItem(Me.SelectedItems(0))
             DoRename(listViewItem)

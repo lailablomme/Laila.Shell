@@ -39,24 +39,24 @@ Public Class Shell
         entry(0).Recursively = True
 
         AddHandler Application.Current.MainWindow.Loaded,
-            Async Sub(sender As Object, e As EventArgs)
-                _w = New Window()
-                _w.Owner = Application.Current.MainWindow
-                _w.Left = Int32.MinValue
-                _w.Top = Int32.MinValue
-                _w.WindowStyle = WindowStyle.None
-                _w.Width = 1920
-                _w.Height = 1080
-                _w.ShowInTaskbar = False
-                _w.Title = "Hidden Window"
-                _w.Show()
+             Sub(sender As Object, e As EventArgs)
+                 _w = New Window()
+                 _w.Owner = Application.Current.MainWindow
+                 _w.Left = Int32.MinValue
+                 _w.Top = Int32.MinValue
+                 _w.WindowStyle = WindowStyle.None
+                 _w.Width = 1920
+                 _w.Height = 1080
+                 _w.ShowInTaskbar = False
+                 _w.Title = "Hidden Window"
+                 _w.Show()
 
-                Dim hwnd As IntPtr = New WindowInteropHelper(_w).Handle
-                Dim source As HwndSource = HwndSource.FromHwnd(hwnd)
-                source.AddHook(AddressOf HwndHook)
-                _hwnd = hwnd
+                 Dim hwnd As IntPtr = New WindowInteropHelper(_w).Handle
+                 Dim source As HwndSource = HwndSource.FromHwnd(hwnd)
+                 source.AddHook(AddressOf HwndHook)
+                 _hwnd = hwnd
 
-                _hNotify = Functions.SHChangeNotifyRegister(
+                 _hNotify = Functions.SHChangeNotifyRegister(
                     hwnd,
                     SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
                     SHCNE.ALLEVENTS,
@@ -64,12 +64,12 @@ Public Class Shell
                     1,
                     entry)
 
-                AddHandler Application.Current.Exit,
+                 AddHandler Application.Current.Exit,
                     Sub(s2 As Object, e2 As ExitEventArgs)
                         Functions.SHChangeNotifyDeregister(_hNotify)
                         Functions.OleUninitialize()
                     End Sub
-            End Sub
+             End Sub
 
         Dim addSpecialFolder As Action(Of String, Item) =
             Sub(name As String, item As Item)
@@ -154,8 +154,8 @@ Public Class Shell
                 End If
 
                 RaiseEvent Notification(Nothing, New NotificationEventArgs() With {
-                    .Item1Path = path1,
-                    .Item2Path = path2,
+                    .Item1Pidl = New Pidl(pidl1),
+                    .Item2Pidl = New Pidl(pidl2),
                     .[Event] = lEvent
                 })
 

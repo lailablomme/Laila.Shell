@@ -67,7 +67,8 @@ Namespace Controls
                                 Not i.disposedValue _
                                 AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
                                 AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                                AndAlso i.FullPath = e.Item1Path) Is Nothing Then
+                                AndAlso Not i.Pidl Is Nothing _
+                                AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
                                 updatePinnedItems()
                                 updateFrequentFolders()
                             End If
@@ -78,13 +79,15 @@ Namespace Controls
                                         Using parent = i.GetParent()
                                             Return i.TreeRootIndex >= TreeRootSection.PINNED _
                                             AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                                            AndAlso (Not parent Is Nothing AndAlso parent.FullPath = e.Item1Path)
+                                            AndAlso (Not parent Is Nothing _
+                                                     AndAlso Not parent.Pidl Is Nothing _
+                                                     AndAlso parent.Pidl.Equals(e.Item1Pidl))
                                         End Using
                                     Else
                                         Return False
                                     End If
                                 End Function) Is Nothing _
-                                OrElse Shell.Desktop.FullPath.Equals(e.Item1Path) Then
+                                OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl) Then
                                 updatePinnedItems()
                                 updateFrequentFolders()
                             End If

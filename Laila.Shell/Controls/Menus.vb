@@ -1,19 +1,15 @@
 ﻿Imports System.ComponentModel
-Imports System.ComponentModel.Design
 Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
-Imports System.Threading.Channels
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
-Imports System.Windows.Data
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
-Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 
@@ -38,24 +34,22 @@ Namespace Controls
         Public Shared ReadOnly UpdateDelayProperty As DependencyProperty = DependencyProperty.Register("UpdateDelay", GetType(Integer?), GetType(Menus), New FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Public Event CommandInvoked(sender As Object, e As CommandInvokedEventArgs)
+        Public Event RenameRequest(sender As Object, e As RenameRequestEventArgs)
 
         Public Property DefaultId As String
 
         Private _contextMenu As IContextMenu
-        'Private _newItemContextMenu As IContextMenu
-        'Private _selectedItemsContextMenu As IContextMenu
         Private _contextMenu2 As IContextMenu2
         Private _contextMenu3 As IContextMenu3
         Private _hMenu As IntPtr
-        'Private _newItemhMenu As IntPtr
-        'Private _selectedItemshMenu As IntPtr
-        Private Shared _firstContextMenuCall As Boolean = True
         Private _parent As Folder
         Private _invokedId As String = Nothing
         Private disposedValue As Boolean
         Private _lastItems As IEnumerable(Of Item)
         Private _lastFolder As Folder
         Private _updateTimer As Timer
+        Private _renameRequestTimer As Timer
+        Private _isWaitingForCreate As Boolean
         Private _isCheckingInternally As Boolean
 
         Shared Sub New()
@@ -63,6 +57,7 @@ Namespace Controls
         End Sub
 
         Public Sub New()
+            AddHandler Shell.Notification, AddressOf shell_Notification
             Dim viewMenu As ContextMenu = New ContextMenu()
             For Each item In Shell.FolderViews
                 Dim viewSubMenuItem As MenuItem = New MenuItem() With {
@@ -222,7 +217,7 @@ Namespace Controls
                 End If
             End If
 
-            menu.Tag = New Tuple(Of IContextMenu, IntPtr)(_contextMenu, _hMenu)
+            menu.Tag = New Tuple(Of IContextMenu, IntPtr, Boolean)(_contextMenu, _hMenu, isDefaultOnly)
             AddHandler menu.Closed,
                 Sub(s As Object, e As EventArgs)
                     If Not _invokedId Is Nothing Then
@@ -230,10 +225,6 @@ Namespace Controls
                         _invokedId = Nothing
                     ElseIf Me.DoAutoDispose Then
                         Me.Dispose()
-                    Else
-                        _lastFolder = Nothing
-                        _lastItems = Nothing
-                        Me.Update()
                     End If
                 End Sub
 
@@ -288,18 +279,15 @@ Namespace Controls
                         End If
                     Next
 
-                    menu.Tag = New Tuple(Of IContextMenu, IntPtr)(_contextMenu, _hMenu)
+                    menu.Tag = New Tuple(Of IContextMenu, IntPtr, Boolean)(_contextMenu, _hMenu, False)
                     AddHandler menu.Closed,
                         Sub(s As Object, e As EventArgs)
                             If Not _invokedId Is Nothing Then
+                                initializeRenameRequest()
                                 Me.InvokeCommand(menu, _invokedId)
                                 _invokedId = Nothing
                             ElseIf Me.DoAutoDispose Then
                                 Me.Dispose()
-                            Else
-                                _lastFolder = Nothing
-                                _lastItems = Nothing
-                                Me.Update()
                             End If
                         End Sub
 
@@ -314,12 +302,11 @@ Namespace Controls
 
         Private Sub makeContextMenu(items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             Dim ptrContextMenu As IntPtr
-            Dim folderPidl As Pidl, isFolderPidlClone As Boolean, shellItemPtr As IntPtr
+            Dim folderPidl As Pidl, isFolderPidlClone As Boolean
             Dim itemPidls As Pidl()
             Dim flags As Integer = CMF.CMF_NORMAL
 
             Try
-                'Dim shellFolder As IShellFolder
                 If Not items Is Nothing AndAlso items.Count > 0 Then
                     ' user clicked on an item
                     flags = flags Or CMF.CMF_ITEMMENU
@@ -386,7 +373,10 @@ Namespace Controls
                         Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
                         If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
                             shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
-                            If Not isFolderPidlClone Then folderPidl = folderPidl.Clone()
+                            If Not isFolderPidlClone Then
+                                folderPidl = folderPidl.Clone()
+                                isFolderPidlClone = True
+                            End If
                             itemPidls = itemPidls.Select(Function(p) p.Clone()).ToArray()
                             Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
                                                          itemPidls.Select(Function(p) p.RelativePIDL).ToArray(),
@@ -403,15 +393,15 @@ Namespace Controls
                         If Not dataObject Is Nothing Then
                             Marshal.ReleaseComObject(dataObject)
                         End If
-                        folderPidl.Dispose()
                         For Each p In itemPidls
                             p.Dispose()
                         Next
                     End Try
-                ElseIf isFolderPidlClone Then
-                    folderPidl.Dispose()
                 End If
             Finally
+                If isFolderPidlClone Then
+                    folderPidl.Dispose()
+                End If
                 If Not IntPtr.Zero.Equals(ptrContextMenu) Then
                     Marshal.Release(ptrContextMenu)
                 End If
@@ -518,13 +508,13 @@ Namespace Controls
         End Function
 
         Private Sub newMenuItem_Click(c As Control, e2 As EventArgs)
-            Me.NewItemMenu.IsOpen = False
             invokeCommandDelayed(c.Tag)
+            Me.NewItemMenu.IsOpen = False
         End Sub
 
         Private Sub menuItem_Click(c As Control, e2 As EventArgs)
-            Me.ItemContextMenu.IsOpen = False
             invokeCommandDelayed(c.Tag)
+            Me.ItemContextMenu.IsOpen = False
         End Sub
 
         Protected Sub invokeCommandDelayed(id As String)
@@ -547,6 +537,8 @@ Namespace Controls
                 }
                 If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
                 RaiseEvent CommandInvoked(Me, e)
+
+                Dim t As Tuple(Of IContextMenu, IntPtr, Boolean) = contextMenu.Tag
 
                 If Not e.IsHandled Then
                     Select Case id.Split(vbTab)(1)
@@ -575,7 +567,6 @@ Namespace Controls
                             'cmi.hwnd = Shell._hwnd
                             cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
 
-                            Dim t As Tuple(Of IContextMenu, IntPtr) = contextMenu.Tag
                             Dim h As HRESULT = t.Item1.InvokeCommand(cmi)
                             Debug.WriteLine("InvokeCommand returned " & h.ToString())
                     End Select
@@ -585,7 +576,7 @@ Namespace Controls
 
                 If Me.DoAutoDispose Then
                     Me.Dispose()
-                ElseIf contextMenu.Equals(Me.NewItemMenu) OrElse contextMenu.Equals(Me.ItemContextMenu) Then
+                ElseIf Not t.Item3 Then
                     If EqualityComparer(Of Folder).Default.Equals(lastFolder, Me.Folder) Then _lastFolder = Nothing
                     If EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(lastSelectedItems, Me.SelectedItems) Then _lastItems = Nothing
                     Me.Update()
@@ -601,19 +592,19 @@ Namespace Controls
         Private Sub releaseContextMenu(contextMenu As ContextMenu)
             Debug.WriteLine("releaseContextMenu()")
             If Not contextMenu Is Nothing AndAlso Not contextMenu.Tag Is Nothing Then
-                Dim t As Tuple(Of IContextMenu, IntPtr) = contextMenu.Tag
+                Dim t As Tuple(Of IContextMenu, IntPtr, Boolean) = contextMenu.Tag
                 Marshal.ReleaseComObject(t.Item1)
                 Functions.DestroyMenu(t.Item2)
                 contextMenu.Tag = Nothing
             End If
-            If Not _contextMenu2 Is Nothing Then
-                Marshal.ReleaseComObject(_contextMenu2)
-                _contextMenu2 = Nothing
-            End If
-            If Not _contextMenu3 Is Nothing Then
-                Marshal.ReleaseComObject(_contextMenu3)
-                _contextMenu3 = Nothing
-            End If
+            'If Not _contextMenu2 Is Nothing Then
+            '    Marshal.ReleaseComObject(_contextMenu2)
+            '    _contextMenu2 = Nothing
+            'End If
+            'If Not _contextMenu3 Is Nothing Then
+            '    Marshal.ReleaseComObject(_contextMenu3)
+            '    _contextMenu3 = Nothing
+            'End If
         End Sub
 
         Public Shared Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
@@ -626,7 +617,7 @@ Namespace Controls
                     If isDrive Then
                         Functions.SetVolumeLabelW(item.FullPath, newName)
                         Shell.RaiseNotificationEvent(Nothing, New NotificationEventArgs() With {
-                                                     .Item1Path = item.FullPath, .[Event] = SHCNE.UPDATEITEM})
+                                                     .Item1Pidl = item.Pidl, .[Event] = SHCNE.UPDATEITEM})
                     Else
                         Dim fileOperation As IFileOperation
                         Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
@@ -827,102 +818,106 @@ Namespace Controls
             Return getContextMenu(Me.Folder, Me.SelectedItems, True)
         End Function
 
+        Private _updateLock As Object = New Object()
         Public Sub Update()
-            Debug.WriteLine("Menus.Update()")
+            SyncLock _updateLock
+                Debug.WriteLine("Menus.Update()")
 
-            Dim didGetMenu As Boolean
+                Dim didGetMenu As Boolean
 
-            Using Shell.OverrideCursor(Cursors.Wait)
-                If Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
-                    _lastFolder = Me.Folder
+                Using Shell.OverrideCursor(Cursors.Wait)
+                    If Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
+                        _lastFolder = Me.Folder
 
-                    releaseContextMenu(Me.NewItemMenu)
+                        releaseContextMenu(Me.NewItemMenu)
 
-                    Me.ItemContextMenu = getContextMenu(Me.Folder, Nothing, False)
-                    Me.NewItemMenu = getNewItemMenu(Me.ItemContextMenu)
+                        Me.ItemContextMenu = getContextMenu(Me.Folder, Nothing, False)
+                        Me.NewItemMenu = getNewItemMenu(Me.ItemContextMenu)
 
-                    didGetMenu = True
+                        didGetMenu = True
 
-                    If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
-                        Dim viewMenuItem As MenuItem = New MenuItem() With {
-                            .Header = "View",
-                            .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/view16.png", UriKind.Absolute))}
-                        }
-                        For Each item In Shell.FolderViews
-                            Dim viewSubMenuItem As MenuItem = New MenuItem() With {
-                                .Header = item.Key,
-                                .Icon = New Image() With {.Source = New BitmapImage(New Uri(item.Value.Item1, UriKind.Absolute))},
-                                .Tag = "View:" & item.Key,
-                                .IsCheckable = True,
-                                .IsChecked = item.Key = Me.Folder.View
+                        If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
+                            Dim viewMenuItem As MenuItem = New MenuItem() With {
+                                .Header = "View",
+                                .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/view16.png", UriKind.Absolute))}
                             }
-                            AddHandler viewSubMenuItem.Checked,
-                                Sub(s2 As Object, e2 As EventArgs)
-                                    If Not _isCheckingInternally Then
-                                        Me.Folder.View = item.Key
-                                    End If
-                                End Sub
-                            AddHandler viewSubMenuItem.Unchecked,
-                                Sub(s2 As Object, e2 As EventArgs)
-                                    If Not _isCheckingInternally Then
-                                        _isCheckingInternally = True
-                                        viewSubMenuItem.IsChecked = True
-                                        _isCheckingInternally = False
-                                    End If
-                                End Sub
-                            viewMenuItem.Items.Add(viewSubMenuItem)
-                        Next
-                        Me.ItemContextMenu.Items.Insert(0, viewMenuItem)
-                        If Me.ItemContextMenu.Items.Count > 1 Then Me.ItemContextMenu.Items.Insert(1, New Separator())
-                    End If
-                    initializeViewMenu()
+                            For Each item In Shell.FolderViews
+                                Dim viewSubMenuItem As MenuItem = New MenuItem() With {
+                                    .Header = item.Key,
+                                    .Icon = New Image() With {.Source = New BitmapImage(New Uri(item.Value.Item1, UriKind.Absolute))},
+                                    .Tag = "View:" & item.Key,
+                                    .IsCheckable = True,
+                                    .IsChecked = item.Key = Me.Folder.View
+                                }
+                                AddHandler viewSubMenuItem.Checked,
+                                    Sub(s2 As Object, e2 As EventArgs)
+                                        If Not _isCheckingInternally Then
+                                            Me.Folder.View = item.Key
+                                        End If
+                                    End Sub
+                                AddHandler viewSubMenuItem.Unchecked,
+                                    Sub(s2 As Object, e2 As EventArgs)
+                                        If Not _isCheckingInternally Then
+                                            _isCheckingInternally = True
+                                            viewSubMenuItem.IsChecked = True
+                                            _isCheckingInternally = False
+                                        End If
+                                    End Sub
+                                viewMenuItem.Items.Add(viewSubMenuItem)
+                            Next
+                            Me.ItemContextMenu.Items.Insert(0, viewMenuItem)
+                            If Me.ItemContextMenu.Items.Count > 1 Then Me.ItemContextMenu.Items.Insert(1, New Separator())
+                        End If
+                        initializeViewMenu()
 
-                    Task.Run(AddressOf makeSortMenu)
-                End If
-
-                If (Not Me.SelectedItems Is Nothing OrElse Not didGetMenu) _
-                    AndAlso ((_lastItems Is Nothing AndAlso Not Me.SelectedItems Is Nothing) _
-                             OrElse (Not _lastItems Is Nothing AndAlso Me.SelectedItems Is Nothing) _
-                             OrElse (_lastItems Is Nothing AndAlso Me.SelectedItems Is Nothing) _
-                             OrElse Not _lastItems.SequenceEqual(Me.SelectedItems)) Then
-                    _lastItems = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
-
-                    If Not Me.ItemContextMenu Is Nothing AndAlso (
-                        Me.NewItemMenu Is Nothing _
-                        OrElse Not EqualityComparer(Of IContextMenu).Default.Equals(
-                        CType(Me.ItemContextMenu.Tag, Tuple(Of IContextMenu, IntPtr)).Item1,
-                        CType(Me.NewItemMenu.Tag, Tuple(Of IContextMenu, IntPtr)).Item1)) Then
-                        releaseContextMenu(Me.ItemContextMenu)
+                        Task.Run(AddressOf makeSortMenu)
                     End If
 
-                    Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, False)
+                    If (Not Me.SelectedItems Is Nothing OrElse Not didGetMenu) _
+                        AndAlso ((_lastItems Is Nothing AndAlso Not Me.SelectedItems Is Nothing) _
+                                 OrElse (Not _lastItems Is Nothing AndAlso Me.SelectedItems Is Nothing) _
+                                 OrElse (_lastItems Is Nothing AndAlso Me.SelectedItems Is Nothing) _
+                                 OrElse Not _lastItems.SequenceEqual(Me.SelectedItems)) Then
+                        _lastItems = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
 
-                    didGetMenu = True
-                End If
+                        If Not Me.ItemContextMenu Is Nothing AndAlso (
+                            Me.NewItemMenu Is Nothing _
+                            OrElse Not EqualityComparer(Of IContextMenu).Default.Equals(
+                            CType(Me.ItemContextMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean)).Item1,
+                            CType(Me.NewItemMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean)).Item1)) _
+                            AndAlso Not didGetMenu Then
+                            releaseContextMenu(Me.ItemContextMenu)
+                        End If
 
-                If didGetMenu Then
-                    Me.CanCut = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "cut")
-                    Me.CanCopy = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "copy")
-                    Me.CanPaste = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "paste")
-                    Me.CanRename = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "rename")
-                    Me.CanDelete = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "delete")
-                    Me.CanShare = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Not Me.ItemContextMenu.Items.Cast(Of Control).FirstOrDefault(
-                            Function(c) TypeOf c Is MenuItem _
-                                AndAlso Not CType(c, MenuItem).Tag Is Nothing _
-                                AndAlso CType(c, MenuItem).Tag.ToString().Split(vbTab)(1) = "Windows.ModernShare") Is Nothing
-                End If
-            End Using
+                        Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, False)
+
+                        didGetMenu = True
+                    End If
+
+                    If didGetMenu Then
+                        Me.CanCut = Not Me.ItemContextMenu Is Nothing _
+                            AndAlso Me.ItemContextMenu.Buttons.Exists(
+                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "cut")
+                        Me.CanCopy = Not Me.ItemContextMenu Is Nothing _
+                            AndAlso Me.ItemContextMenu.Buttons.Exists(
+                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "copy")
+                        Me.CanPaste = Not Me.ItemContextMenu Is Nothing _
+                            AndAlso Me.ItemContextMenu.Buttons.Exists(
+                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "paste")
+                        Me.CanRename = Not Me.ItemContextMenu Is Nothing _
+                            AndAlso Me.ItemContextMenu.Buttons.Exists(
+                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "rename")
+                        Me.CanDelete = Not Me.ItemContextMenu Is Nothing _
+                            AndAlso Me.ItemContextMenu.Buttons.Exists(
+                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "delete")
+                        Me.CanShare = Not Me.ItemContextMenu Is Nothing _
+                            AndAlso Not Me.ItemContextMenu.Items.Cast(Of Control).FirstOrDefault(
+                                Function(c) TypeOf c Is MenuItem _
+                                    AndAlso Not CType(c, MenuItem).Tag Is Nothing _
+                                    AndAlso CType(c, MenuItem).Tag.ToString().Split(vbTab)(1) = "Windows.ModernShare") Is Nothing
+                    End If
+                End Using
+            End SyncLock
         End Sub
 
         Private Async Function makeSortMenu() As Task
@@ -1184,6 +1179,48 @@ Namespace Controls
             End If
         End Sub
 
+        Private Sub initializeRenameRequest()
+            _isWaitingForCreate = True
+
+            If Not _renameRequestTimer Is Nothing Then
+                _renameRequestTimer.Dispose()
+            End If
+
+            _renameRequestTimer = New Timer(New TimerCallback(
+                Sub()
+                    UIHelper.OnUIThread(
+                        Sub()
+                            _isWaitingForCreate = False
+                            If Not _renameRequestTimer Is Nothing Then
+                                _renameRequestTimer.Dispose()
+                                _renameRequestTimer = Nothing
+                            End If
+                        End Sub)
+                End Sub), Nothing, 2500, Timeout.Infinite)
+        End Sub
+
+        Protected Async Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+            If Not disposedValue Then
+                Select Case e.Event
+                    Case SHCNE.CREATE, SHCNE.MKDIR
+                        If _isWaitingForCreate Then
+                            Dim e2 As RenameRequestEventArgs = New RenameRequestEventArgs()
+                            e2.Pidl = e.Item1Pidl.Clone()
+                            Await Task.Delay(250)
+                            RaiseEvent RenameRequest(Me, e2)
+                            If e2.IsHandled Then
+                                _isWaitingForCreate = False
+                                If Not _renameRequestTimer Is Nothing Then
+                                    _renameRequestTimer.Dispose()
+                                    _renameRequestTimer = Nothing
+                                End If
+                            End If
+                            e2.Pidl.Dispose()
+                        End If
+                End Select
+            End If
+        End Sub
+
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName"
@@ -1249,6 +1286,7 @@ Namespace Controls
             If Not disposedValue Then
                 If disposing Then
                     ' dispose managed state (managed objects)
+                    RemoveHandler Shell.Notification, AddressOf shell_Notification
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

@@ -624,16 +624,16 @@ Public Class Folder
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.CREATE
-                    If Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
+                    If _isLoaded Then
                         Dim parentShellItem2 As IShellItem2
                         Try
-                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
                             If Not item1 Is Nothing Then
                                 item1.GetParent(parentShellItem2)
                                 Dim parentFullPath As String
                                 parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                                 If Me.FullPath.Equals(parentFullPath) Then
-                                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue) Is Nothing Then
                                         Dim attr As SFGAO = SFGAO.FOLDER
                                         item1.GetAttributes(attr, attr)
                                         If attr.HasFlag(SFGAO.FOLDER) Then
@@ -651,16 +651,16 @@ Public Class Folder
                         End Try
                     End If
                 Case SHCNE.MKDIR
-                    If Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
+                    If _isLoaded Then
                         Dim parentShellItem2 As IShellItem2
                         Try
-                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
                             If Not item1 Is Nothing Then
                                 item1.GetParent(parentShellItem2)
                                 Dim parentFullPath As String
                                 parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
                                 If Me.FullPath.Equals(parentFullPath) Then
-                                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
+                                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue) Is Nothing Then
                                         _items.Add(New Folder(item1, Me))
                                     End If
                                 End If
@@ -672,8 +672,8 @@ Public Class Folder
                         End Try
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
-                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                        Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _isLoaded Then
+                        Dim item As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue)
                         If Not item Is Nothing Then
                             If TypeOf item Is Folder Then
                                 Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -685,17 +685,17 @@ Public Class Folder
                         End If
                     End If
                 Case SHCNE.DRIVEADD
-                    If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                        If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue) Is Nothing Then
-                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromParsingName(e.Item1Path)
+                    If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
+                        If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue) Is Nothing Then
+                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
                             If Not item1 Is Nothing Then
                                 _items.Add(New Folder(item1, Me))
                             End If
                         End If
                     End If
                 Case SHCNE.DRIVEREMOVED
-                    If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso Not String.IsNullOrWhiteSpace(e.Item1Path) AndAlso _isLoaded Then
-                        Dim item As Item = _items.FirstOrDefault(Function(i) i.FullPath = e.Item1Path AndAlso Not i.disposedValue)
+                    If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
+                        Dim item As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue)
                         If Not Me.IsLoading AndAlso Not item Is Nothing AndAlso TypeOf item Is Folder Then
                             Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                 .Folder = item,
@@ -705,7 +705,7 @@ Public Class Folder
                         End If
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                    If (Me.FullPath.Equals(e.Item1Path) OrElse Shell.Desktop.FullPath.Equals(e.Item1Path)) _
+                    If (Me.Pidl.Equals(e.Item1Pidl) OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl)) _
                         AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _updatesQueued < 2 Then
                         UIHelper.OnUIThread(
                             Async Sub()

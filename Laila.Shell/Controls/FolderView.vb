@@ -3,6 +3,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Media
+Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 
 Namespace Controls
@@ -12,7 +13,7 @@ Namespace Controls
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenusChanged))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
@@ -56,6 +57,10 @@ Namespace Controls
             Me.ActiveView.DoRename()
         End Sub
 
+        Public Async Function DoRename(pidl As Pidl) As Task(Of Boolean)
+            Return Await Me.ActiveView.DoRename(pidl)
+        End Function
+
         Public Property ActiveView As BaseFolderView
             Get
                 Return _activeView
@@ -91,6 +96,20 @@ Namespace Controls
                 SetCurrentValue(MenusProperty, value)
             End Set
         End Property
+
+        Shared Sub OnMenusChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim fv As FolderView = d
+            If Not e.OldValue Is Nothing Then
+                RemoveHandler CType(e.OldValue, Menus).RenameRequest, AddressOf fv.menus_RenameRequest
+            End If
+            If Not e.NewValue Is Nothing Then
+                AddHandler CType(e.NewValue, Menus).RenameRequest, AddressOf fv.menus_RenameRequest
+            End If
+        End Sub
+
+        Private Async Sub menus_RenameRequest(sender As Object, e As RenameRequestEventArgs)
+            e.IsHandled = Await Me.DoRename(e.Pidl)
+        End Sub
 
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim fv As FolderView = d

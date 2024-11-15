@@ -208,6 +208,7 @@ Public Class Item
         Me.ClearCache()
 
         If Not Me.ShellItem2 Is Nothing Then
+            _fullPath = Item.GetFullPathFromShellItem2(Me.ShellItem2)
             _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
@@ -846,12 +847,14 @@ Public Class Item
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
-                    If Me.FullPath.Equals(e.Item1Path) Then
+                    If Me.Pidl.Equals(e.Item1Pidl) Then
                         Me.Refresh()
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
-                    If Me.FullPath.Equals(e.Item1Path) Then
-                        _fullPath = e.Item2Path
+                    If Me.Pidl.Equals(e.Item1Pidl) Then
+                        Dim oldPidl As Pidl = Me.Pidl
+                        _pidl = e.Item2Pidl.Clone()
+                        oldPidl.Dispose()
                         Me.Refresh()
                     End If
             End Select
