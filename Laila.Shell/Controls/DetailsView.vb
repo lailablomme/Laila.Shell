@@ -251,8 +251,8 @@ Namespace Controls
                     End If
                     Dim ptTop As Point = Me.PointFromScreen(listViewItem.PointToScreen(New Point(0, 0)))
 
-                    point.X = ptLeft.X + 5
-                    point.Y = ptTop.Y
+                    point.X = ptLeft.X + 2
+                    point.Y = ptTop.Y + 1
                     size.Width = width - 5
                     size.Height = listViewItem.ActualHeight
                 End If

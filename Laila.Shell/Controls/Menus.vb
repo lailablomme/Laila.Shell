@@ -98,19 +98,14 @@ Namespace Controls
                 Dim dataObject As IDataObject
                 Functions.OleGetClipboard(dataObject)
 
-                Dim dropTarget As IDropTarget, pidl As IntPtr, shellItemPtr As IntPtr, dropTargetPtr As IntPtr
+                Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr
                 Try
-                    shellItemPtr = Marshal.GetIUnknownForObject(parent.ShellItem2)
-                    Functions.SHGetIDListFromObject(shellItemPtr, pidl)
                     Using parent2 As Folder = parent.GetParent()
                         If Not parent2 Is Nothing Then
-                            Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = parent2.ShellFolder
-                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                            parent2.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {parent.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                         Else
-                            Dim shellFolder As IShellFolder
-                            Functions.SHGetDesktopFolder(shellFolder)
                             ' desktop
-                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                            Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {parent.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                         End If
                     End Using
                     If Not IntPtr.Zero.Equals(dropTargetPtr) Then
@@ -127,14 +122,8 @@ Namespace Controls
                         hasPaste = hr = HRESULT.Ok AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
                     End If
                 Finally
-                    If Not IntPtr.Zero.Equals(shellItemPtr) Then
-                        Marshal.Release(shellItemPtr)
-                    End If
                     If Not IntPtr.Zero.Equals(dropTargetPtr) Then
                         Marshal.Release(dropTargetPtr)
-                    End If
-                    If Not IntPtr.Zero.Equals(pidl) Then
-                        Marshal.FreeCoTaskMem(pidl)
                     End If
                     If Not dropTarget Is Nothing Then
                         Marshal.ReleaseComObject(dropTarget)

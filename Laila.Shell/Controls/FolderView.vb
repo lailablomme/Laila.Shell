@@ -117,6 +117,7 @@ Namespace Controls
         End Sub
 
         Private Sub changeView(newValue As String)
+            Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
             If Not Me.ActiveView Is Nothing Then
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.FolderProperty)
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
@@ -139,6 +140,7 @@ Namespace Controls
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.MenusProperty, New Binding("Menus") With {.Source = Me})
+            Me.SelectedItems = selectedItems
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)

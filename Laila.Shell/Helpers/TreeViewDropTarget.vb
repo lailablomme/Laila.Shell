@@ -260,19 +260,14 @@ Public Class TreeViewDropTarget
                     OrElse _newPinnedIndex <> newPinnedIndex Then
                     _lastOverItem = overItem
 
-                    Dim dropTarget As IDropTarget, pidl As IntPtr, shellItemPtr As IntPtr, dropTargetPtr As IntPtr
+                    Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr
                     Try
-                        shellItemPtr = Marshal.GetIUnknownForObject(overItem.ShellItem2)
-                        Functions.SHGetIDListFromObject(shellItemPtr, pidl)
                         Using parent = overItem.GetParent()
                             If Not parent Is Nothing Then
-                                Dim lastpidl As IntPtr = Functions.ILFindLastID(pidl), shellFolder As IShellFolder = parent.ShellFolder
-                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {lastpidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                                parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                             Else
-                                Dim shellFolder As IShellFolder
-                                Functions.SHGetDesktopFolder(shellFolder)
                                 ' desktop
-                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                                Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                             End If
                         End Using
                         If Not IntPtr.Zero.Equals(dropTargetPtr) Then
@@ -281,14 +276,8 @@ Public Class TreeViewDropTarget
                             dropTarget = Nothing
                         End If
                     Finally
-                        If Not IntPtr.Zero.Equals(shellItemPtr) Then
-                            Marshal.Release(shellItemPtr)
-                        End If
                         If Not IntPtr.Zero.Equals(dropTargetPtr) Then
                             Marshal.Release(dropTargetPtr)
-                        End If
-                        If Not IntPtr.Zero.Equals(pidl) Then
-                            Marshal.FreeCoTaskMem(pidl)
                         End If
                     End Try
                     'Debug.WriteLine("got dropTarget = " & If(dropTarget Is Nothing, "nothing", "something"))

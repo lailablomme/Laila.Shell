@@ -65,7 +65,8 @@ Namespace Controls
                         _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
                         _selectionHelper.SelectionChanged =
                             Sub()
-                                Me.SelectedItems = _selectionHelper.SelectedItems
+                                If Not Me.Folder Is Nothing Then _
+                                    Me.SelectedItems = _selectionHelper.SelectedItems
                             End Sub
                         _selectionHelper.SetSelectedItems(Me.SelectedItems)
 
@@ -133,10 +134,14 @@ Namespace Controls
                 If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Not clickedItem Is Nothing Then
                     Using Shell.OverrideCursor(Cursors.Wait)
                         Me.SelectedItems = {clickedItem}
-                        hookMenus()
-                        If Not _menus Is Nothing Then
-                            Dim contextMenu As ContextMenu = _menus.GetDefaultContextMenu()
-                            _menus.InvokeCommand(contextMenu, _menus.DefaultId)
+                        If TypeOf clickedItem Is Folder Then
+                            Me.Folder = clickedItem
+                        Else
+                            hookMenus()
+                            If Not _menus Is Nothing Then
+                                Dim contextMenu As ContextMenu = _menus.GetDefaultContextMenu()
+                                _menus.InvokeCommand(contextMenu, _menus.DefaultId)
+                            End If
                         End If
                     End Using
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then

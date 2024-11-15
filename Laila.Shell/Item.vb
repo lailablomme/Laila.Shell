@@ -380,49 +380,31 @@ Public Class Item
 
     Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
         If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
-            Dim pidl As IntPtr, lastpidl As IntPtr, ptr As IntPtr
-            Try
-                ptr = Marshal.GetIUnknownForObject(Me.ShellItem2)
-                Functions.SHGetIDListFromObject(ptr, pidl)
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-            End Try
-            lastpidl = Functions.ILFindLastID(pidl)
-
             Dim parent As Folder = Me.GetParent()
             Dim shellFolder As IShellFolder = If(Not parent Is Nothing, parent.ShellFolder, Shell.Desktop.ShellFolder)
+            Dim ptr As IntPtr, ptr2 As IntPtr, shellIconOverlay As IShellIconOverlay
             Try
                 ptr = Marshal.GetIUnknownForObject(shellFolder)
-                Dim ptr2 As IntPtr, shellIconOverlay As IShellIconOverlay
-                Try
-                    Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
-                    If Not IntPtr.Zero.Equals(ptr2) Then
-                        Dim iconIndex As Integer
+                Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
+                If Not IntPtr.Zero.Equals(ptr2) Then
+                    Dim iconIndex As Integer
 
-                        shellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
-                        shellIconOverlay.GetOverlayIconIndex(lastpidl, iconIndex)
+                    shellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
+                    shellIconOverlay.GetOverlayIconIndex(Me.Pidl.RelativePIDL, iconIndex)
 
-                        _overlayIconIndex = iconIndex
-                    Else
-                        Return Nothing
-                    End If
-                Finally
-                    If Not IntPtr.Zero.Equals(ptr2) Then
-                        Marshal.Release(ptr2)
-                    End If
-                    If Not shellIconOverlay Is Nothing Then
-                        Marshal.ReleaseComObject(shellIconOverlay)
-                    End If
-                End Try
-            Finally
-                Marshal.Release(ptr)
-                If Not IntPtr.Zero.Equals(pidl) Then
-                    Marshal.FreeHGlobal(pidl)
+                    _overlayIconIndex = iconIndex
+                Else
+                    Return Nothing
                 End If
+            Finally
                 If Not parent Is Nothing Then
                     parent.Dispose()
+                End If
+                If Not IntPtr.Zero.Equals(ptr2) Then
+                    Marshal.Release(ptr2)
+                End If
+                If Not shellIconOverlay Is Nothing Then
+                    Marshal.ReleaseComObject(shellIconOverlay)
                 End If
             End Try
         End If

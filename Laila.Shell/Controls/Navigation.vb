@@ -100,7 +100,8 @@ Namespace Controls
 
         Public Sub Up()
             Dim parent As Folder = Me.Folder._logicalParent
-            If parent Is Nothing Then parent = Me.Folder.GetParent()
+            If parent Is Nothing Then parent =
+                If(Me.Folder._logicalParent Is Nothing, Me.Folder.GetParent(), Me.Folder._logicalParent)
             parent.LastScrollOffset = New Point()
             parent.IsInHistory = True
             Me.Folder = parent

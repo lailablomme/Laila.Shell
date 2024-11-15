@@ -119,7 +119,7 @@ Public Class Folder
                 Dim t As Func(Of Task) =
                     Async Function() As Task
                         SyncLock _lock
-                            If _items.Count = 0 Then
+                            If Not _isEnumerated Then
                                 updateItems(_items,, True)
                             End If
                         End SyncLock
@@ -209,9 +209,9 @@ Public Class Folder
 
     Public ReadOnly Property ColumnManager As IColumnManager
         Get
-            Dim ptr As IntPtr, shellFolder As IShellFolder = Me.ShellFolder
+            Dim ptr As IntPtr
             Try
-                shellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
+                Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
                 Dim shellView As IShellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
                 Return shellView
             Finally
@@ -462,19 +462,19 @@ Public Class Folder
                 End If
             End If
         Else
-            Dim list As IEnumIDList, shellFolder As IShellFolder = Me.ShellFolder
+            Dim list As IEnumIDList
             Try
-                shellFolder.EnumObjects(Nothing, flags, list)
+                Me.ShellFolder.EnumObjects(Nothing, flags, list)
                 If Not list Is Nothing Then
                     Dim pidl(0) As IntPtr, fetched As Integer, count As Integer = 0
                     While list.Next(1, pidl, fetched) = 0
                         Try
-                            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), shellFolder)
+                            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), Me.ShellFolder)
                             Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItem2)
                             pathsAfter.Add(fullPath)
                             If Not exists(fullPath) Then
                                 Dim attr2 As Integer = SFGAO.FOLDER
-                                shellFolder.GetAttributesOf(1, pidl, attr2)
+                                Me.ShellFolder.GetAttributesOf(1, pidl, attr2)
                                 Dim newItem As Item
                                 Try
                                     If CBool(attr2 And SFGAO.FOLDER) Then
@@ -738,6 +738,7 @@ Public Class Folder
 
             If Not _shellFolder Is Nothing Then
                 Marshal.ReleaseComObject(_shellFolder)
+                _shellFolder = Nothing
             End If
         End If
 
