@@ -630,16 +630,21 @@ Public Class Folder
                             Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
                             If Not item1 Is Nothing Then
                                 item1.GetParent(parentShellItem2)
-                                Dim parentFullPath As String
-                                parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
+                                Dim parentFullPath As String = Item.GetFullPathFromShellItem2(parentShellItem2)
+                                Dim itemFullPath As String = Item.GetFullPathFromShellItem2(item1)
                                 If Me.FullPath.Equals(parentFullPath) Then
-                                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue) Is Nothing Then
-                                        Dim attr As SFGAO = SFGAO.FOLDER
-                                        item1.GetAttributes(attr, attr)
-                                        If attr.HasFlag(SFGAO.FOLDER) Then
-                                            _items.Add(New Folder(item1, Me))
+                                    If Not Me.IsLoading AndAlso Not _items Is Nothing Then
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) i.FullPath.Equals(itemFullPath) AndAlso Not i.disposedValue)
+                                        If existing Is Nothing Then
+                                            Dim attr As SFGAO = SFGAO.FOLDER
+                                            item1.GetAttributes(attr, attr)
+                                            If attr.HasFlag(SFGAO.FOLDER) Then
+                                                _items.Add(New Folder(item1, Me))
+                                            Else
+                                                _items.Add(New Item(item1, Me))
+                                            End If
                                         Else
-                                            _items.Add(New Item(item1, Me))
+                                            existing.Refresh()
                                         End If
                                     End If
                                 End If
@@ -657,11 +662,16 @@ Public Class Folder
                             Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
                             If Not item1 Is Nothing Then
                                 item1.GetParent(parentShellItem2)
-                                Dim parentFullPath As String
-                                parentShellItem2.GetDisplayName(SHGDN.FORPARSING, parentFullPath)
+                                Dim parentFullPath As String = Item.GetFullPathFromShellItem2(parentShellItem2)
+                                Dim itemFullPath As String = Item.GetFullPathFromShellItem2(item1)
                                 If Me.FullPath.Equals(parentFullPath) Then
-                                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue) Is Nothing Then
-                                        _items.Add(New Folder(item1, Me))
+                                    If Not Me.IsLoading AndAlso Not _items Is Nothing Then
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) i.FullPath.Equals(itemFullPath) AndAlso Not i.disposedValue)
+                                        If existing Is Nothing Then
+                                            _items.Add(New Folder(item1, Me))
+                                        Else
+                                            existing.Refresh()
+                                        End If
                                     End If
                                 End If
                             End If

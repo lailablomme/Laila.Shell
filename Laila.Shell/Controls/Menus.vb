@@ -217,10 +217,17 @@ Namespace Controls
                 End If
             End If
 
+            Dim newMenuItem As MenuItem = menu.Items.Cast(Of Control) _
+                .FirstOrDefault(Function(c) TypeOf c Is MenuItem _
+                    AndAlso Not c.Tag Is Nothing _
+                    AndAlso c.Tag.ToString().Split(vbTab)(1) = "New")
             menu.Tag = New Tuple(Of IContextMenu, IntPtr, Boolean)(_contextMenu, _hMenu, isDefaultOnly)
             AddHandler menu.Closed,
                 Sub(s As Object, e As EventArgs)
                     If Not _invokedId Is Nothing Then
+                        If Not newMenuItem.Items.Cast(Of Control).FirstOrDefault(Function(c) _invokedId.Equals(c.Tag)) Is Nothing Then
+                            initializeRenameRequest()
+                        End If
                         Me.InvokeCommand(menu, _invokedId)
                         _invokedId = Nothing
                     ElseIf Me.DoAutoDispose Then
@@ -818,23 +825,26 @@ Namespace Controls
             Return getContextMenu(Me.Folder, Me.SelectedItems, True)
         End Function
 
-        Private _updateLock As Object = New Object()
-        Public Sub Update()
-            SyncLock _updateLock
-                Debug.WriteLine("Menus.Update()")
+        Private _isFirstUpdate As Boolean = True
 
-                Dim didGetMenu As Boolean
+        Public Sub Update(Optional doMake As Boolean = True)
+            Debug.WriteLine("Menus.Update()")
 
-                Using Shell.OverrideCursor(Cursors.Wait)
-                    If Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
-                        _lastFolder = Me.Folder
+            Dim didGetMenu As Boolean
 
-                        releaseContextMenu(Me.NewItemMenu)
+            Using Shell.OverrideCursor(Cursors.Wait)
+                If Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
+                    If doMake Then _lastFolder = Me.Folder
 
+                    releaseContextMenu(Me.NewItemMenu)
+                    Me.ItemContextMenu = Nothing
+                    Me.NewItemMenu = Nothing
+
+                    didGetMenu = True
+
+                    If doMake Then
                         Me.ItemContextMenu = getContextMenu(Me.Folder, Nothing, False)
                         Me.NewItemMenu = getNewItemMenu(Me.ItemContextMenu)
-
-                        didGetMenu = True
 
                         If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
                             Dim viewMenuItem As MenuItem = New MenuItem() With {
@@ -872,52 +882,53 @@ Namespace Controls
 
                         Task.Run(AddressOf makeSortMenu)
                     End If
+                End If
 
                     If (Not Me.SelectedItems Is Nothing OrElse Not didGetMenu) _
                         AndAlso ((_lastItems Is Nothing AndAlso Not Me.SelectedItems Is Nothing) _
                                  OrElse (Not _lastItems Is Nothing AndAlso Me.SelectedItems Is Nothing) _
-                                 OrElse (_lastItems Is Nothing AndAlso Me.SelectedItems Is Nothing) _
-                                 OrElse Not _lastItems.SequenceEqual(Me.SelectedItems)) Then
-                        _lastItems = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
+                                 OrElse (Not _lastItems Is Nothing AndAlso Not _lastItems.SequenceEqual(Me.SelectedItems)) _
+                                 OrElse didGetMenu) Then
+                    If doMake Then _lastItems = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
 
-                        If Not Me.ItemContextMenu Is Nothing AndAlso (
+                    If Not Me.ItemContextMenu Is Nothing AndAlso (
                             Me.NewItemMenu Is Nothing _
                             OrElse Not EqualityComparer(Of IContextMenu).Default.Equals(
                             CType(Me.ItemContextMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean)).Item1,
                             CType(Me.NewItemMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean)).Item1)) _
                             AndAlso Not didGetMenu Then
-                            releaseContextMenu(Me.ItemContextMenu)
-                        End If
-
-                        Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, False)
-
-                        didGetMenu = True
+                        releaseContextMenu(Me.ItemContextMenu)
+                        Me.ItemContextMenu = Nothing
                     End If
 
-                    If didGetMenu Then
-                        Me.CanCut = Not Me.ItemContextMenu Is Nothing _
-                            AndAlso Me.ItemContextMenu.Buttons.Exists(
-                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "cut")
-                        Me.CanCopy = Not Me.ItemContextMenu Is Nothing _
-                            AndAlso Me.ItemContextMenu.Buttons.Exists(
-                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "copy")
-                        Me.CanPaste = Not Me.ItemContextMenu Is Nothing _
-                            AndAlso Me.ItemContextMenu.Buttons.Exists(
-                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "paste")
-                        Me.CanRename = Not Me.ItemContextMenu Is Nothing _
-                            AndAlso Me.ItemContextMenu.Buttons.Exists(
-                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "rename")
-                        Me.CanDelete = Not Me.ItemContextMenu Is Nothing _
-                            AndAlso Me.ItemContextMenu.Buttons.Exists(
-                                Function(b) b.Tag.ToString().Split(vbTab)(1) = "delete")
-                        Me.CanShare = Not Me.ItemContextMenu Is Nothing _
-                            AndAlso Not Me.ItemContextMenu.Items.Cast(Of Control).FirstOrDefault(
-                                Function(c) TypeOf c Is MenuItem _
-                                    AndAlso Not CType(c, MenuItem).Tag Is Nothing _
-                                    AndAlso CType(c, MenuItem).Tag.ToString().Split(vbTab)(1) = "Windows.ModernShare") Is Nothing
-                    End If
-                End Using
-            End SyncLock
+                    If doMake Then Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, False)
+
+                    didGetMenu = True
+                End If
+
+                If didGetMenu Then
+                    Me.CanCut = Not Me.ItemContextMenu Is Nothing _
+                        AndAlso Me.ItemContextMenu.Buttons.Exists(
+                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "cut")
+                    Me.CanCopy = Not Me.ItemContextMenu Is Nothing _
+                        AndAlso Me.ItemContextMenu.Buttons.Exists(
+                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "copy")
+                    Me.CanPaste = Not Me.ItemContextMenu Is Nothing _
+                        AndAlso Me.ItemContextMenu.Buttons.Exists(
+                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "paste")
+                    Me.CanRename = Not Me.ItemContextMenu Is Nothing _
+                        AndAlso Me.ItemContextMenu.Buttons.Exists(
+                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "rename")
+                    Me.CanDelete = Not Me.ItemContextMenu Is Nothing _
+                        AndAlso Me.ItemContextMenu.Buttons.Exists(
+                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "delete")
+                    Me.CanShare = Not Me.ItemContextMenu Is Nothing _
+                        AndAlso Not Me.ItemContextMenu.Items.Cast(Of Control).FirstOrDefault(
+                            Function(c) TypeOf c Is MenuItem _
+                                AndAlso Not CType(c, MenuItem).Tag Is Nothing _
+                                AndAlso CType(c, MenuItem).Tag.ToString().Split(vbTab)(1) = "Windows.ModernShare") Is Nothing
+                End If
+            End Using
         End Sub
 
         Private Async Function makeSortMenu() As Task
@@ -1231,6 +1242,8 @@ Namespace Controls
         End Sub
 
         Private Sub onSelectionChanged()
+            Me.Update(False)
+
             If Not _updateTimer Is Nothing Then
                 _updateTimer.Dispose()
             End If
