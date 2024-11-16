@@ -157,7 +157,7 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" />
-                                        <Image Grid.Column="1" Source="{Binding Icon[16]}" Margin="0,0,4,0" Width="16" Height="16">
+                                        <Image Grid.Column="1" Source="{Binding Icon[16]}" Margin="5,0,4,0" Width="16" Height="16">
                                             <Image.Style>
                                                 <Style>
                                                     <Setter Property="Image.Opacity" Value="1" />
@@ -172,7 +172,7 @@
                                                 </Style>
                                             </Image.Style>
                                         </Image>
-                                        <Image Grid.Column="1" Source="{Binding OverlaySmall}" Margin="0,0,4,0" Width="16" Height="16">
+                                        <Image Grid.Column="1" Source="{Binding OverlaySmall}" Margin="5,0,4,0" Width="16" Height="16">
                                             <Image.Style>
                                                 <Style>
                                                     <Setter Property="Image.Opacity" Value="1" />
@@ -182,6 +182,22 @@
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding IsLoading}" Value="True">
                                                             <Setter Property="Image.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
+                                        <Image Grid.Column="1" Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}"
+                                                       Width="12" Height="11" Margin="0,7,14,0" VerticalAlignment="Top">
+                                            <Image.Style>
+                                                <Style>
+                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
+                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].Icon16}" Value="{x:Null}">
+                                                            <Setter Property="Image.Visibility" Value="Collapsed" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
