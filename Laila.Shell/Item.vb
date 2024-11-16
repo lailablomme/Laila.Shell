@@ -4,6 +4,7 @@ Imports System.Runtime.InteropServices
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports FileSignatures
 Imports Laila.Shell.Helpers
 
 Public Class Item
@@ -27,6 +28,7 @@ Public Class Item
     Private Shared _objectCount As Long = 0
     Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
+    Private _isImage As Boolean?
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -240,26 +242,6 @@ Public Class Item
         End Get
     End Property
 
-    'Public ReadOnly Property Parent As Folder
-    '    Get
-    '        If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
-    '            If (_parent Is Nothing OrElse _parent.disposedValue) AndAlso Not disposedValue Then
-    '                Dim parentShellItem2 As IShellItem2
-    '                If Not Me.ShellItem2 Is Nothing Then
-    '                    Me.ShellItem2.GetParent(parentShellItem2)
-    '                End If
-    '                If Not parentShellItem2 Is Nothing Then
-    '                    _parent = New Folder(parentShellItem2, Nothing)
-    '                End If
-    '            End If
-
-    '            Return _parent
-    '        Else
-    '            Return Nothing
-    '        End If
-    '    End Get
-    'End Property
-
     Public Function GetParent() As Folder
         If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
             Dim parentShellItem2 As IShellItem2
@@ -379,6 +361,44 @@ Public Class Item
         End Get
     End Property
 
+    Public Overridable ReadOnly Property HasThumbnail As Boolean
+        Get
+            If Not disposedValue Then
+                Dim ptr As IntPtr
+                Try
+                    Dim h As HRESULT = Me.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_ThumbnailHandler, GetType(IThumbnailProvider).GUID, ptr)
+                    Return h = 0 AndAlso Not IntPtr.Zero.Equals(ptr)
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr) Then
+                        Marshal.Release(ptr)
+                    End If
+                End Try
+            Else
+                Return Nothing
+            End If
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property HasThumbnailAsync As Boolean
+        Get
+            Dim result As Boolean
+            UIHelper.OnUIThread(
+                Sub()
+                    result = Me.HasThumbnail
+                End Sub)
+            Return result
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property IsImage As Boolean
+        Get
+            If Not _isImage.HasValue Then
+                _isImage = IO.File.Exists(Me.FullPath) AndAlso ImageHelper.IsImage(Me.FullPath)
+            End If
+            Return _isImage.Value
+        End Get
+    End Property
+
     Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
         If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
             Dim parent As Folder = Me.GetParent()
@@ -476,6 +496,12 @@ Public Class Item
     Public ReadOnly Property IsDrive As Boolean
         Get
             Return Me.FullPath.Equals(Path.GetPathRoot(Me.FullPath)) AndAlso Not Me.FullPath.StartsWith("\\")
+        End Get
+    End Property
+
+    Public ReadOnly Property IsFolder As Boolean
+        Get
+            Return TypeOf Me Is Folder
         End Get
     End Property
 

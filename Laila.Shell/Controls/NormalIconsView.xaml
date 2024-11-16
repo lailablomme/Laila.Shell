@@ -84,20 +84,56 @@
                                                 <RowDefinition Height="48" />
                                                 <RowDefinition Height="Auto" SharedSizeGroup="A" />
                                             </Grid.RowDefinitions>
-                                            <Image Source="{Binding ImageAsync[48], IsAsync=True}" Width="48" Height="48" UseLayoutRounding="True" SnapsToDevicePixels="True">
-                                                <Image.Style>
-                                                    <Style>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                                <Setter Property="Image.Opacity" Value="0.5" />
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding IsCut}" Value="True">
-                                                                <Setter Property="Image.Opacity" Value="0.5" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Image.Style>
-                                            </Image>
+                                            <Grid>
+                                                <Image Source="{Binding ImageAsync[48], IsAsync=True}" Width="48" Height="48" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                    <Image.Style>
+                                                        <Style>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                    <Setter Property="Image.Opacity" Value="0.5" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsCut}" Value="True">
+                                                                    <Setter Property="Image.Opacity" Value="0.5" />
+                                                                </DataTrigger>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding HasThumbnailAsync, IsAsync=True}" Value="True" />
+                                                                        <Condition Binding="{Binding IsImage, IsAsync=True}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="Image.Effect">
+                                                                            <Setter.Value>
+                                                                                <DropShadowEffect BlurRadius="3" ShadowDepth="3" Opacity="0.45" />
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </MultiDataTrigger.Setters>
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Image.Style>
+                                                </Image>
+                                                <Image Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
+                                                       UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                                       VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                                                    <Image.Style>
+                                                        <Style>
+                                                            <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding IsFolder, IsAsync=True}" Value="False" />
+                                                                        <Condition Binding="{Binding IsImage, IsAsync=True}" Value="False" />
+                                                                        <Condition Binding="{Binding HasThumbnailAsync, IsAsync=True}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="Image.Visibility" Value="Visible" />
+                                                                    </MultiDataTrigger.Setters>
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Image.Style>
+                                                </Image>
+                                            </Grid>
                                             <Border Width="48" Height="48">
                                                 <Image Source="{Binding OverlayLargeAsync, IsAsync=True}" Width="40" Height="40" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
