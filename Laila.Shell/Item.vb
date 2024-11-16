@@ -711,7 +711,9 @@ Public Class Item
                 Dim ptr As IntPtr
                 Try
                     Me.ShellItem2.GetPropertyStore(0, GetType(IPropertyStore).GUID, ptr)
-                    _propertyStore = Marshal.GetObjectForIUnknown(ptr)
+                    If Not IntPtr.Zero.Equals(ptr) Then
+                        _propertyStore = Marshal.GetObjectForIUnknown(ptr)
+                    End If
                 Finally
                     If Not IntPtr.Zero.Equals(ptr) Then
                         Marshal.Release(ptr)

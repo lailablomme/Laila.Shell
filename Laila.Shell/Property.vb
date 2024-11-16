@@ -48,13 +48,11 @@ Public Class [Property]
         _canonicalName = canonicalName
         propertyDescription.GetPropertyKey(_propertyKey)
         _propertyStore = propertyStore
-        Dim o As Object = Me.RawValue : _propertyStore = Nothing
     End Sub
 
     Public Sub New(propertyKey As PROPERTYKEY, propertyStore As IPropertyStore)
         _propertyKey = propertyKey
         _propertyStore = propertyStore
-        Dim o As Object = Me.RawValue : _propertyStore = Nothing
     End Sub
 
     Public ReadOnly Property CanonicalName As String

@@ -27,7 +27,7 @@ Public Class System_StorageProviderUIStatusProperty
 
         If Not propertyStore Is Nothing Then
             Dim ptr As IntPtr, persistSerializedPropStorage As IPersistSerializedPropStorage
-            If _propertyStore1 Is Nothing Then
+            If _propertyStore1 Is Nothing AndAlso Me.RawValue.vt > 0 Then
                 Try
                     Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
                     _propertyStore1 = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
@@ -49,7 +49,7 @@ Public Class System_StorageProviderUIStatusProperty
                 _system_StorageProviderCustomStatesProperty = New [Property](_system_StorageProviderCustomStatesKey, _propertyStore1)
             End If
 
-            If _propertyStore2 Is Nothing Then
+            If _propertyStore2 Is Nothing AndAlso Not _propertyStore1 Is Nothing Then
                 Try
                     Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
                     _propertyStore2 = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
@@ -71,27 +71,33 @@ Public Class System_StorageProviderUIStatusProperty
             If _system_ItemCustomState_IconReferencesProperty Is Nothing Then
                 _system_ItemCustomState_IconReferencesProperty = New [Property](_system_ItemCustomState_IconReferencesKey, _propertyStore2)
             End If
-
-            Marshal.ReleaseComObject(_propertyStore1) : _propertyStore1 = Nothing
-            Marshal.ReleaseComObject(_propertyStore2) : _propertyStore2 = Nothing
         End If
     End Sub
 
     Public Overrides ReadOnly Property DisplayName As String
         Get
-            Return _system_StorageProviderStateProperty.DisplayName
+            If Not _system_StorageProviderStateProperty Is Nothing Then
+                Return _system_StorageProviderStateProperty.DisplayName
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
     Public ReadOnly Property ActivityDisplayName As String
         Get
-            Return _system_StorageProviderCustomStatesProperty.DisplayName()
+            If Not _system_StorageProviderCustomStatesProperty Is Nothing Then
+                Return _system_StorageProviderCustomStatesProperty.DisplayName()
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
     Public Overrides ReadOnly Property Text As String
         Get
-            If Not disposedValue AndAlso String.IsNullOrWhiteSpace(_text) Then
+            If Not disposedValue AndAlso String.IsNullOrWhiteSpace(_text) _
+                AndAlso Not _system_StorageProviderStateProperty Is Nothing Then
                 _text = _system_StorageProviderStateProperty.Text
             End If
 
@@ -101,7 +107,11 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public ReadOnly Property ActivityText As String
         Get
-            Return _system_ItemCustomState_ValuesProperty.Text
+            If Not _system_ItemCustomState_ValuesProperty Is Nothing Then
+                Return _system_ItemCustomState_ValuesProperty.Text
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
@@ -115,23 +125,27 @@ Public Class System_StorageProviderUIStatusProperty
         Get
             Dim icons As List(Of ImageSource) = New List(Of ImageSource)()
 
-            Dim mainIcons As ImageSource() = _system_StorageProviderStateProperty.Icons16
-            If Not mainIcons Is Nothing Then
-                icons.AddRange(mainIcons)
+            If Not _system_StorageProviderStateProperty Is Nothing Then
+                Dim mainIcons As ImageSource() = _system_StorageProviderStateProperty.Icons16
+                If Not mainIcons Is Nothing Then
+                    icons.AddRange(mainIcons)
+                End If
             End If
 
-            If Not String.IsNullOrWhiteSpace(_system_ItemCustomState_IconReferencesProperty.Text) Then
-                For Each iconReference In _system_ItemCustomState_IconReferencesProperty.Text.Split(";")
-                    Dim s() As String = Split(_system_ItemCustomState_IconReferencesProperty.Text, ","), icon As IntPtr
-                    Try
-                        Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                        If Not IntPtr.Zero.Equals(icon) Then
-                            icons.Add(System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()))
-                        End If
-                    Finally
-                        Functions.DeleteObject(icon)
-                    End Try
-                Next
+            If Not _system_ItemCustomState_IconReferencesProperty Is Nothing Then
+                If Not String.IsNullOrWhiteSpace(_system_ItemCustomState_IconReferencesProperty.Text) Then
+                    For Each iconReference In _system_ItemCustomState_IconReferencesProperty.Text.Split(";")
+                        Dim s() As String = Split(_system_ItemCustomState_IconReferencesProperty.Text, ","), icon As IntPtr
+                        Try
+                            Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
+                            If Not IntPtr.Zero.Equals(icon) Then
+                                icons.Add(System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()))
+                            End If
+                        Finally
+                            Functions.DeleteObject(icon)
+                        End Try
+                    Next
+                End If
             End If
 
             Return icons.ToArray()
