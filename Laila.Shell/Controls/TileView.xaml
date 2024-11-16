@@ -16,11 +16,6 @@
                                   VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
                                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
-                            <ListView.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel Margin="20,0,-25,0" SpacingMode="None" AllowDifferentSizedItems="True" />
-                                </ItemsPanelTemplate>
-                            </ListView.ItemsPanel>
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.ContainerStyle>
@@ -34,7 +29,7 @@
                                                                     <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Expander.Header>
-                                                            <ItemsPresenter />
+                                                            <ItemsPresenter Margin="25,0,0,0" />
                                                         </Expander>
                                                     </ControlTemplate>
                                                 </Setter.Value>
@@ -42,6 +37,12 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
+                                <ItemsPanelTemplate x:Key="DefaultItemsPanel">
+                                    <vwp:VirtualizingWrapPanel Margin="20,0,0,0" SpacingMode="None" AllowDifferentSizedItems="True" />
+                                </ItemsPanelTemplate>
+                                <ItemsPanelTemplate x:Key="GroupedItemsPanel">
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None" AllowDifferentSizedItems="True" />
+                                </ItemsPanelTemplate>
                             </ListView.Resources>
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior />
@@ -70,6 +71,14 @@
                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Self}}" Value="0">
+                                            <Setter Property="ItemsPanel" Value="{StaticResource DefaultItemsPanel}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Self}}" Value="1">
+                                            <Setter Property="ItemsPanel" Value="{StaticResource GroupedItemsPanel}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
                                 </Style>
                             </ListView.Style>
                             <ListView.ItemContainerStyle>

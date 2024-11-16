@@ -16,11 +16,6 @@
                                   VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
                                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
-                            <ListView.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel Margin="20,0,-25,0" x:Name="PART_StackPanel" />
-                                </ItemsPanelTemplate>
-                            </ListView.ItemsPanel>
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.ContainerStyle>
@@ -34,7 +29,7 @@
                                                                     <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Expander.Header>
-                                                            <ItemsPresenter />
+                                                            <ItemsPresenter Margin="25,0,0,0" />
                                                         </Expander>
                                                     </ControlTemplate>
                                                 </Setter.Value>
@@ -42,6 +37,12 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
+                                <ItemsPanelTemplate x:Key="DefaultItemsPanel">
+                                    <VirtualizingStackPanel Margin="20,0,0,0" x:Name="PART_StackPanel" />
+                                </ItemsPanelTemplate>
+                                <ItemsPanelTemplate x:Key="GroupedItemsPanel">
+                                    <VirtualizingStackPanel x:Name="PART_StackPanel" />
+                                </ItemsPanelTemplate>
                             </ListView.Resources>
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior />
@@ -70,6 +71,14 @@
                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Self}}" Value="0">
+                                            <Setter Property="ItemsPanel" Value="{StaticResource DefaultItemsPanel}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Self}}" Value="1">
+                                            <Setter Property="ItemsPanel" Value="{StaticResource GroupedItemsPanel}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
                                 </Style>
                             </ListView.Style>
                             <ListView.ItemContainerStyle>
