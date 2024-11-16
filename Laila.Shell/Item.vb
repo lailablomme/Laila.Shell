@@ -29,6 +29,7 @@ Public Class Item
     Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
     Private _isImage As Boolean?
+    Private _propertyStore As IPropertyStore
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -198,6 +199,11 @@ Public Class Item
             _shellItem2 = Nothing
         End If
 
+        If Not _propertyStore Is Nothing Then
+            Dim oldPropertyStore As IPropertyStore = _propertyStore
+            _propertyStore = Nothing
+            Marshal.ReleaseComObject(oldPropertyStore)
+        End If
         For Each [property] In _properties
             [property].Dispose()
         Next
@@ -470,6 +476,7 @@ Public Class Item
                 If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                 End If
+                'Debug.WriteLine(Me.PropertiesByKeyAsText("fceff153-e839-4cf3-a9e7-ea22832094b8:123").Text)
             Catch ex As Exception
                 ' sometimes the treeview will try to sort us just as we're in the process of disposing
             End Try
@@ -645,10 +652,27 @@ Public Class Item
             For Each propCanonicalName In properties
                 Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
                 If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
-                    text.Add(prop.DescriptionDisplayName & ": " & prop.Text)
+                    text.Add(prop.DisplayName & ": " & prop.Text)
                 End If
                 i += 1
             Next
+            Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty
+            Try
+                System_StorageProviderUIStatus =
+                    [Property].FromKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey, Me.PropertyStore)
+                If System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                    If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.Text) Then
+                        text.Add(System_StorageProviderUIStatus.DisplayName & ": " & System_StorageProviderUIStatus.Text)
+                    End If
+                    If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.ActivityText) Then
+                        text.Add(System_StorageProviderUIStatus.ActivityDisplayName & ": " & System_StorageProviderUIStatus.ActivityText)
+                    End If
+                End If
+            Finally
+                If Not System_StorageProviderUIStatus Is Nothing Then
+                    System_StorageProviderUIStatus.Dispose()
+                End If
+            End Try
             Return String.Join(vbCrLf, text)
         End Get
     End Property
@@ -672,12 +696,29 @@ Public Class Item
                 If Not propCanonicalName.StartsWith("*") Then
                     Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
                     If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
-                        text.Add(If(i >= 2, prop.DescriptionDisplayName & ": ", "") & prop.Text)
+                        text.Add(If(i >= 2, prop.DisplayName & ": ", "") & prop.Text)
                     End If
                 End If
                 i += 1
             Next
             Return String.Join(vbCrLf, text)
+        End Get
+    End Property
+
+    Public ReadOnly Property PropertyStore As IPropertyStore
+        Get
+            If _propertyStore Is Nothing Then
+                Dim ptr As IntPtr
+                Try
+                    Me.ShellItem2.GetPropertyStore(0, GetType(IPropertyStore).GUID, ptr)
+                    _propertyStore = Marshal.GetObjectForIUnknown(ptr)
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr) Then
+                        Marshal.Release(ptr)
+                    End If
+                End Try
+            End If
+            Return _propertyStore
         End Get
     End Property
 
@@ -693,7 +734,7 @@ Public Class Item
 
                     [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
                     If [property] Is Nothing Then
-                        [property] = [Property].FromKey(key, Me)
+                        [property] = [Property].FromKey(key, Me.PropertyStore)
                         _properties.Add([property])
                     End If
                 End Sub)
@@ -705,7 +746,7 @@ Public Class Item
         Get
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
             If [property] Is Nothing Then
-                [property] = [Property].FromKey(propertyKey, Me)
+                [property] = [Property].FromKey(propertyKey, Me.PropertyStore)
                 _properties.Add([property])
             End If
             Return [property]
@@ -716,7 +757,7 @@ Public Class Item
         Get
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
             If [property] Is Nothing Then
-                [property] = [Property].FromCanonicalName(canonicalName, Me)
+                [property] = [Property].FromCanonicalName(canonicalName, Me.PropertyStore)
                 If Not [property] Is Nothing Then _properties.Add([property])
             End If
             Return [property]

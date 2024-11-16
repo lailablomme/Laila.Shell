@@ -13,7 +13,7 @@ Public Class [Property]
     Implements IDisposable
 
     Protected _canonicalName As String
-    Protected _item As Item
+    Protected _propertyStore As IPropertyStore
     Protected _propertyDescription As IPropertyDescription
     Protected _propertyKey As PROPERTYKEY
     Protected _text As String
@@ -22,37 +22,37 @@ Public Class [Property]
     Private _rawValue As PROPVARIANT
     Private _icon16 As ImageSource
 
-    Public Shared Function FromCanonicalName(canonicalName As String, Optional item As Item = Nothing) As [Property]
+    Public Shared Function FromCanonicalName(canonicalName As String, Optional propertyStore As IPropertyStore = Nothing) As [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
-            Return New System_StorageProviderUIStatusProperty(item)
+            Return New System_StorageProviderUIStatusProperty(propertyStore)
         Else
             Dim propertyDescription As IPropertyDescription
             Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
             If Not propertyDescription Is Nothing Then
-                Return New [Property](canonicalName, propertyDescription, item)
+                Return New [Property](canonicalName, propertyDescription, propertyStore)
             Else
                 Return Nothing
             End If
         End If
     End Function
 
-    Public Shared Function FromKey(propertyKey As PROPERTYKEY, Optional item As Item = Nothing) As [Property]
-        If propertyKey.Equals(System_StorageProviderUIStatusProperty.PropertyKey) Then
-            Return New System_StorageProviderUIStatusProperty(item)
+    Public Shared Function FromKey(propertyKey As PROPERTYKEY, Optional propertyStore As IPropertyStore = Nothing) As [Property]
+        If propertyKey.Equals(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey) Then
+            Return New System_StorageProviderUIStatusProperty(propertyStore)
         Else
-            Return New [Property](propertyKey, item)
+            Return New [Property](propertyKey, propertyStore)
         End If
     End Function
 
-    Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, item As Item)
+    Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, propertyStore As IPropertyStore)
         _canonicalName = canonicalName
         propertyDescription.GetPropertyKey(_propertyKey)
-        _item = item
+        _propertyStore = propertyStore
     End Sub
 
-    Public Sub New(propertyKey As PROPERTYKEY, item As Item)
+    Public Sub New(propertyKey As PROPERTYKEY, propertyStore As IPropertyStore)
         _propertyKey = propertyKey
-        _item = item
+        _propertyStore = propertyStore
     End Sub
 
     Public ReadOnly Property CanonicalName As String
@@ -70,19 +70,17 @@ Public Class [Property]
         End Get
     End Property
 
-    Public ReadOnly Property DescriptionDisplayName As String
+    Public Overridable ReadOnly Property DisplayName As String
         Get
-            Dim displayName As StringBuilder = New StringBuilder()
-            Me.Description.GetDisplayName(displayName)
-            Return displayName.ToString()
+            Dim name As StringBuilder = New StringBuilder()
+            Me.Description.GetDisplayName(name)
+            Return name.ToString()
         End Get
     End Property
 
-    Public ReadOnly Property DescriptionDisplayNameWithColon As String
+    Public ReadOnly Property DisplayNameWithColon As String
         Get
-            Dim displayName As StringBuilder = New StringBuilder()
-            Me.Description.GetDisplayName(displayName)
-            Return displayName.ToString() & ":"
+            Return Me.DisplayName.ToString() & ":"
         End Get
     End Property
 
@@ -98,8 +96,8 @@ Public Class [Property]
     Friend Overridable ReadOnly Property RawValue As PROPVARIANT
         Get
             Try
-                If Not _item.disposedValue AndAlso _rawValue.vt = 0 Then
-                    _item.ShellItem2.GetProperty(_propertyKey, _rawValue)
+                If _rawValue.vt = 0 Then
+                    _propertyStore.GetValue(_propertyKey, _rawValue)
                 End If
             Catch ex As COMException
             End Try
@@ -180,7 +178,7 @@ Public Class [Property]
         End Get
     End Property
 
-    Public Overridable ReadOnly Property Icon16 As ImageSource
+    Public Overridable ReadOnly Property Icons16 As ImageSource()
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then
                 Dim imageReference As String, icon As IntPtr
@@ -189,8 +187,16 @@ Public Class [Property]
                 propertyEnumType2.GetImageReference(imageReference)
                 If Not String.IsNullOrWhiteSpace(imageReference) Then
                     Dim s() As String = Split(imageReference, ",")
-                    Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                    Return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    Try
+                        Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
+                        If Not IntPtr.Zero.Equals(icon) Then
+                            Return {System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())}
+                        Else
+                            Return Nothing
+                        End If
+                    Finally
+                        Functions.DeleteObject(icon)
+                    End Try
                 End If
             Else
                 Return Nothing
@@ -198,12 +204,29 @@ Public Class [Property]
         End Get
     End Property
 
-    Public Overridable ReadOnly Property Icon16Async As ImageSource
+    Public Overridable ReadOnly Property Icons16Async As ImageSource()
+        Get
+            Dim result As ImageSource()
+            UIHelper.OnUIThread(
+                Sub()
+                    result = Me.Icons16
+                End Sub)
+            Return result
+        End Get
+    End Property
+
+    Public ReadOnly Property FirstIcon16 As ImageSource
+        Get
+            Return If(Me.Icons16.Count > 0, Me.Icons16(0), Nothing)
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property FirstIcon16Async As ImageSource
         Get
             Dim result As ImageSource
             UIHelper.OnUIThread(
                 Sub()
-                    result = Me.Icon16
+                    result = Me.FirstIcon16
                 End Sub)
             Return result
         End Get

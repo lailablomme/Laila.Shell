@@ -141,30 +141,37 @@ Namespace Controls
 
             If [property].HasIcon Then
                 Dim imageFactory2 As FrameworkElementFactory = New FrameworkElementFactory(GetType(Image))
-                imageFactory2.SetValue(Grid.ColumnProperty, 1)
                 imageFactory2.SetValue(Image.MarginProperty, New Thickness(0, 0, 4, 0))
                 imageFactory2.SetValue(Image.WidthProperty, Convert.ToDouble(16))
                 imageFactory2.SetValue(Image.HeightProperty, Convert.ToDouble(16))
                 imageFactory2.SetValue(Image.HorizontalAlignmentProperty, HorizontalAlignment.Left)
                 imageFactory2.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center)
                 imageFactory2.SetValue(Image.SourceProperty, New Binding() With {
-                    .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Icon16Async", column.PROPERTYKEY.ToString())),
+                    .Path = New PropertyPath("."),
                     .Mode = BindingMode.OneWay,
                     .IsAsync = True
                 })
-                Dim imageStyle As Style = New Style(GetType(Image))
-                imageStyle.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(1)))
-                Dim imageDataTrigger1 As DataTrigger = New DataTrigger() With {
-                        .Binding = New Binding("IsCut") With
-                                   {
-                                       .Mode = BindingMode.OneWay
-                                   },
-                        .Value = True
-                    }
-                imageDataTrigger1.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(0.5)))
-                imageStyle.Triggers.Add(imageDataTrigger1)
-                imageFactory2.SetValue(Image.StyleProperty, imageStyle)
-                gridFactory.AppendChild(imageFactory2)
+
+                Dim itemTemplate As DataTemplate = New DataTemplate()
+                itemTemplate.VisualTree = imageFactory2
+
+                Dim stackPanelFactory As FrameworkElementFactory = New FrameworkElementFactory(GetType(StackPanel))
+                stackPanelFactory.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal)
+
+                Dim itemsPanelTemplate As ItemsPanelTemplate = New ItemsPanelTemplate()
+                itemsPanelTemplate.VisualTree = stackPanelFactory
+
+                Dim itemsControlFactory As FrameworkElementFactory = New FrameworkElementFactory(GetType(ItemsControl))
+                imageFactory2.SetValue(Grid.ColumnProperty, 1)
+                itemsControlFactory.SetValue(ItemsControl.ItemsPanelProperty, itemsPanelTemplate)
+                itemsControlFactory.SetValue(ItemsControl.ItemTemplateProperty, itemTemplate)
+                itemsControlFactory.SetValue(ItemsControl.ItemsSourceProperty, New Binding() With {
+                    .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", column.PROPERTYKEY.ToString())),
+                    .Mode = BindingMode.OneWay,
+                    .IsAsync = True
+                })
+
+                gridFactory.AppendChild(itemsControlFactory)
             End If
 
             Dim textBlockFactory As FrameworkElementFactory = New FrameworkElementFactory(GetType(TextBlock))

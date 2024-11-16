@@ -971,7 +971,7 @@ Namespace Controls
                                 AndAlso Not primaryProperties.Contains(prop.Key.ToString()) _
                                 AndAlso Not additionalProperties.Contains(prop.Key.ToString()) Then
                             additionalProperties.Add(prop.Key.ToString())
-                            descriptions.Add(prop.Key.ToString(), prop.DescriptionDisplayName)
+                            descriptions.Add(prop.Key.ToString(), prop.DisplayName)
                         End If
                     Next
                 End Sub
