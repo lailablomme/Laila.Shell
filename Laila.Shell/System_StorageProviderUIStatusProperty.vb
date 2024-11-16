@@ -35,15 +35,6 @@ Public Class System_StorageProviderUIStatusProperty
                     persistSerializedPropStorage.SetFlags(0)
                     persistSerializedPropStorage.SetPropertyStorage(
                         MyBase.RawValue.union.bstrblobVal.pData, MyBase.RawValue.union.bstrblobVal.cbSize)
-
-                    Dim c As Integer
-                    _propertyStore1.GetCount(c)
-                    For i = 0 To c - 1
-                        Dim pk As PROPERTYKEY
-                        _propertyStore1.GetAt(i, pk)
-                        Dim p As [Property] = New [Property](pk, _propertyStore1)
-                        Debug.WriteLine("**" & p.CanonicalName & "--" & p.DisplayName & "--" & p.Text)
-                    Next
                 Finally
                     If Not IntPtr.Zero.Equals(ptr) Then
                         Marshal.Release(ptr)
@@ -67,15 +58,6 @@ Public Class System_StorageProviderUIStatusProperty
                     persistSerializedPropStorage.SetPropertyStorage(
                         _system_StorageProviderCustomStatesProperty.RawValue.union.bstrblobVal.pData,
                         _system_StorageProviderCustomStatesProperty.RawValue.union.bstrblobVal.cbSize)
-
-                    Dim c As Integer
-                    _propertyStore2.GetCount(c)
-                    For i = 0 To c - 1
-                        Dim pk As PROPERTYKEY
-                        _propertyStore2.GetAt(i, pk)
-                        Dim p As [Property] = New [Property](pk, _propertyStore2)
-                        Debug.WriteLine(p.CanonicalName & "--" & p.DisplayName & "--" & p.Text)
-                    Next
                 Finally
                     If Not IntPtr.Zero.Equals(ptr) Then
                         Marshal.Release(ptr)
@@ -89,6 +71,9 @@ Public Class System_StorageProviderUIStatusProperty
             If _system_ItemCustomState_IconReferencesProperty Is Nothing Then
                 _system_ItemCustomState_IconReferencesProperty = New [Property](_system_ItemCustomState_IconReferencesKey, _propertyStore2)
             End If
+
+            Marshal.ReleaseComObject(_propertyStore1) : _propertyStore1 = Nothing
+            Marshal.ReleaseComObject(_propertyStore2) : _propertyStore2 = Nothing
         End If
     End Sub
 

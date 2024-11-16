@@ -48,11 +48,13 @@ Public Class [Property]
         _canonicalName = canonicalName
         propertyDescription.GetPropertyKey(_propertyKey)
         _propertyStore = propertyStore
+        Dim o As Object = Me.RawValue : _propertyStore = Nothing
     End Sub
 
     Public Sub New(propertyKey As PROPERTYKEY, propertyStore As IPropertyStore)
         _propertyKey = propertyKey
         _propertyStore = propertyStore
+        Dim o As Object = Me.RawValue : _propertyStore = Nothing
     End Sub
 
     Public ReadOnly Property CanonicalName As String
@@ -96,7 +98,7 @@ Public Class [Property]
     Friend Overridable ReadOnly Property RawValue As PROPVARIANT
         Get
             Try
-                If _rawValue.vt = 0 Then
+                If _rawValue.vt = 0 And Not _propertyStore Is Nothing Then
                     _propertyStore.GetValue(_propertyKey, _rawValue)
                 End If
             Catch ex As COMException
