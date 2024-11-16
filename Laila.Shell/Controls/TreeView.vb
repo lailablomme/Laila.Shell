@@ -1,6 +1,7 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Collections.Specialized
 Imports System.ComponentModel
+Imports System.Media
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
@@ -30,6 +31,8 @@ Namespace Controls
         Private _menu As Laila.Shell.Controls.Menus
         Private _fequentUpdateTimer As Timer
         Private disposedValue As Boolean
+        Private _typeToSearchTimer As Timer
+        Private _typeToSearchString As String = ""
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(TreeView), New FrameworkPropertyMetadata(GetType(TreeView)))
@@ -164,19 +167,14 @@ Namespace Controls
             PART_DragInsertIndicator = Template.FindName("PART_DragInsertIndicator", Me)
 
             _selectionHelper = New SelectionHelper(Of Item)(PART_ListBox)
-            _selectionHelper.SelectionChanged =
-                        Sub()
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Me.OnSelectionChanged()
-                                End Sub)
-                        End Sub
 
             AddHandler PART_ListBox.PreviewMouseMove, AddressOf OnTreeViewPreviewMouseMove
             AddHandler PART_ListBox.PreviewMouseLeftButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
             AddHandler PART_ListBox.PreviewMouseRightButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
             AddHandler PART_ListBox.PreviewMouseUp, AddressOf OnTreeViewPreviewMouseButtonUp
             AddHandler PART_ListBox.MouseLeave, AddressOf OnTreeViewMouseLeave
+            AddHandler Me.PreviewKeyDown, AddressOf OnTreeViewKeyDown
+            AddHandler Me.PreviewTextInput, AddressOf OnTreeViewTextInput
 
             _dropTarget = New TreeViewDropTarget(Me)
             WpfDragTargetProxy.RegisterDragDrop(PART_ListBox, _dropTarget)
@@ -272,14 +270,6 @@ Namespace Controls
                 End If
             End If
         End Function
-
-        Protected Overridable Sub OnSelectionChanged()
-            'If Not Me.SelectedItem Is Nothing Then
-            '    If TypeOf Me.SelectedItem Is Folder AndAlso Not Me.SelectedItem.Equals(Me.Folder) Then
-            '        Me.Folder = Me.SelectedItem
-            '    End If
-            'End If
-        End Sub
 
         Public ReadOnly Property SelectedItem As Item
             Get
@@ -474,14 +464,7 @@ Namespace Controls
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                                 e.Handled = True
                             Else
-                                Using parent = clickedItem.GetParent()
-                                    Dim menu As Menus = New Menus() With {
-                                        .Folder = parent,
-                                        .SelectedItems = {clickedItem},
-                                        .DoAutoDispose = True
-                                    }
-                                    menu.InvokeCommand(_menu.DefaultId)
-                                End Using
+                                invokeDefaultCommand(clickedItem)
                             End If
                         End If
                     ElseIf e.LeftButton = MouseButtonState.Pressed Then
@@ -489,8 +472,13 @@ Namespace Controls
                             If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                             Else
-                                _selectionHelper.SetSelectedItems({clickedItem})
-                                If TypeOf clickedItem Is Folder Then Me.Folder = clickedItem
+                                Using Shell.OverrideCursor(Cursors.Wait)
+                                    _selectionHelper.SetSelectedItems({clickedItem})
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                        End Sub, Threading.DispatcherPriority.Render)
+                                    If TypeOf clickedItem Is Folder Then Me.Folder = clickedItem
+                                End Using
                             End If
                             e.Handled = True
                         End If
@@ -514,6 +502,79 @@ Namespace Controls
 
         Public Sub OnTreeViewMouseLeave(sender As Object, e As MouseEventArgs)
             _mouseItemDown = Nothing
+        End Sub
+
+        Private Sub OnTreeViewKeyDown(sender As Object, e As KeyEventArgs)
+            If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                Clipboard.CopyFiles({Me.SelectedItem})
+                e.Handled = True
+            ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                Clipboard.CutFiles({Me.SelectedItem})
+                e.Handled = True
+            ElseIf (e.Key = Key.Space OrElse e.Key = Key.Enter) AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                If TypeOf Me.SelectedItem Is Folder Then
+                    Me.Folder = Me.SelectedItem
+                Else
+                    invokeDefaultCommand(Me.SelectedItem)
+                End If
+                e.Handled = True
+            ElseIf e.Key = Key.Add AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                CType(Me.SelectedItem, Folder).IsExpanded = True
+                e.Handled = True
+            ElseIf e.Key = Key.Subtract AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                CType(Me.SelectedItem, Folder).IsExpanded = False
+                e.Handled = True
+            End If
+        End Sub
+
+        Private Sub OnTreeViewTextInput(sender As Object, e As TextCompositionEventArgs)
+            If Not _typeToSearchTimer Is Nothing Then
+                _typeToSearchTimer.Dispose()
+            End If
+
+            _typeToSearchTimer = New Timer(New TimerCallback(
+                Sub()
+                    UIHelper.OnUIThread(
+                        Sub()
+                            _typeToSearchString = ""
+                            _typeToSearchTimer.Dispose()
+                            _typeToSearchTimer = Nothing
+                        End Sub)
+                End Sub), Nothing, 650, Timeout.Infinite)
+
+            _typeToSearchString &= e.Text
+            Dim foundItem As Item =
+                Me.Items.Skip(Me.Items.IndexOf(Me.SelectedItem) + 1).Where(Function(i) i.IsVisibleInTree) _
+                        .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+            If foundItem Is Nothing Then
+                foundItem =
+                    Me.Items.Take(Me.Items.IndexOf(Me.SelectedItem)).Where(Function(i) i.IsVisibleInTree) _
+                            .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+            End If
+            If Not foundItem Is Nothing Then
+                Me.SetSelectedItem(foundItem)
+                e.Handled = True
+            Else
+                SystemSounds.Asterisk.Play()
+            End If
+        End Sub
+
+        Private Sub invokeDefaultCommand(item As Item)
+            Using parent = item.GetParent()
+                Dim menu As Menus = New Menus() With {
+                    .UpdateDelay = Nothing,
+                    .Folder = parent,
+                    .SelectedItems = {item},
+                    .DoAutoDispose = True
+                }
+                Dim contextMenu As ContextMenu = menu.GetDefaultContextMenu()
+                menu.InvokeCommand(contextMenu, _menu.DefaultId)
+            End Using
         End Sub
 
         Private Sub items_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)

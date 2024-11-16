@@ -1,6 +1,7 @@
 ﻿Imports System.ComponentModel
 Imports System.IO
 Imports System.IO.Compression
+Imports System.Media
 Imports System.Runtime.InteropServices
 Imports System.Security.Cryptography.X509Certificates
 Imports System.Threading
@@ -40,6 +41,8 @@ Namespace Controls
         Private _lastScrollOffset As Point
         Private _lastScrollSize As Size
         Private _isLoaded As Boolean
+        Private _typeToSearchTimer As Timer
+        Private _typeToSearchString As String = ""
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -90,13 +93,64 @@ Namespace Controls
             AddHandler Me.PART_ListView.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
             AddHandler Me.PART_ListView.MouseLeave, AddressOf OnListViewMouseLeave
             AddHandler Me.PreviewKeyDown, AddressOf OnListViewKeyDown
+            AddHandler Me.PreviewTextInput, AddressOf OnListViewTextInput
         End Sub
 
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
-            If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) AndAlso Me.SelectedItems.Count > 0 Then
+            If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
                 Clipboard.CopyFiles(Me.SelectedItems)
-            ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) AndAlso Me.SelectedItems.Count > 0 Then
+            ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
                 Clipboard.CutFiles(Me.SelectedItems)
+            ElseIf e.Key = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
+                If TypeOf Me.SelectedItems(0) Is Folder Then
+                    Me.Folder = Me.SelectedItems(0)
+                Else
+                    invokeDefaultCommand()
+                End If
+                e.Handled = True
+            End If
+        End Sub
+
+        Private Sub OnListViewTextInput(sender As Object, e As TextCompositionEventArgs)
+            If Not _typeToSearchTimer Is Nothing Then
+                _typeToSearchTimer.Dispose()
+            End If
+
+            _typeToSearchTimer = New Timer(New TimerCallback(
+                Sub()
+                    UIHelper.OnUIThread(
+                        Sub()
+                            _typeToSearchString = ""
+                            _typeToSearchTimer.Dispose()
+                            _typeToSearchTimer = Nothing
+                        End Sub)
+                End Sub), Nothing, 650, Timeout.Infinite)
+
+            _typeToSearchString &= e.Text
+            Dim foundItem As Item =
+                Me.Folder.Items.Skip(Me.Folder.Items.IndexOf(Me.SelectedItems(0)) + 1) _
+                        .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+            If foundItem Is Nothing Then
+                foundItem =
+                    Me.Folder.Items.Take(Me.Folder.Items.IndexOf(Me.SelectedItems(0))) _
+                            .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+            End If
+            If Not foundItem Is Nothing Then
+                Me.SelectedItems = {foundItem}
+                e.Handled = True
+            Else
+                SystemSounds.Asterisk.Play()
+            End If
+        End Sub
+
+        Private Sub invokeDefaultCommand()
+            hookMenus()
+            If Not _menus Is Nothing Then
+                Dim contextMenu As ContextMenu = _menus.GetDefaultContextMenu()
+                _menus.InvokeCommand(contextMenu, _menus.DefaultId)
             End If
         End Sub
 
@@ -140,11 +194,7 @@ Namespace Controls
                                 Sub()
                                 End Sub, Threading.DispatcherPriority.Render)
                         Else
-                            hookMenus()
-                            If Not _menus Is Nothing Then
-                                Dim contextMenu As ContextMenu = _menus.GetDefaultContextMenu()
-                                _menus.InvokeCommand(contextMenu, _menus.DefaultId)
-                            End If
+                            invokeDefaultCommand()
                         End If
                     End Using
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then

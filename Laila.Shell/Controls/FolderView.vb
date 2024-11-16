@@ -137,7 +137,9 @@ Namespace Controls
 
         Private Sub changeView(newValue As String)
             Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
+            Dim hasFocus As Boolean
             If Not Me.ActiveView Is Nothing Then
+                hasFocus = Me.ActiveView.IsKeyboardFocusWithin
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.FolderProperty)
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.MenusProperty)
@@ -156,6 +158,7 @@ Namespace Controls
                 Me.ActiveView = _views(newValue)
             End If
             Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
+            If hasFocus Then Me.ActiveView.Focus()
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.MenusProperty, New Binding("Menus") With {.Source = Me})

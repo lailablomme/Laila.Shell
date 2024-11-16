@@ -1,5 +1,6 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Input
 
 Namespace Helpers
     Public Class SelectionHelper(Of TData)
@@ -108,6 +109,7 @@ Namespace Helpers
                 End If
             End Get
         End Property
+
         Public Sub SetSelectedItems(value As IEnumerable(Of TData))
             If Not _control Is Nothing Then
                 ' Wait for any databinding to finish
@@ -131,9 +133,9 @@ Namespace Helpers
                         End If
                     ElseIf selectedItems.Count = 1 Then
                         If Not selectedItems(0).Equals(_control.SelectedItem) Then
-                            _control.SelectedItem = selectedItems(0)
                             '_control.ScrollIntoView(selectedItems(0))
                             scrollIntoView(_control, selectedItems(0))
+                            _control.SelectedItem = selectedItems(0)
                             SelectionChanged()
                         End If
                     Else
