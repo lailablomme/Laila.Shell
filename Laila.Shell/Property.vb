@@ -1,13 +1,9 @@
-﻿Imports System.ComponentModel
-Imports System.ComponentModel.DataAnnotations
-Imports System.Drawing.Text
-Imports System.Runtime.InteropServices
+﻿Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
-Imports MS.WindowsAPICodePack.Internal
 
 Public Class [Property]
     Implements IDisposable

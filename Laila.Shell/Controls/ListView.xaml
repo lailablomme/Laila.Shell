@@ -2,6 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Laila.Shell.Controls"
                     xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
+                    xmlns:converters="clr-namespace:Laila.Shell.Converters"
                     xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
@@ -11,10 +12,12 @@
                 <ControlTemplate TargetType="{x:Type local:ListView}">
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
-                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" FocusVisualStyle="{x:Null}"  
-                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
-                                  ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
-                                  VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
+                                  FocusVisualStyle="{x:Null}" ScrollViewer.IsDeferredScrollingEnabled="False" 
+                                  ScrollViewer.CanContentScroll="True" BorderThickness="0" 
+                                  Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
+                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="2" 
+                                  VirtualizingPanel.CacheLengthUnit="Page">
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.Panel>
@@ -28,12 +31,22 @@
                                                 <Setter.Value>
                                                     <ControlTemplate>
                                                         <Expander Margin="0,0,20,0" IsExpanded="True" Style="{DynamicResource lailaShell_GroupByExpanderStyle}">
+                                                            <Expander.Resources>
+                                                                <converters:ListViewGroupingHeightConverter x:Key="listViewGroupingHeightConverter" />
+                                                            </Expander.Resources>
                                                             <Expander.Header>
-                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" x:Name="expanderHeader">
                                                                     <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Expander.Header>
-                                                            <ItemsPresenter Margin="5,0,0,0" />
+                                                            <ItemsPresenter Margin="5,0,0,0">
+                                                                <ItemsPresenter.Height>
+                                                                    <MultiBinding Converter="{StaticResource listViewGroupingHeightConverter}">
+                                                                        <Binding Path="." ElementName="expanderHeader" />
+                                                                        <Binding Path="ActualHeight" ElementName="PART_ListView" />
+                                                                    </MultiBinding>
+                                                                </ItemsPresenter.Height>
+                                                            </ItemsPresenter>
                                                         </Expander>
                                                     </ControlTemplate>
                                                 </Setter.Value>
@@ -41,13 +54,25 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
-                                <ItemsPanelTemplate x:Key="DefaultItemsPanel">
-                                    <vwp:VirtualizingWrapPanel Margin="20,0,0,0" Orientation="Vertical" SpacingMode="None" AllowDifferentSizedItems="True" />
-                                </ItemsPanelTemplate>
-                                <ItemsPanelTemplate x:Key="GroupedItemsPanel">
-                                    <vwp:VirtualizingWrapPanel Orientation="Vertical" SpacingMode="None" AllowDifferentSizedItems="True" />
-                                </ItemsPanelTemplate>
                             </ListView.Resources>
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None" AllowDifferentSizedItems="True">
+                                        <vwp:VirtualizingWrapPanel.Style>
+                                            <Style>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="0">
+                                                        <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="20,0,0,0" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="1">
+                                                        <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="0,0,0,0" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </vwp:VirtualizingWrapPanel.Style>
+                                    </vwp:VirtualizingWrapPanel>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior />
                             </i:Interaction.Behaviors>
@@ -75,14 +100,6 @@
                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Self}}" Value="0">
-                                            <Setter Property="ItemsPanel" Value="{StaticResource DefaultItemsPanel}" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Self}}" Value="1">
-                                            <Setter Property="ItemsPanel" Value="{StaticResource GroupedItemsPanel}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
                                 </Style>
                             </ListView.Style>
                             <ListView.ItemContainerStyle>

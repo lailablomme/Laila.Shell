@@ -11,10 +11,12 @@
                 <ControlTemplate TargetType="{x:Type local:ExtraLargeIconsView}">
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
-                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" FocusVisualStyle="{x:Null}"  
-                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
-                                  ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
-                                  VirtualizingPanel.ScrollUnit="Pixel" Grid.IsSharedSizeScope="True">
+                                  FocusVisualStyle="{x:Null}" ScrollViewer.IsDeferredScrollingEnabled="False" 
+                                  ScrollViewer.CanContentScroll="True" BorderThickness="0" 
+                                  Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
+                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="2" 
+                                  VirtualizingPanel.CacheLengthUnit="Page">
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.ContainerStyle>
@@ -36,13 +38,25 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
-                                <ItemsPanelTemplate x:Key="DefaultItemsPanel">
-                                    <vwp:VirtualizingWrapPanel Margin="20,0,0,0" SpacingMode="None" AllowDifferentSizedItems="True" />
-                                </ItemsPanelTemplate>
-                                <ItemsPanelTemplate x:Key="GroupedItemsPanel">
-                                    <vwp:VirtualizingWrapPanel SpacingMode="None" AllowDifferentSizedItems="True" />
-                                </ItemsPanelTemplate>
                             </ListView.Resources>
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None" AllowDifferentSizedItems="True">
+                                        <vwp:VirtualizingWrapPanel.Style>
+                                            <Style>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="0">
+                                                        <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="20,0,0,0" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="1">
+                                                        <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="0,0,0,0" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </vwp:VirtualizingWrapPanel.Style>
+                                    </vwp:VirtualizingWrapPanel>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior />
                             </i:Interaction.Behaviors>
@@ -70,14 +84,6 @@
                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Self}}" Value="0">
-                                            <Setter Property="ItemsPanel" Value="{StaticResource DefaultItemsPanel}" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Self}}" Value="1">
-                                            <Setter Property="ItemsPanel" Value="{StaticResource GroupedItemsPanel}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
                                 </Style>
                             </ListView.Style>
                             <ListView.ItemContainerStyle>
