@@ -10,7 +10,7 @@ Namespace Controls
     Public Class DetailsView
         Inherits BaseFolderView
 
-        Private PART_Ext As Behaviors.GridViewExtBehavior
+        Private PART_Ext As Behaviors.GridViewShellBehavior
         Private _isLoaded As Boolean
 
         Shared Sub New()
@@ -27,16 +27,6 @@ Namespace Controls
 
                         ' notify of sort/group by changes
                         Me.PART_Ext = Microsoft.Xaml.Behaviors.Interaction.GetBehaviors(Me.PART_ListView).FirstOrDefault(Function(b) TypeOf b Is Behaviors.GridViewExtBehavior)
-                        If Not Me.PART_Ext Is Nothing Then
-                            AddHandler Me.PART_Ext.SortChanged,
-                                Sub(s2 As Object, e2 As EventArgs)
-                                    Me.Folder.NotifyOfPropertyChange("ItemsSortPropertyName")
-                                End Sub
-                            AddHandler Me.PART_Ext.GroupByChanged,
-                                Sub(s2 As Object, e2 As EventArgs)
-                                    Me.Folder.NotifyOfPropertyChange("ItemsGroupByPropertyName")
-                                End Sub
-                        End If
                     End If
                 End Sub
         End Sub
@@ -44,7 +34,6 @@ Namespace Controls
         Public Function buildColumnsIn() As Behaviors.GridViewExtBehavior.ColumnsInData
             Dim d As Behaviors.GridViewExtBehavior.ColumnsInData = New Behaviors.GridViewExtBehavior.ColumnsInData()
             d.ViewName = Me.Folder.FullPath
-            d.PrimarySortProperties = "PrimarySort"
             d.Items = New List(Of GridViewColumn)()
 
             For Each column In Me.Folder.Columns.Where(Function(c) Not String.IsNullOrWhiteSpace(c.DisplayName))
@@ -215,6 +204,9 @@ Namespace Controls
         Protected Overrides Sub ClearBinding()
             MyBase.ClearBinding()
 
+            If Not Me.PART_Ext Is Nothing Then
+                Me.PART_Ext.Folder = Nothing
+            End If
             If Not Me.PART_ListView Is Nothing Then
                 CType(Me.PART_ListView.View, GridView).Columns.Clear()
             End If
@@ -223,6 +215,9 @@ Namespace Controls
         Protected Overrides Sub MakeBinding(folder As Folder)
             MyBase.MakeBinding(folder)
 
+            If Not Me.PART_Ext Is Nothing Then
+                Me.PART_Ext.Folder = folder
+            End If
             If Not Me.PART_ListView Is Nothing Then
                 Me.ColumnsIn = buildColumnsIn()
             End If

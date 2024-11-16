@@ -256,12 +256,6 @@ Public Class Item
         Return Nothing
     End Function
 
-    Public ReadOnly Property PrimarySort As Integer
-        Get
-            Return 0
-        End Get
-    End Property
-
     Public Property IsPinned As Boolean
         Get
             Return _isPinned
@@ -728,14 +722,7 @@ Public Class Item
 
                     [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
                     If [property] Is Nothing Then
-                        Dim propertyStore As IPropertyStore = Me.PropertyStore
-                        Try
-                            [property] = [Property].FromKey(key, propertyStore)
-                        Finally
-                            If Not propertyStore Is Nothing Then
-                                Marshal.ReleaseComObject(propertyStore)
-                            End If
-                        End Try
+                        [property] = [Property].FromKey(key, Me.ShellItem2)
                         _properties.Add([property])
                     End If
                 End Sub)
@@ -747,14 +734,7 @@ Public Class Item
         Get
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
             If [property] Is Nothing Then
-                Dim propertyStore As IPropertyStore = Me.PropertyStore
-                Try
-                    [property] = [Property].FromKey(propertyKey, propertyStore)
-                Finally
-                    If Not propertyStore Is Nothing Then
-                        Marshal.ReleaseComObject(propertyStore)
-                    End If
-                End Try
+                [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                 _properties.Add([property])
             End If
             Return [property]
@@ -765,14 +745,7 @@ Public Class Item
         Get
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
             If [property] Is Nothing Then
-                Dim propertyStore As IPropertyStore = Me.PropertyStore
-                Try
-                    [property] = [Property].FromCanonicalName(canonicalName, propertyStore)
-                Finally
-                    If Not propertyStore Is Nothing Then
-                        Marshal.ReleaseComObject(propertyStore)
-                    End If
-                End Try
+                [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                 If Not [property] Is Nothing Then _properties.Add([property])
             End If
             Return [property]

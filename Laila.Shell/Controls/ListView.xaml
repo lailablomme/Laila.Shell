@@ -57,7 +57,7 @@
                             </ListView.Resources>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel SpacingMode="None" AllowDifferentSizedItems="True">
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None">
                                         <vwp:VirtualizingWrapPanel.Style>
                                             <Style>
                                                 <Style.Triggers>
@@ -102,11 +102,6 @@
                                     </Setter>
                                 </Style>
                             </ListView.Style>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="VerticalContentAlignment" Value="Top" />
-                                </Style>
-                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border>

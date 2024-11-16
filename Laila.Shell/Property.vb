@@ -1,6 +1,7 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows
+Imports System.Windows.Forms
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
@@ -17,7 +18,21 @@ Public Class [Property]
     Private _rawValue As PROPVARIANT
     Private _icon16 As ImageSource
 
-    Public Shared Function FromCanonicalName(canonicalName As String, Optional propertyStore As IPropertyStore = Nothing) As [Property]
+    Public Shared Function FromCanonicalName(canonicalName As String) As [Property]
+        If canonicalName = "System.StorageProviderUIStatus" Then
+            Return New System_StorageProviderUIStatusProperty()
+        Else
+            Dim propertyDescription As IPropertyDescription
+            Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
+            If Not propertyDescription Is Nothing Then
+                Return New [Property](canonicalName, propertyDescription)
+            Else
+                Return Nothing
+            End If
+        End If
+    End Function
+
+    Public Shared Function FromCanonicalName(canonicalName As String, propertyStore As IPropertyStore) As [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
             Return New System_StorageProviderUIStatusProperty(propertyStore)
         Else
@@ -25,6 +40,20 @@ Public Class [Property]
             Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
             If Not propertyDescription Is Nothing Then
                 Return New [Property](canonicalName, propertyDescription, propertyStore)
+            Else
+                Return Nothing
+            End If
+        End If
+    End Function
+
+    Public Shared Function FromCanonicalName(canonicalName As String, shellItem2 As IShellItem2) As [Property]
+        If canonicalName = "System.StorageProviderUIStatus" Then
+            Return New System_StorageProviderUIStatusProperty(shellItem2)
+        Else
+            Dim propertyDescription As IPropertyDescription
+            Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
+            If Not propertyDescription Is Nothing Then
+                Return New [Property](canonicalName, propertyDescription, shellItem2)
             Else
                 Return Nothing
             End If
@@ -39,7 +68,15 @@ Public Class [Property]
         End If
     End Function
 
-    Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, propertyStore As IPropertyStore)
+    Public Shared Function FromKey(propertyKey As PROPERTYKEY, Optional shellItem2 As IShellItem2 = Nothing) As [Property]
+        If propertyKey.Equals(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey) Then
+            Return New System_StorageProviderUIStatusProperty(shellItem2)
+        Else
+            Return New [Property](propertyKey, shellItem2)
+        End If
+    End Function
+
+    Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, Optional propertyStore As IPropertyStore = Nothing)
         _canonicalName = canonicalName
         propertyDescription.GetPropertyKey(_propertyKey)
         If Not propertyStore Is Nothing Then
@@ -47,10 +84,25 @@ Public Class [Property]
         End If
     End Sub
 
+    Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, shellItem2 As IShellItem2)
+        _canonicalName = canonicalName
+        propertyDescription.GetPropertyKey(_propertyKey)
+        If Not shellItem2 Is Nothing Then
+            shellItem2.GetProperty(_propertyKey, _rawValue)
+        End If
+    End Sub
+
     Public Sub New(propertyKey As PROPERTYKEY, propertyStore As IPropertyStore)
         _propertyKey = propertyKey
         If Not propertyStore Is Nothing Then
             propertyStore.GetValue(_propertyKey, _rawValue)
+        End If
+    End Sub
+
+    Public Sub New(propertyKey As PROPERTYKEY, shellItem2 As IShellItem2)
+        _propertyKey = propertyKey
+        If Not shellItem2 Is Nothing Then
+            shellItem2.GetProperty(_propertyKey, _rawValue)
         End If
     End Sub
 
@@ -107,7 +159,7 @@ Public Class [Property]
                     Return index
                 End If
             Else
-                Return getValue(rawValue)
+                Return getValue(RawValue)
             End If
 
             Return Nothing

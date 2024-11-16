@@ -86,11 +86,6 @@
                                     </Setter>
                                 </Style>
                             </ListView.Style>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="VerticalContentAlignment" Value="Top" />
-                                </Style>
-                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border Padding="2" Width="69" VerticalAlignment="Top">

@@ -6,9 +6,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Documents
-Imports System.Windows.Forms.AxHost
 Imports System.Windows.Media
-Imports System.Xml.Serialization
 Imports Laila.Shell.Adorners
 Imports Laila.Shell.Helpers
 Imports LiteDB
@@ -203,8 +201,6 @@ Namespace Behaviors
                                     End Select
                                 End Sub
                         End If
-
-                        If _isLoaded Then regroup()
                     End Sub)
             AddHandler _listView.Loaded,
                Sub(sender As Object, e As EventArgs)
@@ -330,25 +326,17 @@ Namespace Behaviors
                 showHideColumns()
 
                 ' set sort from state
-                Dim view As ICollectionView = _listView.Items
-                Using view.DeferRefresh()
-                    resetSortDescriptions(view)
-                    If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(_gridViewState.SortPropertyName) Then
-                        view.SortDescriptions.Add(New SortDescription() With {
-                        .PropertyName = _gridViewState.SortPropertyName,
-                        .Direction = _gridViewState.SortDirection
-                    })
-                    Else
-                        Dim initialSortPropertyName As String = GetSortPropertyName(_activeColumns(0).Column)
-                        If String.IsNullOrWhiteSpace(initialSortPropertyName) Then
-                            initialSortPropertyName = GetPropertyName(_activeColumns(0).Column)
-                        End If
-                        view.SortDescriptions.Add(New SortDescription() With {
-                        .PropertyName = initialSortPropertyName,
-                        .Direction = ListSortDirection.Ascending
-                    })
+                Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
+                resetSortDescriptions(view)
+                If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(_gridViewState.SortPropertyName) Then
+                    Me.SetSort(_gridViewState.SortPropertyName, _gridViewState.SortDirection)
+                Else
+                    Dim initialSortPropertyName As String = GetSortPropertyName(_activeColumns(0).Column)
+                    If String.IsNullOrWhiteSpace(initialSortPropertyName) Then
+                        initialSortPropertyName = GetPropertyName(_activeColumns(0).Column)
                     End If
-                End Using
+                    Me.SetSort(initialSortPropertyName, ListSortDirection.Ascending)
+                End If
 
                 UpdateSortGlyphs()
 
@@ -371,35 +359,37 @@ Namespace Behaviors
                 ' set initial group by
                 If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrWhiteSpace(_gridViewState.GroupByPropertyName) Then
                     _groupByPropertyName = _gridViewState.GroupByPropertyName
-                    regroup()
+                    SetGrouping(_groupByPropertyName)
                 ElseIf Not String.IsNullOrWhiteSpace(Me.ColumnsIn.InitialGroupByPropertyName) Then
                     _groupByPropertyName = Me.ColumnsIn.InitialGroupByPropertyName
-                    regroup()
+                    SetGrouping(_groupByPropertyName)
                 Else
                     _groupByPropertyName = Nothing
-                    regroup()
+                    SetGrouping(_groupByPropertyName)
                 End If
             End If
         End Sub
 
         Private Sub resetSortDescriptions(view As ICollectionView)
             view.SortDescriptions.Clear()
-            For Each firstSortProperty In Me.ColumnsIn.PrimarySortProperties.Split(",")
-                Dim firstSortProperty1() As String = firstSortProperty.Split(" ")
-                Dim firstSortDirection As ListSortDirection = ListSortDirection.Ascending
-                If firstSortProperty1.Count >= 2 Then
-                    Select Case firstSortProperty1(1).ToUpper()
-                        Case "ASC" : firstSortDirection = ListSortDirection.Ascending
-                        Case "DESC" : firstSortDirection = ListSortDirection.Descending
-                        Case Else
-                            Throw New IndexOutOfRangeException()
-                    End Select
-                End If
-                view.SortDescriptions.Add(New SortDescription() With {
+            If Not String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) Then
+                For Each firstSortProperty In Me.ColumnsIn.PrimarySortProperties.Split(",")
+                    Dim firstSortProperty1() As String = firstSortProperty.Split(" ")
+                    Dim firstSortDirection As ListSortDirection = ListSortDirection.Ascending
+                    If firstSortProperty1.Count >= 2 Then
+                        Select Case firstSortProperty1(1).ToUpper()
+                            Case "ASC" : firstSortDirection = ListSortDirection.Ascending
+                            Case "DESC" : firstSortDirection = ListSortDirection.Descending
+                            Case Else
+                                Throw New IndexOutOfRangeException()
+                        End Select
+                    End If
+                    view.SortDescriptions.Add(New SortDescription() With {
                     .PropertyName = firstSortProperty1(0),
                     .Direction = firstSortDirection
                 })
-            Next
+                Next
+            End If
         End Sub
 
         Private Sub showHideColumns()
@@ -442,10 +432,12 @@ Namespace Behaviors
                 GridViewColumnHeaderGlyphAdorner.Remove(ch, "GridViewExtBehavior.Sort")
             Next
 
-            Dim view As ICollectionView = _listView.Items
-            If view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count Then
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
+            If (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
+                OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
+                AndAlso view.SortDescriptions.Count > 0 Then
                 Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
-                Dim currentSortedColumnHeader As GridViewColumnHeader = getCurrentSortedColumnHeader()
+                Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
                 If Not currentSortedColumnHeader Is Nothing Then
                     If currentSort.Direction = ListSortDirection.Ascending Then
                         GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
@@ -458,10 +450,12 @@ Namespace Behaviors
             End If
         End Sub
 
-        Private Function getCurrentSortedColumnHeader() As GridViewColumnHeader
+        Protected Function GetCurrentSortedColumnHeader() As GridViewColumnHeader
             Dim view As ICollectionView = _listView.Items
             Dim currentSort As SortDescription
-            If view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count Then
+            If (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
+                OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
+                AndAlso view.SortDescriptions.Count > 0 Then
                 currentSort = view.SortDescriptions(view.SortDescriptions.Count - 1)
 
                 Dim result As GridViewColumnHeader =
@@ -491,7 +485,8 @@ Namespace Behaviors
                     If Not String.IsNullOrEmpty(propertyName) Then
                         If Not _listView Is Nothing Then
                             ' apply sort
-                            applySort(_listView.Items, propertyName, -1, _listView, headerClicked)
+                            Me.SetSort(propertyName, -1)
+                            Me.UpdateSortGlyphs()
                             writeState()
                             RaiseEvent SortChanged(Me, New EventArgs())
 
@@ -560,7 +555,7 @@ Namespace Behaviors
                                 If currentSort.PropertyName = propertyName Then
                                     resetSortDescriptions(view)
 
-                                    Dim currentSortedColumnHeader As GridViewColumnHeader = getCurrentSortedColumnHeader()
+                                    Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
                                     If Not currentSortedColumnHeader Is Nothing Then
                                         GridViewColumnHeaderGlyphAdorner.Remove(currentSortedColumnHeader, "GridViewSort")
                                     End If
@@ -584,7 +579,7 @@ Namespace Behaviors
                         Sub(s2 As Object, e2 As EventArgs)
                             If Not _clickedColumn Is Nothing Then
                                 _groupByPropertyName = propertyName
-                                regroup()
+                                SetGrouping(_groupByPropertyName)
 
                                 RaiseEvent GroupByChanged(Me, New EventArgs())
 
@@ -596,7 +591,7 @@ Namespace Behaviors
                         Sub(s2 As Object, e2 As EventArgs)
                             If Not _clickedColumn Is Nothing Then
                                 _groupByPropertyName = Nothing
-                                regroup()
+                                SetGrouping(_groupByPropertyName)
 
                                 RaiseEvent GroupByChanged(Me, New EventArgs())
 
@@ -623,7 +618,8 @@ Namespace Behaviors
             End If
         End Sub
 
-        Private Sub applySort(view As ICollectionView, propertyName As String, direction As ListSortDirection, listView As ListView, sortedColumnHeader As GridViewColumnHeader)
+        Protected Overridable Sub SetSort(propertyName As String, direction As ListSortDirection)
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
             Dim newDirection As ListSortDirection = ListSortDirection.Ascending
             If view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count Then
                 Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
@@ -635,11 +631,6 @@ Namespace Behaviors
                     End If
                 End If
 
-                Dim currentSortedColumnHeader As GridViewColumnHeader = getCurrentSortedColumnHeader()
-                If Not currentSortedColumnHeader Is Nothing Then
-                    GridViewColumnHeaderGlyphAdorner.Remove(currentSortedColumnHeader, "GridViewExtBehavior.Sort")
-                End If
-
                 view.SortDescriptions.Remove(view.SortDescriptions(view.SortDescriptions.Count - 1))
             End If
             If direction <> -1 Then
@@ -647,20 +638,14 @@ Namespace Behaviors
             End If
             If Not String.IsNullOrEmpty(propertyName) Then
                 view.SortDescriptions.Add(New SortDescription(propertyName, newDirection))
-                If newDirection = ListSortDirection.Ascending Then
-                    GridViewColumnHeaderGlyphAdorner.Add(sortedColumnHeader, "GridViewExtBehavior.Sort", 1,
-                       "pack://application:,,,/Laila.Shell;component/Images/sortasc.png", HorizontalAlignment.Center)
-                Else
-                    GridViewColumnHeaderGlyphAdorner.Add(sortedColumnHeader, "GridViewExtBehavior.Sort", 1,
-                       "pack://application:,,,/Laila.Shell;component/Images/sortdesc.png", HorizontalAlignment.Center)
-                End If
             End If
         End Sub
-        Private Sub regroup()
+
+        Protected Overridable Sub SetGrouping(propertyName As String)
             Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
             If Not view Is Nothing Then
-                If Not String.IsNullOrWhiteSpace(_groupByPropertyName) Then
-                    Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(_groupByPropertyName)
+                If Not String.IsNullOrWhiteSpace(propertyName) Then
+                    Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(propertyName)
                     If Not view.GroupDescriptions Is Nothing AndAlso view.GroupDescriptions.Count > 0 Then
                         view.GroupDescriptions(0) = groupDescription
                     Else
@@ -780,7 +765,9 @@ Namespace Behaviors
             Next
 
             Dim view As ICollectionView = _listView.Items
-            If view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count Then
+            If (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
+                OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
+                AndAlso view.SortDescriptions.Count > 0 Then
                 Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
                 _gridViewState.SortPropertyName = currentSort.PropertyName
                 _gridViewState.SortDirection = currentSort.Direction

@@ -351,22 +351,15 @@ Namespace Controls
             End If
         End Sub
 
-        Protected Overridable Sub Folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
+        Protected Overridable Sub Folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
                 Case "IsRefreshingItems"
                     UIHelper.OnUIThread(
                         Sub()
-                            Me.IsLoading = CType(s, Folder).IsRefreshingItems
+                            Me.IsLoading = CType(sender, Folder).IsRefreshingItems
                         End Sub)
-                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
-                    Dim folder As Folder = CType(s, Folder)
-                    Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
-                    folderViewState.SortPropertyName = folder.ItemsSortPropertyName
-                    folderViewState.SortDirection = folder.ItemsSortDirection
-                    folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
-                    folderViewState.View = folder.View
-                    folderViewState.Persist()
-
+                Case "ItemsGroupByPropertyName"
+                    Dim folder As Folder = CType(sender, Folder)
                     If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
                         Me.PART_ListView.GroupStyle.Add(Me.PART_ListView.Resources("groupStyle"))
                     Else

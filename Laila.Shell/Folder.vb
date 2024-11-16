@@ -513,12 +513,18 @@ Public Class Folder
             Next
         End If
 
+        For Each chunk In toAdd.Chunk(250)
+            UIHelper.OnUIThread(
+                Sub()
+                    For Each item In chunk
+                        add(item)
+                    Next
+                End Sub)
+            Thread.Sleep(10)
+        Next
+
         UIHelper.OnUIThread(
             Sub()
-                For Each item In toAdd
-                    add(item)
-                Next
-
                 For Each item In getToBeRemoved(pathsBefore, pathsAfter)
                     If TypeOf item Is Folder Then
                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -575,10 +581,17 @@ Public Class Folder
                 .PropertyName = Me.ItemsSortPropertyName,
                 .Direction = value
             }
+            Dim groupSortDesc As SortDescription = New SortDescription() With {
+                .PropertyName = Me.ItemsGroupByPropertyName,
+                .Direction = value
+            }
             If view.SortDescriptions.Count = 0 Then
                 view.SortDescriptions.Add(desc)
-            Else
+            ElseIf view.SortDescriptions.Count = 1 Then
                 view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
+            ElseIf view.SortDescriptions.Count = 2 Then
+                view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
+                view.SortDescriptions(view.SortDescriptions.Count - 2) = groupSortDesc
             End If
             Me.NotifyOfPropertyChange("ItemsSortDirection")
         End Set
@@ -597,13 +610,25 @@ Public Class Folder
             Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
             If Not String.IsNullOrWhiteSpace(value) Then
                 Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(value)
+                Dim groupSortDesc As SortDescription = New SortDescription() With {
+                    .PropertyName = value,
+                    .Direction = Me.ItemsSortDirection
+                }
                 If view.GroupDescriptions.Count > 0 Then
                     view.GroupDescriptions(0) = groupDescription
                 Else
                     view.GroupDescriptions.Add(groupDescription)
                 End If
+                If view.SortDescriptions.Count = 1 Then
+                    view.SortDescriptions.Insert(0, groupSortDesc)
+                ElseIf view.SortDescriptions.Count = 2 Then
+                    view.SortDescriptions(0) = groupSortDesc
+                End If
             ElseIf Not view.GroupDescriptions Is Nothing Then
                 view.GroupDescriptions.Clear()
+                If view.SortDescriptions.Count = 2 Then
+                    view.SortDescriptions.RemoveAt(0)
+                End If
             End If
             Me.NotifyOfPropertyChange("ItemsGroupByPropertyName")
         End Set

@@ -109,7 +109,8 @@
                                 <GridView></GridView>
                             </ListView.View>
                             <i:Interaction.Behaviors>
-                                <behaviors:GridViewExtBehavior ColumnsIn="{Binding ColumnsIn, RelativeSource={RelativeSource Mode=TemplatedParent}}" x:Name="ext" />
+                                <behaviors:GridViewShellBehavior 
+                                    ColumnsIn="{Binding ColumnsIn, RelativeSource={RelativeSource Mode=TemplatedParent}}" x:Name="ext" />
                                 <behaviors:SelectionBehavior />
                             </i:Interaction.Behaviors>
                             <ListView.Style>

@@ -114,13 +114,14 @@ Namespace Controls
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim fv As FolderView = d
             If Not e.NewValue Is Nothing Then
-                AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(CType(e.NewValue, Folder).FullPath)
                 CType(e.NewValue, Folder).ItemsSortPropertyName = folderViewState.SortPropertyName
                 CType(e.NewValue, Folder).ItemsSortDirection = folderViewState.SortDirection
                 CType(e.NewValue, Folder).ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
                 CType(e.NewValue, Folder).View = folderViewState.View
+                fv.changeView(CType(e.NewValue, Folder).View)
+                AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
             End If
             If Not e.OldValue Is Nothing Then
                 CType(e.OldValue, Folder).IsActiveInFolderView = False
@@ -130,8 +131,16 @@ Namespace Controls
 
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
-                Case "View"
-                    changeView(Me.Folder.View)
+                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
+                    If e.PropertyName = "View" Then changeView(Me.Folder.View)
+
+                    Dim folder As Folder = CType(sender, Folder)
+                    Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+                    folderViewState.SortPropertyName = folder.ItemsSortPropertyName
+                    folderViewState.SortDirection = folder.ItemsSortDirection
+                    folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
+                    folderViewState.View = folder.View
+                    folderViewState.Persist()
             End Select
         End Sub
 
