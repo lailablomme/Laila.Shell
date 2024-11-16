@@ -29,7 +29,6 @@ Public Class Item
     Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
     Private _isImage As Boolean?
-    Private _propertyStore As IPropertyStore
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -199,11 +198,6 @@ Public Class Item
             _shellItem2 = Nothing
         End If
 
-        If Not _propertyStore Is Nothing Then
-            Dim oldPropertyStore As IPropertyStore = _propertyStore
-            _propertyStore = Nothing
-            Marshal.ReleaseComObject(oldPropertyStore)
-        End If
         For Each [property] In _properties
             [property].Dispose()
         Next
@@ -707,20 +701,18 @@ Public Class Item
 
     Public ReadOnly Property PropertyStore As IPropertyStore
         Get
-            If _propertyStore Is Nothing Then
-                Dim ptr As IntPtr
-                Try
-                    Me.ShellItem2.GetPropertyStore(0, GetType(IPropertyStore).GUID, ptr)
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        _propertyStore = Marshal.GetObjectForIUnknown(ptr)
-                    End If
-                Finally
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        Marshal.Release(ptr)
-                    End If
-                End Try
-            End If
-            Return _propertyStore
+            Dim ptr As IntPtr
+            Try
+                Me.ShellItem2.GetPropertyStore(0, GetType(IPropertyStore).GUID, ptr)
+                If Not IntPtr.Zero.Equals(ptr) Then
+                    Return Marshal.GetObjectForIUnknown(ptr)
+                End If
+            Finally
+                If Not IntPtr.Zero.Equals(ptr) Then
+                    Marshal.Release(ptr)
+                End If
+            End Try
+            Return Nothing
         End Get
     End Property
 
@@ -736,7 +728,14 @@ Public Class Item
 
                     [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
                     If [property] Is Nothing Then
-                        [property] = [Property].FromKey(key, Me.PropertyStore)
+                        Dim propertyStore As IPropertyStore = Me.PropertyStore
+                        Try
+                            [property] = [Property].FromKey(key, propertyStore)
+                        Finally
+                            If Not propertyStore Is Nothing Then
+                                Marshal.ReleaseComObject(propertyStore)
+                            End If
+                        End Try
                         _properties.Add([property])
                     End If
                 End Sub)
@@ -748,7 +747,14 @@ Public Class Item
         Get
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
             If [property] Is Nothing Then
-                [property] = [Property].FromKey(propertyKey, Me.PropertyStore)
+                Dim propertyStore As IPropertyStore = Me.PropertyStore
+                Try
+                    [property] = [Property].FromKey(propertyKey, propertyStore)
+                Finally
+                    If Not propertyStore Is Nothing Then
+                        Marshal.ReleaseComObject(propertyStore)
+                    End If
+                End Try
                 _properties.Add([property])
             End If
             Return [property]
@@ -759,7 +765,14 @@ Public Class Item
         Get
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
             If [property] Is Nothing Then
-                [property] = [Property].FromCanonicalName(canonicalName, Me.PropertyStore)
+                Dim propertyStore As IPropertyStore = Me.PropertyStore
+                Try
+                    [property] = [Property].FromCanonicalName(canonicalName, propertyStore)
+                Finally
+                    If Not propertyStore Is Nothing Then
+                        Marshal.ReleaseComObject(propertyStore)
+                    End If
+                End Try
                 If Not [property] Is Nothing Then _properties.Add([property])
             End If
             Return [property]

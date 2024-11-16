@@ -854,8 +854,8 @@ Namespace Controls
                     If Not Me.ItemContextMenu Is Nothing AndAlso (
                             Me.NewItemMenu Is Nothing _
                             OrElse Not EqualityComparer(Of IContextMenu).Default.Equals(
-                            CType(Me.ItemContextMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean)).Item1,
-                            CType(Me.NewItemMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean)).Item1)) _
+                            CType(Me.ItemContextMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean))?.Item1,
+                            CType(Me.NewItemMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean))?.Item1)) _
                             AndAlso Not didGetMenu Then
                         releaseContextMenu(Me.ItemContextMenu)
                         Me.ItemContextMenu = Nothing

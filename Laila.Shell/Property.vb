@@ -13,7 +13,6 @@ Public Class [Property]
     Implements IDisposable
 
     Protected _canonicalName As String
-    Protected _propertyStore As IPropertyStore
     Protected _propertyDescription As IPropertyDescription
     Protected _propertyKey As PROPERTYKEY
     Protected _text As String
@@ -47,12 +46,16 @@ Public Class [Property]
     Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, propertyStore As IPropertyStore)
         _canonicalName = canonicalName
         propertyDescription.GetPropertyKey(_propertyKey)
-        _propertyStore = propertyStore
+        If Not propertyStore Is Nothing Then
+            propertyStore.GetValue(_propertyKey, _rawValue)
+        End If
     End Sub
 
     Public Sub New(propertyKey As PROPERTYKEY, propertyStore As IPropertyStore)
         _propertyKey = propertyKey
-        _propertyStore = propertyStore
+        If Not propertyStore Is Nothing Then
+            propertyStore.GetValue(_propertyKey, _rawValue)
+        End If
     End Sub
 
     Public ReadOnly Property CanonicalName As String
@@ -95,12 +98,6 @@ Public Class [Property]
 
     Friend Overridable ReadOnly Property RawValue As PROPVARIANT
         Get
-            Try
-                If _rawValue.vt = 0 And Not _propertyStore Is Nothing Then
-                    _propertyStore.GetValue(_propertyKey, _rawValue)
-                End If
-            Catch ex As COMException
-            End Try
             Return _rawValue
         End Get
     End Property
