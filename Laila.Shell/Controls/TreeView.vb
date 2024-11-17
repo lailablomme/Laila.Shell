@@ -418,43 +418,43 @@ Namespace Controls
                             Dim parent As Folder = clickedItem.GetParent()
 
                             _menu = New Laila.Shell.Controls.Menus() With {
-                                .Folder = If(parent Is Nothing, Shell.Desktop, parent),
-                                .SelectedItems = {clickedItem},
-                                .DoAutoDispose = True
-                            }
+                                             .Folder = If(parent Is Nothing, Shell.Desktop, parent),
+                                             .SelectedItems = {clickedItem},
+                                             .DoAutoDispose = True
+                                         }
                             AddHandler _menu.CommandInvoked,
-                                Sub(s As Object, e2 As CommandInvokedEventArgs)
-                                    Select Case e2.Verb
-                                        Case "open"
-                                            If TypeOf clickedItem Is Folder Then
-                                                _selectionHelper.SetSelectedItems({clickedItem})
-                                                Me.Folder = clickedItem
-                                                e2.IsHandled = True
-                                            End If
-                                        Case "rename"
-                                            Dim pt As Point = Me.PointFromScreen(treeViewItem.PointToScreen(New Point(0, 0)))
-                                            pt.X += clickedItem.TreeMargin.Left + 37
-                                            pt.Y -= 1
-                                            Menus.DoRename(pt, New Size(Me.ActualWidth - pt.X - 2, treeViewItem.ActualHeight),
-                                                           TextAlignment.Left, Me.FontSize, clickedItem, Me.PART_Grid)
-                                            e2.IsHandled = True
-                                        Case "laila.shell.(un)pin"
-                                            If e2.IsChecked Then
-                                                PinnedItems.PinItem(clickedItem.FullPath)
-                                            Else
-                                                PinnedItems.UnpinItem(clickedItem.FullPath)
-                                            End If
-                                            e2.IsHandled = True
-                                    End Select
-                                End Sub
+                                             Sub(s As Object, e2 As CommandInvokedEventArgs)
+                                                 Select Case e2.Verb
+                                                     Case "open"
+                                                         If TypeOf clickedItem Is Folder Then
+                                                             _selectionHelper.SetSelectedItems({clickedItem})
+                                                             Me.Folder = clickedItem
+                                                             e2.IsHandled = True
+                                                         End If
+                                                     Case "rename"
+                                                         Dim pt As Point = Me.PointFromScreen(treeViewItem.PointToScreen(New Point(0, 0)))
+                                                         pt.X += clickedItem.TreeMargin.Left + 37
+                                                         pt.Y -= 1
+                                                         Menus.DoRename(pt, New Size(Me.ActualWidth - pt.X - 2, treeViewItem.ActualHeight),
+                                                                        TextAlignment.Left, Me.FontSize, clickedItem, Me.PART_Grid)
+                                                         e2.IsHandled = True
+                                                     Case "laila.shell.(un)pin"
+                                                         If e2.IsChecked Then
+                                                             PinnedItems.PinItem(clickedItem.FullPath)
+                                                         Else
+                                                             PinnedItems.UnpinItem(clickedItem.FullPath)
+                                                         End If
+                                                         e2.IsHandled = True
+                                                 End Select
+                                             End Sub
 
                             PART_ListBox.ContextMenu = _menu.ItemContextMenu
                             e.Handled = True
 
                             AddHandler PART_ListBox.ContextMenu.Closed,
-                                Sub(s2 As Object, e2 As Object)
-                                    If Not parent Is Nothing Then parent.Dispose()
-                                End Sub
+                                             Sub(s2 As Object, e2 As Object)
+                                                 If Not parent Is Nothing Then parent.Dispose()
+                                             End Sub
                         Else
                             PART_ListBox.ContextMenu = Nothing
                         End If
@@ -472,13 +472,8 @@ Namespace Controls
                             If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                             Else
-                                Using Shell.OverrideCursor(Cursors.Wait)
-                                    _selectionHelper.SetSelectedItems({clickedItem})
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                        End Sub, Threading.DispatcherPriority.Render)
-                                    If TypeOf clickedItem Is Folder Then Me.Folder = clickedItem
-                                End Using
+                                _selectionHelper.SetSelectedItems({clickedItem})
+                                If TypeOf clickedItem Is Folder Then Me.Folder = clickedItem
                             End If
                             e.Handled = True
                         End If
@@ -682,9 +677,11 @@ Namespace Controls
             End Set
         End Property
 
-        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim tv As TreeView = TryCast(d, TreeView)
-            tv.SetSelectedFolder(e.NewValue)
+        Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Using Shell.OverrideCursor(Cursors.Wait)
+                Dim tv As TreeView = TryCast(d, TreeView)
+                Await tv.SetSelectedFolder(e.NewValue)
+            End Using
         End Sub
 
         Public Property Items As ObservableCollection(Of Item)

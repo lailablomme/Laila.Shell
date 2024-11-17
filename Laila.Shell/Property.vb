@@ -156,6 +156,7 @@ Public Class [Property]
                 Dim index As UInt32
                 Dim propertyEnumType As IPropertyEnumType = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
                 If Not propertyEnumType Is Nothing Then
+                    Marshal.ReleaseComObject(propertyEnumType)
                     Return index
                 End If
             Else
@@ -212,10 +213,13 @@ Public Class [Property]
                         Dim imageReference As String
                         Dim propertyEnumType2 As IPropertyEnumType2 = propertyEnumType
                         propertyEnumType2.GetImageReference(imageReference)
+                        Marshal.ReleaseComObject(propertyEnumType)
                         If Not String.IsNullOrWhiteSpace(imageReference) Then
                             _hasIcon = True
+                            Exit For
                         End If
                     Next
+                    Marshal.ReleaseComObject(propertyEnumTypeList)
                 End If
             End If
 
@@ -226,23 +230,14 @@ Public Class [Property]
     Public Overridable ReadOnly Property Icons16 As ImageSource()
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                Dim imageReference As String, icon As IntPtr
+                Dim imageReference As String, icon As IntPtr, iconl As IntPtr
                 Dim index As UInt32
                 Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
                 propertyEnumType2.GetImageReference(imageReference)
                 If Not String.IsNullOrWhiteSpace(imageReference) Then
-                    Dim s() As String = Split(imageReference, ",")
-                    Try
-                        Functions.ExtractIconEx(s(0), s(1), Nothing, icon, 1)
-                        If Not IntPtr.Zero.Equals(icon) Then
-                            Return {System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())}
-                        Else
-                            Return Nothing
-                        End If
-                    Finally
-                        Functions.DeleteObject(icon)
-                    End Try
+                    Return {ImageHelper.ExtractIcon(imageReference)}
                 End If
+                Marshal.ReleaseComObject(propertyEnumType2)
             Else
                 Return Nothing
             End If
@@ -350,8 +345,11 @@ Public Class [Property]
                 If x = Val(obj) Then
                     index = x
                     Return propertyEnumType
+                Else
+                    Marshal.ReleaseComObject(propertyEnumType)
                 End If
             Next
+            Marshal.ReleaseComObject(propertyEnumTypeList)
         End If
 
         Return Nothing
@@ -361,11 +359,11 @@ Public Class [Property]
         If Not disposedValue Then
             If disposing Then
                 ' dispose managed state (managed objects)
-                _rawValue.Dispose()
             End If
 
             ' free unmanaged resources (unmanaged objects) and override finalizer
             ' set large fields to null
+            _rawValue.Dispose()
             If Not _propertyDescription Is Nothing Then
                 Marshal.ReleaseComObject(_propertyDescription)
             End If

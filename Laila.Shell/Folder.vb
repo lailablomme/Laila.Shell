@@ -716,7 +716,10 @@ Public Class Folder
                                     .[Event] = e.Event
                                 })
                             End If
-                            _items.Remove(item)
+                            UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    item.Dispose()
+                                End Sub)
                         End If
                     End If
                 Case SHCNE.DRIVEADD
@@ -736,7 +739,10 @@ Public Class Folder
                                 .Folder = item,
                                 .[Event] = e.Event
                             })
-                            _items.Remove(item)
+                            UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    item.Dispose()
+                                End Sub)
                         End If
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
