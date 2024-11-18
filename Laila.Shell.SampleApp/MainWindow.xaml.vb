@@ -138,4 +138,8 @@ Class MainWindow
             menus.ViewMenu.IsOpen = True
         End If
     End Sub
+
+    Private Sub view_Closed(sender As Object, e As EventArgs)
+        Shell.Shutdown()
+    End Sub
 End Class

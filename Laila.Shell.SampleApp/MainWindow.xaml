@@ -7,7 +7,7 @@
         xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" 
         xmlns:shell="clr-namespace:Laila.Shell;assembly=Laila.Shell" 
         xmlns:metroWindow="clr-namespace:Laila.MetroWindow.Controls;assembly=Laila.MetroWindow"
-        x:Name="view"
+        x:Name="view" Closed="view_Closed"
         mc:Ignorable="d" Icon="{Binding SelectedItem.Folder.Icon[48], ElementName=tabControl}" 
         Title="{Binding SelectedItem.Folder.DisplayName, ElementName=tabControl}"
         Height="450" Width="800">

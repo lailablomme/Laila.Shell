@@ -38,38 +38,28 @@ Public Class Shell
         entry(0).pIdl = IntPtr.Zero
         entry(0).Recursively = True
 
-        AddHandler Application.Current.MainWindow.Loaded,
-             Sub(sender As Object, e As EventArgs)
-                 _w = New Window()
-                 _w.Owner = Application.Current.MainWindow
-                 _w.Left = Int32.MinValue
-                 _w.Top = Int32.MinValue
-                 _w.WindowStyle = WindowStyle.None
-                 _w.Width = 1920
-                 _w.Height = 1080
-                 _w.ShowInTaskbar = False
-                 _w.Title = "Hidden Window"
-                 _w.Show()
+        _w = New Window()
+        _w.Left = Int32.MinValue
+        _w.Top = Int32.MinValue
+        _w.WindowStyle = WindowStyle.None
+        _w.Width = 1920
+        _w.Height = 1080
+        _w.ShowInTaskbar = False
+        _w.Title = "Hidden Window"
+        _w.Show()
 
-                 Dim hwnd As IntPtr = New WindowInteropHelper(_w).Handle
-                 Dim source As HwndSource = HwndSource.FromHwnd(hwnd)
-                 source.AddHook(AddressOf HwndHook)
-                 _hwnd = hwnd
+        Dim hwnd As IntPtr = New WindowInteropHelper(_w).Handle
+        Dim source As HwndSource = HwndSource.FromHwnd(hwnd)
+        source.AddHook(AddressOf HwndHook)
+        _hwnd = hwnd
 
-                 _hNotify = Functions.SHChangeNotifyRegister(
-                    hwnd,
-                    SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
-                    SHCNE.ALLEVENTS,
-                    WM.USER + 1,
-                    1,
-                    entry)
-
-                 AddHandler Application.Current.Exit,
-                    Sub(s2 As Object, e2 As ExitEventArgs)
-                        Functions.SHChangeNotifyDeregister(_hNotify)
-                        Functions.OleUninitialize()
-                    End Sub
-             End Sub
+        _hNotify = Functions.SHChangeNotifyRegister(
+            hwnd,
+            SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
+            SHCNE.ALLEVENTS,
+            WM.USER + 1,
+            1,
+            entry)
 
         Dim addSpecialFolder As Action(Of String, Item) =
             Sub(name As String, item As Item)
@@ -121,6 +111,17 @@ Public Class Shell
             _debugWindow = New DebugTools.DebugWindow()
             _debugWindow.Show()
         End If
+    End Sub
+
+    Public Shared Sub Shutdown()
+        For Each item In Shell.ItemsCache.ToList()
+            item.Dispose()
+        Next
+
+        Functions.SHChangeNotifyDeregister(_hNotify)
+        Functions.OleUninitialize()
+
+        _w.Close()
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr

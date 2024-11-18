@@ -31,14 +31,18 @@ Public Class ImageHelper
             Dim s() As String = Split(ref, ","), icon As IntPtr, iconl As IntPtr
             Try
                 Functions.ExtractIconEx(s(0), s(1), iconl, Icon, 1)
-                If Not IntPtr.Zero.Equals(Icon) Then
+                If Not IntPtr.Zero.Equals(icon) Then
                     _icons.Add(ref.ToLower().Trim(), System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()))
                 Else
                     _icons.Add(ref.ToLower().Trim(), Nothing)
                 End If
             Finally
-                Functions.DeleteObject(Icon)
-                Functions.DeleteObject(iconl)
+                If Not IntPtr.Zero.Equals(icon) Then
+                    Functions.DestroyIcon(icon)
+                End If
+                If Not IntPtr.Zero.Equals(iconl) Then
+                    Functions.DestroyIcon(iconl)
+                End If
             End Try
         End If
         Return _icons(ref.ToLower().Trim())
