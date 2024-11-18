@@ -513,18 +513,12 @@ Public Class Folder
             Next
         End If
 
-        For Each chunk In toAdd.Chunk(250)
-            UIHelper.OnUIThread(
-                Sub()
-                    For Each item In chunk
-                        add(item)
-                    Next
-                End Sub)
-            Thread.Sleep(10)
-        Next
-
         UIHelper.OnUIThread(
             Sub()
+                For Each item In toAdd
+                    add(item)
+                Next
+
                 For Each item In getToBeRemoved(pathsBefore, pathsAfter)
                     If TypeOf item Is Folder Then
                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
