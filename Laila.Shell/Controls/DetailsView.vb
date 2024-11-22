@@ -31,12 +31,12 @@ Namespace Controls
                 End Sub
         End Sub
 
-        Public Function buildColumnsIn() As Behaviors.GridViewExtBehavior.ColumnsInData
+        Public Function buildColumnsIn(folder As Folder) As Behaviors.GridViewExtBehavior.ColumnsInData
             Dim d As Behaviors.GridViewExtBehavior.ColumnsInData = New Behaviors.GridViewExtBehavior.ColumnsInData()
-            d.ViewName = Me.Folder.FullPath
+            d.ViewName = folder.FullPath
             d.Items = New List(Of GridViewColumn)()
 
-            For Each column In Me.Folder.Columns.Where(Function(c) Not String.IsNullOrWhiteSpace(c.DisplayName))
+            For Each column In folder.Columns.Where(Function(c) Not String.IsNullOrWhiteSpace(c.DisplayName))
                 Dim [property] As [Property] = [Property].FromCanonicalName(column.CanonicalName)
 
                 Dim gvc As GridViewColumn = New GridViewColumn()
@@ -219,7 +219,7 @@ Namespace Controls
                 Me.PART_Ext.Folder = folder
             End If
             If Not Me.PART_ListView Is Nothing Then
-                Me.ColumnsIn = buildColumnsIn()
+                Me.ColumnsIn = buildColumnsIn(folder)
             End If
         End Sub
 
