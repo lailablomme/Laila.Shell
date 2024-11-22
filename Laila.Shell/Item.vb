@@ -302,25 +302,15 @@ Public Class Item
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                Dim ptr As IntPtr, ptr2 As IntPtr, hbitmap As IntPtr, shellItemImageFactory As IShellItemImageFactory
+                Dim hbitmap As IntPtr
                 Try
-                    ptr = Marshal.GetIUnknownForObject(Me.ShellItem2)
-                    Marshal.QueryInterface(ptr, GetType(IShellItemImageFactory).GUID, ptr2)
-                    If Not IntPtr.Zero.Equals(ptr2) Then
-                        shellItemImageFactory = Marshal.GetObjectForIUnknown(ptr2)
-                        Marshal.Release(ptr)
-                        Marshal.Release(ptr2)
-                        shellItemImageFactory.GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
-                        If Not IntPtr.Zero.Equals(hbitmap) Then
-                            Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        End If
+                    Dim h As HRESULT = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
+                    If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                        Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     End If
                 Catch ex As Exception
                 Finally
                     Functions.DeleteObject(hbitmap)
-                    If Not shellItemImageFactory Is Nothing Then
-                        Marshal.ReleaseComObject(shellItemImageFactory)
-                    End If
                 End Try
             End If
             Return Nothing
@@ -341,25 +331,15 @@ Public Class Item
     Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
         Get
             If Not disposedValue Then
-                Dim ptr As IntPtr, ptr2 As IntPtr, hbitmap As IntPtr, shellItemImageFactory As IShellItemImageFactory
+                Dim hbitmap As IntPtr
                 Try
-                    ptr = Marshal.GetIUnknownForObject(Me.ShellItem2)
-                    Marshal.QueryInterface(ptr, GetType(IShellItemImageFactory).GUID, ptr2)
-                    If Not IntPtr.Zero.Equals(ptr2) Then
-                        shellItemImageFactory = Marshal.GetObjectForIUnknown(ptr2)
-                        Marshal.Release(ptr)
-                        Marshal.Release(ptr2)
-                        shellItemImageFactory.GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
-                        If Not IntPtr.Zero.Equals(hbitmap) Then
-                            Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        End If
+                    Dim h As HRESULT = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
+                    If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                        Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     End If
                 Catch ex As Exception
                 Finally
                     Functions.DeleteObject(hbitmap)
-                    If Not shellItemImageFactory Is Nothing Then
-                        Marshal.ReleaseComObject(shellItemImageFactory)
-                    End If
                 End Try
             End If
             Return Nothing
@@ -380,25 +360,15 @@ Public Class Item
     Public Overridable ReadOnly Property HasThumbnail As Boolean
         Get
             If Not disposedValue Then
-                Dim ptr As IntPtr, hbitmap As IntPtr, wtsat As WTS_ALPHATYPE = WTS_ALPHATYPE.WTSAT_ARGB, thumbnailHandler As IThumbnailProvider
+                Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT = Me.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_ThumbnailHandler, GetType(IThumbnailProvider).GUID, ptr)
-                    If h = 0 AndAlso Not IntPtr.Zero.Equals(ptr) Then
-                        thumbnailHandler = Marshal.GetObjectForIUnknown(ptr)
-                        h = thumbnailHandler.GetThumbnail(2, hbitmap, wtsat)
+                    Dim h As HRESULT = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(16, 16), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
+                    If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                        Return True
                     End If
-                    Return h = 0 AndAlso Not IntPtr.Zero.Equals(ptr) AndAlso Not IntPtr.Zero.Equals(hbitmap)
                 Catch ex As Exception
                 Finally
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        Marshal.Release(ptr)
-                    End If
-                    If Not IntPtr.Zero.Equals(hbitmap) Then
-                        Functions.DeleteObject(hbitmap)
-                    End If
-                    If Not thumbnailHandler Is Nothing Then
-                        Marshal.ReleaseComObject(thumbnailHandler)
-                    End If
+                    Functions.DeleteObject(hbitmap)
                 End Try
             End If
             Return False
@@ -758,7 +728,7 @@ Public Class Item
                         _properties.Add([property])
                     End If
                 End Sub)
-            Return [Property]
+            Return [property]
         End Get
     End Property
 
