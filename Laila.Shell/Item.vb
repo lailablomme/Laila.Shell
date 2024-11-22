@@ -362,7 +362,7 @@ Public Class Item
             If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(16, 16), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
+                    Dim h As HRESULT = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(1, 1), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
                     If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                         Return True
                     End If

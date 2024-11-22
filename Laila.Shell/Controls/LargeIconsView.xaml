@@ -180,9 +180,6 @@
                                                                 <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
                                                                     <Setter Property="Image.Visibility" Value="Visible" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].FirstIcon16Async, IsAsync=True}" Value="{x:Null}">
-                                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
-                                                                </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Image.Style>
@@ -198,10 +195,6 @@
                                                                     <Setter Property="TextBlock.Foreground" Value="Blue" />
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="False">
-                                                                    <Setter Property="TextBlock.MaxWidth" Value="96" />
-                                                                    <Setter Property="TextBlock.TextAlignment" Value="Center" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].FirstIcon16Async, IsAsync=True}" Value="{x:Null}">
                                                                     <Setter Property="TextBlock.MaxWidth" Value="96" />
                                                                     <Setter Property="TextBlock.TextAlignment" Value="Center" />
                                                                 </DataTrigger>

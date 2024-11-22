@@ -234,10 +234,13 @@ Public Class [Property]
                 Dim index As UInt32
                 Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
                 propertyEnumType2.GetImageReference(imageReference)
-                If Not String.IsNullOrWhiteSpace(imageReference) Then
-                    Return {ImageHelper.ExtractIcon(imageReference)}
-                End If
-                Marshal.ReleaseComObject(propertyEnumType2)
+                Try
+                    If Not String.IsNullOrWhiteSpace(imageReference) Then
+                        Return {ImageHelper.ExtractIcon(imageReference)}
+                    End If
+                Finally
+                    Marshal.ReleaseComObject(propertyEnumType2)
+                End Try
             Else
                 Return Nothing
             End If
@@ -257,7 +260,8 @@ Public Class [Property]
 
     Public ReadOnly Property FirstIcon16 As ImageSource
         Get
-            Return If(Me.Icons16.Count > 0, Me.Icons16(0), Nothing)
+            Dim icons16() As ImageSource = Me.Icons16
+            Return If(icons16.Count > 0, icons16(0), Nothing)
         End Get
     End Property
 
@@ -339,17 +343,20 @@ Public Class [Property]
             Dim count As UInt32
             propertyEnumTypeList.GetCount(count)
             Dim propertyEnumType As IPropertyEnumType
-            Dim obj As Object = getValue(value)
-            For x As UInt32 = 0 To count - 1
-                propertyEnumTypeList.GetAt(x, GetType(IPropertyEnumType).GUID, propertyEnumType)
-                If x = Val(obj) Then
-                    index = x
-                    Return propertyEnumType
-                Else
-                    Marshal.ReleaseComObject(propertyEnumType)
-                End If
-            Next
-            Marshal.ReleaseComObject(propertyEnumTypeList)
+            Dim x As UInt32 = getValue(value)
+            'For x As UInt32 = 0 To count - 1
+            propertyEnumTypeList.GetAt(x, GetType(IPropertyEnumType).GUID, propertyEnumType)
+            'If x = Val(obj) Then
+            index = x
+            Try
+                Return propertyEnumType
+            Finally
+                ' Else
+                'Marshal.ReleaseComObject(propertyEnumType)
+                'End If'
+                'Next
+                Marshal.ReleaseComObject(propertyEnumTypeList)
+            End Try
         End If
 
         Return Nothing
