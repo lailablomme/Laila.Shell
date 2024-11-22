@@ -9,23 +9,51 @@ Imports Laila.Shell.Helpers
 Public Class [Property]
     Implements IDisposable
 
+    Private Shared _descriptions As HashSet(Of Tuple(Of String, String, IPropertyDescription)) = New HashSet(Of Tuple(Of String, String, IPropertyDescription))
+    Private Shared _hasIcon As HashSet(Of Tuple(Of String, Boolean)) = New HashSet(Of Tuple(Of String, Boolean))()
+    Private Shared _icons16 As HashSet(Of Tuple(Of String, ImageSource())) = New HashSet(Of Tuple(Of String, ImageSource()))()
+
     Protected _canonicalName As String
     Protected _propertyDescription As IPropertyDescription
     Protected _propertyKey As PROPERTYKEY
     Protected _text As String
-    Private _hasIcon As Boolean?
     Protected disposedValue As Boolean
     Private _rawValue As PROPVARIANT
-    Private _icon16 As ImageSource
+    Private _displayType As PropertyDisplayType = -1
+
+    Private Shared Function getDescription(canonicalName As String) As Tuple(Of String, String, IPropertyDescription)
+        Dim desc As Tuple(Of String, String, IPropertyDescription) = _descriptions.FirstOrDefault(Function(d) d.Item1 = canonicalName)
+        If desc Is Nothing Then
+            Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
+            Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
+            If propertyDescription Is Nothing Then Return Nothing
+            propertyDescription.GetPropertyKey(pkey)
+            desc = New Tuple(Of String, String, IPropertyDescription)(canonicalName, pkey.ToString(), propertyDescription)
+            _descriptions.Add(desc)
+        End If
+        Return desc
+    End Function
+
+    Private Shared Function getDescription(pkey As PROPERTYKEY) As Tuple(Of String, String, IPropertyDescription)
+        Dim desc As Tuple(Of String, String, IPropertyDescription) = _descriptions.FirstOrDefault(Function(d) d.Item2 = pkey.ToString())
+        If desc Is Nothing Then
+            Dim propertyDescription As IPropertyDescription, canonicalName As String
+            Functions.PSGetPropertyDescription(pkey, GetType(IPropertyDescription).GUID, propertyDescription)
+            If propertyDescription Is Nothing Then Return Nothing
+            Functions.PSGetNameFromPropertyKey(pkey, canonicalName)
+            desc = New Tuple(Of String, String, IPropertyDescription)(canonicalName, pkey.ToString(), propertyDescription)
+            _descriptions.Add(desc)
+        End If
+        Return desc
+    End Function
 
     Public Shared Function FromCanonicalName(canonicalName As String) As [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
             Return New System_StorageProviderUIStatusProperty()
         Else
-            Dim propertyDescription As IPropertyDescription
-            Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
-            If Not propertyDescription Is Nothing Then
-                Return New [Property](canonicalName, propertyDescription)
+            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
+            If Not desc Is Nothing Then
+                Return New [Property](canonicalName)
             Else
                 Return Nothing
             End If
@@ -36,10 +64,9 @@ Public Class [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
             Return New System_StorageProviderUIStatusProperty(propertyStore)
         Else
-            Dim propertyDescription As IPropertyDescription
-            Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
-            If Not propertyDescription Is Nothing Then
-                Return New [Property](canonicalName, propertyDescription, propertyStore)
+            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
+            If Not desc Is Nothing Then
+                Return New [Property](canonicalName, propertyStore)
             Else
                 Return Nothing
             End If
@@ -50,10 +77,9 @@ Public Class [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
             Return New System_StorageProviderUIStatusProperty(shellItem2)
         Else
-            Dim propertyDescription As IPropertyDescription
-            Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
-            If Not propertyDescription Is Nothing Then
-                Return New [Property](canonicalName, propertyDescription, shellItem2)
+            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
+            If Not desc Is Nothing Then
+                Return New [Property](canonicalName, shellItem2)
             Else
                 Return Nothing
             End If
@@ -64,7 +90,12 @@ Public Class [Property]
         If propertyKey.Equals(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey) Then
             Return New System_StorageProviderUIStatusProperty(propertyStore)
         Else
-            Return New [Property](propertyKey, propertyStore)
+            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(propertyKey)
+            If Not desc Is Nothing Then
+                Return New [Property](propertyKey, propertyStore)
+            Else
+                Return Nothing
+            End If
         End If
     End Function
 
@@ -72,21 +103,30 @@ Public Class [Property]
         If propertyKey.Equals(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey) Then
             Return New System_StorageProviderUIStatusProperty(shellItem2)
         Else
-            Return New [Property](propertyKey, shellItem2)
+            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(propertyKey)
+            If Not desc Is Nothing Then
+                Return New [Property](propertyKey, shellItem2)
+            Else
+                Return Nothing
+            End If
         End If
     End Function
 
-    Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, Optional propertyStore As IPropertyStore = Nothing)
+    Public Sub New(canonicalName As String, Optional propertyStore As IPropertyStore = Nothing)
         _canonicalName = canonicalName
-        propertyDescription.GetPropertyKey(_propertyKey)
+        Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
+        _propertyKey = New PROPERTYKEY(desc.Item2)
+        _propertyDescription = desc.Item3
         If Not propertyStore Is Nothing Then
             propertyStore.GetValue(_propertyKey, _rawValue)
         End If
     End Sub
 
-    Public Sub New(canonicalName As String, propertyDescription As IPropertyDescription, shellItem2 As IShellItem2)
+    Public Sub New(canonicalName As String, shellItem2 As IShellItem2)
         _canonicalName = canonicalName
-        propertyDescription.GetPropertyKey(_propertyKey)
+        Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
+        _propertyKey = New PROPERTYKEY(desc.Item2)
+        _propertyDescription = desc.Item3
         If Not shellItem2 Is Nothing Then
             shellItem2.GetProperty(_propertyKey, _rawValue)
         End If
@@ -94,6 +134,9 @@ Public Class [Property]
 
     Public Sub New(propertyKey As PROPERTYKEY, propertyStore As IPropertyStore)
         _propertyKey = propertyKey
+        Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(propertyKey)
+        _canonicalName = desc.Item1
+        _propertyDescription = desc.Item3
         If Not propertyStore Is Nothing Then
             propertyStore.GetValue(_propertyKey, _rawValue)
         End If
@@ -101,6 +144,9 @@ Public Class [Property]
 
     Public Sub New(propertyKey As PROPERTYKEY, shellItem2 As IShellItem2)
         _propertyKey = propertyKey
+        Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(propertyKey)
+        _canonicalName = desc.Item1
+        _propertyDescription = desc.Item3
         If Not shellItem2 Is Nothing Then
             shellItem2.GetProperty(_propertyKey, _rawValue)
         End If
@@ -108,9 +154,6 @@ Public Class [Property]
 
     Public ReadOnly Property CanonicalName As String
         Get
-            If String.IsNullOrEmpty(_canonicalName) Then
-                Functions.PSGetNameFromPropertyKey(_propertyKey, _canonicalName)
-            End If
             Return _canonicalName
         End Get
     End Property
@@ -137,9 +180,6 @@ Public Class [Property]
 
     Public ReadOnly Property Description As IPropertyDescription
         Get
-            If _propertyDescription Is Nothing Then
-                Functions.PSGetPropertyDescriptionByName(Me.CanonicalName, GetType(IPropertyDescription).GUID, _propertyDescription)
-            End If
             Return _propertyDescription
         End Get
     End Property
@@ -152,30 +192,17 @@ Public Class [Property]
 
     Public ReadOnly Property Value As Object
         Get
-            If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                Dim index As UInt32
-                Dim propertyEnumType As IPropertyEnumType = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
-                If Not propertyEnumType Is Nothing Then
-                    Marshal.ReleaseComObject(propertyEnumType)
-                    Return index
-                End If
-            Else
-                Return getValue(RawValue)
-            End If
-
-            Return Nothing
+            Return Me.RawValue.GetValue()
         End Get
     End Property
 
     Public Overridable ReadOnly Property Text As String
         Get
-            If String.IsNullOrWhiteSpace(_text) Then
-                If Me.RawValue.vt > 0 Then
-                    Dim buffer As StringBuilder = New StringBuilder()
-                    buffer.Append(New String(" ", 2050))
-                    Functions.PSFormatForDisplay(_propertyKey, Me.RawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
-                    _text = buffer.ToString()
-                End If
+            If _text Is Nothing Then
+                Dim buffer As StringBuilder = New StringBuilder()
+                buffer.Append(New String(" ", 2050))
+                Functions.PSFormatForDisplay(_propertyKey, Me.RawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
+                _text = buffer.ToString()
             End If
             Return _text
         End Get
@@ -183,9 +210,10 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property DisplayType As PropertyDisplayType
         Get
-            Dim dt As PropertyDisplayType
-            Me.Description.GetDisplayType(dt)
-            Return dt
+            If _displayType = -1 Then
+                Me.Description.GetDisplayType(_displayType)
+            End If
+            Return _displayType
         End Get
     End Property
 
@@ -199,48 +227,71 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property HasIcon As Boolean
         Get
-            If Not _hasIcon.HasValue Then
-                _hasIcon = False
+            Dim hi As Tuple(Of String, Boolean) = _hasIcon.FirstOrDefault(Function(hi2) hi2.Item1 = _propertyKey.ToString())
 
+            If hi Is Nothing Then
+                Dim result As Boolean = False
                 If Me.DisplayType = PropertyDisplayType.Enumerated Then
                     Dim propertyEnumTypeList As IPropertyEnumTypeList
-                    Me.Description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
-                    Dim count As UInt32
-                    propertyEnumTypeList.GetCount(count)
-                    Dim propertyEnumType As IPropertyEnumType
-                    For x As UInt32 = 0 To count - 1
-                        propertyEnumTypeList.GetAt(x, GetType(IPropertyEnumType).GUID, propertyEnumType)
-                        Dim imageReference As String
-                        Dim propertyEnumType2 As IPropertyEnumType2 = propertyEnumType
-                        propertyEnumType2.GetImageReference(imageReference)
-                        Marshal.ReleaseComObject(propertyEnumType)
-                        If Not String.IsNullOrWhiteSpace(imageReference) Then
-                            _hasIcon = True
-                            Exit For
+                    Try
+                        Me.Description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
+                        Dim count As UInt32
+                        propertyEnumTypeList.GetCount(count)
+                        For x As UInt32 = 0 To count - 1
+                            Dim propertyEnumType2 As IPropertyEnumType2
+                            Try
+                                propertyEnumTypeList.GetAt(x, GetType(IPropertyEnumType2).GUID, propertyEnumType2)
+                                Dim imageReference As String
+                                propertyEnumType2.GetImageReference(imageReference)
+                                If Not String.IsNullOrWhiteSpace(imageReference) Then
+                                    result = True
+                                    Exit For
+                                End If
+                            Finally
+                                If Not propertyEnumType2 Is Nothing Then
+                                    Marshal.ReleaseComObject(propertyEnumType2)
+                                    propertyEnumType2 = Nothing
+                                End If
+                            End Try
+                        Next
+                    Finally
+                        If Not propertyEnumTypeList Is Nothing Then
+                            Marshal.ReleaseComObject(propertyEnumTypeList)
                         End If
-                    Next
-                    Marshal.ReleaseComObject(propertyEnumTypeList)
+                    End Try
                 End If
+                hi = New Tuple(Of String, Boolean)(_propertyKey.ToString(), result)
+                _hasIcon.Add(hi)
             End If
 
-            Return _hasIcon.Value
+            Return hi.Item2
         End Get
     End Property
 
     Public Overridable ReadOnly Property Icons16 As ImageSource()
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                Dim imageReference As String, icon As IntPtr, iconl As IntPtr
-                Dim index As UInt32
-                Dim propertyEnumType2 As IPropertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description, index)
-                propertyEnumType2.GetImageReference(imageReference)
-                Try
-                    If Not String.IsNullOrWhiteSpace(imageReference) Then
-                        Return {ImageHelper.ExtractIcon(imageReference)}
-                    End If
-                Finally
-                    Marshal.ReleaseComObject(propertyEnumType2)
-                End Try
+                Dim i16 As Tuple(Of String, ImageSource()) =
+                    _icons16.FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()))
+                If i16 Is Nothing Then
+                    Dim result As ImageSource()
+                    Dim propertyEnumType2 As IPropertyEnumType2
+                    Try
+                        propertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description)
+                        Dim imageReference As String
+                        propertyEnumType2.GetImageReference(imageReference)
+                        If Not String.IsNullOrWhiteSpace(imageReference) Then
+                            result = {ImageHelper.ExtractIcon(imageReference)}
+                        End If
+                    Finally
+                        If Not propertyEnumType2 Is Nothing Then
+                            Marshal.ReleaseComObject(propertyEnumType2)
+                        End If
+                    End Try
+                    i16 = New Tuple(Of String, ImageSource())(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), result)
+                    _icons16.Add(i16)
+                End If
+                Return i16.Item2
             Else
                 Return Nothing
             End If
@@ -276,86 +327,18 @@ Public Class [Property]
         End Get
     End Property
 
-    Protected Function getValue(value As PROPVARIANT) As Object
-        Dim ve As VarEnum = value.vt
-        If ve.HasFlag(VarEnum.VT_VECTOR) Then
-            ve = ve Xor VarEnum.VT_VECTOR
-            Select Case ve
-                Case VarEnum.VT_UNKNOWN
-                    Dim count As Integer = value.union.bstrblobVal.cbSize
-                    Dim resultList As New List(Of IntPtr)()
-                    Dim pArray As IntPtr = value.union.bstrblobVal.pData
-                    For i As Integer = 0 To count - 1
-                        Dim pUnknown As IntPtr = Marshal.ReadIntPtr(pArray, i * IntPtr.Size)
-                        'Dim obj As Object = Marshal.GetObjectForIUnknown(pUnknown)
-                        resultList.Add(pUnknown)
-                    Next
-                    Return resultList
-                Case VarEnum.VT_LPWSTR
-                    Dim count As Integer = value.union.bstrblobVal.cbSize
-                    Dim resultList As New List(Of String)()
-                    Dim pData As IntPtr = value.union.bstrblobVal.pData
-                    For i As Integer = 0 To count - 1
-                        Dim ptr As IntPtr = Marshal.ReadIntPtr(pData, i * IntPtr.Size)
-                        Dim str As String = Marshal.PtrToStringUni(ptr)
-                        resultList.Add(str)
-                    Next
-                    Return resultList
-                Case VarEnum.VT_UI1
-                    Dim count As Integer = value.union.bstrblobVal.cbSize
-                    Dim byteArray(count - 1) As Byte
-                    Marshal.Copy(value.union.bstrblobVal.pData, byteArray, 0, count)
-                    Return byteArray
-            End Select
-        Else
-            Select Case ve
-                Case VarEnum.VT_EMPTY
-                    Return Nothing
-                Case VarEnum.VT_BSTR
-                    Return Marshal.PtrToStringBSTR(value.union.ptr)
-                Case VarEnum.VT_LPWSTR
-                    Return Marshal.PtrToStringUni(value.union.ptr)
-                Case VarEnum.VT_FILETIME
-                    Return DateTime.FromFileTime(value.union.hVal)
-                Case VarEnum.VT_I1
-                    Return Chr(value.union.bVal)
-                Case VarEnum.VT_I2
-                    Return value.union.iVal
-                Case VarEnum.VT_UI2
-                    Return value.union.uiVal
-                Case VarEnum.VT_I4
-                    Return value.union.intVal
-                Case VarEnum.VT_UI4
-                    Return value.union.uintVal
-                Case VarEnum.VT_UI8
-                    Return value.union.uhVal
-                Case Else
-                    Debug.WriteLine("Unknown " & ve.ToString())
-                    Return Nothing
-            End Select
-        End If
-    End Function
-
-    Protected Function getSelectedPropertyEnumType(value As PROPVARIANT, description As IPropertyDescription, ByRef index As UInt32) As IPropertyEnumType
+    Protected Function getSelectedPropertyEnumType(value As PROPVARIANT, description As IPropertyDescription) As IPropertyEnumType
         If Me.DisplayType = PropertyDisplayType.Enumerated Then
-            Dim propertyEnumTypeList As IPropertyEnumTypeList
-            description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
-            Dim count As UInt32
-            propertyEnumTypeList.GetCount(count)
-            Dim propertyEnumType As IPropertyEnumType
-            Dim x As UInt32 = getValue(value)
-            'For x As UInt32 = 0 To count - 1
-            propertyEnumTypeList.GetAt(x, GetType(IPropertyEnumType).GUID, propertyEnumType)
-            'If x = Val(obj) Then
-            index = x
+            Dim propertyEnumTypeList As IPropertyEnumTypeList, propertyEnumType As IPropertyEnumType
             Try
+                description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
+                Dim index As UInt32 = value.GetValue()
+                propertyEnumTypeList.GetAt(Index, GetType(IPropertyEnumType).GUID, propertyEnumType)
                 Return propertyEnumType
             Finally
-                ' Else
-                'Marshal.ReleaseComObject(propertyEnumType)
-                'End If'
-                'Next
-                Marshal.ReleaseComObject(propertyEnumTypeList)
+                If Not propertyEnumTypeList Is Nothing Then
+                    Marshal.ReleaseComObject(propertyEnumTypeList)
+                End If
             End Try
         End If
 
@@ -371,14 +354,11 @@ Public Class [Property]
             ' free unmanaged resources (unmanaged objects) and override finalizer
             ' set large fields to null
             _rawValue.Dispose()
-            If Not _propertyDescription Is Nothing Then
-                Marshal.ReleaseComObject(_propertyDescription)
-            End If
             disposedValue = True
         End If
     End Sub
 
-    ' ' TODO: override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
+    ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
     ' Protected Overrides Sub Finalize()
     '     ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
     '     Dispose(disposing:=False)

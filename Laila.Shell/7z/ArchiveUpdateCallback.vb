@@ -24,22 +24,22 @@ Namespace SevenZip
                 Case ITEMPROPID.kpidPath
                     value = New PROPVARIANT()
                     Dim fileInfo As New FileInfo(filePath)
-                    PROPVARIANT.SetValue(value, fileInfo.Name)
+                    value.SetValue(fileInfo.Name)
                 Case ITEMPROPID.kpidSize
                     Dim fileInfo As New FileInfo(filePath)
                     value = New PROPVARIANT()
-                    PROPVARIANT.SetValue(value, CType(fileInfo.Length, ULong))
+                    value.SetValue(CType(fileInfo.Length, ULong))
                 Case ITEMPROPID.kpidAttrib
                     Dim fileInfo As New FileInfo(filePath)
                     value = New PROPVARIANT()
-                    PROPVARIANT.SetValue(value, CType(fileInfo.Attributes, UInt32))
+                    value.SetValue(CType(fileInfo.Attributes, UInt32))
                 Case ITEMPROPID.kpidMTime
                     Dim fileInfo As New FileInfo(filePath)
                     value = New PROPVARIANT()
-                    PROPVARIANT.SetValue(value, fileInfo.LastWriteTimeUtc)
+                    value.SetValue(fileInfo.LastWriteTimeUtc)
                 Case ITEMPROPID.kpidIsDir
                     value = New PROPVARIANT()
-                    PROPVARIANT.SetValue(value, False)
+                    value.SetValue(False)
             End Select
 
             Return 0 ' S_OK

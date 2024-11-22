@@ -9,7 +9,7 @@ Imports Laila.Shell.Helpers
 Public Class System_StorageProviderUIStatusProperty
     Inherits [Property]
 
-    Public Shared Property System_StorageProviderUIStatusKey = New PROPERTYKEY("e77e90df-6271-4f5b-834f-2dd1f245dda4", 2)
+    Public Shared Property System_StorageProviderUIStatusKey As PROPERTYKEY = New PROPERTYKEY("e77e90df-6271-4f5b-834f-2dd1f245dda4", 2)
 
     Private _system_StorageProviderStateKey As PROPERTYKEY = New PROPERTYKEY("e77e90df-6271-4f5b-834f-2dd1f245dda4", 3)
     Private _system_StorageProviderCustomStatesKey As PROPERTYKEY = New PROPERTYKEY("fceff153-e839-4cf3-a9e7-ea22832094b8", 120)
@@ -66,14 +66,6 @@ Public Class System_StorageProviderUIStatusProperty
                 If Not IntPtr.Zero.Equals(ptr) Then
                     Marshal.Release(ptr)
                 End If
-                'If Not persistSerializedPropStorage Is Nothing Then
-                '    Marshal.ReleaseComObject(persistSerializedPropStorage)
-                '    persistSerializedPropStorage = Nothing
-                'End If
-                If Not _propertyStore1 Is Nothing Then
-                    Marshal.ReleaseComObject(_propertyStore1)
-                    _propertyStore1 = Nothing
-                End If
             End Try
         End If
 
@@ -97,10 +89,10 @@ Public Class System_StorageProviderUIStatusProperty
                 If Not IntPtr.Zero.Equals(ptr) Then
                     Marshal.Release(ptr)
                 End If
-                'If Not persistSerializedPropStorage Is Nothing Then
-                '    Marshal.ReleaseComObject(persistSerializedPropStorage)
-                '    persistSerializedPropStorage = Nothing
-                'End If
+                If Not _propertyStore1 Is Nothing Then
+                    Marshal.ReleaseComObject(_propertyStore1)
+                    _propertyStore1 = Nothing
+                End If
                 If Not _propertyStore2 Is Nothing Then
                     Marshal.ReleaseComObject(_propertyStore2)
                     _propertyStore2 = Nothing

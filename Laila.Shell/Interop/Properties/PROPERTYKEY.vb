@@ -10,6 +10,12 @@ Public Structure PROPERTYKEY
         Me.pid = pid
     End Sub
 
+    Public Sub New(pkey As String)
+        Dim s() As String = pkey.Split(":")
+        Me.fmtid = New Guid(s(0))
+        Me.pid = s(1)
+    End Sub
+
     Friend Overloads Function Equals(propertyKey As PROPERTYKEY) As Boolean
         Return propertyKey.fmtid.Equals(fmtid) AndAlso propertyKey.pid.Equals(pid)
     End Function
