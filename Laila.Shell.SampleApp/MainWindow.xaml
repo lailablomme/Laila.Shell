@@ -21,7 +21,7 @@
                     </Grid.ColumnDefinitions>
                     <Image Source="{Binding Folder.Icon[16]}" HorizontalAlignment="Left" Width="16" Height="16"
                            VerticalAlignment="Center" />
-                    <Image Source="{Binding Folder.OverlaySmall}" HorizontalAlignment="Left" Width="16" Height="16"
+                    <Image Source="{Binding Folder.OverlayImage}" HorizontalAlignment="Left" Width="16" Height="16"
                            VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Text="{Binding Folder.DisplayName}" VerticalAlignment="Center" 
                                TextTrimming="CharacterEllipsis" />
