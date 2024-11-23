@@ -117,9 +117,6 @@ Namespace Controls
             If Not e.NewValue Is Nothing Then
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(CType(e.NewValue, Folder).FullPath)
-                CType(e.NewValue, Folder).ItemsSortPropertyName = folderViewState.SortPropertyName
-                CType(e.NewValue, Folder).ItemsSortDirection = folderViewState.SortDirection
-                CType(e.NewValue, Folder).ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
                 CType(e.NewValue, Folder).View = folderViewState.View
                 fv.changeView(CType(e.NewValue, Folder).View)
                 AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged

@@ -433,7 +433,7 @@ Namespace Behaviors
             Next
 
             Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
-            If (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
+            If Not view Is Nothing AndAlso (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
                 OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
                 AndAlso view.SortDescriptions.Count > 0 Then
                 Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)

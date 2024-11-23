@@ -292,22 +292,22 @@ Public Class Item
         End Get
     End Property
 
+    Private _overlayImageAsync As BitmapSource
+    Private _skipOverlayImageAsync As Boolean
     Public Overridable ReadOnly Property OverlayImageAsync As ImageSource
         Get
-            Dim tcs As New TaskCompletionSource(Of ImageSource)
+            If Not _skipOverlayImageAsync Then
+                Shell.SlowTaskQueue.Add(
+                    Function()
+                        _overlayImageAsync = Me.OverlayImage
+                        _skipOverlayImageAsync = True
+                        Me.NotifyOfPropertyChange(NameOf(OverlayImageAsync))
+                        Return Nothing
+                    End Function)
+            End If
+            _skipOverlayImageAsync = False
 
-            Shell.SlowTaskQueue.Add(
-                Function()
-                    Try
-                        Dim result As ImageSource = Me.OverlayImage
-                        tcs.SetResult(result)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                    Return Nothing
-                End Function)
-
-            Return tcs.Task.Result
+            Return _overlayImageAsync
         End Get
     End Property
 

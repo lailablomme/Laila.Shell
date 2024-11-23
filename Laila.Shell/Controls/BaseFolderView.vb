@@ -414,11 +414,21 @@ Namespace Controls
                             End Sub)
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
 
+                ' clear sorting and grouping for faster loading
+                newValue.ItemsSortPropertyName = Nothing
+                newValue.ItemsGroupByPropertyName = Nothing
+
                 ' load items
                 Await newValue.GetItemsAsync()
 
                 ' get notified of folder property changes
                 AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
+
+                ' set sorting and grouping
+                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(newValue.FullPath)
+                newValue.ItemsSortPropertyName = folderViewState.SortPropertyName
+                newValue.ItemsSortDirection = folderViewState.SortDirection
+                newValue.ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
 
                 ' bind view
                 bfv.MakeBinding(e.NewValue)

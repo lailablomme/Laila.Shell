@@ -32,6 +32,9 @@ Public Class Folder
     Private _view As String
     Private _hasSubFolders As Boolean?
     Private _shellFolder As IShellFolder
+    Private _itemsSortPropertyName As String
+    Private _itemsSortDirection As ListSortDirection
+    Private _itemsGroupByPropertyName As String
 
     Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
         Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
@@ -538,67 +541,57 @@ Public Class Folder
 
     Public Property ItemsSortPropertyName As String
         Get
-            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-            If view.SortDescriptions.Count > 0 Then
-                Return view.SortDescriptions(view.SortDescriptions.Count - 1).PropertyName
-            Else
-                Return Nothing
-            End If
+            Return _itemsSortPropertyName
         End Get
         Set(value As String)
             Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-            Dim desc As SortDescription = New SortDescription() With {
-                .PropertyName = value,
-                .Direction = Me.ItemsSortDirection
-            }
-            If view.SortDescriptions.Count = 0 Then
-                view.SortDescriptions.Add(desc)
-            Else
-                view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
+            Dim desc As SortDescription
+            If Not String.IsNullOrWhiteSpace(value) Then
+                desc = New SortDescription() With {
+                    .PropertyName = value,
+                    .Direction = Me.ItemsSortDirection
+                }
             End If
-            Me.NotifyOfPropertyChange("ItemsSortPropertyName")
+            If view.SortDescriptions.Count = 0 AndAlso Not String.IsNullOrWhiteSpace(value) Then
+                view.SortDescriptions.Add(desc)
+            ElseIf Not String.IsNullOrWhiteSpace(value) Then
+                view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
+            ElseIf Not String.IsNullOrWhiteSpace(Me.ItemsGroupByPropertyName) _
+                AndAlso String.IsNullOrWhiteSpace(value) _
+                AndAlso view.SortDescriptions.Count > 1 Then
+                For x = 2 To view.SortDescriptions.Count
+                    view.SortDescriptions.RemoveAt(view.SortDescriptions.Count - 1)
+                Next
+            ElseIf String.IsNullOrWhiteSpace(Me.ItemsGroupByPropertyName) _
+                AndAlso String.IsNullOrWhiteSpace(value) Then
+                view.SortDescriptions.Clear()
+            End If
+
+            Me.SetValue(_itemsSortPropertyName, value)
         End Set
     End Property
 
     Public Property ItemsSortDirection As ListSortDirection
         Get
-            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-            If view.SortDescriptions.Count > 0 Then
-                Return view.SortDescriptions(view.SortDescriptions.Count - 1).Direction
-            Else
-                Return ListSortDirection.Ascending
-            End If
+            Return _itemsSortDirection
         End Get
         Set(value As ListSortDirection)
             Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-            Dim desc As SortDescription = New SortDescription() With {
-                .PropertyName = Me.ItemsSortPropertyName,
-                .Direction = value
-            }
-            Dim groupSortDesc As SortDescription = New SortDescription() With {
-                .PropertyName = Me.ItemsGroupByPropertyName,
-                .Direction = value
-            }
-            If view.SortDescriptions.Count = 0 Then
-                view.SortDescriptions.Add(desc)
-            ElseIf view.SortDescriptions.Count = 1 Then
-                view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
-            ElseIf view.SortDescriptions.Count = 2 Then
-                view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
-                view.SortDescriptions(view.SortDescriptions.Count - 2) = groupSortDesc
-            End If
-            Me.NotifyOfPropertyChange("ItemsSortDirection")
+            For x = 0 To view.SortDescriptions.Count - 1
+                Dim desc As SortDescription = New SortDescription() With {
+                    .PropertyName = view.SortDescriptions(x).PropertyName,
+                    .Direction = value
+                }
+                view.SortDescriptions(x) = desc
+            Next
+
+            Me.SetValue(_itemsSortDirection, value)
         End Set
     End Property
 
     Public Property ItemsGroupByPropertyName As String
         Get
-            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-            If Not view.GroupDescriptions Is Nothing AndAlso view.GroupDescriptions.Count > 0 Then
-                Return CType(view.GroupDescriptions(0), PropertyGroupDescription).PropertyName
-            Else
-                Return Nothing
-            End If
+            Return _itemsGroupByPropertyName
         End Get
         Set(value As String)
             Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
@@ -618,13 +611,12 @@ Public Class Folder
                 ElseIf view.SortDescriptions.Count = 2 Then
                     view.SortDescriptions(0) = groupSortDesc
                 End If
-            ElseIf Not view.GroupDescriptions Is Nothing Then
+            ElseIf view.GroupDescriptions.Count > 0 Then
                 view.GroupDescriptions.Clear()
-                If view.SortDescriptions.Count = 2 Then
-                    view.SortDescriptions.RemoveAt(0)
-                End If
+                view.SortDescriptions.RemoveAt(0)
             End If
-            Me.NotifyOfPropertyChange("ItemsGroupByPropertyName")
+
+            Me.SetValue(_itemsGroupByPropertyName, value)
         End Set
     End Property
 

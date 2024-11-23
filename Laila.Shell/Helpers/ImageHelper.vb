@@ -46,7 +46,7 @@ Public Class ImageHelper
         End Try
     End Function
 
-    Public Shared Function GetOverlayIcon(overlayIconIndex As Byte)
+    Public Shared Function GetOverlayIcon(overlayIconIndex As Byte) As BitmapSource
         If Not _overlayIconIndexes.ContainsKey(overlayIconIndex) Then
             Dim index As Integer
             UIHelper.OnUIThread(
@@ -61,7 +61,7 @@ Public Class ImageHelper
         Return ImageHelper.GetIcon(_overlayIconIndexes(overlayIconIndex))
     End Function
 
-    Public Shared Function GetIcon(index As Integer)
+    Public Shared Function GetIcon(index As Integer) As BitmapSource
         If Not _icons2.ContainsKey(index) Then
             UIHelper.OnUIThread(
                 Sub()
