@@ -141,7 +141,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Grid.Column="2" Source="{Binding OverlaySmallAsync, IsAsync=True}" Width="16" Height="16" 
+                                            <Image Grid.Column="2" Source="{Binding OverlayImageAsync, IsAsync=True}" Width="16" Height="16" 
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                     VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                 <Image.Style>

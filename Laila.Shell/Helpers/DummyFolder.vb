@@ -34,10 +34,6 @@ Public Class DummyFolder
         End Get
     End Property
 
-    Protected Overrides Function getOverlay(isLarge As Boolean) As ImageSource
-        Return Nothing
-    End Function
-
     Public Overrides ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
             Return Nothing

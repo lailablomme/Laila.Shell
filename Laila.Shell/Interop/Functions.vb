@@ -3,10 +3,30 @@ Imports System.Text
 Imports System.Windows
 Imports System.Windows.Shapes
 Imports System.Runtime.InteropServices.ComTypes
+Imports System.IO
 
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("shell32.dll", EntryPoint:="#727", CharSet:=CharSet.Auto)>
+    Public Shared Function SHGetImageListHandle(iImageList As Integer, ByRef riid As Guid, ByRef phImageList As IntPtr) As Integer
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
+    Public Shared Function SHGetImageList(
+        iImageList As Integer,
+        ByRef riid As Guid,
+        <Out> ByRef ppv As IntPtr
+    ) As Integer
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
+    Public Shared Function SHGetFileInfo(
+        pszPath As String,
+        dwFileAttributes As Integer,
+        ByRef psfi As SHFILEINFO,
+        cbFileInfo As Integer,
+        uFlags As Integer
+    ) As IntPtr
+    End Function
     <DllImport("ole32.dll")>
     Public Shared Function OleGetClipboard(ByRef dataObject As System.Runtime.InteropServices.ComTypes.IDataObject) As Integer
     End Function

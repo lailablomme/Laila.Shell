@@ -264,49 +264,42 @@ Public Class Item
         End Set
     End Property
 
-    Public Overridable ReadOnly Property OverlaySmall As ImageSource
+    Public Overridable ReadOnly Property OverlayImage As ImageSource
         Get
-            Return getOverlay(False)
+            If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
+                If IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath) Then
+                    Dim shFileInfo As New SHFILEINFO()
+                    Dim result As IntPtr = Functions.SHGetFileInfo(
+                        Me.FullPath,
+                        0,
+                        shFileInfo,
+                        Marshal.SizeOf(shFileInfo),
+                        SHGFI.SHGFI_ICON Or SHGFI.SHGFI_OVERLAYINDEX
+                    )
+                    If Not IntPtr.Zero.Equals(result) Then
+                        _overlayIconIndex = CByte((shFileInfo.iIcon >> 24) And &HFF)
+                        If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
+                            Functions.DestroyIcon(shFileInfo.hIcon)
+                        End If
+                    End If
+                End If
+            End If
+            Dim image As BitmapSource
+            If _overlayIconIndex.HasValue AndAlso _overlayIconIndex > 0 Then
+                image = ImageHelper.GetOverlayIcon(_overlayIconIndex)
+            End If
+            Return image
         End Get
     End Property
 
-    Public Overridable ReadOnly Property OverlaySmallAsync As ImageSource
+    Public Overridable ReadOnly Property OverlayImageAsync As ImageSource
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource)
 
             Shell.SlowTaskQueue.Add(
                 Function()
                     Try
-                        Dim result As ImageSource
-                        result = getOverlay(False)
-                        If Not result Is Nothing Then result.Freeze()
-                        tcs.SetResult(result)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                    Return Nothing
-                End Function)
-
-            Return tcs.Task.Result
-        End Get
-    End Property
-
-    Public Overridable ReadOnly Property OverlayLarge As ImageSource
-        Get
-            Return getOverlay(True)
-        End Get
-    End Property
-
-    Public Overridable ReadOnly Property OverlayLargeAsync As ImageSource
-        Get
-            Dim tcs As New TaskCompletionSource(Of ImageSource)
-
-            Shell.SlowTaskQueue.Add(
-                Function()
-                    Try
-                        Dim result As ImageSource
-                        result = getOverlay(True)
-                        If Not result Is Nothing Then result.Freeze()
+                        Dim result As ImageSource = Me.OverlayImage
                         tcs.SetResult(result)
                     Catch ex As Exception
                         tcs.SetException(ex)
@@ -441,71 +434,6 @@ Public Class Item
             Return _isImage.Value
         End Get
     End Property
-
-    Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
-        UIHelper.OnUIThread(
-            Sub()
-                If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
-                    Dim parent As Folder = Me.GetParent()
-                    Dim shellFolder As IShellFolder = If(Not parent Is Nothing, parent.ShellFolder, Shell.Desktop.ShellFolder)
-                    Dim ptr As IntPtr, ptr2 As IntPtr, shellIconOverlay As IShellIconOverlay
-                    Try
-                        ptr = Marshal.GetIUnknownForObject(shellFolder)
-                        Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
-                        If Not IntPtr.Zero.Equals(ptr2) Then
-                            Dim iconIndex As Integer
-
-                            shellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
-                            shellIconOverlay.GetOverlayIconIndex(Me.Pidl.RelativePIDL, iconIndex)
-
-                            _overlayIconIndex = iconIndex
-                        End If
-                    Finally
-                        If Not parent Is Nothing Then
-                            parent.Dispose()
-                        End If
-                        If Not IntPtr.Zero.Equals(ptr2) Then
-                            Marshal.Release(ptr2)
-                        End If
-                        If Not shellIconOverlay Is Nothing Then
-                            Marshal.ReleaseComObject(shellIconOverlay)
-                        End If
-                    End Try
-                End If
-            End Sub)
-
-        If _overlayIconIndex.HasValue AndAlso _overlayIconIndex > 0 Then
-            ' Get the system image list
-            Dim hImageListLarge As IntPtr
-            Dim hImageListSmall As IntPtr
-            Functions.Shell_GetImageLists(hImageListLarge, hImageListSmall)
-
-            ' Retrieve the overlay icon
-            Dim hIcon As IntPtr
-            Try
-                If isLarge Then
-                    hIcon = Functions.ImageList_GetIcon(hImageListLarge, _overlayIconIndex, 0)
-                Else
-                    hIcon = Functions.ImageList_GetIcon(hImageListSmall, _overlayIconIndex, 0)
-                End If
-                If hIcon <> IntPtr.Zero Then
-                    Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
-                        Dim bs As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        bs.Freeze()
-                        Return bs
-                    End Using
-                Else
-                    Return Nothing
-                End If
-            Finally
-                If hIcon <> IntPtr.Zero Then
-                    Functions.DestroyIcon(hIcon)
-                End If
-            End Try
-        Else
-            Return Nothing
-        End If
-    End Function
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
