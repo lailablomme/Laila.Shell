@@ -4,7 +4,6 @@ Imports System.Runtime.InteropServices
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
-Imports FileSignatures
 Imports Laila.Shell.Helpers
 
 Public Class Item
@@ -273,12 +272,22 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlaySmallAsync As ImageSource
         Get
-            Dim result As ImageSource
-            UIHelper.OnUIThread(
-                Sub()
-                    result = getOverlay(False)
-                End Sub)
-            Return result
+            Dim tcs As New TaskCompletionSource(Of ImageSource)
+
+            Shell.SlowTaskQueue.Add(
+                Function()
+                    Try
+                        Dim result As ImageSource
+                        result = getOverlay(False)
+                        If Not result Is Nothing Then result.Freeze()
+                        tcs.SetResult(result)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                    Return Nothing
+                End Function)
+
+            Return tcs.Task.Result
         End Get
     End Property
 
@@ -290,12 +299,22 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlayLargeAsync As ImageSource
         Get
-            Dim result As ImageSource
-            UIHelper.OnUIThread(
-                Sub()
-                    result = getOverlay(True)
-                End Sub)
-            Return result
+            Dim tcs As New TaskCompletionSource(Of ImageSource)
+
+            Shell.SlowTaskQueue.Add(
+                Function()
+                    Try
+                        Dim result As ImageSource
+                        result = getOverlay(True)
+                        If Not result Is Nothing Then result.Freeze()
+                        tcs.SetResult(result)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                    Return Nothing
+                End Function)
+
+            Return tcs.Task.Result
         End Get
     End Property
 
@@ -319,12 +338,22 @@ Public Class Item
 
     Public Overridable ReadOnly Property IconAsync(size As Integer) As ImageSource
         Get
-            Dim result As ImageSource
-            UIHelper.OnUIThread(
-                Sub()
-                    result = Me.Icon(size)
-                End Sub)
-            Return result
+            Dim tcs As New TaskCompletionSource(Of ImageSource)
+
+            Shell.PriorityTaskQueue.Add(
+                Function()
+                    Try
+                        Dim result As ImageSource
+                        result = Me.Icon(size)
+                        If Not result Is Nothing Then result.Freeze()
+                        tcs.SetResult(result)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                    Return Nothing
+                End Function)
+
+            Return tcs.Task.Result
         End Get
     End Property
 
@@ -348,12 +377,22 @@ Public Class Item
 
     Public Overridable ReadOnly Property ImageAsync(size As Integer) As ImageSource
         Get
-            Dim result As ImageSource
-            UIHelper.OnUIThread(
-                Sub()
-                    result = Me.Image(size)
-                End Sub)
-            Return result
+            Dim tcs As New TaskCompletionSource(Of ImageSource)
+
+            Shell.PriorityTaskQueue.Add(
+                Function()
+                    Try
+                        Dim result As ImageSource
+                        result = Me.Image(size)
+                        If Not result Is Nothing Then result.Freeze()
+                        tcs.SetResult(result)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                    Return Nothing
+                End Function)
+
+            Return tcs.Task.Result
         End Get
     End Property
 
@@ -377,12 +416,20 @@ Public Class Item
 
     Public Overridable ReadOnly Property HasThumbnailAsync As Boolean
         Get
-            Dim result As Boolean
-            UIHelper.OnUIThread(
-                Sub()
-                    result = Me.HasThumbnail
-                End Sub)
-            Return result
+            Dim tcs As New TaskCompletionSource(Of Boolean)
+
+            Shell.SlowTaskQueue.Add(
+                Function()
+                    Try
+                        tcs.SetResult(Me.HasThumbnail)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                    Return Nothing
+                End Function)
+
+            ' Wait for the result
+            Return tcs.Task.Result
         End Get
     End Property
 
@@ -396,35 +443,36 @@ Public Class Item
     End Property
 
     Protected Overridable Function getOverlay(isLarge As Boolean) As ImageSource
-        If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
-            Dim parent As Folder = Me.GetParent()
-            Dim shellFolder As IShellFolder = If(Not parent Is Nothing, parent.ShellFolder, Shell.Desktop.ShellFolder)
-            Dim ptr As IntPtr, ptr2 As IntPtr, shellIconOverlay As IShellIconOverlay
-            Try
-                ptr = Marshal.GetIUnknownForObject(shellFolder)
-                Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
-                If Not IntPtr.Zero.Equals(ptr2) Then
-                    Dim iconIndex As Integer
+        UIHelper.OnUIThread(
+            Sub()
+                If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
+                    Dim parent As Folder = Me.GetParent()
+                    Dim shellFolder As IShellFolder = If(Not parent Is Nothing, parent.ShellFolder, Shell.Desktop.ShellFolder)
+                    Dim ptr As IntPtr, ptr2 As IntPtr, shellIconOverlay As IShellIconOverlay
+                    Try
+                        ptr = Marshal.GetIUnknownForObject(shellFolder)
+                        Marshal.QueryInterface(ptr, GetType(IShellIconOverlay).GUID, ptr2)
+                        If Not IntPtr.Zero.Equals(ptr2) Then
+                            Dim iconIndex As Integer
 
-                    shellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
-                    shellIconOverlay.GetOverlayIconIndex(Me.Pidl.RelativePIDL, iconIndex)
+                            shellIconOverlay = Marshal.GetObjectForIUnknown(ptr2)
+                            shellIconOverlay.GetOverlayIconIndex(Me.Pidl.RelativePIDL, iconIndex)
 
-                    _overlayIconIndex = iconIndex
-                Else
-                    Return Nothing
+                            _overlayIconIndex = iconIndex
+                        End If
+                    Finally
+                        If Not parent Is Nothing Then
+                            parent.Dispose()
+                        End If
+                        If Not IntPtr.Zero.Equals(ptr2) Then
+                            Marshal.Release(ptr2)
+                        End If
+                        If Not shellIconOverlay Is Nothing Then
+                            Marshal.ReleaseComObject(shellIconOverlay)
+                        End If
+                    End Try
                 End If
-            Finally
-                If Not parent Is Nothing Then
-                    parent.Dispose()
-                End If
-                If Not IntPtr.Zero.Equals(ptr2) Then
-                    Marshal.Release(ptr2)
-                End If
-                If Not shellIconOverlay Is Nothing Then
-                    Marshal.ReleaseComObject(shellIconOverlay)
-                End If
-            End Try
-        End If
+            End Sub)
 
         If _overlayIconIndex.HasValue AndAlso _overlayIconIndex > 0 Then
             ' Get the system image list
@@ -715,19 +763,12 @@ Public Class Item
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
             Dim [property] As [Property]
-            UIHelper.OnUIThread(
-                Sub()
-                    Dim parts() As String = propertyKey.Split(":")
-                    Dim key As PROPERTYKEY
-                    key.fmtid = New Guid(parts(0))
-                    key.pid = parts(1)
-
-                    [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
-                    If [property] Is Nothing Then
-                        [property] = [Property].FromKey(key, Me.ShellItem2)
-                        _properties.Add([property])
-                    End If
-                End Sub)
+            Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
+            [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
+            If [property] Is Nothing Then
+                [property] = [Property].FromKey(key, Me.ShellItem2)
+                If Not [property] Is Nothing Then _properties.Add([property])
+            End If
             Return [property]
         End Get
     End Property
@@ -737,7 +778,7 @@ Public Class Item
             Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
             If [property] Is Nothing Then
                 [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
-                _properties.Add([property])
+                If Not [property] Is Nothing Then _properties.Add([property])
             End If
             Return [property]
         End Get

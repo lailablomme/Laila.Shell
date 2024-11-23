@@ -1,4 +1,5 @@
-﻿Imports System.Collections.ObjectModel
+﻿Imports System.Collections.Concurrent
+Imports System.Collections.ObjectModel
 Imports System.Drawing
 Imports System.Reflection
 Imports System.Runtime.InteropServices
@@ -17,6 +18,9 @@ Public Class Shell
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
+    Public Shared SlowTaskQueue As New BlockingCollection(Of Func(Of Object))
+    Public Shared PriorityTaskQueue As New BlockingCollection(Of Func(Of Object))
+    Private Shared _threads As List(Of Thread) = New List(Of Thread)()
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
@@ -33,6 +37,33 @@ Public Class Shell
 
     Shared Sub New()
         Functions.OleInitialize(IntPtr.Zero)
+
+        For i = 1 To Math.Max(Environment.ProcessorCount / 2, 1)
+            Dim staThread As Thread = New Thread(
+                Sub()
+                    ' Process tasks from the queue
+                    For Each task In PriorityTaskQueue.GetConsumingEnumerable()
+                        task.Invoke()
+                    Next
+                End Sub)
+            staThread.SetApartmentState(ApartmentState.STA)
+            staThread.IsBackground = True
+            staThread.Start()
+            _threads.Add(staThread)
+        Next
+        For i = 1 To Math.Max(Environment.ProcessorCount / 2, 1)
+            Dim staThread As Thread = New Thread(
+                Sub()
+                    ' Process tasks from the queue
+                    For Each task In SlowTaskQueue.GetConsumingEnumerable()
+                        task.Invoke()
+                    Next
+                End Sub)
+            staThread.SetApartmentState(ApartmentState.STA)
+            staThread.IsBackground = True
+            staThread.Start()
+            _threads.Add(staThread)
+        Next
 
         Dim entry(0) As SHChangeNotifyEntry
         entry(0).pIdl = IntPtr.Zero
