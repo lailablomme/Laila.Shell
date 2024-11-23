@@ -60,32 +60,6 @@
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior />
                             </i:Interaction.Behaviors>
-                            <ListView.Style>
-                                <Style TargetType="{x:Type ListView}">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="ListView">
-                                                <Border Name="Border" Background="{TemplateBinding Background}"
-                                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                                        BorderThickness="{TemplateBinding BorderThickness}">
-                                                    <ScrollViewer>
-                                                        <ItemsPresenter />
-                                                    </ScrollViewer>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <MultiTrigger>
-                                                        <MultiTrigger.Conditions>
-                                                            <Condition Property="IsGrouping" Value="true" />
-                                                            <Condition Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="false" />
-                                                        </MultiTrigger.Conditions>
-                                                        <Setter Property="ScrollViewer.CanContentScroll" Value="false" />
-                                                    </MultiTrigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ListView.Style>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border>

@@ -357,13 +357,33 @@ Namespace Controls
                     UIHelper.OnUIThread(
                         Sub()
                             Me.IsLoading = CType(sender, Folder).IsRefreshingItems
+
+                            If CType(sender, Folder).IsRefreshingItems Then
+                                Me.PART_ListView.ItemsSource = Nothing
+                            Else
+                                Me.PART_ListView.ItemsSource = CType(sender, Folder).Items
+                            End If
                         End Sub)
-                Case "ItemsGroupByPropertyName"
+                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
                     Dim folder As Folder = CType(sender, Folder)
-                    If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
-                        Me.PART_ListView.GroupStyle.Add(Me.PART_ListView.Resources("groupStyle"))
-                    Else
-                        Me.PART_ListView.GroupStyle.Clear()
+
+                    If e.PropertyName = "ItemsGroupByPropertyName" Then
+                        If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
+                            If Me.PART_ListView.GroupStyle.Count = 0 Then
+                                Me.PART_ListView.GroupStyle.Add(Me.PART_ListView.Resources("groupStyle"))
+                            End If
+                        Else
+                            Me.PART_ListView.GroupStyle.Clear()
+                        End If
+                    End If
+
+                    If Not folder.IsRefreshingItems Then
+                        Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+                        folderViewState.SortPropertyName = folder.ItemsSortPropertyName
+                        folderViewState.SortDirection = folder.ItemsSortDirection
+                        folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
+                        folderViewState.View = folder.View
+                        folderViewState.Persist()
                     End If
             End Select
         End Sub
@@ -421,14 +441,18 @@ Namespace Controls
                 ' load items
                 Await newValue.GetItemsAsync()
 
-                ' get notified of folder property changes
-                AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
-
                 ' set sorting and grouping
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(newValue.FullPath)
                 newValue.ItemsSortPropertyName = folderViewState.SortPropertyName
                 newValue.ItemsSortDirection = folderViewState.SortDirection
                 newValue.ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
+
+                ' get notified of folder property changes
+                AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
+
+                VirtualizingPanel.SetIsVirtualizing(bfv.PART_ListView, True)
+                VirtualizingPanel.SetIsVirtualizingWhenGrouping(bfv.PART_ListView, True)
+                VirtualizingPanel.SetVirtualizationMode(bfv.PART_ListView, VirtualizationMode.Recycling)
 
                 ' bind view
                 bfv.MakeBinding(e.NewValue)

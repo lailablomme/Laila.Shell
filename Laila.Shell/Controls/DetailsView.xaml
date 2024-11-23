@@ -113,32 +113,6 @@
                                     ColumnsIn="{Binding ColumnsIn, RelativeSource={RelativeSource Mode=TemplatedParent}}" x:Name="ext" />
                                 <behaviors:SelectionBehavior />
                             </i:Interaction.Behaviors>
-                            <ListView.Style>
-                                <Style TargetType="{x:Type ListView}">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="ListView">
-                                                <Border Name="Border" Background="{TemplateBinding Background}"
-                                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                                        BorderThickness="{TemplateBinding BorderThickness}">
-                                                    <ScrollViewer Style="{DynamicResource {x:Static GridView.GridViewScrollViewerStyleKey}}">
-                                                        <ItemsPresenter />
-                                                    </ScrollViewer>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <MultiTrigger>
-                                                        <MultiTrigger.Conditions>
-                                                            <Condition Property="IsGrouping" Value="true" />
-                                                            <Condition Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="false" />
-                                                        </MultiTrigger.Conditions>
-                                                        <Setter Property="ScrollViewer.CanContentScroll" Value="false" />
-                                                    </MultiTrigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ListView.Style>
                         </ListView>
                         <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Panel.ZIndex="3">
                             <Grid.Style>

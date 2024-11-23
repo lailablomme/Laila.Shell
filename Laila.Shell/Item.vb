@@ -99,6 +99,7 @@ Public Class Item
 
             _pidl = New Pidl(pidl)
             _fullPath = Item.GetFullPathFromShellItem2(shellItem2)
+            Dim dn As String = Me.DisplayName
             _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
             Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
             Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
@@ -298,12 +299,11 @@ Public Class Item
         Get
             If Not _skipOverlayImageAsync Then
                 Shell.SlowTaskQueue.Add(
-                    Function()
+                    Sub()
                         _overlayImageAsync = Me.OverlayImage
                         _skipOverlayImageAsync = True
                         Me.NotifyOfPropertyChange(NameOf(OverlayImageAsync))
-                        Return Nothing
-                    End Function)
+                    End Sub)
             End If
             _skipOverlayImageAsync = False
 
@@ -334,7 +334,7 @@ Public Class Item
             Dim tcs As New TaskCompletionSource(Of ImageSource)
 
             Shell.PriorityTaskQueue.Add(
-                Function()
+                Sub()
                     Try
                         Dim result As ImageSource
                         result = Me.Icon(size)
@@ -343,8 +343,7 @@ Public Class Item
                     Catch ex As Exception
                         tcs.SetException(ex)
                     End Try
-                    Return Nothing
-                End Function)
+                End Sub)
 
             Return tcs.Task.Result
         End Get
@@ -373,7 +372,7 @@ Public Class Item
             Dim tcs As New TaskCompletionSource(Of ImageSource)
 
             Shell.PriorityTaskQueue.Add(
-                Function()
+                Sub()
                     Try
                         Dim result As ImageSource
                         result = Me.Image(size)
@@ -382,8 +381,7 @@ Public Class Item
                     Catch ex As Exception
                         tcs.SetException(ex)
                     End Try
-                    Return Nothing
-                End Function)
+                End Sub)
 
             Return tcs.Task.Result
         End Get
@@ -412,14 +410,13 @@ Public Class Item
             Dim tcs As New TaskCompletionSource(Of Boolean)
 
             Shell.SlowTaskQueue.Add(
-                Function()
+                Sub()
                     Try
                         tcs.SetResult(Me.HasThumbnail)
                     Catch ex As Exception
                         tcs.SetException(ex)
                     End Try
-                    Return Nothing
-                End Function)
+                End Sub)
 
             ' Wait for the result
             Return tcs.Task.Result

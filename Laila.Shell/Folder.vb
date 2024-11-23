@@ -297,7 +297,12 @@ Public Class Folder
             item.Dispose()
         Next
         _isEnumerated = False
+        Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+        view.SortDescriptions.Clear()
+        view.GroupDescriptions.Clear()
         Me.GetItems()
+        Me.ItemsGroupByPropertyName = Me.ItemsGroupByPropertyName
+        Me.ItemsSortPropertyName = Me.ItemsSortPropertyName
         Me.IsRefreshingItems = False
     End Sub
 
@@ -308,7 +313,12 @@ Public Class Folder
             item.Dispose()
         Next
         _isEnumerated = False
+        Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+        view.SortDescriptions.Clear()
+        view.GroupDescriptions.Clear()
         Await Me.GetItemsAsync()
+        Me.ItemsSortPropertyName = Me.ItemsSortPropertyName
+        Me.ItemsGroupByPropertyName = Me.ItemsGroupByPropertyName
         Me.IsRefreshingItems = False
     End Function
 

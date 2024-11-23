@@ -18,8 +18,8 @@ Public Class Shell
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
-    Public Shared SlowTaskQueue As New BlockingCollection(Of Func(Of Object))
-    Public Shared PriorityTaskQueue As New BlockingCollection(Of Func(Of Object))
+    Public Shared SlowTaskQueue As New BlockingCollection(Of Action)
+    Public Shared PriorityTaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
 
     Private Shared _hNotify As UInt32
