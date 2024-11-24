@@ -178,7 +178,8 @@ Public Class Folder
         If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
             AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
             AndAlso (Me._logicalParent Is Nothing _
-                     OrElse (Not Me._logicalParent.IsActiveInFolderView AndAlso Not _logicalParent.IsVisibleInAddressBar)) _
+                     OrElse (Not Me._logicalParent.IsActiveInFolderView _
+                             AndAlso Not _logicalParent.IsVisibleInAddressBar)) _
             AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
             Me.Dispose()
         End If
