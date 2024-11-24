@@ -20,13 +20,13 @@ Namespace Controls
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
-            AddHandler PART_ListView.Loaded,
+            AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
                         _isLoaded = True
 
                         ' notify of sort/group by changes
-                        Me.PART_Ext = Microsoft.Xaml.Behaviors.Interaction.GetBehaviors(Me.PART_ListView).FirstOrDefault(Function(b) TypeOf b Is Behaviors.GridViewExtBehavior)
+                        Me.PART_Ext = Microsoft.Xaml.Behaviors.Interaction.GetBehaviors(Me.PART_ListBox).FirstOrDefault(Function(b) TypeOf b Is Behaviors.GridViewExtBehavior)
                     End If
                 End Sub
         End Sub
@@ -207,8 +207,8 @@ Namespace Controls
             If Not Me.PART_Ext Is Nothing Then
                 Me.PART_Ext.Folder = Nothing
             End If
-            If Not Me.PART_ListView Is Nothing Then
-                CType(Me.PART_ListView.View, GridView).Columns.Clear()
+            If Not Me.PART_ListBox Is Nothing Then
+                CType(CType(Me.PART_ListBox, System.Windows.Controls.ListView).View, GridView).Columns.Clear()
             End If
         End Sub
 
@@ -218,7 +218,7 @@ Namespace Controls
             If Not Me.PART_Ext Is Nothing Then
                 Me.PART_Ext.Folder = folder
             End If
-            If Not Me.PART_ListView Is Nothing Then
+            If Not Me.PART_ListBox Is Nothing Then
                 Me.ColumnsIn = buildColumnsIn(folder)
             End If
         End Sub
@@ -234,12 +234,12 @@ Namespace Controls
             MyBase.Folder_PropertyChanged(s, e)
         End Sub
 
-        Protected Overrides Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
+        Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
             Dim column As Column = Me.Folder.Columns("System.ItemNameDisplay")
             If Not column Is Nothing Then
                 Dim headers As IEnumerable(Of GridViewColumnHeader) =
-                                            UIHelper.FindVisualChildren(Of GridViewColumnHeader)(Me.PART_ListView)
+                                            UIHelper.FindVisualChildren(Of GridViewColumnHeader)(Me.PART_ListBox)
                 Dim header As GridViewColumnHeader =
                                             headers.FirstOrDefault(Function(h) Not h.Column Is Nothing _
                                                 AndAlso h.Column.GetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty) _
@@ -251,12 +251,12 @@ Namespace Controls
                         ptLeft.X += 20
                         width -= 20
                     End If
-                    Dim ptTop As Point = Me.PointFromScreen(listViewItem.PointToScreen(New Point(0, 0)))
+                    Dim ptTop As Point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
 
                     point.X = ptLeft.X + 2
                     point.Y = ptTop.Y + 1
                     size.Width = width - 5
-                    size.Height = listViewItem.ActualHeight
+                    size.Height = listBoxItem.ActualHeight
                 End If
             End If
             textAlignment = TextAlignment.Left

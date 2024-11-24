@@ -25,7 +25,7 @@ Public Class ListViewDropTarget
     Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
-        _folderView.ActiveView.PART_ListView.Focus()
+        _folderView.ActiveView.PART_ListBox.Focus()
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
 
@@ -76,10 +76,10 @@ Public Class ListViewDropTarget
 
     Private Function getOverItem(ptWIN32 As WIN32POINT) As Item
         ' translate point to listview
-        Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListView)
+        Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListBox)
 
         ' find which item we're over
-        Dim overObject As IInputElement = _folderView.ActiveView.PART_ListView.InputHitTest(pt)
+        Dim overObject As IInputElement = _folderView.ActiveView.PART_ListBox.InputHitTest(pt)
         Dim overListViewItem As ListViewItem
         If TypeOf overObject Is ListViewItem Then
             overListViewItem = overObject
@@ -96,7 +96,7 @@ Public Class ListViewDropTarget
     Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
         Debug.WriteLine("dragPoint")
 
-        Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListView)
+        Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListBox)
         If pt.Y < 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
                 _scrollDirection = False
@@ -107,12 +107,12 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListView)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
                             End Sub)
                     End Sub), Nothing, 350, 350)
             End If
-        ElseIf pt.Y > _folderView.ActiveView.PART_ListView.ActualHeight - 100 Then
+        ElseIf pt.Y > _folderView.ActiveView.PART_ListBox.ActualHeight - 100 Then
             If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> True Then
                 _scrollDirection = True
                 If Not _scrollTimer Is Nothing Then
@@ -122,7 +122,7 @@ Public Class ListViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListView)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
                             End Sub)
                     End Sub), Nothing, 350, 350)

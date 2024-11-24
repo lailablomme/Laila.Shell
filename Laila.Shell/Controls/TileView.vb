@@ -11,12 +11,12 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(TileView), New FrameworkPropertyMetadata(GetType(TileView)))
         End Sub
 
-        Protected Overrides Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
+        Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
-            point = Me.PointFromScreen(listViewItem.PointToScreen(New Point(0, 0)))
+            point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
             point.X += 16 + 4 + 48 + 4 + 4
             point.Y += 1
-            listViewItem.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
+            listBoxItem.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
             size.Width = 200 + 4
             size.Height = 17
             textAlignment = TextAlignment.Left

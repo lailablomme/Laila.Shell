@@ -46,7 +46,7 @@
                                     <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
-                                            <ControlTemplate TargetType="ListBoxItem">
+                                            <ControlTemplate TargetType="ListViewItem">
                                                 <Grid Height="20">
                                                     <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
                                                             Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">

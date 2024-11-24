@@ -42,6 +42,9 @@ Namespace Controls
                     For Each button In _list
                         If TypeOf button Is Button AndAlso Not buttonStyle Is Nothing Then button.Style = buttonStyle
                         If TypeOf button Is ToggleButton AndAlso Not toggleButtonStyle Is Nothing Then button.Style = toggleButtonStyle
+                        If Not button.Parent Is Nothing Then
+                            CType(button.Parent, Panel).Children.Remove(button)
+                        End If
                         _buttonsTop.Children.Add(button)
                     Next
                     Me.ShowButtonsTopOrBottom = TopOrBottom.Top
@@ -49,6 +52,9 @@ Namespace Controls
                     For Each button In _list
                         If TypeOf button Is Button AndAlso Not buttonStyle Is Nothing Then button.Style = buttonStyle
                         If TypeOf button Is ToggleButton AndAlso Not toggleButtonStyle Is Nothing Then button.Style = toggleButtonStyle
+                        If Not button.Parent Is Nothing Then
+                            CType(button.Parent, Panel).Children.Remove(button)
+                        End If
                         _buttonsBottom.Children.Add(button)
                     Next
                     Me.ShowButtonsTopOrBottom = TopOrBottom.Bottom

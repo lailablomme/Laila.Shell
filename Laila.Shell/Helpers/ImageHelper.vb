@@ -92,9 +92,21 @@ Public Class ImageHelper
             Try
                 Functions.ExtractIconEx(s(0), s(1), iconl, icon, 1)
                 If Not IntPtr.Zero.Equals(icon) Then
-                    _icons.Add(ref.ToLower().Trim(), System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions()))
+                    Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    img.Freeze()
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
+                                _icons.Add(ref.ToLower().Trim(), img)
+                            End If
+                        End Sub, Threading.DispatcherPriority.Send)
                 Else
-                    _icons.Add(ref.ToLower().Trim(), Nothing)
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
+                                _icons.Add(ref.ToLower().Trim(), Nothing)
+                            End If
+                        End Sub, Threading.DispatcherPriority.Send)
                 End If
             Finally
                 If Not IntPtr.Zero.Equals(icon) Then

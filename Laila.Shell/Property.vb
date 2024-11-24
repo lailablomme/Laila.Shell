@@ -7,6 +7,7 @@ Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
 
 Public Class [Property]
+    Inherits NotifyPropertyChangedBase
     Implements IDisposable
 
     Private Shared _descriptions As HashSet(Of Tuple(Of String, String, IPropertyDescription)) = New HashSet(Of Tuple(Of String, String, IPropertyDescription))
@@ -298,14 +299,21 @@ Public Class [Property]
         End Get
     End Property
 
+    Private _icons16Async As ImageSource()
+    Private _skipIcons16Async As Boolean
     Public Overridable ReadOnly Property Icons16Async As ImageSource()
         Get
-            Dim result As ImageSource()
-            UIHelper.OnUIThread(
-                Sub()
-                    result = Me.Icons16
-                End Sub)
-            Return result
+            If Not _skipIcons16Async Then
+                Shell.PriorityTaskQueue.Add(
+                    Sub()
+                        _icons16Async = Me.Icons16
+                        _skipIcons16Async = True
+                        Me.NotifyOfPropertyChange(NameOf(Icons16Async))
+                    End Sub)
+            End If
+            _skipIcons16Async = False
+
+            Return _icons16Async
         End Get
     End Property
 
@@ -316,14 +324,21 @@ Public Class [Property]
         End Get
     End Property
 
+    Private _firstIcon16Async As ImageSource
+    Private _skipFirstIcon16Async As Boolean
     Public Overridable ReadOnly Property FirstIcon16Async As ImageSource
         Get
-            Dim result As ImageSource
-            UIHelper.OnUIThread(
-                Sub()
-                    result = Me.FirstIcon16
-                End Sub)
-            Return result
+            If Not _skipFirstIcon16Async Then
+                Shell.PriorityTaskQueue.Add(
+                    Sub()
+                        _firstIcon16Async = Me.FirstIcon16
+                        _skipFirstIcon16Async = True
+                        Me.NotifyOfPropertyChange(NameOf(FirstIcon16Async))
+                    End Sub)
+            End If
+            _skipFirstIcon16Async = False
+
+            Return _firstIcon16Async
         End Get
     End Property
 
@@ -333,7 +348,7 @@ Public Class [Property]
             Try
                 description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
                 Dim index As UInt32 = value.GetValue()
-                propertyEnumTypeList.GetAt(Index, GetType(IPropertyEnumType).GUID, propertyEnumType)
+                propertyEnumTypeList.GetAt(index, GetType(IPropertyEnumType).GUID, propertyEnumType)
                 Return propertyEnumType
             Finally
                 If Not propertyEnumTypeList Is Nothing Then

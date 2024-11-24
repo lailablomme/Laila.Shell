@@ -2,6 +2,7 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports Laila.Shell.Helpers
 Imports WpfToolkit.Controls
 
 Namespace Controls
@@ -17,7 +18,7 @@ Namespace Controls
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
-            AddHandler PART_ListView.Loaded,
+            AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
                         _isLoaded = True
@@ -43,34 +44,34 @@ Namespace Controls
         End Sub
 
         Private Sub setWrapPanel(folder As Folder)
-            If Not Me.PART_ListView Is Nothing Then
-                Dim wrapPanelFactory As FrameworkElementFactory
-                If folder.ItemsGroupByPropertyName Is Nothing Then
-                    wrapPanelFactory = New FrameworkElementFactory(GetType(VirtualizingWrapPanel))
-                    wrapPanelFactory.SetValue(VirtualizingWrapPanel.OrientationProperty, Orientation.Vertical)
-                    wrapPanelFactory.SetValue(VirtualizingWrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
-                    wrapPanelFactory.SetValue(VirtualizingWrapPanel.AllowDifferentSizedItemsProperty, True)
-                    wrapPanelFactory.SetValue(VirtualizingWrapPanel.SpacingModeProperty, SpacingMode.None)
-                Else
-                    wrapPanelFactory = New FrameworkElementFactory(GetType(WrapPanel))
-                    wrapPanelFactory.SetValue(WrapPanel.OrientationProperty, Orientation.Vertical)
-                    wrapPanelFactory.SetValue(WrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
-                End If
+            'If Not Me.PART_ListView Is Nothing Then
+            '    Dim wrapPanelFactory As FrameworkElementFactory
+            '    If folder.ItemsGroupByPropertyName Is Nothing Then
+            '        wrapPanelFactory = New FrameworkElementFactory(GetType(VirtualizingWrapPanel))
+            '        wrapPanelFactory.SetValue(VirtualizingWrapPanel.OrientationProperty, Orientation.Vertical)
+            '        wrapPanelFactory.SetValue(VirtualizingWrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
+            '        wrapPanelFactory.SetValue(VirtualizingWrapPanel.AllowDifferentSizedItemsProperty, True)
+            '        wrapPanelFactory.SetValue(VirtualizingWrapPanel.SpacingModeProperty, SpacingMode.None)
+            '    Else
+            '        wrapPanelFactory = New FrameworkElementFactory(GetType(WrapPanel))
+            '        wrapPanelFactory.SetValue(WrapPanel.OrientationProperty, Orientation.Vertical)
+            '        wrapPanelFactory.SetValue(WrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
+            '    End If
 
-                Dim itemsPanelTemplate As New ItemsPanelTemplate()
-                itemsPanelTemplate.VisualTree = wrapPanelFactory
-                Me.PART_ListView.ItemsPanel = itemsPanelTemplate
-            End If
+            '    Dim itemsPanelTemplate As New ItemsPanelTemplate()
+            '    itemsPanelTemplate.VisualTree = wrapPanelFactory
+            '    Me.PART_ListView.ItemsPanel = itemsPanelTemplate
+            'End If
         End Sub
 
-        Protected Overrides Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
+        Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
-            point = Me.PointFromScreen(listViewItem.PointToScreen(New Point(0, 0)))
+            point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
             point.X += 16 + 4 + 2 + 16 + 4
             point.Y += 1
-            listViewItem.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
-            size.Width = listViewItem.DesiredSize.Width - 16 - 4 - 2
-            size.Height = listViewItem.DesiredSize.Height
+            listBoxItem.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
+            size.Width = listBoxItem.DesiredSize.Width - 16 - 4 - 2
+            size.Height = listBoxItem.DesiredSize.Height
             textAlignment = TextAlignment.Left
             fontSize = Me.FontSize
         End Sub

@@ -27,7 +27,7 @@ Namespace Controls
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
-        Friend PART_ListView As System.Windows.Controls.ListView
+        Friend PART_ListBox As System.Windows.Controls.ListBox
         Private PART_Grid As Grid
         Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
         Private _isLoading As Boolean
@@ -51,21 +51,21 @@ Namespace Controls
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
-            Me.PART_ListView = Template.FindName("PART_ListView", Me)
+            Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
 
-            Me.PART_ListView.Visibility = Visibility.Hidden
+            Me.PART_ListBox.Visibility = Visibility.Hidden
 
             If Not Me.Folder Is Nothing Then
                 Me.MakeBinding(Me.Folder)
             End If
 
-            AddHandler PART_ListView.Loaded,
+            AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
                         _isLoaded = True
 
-                        _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListView)
+                        _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListBox)
                         _selectionHelper.SelectionChanged =
                             Sub()
                                 If Not Me.Folder Is Nothing Then _
@@ -73,7 +73,7 @@ Namespace Controls
                             End Sub
                         _selectionHelper.SetSelectedItems(Me.SelectedItems)
 
-                        _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListView)(0)
+                        _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
                         AddHandler _scrollViewer.ScrollChanged,
                             Sub(s2 As Object, e2 As ScrollChangedEventArgs)
                                 If Not Me.Folder Is Nothing Then
@@ -85,13 +85,17 @@ Namespace Controls
                                     GC.Collect()
                                 End Sub)
                             End Sub
+
+                        If Not Me.Folder Is Nothing Then
+                            setGrouping(Me.Folder)
+                        End If
                     End If
                 End Sub
 
-            AddHandler Me.PART_ListView.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
-            AddHandler Me.PART_ListView.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
-            AddHandler Me.PART_ListView.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
-            AddHandler Me.PART_ListView.MouseLeave, AddressOf OnListViewMouseLeave
+            AddHandler Me.PART_ListBox.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
+            AddHandler Me.PART_ListBox.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
+            AddHandler Me.PART_ListBox.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
+            AddHandler Me.PART_ListBox.MouseLeave, AddressOf OnListViewMouseLeave
             AddHandler Me.PreviewKeyDown, AddressOf OnListViewKeyDown
             AddHandler Me.PreviewTextInput, AddressOf OnListViewTextInput
         End Sub
@@ -155,11 +159,11 @@ Namespace Controls
         End Sub
 
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
-            Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
-            Dim overItem As Item = TryCast(listViewItem?.DataContext, Item)
+            Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
+            Dim overItem As Item = TryCast(listBoxItem?.DataContext, Item)
             If Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
                 Dim toolTip As String = overItem.InfoTip
-                listViewItem.ToolTip = If(String.IsNullOrWhiteSpace(toolTip), Nothing, toolTip)
+                listBoxItem.ToolTip = If(String.IsNullOrWhiteSpace(toolTip), Nothing, toolTip)
                 _mouseItemOver = overItem
             End If
 
@@ -177,13 +181,13 @@ Namespace Controls
 
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then
-                Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
-                Dim clickedItem As Item = TryCast(listViewItem?.DataContext, Item)
+                Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
+                Dim clickedItem As Item = TryCast(listBoxItem?.DataContext, Item)
                 _mouseItemDown = clickedItem
                 If clickedItem Is Nothing Then
-                    Me.PART_ListView.Focus()
+                    Me.PART_ListBox.Focus()
                 Else
-                    listViewItem.Focus()
+                    listBoxItem.Focus()
                 End If
                 If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Not clickedItem Is Nothing Then
                     Using Shell.OverrideCursor(Cursors.Wait)
@@ -217,7 +221,7 @@ Namespace Controls
                     hookMenus()
                     If Not _menus Is Nothing Then
                         _menus.Update()
-                        Me.PART_ListView.ContextMenu = _menus.ItemContextMenu
+                        Me.PART_ListBox.ContextMenu = _menus.ItemContextMenu
                     End If
                     e.Handled = True
                 ElseIf clickedItem Is Nothing AndAlso
@@ -265,7 +269,7 @@ Namespace Controls
             End If
         End Sub
 
-        Protected MustOverride Sub GetItemNameCoordinates(listViewItem As ListViewItem, ByRef textAlignment As TextAlignment,
+        Protected MustOverride Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                           ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
 
         Public Async Function DoRename(pidl As Pidl) As Task(Of Boolean)
@@ -276,9 +280,9 @@ Namespace Controls
                     UIHelper.OnUIThread(
                         Sub()
                         End Sub, Threading.DispatcherPriority.ContextIdle)
-                    Dim listViewItem As ListViewItem = Me.PART_ListView.ItemContainerGenerator.ContainerFromItem(item)
-                    If Not listViewItem Is Nothing Then
-                        DoRename(listViewItem)
+                    Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromItem(item)
+                    If Not listBoxItem Is Nothing Then
+                        DoRename(listBoxItem)
                         Return True
                     End If
                 End If
@@ -287,14 +291,14 @@ Namespace Controls
         End Function
 
         Public Sub DoRename()
-            Dim listViewItem As ListViewItem = Me.PART_ListView.ItemContainerGenerator.ContainerFromItem(Me.SelectedItems(0))
-            DoRename(listViewItem)
+            Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromItem(Me.SelectedItems(0))
+            DoRename(listBoxItem)
         End Sub
 
-        Public Sub DoRename(listViewItem As ListViewItem)
+        Public Sub DoRename(listBoxItem As ListBoxItem)
             Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
-            Me.GetItemNameCoordinates(listViewItem, textAlignment, point, size, fontSize)
-            Menus.DoRename(point, size, textAlignment, fontSize, listViewItem.DataContext, Me.PART_Grid)
+            Me.GetItemNameCoordinates(listBoxItem, textAlignment, point, size, fontSize)
+            Menus.DoRename(point, size, textAlignment, fontSize, listBoxItem.DataContext, Me.PART_Grid)
         End Sub
 
         Public Overridable Property SelectedItems As IEnumerable(Of Item)
@@ -334,20 +338,16 @@ Namespace Controls
         End Property
 
         Protected Overridable Sub ClearBinding()
-            If Not Me.PART_ListView Is Nothing Then
-                Me.PART_ListView.ItemsSource = Nothing
+            If Not Me.PART_ListBox Is Nothing Then
+                Me.PART_ListBox.ItemsSource = Nothing
             End If
         End Sub
 
         Protected Overridable Sub MakeBinding(folder As Folder)
-            If Not Me.PART_ListView Is Nothing Then
-                If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
-                    Me.PART_ListView.GroupStyle.Add(Me.PART_ListView.Resources("groupStyle"))
-                Else
-                    Me.PART_ListView.GroupStyle.Clear()
-                End If
+            If Not Me.PART_ListBox Is Nothing Then
+                setGrouping(folder)
 
-                Me.PART_ListView.ItemsSource = folder.Items
+                Me.PART_ListBox.ItemsSource = folder.Items
             End If
         End Sub
 
@@ -359,22 +359,16 @@ Namespace Controls
                             Me.IsLoading = CType(sender, Folder).IsRefreshingItems
 
                             If CType(sender, Folder).IsRefreshingItems Then
-                                Me.PART_ListView.ItemsSource = Nothing
+                                Me.PART_ListBox.ItemsSource = Nothing
                             Else
-                                Me.PART_ListView.ItemsSource = CType(sender, Folder).Items
+                                Me.PART_ListBox.ItemsSource = CType(sender, Folder).Items
                             End If
                         End Sub)
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
                     Dim folder As Folder = CType(sender, Folder)
 
                     If e.PropertyName = "ItemsGroupByPropertyName" Then
-                        If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
-                            If Me.PART_ListView.GroupStyle.Count = 0 Then
-                                Me.PART_ListView.GroupStyle.Add(Me.PART_ListView.Resources("groupStyle"))
-                            End If
-                        Else
-                            Me.PART_ListView.GroupStyle.Clear()
-                        End If
+                        setGrouping(folder)
                     End If
 
                     If Not folder.IsRefreshingItems Then
@@ -388,6 +382,18 @@ Namespace Controls
             End Select
         End Sub
 
+        Private Sub setGrouping(folder As Folder)
+            If Not Me.PART_ListBox.Resources("groupStyle") Is Nothing Then
+                If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
+                    If Me.PART_ListBox.GroupStyle.Count = 0 Then
+                        Me.PART_ListBox.GroupStyle.Add(Me.PART_ListBox.Resources("groupStyle"))
+                    End If
+                Else
+                    Me.PART_ListBox.GroupStyle.Clear()
+                End If
+            End If
+        End Sub
+
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = TryCast(d, BaseFolderView)
 
@@ -397,8 +403,8 @@ Namespace Controls
             If Not bfv._timeSpentTimer Is Nothing Then bfv._timeSpentTimer.Dispose()
 
             ' hide listview so no-one sees us binding to the new folder and restoring the scroll position
-            If Not bfv.PART_ListView Is Nothing Then
-                bfv.PART_ListView.Visibility = Visibility.Hidden
+            If Not bfv.PART_ListBox Is Nothing Then
+                bfv.PART_ListBox.Visibility = Visibility.Hidden
             End If
 
             If Not e.OldValue Is Nothing Then
@@ -450,10 +456,6 @@ Namespace Controls
                 ' get notified of folder property changes
                 AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
 
-                VirtualizingPanel.SetIsVirtualizing(bfv.PART_ListView, True)
-                VirtualizingPanel.SetIsVirtualizingWhenGrouping(bfv.PART_ListView, True)
-                VirtualizingPanel.SetVirtualizationMode(bfv.PART_ListView, VirtualizationMode.Recycling)
-
                 ' bind view
                 bfv.MakeBinding(e.NewValue)
 
@@ -469,7 +471,7 @@ Namespace Controls
                         bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv._lastScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
 
                         ' show listview
-                        bfv.PART_ListView.Visibility = Visibility.Visible
+                        bfv.PART_ListBox.Visibility = Visibility.Visible
                     End Sub)
             End If
 

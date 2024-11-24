@@ -7,10 +7,113 @@
         xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" 
         xmlns:shell="clr-namespace:Laila.Shell;assembly=Laila.Shell" 
         xmlns:metroWindow="clr-namespace:Laila.MetroWindow.Controls;assembly=Laila.MetroWindow"
+             xmlns:metroWindowConverters="clr-namespace:Laila.MetroWindow.Converters;assembly=Laila.MetroWindow"
+             xmlns:localConverters="clr-namespace:Laila.Shell.SampleApp.Converters"
         x:Name="view" Closed="view_Closed"
         mc:Ignorable="d" Icon="{Binding SelectedItem.Folder.Icon[48], ElementName=tabControl}" 
         Title="{Binding SelectedItem.Folder.DisplayName, ElementName=tabControl}"
         Height="450" Width="800">
+    <metroWindow:MetroWindow.Style>
+        <Style TargetType="{x:Type local:MainWindow}">
+            <Setter Property="OverridesDefaultStyle" Value="True" />
+            <Setter Property="UseLayoutRounding" Value="True" />
+            <Setter Property="WindowStyle" Value="None" />
+            <Setter Property="Background" Value="#44000000" />
+            <Setter Property="AllowsTransparency" Value="True" />
+            <Setter Property="GlowColor" Value="Gray" />
+            <Setter Property="GlowSize" Value="15" />
+            <Setter Property="GlowStyle" Value="Glowing" />
+            <Setter Property="WindowChrome.CaptionHeight"  Value="30" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type local:MainWindow}">
+                        <ControlTemplate.Resources>
+                            <metroWindowConverters:ShadowMarginConverter x:Key="shadowMarginConverter" />
+                            <metroWindowConverters:GlowMarginConverter x:Key="glowMarginConverter" />
+                            <metroWindowConverters:BorderSizeConverter x:Key="borderSizeConverter" />
+                            <localConverters:RectConverter x:Key="rectConverter" />
+                        </ControlTemplate.Resources>
+                        <Border x:Name="PART_RootBorder" Padding="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource glowMarginConverter}}">
+                            <Border Grid.Row="1" Grid.Column="1" x:Name="PART_MainBorder" CornerRadius="10"  
+                                    Background="{TemplateBinding Background}" BorderBrush="DarkViolet" BorderThickness="1">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="{Binding Path=GlowSize, 
+                                            RelativeSource={RelativeSource Mode=TemplatedParent}, FallbackValue=15}" 
+                                                          ShadowDepth="0" Color="{Binding Path=GlowColor, 
+                                            RelativeSource={RelativeSource Mode=TemplatedParent}, FallbackValue=Gray}" />
+                                </Border.Effect>
+                                <Border CornerRadius="10" ClipToBounds="True" x:Name="PART_ClippingBorder">
+                                    <Grid x:Name="PART_MainGrid" Margin="0">
+                                        <Grid.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                <LinearGradientBrush.GradientStops>
+                                                    <GradientStopCollection>
+                                                        <GradientStop Color="MediumOrchid" Offset="0.0" />
+                                                        <GradientStop Color="Violet" Offset="1.0" />
+                                                    </GradientStopCollection>
+                                                </LinearGradientBrush.GradientStops>
+                                            </LinearGradientBrush>
+                                        </Grid.Background>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+
+                                        <ContentPresenter Grid.Row="0" Grid.RowSpan="2" WindowChrome.IsHitTestVisibleInChrome="True" Margin="0,7,0,0"
+                                          Content="{Binding Content, RelativeSource={RelativeSource Mode=TemplatedParent}}" />
+
+                                        <ContentControl x:Name="PART_TitleBar" HorizontalAlignment="Right">
+                                            <Grid Grid.Row="0" x:Name="PART_TitleBarGrid" VerticalAlignment="Center"
+                                              Background="{x:Null}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
+                                                    <Button Style="{DynamicResource metroWindowButtonStyle}" 
+                                                        x:Name="PART_MinimizeButton">0</Button>
+                                                    <Button Style="{DynamicResource metroWindowButtonStyle}" 
+                                                        x:Name="PART_MaximizeRestoreButton">1</Button>
+                                                    <Button Style="{DynamicResource metroWindowCloseButtonStyle}" 
+                                                        x:Name="PART_CloseButton">r</Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </ContentControl>
+                                    </Grid>
+                                </Border>
+                            </Border>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="ActualWindowState" Value="Maximized">
+                                <Setter Property="CornerRadius" TargetName="PART_MainBorder" Value="0" />
+                                <Setter Property="CornerRadius" TargetName="PART_ClippingBorder" Value="0" />
+                                <Setter Property="Clip" TargetName="PART_ClippingBorder" Value="{x:Null}" />
+                            </Trigger>
+                            <Trigger Property="ActualWindowState" Value="Normal">
+                                <Setter Property="Clip" TargetName="PART_ClippingBorder">
+                                    <Setter.Value>
+                                        <RectangleGeometry RadiusX="10" RadiusY="10">
+                                            <RectangleGeometry.Rect>
+                                                <MultiBinding Converter="{StaticResource rectConverter}">
+                                                    <Binding ElementName="PART_ClippingBorder" Path="ActualWidth" />
+                                                    <Binding ElementName="PART_ClippingBorder" Path="ActualHeight" />
+                                                </MultiBinding>
+                                            </RectangleGeometry.Rect>
+                                        </RectangleGeometry>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource Mode=Self}}" Value="False">
+                                <Setter Property="BorderBrush" TargetName="PART_MainBorder" Value="Gray" />
+                                <Setter Property="GlowColor" Value="Gray" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </metroWindow:MetroWindow.Style>
     <controls:TabControl x:Name="tabControl">
         <controls:TabControl.ItemTemplate>
             <DataTemplate>

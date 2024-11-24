@@ -16,13 +16,13 @@
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="2" 
+                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" 
                                   VirtualizingPanel.CacheLengthUnit="Page">
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.Panel>
                                         <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel Orientation="Horizontal" />
+                                            <VirtualizingStackPanel Orientation="Horizontal"  />
                                         </ItemsPanelTemplate>
                                     </GroupStyle.Panel>
                                     <GroupStyle.ContainerStyle>
@@ -30,7 +30,7 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander Margin="0,0,20,0" IsExpanded="True" Style="{DynamicResource lailaShell_GroupByExpanderStyle}">
+                                                        <Expander IsExpanded="True" Style="{DynamicResource lailaShell_GroupByExpanderStyle}">
                                                             <Expander.Resources>
                                                                 <converters:ListViewGroupingHeightConverter x:Key="listViewGroupingHeightConverter" />
                                                             </Expander.Resources>
@@ -39,7 +39,7 @@
                                                                     <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Expander.Header>
-                                                            <ItemsPresenter Margin="5,0,0,0">
+                                                            <ItemsPresenter Margin="25,0,0,0">
                                                                 <ItemsPresenter.Height>
                                                                     <MultiBinding Converter="{StaticResource listViewGroupingHeightConverter}">
                                                                         <Binding Path="." ElementName="expanderHeader" />
@@ -57,7 +57,7 @@
                             </ListView.Resources>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel SpacingMode="None">
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None" Orientation="Vertical" ItemSize="240,20">
                                         <vwp:VirtualizingWrapPanel.Style>
                                             <Style>
                                                 <Style.Triggers>
@@ -85,7 +85,7 @@
                                                 <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="16" />
                                                 <ColumnDefinition Width="4" />
-                                                <ColumnDefinition Width="Auto" SharedSizeGroup="A" />
+                                                <ColumnDefinition Width="200" SharedSizeGroup="A" />
                                             </Grid.ColumnDefinitions>
                                             <Image Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].FirstIcon16Async, IsAsync=True}"
                                                    Width="14" Height="16">
