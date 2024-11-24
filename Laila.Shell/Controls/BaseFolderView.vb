@@ -412,6 +412,10 @@ Namespace Controls
                 ' stop listening for property changes
                 RemoveHandler oldValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
 
+                ' clear sorting and grouping for faster loading
+                oldValue.ItemsSortPropertyName = Nothing
+                oldValue.ItemsGroupByPropertyName = Nothing
+
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = bfv._lastScrollOffset
                 oldValue.LastScrollSize = bfv._lastScrollSize
