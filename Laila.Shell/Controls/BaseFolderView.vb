@@ -370,7 +370,7 @@ Namespace Controls
                         setGrouping(folder)
                     End If
 
-                    If Not folder.IsRefreshingItems Then
+                    If Not folder.IsRefreshingItems AndAlso Not Me.Folder Is Nothing Then
                         Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
                         folderViewState.SortPropertyName = folder.ItemsSortPropertyName
                         folderViewState.SortDirection = folder.ItemsSortDirection
@@ -411,10 +411,6 @@ Namespace Controls
 
                 ' stop listening for property changes
                 RemoveHandler oldValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
-
-                ' clear sorting and grouping for faster loading
-                oldValue.ItemsSortPropertyName = Nothing
-                oldValue.ItemsGroupByPropertyName = Nothing
 
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = bfv._lastScrollOffset

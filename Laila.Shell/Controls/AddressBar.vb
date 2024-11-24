@@ -132,9 +132,7 @@ Namespace Controls
 
             Await _lock.WaitAsync()
             Try
-                For Each f In _visibleFolders
-                    If Not f.Equals(folder) Then f.IsVisibleInAddressBar = False
-                Next
+                Dim previousVisibleFolders As List(Of Folder) = _visibleFolders.ToList()
                 _visibleFolders.Clear()
 
                 folder.IsVisibleInAddressBar = True
@@ -305,6 +303,10 @@ Namespace Controls
 
                 Me.IsLoading = False
                 clearSuggestionItems()
+
+                For Each f In previousVisibleFolders.Where(Function(f2) Not _visibleFolders.Contains(f2))
+                    f.IsVisibleInAddressBar = False
+                Next
             Finally
                 _lock.Release()
             End Try

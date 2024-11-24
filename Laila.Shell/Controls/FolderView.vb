@@ -161,6 +161,9 @@ Namespace Controls
             Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
             If hasFocus Then Me.ActiveView.Focus()
             Me.ActiveView.Folder = folder
+            Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+            folderViewState.View = newValue
+            folderViewState.Persist()
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.MenusProperty, New Binding("Menus") With {.Source = Me})
             Me.SelectedItems = selectedItems

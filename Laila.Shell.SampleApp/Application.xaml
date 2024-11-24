@@ -5,6 +5,30 @@
              xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell"
              StartupUri="MainWindow.xaml" DispatcherUnhandledException="Application_DispatcherUnhandledException">
     <Application.Resources>
+        <Style x:Key="FocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <SolidColorBrush x:Key="Item.MouseOver.Background" Color="#1F26A0DA"/>
+        <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#a826A0Da"/>
+        <SolidColorBrush x:Key="Item.SelectedInactive.Background" Color="#3DDADADA"/>
+        <SolidColorBrush x:Key="Item.SelectedInactive.Border" Color="#FFDADADA"/>
+        <SolidColorBrush x:Key="Item.SelectedActive.Background" Color="#3D26A0DA"/>
+        <SolidColorBrush x:Key="Item.SelectedActive.Border" Color="#FF26A0DA"/>
+
+        <SolidColorBrush x:Key="Menu.BorderBrush" Color="#999999"/>
+        <SolidColorBrush x:Key="Menu.Background" Color="#F0F0F0"/>
+        <SolidColorBrush x:Key="Menu.Foreground" Color="Black"/>
+        <SolidColorBrush x:Key="MenuItem.Highlighted.BorderBrush" Color="#26A0DA"/>
+        <SolidColorBrush x:Key="MenuItem.Highlighted.Background" Color="#C0DDEB"/>
+        <SolidColorBrush x:Key="MenuItem.Highlighted.Foreground" Color="Black"/>
+        <SolidColorBrush x:Key="MenuItem.Disabled.Foreground" Color="Gray"/>
+        
         <Style TargetType="ToggleButton" x:Key="lailaShell_TreeChevronButtonStyle">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="Black"/>
@@ -261,13 +285,22 @@
             </Setter>
         </Style>
         <Style TargetType="ToggleButton" x:Key="lailaShell_GroupByExpanderToggleButtonStyle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Padding" Value="4,0,4,0" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
-                        <Grid Width="20" Height="20" Background="Transparent">
-                            <Image Width="9" Height="5" Margin="4,0,0,0" x:Name="Arrow"
-                                   Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
-                        </Grid>
+                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="0,0,4,0"
+                                BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" 
+                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            <StackPanel Orientation="Horizontal">
+                                <Image Width="9" Height="5" x:Name="Arrow" VerticalAlignment="Center"
+                                       Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="False">
                                 <Setter TargetName="Arrow" Property="RenderTransform">
@@ -275,7 +308,11 @@
                                         <RotateTransform Angle="-90"/>
                                     </Setter.Value>
                                 </Setter>
-                                <Setter TargetName="Arrow" Property="Margin" Value="8,13,0,0" />
+                                <Setter TargetName="Arrow" Property="Margin" Value="2,13,-2,0" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
+                                <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -293,8 +330,9 @@
                                 <DockPanel>
                                     <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0" 
                                               Style="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}" 
-                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" />
-                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
+                                        <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                                    </ToggleButton>
                                 </DockPanel>
                                 <ContentPresenter x:Name="ExpanderContent" Visibility="Collapsed" ContentSource="Content" />
                             </StackPanel>
@@ -487,13 +525,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <SolidColorBrush x:Key="Menu.BorderBrush" Color="#999999"/>
-        <SolidColorBrush x:Key="Menu.Background" Color="#F0F0F0"/>
-        <SolidColorBrush x:Key="Menu.Foreground" Color="Black"/>
-        <SolidColorBrush x:Key="MenuItem.Highlighted.BorderBrush" Color="#26A0DA"/>
-        <SolidColorBrush x:Key="MenuItem.Highlighted.Background" Color="#C0DDEB"/>
-        <SolidColorBrush x:Key="MenuItem.Highlighted.Foreground" Color="Black"/>
-        <SolidColorBrush x:Key="MenuItem.Disabled.Foreground" Color="Gray"/>
         <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
             <Setter Property="Margin" Value="-10,0,0,0" />
         </Style>
@@ -758,21 +789,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="FocusVisual">
-            <Setter Property="Control.Template">
-                <Setter.Value>
-                    <ControlTemplate>
-                        <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <SolidColorBrush x:Key="Item.MouseOver.Background" Color="#1F26A0DA"/>
-        <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#a826A0Da"/>
-        <SolidColorBrush x:Key="Item.SelectedInactive.Background" Color="#3DDADADA"/>
-        <SolidColorBrush x:Key="Item.SelectedInactive.Border" Color="#FFDADADA"/>
-        <SolidColorBrush x:Key="Item.SelectedActive.Background" Color="#3D26A0DA"/>
-        <SolidColorBrush x:Key="Item.SelectedActive.Border" Color="#FF26A0DA"/>
         <Style TargetType="ListViewItem">
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
