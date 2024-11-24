@@ -126,7 +126,7 @@ Namespace Controls
                     Return imageFactory1
                 End Function
             gridFactory.AppendChild(getIconFactory("IconAsync[16]"))
-            gridFactory.AppendChild(getIconFactory("OverlayImageAsync"))
+            gridFactory.AppendChild(getIconFactory("OverlayImageAsync[16]"))
 
             If [property].HasIcon Then
                 Dim imageFactory2 As FrameworkElementFactory = New FrameworkElementFactory(GetType(Image))

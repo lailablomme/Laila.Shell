@@ -2,6 +2,7 @@
 Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Runtime.InteropServices
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Forms
 Imports System.Windows.Media.Imaging
@@ -12,10 +13,14 @@ Imports Laila.Shell.Helpers
 Public Class ImageHelper
     Private Shared _recognised As IEnumerable(Of FileSignatures.Formats.Image)
     Private Shared _inspector As FileFormatInspector
+    Private Shared _iconsLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _icons As Dictionary(Of String, BitmapSource) = New Dictionary(Of String, BitmapSource)()
-    Private Shared _icons2 As Dictionary(Of Integer, BitmapSource) = New Dictionary(Of Integer, BitmapSource)()
+    Private Shared _icons2 As Dictionary(Of String, BitmapSource) = New Dictionary(Of String, BitmapSource)()
     Private Shared _overlayIconIndexes As Dictionary(Of Byte, Integer) = New Dictionary(Of Byte, Integer)()
-    Private Shared _imageList As IImageList
+    Private Shared _imageListSmall As IImageList
+    Private Shared _imageListLarge As IImageList
+    Private Shared _imageListExtraLarge As IImageList
+    Private Shared _imageListJumbo As IImageList
 
 
     Shared Sub New()
@@ -24,15 +29,10 @@ Public Class ImageHelper
 
         UIHelper.OnUIThread(
             Sub()
-                Dim ptr As IntPtr
-                Try
-                    Functions.SHGetImageList(SHIL.SHIL_EXTRALARGE, GetType(IImageList).GUID, ptr)
-                    _imageList = Marshal.GetObjectForIUnknown(ptr)
-                Finally
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        Marshal.Release(ptr)
-                    End If
-                End Try
+                Functions.SHGetImageList(SHIL.SHIL_SMALL, GetType(IImageList).GUID, _imageListSmall)
+                Functions.SHGetImageList(SHIL.SHIL_LARGE, GetType(IImageList).GUID, _imageListLarge)
+                Functions.SHGetImageList(SHIL.SHIL_EXTRALARGE, GetType(IImageList).GUID, _imageListExtraLarge)
+                Functions.SHGetImageList(SHIL.SHIL_JUMBO, GetType(IImageList).GUID, _imageListJumbo)
             End Sub)
     End Sub
 
@@ -46,33 +46,44 @@ Public Class ImageHelper
         End Try
     End Function
 
-    Public Shared Function GetOverlayIcon(overlayIconIndex As Byte) As BitmapSource
+    Public Shared Function GetOverlayIcon(overlayIconIndex As Byte, size As Integer) As BitmapSource
         If Not _overlayIconIndexes.ContainsKey(overlayIconIndex) Then
             Dim index As Integer
             UIHelper.OnUIThread(
                 Sub()
                     If Not _overlayIconIndexes.ContainsKey(overlayIconIndex) Then
-                        _imageList.GetOverlayImage(overlayIconIndex, index)
+                        _imageListSmall.GetOverlayImage(overlayIconIndex, index)
                         _overlayIconIndexes.Add(overlayIconIndex, index)
                     End If
                 End Sub, Threading.DispatcherPriority.Send)
         End If
 
-        Return ImageHelper.GetIcon(_overlayIconIndexes(overlayIconIndex))
+        Return ImageHelper.GetIcon(_overlayIconIndexes(overlayIconIndex), size)
     End Function
 
-    Public Shared Function GetIcon(index As Integer) As BitmapSource
-        If Not _icons2.ContainsKey(index) Then
+    Public Shared Function GetIcon(index As Integer, size As Integer) As BitmapSource
+        If Not _icons2.ContainsKey(String.Format("{0}_{1}", index, size)) Then
             UIHelper.OnUIThread(
                 Sub()
-                    If Not _icons2.ContainsKey(index) Then
+                    If Not _icons2.ContainsKey(String.Format("{0}_{1}", index, size)) Then
                         Dim hIcon As IntPtr
                         Try
-                            _imageList.GetIcon(index, 0, hIcon)
+                            If size <= 16 Then
+                                _imageListSmall.GetIcon(index, 0, hIcon)
+                            ElseIf size <= 32 Then
+                                _imageListLarge.GetIcon(index, 0, hIcon)
+                            ElseIf size <= 48 Then
+                                _imageListExtraLarge.GetIcon(index, 0, hIcon)
+                            Else
+                                _imageListJumbo.GetIcon(index, 0, hIcon)
+                            End If
                             Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
-                                Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(icon.ToBitmap().GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                image.Freeze()
-                                _icons2.Add(index, image)
+                                Using bitmap = icon.ToBitmap()
+                                    Dim hBitmap As IntPtr = bitmap.GetHbitmap()
+                                    Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                    image.Freeze()
+                                    _icons2.Add(String.Format("{0}_{1}", index, size), image)
+                                End Using
                             End Using
                         Finally
                             If Not IntPtr.Zero.Equals(hIcon) Then
@@ -83,7 +94,7 @@ Public Class ImageHelper
                 End Sub, Threading.DispatcherPriority.Send)
         End If
 
-        Return _icons2(index)
+        Return _icons2(String.Format("{0}_{1}", index, size))
     End Function
 
     Public Shared Function ExtractIcon(ref As String) As BitmapSource
@@ -94,19 +105,23 @@ Public Class ImageHelper
                 If Not IntPtr.Zero.Equals(icon) Then
                     Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     img.Freeze()
-                    UIHelper.OnUIThread(
-                        Sub()
-                            If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
-                                _icons.Add(ref.ToLower().Trim(), img)
-                            End If
-                        End Sub, Threading.DispatcherPriority.Send)
+                    _iconsLock.Wait()
+                    Try
+                        If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
+                            _icons.Add(ref.ToLower().Trim(), img)
+                        End If
+                    Finally
+                        _iconsLock.Release()
+                    End Try
                 Else
-                    UIHelper.OnUIThread(
-                        Sub()
-                            If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
-                                _icons.Add(ref.ToLower().Trim(), Nothing)
-                            End If
-                        End Sub, Threading.DispatcherPriority.Send)
+                    _iconsLock.Wait()
+                    Try
+                        If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
+                            _icons.Add(ref.ToLower().Trim(), Nothing)
+                        End If
+                    Finally
+                        _iconsLock.Release()
+                    End Try
                 End If
             Finally
                 If Not IntPtr.Zero.Equals(icon) Then

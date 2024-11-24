@@ -1,4 +1,5 @@
 ﻿Imports System.ComponentModel
+Imports System.Data
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
@@ -16,8 +17,13 @@ Namespace Controls
         End Sub
 
         Protected Overrides Sub OnBeforeRestoreScrollOffset()
-            'If Not _scrollViewer Is Nothing Then
-            '    _scrollViewer.ScrollToHorizontalOffset(Double.MaxValue)
+            'Dim view As CollectionView = CollectionViewSource.GetDefaultView(ItemsControl.GetItemsOwner(Me).ItemsSource)
+            'If Not (view Is Nothing OrElse Not view.GroupDescriptions.Count > 0) Then
+            '    Dim totalWidth As Double = 0
+            '    For Each g As CollectionViewGroup In view.Groups
+            '        totalWidth += g.ItemCount / Math.Floor((Me.ActualHeight - 25) / 20) * 240
+            '    Next
+            '    _scrollViewer..ScrollableWidth = totalWidth
             'End If
         End Sub
 

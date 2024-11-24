@@ -118,7 +118,7 @@
                                                 </Image.Style>
                                             </Image>
                                             <Border Width="48" Height="48">
-                                                <Image Source="{Binding OverlayImageAsync, IsAsync=True}" Width="32" Height="32" 
+                                                <Image Source="{Binding OverlayImageAsync[48], IsAsync=True}" Width="32" Height="32" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                        VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                     <Image.Style>

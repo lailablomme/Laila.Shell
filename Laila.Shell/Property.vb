@@ -300,18 +300,15 @@ Public Class [Property]
     End Property
 
     Private _icons16Async As ImageSource()
-    Private _skipIcons16Async As Boolean
     Public Overridable ReadOnly Property Icons16Async As ImageSource()
         Get
-            If Not _skipIcons16Async Then
+            If _icons16Async Is Nothing Then
                 Shell.PriorityTaskQueue.Add(
                     Sub()
                         _icons16Async = Me.Icons16
-                        _skipIcons16Async = True
                         Me.NotifyOfPropertyChange(NameOf(Icons16Async))
                     End Sub)
             End If
-            _skipIcons16Async = False
 
             Return _icons16Async
         End Get
@@ -325,18 +322,15 @@ Public Class [Property]
     End Property
 
     Private _firstIcon16Async As ImageSource
-    Private _skipFirstIcon16Async As Boolean
     Public Overridable ReadOnly Property FirstIcon16Async As ImageSource
         Get
-            If Not _skipFirstIcon16Async Then
+            If _firstIcon16Async Is Nothing Then
                 Shell.PriorityTaskQueue.Add(
                     Sub()
                         _firstIcon16Async = Me.FirstIcon16
-                        _skipFirstIcon16Async = True
                         Me.NotifyOfPropertyChange(NameOf(FirstIcon16Async))
                     End Sub)
             End If
-            _skipFirstIcon16Async = False
 
             Return _firstIcon16Async
         End Get

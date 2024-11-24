@@ -15,7 +15,7 @@ Public Class Functions
     Public Shared Function SHGetImageList(
         iImageList As Integer,
         ByRef riid As Guid,
-        <Out> ByRef ppv As IntPtr
+        <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppv As IImageList
     ) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Auto)>

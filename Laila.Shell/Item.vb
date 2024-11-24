@@ -265,7 +265,7 @@ Public Class Item
         End Set
     End Property
 
-    Public Overridable ReadOnly Property OverlayImage As ImageSource
+    Public Overridable ReadOnly Property OverlayImage(size As Integer) As ImageSource
         Get
             If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
                 If IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath) Then
@@ -287,25 +287,24 @@ Public Class Item
             End If
             Dim image As BitmapSource
             If _overlayIconIndex.HasValue AndAlso _overlayIconIndex > 0 Then
-                image = ImageHelper.GetOverlayIcon(_overlayIconIndex)
+                image = ImageHelper.GetOverlayIcon(_overlayIconIndex, size)
             End If
             Return image
         End Get
     End Property
 
     Private _overlayImageAsync As BitmapSource
-    Private _skipOverlayImageAsync As Boolean
-    Public Overridable ReadOnly Property OverlayImageAsync As ImageSource
+    Private _overlayImageSize As Integer
+    Public Overridable ReadOnly Property OverlayImageAsync(size As Integer) As ImageSource
         Get
-            If Not _skipOverlayImageAsync Then
+            If _overlayImageAsync Is Nothing OrElse _overlayImageSize <> size Then
                 Shell.SlowTaskQueue.Add(
                     Sub()
-                        _overlayImageAsync = Me.OverlayImage
-                        _skipOverlayImageAsync = True
+                        _overlayImageAsync = Me.OverlayImage(size)
+                        _overlayImageSize = size
                         Me.NotifyOfPropertyChange(NameOf(OverlayImageAsync))
                     End Sub)
             End If
-            _skipOverlayImageAsync = False
 
             Return _overlayImageAsync
         End Get

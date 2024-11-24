@@ -22,7 +22,7 @@
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.Panel>
                                         <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel Orientation="Horizontal"  />
+                                            <VirtualizingStackPanel Orientation="Horizontal" VirtualizingPanel.IsVirtualizing="False"  />
                                         </ItemsPanelTemplate>
                                     </GroupStyle.Panel>
                                     <GroupStyle.ContainerStyle>
@@ -115,7 +115,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Grid.Column="2" Source="{Binding OverlayImageAsync, IsAsync=True}" Width="16" Height="16" 
+                                            <Image Grid.Column="2" Source="{Binding OverlayImageAsync[16], IsAsync=True}" Width="16" Height="16" 
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                     VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                 <Image.Style>
