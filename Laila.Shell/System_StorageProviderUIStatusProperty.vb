@@ -171,6 +171,29 @@ Public Class System_StorageProviderUIStatusProperty
         End Get
     End Property
 
+    Public Overrides ReadOnly Property Icons16Async As ImageSource()
+        Get
+            Dim icons As List(Of ImageSource) = New List(Of ImageSource)()
+
+            If Not _system_StorageProviderStateProperty Is Nothing Then
+                Dim mainIcons As ImageSource() = _system_StorageProviderStateProperty.Icons16Async
+                If Not mainIcons Is Nothing Then
+                    icons.AddRange(mainIcons)
+                End If
+            End If
+
+            If Not _system_ItemCustomState_IconReferencesProperty Is Nothing Then
+                If Not String.IsNullOrWhiteSpace(_system_ItemCustomState_IconReferencesProperty.Text) Then
+                    For Each iconReference In _system_ItemCustomState_IconReferencesProperty.Text.Split(";")
+                        icons.Add(ImageHelper.ExtractIcon(iconReference))
+                    Next
+                End If
+            End If
+
+            Return icons.ToArray()
+        End Get
+    End Property
+
     Protected Overrides Sub Dispose(disposing As Boolean)
         MyBase.Dispose(disposing)
 

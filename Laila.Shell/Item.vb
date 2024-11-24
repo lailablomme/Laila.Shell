@@ -20,7 +20,6 @@ Public Class Item
     Private _isPinned As Boolean
     Private _isCut As Boolean
     Private _attributes As SFGAO
-    Private _overlayIconIndex As Integer?
     Private _treeRootIndex As Long = -1
     Private _shellItem2 As IShellItem2
     Private _objectId As Long = -1
@@ -265,11 +264,11 @@ Public Class Item
         End Set
     End Property
 
-    Public Overridable ReadOnly Property OverlayImage(size As Integer) As ImageSource
+    Public ReadOnly Property OverlayIconIndex As Byte
         Get
-            If Not _overlayIconIndex.HasValue AndAlso Not disposedValue Then
-                If IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath) Then
-                    Dim shFileInfo As New SHFILEINFO()
+            If IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath) Then
+                Dim shFileInfo As New SHFILEINFO()
+                Try
                     Dim result As IntPtr = Functions.SHGetFileInfo(
                         Me.FullPath,
                         0,
@@ -278,35 +277,46 @@ Public Class Item
                         SHGFI.SHGFI_ICON Or SHGFI.SHGFI_OVERLAYINDEX
                     )
                     If Not IntPtr.Zero.Equals(result) Then
-                        _overlayIconIndex = CByte((shFileInfo.iIcon >> 24) And &HFF)
-                        If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
-                            Functions.DestroyIcon(shFileInfo.hIcon)
-                        End If
+                        Return CByte((shFileInfo.iIcon >> 24) And &HFF)
                     End If
-                End If
+                Finally
+                    If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
+                        Functions.DestroyIcon(shFileInfo.hIcon)
+                    End If
+                End Try
             End If
-            Dim image As BitmapSource
-            If _overlayIconIndex.HasValue AndAlso _overlayIconIndex > 0 Then
-                image = ImageHelper.GetOverlayIcon(_overlayIconIndex, size)
-            End If
-            Return image
+            Return 0
         End Get
     End Property
 
-    Private _overlayImageAsync As BitmapSource
-    Private _overlayImageSize As Integer
+    Public Overridable ReadOnly Property OverlayImage(size As Integer) As ImageSource
+        Get
+            Dim overlayIconIndex As Byte = Me.OverlayIconIndex
+            If overlayIconIndex > 0 Then
+                Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
+            End If
+            Return Nothing
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property OverlayImageAsync(size As Integer) As ImageSource
         Get
-            If _overlayImageAsync Is Nothing OrElse _overlayImageSize <> size Then
-                Shell.SlowTaskQueue.Add(
-                    Sub()
-                        _overlayImageAsync = Me.OverlayImage(size)
-                        _overlayImageSize = size
-                        Me.NotifyOfPropertyChange(NameOf(OverlayImageAsync))
-                    End Sub)
-            End If
+            Dim tcs As New TaskCompletionSource(Of Byte)
 
-            Return _overlayImageAsync
+            Shell.PriorityTaskQueue.Add(
+                Sub()
+                    Try
+                        tcs.SetResult(Me.OverlayIconIndex)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
+
+            Dim overlayIconIndex As Byte = tcs.Task.Result
+            If overlayIconIndex > 0 Then
+                Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
+            End If
+            Return Nothing
         End Get
     End Property
 

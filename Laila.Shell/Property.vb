@@ -1,5 +1,6 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Text
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Forms
 Imports System.Windows.Media
@@ -12,7 +13,8 @@ Public Class [Property]
 
     Private Shared _descriptions As HashSet(Of Tuple(Of String, String, IPropertyDescription)) = New HashSet(Of Tuple(Of String, String, IPropertyDescription))
     Private Shared _hasIcon As HashSet(Of Tuple(Of String, Boolean)) = New HashSet(Of Tuple(Of String, Boolean))()
-    Private Shared _icons16 As HashSet(Of Tuple(Of String, ImageSource())) = New HashSet(Of Tuple(Of String, ImageSource()))()
+    Private Shared _imageReferences16 As HashSet(Of Tuple(Of String, String())) = New HashSet(Of Tuple(Of String, String()))()
+    Private Shared _imageReferences16Lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
 
     Protected _canonicalName As String
     Protected _propertyDescription As IPropertyDescription
@@ -269,28 +271,35 @@ Public Class [Property]
         End Get
     End Property
 
-    Public Overridable ReadOnly Property Icons16 As ImageSource()
+    Public ReadOnly Property ImageReferences16 As String()
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                Dim i16 As Tuple(Of String, ImageSource()) =
-                    _icons16.FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()))
+                Dim i16 As Tuple(Of String, String()) =
+                    _imageReferences16.FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()))
                 If i16 Is Nothing Then
-                    Dim result As ImageSource()
+                    Dim result As String()
                     Dim propertyEnumType2 As IPropertyEnumType2
                     Try
                         propertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description)
                         Dim imageReference As String
                         propertyEnumType2.GetImageReference(imageReference)
                         If Not String.IsNullOrWhiteSpace(imageReference) Then
-                            result = {ImageHelper.ExtractIcon(imageReference)}
+                            result = {imageReference}
                         End If
                     Finally
                         If Not propertyEnumType2 Is Nothing Then
                             Marshal.ReleaseComObject(propertyEnumType2)
                         End If
                     End Try
-                    i16 = New Tuple(Of String, ImageSource())(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), result)
-                    _icons16.Add(i16)
+                    _imageReferences16Lock.Wait()
+                    Try
+                        If _imageReferences16.FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue())) Is Nothing Then
+                            i16 = New Tuple(Of String, String())(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), result)
+                            _imageReferences16.Add(i16)
+                        End If
+                    Finally
+                        _imageReferences16Lock.Release()
+                    End Try
                 End If
                 Return i16.Item2
             Else
@@ -299,18 +308,30 @@ Public Class [Property]
         End Get
     End Property
 
-    Private _icons16Async As ImageSource()
+    Public Overridable ReadOnly Property Icons16 As ImageSource()
+        Get
+            Return Me.ImageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property Icons16Async As ImageSource()
         Get
-            If _icons16Async Is Nothing Then
-                Shell.PriorityTaskQueue.Add(
-                    Sub()
-                        _icons16Async = Me.Icons16
-                        Me.NotifyOfPropertyChange(NameOf(Icons16Async))
-                    End Sub)
-            End If
+            Dim tcs As New TaskCompletionSource(Of String())
 
-            Return _icons16Async
+            Shell.PriorityTaskQueue.Add(
+                Sub()
+                    Try
+                        tcs.SetResult(Me.ImageReferences16)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
+
+            Dim imageReferences16 As String() = tcs.Task.Result
+            If Not imageReferences16 Is Nothing Then
+                Return imageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
+            End If
+            Return Nothing
         End Get
     End Property
 
@@ -321,18 +342,10 @@ Public Class [Property]
         End Get
     End Property
 
-    Private _firstIcon16Async As ImageSource
     Public Overridable ReadOnly Property FirstIcon16Async As ImageSource
         Get
-            If _firstIcon16Async Is Nothing Then
-                Shell.PriorityTaskQueue.Add(
-                    Sub()
-                        _firstIcon16Async = Me.FirstIcon16
-                        Me.NotifyOfPropertyChange(NameOf(FirstIcon16Async))
-                    End Sub)
-            End If
-
-            Return _firstIcon16Async
+            Dim icons16() As ImageSource = Me.Icons16Async
+            Return If(icons16.Count > 0, icons16(0), Nothing)
         End Get
     End Property
 
