@@ -2,6 +2,7 @@
 Imports System.Data
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Controls.Primitives
 Imports System.Windows.Data
 Imports Laila.Shell.Helpers
 Imports WpfToolkit.Controls
@@ -16,15 +17,7 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ListView), New FrameworkPropertyMetadata(GetType(ListView)))
         End Sub
 
-        Protected Overrides Sub OnBeforeRestoreScrollOffset()
-            'Dim view As CollectionView = CollectionViewSource.GetDefaultView(ItemsControl.GetItemsOwner(Me).ItemsSource)
-            'If Not (view Is Nothing OrElse Not view.GroupDescriptions.Count > 0) Then
-            '    Dim totalWidth As Double = 0
-            '    For Each g As CollectionViewGroup In view.Groups
-            '        totalWidth += g.ItemCount / Math.Floor((Me.ActualHeight - 25) / 20) * 240
-            '    Next
-            '    _scrollViewer..ScrollableWidth = totalWidth
-            'End If
+        Protected Overrides Async Sub OnBeforeRestoreScrollOffset()
         End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,

@@ -22,7 +22,7 @@
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.Panel>
                                         <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel Orientation="Horizontal" VirtualizingPanel.IsVirtualizing="False"  />
+                                            <VirtualizingStackPanel Orientation="Horizontal" />
                                         </ItemsPanelTemplate>
                                     </GroupStyle.Panel>
                                     <GroupStyle.ContainerStyle>
