@@ -27,17 +27,16 @@ Namespace Controls
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
+        Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
         Private PART_Grid As Grid
-        Private _columnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
-        Private _isLoading As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
         Private _menus As Laila.Shell.Controls.Menus
         Private _timeSpentTimer As Timer
-        Private _scrollViewer As ScrollViewer
+        Protected _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
         Private _lastScrollSize As Size
         Private _isLoaded As Boolean
@@ -110,7 +109,7 @@ Namespace Controls
             ElseIf e.Key = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.None _
                 AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
                 If TypeOf Me.SelectedItems(0) Is Folder Then
-                    Me.Folder = Me.SelectedItems(0)
+                    Me.Host.Folder = Me.SelectedItems(0)
                 Else
                     invokeDefaultCommand()
                 End If
@@ -193,7 +192,7 @@ Namespace Controls
                     Using Shell.OverrideCursor(Cursors.Wait)
                         Me.SelectedItems = {clickedItem}
                         If TypeOf clickedItem Is Folder Then
-                            Me.Folder = clickedItem
+                            Me.Host.Folder = clickedItem
                             UIHelper.OnUIThread(
                                 Sub()
                                 End Sub, Threading.DispatcherPriority.Render)
@@ -251,7 +250,7 @@ Namespace Controls
                                 If Not Me.SelectedItems Is Nothing _
                                         AndAlso Me.SelectedItems.Count = 1 _
                                         AndAlso TypeOf Me.SelectedItems(0) Is Folder Then
-                                    Me.Folder = Me.SelectedItems(0)
+                                    Me.Host.Folder = Me.SelectedItems(0)
                                     e2.IsHandled = True
                                 End If
                             Case "rename"
@@ -464,6 +463,8 @@ Namespace Controls
                     Async Sub()
                         Await Task.Delay(50)
 
+                        bfv.OnBeforeRestoreScrollOffset()
+
                         ' restore folder scroll position
                         bfv._lastScrollOffset = newValue.LastScrollOffset
                         bfv._lastScrollSize = newValue.LastScrollSize
@@ -476,6 +477,10 @@ Namespace Controls
             End If
 
             bfv.IsLoading = False
+        End Sub
+
+        Protected Overridable Sub OnBeforeRestoreScrollOffset()
+
         End Sub
 
         Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)

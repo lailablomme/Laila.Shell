@@ -120,7 +120,7 @@ Namespace Controls
             If Not e.NewValue Is Nothing Then
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(CType(e.NewValue, Folder).FullPath)
-                fv.changeView(folderViewState.View)
+                fv.changeView(folderViewState.View, e.NewValue)
                 CType(e.NewValue, Folder).View = folderViewState.View
                 AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
             End If
@@ -132,16 +132,16 @@ Namespace Controls
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
                 Case "View"
-                    changeView(Me.Folder.View)
+                    changeView(Me.Folder.View, Me.Folder)
             End Select
         End Sub
 
-        Private Sub changeView(newValue As String)
+        Private Sub changeView(newValue As String, folder As Folder)
             Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
             Dim hasFocus As Boolean
             If Not Me.ActiveView Is Nothing Then
                 hasFocus = Me.ActiveView.IsKeyboardFocusWithin
-                BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.FolderProperty)
+                Me.ActiveView.Folder = Nothing
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.MenusProperty)
             End If
@@ -150,7 +150,7 @@ Namespace Controls
             Next
             If Not _views.ContainsKey(newValue) Then
                 Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(newValue).Item2)
-                'Me.ActiveView.Host = me
+                Me.ActiveView.Host = Me
                 _views.Add(newValue, Me.ActiveView)
                 If Not Me.PART_Grid Is Nothing Then
                     Me.PART_Grid.Children.Add(Me.ActiveView)
@@ -160,7 +160,7 @@ Namespace Controls
             End If
             Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
             If hasFocus Then Me.ActiveView.Focus()
-            BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = Me})
+            Me.ActiveView.Folder = folder
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.MenusProperty, New Binding("Menus") With {.Source = Me})
             Me.SelectedItems = selectedItems

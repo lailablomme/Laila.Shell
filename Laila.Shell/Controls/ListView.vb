@@ -15,52 +15,9 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ListView), New FrameworkPropertyMetadata(GetType(ListView)))
         End Sub
 
-        Public Overrides Sub OnApplyTemplate()
-            MyBase.OnApplyTemplate()
-
-            AddHandler PART_ListBox.Loaded,
-                Sub(s As Object, e As EventArgs)
-                    If Not _isLoaded Then
-                        _isLoaded = True
-
-                        If Not Me.Folder Is Nothing Then setWrapPanel(Me.Folder)
-                    End If
-                End Sub
-        End Sub
-
-        Protected Overrides Sub Folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
-            MyBase.Folder_PropertyChanged(s, e)
-
-            Select Case e.PropertyName
-                Case "ItemsGroupByPropertyName"
-                    setWrapPanel(s)
-            End Select
-        End Sub
-
-        Protected Overrides Sub MakeBinding(folder As Folder)
-            MyBase.MakeBinding(folder)
-
-            setWrapPanel(folder)
-        End Sub
-
-        Private Sub setWrapPanel(folder As Folder)
-            'If Not Me.PART_ListView Is Nothing Then
-            '    Dim wrapPanelFactory As FrameworkElementFactory
-            '    If folder.ItemsGroupByPropertyName Is Nothing Then
-            '        wrapPanelFactory = New FrameworkElementFactory(GetType(VirtualizingWrapPanel))
-            '        wrapPanelFactory.SetValue(VirtualizingWrapPanel.OrientationProperty, Orientation.Vertical)
-            '        wrapPanelFactory.SetValue(VirtualizingWrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
-            '        wrapPanelFactory.SetValue(VirtualizingWrapPanel.AllowDifferentSizedItemsProperty, True)
-            '        wrapPanelFactory.SetValue(VirtualizingWrapPanel.SpacingModeProperty, SpacingMode.None)
-            '    Else
-            '        wrapPanelFactory = New FrameworkElementFactory(GetType(WrapPanel))
-            '        wrapPanelFactory.SetValue(WrapPanel.OrientationProperty, Orientation.Vertical)
-            '        wrapPanelFactory.SetValue(WrapPanel.MarginProperty, New Thickness(20, 0, -25, 0))
-            '    End If
-
-            '    Dim itemsPanelTemplate As New ItemsPanelTemplate()
-            '    itemsPanelTemplate.VisualTree = wrapPanelFactory
-            '    Me.PART_ListView.ItemsPanel = itemsPanelTemplate
+        Protected Overrides Sub OnBeforeRestoreScrollOffset()
+            'If Not _scrollViewer Is Nothing Then
+            '    _scrollViewer.ScrollToHorizontalOffset(Double.MaxValue)
             'End If
         End Sub
 
