@@ -75,7 +75,7 @@ Public Class Item
     Friend Shared Function GetFullPathFromShellItem2(shellItem2 As IShellItem2) As String
         Dim fullPath As String
         shellItem2.GetDisplayName(SHGDN.FORPARSING, fullPath)
-        If fullPath.StartsWith("::{") AndAlso fullPath.EndsWith("}") Then
+        If Not fullPath Is Nothing AndAlso fullPath.StartsWith("::{") AndAlso fullPath.EndsWith("}") Then
             fullPath = "shell:" & fullPath
         End If
         Return fullPath
