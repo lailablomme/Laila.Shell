@@ -8,6 +8,13 @@ Imports System.IO
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
+    Public Shared Function ILClone(pidl As IntPtr) As IntPtr
+    End Function
+
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
+    Public Shared Function ILRemoveLastID(pidl As IntPtr) As Boolean
+    End Function
     <DllImport("shell32.dll", EntryPoint:="#727", CharSet:=CharSet.Auto)>
     Public Shared Function SHGetImageListHandle(iImageList As Integer, ByRef riid As Guid, ByRef phImageList As IntPtr) As Integer
     End Function
@@ -327,10 +334,6 @@ Public Class Functions
 
     <DllImport("shell32.dll")>
     Public Shared Function SHCreateItemFromIDList(<[In]> pidl As IntPtr, <[In]> riid As Guid, <Out> ByRef ppv As IntPtr) As HRESULT
-    End Function
-
-    <DllImport("shell32.dll")>
-    Public Shared Function ILRemoveLastID(<[In]> <Out> ByRef pidl As IntPtr) As Boolean
     End Function
 
     <DllImport("propsys.dll")>

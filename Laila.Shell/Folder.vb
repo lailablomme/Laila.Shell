@@ -671,8 +671,8 @@ Public Class Folder
                             Else
                                 item1 = New Item(item1ShellItem, Me)
                             End If
-                            Using parent = item1.GetParent()
-                                If Me.Pidl.Equals(parent.Pidl) Then
+                            Using parentPidl = item1.Pidl.GetParent()
+                                If Me.Pidl.Equals(parentPidl) Then
                                     If Not Me.IsLoading AndAlso Not _items Is Nothing Then
                                         Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
                                         If existing Is Nothing Then
@@ -691,8 +691,8 @@ Public Class Folder
                         Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
                         If Not item1ShellItem Is Nothing Then
                             Dim item1 As Folder = New Folder(item1ShellItem, Me)
-                            Using parent = item1.GetParent()
-                                If Me.Pidl.Equals(parent.Pidl) Then
+                            Using parentPidl = item1.Pidl.GetParent()
+                                If Me.Pidl.Equals(parentPidl) Then
                                     If Not Me.IsLoading AndAlso Not _items Is Nothing Then
                                         Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
                                         If existing Is Nothing Then

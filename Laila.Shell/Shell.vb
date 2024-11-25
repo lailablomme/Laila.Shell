@@ -169,12 +169,17 @@ Public Class Shell
                 pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                 Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
+                Dim e As NotificationEventArgs = New NotificationEventArgs() With {
+                    .[Event] = lEvent
+                }
+
                 Dim path1 As String
                 If Not IntPtr.Zero.Equals(pidl1) Then
                     Dim path As StringBuilder = New StringBuilder(260)
                     Functions.SHGetPathFromIDList(pidl1, path)
                     path1 = path.ToString()
-                    Debug.WriteLine(pidl1.ToString() & "/" & path1.ToString())
+                    e.Item1Pidl = New Pidl(pidl1)
+                    Debug.WriteLine(BitConverter.ToString(e.Item1Pidl.Bytes) & vbCrLf & "/" & path1.ToString())
                 End If
 
                 Dim path2 As String
@@ -182,14 +187,11 @@ Public Class Shell
                     Dim path As StringBuilder = New StringBuilder(260)
                     Functions.SHGetPathFromIDList(pidl2, path)
                     path2 = path.ToString()
-                    Debug.WriteLine(pidl2.ToString() & "/" & path2.ToString())
+                    e.Item2Pidl = New Pidl(pidl2)
+                    Debug.WriteLine(BitConverter.ToString(e.Item2Pidl.Bytes) & vbCrLf & "/" & path2.ToString())
                 End If
 
-                RaiseEvent Notification(Nothing, New NotificationEventArgs() With {
-                    .Item1Pidl = New Pidl(pidl1),
-                    .Item2Pidl = New Pidl(pidl2),
-                    .[Event] = lEvent
-                })
+                RaiseEvent Notification(Nothing, e)
 
                 Functions.SHChangeNotification_Unlock(hLock)
             End If

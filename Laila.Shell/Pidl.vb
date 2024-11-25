@@ -156,12 +156,19 @@ Public Class Pidl
     End Function
 
     Public Function Clone() As Pidl
-        Dim bytes As Byte() = Me.Bytes
-        Dim ptr As IntPtr = Marshal.AllocCoTaskMem(bytes.Count)
-        For i = 0 To bytes.Length - 1
-            Marshal.Copy(bytes, 0, ptr, bytes.Length)
-        Next
-        Return New Pidl(ptr)
+        'Dim bytes As Byte() = Me.Bytes
+        'Dim ptr As IntPtr = Marshal.AllocCoTaskMem(bytes.Count)
+        'For i = 0 To bytes.Length - 1
+        '    Marshal.Copy(bytes, 0, ptr, bytes.Length)
+        'Next
+        'Return New Pidl(ptr)
+        Return New Pidl(Functions.ILClone(Me.AbsolutePIDL))
+    End Function
+
+    Public Function GetParent() As Pidl
+        Dim parentPidl As IntPtr = Functions.ILClone(Me.AbsolutePIDL)
+        Functions.ILRemoveLastID(parentPidl)
+        Return New Pidl(parentPidl)
     End Function
 
     Public ReadOnly Property IsZero As Boolean
