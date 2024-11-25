@@ -411,7 +411,7 @@ Namespace Controls
                                 _selectionHelper.SetSelectedItems({clickedItem})
                                 If TypeOf clickedItem Is Folder Then
                                     CType(clickedItem, Folder).LastScrollOffset = New Point()
-                                    Me.SetSelectedFolder(clickedItem)
+                                    Me.Folder = clickedItem
                                 End If
                             End If
 
@@ -473,7 +473,10 @@ Namespace Controls
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                             Else
                                 _selectionHelper.SetSelectedItems({clickedItem})
-                                If TypeOf clickedItem Is Folder Then Me.Folder = clickedItem
+                                If TypeOf clickedItem Is Folder Then
+                                    CType(clickedItem, Folder).LastScrollOffset = New Point()
+                                    Me.Folder = clickedItem
+                                End If
                             End If
                             e.Handled = True
                         End If
