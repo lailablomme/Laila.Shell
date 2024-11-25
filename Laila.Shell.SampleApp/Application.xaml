@@ -475,7 +475,7 @@
                         <Border x:Name="bd" Background="Transparent">
                             <Border x:Name="bd2" Background="Transparent">
                                 <TextBlock Style="{DynamicResource metroWindowTitleTextStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="tb"
-                                        FontFamily="Segoe MDL2 Assets" FontSize="14">
+                                        FontFamily="Segoe Fluent Icons" FontSize="12" FontWeight="UltraLight">
                                     <ContentPresenter />
                                 </TextBlock>
                             </Border>
@@ -518,7 +518,7 @@
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Background="Transparent">
                             <TextBlock Style="{DynamicResource metroWindowTitleTextStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="tb"
-                                    FontFamily="Segoe MDL2 Assets" FontSize="14">
+                                    FontFamily="Segoe Fluent Icons" FontSize="12" FontWeight="UltraLight">
                             <ContentPresenter />
                             </TextBlock>
                         </Border>

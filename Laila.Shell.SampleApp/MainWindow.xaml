@@ -72,11 +72,11 @@
 
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
                                                     <Button Style="{DynamicResource metroWindowButtonStyle}" 
-                                                        x:Name="PART_MinimizeButton">&#xE949;</Button>
+                                                        x:Name="PART_MinimizeButton"></Button>
                                                     <Button Style="{DynamicResource metroWindowButtonStyle}" 
-                                                        x:Name="PART_MaximizeRestoreButton">&#xE739;</Button>
+                                                        x:Name="PART_MaximizeRestoreButton"></Button>
                                                     <Button Style="{DynamicResource metroWindowCloseButtonStyle}" 
-                                                        x:Name="PART_CloseButton">&#xE106;</Button>
+                                                        x:Name="PART_CloseButton"></Button>
                                                 </StackPanel>
                                             </Grid>
                                         </ContentControl>
@@ -105,7 +105,7 @@
                                 </Setter>
                             </Trigger>
                             <Trigger Property="ActualWindowState" Value="Maximized">
-                                <Setter Property="Content" TargetName="PART_MaximizeRestoreButton" Value="&#xE923;" />
+                                <Setter Property="Content" TargetName="PART_MaximizeRestoreButton" Value="" />
                             </Trigger>
                             <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource Mode=Self}}" Value="False">
                                 <Setter Property="BorderBrush" TargetName="PART_MainBorder" Value="Gray" />
