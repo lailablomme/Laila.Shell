@@ -293,8 +293,8 @@ Public Class [Property]
                     End Try
                     _imageReferences16Lock.Wait()
                     Try
+                        i16 = New Tuple(Of String, String())(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), result)
                         If _imageReferences16.FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue())) Is Nothing Then
-                            i16 = New Tuple(Of String, String())(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), result)
                             _imageReferences16.Add(i16)
                         End If
                     Finally
