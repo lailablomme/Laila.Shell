@@ -202,7 +202,8 @@ Namespace Controls
                                 Sub()
                                     subFolder = button.Tag
                                 End Sub)
-                            If (Await subFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count > 0 Then
+                            If (Await subFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count > 0 _
+                                OrElse Not subFolder.Equals(folder) Then
                                 AddHandler button.Checked,
                                      Sub(s As Object, e As EventArgs)
                                          Dim subFoldersContextMenu As ItemsContextMenu = New ItemsContextMenu()
@@ -228,7 +229,7 @@ Namespace Controls
 
                                          subFoldersContextMenu.IsOpen = True
                                      End Sub
-                            Else
+                            ElseIf subFolder.Equals(folder) Then
                                 UIHelper.OnUIThread(
                                     Sub()
                                         button.Visibility = Visibility.Collapsed

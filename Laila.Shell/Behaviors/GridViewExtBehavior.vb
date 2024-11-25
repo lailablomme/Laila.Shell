@@ -327,7 +327,7 @@ Namespace Behaviors
 
                 ' set sort from state
                 Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
-                resetSortDescriptions(view)
+                ResetSortDescriptions(view)
                 If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(_gridViewState.SortPropertyName) Then
                     Me.SetSort(_gridViewState.SortPropertyName, _gridViewState.SortDirection)
                 Else
@@ -370,7 +370,7 @@ Namespace Behaviors
             End If
         End Sub
 
-        Private Sub resetSortDescriptions(view As ICollectionView)
+        Protected Overridable Sub ResetSortDescriptions(view As ICollectionView)
             view.SortDescriptions.Clear()
             If Not String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) Then
                 For Each firstSortProperty In Me.ColumnsIn.PrimarySortProperties.Split(",")
@@ -553,7 +553,7 @@ Namespace Behaviors
                             If view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count Then
                                 Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
                                 If currentSort.PropertyName = propertyName Then
-                                    resetSortDescriptions(view)
+                                    ResetSortDescriptions(view)
 
                                     Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
                                     If Not currentSortedColumnHeader Is Nothing Then

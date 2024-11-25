@@ -35,6 +35,10 @@ Namespace Behaviors
             End If
         End Sub
 
+        Protected Overrides Sub ResetSortDescriptions(view As ICollectionView)
+
+        End Sub
+
         Protected Overrides Sub SetGrouping(propertyName As String)
             If Not Me.Folder Is Nothing Then
                 Me.Folder.ItemsGroupByPropertyName = propertyName

@@ -53,18 +53,16 @@ Namespace Helpers
                                                                       OrElse f.FullPath.ToLower().StartsWith(fileName.ToLower())) _
                                                            .OrderBy(Function(f) f.DisplayName).Cast(Of Item).ToList()
                     End If
-                    Await _lock.WaitAsync()
-                    Try
-                        If Not _items Is Nothing Then
-                            For Each item In _items
-                                item.MaybeDispose()
-                            Next
-                        End If
-                        _items = New List(Of Item)()
-                        _items.AddRange(items)
-                    Finally
-                        _lock.Release()
-                    End Try
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If Not _items Is Nothing Then
+                                For Each item In _items
+                                    item.MaybeDispose()
+                                Next
+                            End If
+                            _items = New List(Of Item)()
+                            _items.AddRange(items)
+                        End Sub)
                     Return items
                 End Function
 
