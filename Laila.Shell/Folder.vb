@@ -129,6 +129,10 @@ Public Class Folder
                     End Function
 
                 Task.Run(t)
+            Else
+                For Each item In _items.Where(Function(i) TypeOf i Is Folder)
+                    item.IsExpanded = False
+                Next
             End If
 
             Me.MaybeDispose()

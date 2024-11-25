@@ -654,11 +654,17 @@ Namespace Controls
 
             Select Case e.PropertyName
                 Case "IsExpanded"
-                    For Each item In folder.Items
-                        If TypeOf item Is Folder AndAlso Not Me.Items.Contains(item) Then
-                            Me.Items.Add(item)
-                        End If
-                    Next
+                    If folder.IsExpanded Then
+                        For Each item In folder.Items
+                            If TypeOf item Is Folder AndAlso Not Me.Items.Contains(item) Then
+                                Me.Items.Add(item)
+                            End If
+                            If Me.SelectedItem Is Nothing AndAlso Not Me.Folder Is Nothing _
+                                AndAlso item.Pidl.Equals(Me.Folder.Pidl) Then
+                                Me.SetSelectedItem(item)
+                            End If
+                        Next
+                    End If
                     CollectionViewSource.GetDefaultView(Me.Items).Refresh()
                 Case "TreeSortKey"
                     For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
