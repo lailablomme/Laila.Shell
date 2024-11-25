@@ -163,7 +163,7 @@ Public Class Shell
             Dim hLock As IntPtr = Functions.SHChangeNotification_Lock(wParam, lParam, pppidl, lEvent)
 
             If hLock <> IntPtr.Zero Then
-                Debug.WriteLine(lEvent.ToString())
+                Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
 
                 Dim pidl1 As IntPtr = Marshal.ReadIntPtr(pppidl)
                 pppidl = IntPtr.Add(pppidl, IntPtr.Size)

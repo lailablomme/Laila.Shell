@@ -661,61 +661,50 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.CREATE
                     If _isLoaded Then
-                        Dim parentShellItem2 As IShellItem2
-                        Try
-                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
-                            If Not item1 Is Nothing Then
-                                item1.GetParent(parentShellItem2)
-                                Dim parentFullPath As String = Item.GetFullPathFromShellItem2(parentShellItem2)
-                                Dim itemFullPath As String = Item.GetFullPathFromShellItem2(item1)
-                                If Me.FullPath.Equals(parentFullPath) Then
+                        Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
+                        If Not item1ShellItem Is Nothing Then
+                            Dim attr As SFGAO = SFGAO.FOLDER
+                            item1ShellItem.GetAttributes(attr, attr)
+                            Dim item1 As Item
+                            If attr.HasFlag(SFGAO.FOLDER) Then
+                                item1 = New Folder(item1ShellItem, Me)
+                            Else
+                                item1 = New Item(item1ShellItem, Me)
+                            End If
+                            Using parent = item1.GetParent()
+                                If Me.Pidl.Equals(parent.Pidl) Then
                                     If Not Me.IsLoading AndAlso Not _items Is Nothing Then
-                                        Dim existing As Item = _items.FirstOrDefault(Function(i) i.FullPath.Equals(itemFullPath) AndAlso Not i.disposedValue)
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
                                         If existing Is Nothing Then
-                                            Dim attr As SFGAO = SFGAO.FOLDER
-                                            item1.GetAttributes(attr, attr)
-                                            If attr.HasFlag(SFGAO.FOLDER) Then
-                                                _items.Add(New Folder(item1, Me))
-                                            Else
-                                                _items.Add(New Item(item1, Me))
-                                            End If
+                                            _items.Add(item1)
                                         Else
                                             existing.Refresh()
+                                            item1.Dispose()
                                         End If
                                     End If
                                 End If
-                            End If
-                        Finally
-                            If Not parentShellItem2 Is Nothing Then
-                                Marshal.ReleaseComObject(parentShellItem2)
-                            End If
-                        End Try
+                            End Using
+                        End If
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
-                        Dim parentShellItem2 As IShellItem2
-                        Try
-                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
-                            If Not item1 Is Nothing Then
-                                item1.GetParent(parentShellItem2)
-                                Dim parentFullPath As String = Item.GetFullPathFromShellItem2(parentShellItem2)
-                                Dim itemFullPath As String = Item.GetFullPathFromShellItem2(item1)
-                                If Me.FullPath.Equals(parentFullPath) Then
+                        Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
+                        If Not item1ShellItem Is Nothing Then
+                            Dim item1 As Folder = New Folder(item1ShellItem, Me)
+                            Using parent = item1.GetParent()
+                                If Me.Pidl.Equals(parent.Pidl) Then
                                     If Not Me.IsLoading AndAlso Not _items Is Nothing Then
-                                        Dim existing As Item = _items.FirstOrDefault(Function(i) i.FullPath.Equals(itemFullPath) AndAlso Not i.disposedValue)
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
                                         If existing Is Nothing Then
-                                            _items.Add(New Folder(item1, Me))
+                                            _items.Add(New Folder(item1ShellItem, Me))
                                         Else
                                             existing.Refresh()
+                                            item1.Dispose()
                                         End If
                                     End If
                                 End If
-                            End If
-                        Finally
-                            If Not parentShellItem2 Is Nothing Then
-                                Marshal.ReleaseComObject(parentShellItem2)
-                            End If
-                        End Try
+                            End Using
+                        End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _isLoaded Then

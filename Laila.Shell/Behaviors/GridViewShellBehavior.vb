@@ -22,13 +22,11 @@ Namespace Behaviors
                 If Not String.IsNullOrWhiteSpace(Me.Folder.ItemsSortPropertyName) Then
                     If direction <> -1 AndAlso Me.Folder.ItemsSortDirection <> direction Then
                         Me.Folder.ItemsSortDirection = direction
-                    Else
-                        If isSwitchingDirection Then
-                            If Me.Folder.ItemsSortDirection = ListSortDirection.Ascending Then
-                                Me.Folder.ItemsSortDirection = ListSortDirection.Descending
-                            Else
-                                Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
-                            End If
+                    ElseIf direction = -1 AndAlso isSwitchingDirection Then
+                        If Me.Folder.ItemsSortDirection = ListSortDirection.Ascending Then
+                            Me.Folder.ItemsSortDirection = ListSortDirection.Descending
+                        Else
+                            Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
                         End If
                     End If
                 End If
