@@ -531,62 +531,70 @@ Namespace Controls
         End Sub
 
         Public Sub InvokeCommand(contextMenu As ContextMenu, id As String)
-            Using Shell.OverrideCursor(Cursors.Wait)
-                Dim lastFolder As Folder = Me.Folder
-                Dim lastSelectedItems As IEnumerable(Of Item) = Me.SelectedItems
+            Dim lastFolder As Folder = Me.Folder
+            Dim lastSelectedItems As IEnumerable(Of Item) = Me.SelectedItems
 
-                Dim c As Control = contextMenu.Items.Cast(Of Control).FirstOrDefault(Function(i) i.Tag = id)
-                Dim e As CommandInvokedEventArgs = New CommandInvokedEventArgs() With {
-                    .Id = id.Split(vbTab)(0),
-                    .Verb = id.Split(vbTab)(1)
-                }
-                If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
-                RaiseEvent CommandInvoked(Me, e)
+            Dim e As CommandInvokedEventArgs = New CommandInvokedEventArgs() With {
+                .Id = id.Split(vbTab)(0),
+                .Verb = id.Split(vbTab)(1)
+            }
+            RaiseEvent CommandInvoked(Me, e)
 
-                Dim t As Tuple(Of IContextMenu, IntPtr, Boolean) = contextMenu.Tag
+            Dim c As Control = contextMenu.Items.Cast(Of Control).FirstOrDefault(Function(i) i.Tag = id)
+            If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
 
-                If Not e.IsHandled Then
-                    Select Case id.Split(vbTab)(1)
-                        Case "Windows.ModernShare"
-                            Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
-                            Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
-                            Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
-                            Dim instance As Object = Activator.CreateInstance(type)
-                            methodInfo.Invoke(instance, {_lastItems.ToList().Select(Function(i) i.FullPath).ToList()})
-                        Case Else
-                            Dim cmi As New CMInvokeCommandInfoEx
-                            Debug.WriteLine("InvokeCommand " & id)
-                            If Convert.ToInt32(id.Split(vbTab)(0)) >= 0 Then
-                                cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
-                                cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
-                            Else
-                                cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
-                                cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
+            Dim t As Tuple(Of IContextMenu, IntPtr, Boolean) = contextMenu.Tag
+
+            Dim thread As Thread = New Thread(New ThreadStart(
+                Sub()
+
+                    If Not e.IsHandled Then
+                        Select Case id.Split(vbTab)(1)
+                            Case "Windows.ModernShare"
+                                Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
+                                Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
+                                Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
+                                Dim instance As Object = Activator.CreateInstance(type)
+                                methodInfo.Invoke(instance, {_lastItems.ToList().Select(Function(i) i.FullPath).ToList()})
+                            Case Else
+                                Dim cmi As New CMInvokeCommandInfoEx
+                                Debug.WriteLine("InvokeCommand " & id)
+                                If Convert.ToInt32(id.Split(vbTab)(0)) >= 0 Then
+                                    cmi.lpVerb = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+                                    cmi.lpVerbW = New IntPtr(Convert.ToUInt32(id.Split(vbTab)(0)))
+                                Else
+                                    cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Split(vbTab)(1))
+                                    cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Split(vbTab)(1))
+                                End If
+                                'cmi.lpDirectory = _parent.FullPath
+                                'cmi.lpDirectoryW = _parent.FullPath
+                                cmi.fMask = CMIC.UNICODE Or CMIC.ASYNCOK
+                                If Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then cmi.fMask = cmi.fMask Or CMIC.CONTROL_DOWN
+                                If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then cmi.fMask = cmi.fMask Or CMIC.SHIFT_DOWN
+                                cmi.nShow = SW.SHOWNORMAL
+                                'cmi.hwnd = Shell._hwnd
+                                cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
+
+                                Dim h As HRESULT = t.Item1.InvokeCommand(cmi)
+                                Debug.WriteLine("InvokeCommand returned " & h.ToString())
+                        End Select
+                    End If
+
+                    UIHelper.OnUIThread(
+                        Sub()
+                            releaseContextMenu(contextMenu)
+
+                            If Me.DoAutoDispose Then
+                                Me.Dispose()
+                            ElseIf Not t.Item3 Then
+                                If EqualityComparer(Of Folder).Default.Equals(lastFolder, Me.Folder) Then _lastFolder = Nothing
+                                If EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(lastSelectedItems, Me.SelectedItems) Then _lastItems = Nothing
+                                Me.Update()
                             End If
-                            'cmi.lpDirectory = _parent.FullPath
-                            'cmi.lpDirectoryW = _parent.FullPath
-                            cmi.fMask = CMIC.UNICODE Or CMIC.ASYNCOK
-                            If Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then cmi.fMask = cmi.fMask Or CMIC.CONTROL_DOWN
-                            If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then cmi.fMask = cmi.fMask Or CMIC.SHIFT_DOWN
-                            cmi.nShow = SW.SHOWNORMAL
-                            'cmi.hwnd = Shell._hwnd
-                            cmi.cbSize = CUInt(Marshal.SizeOf(cmi))
-
-                            Dim h As HRESULT = t.Item1.InvokeCommand(cmi)
-                            Debug.WriteLine("InvokeCommand returned " & h.ToString())
-                    End Select
-                End If
-
-                releaseContextMenu(contextMenu)
-
-                If Me.DoAutoDispose Then
-                    Me.Dispose()
-                ElseIf Not t.Item3 Then
-                    If EqualityComparer(Of Folder).Default.Equals(lastFolder, Me.Folder) Then _lastFolder = Nothing
-                    If EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(lastSelectedItems, Me.SelectedItems) Then _lastItems = Nothing
-                    Me.Update()
-                End If
-            End Using
+                        End Sub)
+                End Sub))
+            thread.SetApartmentState(ApartmentState.STA)
+            thread.Start()
         End Sub
 
         Private Sub releaseContextMenuFull()
