@@ -13,6 +13,7 @@ Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Shell
 Imports System.Xml
+Imports Laila.Shell.Behaviors
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.SevenZip
@@ -26,6 +27,7 @@ Namespace Controls
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -333,6 +335,15 @@ Namespace Controls
             End Get
             Set(ByVal value As Boolean)
                 SetCurrentValue(IsLoadingProperty, value)
+            End Set
+        End Property
+
+        Public Property IsSelecting As Boolean
+            Get
+                Return GetValue(IsSelectingProperty)
+            End Get
+            Set(ByVal value As Boolean)
+                SetCurrentValue(IsSelectingProperty, value)
             End Set
         End Property
 

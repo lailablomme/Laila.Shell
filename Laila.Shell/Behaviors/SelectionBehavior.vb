@@ -12,9 +12,10 @@ Namespace Behaviors
     Public Class SelectionBehavior
         Inherits Behavior(Of ListBox)
 
+        Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(SelectionBehavior), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+
         Private _listBox As ListBox
         Private _selectionRectangle As Border
-        Private _isSelecting As Boolean
         Private _canStartSelecting As Boolean
         Private _mouseDownPos As Point
         Private _control As Control
@@ -104,9 +105,9 @@ Namespace Behaviors
                 Sub(s As Object, e As MouseEventArgs)
                     Dim actualMousePos As Point = e.GetPosition(_listBox)
 
-                    If Not _isSelecting AndAlso _canStartSelecting Then
+                    If Not Me.IsSelecting AndAlso _canStartSelecting Then
                         If Math.Abs(actualMousePos.X - _mouseDownPos.X) > 2 OrElse Math.Abs(actualMousePos.Y - _mouseDownPos.Y) > 2 Then
-                            _isSelecting = True
+                            Me.IsSelecting = True
                             _listBox.Focus()
                             _mouseDownPos.X += _sv.HorizontalOffset
                             _mouseDownPos.Y += _sv.VerticalOffset
@@ -123,8 +124,8 @@ Namespace Behaviors
 
             AddHandler _control.PreviewMouseUp,
                 Sub(s As Object, e As MouseButtonEventArgs)
-                    If (_isSelecting) Then
-                        _isSelecting = False
+                    If (Me.IsSelecting) Then
+                        Me.IsSelecting = False
                         _canStartSelecting = False
                         _control.ReleaseMouseCapture()
 
@@ -141,7 +142,7 @@ Namespace Behaviors
                 Sub(s As Object, e As MouseEventArgs)
                     Dim actualMousePos As Point = e.GetPosition(_listBox)
 
-                    If _isSelecting Then
+                    If Me.IsSelecting Then
                         onAfterMouseMove()
                         e.Handled = True
 
@@ -223,10 +224,13 @@ Namespace Behaviors
             Next
         End Sub
 
-        Public ReadOnly Property IsSelecting As Boolean
+        Public Property IsSelecting As Boolean
             Get
-                Return _isSelecting
+                Return GetValue(IsSelectingProperty)
             End Get
+            Set(ByVal value As Boolean)
+                SetCurrentValue(IsSelectingProperty, value)
+            End Set
         End Property
     End Class
 End Namespace

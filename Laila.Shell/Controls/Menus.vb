@@ -10,6 +10,7 @@ Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Behaviors
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 
@@ -32,6 +33,7 @@ Namespace Controls
         Public Shared ReadOnly CanDeleteProperty As DependencyProperty = DependencyProperty.Register("CanDelete", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanShareProperty As DependencyProperty = DependencyProperty.Register("CanShare", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly UpdateDelayProperty As DependencyProperty = DependencyProperty.Register("UpdateDelay", GetType(Integer?), GetType(Menus), New FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsSelectingChanged))
 
         Public Event CommandInvoked(sender As Object, e As CommandInvokedEventArgs)
         Public Event RenameRequest(sender As Object, e As RenameRequestEventArgs)
@@ -745,6 +747,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property IsSelecting As Boolean
+            Get
+                Return GetValue(IsSelectingProperty)
+            End Get
+            Set(ByVal value As Boolean)
+                SetCurrentValue(IsSelectingProperty, value)
+            End Set
+        End Property
+
         Public Property Folder As Folder
             Get
                 Return GetValue(FolderProperty)
@@ -1242,27 +1253,49 @@ Namespace Controls
         End Sub
 
         Private Sub onSelectionChanged()
-            Me.Update(False)
+            If Not Me.IsSelecting Then
+                Me.Update(False)
 
-            If Not _updateTimer Is Nothing Then
-                _updateTimer.Dispose()
+                If Not _updateTimer Is Nothing Then
+                    _updateTimer.Dispose()
+                End If
+
+                If Me.UpdateDelay.HasValue AndAlso Me.UpdateDelay > 0 Then
+                    _updateTimer = New Timer(New TimerCallback(
+                        Sub()
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    Me.Update()
+
+                                    If Not _updateTimer Is Nothing Then
+                                        _updateTimer.Dispose()
+                                        _updateTimer = Nothing
+                                    End If
+                                End Sub)
+                        End Sub), Nothing, Me.UpdateDelay.Value, Timeout.Infinite)
+                ElseIf Me.UpdateDelay.HasValue Then
+                    Me.Update()
+                End If
             End If
+        End Sub
 
-            If Me.UpdateDelay.HasValue AndAlso Me.UpdateDelay > 0 Then
-                _updateTimer = New Timer(New TimerCallback(
-                    Sub()
-                        UIHelper.OnUIThread(
-                            Sub()
-                                Me.Update()
-
-                                If Not _updateTimer Is Nothing Then
-                                    _updateTimer.Dispose()
-                                    _updateTimer = Nothing
-                                End If
-                            End Sub)
-                    End Sub), Nothing, Me.UpdateDelay.Value, Timeout.Infinite)
-            ElseIf Me.UpdateDelay.HasValue Then
-                Me.Update()
+        Shared Sub OnIsSelectingChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim icm As Menus = TryCast(d, Menus)
+            If Not e.NewValue Then
+                icm.Update()
+            Else
+                If Not icm._updateTimer Is Nothing Then
+                    icm._updateTimer.Dispose()
+                    icm._updateTimer = Nothing
+                End If
+                icm.ContextMenu = Nothing
+                icm._lastItems = Nothing
+                icm.CanCopy = False
+                icm.CanCut = False
+                icm.CanDelete = False
+                icm.CanPaste = False
+                icm.CanRename = False
+                icm.CanShare = False
             End If
         End Sub
 

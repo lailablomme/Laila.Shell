@@ -3,6 +3,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Media
+Imports Laila.Shell.Behaviors
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 
@@ -14,6 +15,7 @@ Namespace Controls
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenusChanged))
+        Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(FolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
@@ -88,6 +90,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property IsSelecting As Boolean
+            Get
+                Return GetValue(IsSelectingProperty)
+            End Get
+            Set(ByVal value As Boolean)
+                SetCurrentValue(IsSelectingProperty, value)
+            End Set
+        End Property
+
         Public Property Menus As Menus
             Get
                 Return GetValue(MenusProperty)
@@ -144,6 +155,7 @@ Namespace Controls
                 Me.ActiveView.Folder = Nothing
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.MenusProperty)
+                BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty)
             End If
             For Each v In _views.Values
                 v.SetValue(Panel.ZIndexProperty, 0)
@@ -166,6 +178,7 @@ Namespace Controls
             folderViewState.Persist()
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.MenusProperty, New Binding("Menus") With {.Source = Me})
+            BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty, New Binding("IsSelecting") With {.Source = Me})
             Me.SelectedItems = selectedItems
         End Sub
 

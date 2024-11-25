@@ -58,7 +58,7 @@
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
                             <i:Interaction.Behaviors>
-                                <behaviors:SelectionBehavior />
+                                <behaviors:SelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
                             </i:Interaction.Behaviors>
                             <ListView.ItemTemplate>
                                 <DataTemplate>

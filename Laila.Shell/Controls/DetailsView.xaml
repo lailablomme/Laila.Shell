@@ -111,7 +111,7 @@
                             <i:Interaction.Behaviors>
                                 <behaviors:GridViewShellBehavior 
                                     ColumnsIn="{Binding ColumnsIn, RelativeSource={RelativeSource Mode=TemplatedParent}}" x:Name="ext" />
-                                <behaviors:SelectionBehavior />
+                                <behaviors:SelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
                             </i:Interaction.Behaviors>
                         </ListView>
                         <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Panel.ZIndex="3">
