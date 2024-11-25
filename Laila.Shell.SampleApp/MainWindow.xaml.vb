@@ -88,7 +88,7 @@ Class MainWindow
     Private Sub RenameButton_Click(sender As Object, e As RoutedEventArgs)
         Dim button As Button = sender
         Dim folderView As Laila.Shell.Controls.FolderView = button.Tag
-        folderView.DoRename()
+        folderView.DoRename(folderView.SelectedItems(0))
     End Sub
 
     Private Sub ShareButton_Click(sender As Object, e As RoutedEventArgs)

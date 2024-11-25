@@ -102,20 +102,22 @@ Namespace Controls
         End Sub
 
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
-            If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+            If Not TypeOf e.OriginalSource Is TextBox Then
+                If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
                 AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
-                Clipboard.CopyFiles(Me.SelectedItems)
-            ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                    Clipboard.CopyFiles(Me.SelectedItems)
+                ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
                 AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
-                Clipboard.CutFiles(Me.SelectedItems)
-            ElseIf e.Key = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                    Clipboard.CutFiles(Me.SelectedItems)
+                ElseIf e.Key = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.None _
                 AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
-                If TypeOf Me.SelectedItems(0) Is Folder Then
-                    Me.Host.Folder = Me.SelectedItems(0)
-                Else
-                    invokeDefaultCommand()
+                    If TypeOf Me.SelectedItems(0) Is Folder Then
+                        Me.Host.Folder = Me.SelectedItems(0)
+                    Else
+                        invokeDefaultCommand(Me.SelectedItems(0))
+                    End If
+                    e.Handled = True
                 End If
-                e.Handled = True
             End If
         End Sub
 
@@ -151,8 +153,8 @@ Namespace Controls
             End If
         End Sub
 
-        Private Sub invokeDefaultCommand()
-            hookMenus()
+        Private Sub invokeDefaultCommand(item As Item)
+            hookMenus(item)
             If Not _menus Is Nothing Then
                 Dim contextMenu As ContextMenu = _menus.GetDefaultContextMenu()
                 _menus.InvokeCommand(contextMenu, _menus.DefaultId)
@@ -199,7 +201,7 @@ Namespace Controls
                                 Sub()
                                 End Sub, Threading.DispatcherPriority.Render)
                         Else
-                            invokeDefaultCommand()
+                            invokeDefaultCommand(clickedItem)
                         End If
                     End Using
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
@@ -219,7 +221,7 @@ Namespace Controls
                         Me.SelectedItems = Nothing
                     End If
 
-                    hookMenus()
+                    hookMenus(clickedItem)
                     If Not _menus Is Nothing Then
                         _menus.Update()
                         Me.PART_ListBox.ContextMenu = _menus.ItemContextMenu
@@ -242,7 +244,7 @@ Namespace Controls
             _mouseItemDown = Nothing
         End Sub
 
-        Private Sub hookMenus()
+        Private Sub hookMenus(clickedItem As Item)
             If Not EqualityComparer(Of Menus).Default.Equals(_menus, Me.Menus) Then
                 _menus = Me.Menus
                 AddHandler _menus.CommandInvoked,
@@ -256,7 +258,7 @@ Namespace Controls
                                     e2.IsHandled = True
                                 End If
                             Case "rename"
-                                Me.DoRename()
+                                Me.DoRename(clickedItem)
                                 e2.IsHandled = True
                             Case "laila.shell.(un)pin"
                                 If e2.IsChecked Then
@@ -291,8 +293,12 @@ Namespace Controls
             Return False
         End Function
 
-        Public Sub DoRename()
-            Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromItem(Me.SelectedItems(0))
+        Public Sub DoRename(item As Item)
+            Me.PART_ListBox.ScrollIntoView(item)
+            UIHelper.OnUIThread(
+                Sub()
+                End Sub, Threading.DispatcherPriority.ContextIdle)
+            Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromItem(item)
             DoRename(listBoxItem)
         End Sub
 

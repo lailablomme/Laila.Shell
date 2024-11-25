@@ -507,30 +507,32 @@ Namespace Controls
         End Sub
 
         Private Sub OnTreeViewKeyDown(sender As Object, e As KeyEventArgs)
-            If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
-                AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                Clipboard.CopyFiles({Me.SelectedItem})
-                e.Handled = True
-            ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
-                AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                Clipboard.CutFiles({Me.SelectedItem})
-                e.Handled = True
-            ElseIf (e.Key = Key.Space OrElse e.Key = Key.Enter) AndAlso Keyboard.Modifiers = ModifierKeys.None _
-                AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                If TypeOf Me.SelectedItem Is Folder Then
-                    Me.Folder = Me.SelectedItem
-                Else
-                    invokeDefaultCommand(Me.SelectedItem)
+            If Not TypeOf e.OriginalSource Is TextBox Then
+                If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                             AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                    Clipboard.CopyFiles({Me.SelectedItem})
+                    e.Handled = True
+                ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                    AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                    Clipboard.CutFiles({Me.SelectedItem})
+                    e.Handled = True
+                ElseIf (e.Key = Key.Space OrElse e.Key = Key.Enter) AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                    AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                    If TypeOf Me.SelectedItem Is Folder Then
+                        Me.Folder = Me.SelectedItem
+                    Else
+                        invokeDefaultCommand(Me.SelectedItem)
+                    End If
+                    e.Handled = True
+                ElseIf e.Key = Key.Add AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                    AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                    CType(Me.SelectedItem, Folder).IsExpanded = True
+                    e.Handled = True
+                ElseIf e.Key = Key.Subtract AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                    AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                    CType(Me.SelectedItem, Folder).IsExpanded = False
+                    e.Handled = True
                 End If
-                e.Handled = True
-            ElseIf e.Key = Key.Add AndAlso Keyboard.Modifiers = ModifierKeys.None _
-                AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                CType(Me.SelectedItem, Folder).IsExpanded = True
-                e.Handled = True
-            ElseIf e.Key = Key.Subtract AndAlso Keyboard.Modifiers = ModifierKeys.None _
-                AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                CType(Me.SelectedItem, Folder).IsExpanded = False
-                e.Handled = True
             End If
         End Sub
 

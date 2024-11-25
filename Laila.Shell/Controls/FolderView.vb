@@ -55,8 +55,8 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub DoRename()
-            Me.ActiveView.DoRename()
+        Public Sub DoRename(item As Item)
+            Me.ActiveView.DoRename(item)
         End Sub
 
         Public Async Function DoRename(pidl As Pidl) As Task(Of Boolean)
