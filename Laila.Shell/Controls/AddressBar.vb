@@ -191,54 +191,54 @@ Namespace Controls
                     End Sub
                     panel.Children.Add(folderButton)
                     Dim subFoldersButton As ToggleButton = New ToggleButton()
-                    subFoldersButton.IsEnabled = False
                     subFoldersButton.Tag = currentFolder
                     If Not chevronButtonStyle Is Nothing Then subFoldersButton.Style = chevronButtonStyle
                     panel.Children.Add(subFoldersButton)
                     Dim func As Func(Of ToggleButton, Task) =
                         Async Function(button As ToggleButton) As Task
                             Dim subFolder As Folder
+                            Dim subFoldersContextMenu As ItemsContextMenu
+
                             UIHelper.OnUIThread(
                                 Sub()
                                     subFolder = button.Tag
+
+                                    subFoldersContextMenu = New ItemsContextMenu()
+                                    subFoldersContextMenu.PlacementTarget = button
+                                    subFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
+                                    Dim view As ListCollectionView = New ListCollectionView(subFolder.Items)
+                                    view.Filter = Function(i) TypeOf i Is Folder
+                                    view.SortDescriptions.Add(New SortDescription() With {
+                                        .PropertyName = "ItemNameDisplaySortValue",
+                                        .Direction = ListSortDirection.Ascending
+                                    })
+                                    subFoldersContextMenu.ItemsSource = view
                                 End Sub)
-                            If (Await subFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count > 0 _
-                                OrElse Not subFolder.Equals(folder) Then
-                                AddHandler button.Checked,
-                                     Sub(s As Object, e As EventArgs)
-                                         Dim subFoldersContextMenu As ItemsContextMenu = New ItemsContextMenu()
-                                         subFoldersContextMenu.PlacementTarget = button
-                                         subFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
-                                         Dim view As ListCollectionView = New ListCollectionView(subFolder.Items)
-                                         view.Filter = Function(i) TypeOf i Is Folder
-                                         view.SortDescriptions.Add(New SortDescription() With {
-                                             .PropertyName = "ItemNameDisplaySortValue",
-                                             .Direction = ListSortDirection.Ascending
-                                         })
-                                         subFoldersContextMenu.ItemsSource = view
 
-                                         AddHandler subFoldersContextMenu.ItemClicked,
-                                             Sub(clickedSubFolder As Folder, e2 As EventArgs)
-                                                 clickedSubFolder.LastScrollOffset = New Point()
-                                                 Me.Folder = clickedSubFolder
-                                             End Sub
-                                         AddHandler subFoldersContextMenu.Closed,
-                                             Sub(s2 As Object, e2 As EventArgs)
-                                                 button.IsChecked = False
-                                             End Sub
+                            AddHandler subFoldersContextMenu.ItemClicked,
+                                Sub(clickedSubFolder As Folder, e2 As EventArgs)
+                                    clickedSubFolder.LastScrollOffset = New Point()
+                                    Me.Folder = clickedSubFolder
+                                End Sub
+                            AddHandler subFoldersContextMenu.Closed,
+                                Sub(s2 As Object, e2 As EventArgs)
+                                    button.IsChecked = False
+                                End Sub
 
-                                         subFoldersContextMenu.IsOpen = True
-                                     End Sub
-                            ElseIf subFolder.Equals(folder) Then
+                            AddHandler button.Checked,
+                                Sub(s As Object, e As EventArgs)
+                                    subFolder.GetItemsAsync()
+                                    subFoldersContextMenu.IsOpen = True
+                                End Sub
+
+                            If subFolder.Equals(folder) _
+                            AndAlso (Await subFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count = 0 Then
                                 UIHelper.OnUIThread(
                                     Sub()
                                         button.Visibility = Visibility.Collapsed
+                                        subFoldersContextMenu.IsOpen = False
                                     End Sub)
                             End If
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    button.IsEnabled = True
-                                End Sub)
                         End Function
                     Task.Run(Sub() func(subFoldersButton))
                     currentFolder.MaybeDispose()
