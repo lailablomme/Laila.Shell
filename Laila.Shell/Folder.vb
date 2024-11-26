@@ -130,7 +130,7 @@ Public Class Folder
 
                 Task.Run(t)
             Else
-                For Each item In _items.Where(Function(i) TypeOf i Is Folder)
+                For Each item In _items.Where(Function(i) TypeOf i Is Folder).ToList()
                     item.IsExpanded = False
                 Next
             End If
