@@ -66,8 +66,16 @@ Public Class Folder
         UIHelper.OnUIThread(
             Sub()
                 Dim ptr2 As IntPtr
-                shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, ptr2)
-                result = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IShellFolder))
+                Try
+                    shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, ptr2)
+                    If Not IntPtr.Zero.Equals(ptr2) Then
+                        result = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IShellFolder))
+                    End If
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr2) Then
+                        Marshal.Release(ptr2)
+                    End If
+                End Try
             End Sub)
         Return result
     End Function
@@ -90,10 +98,6 @@ Public Class Folder
 
     Public Sub New(shellItem2 As IShellItem2, parent As Folder)
         MyBase.New(shellItem2, parent)
-
-        If Not shellItem2 Is Nothing Then
-            _shellFolder = Folder.GetIShellFolderFromIShellItem2(shellItem2)
-        End If
     End Sub
 
     Public ReadOnly Property ShellFolder As IShellFolder
