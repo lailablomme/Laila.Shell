@@ -44,14 +44,10 @@ Public Class Item
         End If
     End Function
 
-    Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, parentShellFolder As IShellFolder) As IShellItem2
+    Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr) As IShellItem2
         Dim ptr As IntPtr
         Try
-            If parentShellFolder Is Nothing Then
-                Functions.SHCreateItemFromIDList(pidl, Guids.IID_IShellItem2, ptr)
-            Else
-                Functions.SHCreateItemWithParent(IntPtr.Zero, parentShellFolder, pidl, Guids.IID_IShellItem2, ptr)
-            End If
+            Functions.SHCreateItemFromIDList(pidl, Guids.IID_IShellItem2, ptr)
             Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2))
         Finally
             If Not IntPtr.Zero.Equals(ptr) Then
@@ -105,7 +101,7 @@ Public Class Item
             Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
             shellItem2.GetAttributes(_attributes, _attributes)
             AddHandler Shell.Notification, AddressOf shell_Notification
-            UIHelper.OnUIThread(
+            UIHelper.OnUIThreadAsync(
                 Sub()
                     Shell.ItemsCache.Add(Me)
                 End Sub)
@@ -206,6 +202,8 @@ Public Class Item
 
     Public Overridable Sub Refresh()
         Dim oldProperties As HashSet(Of [Property]) = _properties
+        Dim oldDisplayName As String = Me.DisplayName
+        Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
         Me.ClearCache()
 
         If Not Me.ShellItem2 Is Nothing Then
@@ -216,19 +214,21 @@ Public Class Item
                 Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
             Me.ShellItem2.GetAttributes(_attributes, _attributes)
             For Each prop In Me.GetType().GetProperties()
-                UIHelper.OnUIThread(
-                Sub()
-                    If prop.Name <> "View" Then
-                        Me.NotifyOfPropertyChange(prop.Name)
-                    End If
-                End Sub)
+                If prop.Name <> "View" AndAlso prop.Name <> "Items" AndAlso prop.Name <> "" _
+                    AndAlso (prop.Name <> "DisplayName" OrElse Me.DisplayName <> oldDisplayName) _
+                    AndAlso (prop.Name <> "ItemNameDisplaySortValue" OrElse Me.DisplayName <> oldItemNameDisplaySortValue) Then
+                    Debug.WriteLine("Refreshing " & prop.Name)
+                    Me.NotifyOfPropertyChange(prop.Name)
+                    'ElseIf prop.Name = "Items" Then
+                    '    UIHelper.OnUIThreadAsync(
+                    '        Sub()
+                    '            Me.NotifyOfPropertyChange(prop.Name)
+                    '        End Sub)
+                End If
             Next
             For Each prop In oldProperties
-                UIHelper.OnUIThread(
-                    Sub()
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.CanonicalName))
-                    End Sub)
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.CanonicalName))
             Next
         Else
             Me.Dispose()
@@ -910,7 +910,7 @@ Public Class Item
                 '    Dim i = 9
                 'End If
 
-                UIHelper.OnUIThread(
+                UIHelper.OnUIThreadAsync(
                     Sub()
                         If Not _logicalParent Is Nothing Then
                             _logicalParent._items.Remove(Me)

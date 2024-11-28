@@ -163,14 +163,16 @@ Public Class ListViewDropTarget
             If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 _lastOverItem = overItem
 
-                Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr
+                Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
                 Try
                     Using parent = overItem.GetParent()
                         If Not parent Is Nothing Then
-                            parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                            shellFolder = parent.ShellFolder
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                         Else
                             ' desktop
-                            Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                            shellFolder = Shell.Desktop.ShellFolder
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
                         End If
                     End Using
                     If Not IntPtr.Zero.Equals(dropTargetPtr) Then
@@ -181,6 +183,9 @@ Public Class ListViewDropTarget
                 Finally
                     If Not IntPtr.Zero.Equals(dropTargetPtr) Then
                         Marshal.Release(dropTargetPtr)
+                    End If
+                    If Not shellFolder Is Nothing Then
+                        Marshal.ReleaseComObject(shellFolder)
                     End If
                 End Try
 

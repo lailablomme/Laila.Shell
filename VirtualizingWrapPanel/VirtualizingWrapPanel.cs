@@ -205,10 +205,10 @@ namespace WpfToolkit.Controls
                 return finalSize;
             }
 
-            if (ItemContainerManager.RealizedContainers.Count < endItemIndex - startItemIndex + 1)
-            {
-                throw new InvalidOperationException("Items must be distinct");
-            }
+            //if (ItemContainerManager.RealizedContainers.Count < endItemIndex - startItemIndex + 1)
+            //{
+            //    throw new InvalidOperationException("Items must be distinct");
+            //}
 
             bool hierarchical = ItemsOwner is IHierarchicalVirtualizationAndScrollInfo;
             double x = startItemOffsetX + GetX(ScrollOffset);
@@ -220,26 +220,29 @@ namespace WpfToolkit.Controls
             for (int i = startItemIndex; i <= endItemIndex; i++)
             {
                 var item = Items[i];
-                var child = ItemContainerManager.RealizedContainers[item];
-
-                Size? upfrontKnownItemSize = GetUpfrontKnownItemSize(item);
-
-                Size childSize = upfrontKnownItemSize ?? itemSizesCache[item];
-
-                if (rowChilds.Count > 0 && x + GetWidth(childSize) > GetWidth(finalSize))
+                if (item != null && ItemContainerManager.RealizedContainers.ContainsKey(item))
                 {
-                    ArrangeRow(GetWidth(finalSize), rowChilds, childSizes, y, hierarchical);
-                    x = 0;
-                    y += rowHeight;
-                    rowHeight = 0;
-                    rowChilds.Clear();
-                    childSizes.Clear();
-                }
+                    var child = ItemContainerManager.RealizedContainers[item];
 
-                x += GetWidth(childSize);
-                rowHeight = Math.Max(rowHeight, GetHeight(childSize));
-                rowChilds.Add(child);
-                childSizes.Add(childSize);
+                    Size? upfrontKnownItemSize = GetUpfrontKnownItemSize(item);
+
+                    Size childSize = upfrontKnownItemSize ?? itemSizesCache[item];
+
+                    if (rowChilds.Count > 0 && x + GetWidth(childSize) > GetWidth(finalSize))
+                    {
+                        ArrangeRow(GetWidth(finalSize), rowChilds, childSizes, y, hierarchical);
+                        x = 0;
+                        y += rowHeight;
+                        rowHeight = 0;
+                        rowChilds.Clear();
+                        childSizes.Clear();
+                    }
+
+                    x += GetWidth(childSize);
+                    rowHeight = Math.Max(rowHeight, GetHeight(childSize));
+                    rowChilds.Add(child);
+                    childSizes.Add(childSize);
+                }
             }
 
             if (rowChilds.Any())

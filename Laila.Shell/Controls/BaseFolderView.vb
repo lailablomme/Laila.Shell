@@ -81,10 +81,10 @@ Namespace Controls
                                     _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
                                     _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
                                 End If
-                                UIHelper.OnUIThreadAsync(
-                                Sub()
-                                    GC.Collect()
-                                End Sub)
+                                'UIHelper.OnUIThreadAsync(
+                                'Sub()
+                                '    GC.Collect()
+                                'End Sub)
                             End Sub
 
                         If Not Me.Folder Is Nothing Then
@@ -383,18 +383,21 @@ Namespace Controls
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
                     Dim folder As Folder = CType(sender, Folder)
 
-                    If e.PropertyName = "ItemsGroupByPropertyName" Then
-                        setGrouping(folder)
-                    End If
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If e.PropertyName = "ItemsGroupByPropertyName" Then
+                                setGrouping(folder)
+                            End If
 
-                    If Not folder.IsRefreshingItems AndAlso Not Me.Folder Is Nothing Then
-                        Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
-                        folderViewState.SortPropertyName = folder.ItemsSortPropertyName
-                        folderViewState.SortDirection = folder.ItemsSortDirection
-                        folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
-                        folderViewState.View = folder.View
-                        folderViewState.Persist()
-                    End If
+                            If Not folder.IsRefreshingItems AndAlso Not Me.Folder Is Nothing Then
+                                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+                                folderViewState.SortPropertyName = folder.ItemsSortPropertyName
+                                folderViewState.SortDirection = folder.ItemsSortDirection
+                                folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
+                                folderViewState.View = folder.View
+                                folderViewState.Persist()
+                            End If
+                        End Sub)
             End Select
         End Sub
 

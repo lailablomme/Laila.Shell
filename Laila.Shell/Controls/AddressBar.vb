@@ -129,6 +129,7 @@ Namespace Controls
         End Sub
 
         Public Async Function ShowNavigationButtons(folder As Folder, isWithDelay As Boolean) As Task
+            If folder Is Nothing Then Return
             If isWithDelay Then Await Task.Delay(150)
 
             Await _lock.WaitAsync()

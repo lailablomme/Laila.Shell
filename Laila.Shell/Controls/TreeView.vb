@@ -97,6 +97,7 @@ Namespace Controls
                     End Select
                 End Sub
 
+            Shell.IsStarted.WaitOne()
             ' home and galery
             If Shell.SpecialFolders.ContainsKey("Home") Then
                 Dim homeFolder As Folder = Shell.SpecialFolders("Home").Clone()
@@ -418,10 +419,10 @@ Namespace Controls
                             Dim parent As Folder = clickedItem.GetParent()
 
                             _menu = New Laila.Shell.Controls.Menus() With {
-                                             .Folder = If(parent Is Nothing, Shell.Desktop, parent),
-                                             .SelectedItems = {clickedItem},
-                                             .DoAutoDispose = True
-                                         }
+                                .Folder = If(parent Is Nothing, Shell.Desktop, parent),
+                                .SelectedItems = {clickedItem},
+                                .DoAutoDispose = True
+                            }
                             AddHandler _menu.CommandInvoked,
                                              Sub(s As Object, e2 As CommandInvokedEventArgs)
                                                  Select Case e2.Verb
@@ -656,21 +657,29 @@ Namespace Controls
 
             Select Case e.PropertyName
                 Case "IsExpanded"
-                    If folder.IsExpanded Then
-                        For Each item In folder.Items
-                            If TypeOf item Is Folder AndAlso Not Me.Items.Contains(item) Then
-                                Me.Items.Add(item)
-                            End If
-                            If Me.SelectedItem Is Nothing AndAlso Not Me.Folder Is Nothing _
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If folder.IsExpanded Then
+                                For Each item In folder.Items
+                                    If TypeOf item Is Folder AndAlso Not Me.Items.Contains(item) Then
+                                        Me.Items.Add(item)
+                                    End If
+                                    If Me.SelectedItem Is Nothing AndAlso Not Me.Folder Is Nothing _
                                 AndAlso item.Pidl.Equals(Me.Folder.Pidl) Then
-                                Me.SetSelectedItem(item)
+                                        Me.SetSelectedItem(item)
+                                    End If
+                                Next
                             End If
-                        Next
-                    End If
-                    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+                            CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+                        End Sub)
                 Case "TreeSortKey"
-                    For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                        AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder))
+                    Dim list As List(Of Item)
+                    UIHelper.OnUIThread(
+                        Sub()
+                            list = Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
+                        End Sub)
+                    For Each item2 In list
                         item2.NotifyOfPropertyChange("TreeSortKey")
                     Next
             End Select

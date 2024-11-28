@@ -25,13 +25,12 @@ Public Class Folder
     Private _isLoaded As Boolean
     Private _enumerationException As Exception
     Friend _isEnumerated As Boolean
-    Private _updatesQueued As Integer
     Private _isActiveInFolderView As Boolean
     Private _isVisibleInAddressBar As Boolean
     Private _isInHistory As Boolean
     Private _view As String
     Private _hasSubFolders As Boolean?
-    Private _shellFolder As IShellFolder
+    Private _pendingUpdateCounter As Integer
     Private _itemsSortPropertyName As String
     Private _itemsSortDirection As ListSortDirection
     Private _itemsGroupByPropertyName As String
@@ -63,20 +62,24 @@ Public Class Folder
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
         Dim result As IShellFolder
-        UIHelper.OnUIThread(
-            Sub()
-                Dim ptr2 As IntPtr
-                Try
-                    shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, ptr2)
-                    If Not IntPtr.Zero.Equals(ptr2) Then
-                        result = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IShellFolder))
-                    End If
-                Finally
-                    If Not IntPtr.Zero.Equals(ptr2) Then
-                        Marshal.Release(ptr2)
-                    End If
-                End Try
-            End Sub)
+        Dim ptr2 As IntPtr
+        shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, ptr2)
+
+        'Shell.startedEvent.WaitOne()
+        'Shell.FolderDispatcher.Invoke(
+        '     Sub()
+        Try
+                     If Not IntPtr.Zero.Equals(ptr2) Then
+                         result = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IShellFolder))
+                     End If
+                 Finally
+                     If Not IntPtr.Zero.Equals(ptr2) Then
+                         Marshal.Release(ptr2)
+                     End If
+                 End Try
+        'End Sub)
+
+        ' Wait for the result
         Return result
     End Function
 
@@ -102,10 +105,10 @@ Public Class Folder
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            If Not disposedValue AndAlso _shellFolder Is Nothing Then
-                _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
-            End If
-            Return _shellFolder
+            'If Not disposedValue AndAlso _shellFolder Is Nothing Then
+            Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+            'End If
+            'Return _shellFolder
         End Get
     End Property
 
@@ -227,14 +230,18 @@ Public Class Folder
 
     Public ReadOnly Property ColumnManager As IColumnManager
         Get
-            Dim ptr As IntPtr
+            Dim ptr As IntPtr, shellFolder As IShellFolder
             Try
-                Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
+                shellFolder = Me.ShellFolder
+                shellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, ptr)
                 Dim shellView As IShellView = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellView))
                 Return shellView
             Finally
                 If Not IntPtr.Zero.Equals(ptr) Then
                     Marshal.Release(ptr)
+                End If
+                If Not shellFolder Is Nothing Then
+                    Marshal.ReleaseComObject(shellFolder)
                 End If
             End Try
         End Get
@@ -360,39 +367,51 @@ Public Class Folder
     End Function
 
     Protected Sub updateItems(items As ObservableCollection(Of Item), Optional doRefreshItems As Boolean = False, Optional isAsync As Boolean = False)
-        Me.IsLoading = True
+        UIHelper.OnUIThread(
+            Sub()
+                Debug.WriteLine("Start loading " & Me.FullPath)
+                Me.IsLoading = True
+            End Sub)
 
         Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
         updateItems(flags,
-                    Function(fullPath As String) As Boolean
-                        Return Not items.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue) Is Nothing
-                    End Function,
-                    Sub(item As Item)
-                        items.Add(item)
-                    End Sub,
-                    Sub(item As Item)
-                        items.Remove(item)
-                    End Sub,
-                    Function() As List(Of String)
-                        Return items.Select(Function(f) f.FullPath).ToList()
-                    End Function,
-                    Function(pathsBefore As List(Of String), pathsAfter As List(Of String)) As List(Of Item)
-                        Return items.Where(Function(i) pathsBefore.Contains(i.FullPath) AndAlso Not pathsAfter.Contains(i.FullPath)).ToList()
-                    End Function,
-                    Function(shellItem2 As IShellItem2)
-                        Return New Folder(shellItem2, Me)
-                    End Function,
-                    Function(shellItem2 As IShellItem2)
-                        Return New Item(shellItem2, Me)
-                    End Function,
-                    Sub(path As String)
-                        Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
-                        If Not item Is Nothing Then
-                            item.Refresh()
-                        End If
-                    End Sub, doRefreshItems, isAsync)
+            Function(fullPath As String) As Boolean
+                Return Not items.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue) Is Nothing
+            End Function,
+            Sub(item As Item)
+                If Not items.Contains(item) Then
+                    items.Add(item)
+                End If
+            End Sub,
+            Sub(item As Item)
+                items.Remove(item)
+            End Sub,
+            Function() As List(Of String)
+                Return items.Select(Function(f) f.FullPath).ToList()
+            End Function,
+            Function(pathsBefore As List(Of String), pathsAfter As List(Of String)) As List(Of Item)
+                Return items.Where(Function(i) pathsBefore.Contains(i.FullPath) AndAlso Not pathsAfter.Contains(i.FullPath)).ToList()
+            End Function,
+            Function(shellItem2 As IShellItem2)
+                Return New Folder(shellItem2, Me)
+            End Function,
+            Function(shellItem2 As IShellItem2)
+                Return New Item(shellItem2, Me)
+            End Function,
+            Sub(path As String)
+                Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
+                If Not item Is Nothing Then
+                    item.Refresh()
+                End If
+            End Sub, doRefreshItems, isAsync)
+
+        UIHelper.OnUIThread(
+            Sub()
+                Me.IsLoading = False
+                Debug.WriteLine("End loading " & Me.FullPath)
+            End Sub)
     End Sub
 
     Protected Sub updateItems(flags As UInt32,
@@ -490,19 +509,20 @@ Public Class Folder
                 End If
             End If
         Else
-            Dim list As IEnumIDList
+            Dim list As IEnumIDList, shellFolder As IShellFolder
             Try
-                Me.ShellFolder.EnumObjects(Nothing, flags, list)
+                shellFolder = Me.ShellFolder
+                shellFolder.EnumObjects(Nothing, flags, list)
                 If Not list Is Nothing Then
                     Dim pidl(0) As IntPtr, fetched As Integer, count As Integer = 0
                     While list.Next(1, pidl, fetched) = 0
                         Try
-                            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), Me.ShellFolder)
+                            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0))
                             Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItem2)
                             pathsAfter.Add(fullPath)
                             If Not exists(fullPath) Then
                                 Dim attr2 As Integer = SFGAO.FOLDER
-                                Me.ShellFolder.GetAttributesOf(1, pidl, attr2)
+                                shellFolder.GetAttributesOf(1, pidl, attr2)
                                 Dim newItem As Item
                                 Try
                                     If CBool(attr2 And SFGAO.FOLDER) Then
@@ -529,6 +549,10 @@ Public Class Folder
                 Me.EnumerationException = Nothing
             Catch ex As Exception
                 Me.EnumerationException = ex
+            Finally
+                If Not shellFolder Is Nothing Then
+                    Marshal.ReleaseComObject(shellFolder)
+                End If
             End Try
         End If
 
@@ -559,8 +583,6 @@ Public Class Folder
                 Next
 
                 Me.NotifyOfPropertyChange("HasSubFolders")
-
-                Me.IsLoading = False
             End Sub)
     End Sub
 
@@ -669,7 +691,7 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.CREATE
                     If _isLoaded Then
-                        Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
+                        Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL)
                         If Not item1ShellItem Is Nothing Then
                             Dim attr As SFGAO = SFGAO.FOLDER
                             item1ShellItem.GetAttributes(attr, attr)
@@ -681,7 +703,7 @@ Public Class Folder
                             End If
                             Using parentPidl = item1.Pidl.GetParent()
                                 If Me.Pidl.Equals(parentPidl) Then
-                                    If Not Me.IsLoading AndAlso Not _items Is Nothing Then
+                                    If Not _items Is Nothing Then
                                         Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
                                         If existing Is Nothing Then
                                             _items.Add(item1)
@@ -696,12 +718,12 @@ Public Class Folder
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
-                        Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
+                        Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL)
                         If Not item1ShellItem Is Nothing Then
                             Dim item1 As Folder = New Folder(item1ShellItem, Me)
                             Using parentPidl = item1.Pidl.GetParent()
                                 If Me.Pidl.Equals(parentPidl) Then
-                                    If Not Me.IsLoading AndAlso Not _items Is Nothing Then
+                                    If Not _items Is Nothing Then
                                         Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
                                         If existing Is Nothing Then
                                             _items.Add(New Folder(item1ShellItem, Me))
@@ -715,7 +737,7 @@ Public Class Folder
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
-                    If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _isLoaded Then
+                    If Not _items Is Nothing AndAlso _isLoaded Then
                         Dim item As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue)
                         If Not item Is Nothing Then
                             If TypeOf item Is Folder Then
@@ -732,8 +754,8 @@ Public Class Folder
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
-                        If Not Me.IsLoading AndAlso Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue) Is Nothing Then
-                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
+                        If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue) Is Nothing Then
+                            Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL)
                             If Not item1 Is Nothing Then
                                 _items.Add(New Folder(item1, Me))
                             End If
@@ -742,7 +764,7 @@ Public Class Folder
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         Dim item As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue)
-                        If Not Me.IsLoading AndAlso Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                        If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                             Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                 .Folder = item,
                                 .[Event] = e.Event
@@ -755,21 +777,19 @@ Public Class Folder
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If (Me.Pidl.Equals(e.Item1Pidl) OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl)) _
-                        AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _updatesQueued < 2 Then
-                        UIHelper.OnUIThread(
-                            Async Sub()
-                                _updatesQueued += 1
-
-                                Dim func As Func(Of Task) =
-                                    Async Function() As Task
-                                        SyncLock _lock
-                                            updateItems(_items, False, True)
-                                        End SyncLock
-                                    End Function
-                                Await Task.Run(func)
-
-                                _updatesQueued -= 1
-                            End Sub)
+                        AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 1 Then
+                        _pendingUpdateCounter += 1
+                        Dim func As Func(Of Task) =
+                            Async Function() As Task
+                                SyncLock _lock
+                                    updateItems(_items, False, True)
+                                End SyncLock
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        _pendingUpdateCounter -= 1
+                                    End Sub)
+                            End Function
+                        Task.Run(func)
                     End If
             End Select
         End If
@@ -785,10 +805,10 @@ Public Class Folder
         If Not disposedValue Then
             Me.DisposeItems()
 
-            If Not _shellFolder Is Nothing Then
-                Marshal.ReleaseComObject(_shellFolder)
-                _shellFolder = Nothing
-            End If
+            'If Not _shellFolder Is Nothing Then
+            '    Marshal.ReleaseComObject(_shellFolder)
+            '    _shellFolder = Nothing
+            'End If
         End If
 
         MyBase.Dispose(disposing)

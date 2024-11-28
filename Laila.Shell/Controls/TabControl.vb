@@ -303,8 +303,20 @@ Namespace Controls
         Public Class TabData
             Inherits NotifyPropertyChangedBase
 
-            Private _folder As Folder = Shell.SpecialFolders("This computer").Clone()
+            Private _folder As Folder
             Private _selectedItems As IEnumerable(Of Item)
+
+            Public Sub New()
+                Shell.PriorityTaskQueue.Add(
+                    Sub()
+                        Shell.IsStarted.WaitOne()
+                        Dim folder As Folder = Shell.SpecialFolders("This computer").Clone()
+                        UIHelper.OnUIThreadAsync(
+                            Sub()
+                                Me.Folder = folder
+                            End Sub, Threading.DispatcherPriority.ContextIdle)
+                    End Sub)
+            End Sub
 
             Public Property Folder As Folder
                 Get

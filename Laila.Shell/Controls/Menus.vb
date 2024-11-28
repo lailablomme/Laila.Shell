@@ -90,43 +90,60 @@ Namespace Controls
 
         Private Function getContextMenu(parent As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean) As Laila.Shell.Controls.ContextMenu
             Dim hasPaste As Boolean
-            If Not isDefaultOnly AndAlso (items Is Nothing OrElse items.Count = 0) Then
-                ' check for paste by checking if it would accept a drop
-                Dim dataObject As IDataObject
-                Functions.OleGetClipboard(dataObject)
+            Dim tcs As New TaskCompletionSource()
 
-                Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr
-                Try
-                    Using parent2 As Folder = parent.GetParent()
-                        If Not parent2 Is Nothing Then
-                            parent2.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {parent.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                        Else
-                            ' desktop
-                            Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {parent.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+            Shell.FolderTaskQueue.Add(
+                Sub()
+                    Try
+                        If Not isDefaultOnly AndAlso (items Is Nothing OrElse items.Count = 0) Then
+                            ' check for paste by checking if it would accept a drop
+                            Dim dataObject As IDataObject
+                            Functions.OleGetClipboard(dataObject)
+
+                            Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder 
+                            Try
+                                Using parent2 As Folder = parent.GetParent()
+                                    If Not parent2 Is Nothing Then
+                                        shellFolder = parent2.ShellFolder
+                                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {parent.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                                    Else
+                                        ' desktop
+                                        shellFolder = Shell.Desktop.ShellFolder
+                                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {parent.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                                    End If
+                                End Using
+                                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                                    dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+                                Else
+                                    dropTarget = Nothing
+                                End If
+
+                                If Not dropTarget Is Nothing Then
+                                    Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
+                                    Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
+                                    dropTarget.DragLeave()
+
+                                    hasPaste = hr = HRESULT.Ok AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
+                                End If
+                            Finally
+                                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                                    Marshal.Release(dropTargetPtr)
+                                End If
+                                If Not dropTarget Is Nothing Then
+                                    Marshal.ReleaseComObject(dropTarget)
+                                End If
+                                If Not shellFolder Is Nothing Then
+                                    Marshal.ReleaseComObject(shellFolder)
+                                End If
+                            End Try
                         End If
-                    End Using
-                    If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                        dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
-                    Else
-                        dropTarget = Nothing
-                    End If
+                        tcs.SetResult()
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
 
-                    If Not dropTarget Is Nothing Then
-                        Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
-                        Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
-                        dropTarget.DragLeave()
-
-                        hasPaste = hr = HRESULT.Ok AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
-                    End If
-                Finally
-                    If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                        Marshal.Release(dropTargetPtr)
-                    End If
-                    If Not dropTarget Is Nothing Then
-                        Marshal.ReleaseComObject(dropTarget)
-                    End If
-                End Try
-            End If
+            tcs.Task.Wait()
 
             _parent = parent
             makeContextMenu(items, isDefaultOnly)
@@ -151,7 +168,7 @@ Namespace Controls
                     Return button
                 End Function
 
-            Dim makeToggleButton As Func(Of Object, String, Boolean, ToggleButton) =
+                        Dim makeToggleButton As Func(Of Object, String, Boolean, ToggleButton) =
                 Function(tag As Object, toolTip As String, isChecked As Boolean) As ToggleButton
                     Dim button As ToggleButton = New ToggleButton()
                     Dim image As Image = New Image()
@@ -168,63 +185,63 @@ Namespace Controls
                     Return button
                 End Function
 
-            Dim osver As Version = Environment.OSVersion.Version
-            Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
+                        Dim osver As Version = Environment.OSVersion.Version
+                        Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
 
-            ' make our own menu
-            Dim menu As Controls.ContextMenu = New Controls.ContextMenu()
-            If Not _contextMenu Is Nothing AndAlso Not IntPtr.Zero.Equals(_hMenu) Then
-                Dim menuItems As List(Of Control) = getMenuItems(_hMenu, -1)
-                Dim lastMenuItem As Control
-                For Each item In menuItems
-                    Dim verb As String = item.Tag?.ToString().Split(vbTab)(1)
-                    Select Case verb
-                        Case "copy", "cut", "paste", "delete", "pintohome", "rename"
-                            ' don't add these
-                        Case Else
-                            Dim isNotDoubleSeparator As Boolean = Not (TypeOf item Is Separator AndAlso
+                        ' make our own menu
+                        Dim menu As Controls.ContextMenu = New Controls.ContextMenu()
+                        If Not _contextMenu Is Nothing AndAlso Not IntPtr.Zero.Equals(_hMenu) Then
+                            Dim menuItems As List(Of Control) = getMenuItems(_hMenu, -1)
+                            Dim lastMenuItem As Control
+                            For Each item In menuItems
+                                Dim verb As String = item.Tag?.ToString().Split(vbTab)(1)
+                                Select Case verb
+                                    Case "copy", "cut", "paste", "delete", "pintohome", "rename"
+                                        ' don't add these
+                                    Case Else
+                                        Dim isNotDoubleSeparator As Boolean = Not (TypeOf item Is Separator AndAlso
                             (Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator))
-                            Dim isNotInitialSeparator As Boolean = Not (TypeOf item Is Separator AndAlso menu.Items.Count = 0)
-                            Dim isNotDoubleOneDriveItem As Boolean = verb Is Nothing OrElse
+                                        Dim isNotInitialSeparator As Boolean = Not (TypeOf item Is Separator AndAlso menu.Items.Count = 0)
+                                        Dim isNotDoubleOneDriveItem As Boolean = verb Is Nothing OrElse
                             Not (isWindows11 AndAlso
                                 (verb.StartsWith("{5250E46F-BB09-D602-5891-F476DC89B70") _
                                  OrElse verb.StartsWith("{1FA0E654-C9F2-4A1F-9800-B9A75D744B0") _
                                  OrElse verb = "MakeAvailableOffline" _
                                  OrElse verb = "MakeAvailableOnline"))
-                            If isNotDoubleSeparator AndAlso isNotInitialSeparator AndAlso isNotDoubleOneDriveItem Then
-                                menu.Items.Add(item)
-                                lastMenuItem = item
-                            End If
-                    End Select
-                Next
-                Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "cut")
-                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-                menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "copy")
-                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-                menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
-                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
+                                        If isNotDoubleSeparator AndAlso isNotInitialSeparator AndAlso isNotDoubleOneDriveItem Then
+                                            menu.Items.Add(item)
+                                            lastMenuItem = item
+                                        End If
+                                End Select
+                            Next
+                            Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "cut")
+                            If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+                            menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "copy")
+                            If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+                            menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "paste")
+                            If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
                 Else If hasPaste Then menu.Buttons.Add(makeButton("-1" & vbTab & "paste", "Paste"))
-                menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "rename")
-                If Not menuItem Is Nothing AndAlso Not items Is Nothing AndAlso items.Count = 1 Then _
+                            menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "rename")
+                            If Not menuItem Is Nothing AndAlso Not items Is Nothing AndAlso items.Count = 1 Then _
                     menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-                menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
-                If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-                If Not items Is Nothing AndAlso items.Count = 1 Then
-                    Dim test As Item = Item.FromParsingName(items(0).FullPath, Nothing)
-                    If Not test Is Nothing Then ' this won't work for all items 
-                        test.Dispose()
-                        Dim isPinned As Boolean = PinnedItems.GetIsPinned(items(0).FullPath)
-                        menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
-                    End If
-                End If
-            End If
+                            menuItem = menuItems.FirstOrDefault(Function(i) i.Tag?.ToString().Split(vbTab)(1) = "delete")
+                            If Not menuItem Is Nothing Then menu.Buttons.Add(makeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+                            If Not items Is Nothing AndAlso items.Count = 1 Then
+                                Dim test As Item = Item.FromParsingName(items(0).FullPath, Nothing)
+                                If Not test Is Nothing Then ' this won't work for all items 
+                                    test.Dispose()
+                                    Dim isPinned As Boolean = PinnedItems.GetIsPinned(items(0).FullPath)
+                                    menu.Buttons.Add(makeToggleButton("-1" & vbTab & "laila.shell.(un)pin", If(isPinned, "Unpin item", "Pin item"), isPinned))
+                                End If
+                            End If
+                        End If
 
-            Dim newMenuItem As MenuItem = menu.Items.Cast(Of Control) _
+                        Dim newMenuItem As MenuItem = menu.Items.Cast(Of Control) _
                 .FirstOrDefault(Function(c) TypeOf c Is MenuItem _
                     AndAlso Not c.Tag Is Nothing _
                     AndAlso c.Tag.ToString().Split(vbTab)(1) = "New")
-            menu.Tag = New Tuple(Of IContextMenu, IntPtr, Boolean)(_contextMenu, _hMenu, isDefaultOnly)
-            AddHandler menu.Closed,
+                        menu.Tag = New Tuple(Of IContextMenu, IntPtr, Boolean)(_contextMenu, _hMenu, isDefaultOnly)
+                        AddHandler menu.Closed,
                 Sub(s As Object, e As EventArgs)
                     If Not _invokedId Is Nothing Then
                         If Not newMenuItem Is Nothing AndAlso
@@ -239,7 +256,7 @@ Namespace Controls
                     End If
                 End Sub
 
-            Dim wireMenuItems As Action(Of List(Of Control)) =
+                        Dim wireMenuItems As Action(Of List(Of Control)) =
                 Sub(wireItems As List(Of Control))
                     For Each c As Control In wireItems
                         If (TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0) _
@@ -256,16 +273,16 @@ Namespace Controls
                         End If
                     Next
                 End Sub
-            wireMenuItems(menu.Items.Cast(Of Control).ToList())
-            wireMenuItems(menu.Buttons.Cast(Of Control).ToList())
+                        wireMenuItems(menu.Items.Cast(Of Control).ToList())
+                        wireMenuItems(menu.Buttons.Cast(Of Control).ToList())
 
-            _contextMenu = Nothing
+                        _contextMenu = Nothing
 
-            'Dim idTPM As Integer = Functions.TrackPopupMenuEx(hMenu, &H100, 0, 0, Shell._hwnd, IntPtr.Zero) - 1
-            'Debug.WriteLine("TrackPopupMenuEx returns " & idTPM)
-            'InvokeCommand(contextMenu, Nothing, idTPM & vbTab)
+                        'Dim idTPM As Integer = Functions.TrackPopupMenuEx(hMenu, &H100, 0, 0, Shell._hwnd, IntPtr.Zero) - 1
+                        'Debug.WriteLine("TrackPopupMenuEx returns " & idTPM)
+                        'InvokeCommand(contextMenu, Nothing, idTPM & vbTab)
 
-            Return menu ' New ContextMenu() 
+                        Return menu ' New ContextMenu() 
         End Function
 
         Private Function getNewItemMenu(contextMenu As Laila.Shell.Controls.ContextMenu)
@@ -314,119 +331,141 @@ Namespace Controls
         End Function
 
         Private Sub makeContextMenu(items As IEnumerable(Of Item), isDefaultOnly As Boolean)
-            Dim ptrContextMenu As IntPtr
-            Dim folderPidl As Pidl
-            Dim itemPidls As Pidl()
-            Dim flags As Integer = CMF.CMF_NORMAL
+            Dim tcs As New TaskCompletionSource()
+            Shell.FolderTaskQueue.Add(
+                Sub()
+                    Dim ptrContextMenu As IntPtr
+                    Dim folderPidl As Pidl
+                    Dim itemPidls As Pidl()
+                    Dim flags As Integer = CMF.CMF_NORMAL
+                    Dim shellFolder As IShellFolder = _parent.ShellFolder
 
-            Try
-                If Not items Is Nothing AndAlso items.Count > 0 Then
-                    ' user clicked on an item
-                    flags = flags Or CMF.CMF_ITEMMENU
-
-                    folderPidl = _parent.Pidl.Clone()
-                    itemPidls = items.Select(Function(i) i.Pidl.Clone()).ToArray()
-
-                    _parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, ptrContextMenu)
-                    If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                        _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
-                    End If
-                Else
-                    ' user clicked on the background
-                    If _parent.FullPath = Shell.Desktop.FullPath Then
-                        ' this is the desktop
-                        folderPidl = Shell.Desktop.Pidl.Clone()
-                        itemPidls = {Shell.Desktop.Pidl.Clone()}
-                    Else
-                        ' this is any other folder
-                        Using parent2 = _parent.GetParent()
-                            folderPidl = parent2.Pidl.Clone()
-                        End Using
-                        itemPidls = {_parent.Pidl.Clone()}
-                    End If
-
-                    _parent.ShellFolder.CreateViewObject(IntPtr.Zero, GetType(IContextMenu).GUID, ptrContextMenu)
-                    If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                        _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
-                    End If
-                End If
-
-                If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                    Dim ptr2 As IntPtr, ptr3 As IntPtr
                     Try
-                        Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu2).GUID, ptr2)
-                        If Not IntPtr.Zero.Equals(ptr2) Then
-                            _contextMenu2 = Marshal.GetObjectForIUnknown(ptr2)
+                        If Not items Is Nothing AndAlso items.Count > 0 Then
+                            ' user clicked on an item
+                            flags = flags Or CMF.CMF_ITEMMENU
+
+                            folderPidl = _parent.Pidl.Clone()
+                            itemPidls = items.Select(Function(i) i.Pidl.Clone()).ToArray()
+
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, ptrContextMenu)
+                            If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                                _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
+                            End If
+                        Else
+                            ' user clicked on the background
+                            If _parent.FullPath = Shell.Desktop.FullPath Then
+                                ' this is the desktop
+                                folderPidl = Shell.Desktop.Pidl.Clone()
+                                itemPidls = {Shell.Desktop.Pidl.Clone()}
+                            Else
+                                ' this is any other folder
+                                Using parent2 = _parent.GetParent()
+                                    folderPidl = parent2.Pidl.Clone()
+                                End Using
+                                itemPidls = {_parent.Pidl.Clone()}
+                            End If
+
+                            shellFolder.CreateViewObject(IntPtr.Zero, GetType(IContextMenu).GUID, ptrContextMenu)
+                            If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                                _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
+                            End If
                         End If
-                        Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu3).GUID, ptr3)
-                        If Not IntPtr.Zero.Equals(ptr3) Then
-                            _contextMenu3 = Marshal.GetObjectForIUnknown(ptr3)
+
+                        If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                            Dim ptr2 As IntPtr, ptr3 As IntPtr
+                            Try
+                                Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu2).GUID, ptr2)
+                                If Not IntPtr.Zero.Equals(ptr2) Then
+                                    _contextMenu2 = Marshal.GetObjectForIUnknown(ptr2)
+                                End If
+                                Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu3).GUID, ptr3)
+                                If Not IntPtr.Zero.Equals(ptr3) Then
+                                    _contextMenu3 = Marshal.GetObjectForIUnknown(ptr3)
+                                End If
+                            Finally
+                                If Not IntPtr.Zero.Equals(ptr2) Then
+                                    Marshal.Release(ptr2)
+                                End If
+                                If Not IntPtr.Zero.Equals(ptr3) Then
+                                    Marshal.Release(ptr3)
+                                End If
+                            End Try
+                        End If
+
+                        If Not _contextMenu Is Nothing Then
+                            _hMenu = Functions.CreatePopupMenu()
+                            flags = flags Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
+                            If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
+                            _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
+                        End If
+
+                        If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                            Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
+                            Try
+                                Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
+                                If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
+                                    shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
+                                    Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
+                                                     itemPidls.Select(Function(p) p.RelativePIDL).ToArray(),
+                                                     IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
+                                    shellExtInit.Initialize(_parent.Pidl.AbsolutePIDL, dataObject, IntPtr.Zero)
+                                End If
+                            Finally
+                                If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
+                                    Marshal.Release(shellExtInitPtr)
+                                End If
+                                If Not shellExtInit Is Nothing Then
+                                    Marshal.ReleaseComObject(shellExtInit)
+                                End If
+                                If Not dataObject Is Nothing Then
+                                    Marshal.ReleaseComObject(dataObject)
+                                End If
+                            End Try
                         End If
                     Finally
-                        If Not IntPtr.Zero.Equals(ptr2) Then
-                            Marshal.Release(ptr2)
+                        folderPidl.Dispose()
+                        For Each p In itemPidls
+                            p.Dispose()
+                        Next
+                        If Not IntPtr.Zero.Equals(ptrContextMenu) Then
+                            Marshal.Release(ptrContextMenu)
                         End If
-                        If Not IntPtr.Zero.Equals(ptr3) Then
-                            Marshal.Release(ptr3)
-                        End If
-                    End Try
-                End If
-
-                If Not _contextMenu Is Nothing Then
-                    _hMenu = Functions.CreatePopupMenu()
-                    flags = flags Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
-                    If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
-                    _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-                End If
-
-                If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                    Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
-                    Try
-                        Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
-                        If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
-                            shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
-                            Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
-                                                         itemPidls.Select(Function(p) p.RelativePIDL).ToArray(),
-                                                         IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
-                            shellExtInit.Initialize(_parent.Pidl.AbsolutePIDL, dataObject, IntPtr.Zero)
-                        End If
-                    Finally
-                        If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
-                            Marshal.Release(shellExtInitPtr)
-                        End If
-                        If Not shellExtInit Is Nothing Then
-                            Marshal.ReleaseComObject(shellExtInit)
-                        End If
-                        If Not dataObject Is Nothing Then
-                            Marshal.ReleaseComObject(dataObject)
+                        If Not shellFolder Is Nothing Then
+                            Marshal.ReleaseComObject(shellFolder)
                         End If
                     End Try
-                End If
-            Finally
-                folderPidl.Dispose()
-                For Each p In itemPidls
-                    p.Dispose()
-                Next
-                If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                    Marshal.Release(ptrContextMenu)
-                End If
-            End Try
+                    tcs.SetResult()
+                End Sub)
+            tcs.Task.Wait()
         End Sub
 
         Private Function getMenuItems(hMenu2 As IntPtr, parentIndex As Integer) As List(Of Control)
-            If parentIndex >= 0 Then
-                Dim lParam As Integer = (&HFFFF0000) Or (parentIndex And &HFFFF)
-                If Not _contextMenu3 Is Nothing Then
-                    Dim ptr3 As IntPtr
-                    Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
-                    Debug.WriteLine("contextMenu3 returned" & h.ToString())
-                    If Not IntPtr.Zero.Equals(ptr3) Then
-                        Marshal.Release(ptr3)
-                    End If
-                ElseIf Not _contextMenu2 Is Nothing Then
-                    _contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
-                End If
-            End If
+            Dim tcs2 As New TaskCompletionSource()
+
+            Shell.FolderTaskQueue.Add(
+                Sub()
+                    Try
+                        If parentIndex >= 0 Then
+                            Dim lParam As Integer = (&HFFFF0000) Or (parentIndex And &HFFFF)
+                            If Not _contextMenu3 Is Nothing Then
+                                Dim ptr3 As IntPtr
+                                Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
+                                Debug.WriteLine("contextMenu3 returned" & h.ToString())
+                                If Not IntPtr.Zero.Equals(ptr3) Then
+                                    Marshal.Release(ptr3)
+                                End If
+                            ElseIf Not _contextMenu2 Is Nothing Then
+                                _contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
+                            End If
+                        End If
+                        tcs2.SetResult()
+                    Catch ex As Exception
+                        tcs2.SetException(ex)
+                    End Try
+                End Sub)
+
+            tcs2.Task.Wait()
 
             Dim result As List(Of Control) = New List(Of Control)()
 
@@ -439,19 +478,33 @@ Namespace Controls
                 Functions.GetMenuItemInfo(hMenu2, i, True, mii)
                 Dim header As String = mii.dwTypeData.Substring(0, mii.cch)
 
-                mii = New MENUITEMINFO()
-                mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                Dim tcs3 As New TaskCompletionSource
+                Dim bitmapSource As BitmapSource
+
+                Shell.FolderTaskQueue.Add(
+                    Sub()
+                        Try
+                            mii = New MENUITEMINFO()
+                            mii.cbSize = CUInt(Marshal.SizeOf(mii))
                 mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE Or MIIM.MIIM_CHECKMARKS
                 Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                Dim bitmapSource As BitmapSource
-                If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                    bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
-                    bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                Else
-                    bitmapSource = Nothing
+                            If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
+                                BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                BitmapSource.Freeze()
+                            ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
+                                BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                BitmapSource.Freeze()
+                            Else
+                                BitmapSource = Nothing
                 End If
+                            tcs3.SetResult()
+                        Catch ex As Exception
+                            tcs3.SetException(ex)
+                        End Try
+                    End Sub)
+
+                tcs3.Task.Wait()
 
                 If mii.fType = MFT.SEPARATOR Then
                     ' refuse initial and double separators
@@ -464,17 +517,30 @@ Namespace Controls
                     mii.fMask = MIIM.MIIM_ID
                     Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                    Dim cmd As StringBuilder = New StringBuilder(), id As Integer
-                    cmd.Append(New String(" ", 2050))
-                    If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
-                        id = mii.wID - 1
-                        _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 2048)
-                        If cmd.Length = 0 Then
-                            _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 2048)
-                        End If
-                    End If
+                    Dim tcs As New TaskCompletionSource, verb As String, id As Integer
 
-                    Debug.WriteLine(header & "  " & id & vbTab & cmd.ToString())
+                    Shell.FolderTaskQueue.Add(
+                        Sub()
+                            Try
+                                Dim cmd As StringBuilder = New StringBuilder()
+                                cmd.Append(New String(" ", 2050))
+                                If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
+                                    id = mii.wID - 1
+                                    _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 2048)
+                                    If cmd.Length = 0 Then
+                                        _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 2048)
+                                    End If
+                                    verb = cmd.ToString()
+                                End If
+                                tcs.SetResult()
+                            Catch ex As Exception
+                                tcs.SetException(ex)
+                            End Try
+                        End Sub)
+
+                    tcs.Task.Wait()
+
+                    Debug.WriteLine(header & "  " & id & vbTab & verb.ToString())
 
                     mii = New MENUITEMINFO()
                     mii.cbSize = CUInt(Marshal.SizeOf(mii))
@@ -484,7 +550,7 @@ Namespace Controls
                     Dim menuItem As MenuItem = New MenuItem() With {
                         .Header = header.Replace("&", "_"),
                         .Icon = New Image() With {.Source = bitmapSource},
-                        .Tag = id & vbTab & cmd.ToString(),
+                        .Tag = id & vbTab & verb,
                         .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
                         .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
                     }
@@ -531,19 +597,26 @@ Namespace Controls
         End Sub
 
         Public Sub InvokeCommand(contextMenu As ContextMenu, id As String)
-            Dim lastFolder As Folder = Me.Folder
-            Dim lastSelectedItems As IEnumerable(Of Item) = Me.SelectedItems
+            Dim lastFolder As Folder
+            Dim lastSelectedItems As IEnumerable(Of Item)
+            Dim t As Tuple(Of IContextMenu, IntPtr, Boolean)
+            Dim e As CommandInvokedEventArgs
 
-            Dim e As CommandInvokedEventArgs = New CommandInvokedEventArgs() With {
-                .Id = id.Split(vbTab)(0),
-                .Verb = id.Split(vbTab)(1)
-            }
-            RaiseEvent CommandInvoked(Me, e)
+            UIHelper.OnUIThread(
+                Sub()
+                    lastFolder = Me.Folder
+                    lastSelectedItems = Me.SelectedItems
 
-            Dim c As Control = contextMenu.Items.Cast(Of Control).FirstOrDefault(Function(i) i.Tag = id)
-            If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
+                    e = New CommandInvokedEventArgs() With {
+                        .Id = id.Split(vbTab)(0),
+                        .Verb = id.Split(vbTab)(1)
+                    }
+                    Dim c As Control = contextMenu.Items.Cast(Of Control).FirstOrDefault(Function(i) i.Tag = id)
+                    If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
+                    RaiseEvent CommandInvoked(Me, e)
 
-            Dim t As Tuple(Of IContextMenu, IntPtr, Boolean) = contextMenu.Tag
+                    t = contextMenu.Tag
+                End Sub)
 
             Dim thread As Thread = New Thread(New ThreadStart(
                 Sub()
@@ -1254,9 +1327,15 @@ Namespace Controls
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName"
-                    initializeSortMenu()
+                    UIHelper.OnUIThread(
+                        Sub()
+                            initializeSortMenu()
+                        End Sub)
                 Case "View"
-                    initializeViewMenu()
+                    UIHelper.OnUIThread(
+                        Sub()
+                            initializeViewMenu()
+                        End Sub)
             End Select
         End Sub
 
