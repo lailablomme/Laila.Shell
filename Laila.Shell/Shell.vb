@@ -198,7 +198,9 @@ Public Class Shell
                     Functions.SHGetPathFromIDList(pidl1, path)
                     path1 = path.ToString()
                     e.Item1Pidl = New Pidl(pidl1)
-                    Debug.WriteLine(BitConverter.ToString(e.Item1Pidl.Bytes) & vbCrLf & "/" & path1.ToString())
+                    Using i = Item.FromPidl(e.Item1Pidl.Clone().AbsolutePIDL, Nothing)
+                        Debug.WriteLine(BitConverter.ToString(e.Item1Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
+                    End Using
                 End If
 
                 Dim path2 As String
@@ -207,7 +209,9 @@ Public Class Shell
                     Functions.SHGetPathFromIDList(pidl2, path)
                     path2 = path.ToString()
                     e.Item2Pidl = New Pidl(pidl2)
-                    Debug.WriteLine(BitConverter.ToString(e.Item2Pidl.Bytes) & vbCrLf & "/" & path2.ToString())
+                    Using i = Item.FromPidl(e.Item2Pidl.Clone().AbsolutePIDL, Nothing)
+                        Debug.WriteLine(BitConverter.ToString(e.Item2Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
+                    End Using
                 End If
 
                 RaiseEvent Notification(Nothing, e)

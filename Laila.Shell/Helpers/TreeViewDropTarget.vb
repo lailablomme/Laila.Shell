@@ -96,7 +96,19 @@ Public Class TreeViewDropTarget
         _lastOverItem = Nothing
         If Not _lastDropTarget Is Nothing Then
             Try
-                Return _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
+                Dim overListBoxItem As ListBoxItem = getOverListBoxItem(ptWIN32)
+                Dim overItem As Item = overListBoxItem?.DataContext
+                If Not overItem Is Nothing AndAlso overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" Then
+                    Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                    If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                    fo.DeleteItems(_dataObject)
+                        fo.PerformOperations()
+                        Return HRESULT.Ok
+                    Else
+                        Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
+                    Debug.WriteLine("drop=" & h.ToString())
+                    Return h
+                End If
             Finally
                 Marshal.ReleaseComObject(_lastDropTarget)
                 _lastDropTarget = Nothing
@@ -300,6 +312,7 @@ Public Class TreeViewDropTarget
                             'Debug.WriteLine("dropTarget.DragEnter()   newPinndedIndex=" & newPinnedIndex)
                             Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
                         Finally
+                            customizeDropDescription(overItem, grfKeyState, pdwEffect)
                             _lastDropTarget = dropTarget
                         End Try
                     Else
@@ -323,7 +336,11 @@ Public Class TreeViewDropTarget
                     'If Drag.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not WpfDragTargetProxy._isDropDescriptionSet AndAlso Drag._isDragging Then
                     '    WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     'End If
-                    Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
+                    Try
+                        Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
+                    Finally
+                        customizeDropDescription(overItem, grfKeyState, pdwEffect)
+                    End Try
                 Else
                     'Debug.WriteLine("did nothing")
                     _newPinnedIndex = newPinnedIndex
@@ -370,4 +387,10 @@ Public Class TreeViewDropTarget
 
         Return HRESULT.Ok
     End Function
+
+    Private Sub customizeDropDescription(overItem As Item, grfKeyState As MK, pdwEffect As DROPEFFECT)
+        If overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" And grfKeyState.HasFlag(MK.MK_SHIFT) Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_WARNING, "Delete", "")
+        End If
+    End Sub
 End Class

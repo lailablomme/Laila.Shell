@@ -65,7 +65,18 @@ Public Class ListViewDropTarget
         _lastOverItem = Nothing
         If Not _lastDropTarget Is Nothing Then
             Try
-                Return _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
+                Dim overItem As Item = getOverItem(ptWIN32)
+                If Not overItem Is Nothing AndAlso overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" Then
+                    Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                    If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                    fo.DeleteItems(_dataObject)
+                    fo.PerformOperations()
+                    Return HRESULT.Ok
+                Else
+                    Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
+                    Debug.WriteLine("drop=" & h.ToString())
+                    Return h
+                End If
             Finally
                 Marshal.ReleaseComObject(_lastDropTarget)
                 _lastDropTarget = Nothing

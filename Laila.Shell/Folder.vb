@@ -369,7 +369,7 @@ Public Class Folder
     Protected Sub updateItems(items As ObservableCollection(Of Item), Optional doRefreshItems As Boolean = False, Optional isAsync As Boolean = False)
         UIHelper.OnUIThread(
             Sub()
-                Debug.WriteLine("Start loading " & Me.FullPath)
+                Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
                 Me.IsLoading = True
             End Sub)
 
@@ -410,7 +410,7 @@ Public Class Folder
         UIHelper.OnUIThread(
             Sub()
                 Me.IsLoading = False
-                Debug.WriteLine("End loading " & Me.FullPath)
+                Debug.WriteLine("End loading " & Me.DisplayName)
             End Sub)
     End Sub
 
@@ -777,7 +777,8 @@ Public Class Folder
                     End If
                 Case SHCNE.UPDATEDIR
                     If (Me.Pidl.Equals(e.Item1Pidl) OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl)) _
-                        AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 1 Then
+                        AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 1 _
+                        AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) Then
                         _pendingUpdateCounter += 1
                         Dim func As Func(Of Task) =
                             Async Function() As Task

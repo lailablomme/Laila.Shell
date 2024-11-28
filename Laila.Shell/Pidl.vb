@@ -1,5 +1,6 @@
 ﻿Imports System.IO
 Imports System.Runtime.InteropServices
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
 Imports Laila.Shell.Helpers
 
 Public Class Pidl
@@ -71,13 +72,13 @@ Public Class Pidl
         For i = 0 To count - 1
             offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
             Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset))
-            Try
-                result.Add(Item.FromParsingName(Item.GetFullPathFromShellItem2(shellItem2), Nothing))
-            Finally
-                If Not shellItem2 Is Nothing Then
-                    Marshal.ReleaseComObject(shellItem2)
-                End If
-            End Try
+            Dim attr As SFGAO = SFGAO.FOLDER
+            shellItem2.GetAttributes(attr, attr)
+            If attr.HasFlag(SFGAO.FOLDER) Then
+                result.Add(New Folder(shellItem2, Nothing))
+            Else
+                result.Add(New Item(shellItem2, Nothing))
+            End If
         Next
 
         Return result

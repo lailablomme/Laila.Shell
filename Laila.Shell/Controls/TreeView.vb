@@ -124,11 +124,11 @@ Namespace Controls
             ' frequent folders
             _fequentUpdateTimer = New Timer(New TimerCallback(
                         Sub()
-                            Application.Current.Dispatcher.Invoke(
-                                Async Function() As Task
+                            UIHelper.OnUIThread(
+                                Async Sub()
                                     Await updateFrequentFolders()
                                     CollectionViewSource.GetDefaultView(Me.Items).Refresh()
-                                End Function)
+                                End Sub)
                         End Sub), Nothing, 1000 * 60, 1000 * 60)
 
             AddHandler PinnedItems.ItemPinned,

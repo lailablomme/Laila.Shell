@@ -20,7 +20,8 @@ Public Class FrequentFolders
             Dim mostFrequent1 As List(Of FrequentFolder) = collection.Query() _
                 .OrderByDescending(Function(f) f.AccessCount).ToList() _
                 .OrderByDescending(Function(f) f.MinutesSpent).ToList() _
-                .Where(Function(f) Not f.FullPath.StartsWith("\\") AndAlso IO.Directory.Exists(f.FullPath)).ToList()
+                .Where(Function(f) Not String.IsNullOrWhiteSpace(f.FullPath) _
+                    AndAlso Not f.FullPath.StartsWith("\\") AndAlso IO.Directory.Exists(f.FullPath)).ToList()
 
             Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
             Dim count As Integer = 0

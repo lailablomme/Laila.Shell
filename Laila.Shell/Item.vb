@@ -1,6 +1,7 @@
 Imports System.Drawing
 Imports System.IO
 Imports System.Runtime.InteropServices
+Imports System.Text
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
@@ -31,6 +32,21 @@ Public Class Item
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
+        If Not shellItem2 Is Nothing Then
+            Dim attr As SFGAO = SFGAO.FOLDER
+            shellItem2.GetAttributes(attr, attr)
+            If attr.HasFlag(SFGAO.FOLDER) Then
+                Return New Folder(shellItem2, parent)
+            Else
+                Return New Item(shellItem2, parent)
+            End If
+        Else
+            Return Nothing
+        End If
+    End Function
+
+    Public Shared Function FromPidl(pidl As IntPtr, parent As Folder) As Item
+        Dim shellItem2 As IShellItem2 = GetIShellItem2FromPidl(pidl)
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
