@@ -213,22 +213,23 @@ Public Class Item
                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                 Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
             Me.ShellItem2.GetAttributes(_attributes, _attributes)
-            For Each prop In Me.GetType().GetProperties()
-                If prop.Name <> "View" AndAlso prop.Name <> "Items" AndAlso prop.Name <> "" _
-                    AndAlso (prop.Name <> "DisplayName" OrElse Me.DisplayName <> oldDisplayName) _
-                    AndAlso (prop.Name <> "ItemNameDisplaySortValue" OrElse Me.DisplayName <> oldItemNameDisplaySortValue) Then
-                    Debug.WriteLine("Refreshing " & prop.Name)
-                    Me.NotifyOfPropertyChange(prop.Name)
-                    'ElseIf prop.Name = "Items" Then
-                    '    UIHelper.OnUIThreadAsync(
-                    '        Sub()
-                    '            Me.NotifyOfPropertyChange(prop.Name)
-                    '        End Sub)
-                End If
-            Next
+            If Me.DisplayName <> oldDisplayName Then
+                Me.NotifyOfPropertyChange("DisplayName")
+            End If
+            If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
+                Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
+            End If
+            Me.NotifyOfPropertyChange("OverlayImageAsync")
+            Me.NotifyOfPropertyChange("IconAsync")
+            Me.NotifyOfPropertyChange("ImageAsync")
+            Me.NotifyOfPropertyChange("HasThumbnailAsync")
+            Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
+            Me.NotifyOfPropertyChange("IsImage")
+            Me.NotifyOfPropertyChange("IsHidden")
+            Me.NotifyOfPropertyChange("IsCompressed")
             For Each prop In oldProperties
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.CanonicalName))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key.ToString()))
             Next
         Else
             Me.Dispose()

@@ -137,7 +137,7 @@
                     <Grid x:Name="PART_Grid">
                         <ListBox ItemsSource="{TemplateBinding Items}" x:Name="PART_ListBox" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
-                             VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
+                             VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
                              ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0"
                              VirtualizingPanel.ScrollUnit="Pixel" ItemContainerStyleSelector="{StaticResource treeViewItemStyleSelector}">
                             <ListBox.ItemsPanel>

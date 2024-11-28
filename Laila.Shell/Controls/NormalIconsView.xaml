@@ -15,7 +15,7 @@
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="2" 
+                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="0" 
                                   VirtualizingPanel.CacheLengthUnit="Page">
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">

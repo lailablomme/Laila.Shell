@@ -338,7 +338,7 @@ Public Class Folder
         Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
         view.SortDescriptions.Clear()
         view.GroupDescriptions.Clear()
-        Await Me.GetItemsAsync()
+        Await GetItemsAsync()
         Me.ItemsSortPropertyName = Me.ItemsSortPropertyName
         Me.ItemsGroupByPropertyName = Me.ItemsGroupByPropertyName
         Me.IsRefreshingItems = False
@@ -775,14 +775,14 @@ Public Class Folder
                                 End Sub)
                         End If
                     End If
-                Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
+                Case SHCNE.UPDATEDIR
                     If (Me.Pidl.Equals(e.Item1Pidl) OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl)) _
                         AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 1 Then
                         _pendingUpdateCounter += 1
                         Dim func As Func(Of Task) =
                             Async Function() As Task
                                 SyncLock _lock
-                                    updateItems(_items, False, True)
+                                    updateItems(_items, True, True)
                                 End SyncLock
                                 UIHelper.OnUIThread(
                                     Sub()

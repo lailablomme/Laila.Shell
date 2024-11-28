@@ -28,7 +28,7 @@
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" FocusVisualStyle="{x:Null}"  
-                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="5" VirtualizingPanel.CacheLengthUnit="Page"
+                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
                                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   VirtualizingPanel.ScrollUnit="Pixel">
                             <ListView.ItemsPanel>
