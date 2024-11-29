@@ -285,12 +285,7 @@ Public Class Folder
 
     Public Overrides ReadOnly Property HasSubFolders As Boolean
         Get
-            If _isEnumerated Then
-                If Not _hasSubFolders.HasValue Then
-                    _hasSubFolders = Not _items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
-                End If
-                Return _hasSubFolders.Value
-            ElseIf Not disposedValue Then
+            If Not disposedValue Then
                 Dim tcs As New TaskCompletionSource(Of SFGAO)
 
                 Shell.SlowTaskQueue.Add(
