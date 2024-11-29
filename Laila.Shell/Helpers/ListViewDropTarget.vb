@@ -121,7 +121,7 @@ Public Class ListViewDropTarget
                             Sub()
                                 Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
-                            End Sub)
+                            End Sub, Threading.DispatcherPriority.ContextIdle)
                     End Sub), Nothing, 350, 350)
             End If
         ElseIf pt.Y > _folderView.ActiveView.PART_ListBox.ActualHeight - 100 Then
