@@ -44,7 +44,8 @@ Namespace ClipboardFormats
             Functions.OpenClipboard(IntPtr.Zero)
             Dim hGlobal As IntPtr = Functions.GetClipboardData(format)
             Try
-                Return If(Marshal.ReadInt32(hGlobal) = 5, DROPEFFECT.DROPEFFECT_COPY, DROPEFFECT.DROPEFFECT_MOVE)
+                Return If(IntPtr.Zero.Equals(hGlobal), DROPEFFECT.DROPEFFECT_COPY,
+                    If(Marshal.ReadInt32(hGlobal) = 5, DROPEFFECT.DROPEFFECT_COPY, DROPEFFECT.DROPEFFECT_MOVE))
             Finally
                 Functions.CloseClipboard()
             End Try
