@@ -111,34 +111,36 @@ Namespace Controls
         End Sub
 
         Private Sub OnListViewTextInput(sender As Object, e As TextCompositionEventArgs)
-            If Not _typeToSearchTimer Is Nothing Then
-                _typeToSearchTimer.Dispose()
-            End If
+            If Not TypeOf e.OriginalSource Is TextBox Then
+                If Not _typeToSearchTimer Is Nothing Then
+                    _typeToSearchTimer.Dispose()
+                End If
 
-            _typeToSearchTimer = New Timer(New TimerCallback(
-                Sub()
-                    UIHelper.OnUIThread(
-                        Sub()
-                            _typeToSearchString = ""
-                            _typeToSearchTimer.Dispose()
-                            _typeToSearchTimer = Nothing
-                        End Sub)
-                End Sub), Nothing, 650, Timeout.Infinite)
+                _typeToSearchTimer = New Timer(New TimerCallback(
+                    Sub()
+                        UIHelper.OnUIThread(
+                            Sub()
+                                _typeToSearchString = ""
+                                _typeToSearchTimer.Dispose()
+                                _typeToSearchTimer = Nothing
+                            End Sub)
+                    End Sub), Nothing, 650, Timeout.Infinite)
 
-            _typeToSearchString &= e.Text
-            Dim foundItem As Item =
+                _typeToSearchString &= e.Text
+                Dim foundItem As Item =
                 Me.Folder.Items.Skip(Me.Folder.Items.IndexOf(Me.SelectedItems(0)) + 1) _
                         .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
-            If foundItem Is Nothing Then
-                foundItem =
+                If foundItem Is Nothing Then
+                    foundItem =
                     Me.Folder.Items.Take(Me.Folder.Items.IndexOf(Me.SelectedItems(0))) _
                             .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
-            End If
-            If Not foundItem Is Nothing Then
-                Me.SelectedItems = {foundItem}
-                e.Handled = True
-            Else
-                SystemSounds.Asterisk.Play()
+                End If
+                If Not foundItem Is Nothing Then
+                    Me.SelectedItems = {foundItem}
+                    e.Handled = True
+                Else
+                    SystemSounds.Asterisk.Play()
+                End If
             End If
         End Sub
 
@@ -482,7 +484,7 @@ Namespace Controls
 
                         ' show listview
                         bfv.PART_ListBox.Visibility = Visibility.Visible
-                    End Sub)
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
 
             bfv.IsLoading = False

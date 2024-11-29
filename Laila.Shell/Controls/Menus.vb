@@ -1359,14 +1359,17 @@ Namespace Controls
                             Dim e2 As RenameRequestEventArgs = New RenameRequestEventArgs()
                             e2.Pidl = e.Item1Pidl.Clone()
                             Await Task.Delay(250)
-                            RaiseEvent RenameRequest(Me, e2)
-                            If e2.IsHandled Then
-                                _isWaitingForCreate = False
-                                If Not _renameRequestTimer Is Nothing Then
-                                    _renameRequestTimer.Dispose()
-                                    _renameRequestTimer = Nothing
-                                End If
-                            End If
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    RaiseEvent RenameRequest(Me, e2)
+                                    If e2.IsHandled Then
+                                        _isWaitingForCreate = False
+                                        If Not _renameRequestTimer Is Nothing Then
+                                            _renameRequestTimer.Dispose()
+                                            _renameRequestTimer = Nothing
+                                        End If
+                                    End If
+                                End Sub)
                             e2.Pidl.Dispose()
                         End If
                 End Select
