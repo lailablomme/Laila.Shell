@@ -291,8 +291,12 @@ Public Class Folder
 
             If _hasSubFolders.HasValue Then
                 Return _hasSubFolders.Value
+            ElseIf Not disposedValue Then
+                Dim attr As SFGAO = SFGAO.HASSUBFOLDER
+                Me.ShellItem2.GetAttributes(attr, attr)
+                Return attr.HasFlag(SFGAO.HASSUBFOLDER)
             Else
-                Return Me.Attributes.HasFlag(SFGAO.HASSUBFOLDER)
+                Return False
             End If
         End Get
     End Property
@@ -471,15 +475,20 @@ Public Class Folder
                         End Try
                         If Not enumShellItems Is Nothing Then
                             Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
+                            Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
                             enumShellItems.Next(1, shellItems, fetched)
                             While fetched = 1
+                                Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
                                 Dim attr2 As Integer = SFGAO.FOLDER
                                 shellItems(0).GetAttributes(attr2, attr2)
+                                Debug.WriteLine("{0:HH:mm:ss.ffff} Getting path", DateTime.Now)
                                 Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
+                                Debug.WriteLine("{0:HH:mm:ss.ffff} " & fullPath, DateTime.Now)
                                 pathsAfter.Add(fullPath)
                                 If Not exists(fullPath) Then
                                     Dim newItem As Item
                                     Try
+                                        Debug.WriteLine("{0:HH:mm:ss.ffff} making item", DateTime.Now)
                                         If CBool(attr2 And SFGAO.FOLDER) Then
                                             newItem = makeNewFolder(shellItems(0))
                                         Else
@@ -489,9 +498,11 @@ Public Class Folder
                                     Catch ex As Exception
                                     End Try
                                 Else
+                                    Debug.WriteLine("{0:HH:mm:ss.ffff} Updating item", DateTime.Now)
                                     toUpdate.Add(fullPath)
                                     Marshal.ReleaseComObject(shellItems(0))
                                 End If
+                                Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
                                 enumShellItems.Next(1, shellItems, fetched)
                             End While
                         End If
