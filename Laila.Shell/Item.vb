@@ -98,7 +98,7 @@ Public Class Item
         _objectId = _objectCount
         _shellItem2 = shellItem2
         If Not shellItem2 Is Nothing Then
-            Debug.WriteLine("{0:HH:mm:ss.ffff} Getting PIDL", DateTime.Now)
+            'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting PIDL", DateTime.Now)
             Dim ptr As IntPtr, pidl As IntPtr
             Try
                 ptr = Marshal.GetIUnknownForObject(_shellItem2)
@@ -110,18 +110,18 @@ Public Class Item
             End Try
 
             _pidl = New Pidl(pidl)
-            Debug.WriteLine("{0:HH:mm:ss.ffff} Getting full path", DateTime.Now)
+            'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting full path", DateTime.Now)
             _fullPath = Item.GetFullPathFromShellItem2(shellItem2)
-            Debug.WriteLine("{0:HH:mm:ss.ffff} Getting display name", DateTime.Now)
+            'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting display name", DateTime.Now)
             Dim dn As String = Me.DisplayName
-            Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
+            'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
             _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
             Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
             Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
             Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED
             shellItem2.GetAttributes(_attributes, _attributes)
             AddHandler Shell.Notification, AddressOf shell_Notification
-            Debug.WriteLine("{0:HH:mm:ss.ffff} Adding to cache", DateTime.Now)
+            'Debug.WriteLine("{0:HH:mm:ss.ffff} Adding to cache", DateTime.Now)
             UIHelper.OnUIThreadAsync(
                 Sub()
                     Shell.ItemsCache.Add(Me)
