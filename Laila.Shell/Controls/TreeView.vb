@@ -66,34 +66,40 @@ Namespace Controls
                 Sub(s As Object, e As NotificationEventArgs)
                     Select Case e.Event
                         Case SHCNE.RMDIR
-                            If Not Me.Items.FirstOrDefault(Function(i) _
-                                Not i.disposedValue _
-                                AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
-                                AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                                AndAlso Not i.Pidl Is Nothing _
-                                AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
-                                updatePinnedItems()
-                                updateFrequentFolders()
-                            End If
-                        Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                            If Not Me.Items.FirstOrDefault(
-                                Function(i)
-                                    If Not i.disposedValue Then
-                                        Using parent = i.GetParent()
-                                            Return i.TreeRootIndex >= TreeRootSection.PINNED _
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    If Not Me.Items.FirstOrDefault(Function(i) _
+                                    Not i.disposedValue _
+                                    AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
+                                    AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
+                                    AndAlso Not i.Pidl Is Nothing _
+                                    AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
+                                        updatePinnedItems()
+                                        updateFrequentFolders()
+                                    End If
+                                End Sub)
+                        Case SHCNE.UPDATEDIR
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    If Not Me.Items.FirstOrDefault(
+                                        Function(i)
+                                            If Not i.disposedValue Then
+                                                Using parent = i.GetParent()
+                                                    Return i.TreeRootIndex >= TreeRootSection.PINNED _
                                             AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                                             AndAlso (Not parent Is Nothing _
                                                      AndAlso Not parent.Pidl Is Nothing _
                                                      AndAlso parent.Pidl.Equals(e.Item1Pidl))
-                                        End Using
-                                    Else
-                                        Return False
+                                                End Using
+                                            Else
+                                                Return False
+                                            End If
+                                        End Function) Is Nothing _
+                                    OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl) Then
+                                        updatePinnedItems()
+                                        updateFrequentFolders()
                                     End If
-                                End Function) Is Nothing _
-                                OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl) Then
-                                updatePinnedItems()
-                                updateFrequentFolders()
-                            End If
+                                End Sub)
                     End Select
                 End Sub
 

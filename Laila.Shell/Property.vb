@@ -271,6 +271,23 @@ Public Class [Property]
         End Get
     End Property
 
+    Public Overridable ReadOnly Property HasIconAsync As Boolean
+        Get
+            Dim tcs As New TaskCompletionSource(Of Boolean)
+
+            Shell.PriorityTaskQueue.Add(
+                Sub()
+                    Try
+                        tcs.SetResult(Me.HasIcon)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
+
+            Return tcs.Task.Result
+        End Get
+    End Property
+
     Public ReadOnly Property ImageReferences16 As String()
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then

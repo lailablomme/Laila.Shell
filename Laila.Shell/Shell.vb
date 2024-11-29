@@ -22,6 +22,7 @@ Public Class Shell
     Public Shared SlowTaskQueue As New BlockingCollection(Of Action)
     Public Shared PriorityTaskQueue As New BlockingCollection(Of Action)
     Public Shared FolderTaskQueue As New BlockingCollection(Of Action)
+    Public Shared NotifyTaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
     Public Shared IsStarted As ManualResetEvent = New ManualResetEvent(False)
     Public Shared IsShuttingDown As Boolean
@@ -67,6 +68,19 @@ Public Class Shell
             staThread.IsBackground = True
             staThread.Start()
             _threads.Add(staThread)
+        Next
+        For i = 1 To Math.Max(Environment.ProcessorCount / 2, 2)
+            Dim mtaThread As Thread = New Thread(
+                Sub()
+                    ' Process tasks from the queue
+                    For Each task In NotifyTaskQueue.GetConsumingEnumerable()
+                        task.Invoke()
+                    Next
+                End Sub)
+            mtaThread.SetApartmentState(ApartmentState.MTA)
+            mtaThread.IsBackground = True
+            mtaThread.Start()
+            _threads.Add(mtaThread)
         Next
         Dim staThread2 As Thread = New Thread(
             Sub()
@@ -185,39 +199,42 @@ Public Class Shell
             Dim hLock As IntPtr = Functions.SHChangeNotification_Lock(wParam, lParam, pppidl, lEvent)
 
             If hLock <> IntPtr.Zero Then
-                Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
-
                 Dim pidl1 As IntPtr = Marshal.ReadIntPtr(pppidl)
                 pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                 Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
                 Dim e As NotificationEventArgs = New NotificationEventArgs() With {
-                    .[Event] = lEvent
-                }
+                            .[Event] = lEvent
+                        }
 
-                Dim path1 As String
                 If Not IntPtr.Zero.Equals(pidl1) Then
-                    Dim path As StringBuilder = New StringBuilder(260)
-                    Functions.SHGetPathFromIDList(pidl1, path)
-                    path1 = path.ToString()
-                    e.Item1Pidl = New Pidl(pidl1)
-                    Using i = Item.FromPidl(e.Item1Pidl.Clone().AbsolutePIDL, Nothing)
-                        Debug.WriteLine(BitConverter.ToString(e.Item1Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
-                    End Using
+                    e.Item1Pidl = New Pidl(pidl1).Clone()
                 End If
 
-                Dim path2 As String
                 If Not IntPtr.Zero.Equals(pidl2) Then
-                    Dim path As StringBuilder = New StringBuilder(260)
-                    Functions.SHGetPathFromIDList(pidl2, path)
-                    path2 = path.ToString()
-                    e.Item2Pidl = New Pidl(pidl2)
-                    Using i = Item.FromPidl(e.Item2Pidl.Clone().AbsolutePIDL, Nothing)
-                        Debug.WriteLine(BitConverter.ToString(e.Item2Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
-                    End Using
+                    e.Item2Pidl = New Pidl(pidl2).Clone()
                 End If
 
-                RaiseEvent Notification(Nothing, e)
+                Shell.NotifyTaskQueue.Add(
+                    Sub()
+                        Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
+
+                        If Not e.Item1Pidl Is Nothing Then
+                            Using i = Item.FromPidl(e.Item1Pidl.Clone().AbsolutePIDL, Nothing)
+                                Debug.WriteLine(BitConverter.ToString(e.Item1Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
+                            End Using
+                        End If
+                        If Not e.Item2Pidl Is Nothing Then
+                            Using i = Item.FromPidl(e.Item2Pidl.Clone().AbsolutePIDL, Nothing)
+                                Debug.WriteLine(BitConverter.ToString(e.Item2Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
+                            End Using
+                        End If
+
+                        RaiseEvent Notification(Nothing, e)
+
+                        If Not e.Item1Pidl Is Nothing Then e.Item1Pidl.Dispose()
+                        If Not e.Item2Pidl Is Nothing Then e.Item2Pidl.Dispose()
+                    End Sub)
 
                 Functions.SHChangeNotification_Unlock(hLock)
             End If

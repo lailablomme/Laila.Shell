@@ -574,17 +574,6 @@ Namespace Controls
                             Clipboard.CopyFiles(Me.SelectedItems.ToList())
                         Case "cut"
                             Clipboard.CutFiles(Me.SelectedItems.ToList())
-                        Case "paste"
-                            doPaste(Me.Folder)
-                        Case "delete"
-                            Dim dataObject As IDataObject
-                            dataObject = Clipboard.GetDataObjectFor(Me.Folder, Me.SelectedItems.ToList())
-                            Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                            If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                            fo.DeleteItems(dataObject)
-                            fo.PerformOperations()
-                            Marshal.ReleaseComObject(fo)
-                            Marshal.ReleaseComObject(dataObject)
                     End Select
                 End Sub)
 
@@ -596,7 +585,16 @@ Namespace Controls
                             Case "copy"
                             Case "cut"
                             Case "paste"
+                                doPaste(lastFolder)
                             Case "delete"
+                                Dim dataObject As IDataObject
+                                dataObject = Clipboard.GetDataObjectFor(lastFolder, lastSelectedItems.ToList())
+                                Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                                If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                                fo.DeleteItems(dataObject)
+                                fo.PerformOperations()
+                                Marshal.ReleaseComObject(fo)
+                                Marshal.ReleaseComObject(dataObject)
                             Case Else
                                 Dim cmi As New CMInvokeCommandInfoEx
                                 Debug.WriteLine("InvokeCommand " & id)

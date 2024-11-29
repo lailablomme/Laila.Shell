@@ -130,7 +130,7 @@ Namespace Controls
 
             If [property].HasIcon Then
                 Dim imageFactory2 As FrameworkElementFactory = New FrameworkElementFactory(GetType(Image))
-                imageFactory2.SetValue(Image.MarginProperty, New Thickness(0, 0, 4, 0))
+                imageFactory2.SetValue(Image.MarginProperty, New Thickness(0, 0, 1, 0))
                 imageFactory2.SetValue(Image.WidthProperty, Convert.ToDouble(16))
                 imageFactory2.SetValue(Image.HeightProperty, Convert.ToDouble(16))
                 imageFactory2.SetValue(Image.HorizontalAlignmentProperty, HorizontalAlignment.Left)
@@ -159,6 +159,7 @@ Namespace Controls
                     .Mode = BindingMode.OneWay,
                     .IsAsync = True
                 })
+                itemsControlFactory.SetValue(ItemsControl.MarginProperty, New Thickness(0, 0, 3, 0))
 
                 gridFactory.AppendChild(itemsControlFactory)
             End If

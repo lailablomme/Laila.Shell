@@ -245,7 +245,15 @@ Public Class Item
             Me.NotifyOfPropertyChange("IsCompressed")
             For Each prop In oldProperties
                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIcon", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key.ToString()))
                 Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIcon", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key.ToString()))
+                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key.ToString()))
             Next
         Else
             Me.Dispose()
