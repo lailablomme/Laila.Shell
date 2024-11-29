@@ -424,30 +424,31 @@ Namespace Controls
                                 .DoAutoDispose = True
                             }
                             AddHandler _menu.CommandInvoked,
-                                             Sub(s As Object, e2 As CommandInvokedEventArgs)
-                                                 Select Case e2.Verb
-                                                     Case "open"
-                                                         If TypeOf clickedItem Is Folder Then
-                                                             _selectionHelper.SetSelectedItems({clickedItem})
-                                                             Me.Folder = clickedItem
-                                                             e2.IsHandled = True
-                                                         End If
-                                                     Case "rename"
-                                                         Dim pt As Point = Me.PointFromScreen(treeViewItem.PointToScreen(New Point(0, 0)))
-                                                         pt.X += clickedItem.TreeMargin.Left + 37
-                                                         pt.Y -= 1
-                                                         Menus.DoRename(pt, New Size(Me.ActualWidth - pt.X - 2, treeViewItem.ActualHeight),
-                                                                        TextAlignment.Left, Me.FontSize, clickedItem, Me.PART_Grid)
-                                                         e2.IsHandled = True
-                                                     Case "laila.shell.(un)pin"
-                                                         If e2.IsChecked Then
-                                                             PinnedItems.PinItem(clickedItem.FullPath)
-                                                         Else
-                                                             PinnedItems.UnpinItem(clickedItem.FullPath)
-                                                         End If
-                                                         e2.IsHandled = True
-                                                 End Select
-                                             End Sub
+                                Sub(s As Object, e2 As CommandInvokedEventArgs)
+                                    Select Case e2.Verb
+                                        Case "open"
+                                            If TypeOf clickedItem Is Folder Then
+                                                _selectionHelper.SetSelectedItems({clickedItem})
+                                                Me.Folder = clickedItem
+                                                e2.IsHandled = True
+                                            End If
+                                        Case "rename"
+                                            Dim pt As Point = Me.PointFromScreen(treeViewItem.PointToScreen(New Point(0, 0)))
+                                            pt.X += clickedItem.TreeMargin.Left + 37
+                                            pt.Y -= 1
+                                            Menus.DoRename(pt, New Size(Me.ActualWidth - pt.X - 2, treeViewItem.ActualHeight),
+                                                        TextAlignment.Left, Me.FontSize, clickedItem, Me.PART_Grid)
+                                            e2.IsHandled = True
+                                        Case "laila.shell.(un)pin"
+                                            If e2.IsChecked Then
+                                                PinnedItems.PinItem(clickedItem.FullPath)
+                                            Else
+                                                PinnedItems.UnpinItem(clickedItem.FullPath)
+                                            End If
+                                            e2.IsHandled = True
+                                    End Select
+                                End Sub
+                            _menu.Update()
 
                             PART_ListBox.ContextMenu = _menu.ItemContextMenu
                             e.Handled = True

@@ -8,6 +8,9 @@ Imports System.IO
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function GetClipboardData(uFormat As UInteger) As IntPtr
+    End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function ILClone(pidl As IntPtr) As IntPtr
     End Function

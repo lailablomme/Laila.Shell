@@ -1,22 +1,11 @@
 ﻿Imports System.ComponentModel
-Imports System.IO
-Imports System.IO.Compression
 Imports System.Media
-Imports System.Runtime.InteropServices
-Imports System.Security.Cryptography.X509Certificates
 Imports System.Threading
 Imports System.Windows
-Imports System.Windows.Annotations
 Imports System.Windows.Controls
-Imports System.Windows.Data
 Imports System.Windows.Input
-Imports System.Windows.Media
-Imports System.Windows.Shell
-Imports System.Xml
-Imports Laila.Shell.Behaviors
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
-Imports Laila.Shell.SevenZip
 
 Namespace Controls
     Public MustInherit Class BaseFolderView
@@ -258,7 +247,7 @@ Namespace Controls
                                     e2.IsHandled = True
                                 End If
                             Case "rename"
-                                Me.DoRename(clickedItem)
+                                Me.DoRename(Me.SelectedItems(0))
                                 e2.IsHandled = True
                             Case "laila.shell.(un)pin"
                                 If e2.IsChecked Then

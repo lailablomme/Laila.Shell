@@ -71,6 +71,7 @@ Public Class ListViewDropTarget
                     If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
                     fo.DeleteItems(_dataObject)
                     fo.PerformOperations()
+                    Marshal.ReleaseComObject(fo)
                     Return HRESULT.Ok
                 Else
                     Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)

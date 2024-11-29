@@ -102,10 +102,11 @@ Public Class TreeViewDropTarget
                     Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
                     If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
                     fo.DeleteItems(_dataObject)
-                        fo.PerformOperations()
-                        Return HRESULT.Ok
-                    Else
-                        Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
+                    fo.PerformOperations()
+                    Marshal.ReleaseComObject(fo)
+                    Return HRESULT.Ok
+                Else
+                    Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
                     Debug.WriteLine("drop=" & h.ToString())
                     Return h
                 End If

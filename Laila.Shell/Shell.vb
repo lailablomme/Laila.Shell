@@ -24,6 +24,7 @@ Public Class Shell
     Public Shared FolderTaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
     Public Shared IsStarted As ManualResetEvent = New ManualResetEvent(False)
+    Public Shared IsShuttingDown As Boolean
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
@@ -164,6 +165,8 @@ Public Class Shell
     End Sub
 
     Public Shared Sub Shutdown()
+        IsShuttingDown = True
+
         For Each item In Shell.ItemsCache.ToList()
             item.Dispose()
         Next

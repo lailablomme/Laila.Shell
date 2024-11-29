@@ -47,7 +47,6 @@ Namespace Controls
         Private _parent As Folder
         Private _invokedId As String = Nothing
         Private disposedValue As Boolean
-        Private _lastItems As IEnumerable(Of Item)
         Private _lastFolder As Folder
         Private _updateTimer As Timer
         Private _renameRequestTimer As Timer
@@ -89,61 +88,8 @@ Namespace Controls
         End Sub
 
         Private Function getContextMenu(parent As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean) As Laila.Shell.Controls.ContextMenu
-            Dim hasPaste As Boolean
-            Dim tcs As New TaskCompletionSource()
-
-            Shell.FolderTaskQueue.Add(
-                Sub()
-                    Try
-                        If Not isDefaultOnly AndAlso (items Is Nothing OrElse items.Count = 0) Then
-                            ' check for paste by checking if it would accept a drop
-                            Dim dataObject As IDataObject
-                            Functions.OleGetClipboard(dataObject)
-
-                            Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder 
-                            Try
-                                Using parent2 As Folder = parent.GetParent()
-                                    If Not parent2 Is Nothing Then
-                                        shellFolder = parent2.ShellFolder
-                                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {parent.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                                    Else
-                                        ' desktop
-                                        shellFolder = Shell.Desktop.ShellFolder
-                                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {parent.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                                    End If
-                                End Using
-                                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                                    dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
-                                Else
-                                    dropTarget = Nothing
-                                End If
-
-                                If Not dropTarget Is Nothing Then
-                                    Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
-                                    Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
-                                    dropTarget.DragLeave()
-
-                                    hasPaste = hr = HRESULT.Ok AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
-                                End If
-                            Finally
-                                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                                    Marshal.Release(dropTargetPtr)
-                                End If
-                                If Not dropTarget Is Nothing Then
-                                    Marshal.ReleaseComObject(dropTarget)
-                                End If
-                                If Not shellFolder Is Nothing Then
-                                    Marshal.ReleaseComObject(shellFolder)
-                                End If
-                            End Try
-                        End If
-                        tcs.SetResult()
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait()
+            Dim hasPaste As Boolean = Not isDefaultOnly AndAlso (items Is Nothing OrElse items.Count = 0) _
+                AndAlso getCanPaste(parent)
 
             _parent = parent
             makeContextMenu(items, isDefaultOnly)
@@ -616,19 +562,41 @@ Namespace Controls
                     RaiseEvent CommandInvoked(Me, e)
 
                     t = contextMenu.Tag
+
+                    Select Case id.Split(vbTab)(1)
+                        Case "Windows.ModernShare"
+                            Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
+                            Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
+                            Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
+                            Dim instance As Object = Activator.CreateInstance(type)
+                            methodInfo.Invoke(instance, {Me.SelectedItems.ToList().Select(Function(i) i.FullPath).ToList()})
+                        Case "copy"
+                            Clipboard.CopyFiles(Me.SelectedItems.ToList())
+                        Case "cut"
+                            Clipboard.CutFiles(Me.SelectedItems.ToList())
+                        Case "paste"
+                            doPaste(Me.Folder)
+                        Case "delete"
+                            Dim dataObject As IDataObject
+                            dataObject = Clipboard.GetDataObjectFor(Me.Folder, Me.SelectedItems.ToList())
+                            Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                            If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                            fo.DeleteItems(dataObject)
+                            fo.PerformOperations()
+                            Marshal.ReleaseComObject(fo)
+                            Marshal.ReleaseComObject(dataObject)
+                    End Select
                 End Sub)
 
             Dim thread As Thread = New Thread(New ThreadStart(
                 Sub()
-
                     If Not e.IsHandled Then
                         Select Case id.Split(vbTab)(1)
                             Case "Windows.ModernShare"
-                                Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
-                                Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
-                                Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
-                                Dim instance As Object = Activator.CreateInstance(type)
-                                methodInfo.Invoke(instance, {_lastItems.ToList().Select(Function(i) i.FullPath).ToList()})
+                            Case "copy"
+                            Case "cut"
+                            Case "paste"
+                            Case "delete"
                             Case Else
                                 Dim cmi As New CMInvokeCommandInfoEx
                                 Debug.WriteLine("InvokeCommand " & id)
@@ -659,10 +627,8 @@ Namespace Controls
 
                             If Me.DoAutoDispose Then
                                 Me.Dispose()
-                            ElseIf Not t.Item3 Then
-                                If EqualityComparer(Of Folder).Default.Equals(lastFolder, Me.Folder) Then _lastFolder = Nothing
-                                If EqualityComparer(Of IEnumerable(Of Item)).Default.Equals(lastSelectedItems, Me.SelectedItems) Then _lastItems = Nothing
-                                Me.Update()
+                            ElseIf t Is Nothing OrElse Not t.Item3 Then
+                                Me.UpdateButtons()
                             End If
                         End Sub)
                 End Sub))
@@ -772,6 +738,120 @@ Namespace Controls
                         grid.Children.Remove(textBox)
                 End Select
             End Sub
+        End Sub
+
+        Private Function getCanCopy(items As List(Of Item))
+            Return Not items Is Nothing AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY))
+        End Function
+
+        Private Function getCanMove(items As List(Of Item))
+            Return Not items Is Nothing AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE))
+        End Function
+
+        Private Function getCanRename(items As List(Of Item))
+            Return Not items Is Nothing AndAlso items.Count = 1 AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
+        End Function
+
+        Private Function getCanDelete(items As List(Of Item))
+            Return Not items Is Nothing AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
+        End Function
+
+        Private Function getCanShare(items As List(Of Item))
+            Return Not items Is Nothing AndAlso items.All(Function(i) Not TypeOf i Is Folder)
+        End Function
+
+        Private Function getCanPaste(folder As Folder) As Boolean
+            ' check for paste by checking if it would accept a drop
+            Dim dataObject As IDataObject
+            Functions.OleGetClipboard(dataObject)
+
+            Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
+            Try
+                Using parent2 As Folder = folder.GetParent()
+                    If Not parent2 Is Nothing Then
+                        shellFolder = parent2.ShellFolder
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    Else
+                        ' desktop
+                        shellFolder = Shell.Desktop.ShellFolder
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    End If
+                End Using
+                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                    dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+                Else
+                    dropTarget = Nothing
+                End If
+
+                If Not dropTarget Is Nothing Then
+                    Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
+                    Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
+                    dropTarget.DragLeave()
+
+                    Return hr = HRESULT.Ok AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
+                End If
+            Finally
+                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                    Marshal.Release(dropTargetPtr)
+                End If
+                If Not dropTarget Is Nothing Then
+                    Marshal.ReleaseComObject(dropTarget)
+                End If
+                If Not shellFolder Is Nothing Then
+                    Marshal.ReleaseComObject(shellFolder)
+                End If
+                If Not dataObject Is Nothing Then
+                    Marshal.ReleaseComObject(dataObject)
+                End If
+            End Try
+
+            Return False
+        End Function
+
+        Private Sub doPaste(folder As Folder)
+            ' check for paste by checking if it would accept a drop
+            Dim dataObject As IDataObject
+            Functions.OleGetClipboard(dataObject)
+
+            Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
+            Try
+                Using parent2 As Folder = folder.GetParent()
+                    If Not parent2 Is Nothing Then
+                        shellFolder = parent2.ShellFolder
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    Else
+                        ' desktop
+                        shellFolder = Shell.Desktop.ShellFolder
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                    End If
+                End Using
+                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                    dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+                Else
+                    dropTarget = Nothing
+                End If
+
+                If Not dropTarget Is Nothing Then
+                    Dim effect As DROPEFFECT = ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.GetClipboard()
+                    Dim grfKeyState As MK = MK.MK_LBUTTON
+                    If effect = DROPEFFECT.DROPEFFECT_COPY Then grfKeyState = grfKeyState Or MK.MK_CONTROL
+                    Dim hr As HRESULT = dropTarget.DragEnter(dataObject, grfKeyState, New WIN32POINT(), effect)
+                    dropTarget.Drop(dataObject, grfKeyState, New WIN32POINT(), effect)
+                End If
+            Finally
+                If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                    Marshal.Release(dropTargetPtr)
+                End If
+                If Not dropTarget Is Nothing Then
+                    Marshal.ReleaseComObject(dropTarget)
+                End If
+                If Not shellFolder Is Nothing Then
+                    Marshal.ReleaseComObject(shellFolder)
+                End If
+                If Not dataObject Is Nothing Then
+                    Marshal.ReleaseComObject(dataObject)
+                End If
+            End Try
         End Sub
 
         Public Property CanCut As Boolean
@@ -913,52 +993,42 @@ Namespace Controls
             Return getContextMenu(Me.Folder, Me.SelectedItems, True)
         End Function
 
+        Public Sub UpdateNewItemMenu(Optional doMake As Boolean = True)
+            If Shell.IsShuttingDown Then Return
+            Debug.WriteLine("Menus.UpdateNewItemMenu()")
+            If Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
+                If doMake Then _lastFolder = Me.Folder
+
+                releaseContextMenuFull()
+                Me.ItemContextMenu = Nothing
+                Me.NewItemMenu = Nothing
+
+                If doMake Then
+                    Me.ItemContextMenu = getContextMenu(Me.Folder, Nothing, False)
+                    Me.NewItemMenu = getNewItemMenu(Me.ItemContextMenu)
+
+                    Task.Run(AddressOf makeSortMenu)
+                End If
+            End If
+        End Sub
+
         Public Sub Update(Optional doMake As Boolean = True)
+            If Shell.IsShuttingDown Then Return
             Debug.WriteLine("Menus.Update()")
 
-            Dim didGetMenu As Boolean
-
             Using Shell.OverrideCursor(Cursors.Wait)
-                If Not EqualityComparer(Of Folder).Default.Equals(_lastFolder, Me.Folder) Then
-                    If doMake Then _lastFolder = Me.Folder
-
-                    releaseContextMenu(Me.NewItemMenu)
+                If Not Me.ItemContextMenu Is Nothing AndAlso (
+                    Me.NewItemMenu Is Nothing _
+                    OrElse Not EqualityComparer(Of IContextMenu).Default.Equals(
+                        CType(Me.ItemContextMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean))?.Item1,
+                        CType(Me.NewItemMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean))?.Item1)) Then
+                    releaseContextMenu(Me.ItemContextMenu)
                     Me.ItemContextMenu = Nothing
-                    Me.NewItemMenu = Nothing
-
-                    didGetMenu = True
-
-                    If doMake Then
-                        Me.ItemContextMenu = getContextMenu(Me.Folder, Nothing, False)
-                        Me.NewItemMenu = getNewItemMenu(Me.ItemContextMenu)
-
-                        Task.Run(AddressOf makeSortMenu)
-                    End If
                 End If
 
-                If (Not Me.SelectedItems Is Nothing OrElse Not didGetMenu) _
-                        AndAlso ((_lastItems Is Nothing AndAlso Not Me.SelectedItems Is Nothing) _
-                                 OrElse (Not _lastItems Is Nothing AndAlso Me.SelectedItems Is Nothing) _
-                                 OrElse (Not _lastItems Is Nothing AndAlso Not _lastItems.SequenceEqual(Me.SelectedItems)) _
-                                 OrElse didGetMenu) Then
-                    If doMake Then _lastItems = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
+                If doMake Then
+                    Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, False)
 
-                    If Not Me.ItemContextMenu Is Nothing AndAlso (
-                            Me.NewItemMenu Is Nothing _
-                            OrElse Not EqualityComparer(Of IContextMenu).Default.Equals(
-                            CType(Me.ItemContextMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean))?.Item1,
-                            CType(Me.NewItemMenu.Tag, Tuple(Of IContextMenu, IntPtr, Boolean))?.Item1)) _
-                            AndAlso Not didGetMenu Then
-                        releaseContextMenu(Me.ItemContextMenu)
-                        Me.ItemContextMenu = Nothing
-                    End If
-
-                    If doMake Then Me.ItemContextMenu = getContextMenu(Me.Folder, Me.SelectedItems, False)
-
-                    didGetMenu = True
-                End If
-
-                If didGetMenu Then
                     If Not Me.ItemContextMenu Is Nothing _
                         AndAlso (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0) Then
                         Dim viewMenuItem As MenuItem = New MenuItem() With {
@@ -993,27 +1063,6 @@ Namespace Controls
                         If Me.ItemContextMenu.Items.Count > 1 Then Me.ItemContextMenu.Items.Insert(1, New Separator())
                     End If
                     initializeViewMenu()
-
-                    Me.CanCut = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "cut")
-                    Me.CanCopy = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "copy")
-                    Me.CanPaste = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "paste")
-                    Me.CanRename = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "rename")
-                    Me.CanDelete = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Me.ItemContextMenu.Buttons.Exists(
-                            Function(b) b.Tag.ToString().Split(vbTab)(1) = "delete")
-                    Me.CanShare = Not Me.ItemContextMenu Is Nothing _
-                        AndAlso Not Me.ItemContextMenu.Items.Cast(Of Control).FirstOrDefault(
-                            Function(c) TypeOf c Is MenuItem _
-                                AndAlso Not CType(c, MenuItem).Tag Is Nothing _
-                                AndAlso CType(c, MenuItem).Tag.ToString().Split(vbTab)(1) = "Windows.ModernShare") Is Nothing
 
                     If Not Me.ItemContextMenu Is Nothing AndAlso Me.ItemContextMenu.Items.Count = 0 Then
                         releaseContextMenu(Me.ItemContextMenu)
@@ -1339,67 +1388,34 @@ Namespace Controls
             End Select
         End Sub
 
-        Private Sub onSelectionChanged()
-            If Not Me.IsSelecting Then
-                Me.Update(False)
-
-                If Not _updateTimer Is Nothing Then
-                    _updateTimer.Dispose()
-                End If
-
-                If Me.UpdateDelay.HasValue AndAlso Me.UpdateDelay > 0 Then
-                    _updateTimer = New Timer(New TimerCallback(
-                        Sub()
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Me.Update()
-
-                                    If Not _updateTimer Is Nothing Then
-                                        _updateTimer.Dispose()
-                                        _updateTimer = Nothing
-                                    End If
-                                End Sub)
-                        End Sub), Nothing, Me.UpdateDelay.Value, Timeout.Infinite)
-                ElseIf Me.UpdateDelay.HasValue Then
-                    Me.Update()
-                End If
-            End If
+        Public Sub UpdateButtons()
+            Me.CanCut = Not (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0) AndAlso getCanMove(Me.SelectedItems.ToList())
+            Me.CanCopy = Not (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0) AndAlso getCanCopy(Me.SelectedItems.ToList())
+            Me.CanPaste = Not Me.Folder Is Nothing AndAlso getCanPaste(Me.Folder)
+            Me.CanRename = Not (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0) AndAlso getCanRename(Me.SelectedItems.ToList())
+            Me.CanDelete = Not (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0) AndAlso getCanDelete(Me.SelectedItems.ToList())
+            Me.CanShare = Not (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0) AndAlso getCanShare(Me.SelectedItems.ToList())
         End Sub
 
         Shared Sub OnIsSelectingChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim icm As Menus = TryCast(d, Menus)
-            If Not e.NewValue Then
-                icm.Update()
-            Else
-                If Not icm._updateTimer Is Nothing Then
-                    icm._updateTimer.Dispose()
-                    icm._updateTimer = Nothing
-                End If
-                icm.ContextMenu = Nothing
-                icm._lastItems = Nothing
-                icm.CanCopy = False
-                icm.CanCut = False
-                icm.CanDelete = False
-                icm.CanPaste = False
-                icm.CanRename = False
-                icm.CanShare = False
-            End If
         End Sub
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim icm As Menus = TryCast(d, Menus)
             If Not e.OldValue Is Nothing Then
                 RemoveHandler CType(e.OldValue, Folder).PropertyChanged, AddressOf icm.folder_PropertyChanged
+                icm.UpdateNewItemMenu(False)
             End If
             If Not e.NewValue Is Nothing Then
                 AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf icm.folder_PropertyChanged
+                icm.UpdateNewItemMenu(True)
             End If
-            icm.onSelectionChanged()
+            icm.UpdateButtons()
         End Sub
 
         Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim icm As Menus = TryCast(d, Menus)
-            icm.onSelectionChanged()
+            icm.UpdateButtons()
         End Sub
 
         Shared Function OnSelectedItemsCoerce(ByVal d As DependencyObject, baseValue As Object) As Object

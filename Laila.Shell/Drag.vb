@@ -43,60 +43,9 @@ Public Class Drag
             Try
                 Debug.WriteLine("Drag.Start")
 
-                ' make a DataObject for our list of items
-                Dim shellItemPtr As IntPtr, folderpidl As IntPtr
-                Dim pidls(items.Count - 1) As IntPtr, lastpidl As IntPtr, pidlsPtr As IntPtr
-                Try
-                    Using parent = items(0).GetParent()
-                        shellItemPtr = Marshal.GetIUnknownForObject(parent.ShellItem2)
-                        Functions.SHGetIDListFromObject(shellItemPtr, folderpidl)
-                    End Using
-                Finally
-                    If Not IntPtr.Zero.Equals(shellItemPtr) Then
-                        Marshal.Release(shellItemPtr)
-                    End If
-                End Try
-                pidlsPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of IntPtr) * items.Count)
-                For i = 0 To items.Count - 1
-                    Try
-                        shellItemPtr = Marshal.GetIUnknownForObject(items(i).ShellItem2)
-                        Functions.SHGetIDListFromObject(shellItemPtr, pidls(i))
-                        lastpidl = Functions.ILFindLastID(pidls(i))
-                        Marshal.WriteIntPtr(IntPtr.Add(pidlsPtr, Marshal.SizeOf(Of IntPtr) * i), lastpidl)
-                    Finally
-                        If Not IntPtr.Zero.Equals(shellItemPtr) Then
-                            Marshal.Release(shellItemPtr)
-                        End If
-                    End Try
-                Next
-                Functions.SHCreateDataObject(folderpidl, items.Count, pidlsPtr, IntPtr.Zero, GetType(IDataObject).GUID, _dataObject)
-
-                ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
-                ' and I don't know what it's doing 
-                Dim initDropTarget As IDropTarget, pidl As IntPtr, dropTargetPtr As IntPtr
-                Try
-                    shellItemPtr = Marshal.GetIUnknownForObject(Shell.Desktop.ShellItem2)
-                    Functions.SHGetIDListFromObject(shellItemPtr, pidl)
-                    Dim shellFolder As IShellFolder
-                    Functions.SHGetDesktopFolder(shellFolder)
-                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {pidl}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                    initDropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
-                    initDropTarget.DragEnter(_dataObject, 0, New WIN32POINT() With {.x = 0, .y = 0}, 0)
-                    initDropTarget.DragLeave()
-                Finally
-                    If Not IntPtr.Zero.Equals(shellItemPtr) Then
-                        Marshal.Release(shellItemPtr)
-                    End If
-                    If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                        Marshal.Release(dropTargetPtr)
-                    End If
-                    If Not IntPtr.Zero.Equals(pidl) Then
-                        Marshal.FreeCoTaskMem(pidl)
-                    End If
-                    If Not initDropTarget Is Nothing Then
-                        Marshal.ReleaseComObject(initDropTarget)
-                    End If
-                End Try
+                Using parent = items(0).GetParent()
+                    _dataObject = Clipboard.GetDataObjectFor(parent, items.ToList())
+                End Using
 
                 makeDragImageObjects(items)
                 InitializeDragImage()
@@ -120,14 +69,6 @@ Public Class Drag
 
                 Shell._w.Content = Nothing
                 Mouse.OverrideCursor = Nothing
-                If Not IntPtr.Zero.Equals(folderpidl) Then
-                    Marshal.FreeCoTaskMem(folderpidl)
-                End If
-                For i = 0 To pidls.Count - 1
-                    If Not IntPtr.Zero.Equals(pidls(i)) Then
-                        Marshal.FreeCoTaskMem(pidls(i))
-                    End If
-                Next
                 Marshal.ReleaseComObject(_dataObject)
                 _dataObject = Nothing
             Finally
