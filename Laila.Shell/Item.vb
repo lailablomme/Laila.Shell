@@ -2,6 +2,7 @@ Imports System.Drawing
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Text
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
@@ -28,6 +29,7 @@ Public Class Item
     Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
     Private _isImage As Boolean?
+    Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -248,6 +250,7 @@ Public Class Item
             Me.NotifyOfPropertyChange("IsImage")
             Me.NotifyOfPropertyChange("IsHidden")
             Me.NotifyOfPropertyChange("IsCompressed")
+            Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
             For Each prop In oldProperties
                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIcon", prop.Key.ToString()))
@@ -416,6 +419,25 @@ Public Class Item
                         Dim result As ImageSource
                         result = Me.Image(size)
                         If Not result Is Nothing Then result.Freeze()
+                        tcs.SetResult(result)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
+
+            Return tcs.Task.Result
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property StorageProviderUIStatusFirstIcon16Async As ImageSource
+        Get
+            Dim tcs As New TaskCompletionSource(Of ImageSource)
+
+            Shell.SlowTaskQueue.Add(
+                Sub()
+                    Try
+                        Dim result As ImageSource
+                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").FirstIcon16Async
                         tcs.SetResult(result)
                     Catch ex As Exception
                         tcs.SetException(ex)
@@ -726,36 +748,51 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
-            Dim [property] As [Property]
-            Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
-            [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
-            If [property] Is Nothing Then
-                [property] = [Property].FromKey(key, Me.ShellItem2)
-                If Not [property] Is Nothing Then _properties.Add([property])
-            End If
-            Return [property]
+            _propertiesLock.Wait()
+            Try
+                Dim [property] As [Property]
+                Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
+                [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
+                If [property] Is Nothing Then
+                    [property] = [Property].FromKey(key, Me.ShellItem2)
+                    If Not [property] Is Nothing Then _properties.Add([property])
+                End If
+                Return [property]
+            Finally
+                _propertiesLock.Release()
+            End Try
         End Get
     End Property
 
     Public Overridable ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
         Get
-            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
-            If [property] Is Nothing Then
-                [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
-                If Not [property] Is Nothing Then _properties.Add([property])
-            End If
-            Return [property]
+            _propertiesLock.Wait()
+            Try
+                Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
+                If [property] Is Nothing Then
+                    [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                    If Not [property] Is Nothing Then _properties.Add([property])
+                End If
+                Return [property]
+            Finally
+                _propertiesLock.Release()
+            End Try
         End Get
     End Property
 
     Public Overridable ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
-            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
-            If [property] Is Nothing Then
-                [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
-                If Not [property] Is Nothing Then _properties.Add([property])
-            End If
-            Return [property]
+            _propertiesLock.Wait()
+            Try
+                Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
+                If [property] Is Nothing Then
+                    [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                    If Not [property] Is Nothing Then _properties.Add([property])
+                End If
+                Return [property]
+            Finally
+                _propertiesLock.Release()
+            End Try
         End Get
     End Property
 

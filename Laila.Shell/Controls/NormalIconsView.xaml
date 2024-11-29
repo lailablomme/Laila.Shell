@@ -68,34 +68,34 @@
                                                 <RowDefinition Height="48" />
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
-                                                <Image Source="{Binding ImageAsync[48], IsAsync=True}" Width="48" Height="48"
-                                                       UseLayoutRounding="True" SnapsToDevicePixels="True">
-                                                    <Image.Style>
-                                                        <Style>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                                    <Setter Property="Image.Opacity" Value="0.5" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding IsCut}" Value="True">
-                                                                    <Setter Property="Image.Opacity" Value="0.5" />
-                                                                </DataTrigger>
-                                                                <MultiDataTrigger>
-                                                                    <MultiDataTrigger.Conditions>
-                                                                        <Condition Binding="{Binding HasThumbnailAsync, IsAsync=True}" Value="True" />
-                                                                        <Condition Binding="{Binding IsImage, IsAsync=True}" Value="True" />
-                                                                    </MultiDataTrigger.Conditions>
-                                                                    <MultiDataTrigger.Setters>
-                                                                        <Setter Property="Image.Effect">
-                                                                            <Setter.Value>
-                                                                                <DropShadowEffect BlurRadius="3" ShadowDepth="3" Opacity="0.45" />
-                                                                            </Setter.Value>
-                                                                        </Setter>
-                                                                    </MultiDataTrigger.Setters>
-                                                                </MultiDataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Image.Style>
-                                                </Image>
+                                            <Image Source="{Binding ImageAsync[48], IsAsync=True}" Width="48" Height="48"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsCut}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding HasThumbnailAsync, IsAsync=True}" Value="True" />
+                                                                    <Condition Binding="{Binding IsImage, IsAsync=True}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Image.Effect">
+                                                                        <Setter.Value>
+                                                                            <DropShadowEffect BlurRadius="3" ShadowDepth="3" Opacity="0.45" />
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
                                             <Image Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                    VerticalAlignment="Bottom" HorizontalAlignment="Right">
@@ -141,13 +141,13 @@
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
 
-                                                <Image Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].FirstIcon16Async, IsAsync=True}"
+                                                <Image Source="{Binding StorageProviderUIStatusFirstIcon16Async, IsAsync=True}"
                                                        Width="12" Height="11" Margin="0,3,2,0" VerticalAlignment="Top">
                                                     <Image.Style>
                                                         <Style>
                                                             <Setter Property="Image.Visibility" Value="Collapsed" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
+                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon, IsAsync=True}" Value="True">
                                                                     <Setter Property="Image.Visibility" Value="Visible" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
@@ -164,7 +164,7 @@
                                                                 <DataTrigger Binding="{Binding IsCompressed}" Value="True">
                                                                     <Setter Property="TextBlock.Foreground" Value="Blue" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="False">
+                                                                <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon, IsAsync=True}" Value="False">
                                                                     <Setter Property="TextBlock.MaxWidth" Value="65" />
                                                                     <Setter Property="TextBlock.TextAlignment" Value="Center" />
                                                                 </DataTrigger>
