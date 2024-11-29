@@ -626,6 +626,8 @@ Namespace Controls
                             If Me.DoAutoDispose Then
                                 Me.Dispose()
                             ElseIf t Is Nothing OrElse Not t.Item3 Then
+                                _lastFolder = Nothing
+                                Me.UpdateNewItemMenu()
                                 Me.UpdateButtons()
                             End If
                         End Sub)
