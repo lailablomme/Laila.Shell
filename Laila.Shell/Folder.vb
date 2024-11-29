@@ -286,15 +286,25 @@ Public Class Folder
     Public Overrides ReadOnly Property HasSubFolders As Boolean
         Get
             If _isEnumerated Then
-                _hasSubFolders = Not _items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
-            End If
-
-            If _hasSubFolders.HasValue Then
+                If Not _hasSubFolders.HasValue Then
+                    _hasSubFolders = Not _items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
+                End If
                 Return _hasSubFolders.Value
             ElseIf Not disposedValue Then
-                Dim attr As SFGAO = SFGAO.HASSUBFOLDER
-                Me.ShellItem2.GetAttributes(attr, attr)
-                Return attr.HasFlag(SFGAO.HASSUBFOLDER)
+                Dim tcs As New TaskCompletionSource(Of SFGAO)
+
+                Shell.SlowTaskQueue.Add(
+                Sub()
+                    Try
+                        Dim attr As SFGAO = SFGAO.HASSUBFOLDER
+                        Me.ShellItem2.GetAttributes(attr, attr)
+                        tcs.SetResult(attr)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
+
+                Return tcs.Task.Result.HasFlag(SFGAO.HASSUBFOLDER)
             Else
                 Return False
             End If
