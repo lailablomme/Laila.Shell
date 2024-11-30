@@ -28,6 +28,11 @@ Namespace Controls
         Private disposedValue As Boolean
 
         Public Sub New()
+            AddHandler Shell.ShuttingDown,
+                Sub(s As Object, e As EventArgs)
+                    Me.Dispose()
+                End Sub
+
             AddHandler Me.Loaded,
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
@@ -36,11 +41,6 @@ Namespace Controls
                         _dropTarget = New ListViewDropTarget(Me)
                         WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
                     End If
-                End Sub
-
-            AddHandler System.Windows.Application.Current.MainWindow.Closed,
-                Sub()
-                    WpfDragTargetProxy.RevokeDragDrop(Me)
                 End Sub
         End Sub
 
@@ -163,6 +163,8 @@ Namespace Controls
                     If Not Me.Folder Is Nothing Then
                         Me.Folder.IsActiveInFolderView = False
                     End If
+
+                    WpfDragTargetProxy.RevokeDragDrop(Me)
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

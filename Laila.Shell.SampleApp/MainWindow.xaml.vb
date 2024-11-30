@@ -135,8 +135,4 @@ Class MainWindow
         viewMenu.PlacementTarget = button
         viewMenu.IsOpen = True
     End Sub
-
-    Private Sub view_Closed(sender As Object, e As EventArgs)
-        Shell.Shutdown()
-    End Sub
 End Class

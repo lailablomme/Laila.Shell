@@ -37,6 +37,11 @@ Namespace Controls
 
         Public Sub New()
             AddHandler Shell.Notification, AddressOf shell_Notification
+
+            AddHandler Shell.ShuttingDown,
+                Sub(s As Object, e As EventArgs)
+                    Me.Dispose()
+                End Sub
         End Sub
 
         Protected MustOverride Sub AddItems()

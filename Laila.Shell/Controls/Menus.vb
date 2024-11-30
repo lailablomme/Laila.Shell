@@ -31,6 +31,13 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
         End Sub
 
+        Public Sub New()
+            AddHandler Shell.ShuttingDown,
+                Sub(s As Object, e As EventArgs)
+                    Me.Dispose()
+                End Sub
+        End Sub
+
         Friend Shared Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
             Dim originalName As String, isDrive As Boolean
 
@@ -170,7 +177,7 @@ Namespace Controls
                 Me.CanPaste = Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
-                Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.All(Function(i) Not TypeOf i Is Folder)
+                Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
             End If
         End Sub
 

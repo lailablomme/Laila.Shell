@@ -29,7 +29,7 @@ Namespace Controls
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
         Private _menu As RightClickMenu
-        Private _fequentUpdateTimer As Timer
+        Private _frequentUpdateTimer As Timer
         Private disposedValue As Boolean
         Private _typeToSearchTimer As Timer
         Private _typeToSearchString As String = ""
@@ -46,9 +46,9 @@ Namespace Controls
             CType(view, ListCollectionView).CustomSort = New TreeViewPropertyComparer("TreeSortKey")
             AddHandler Me.Items.CollectionChanged, AddressOf items_CollectionChanged
 
-            AddHandler System.Windows.Application.Current.MainWindow.Closed,
-                Sub()
-                    WpfDragTargetProxy.RevokeDragDrop(PART_ListBox)
+            AddHandler Shell.ShuttingDown,
+                Sub(s As Object, e As EventArgs)
+                    Me.Dispose()
                 End Sub
 
             AddHandler Shell.FolderNotification,
@@ -128,27 +128,27 @@ Namespace Controls
             updateFrequentFolders()
 
             ' frequent folders
-            _fequentUpdateTimer = New Timer(New TimerCallback(
-                        Sub()
-                            UIHelper.OnUIThread(
+            _frequentUpdateTimer = New Timer(New TimerCallback(
+                Sub()
+                    UIHelper.OnUIThread(
                                 Async Sub()
                                     Await updateFrequentFolders()
                                     CollectionViewSource.GetDefaultView(Me.Items).Refresh()
                                 End Sub)
-                        End Sub), Nothing, 1000 * 60, 1000 * 60)
+                End Sub), Nothing, 1000 * 60, 1000 * 60)
 
             AddHandler PinnedItems.ItemPinned,
-                        Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                            Await updatePinnedItems()
-                            Await updateFrequentFolders()
-                            CollectionViewSource.GetDefaultView(Me.Items).Refresh()
-                        End Sub
+                Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
+                    Await updatePinnedItems()
+                    Await updateFrequentFolders()
+                    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+                End Sub
             AddHandler PinnedItems.ItemUnpinned,
-                        Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                            Await updatePinnedItems()
-                            Await updateFrequentFolders()
-                            CollectionViewSource.GetDefaultView(Me.Items).Refresh()
-                        End Sub
+                Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
+                    Await updatePinnedItems()
+                    Await updateFrequentFolders()
+                    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+                End Sub
 
             CollectionViewSource.GetDefaultView(Me.Items).Refresh()
         End Sub
@@ -735,14 +735,25 @@ Namespace Controls
             If Not disposedValue Then
                 If disposing Then
                     ' dispose managed state (managed objects)
+                    If Not _typeToSearchTimer Is Nothing Then
+                        _typeToSearchTimer.Dispose()
+                        _typeToSearchTimer = Nothing
+                    End If
+
+                    If Not _frequentUpdateTimer Is Nothing Then
+                        _frequentUpdateTimer.Dispose()
+                        _frequentUpdateTimer = Nothing
+                    End If
+
                     For Each item In Me.Items.ToList()
                         If Not TypeOf item Is SeparatorFolder Then
+                            item._logicalParent = Nothing
                             item.TreeRootIndex = -1
                             item.IsExpanded = False
-                            item._logicalParent = Nothing
-                            item.MaybeDispose()
                         End If
                     Next
+
+                    WpfDragTargetProxy.RevokeDragDrop(PART_ListBox)
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

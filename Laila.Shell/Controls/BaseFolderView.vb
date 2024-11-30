@@ -10,6 +10,7 @@ Imports Laila.Shell.Helpers
 Namespace Controls
     Public MustInherit Class BaseFolderView
         Inherits Control
+        Implements IDisposable
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -32,6 +33,7 @@ Namespace Controls
         Private _typeToSearchTimer As Timer
         Private _typeToSearchString As String = ""
         Private _menu As RightClickMenu
+        Private disposedValue As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -48,6 +50,11 @@ Namespace Controls
             If Not Me.Folder Is Nothing Then
                 Me.MakeBinding(Me.Folder)
             End If
+
+            AddHandler Shell.ShuttingDown,
+                Sub(s As Object, e As EventArgs)
+                    Me.Dispose()
+                End Sub
 
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -493,6 +500,33 @@ Namespace Controls
             If Not dlv._selectionHelper Is Nothing Then
                 dlv._selectionHelper.SetSelectedItems(e.NewValue)
             End If
+        End Sub
+
+        Protected Overridable Sub Dispose(disposing As Boolean)
+            If Not disposedValue Then
+                If disposing Then
+                    ' dispose managed state (managed objects)
+                    If Not _timeSpentTimer Is Nothing Then
+                        _timeSpentTimer.Dispose()
+                        _timeSpentTimer = Nothing
+                    End If
+
+                    If Not _typeToSearchTimer Is Nothing Then
+                        _typeToSearchTimer.Dispose()
+                        _typeToSearchTimer = Nothing
+                    End If
+                End If
+
+                ' free unmanaged resources (unmanaged objects) and override finalizer
+                ' set large fields to null
+                disposedValue = True
+            End If
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+            Dispose(disposing:=True)
+            GC.SuppressFinalize(Me)
         End Sub
     End Class
 End Namespace

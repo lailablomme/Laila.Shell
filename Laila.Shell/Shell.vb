@@ -1,5 +1,6 @@
 ﻿Imports System.Collections.Concurrent
 Imports System.Collections.ObjectModel
+Imports System.ComponentModel.Design
 Imports System.Drawing
 Imports System.Reflection
 Imports System.Runtime.InteropServices
@@ -19,23 +20,29 @@ Public Class Shell
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
+    Public Shared Event ShuttingDown As EventHandler
+
     Public Shared SlowTaskQueue As New BlockingCollection(Of Action)
     Public Shared PriorityTaskQueue As New BlockingCollection(Of Action)
     Public Shared FolderTaskQueue As New BlockingCollection(Of Action)
     Public Shared NotifyTaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
+
     Public Shared IsStarted As ManualResetEvent = New ManualResetEvent(False)
     Public Shared IsShuttingDown As Boolean
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
-    Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Public Shared _hwnd As IntPtr
+
+    Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
+
     Private Shared _itemsCacheLock As Object = New Object()
     Private Shared _itemsCache As List(Of Item) = New List(Of Item)()
     Private Shared _isDebugVisible As Boolean = False
     Private Shared _debugWindow As DebugTools.DebugWindow
+
     Private Shared _overrideCursorFunc As Func(Of Cursor, IDisposable) =
         Function(cursor As Cursor) As IDisposable
             Return New OverrideCursor(cursor)
@@ -123,6 +130,8 @@ Public Class Shell
             1,
             entry)
 
+        EventManager.RegisterClassHandler(GetType(Window), Window.LoadedEvent, New RoutedEventHandler(AddressOf window_Loaded))
+
         Dim addSpecialFolder As Action(Of String, Item) =
             Sub(name As String, item As Item)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
@@ -179,17 +188,35 @@ Public Class Shell
         End If
     End Sub
 
+    Private Shared Sub window_Loaded(sender As Object, e As EventArgs)
+        RemoveHandler CType(sender, Window).Closed, AddressOf window_Closed
+        AddHandler CType(sender, Window).Closed, AddressOf window_Closed
+    End Sub
+
+    Private Shared Sub window_Closed(sender As Object, e As EventArgs)
+        If System.Windows.Application.Current.ShutdownMode = ShutdownMode.OnLastWindowClose _
+            AndAlso System.Windows.Application.Current.Windows.Cast(Of Window) _
+                .Where(Function(w) Not w.GetType().ToString().StartsWith("Microsoft.VisualStudio.")).Count <= 2 Then
+            Shell.Shutdown()
+        End If
+    End Sub
+
     Public Shared Sub Shutdown()
-        IsShuttingDown = True
+        If Not Shell.IsShuttingDown Then
+            Shell.IsShuttingDown = True
 
-        For Each item In Shell.ItemsCache.ToList()
-            item.Dispose()
-        Next
+            Functions.SHChangeNotifyDeregister(_hNotify)
 
-        Functions.SHChangeNotifyDeregister(_hNotify)
-        Functions.OleUninitialize()
+            RaiseEvent ShuttingDown(Nothing, New EventArgs())
 
-        _w.Close()
+            For Each item In Shell.ItemsCache.ToList()
+                item.Dispose()
+            Next
+
+            Functions.OleUninitialize()
+
+            _w.Close()
+        End If
     End Sub
 
     Public Shared Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
