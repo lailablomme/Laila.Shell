@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Interop;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -9,9 +10,9 @@ namespace Laila.Shell.WinRT
 {
     public class ModernShare
     {
-        public void ShowShareUI(List<string> filePaths)
+        public void ShowShareUI(List<string> filePaths, Window window)
         {
-            IntPtr hwnd = new WindowInteropHelper(System.Windows.Application.Current.MainWindow).Handle;
+            IntPtr hwnd = new WindowInteropHelper(window).Handle;
 
             var dataTransferManager = DataTransferManagerHelper.GetForWindow(hwnd);
             dataTransferManager.DataRequested += (DataTransferManager sender, DataRequestedEventArgs args) =>

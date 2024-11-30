@@ -730,7 +730,11 @@ Public Class Folder
                                                     item1.Dispose()
                                                 End If
                                             End Sub)
+                                    Else
+                                        item1.Dispose()
                                     End If
+                                Else
+                                    item1.Dispose()
                                 End If
                             End Using
                         End If
@@ -747,19 +751,23 @@ Public Class Folder
                                             Sub()
                                                 Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
                                                 If existing Is Nothing Then
-                                                    _items.Add(New Folder(item1ShellItem, Me))
+                                                    _items.Add(item1)
                                                 Else
                                                     existing.Refresh()
                                                     item1.Dispose()
                                                 End If
                                             End Sub)
+                                    Else
+                                        item1.Dispose()
                                     End If
+                                Else
+                                    item1.Dispose()
                                 End If
                             End Using
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
-                    If Not _items Is Nothing AndAlso _isLoaded Then
+                    If Not _items Is Nothing Then
                         UIHelper.OnUIThreadAsync(
                             Sub()
                                 Dim item As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue)

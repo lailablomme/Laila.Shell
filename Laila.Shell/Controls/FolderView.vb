@@ -14,7 +14,6 @@ Namespace Controls
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenusChanged))
         Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(FolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
@@ -99,29 +98,6 @@ Namespace Controls
             End Set
         End Property
 
-        Public Property Menus As Menus
-            Get
-                Return GetValue(MenusProperty)
-            End Get
-            Set(ByVal value As Menus)
-                SetCurrentValue(MenusProperty, value)
-            End Set
-        End Property
-
-        Shared Sub OnMenusChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim fv As FolderView = d
-            If Not e.OldValue Is Nothing Then
-                RemoveHandler CType(e.OldValue, Menus).RenameRequest, AddressOf fv.menus_RenameRequest
-            End If
-            If Not e.NewValue Is Nothing Then
-                AddHandler CType(e.NewValue, Menus).RenameRequest, AddressOf fv.menus_RenameRequest
-            End If
-        End Sub
-
-        Private Async Sub menus_RenameRequest(sender As Object, e As RenameRequestEventArgs)
-            e.IsHandled = Await Me.DoRename(e.Pidl)
-        End Sub
-
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim fv As FolderView = d
             fv.SelectedItems = Nothing
@@ -154,7 +130,6 @@ Namespace Controls
                 hasFocus = Me.ActiveView.IsKeyboardFocusWithin
                 Me.ActiveView.Folder = Nothing
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
-                BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.MenusProperty)
                 BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty)
             End If
             For Each v In _views.Values
@@ -177,7 +152,6 @@ Namespace Controls
             folderViewState.View = newValue
             folderViewState.Persist()
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
-            BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.MenusProperty, New Binding("Menus") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty, New Binding("IsSelecting") With {.Source = Me})
             Me.SelectedItems = selectedItems
         End Sub

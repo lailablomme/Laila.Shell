@@ -32,7 +32,8 @@ Public Class Shell
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Public Shared _hwnd As IntPtr
     Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
-    Private Shared _itemsCache As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
+    Private Shared _itemsCacheLock As Object = New Object()
+    Private Shared _itemsCache As List(Of Item) = New List(Of Item)()
     Private Shared _isDebugVisible As Boolean = False
     Private Shared _debugWindow As DebugTools.DebugWindow
     Private Shared _overrideCursorFunc As Func(Of Cursor, IDisposable) =
@@ -280,11 +281,23 @@ Public Class Shell
         RaiseEvent Notification(sender, e)
     End Sub
 
-    Public Shared ReadOnly Property ItemsCache As ObservableCollection(Of Item)
+    Public Shared ReadOnly Property ItemsCache As List(Of Item)
         Get
             Return _itemsCache
         End Get
     End Property
+
+    Public Shared Sub AddToItemsCache(item As Item)
+        SyncLock _itemsCacheLock
+            _itemsCache.Add(item)
+        End SyncLock
+    End Sub
+
+    Public Shared Sub RemoveFromItemsCache(item As Item)
+        SyncLock _itemsCacheLock
+            _itemsCache.Remove(item)
+        End SyncLock
+    End Sub
 
     Public Shared Property OverrideCursor As Func(Of Cursor, IDisposable)
         Get

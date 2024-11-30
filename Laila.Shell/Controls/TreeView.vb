@@ -28,7 +28,7 @@ Namespace Controls
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
-        Private _menu As Laila.Shell.Controls.Menus
+        Private _menu As RightClickMenu
         Private _fequentUpdateTimer As Timer
         Private disposedValue As Boolean
         Private _typeToSearchTimer As Timer
@@ -424,10 +424,12 @@ Namespace Controls
 
                             Dim parent As Folder = clickedItem.GetParent()
 
-                            _menu = New Laila.Shell.Controls.Menus() With {
+                            If Not _menu Is Nothing Then
+                                _menu.Dispose()
+                            End If
+                            _menu = New RightClickMenu() With {
                                 .Folder = If(parent Is Nothing, Shell.Desktop, parent),
-                                .SelectedItems = {clickedItem},
-                                .DoAutoDispose = True
+                                .SelectedItems = {clickedItem}
                             }
                             AddHandler _menu.CommandInvoked,
                                 Sub(s As Object, e2 As CommandInvokedEventArgs)
@@ -454,9 +456,8 @@ Namespace Controls
                                             e2.IsHandled = True
                                     End Select
                                 End Sub
-                            _menu.Update()
 
-                            PART_ListBox.ContextMenu = _menu.ItemContextMenu
+                            PART_ListBox.ContextMenu = _menu
                             e.Handled = True
 
                             AddHandler PART_ListBox.ContextMenu.Closed,
@@ -577,16 +578,15 @@ Namespace Controls
         End Sub
 
         Private Sub invokeDefaultCommand(item As Item)
-            Using parent = item.GetParent()
-                Dim menu As Menus = New Menus() With {
-                    .UpdateDelay = Nothing,
-                    .Folder = parent,
-                    .SelectedItems = {item},
-                    .DoAutoDispose = True
-                }
-                Dim contextMenu As ContextMenu = menu.GetDefaultContextMenu()
-                menu.InvokeCommand(contextMenu, _menu.DefaultId)
-            End Using
+            If Not _menu Is Nothing Then
+                _menu.Dispose()
+            End If
+            _menu = New RightClickMenu() With {
+                .Folder = Me.Folder,
+                .SelectedItems = {item},
+                .IsDefaultOnly = True
+            }
+            _menu.InvokeCommand(_menu.DefaultId)
         End Sub
 
         Private Sub items_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)

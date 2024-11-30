@@ -15,7 +15,6 @@ Namespace Controls
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
-        Public Shared ReadOnly MenusProperty As DependencyProperty = DependencyProperty.Register("Menus", GetType(Menus), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend Host As FolderView
@@ -25,7 +24,6 @@ Namespace Controls
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
-        Private _menus As Laila.Shell.Controls.Menus
         Private _timeSpentTimer As Timer
         Protected _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
@@ -33,6 +31,7 @@ Namespace Controls
         Private _isLoaded As Boolean
         Private _typeToSearchTimer As Timer
         Private _typeToSearchString As String = ""
+        Private _menu As RightClickMenu
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -145,11 +144,7 @@ Namespace Controls
         End Sub
 
         Private Sub invokeDefaultCommand(item As Item)
-            hookMenus(item)
-            If Not _menus Is Nothing Then
-                Dim contextMenu As ContextMenu = _menus.GetDefaultContextMenu()
-                _menus.InvokeCommand(contextMenu, _menus.DefaultId)
-            End If
+            getMenu(Me.Folder, {item}).InvokeCommand(_menu.DefaultId)
         End Sub
 
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
@@ -212,11 +207,7 @@ Namespace Controls
                         Me.SelectedItems = Nothing
                     End If
 
-                    hookMenus(clickedItem)
-                    If Not _menus Is Nothing Then
-                        _menus.Update()
-                        Me.PART_ListBox.ContextMenu = _menus.ItemContextMenu
-                    End If
+                    Me.PART_ListBox.ContextMenu = getMenu(Me.Folder, Me.SelectedItems)
                     e.Handled = True
                 ElseIf clickedItem Is Nothing AndAlso
                         UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
@@ -235,33 +226,44 @@ Namespace Controls
             _mouseItemDown = Nothing
         End Sub
 
-        Private Sub hookMenus(clickedItem As Item)
-            If Not EqualityComparer(Of Menus).Default.Equals(_menus, Me.Menus) Then
-                _menus = Me.Menus
-                AddHandler _menus.CommandInvoked,
-                    Sub(s As Object, e2 As CommandInvokedEventArgs)
-                        Select Case e2.Verb
-                            Case "open"
-                                If Not Me.SelectedItems Is Nothing _
-                                        AndAlso Me.SelectedItems.Count = 1 _
-                                        AndAlso TypeOf Me.SelectedItems(0) Is Folder Then
-                                    Me.Host.Folder = Me.SelectedItems(0)
-                                    e2.IsHandled = True
-                                End If
-                            Case "rename"
-                                Me.DoRename(Me.SelectedItems(0))
-                                e2.IsHandled = True
-                            Case "laila.shell.(un)pin"
-                                If e2.IsChecked Then
-                                    PinnedItems.PinItem(Me.SelectedItems(0).FullPath)
-                                Else
-                                    PinnedItems.UnpinItem(Me.SelectedItems(0).FullPath)
-                                End If
-                                e2.IsHandled = True
-                        End Select
-                    End Sub
+        Private Function getMenu(folder As Folder, selectedItems As IEnumerable(Of Item)) As RightClickMenu
+            If Not _menu Is Nothing Then
+                _menu.Dispose()
             End If
-        End Sub
+
+            _menu = New RightClickMenu()
+            _menu.Folder = folder
+            _menu.SelectedItems = selectedItems
+
+            AddHandler _menu.CommandInvoked,
+                Sub(s As Object, e2 As CommandInvokedEventArgs)
+                    Select Case e2.Verb
+                        Case "open"
+                            If Not Me.SelectedItems Is Nothing _
+                                    AndAlso Me.SelectedItems.Count = 1 _
+                                    AndAlso TypeOf Me.SelectedItems(0) Is Folder Then
+                                Me.Host.Folder = Me.SelectedItems(0)
+                                e2.IsHandled = True
+                            End If
+                        Case "rename"
+                            Me.DoRename(Me.SelectedItems(0))
+                            e2.IsHandled = True
+                        Case "laila.shell.(un)pin"
+                            If e2.IsChecked Then
+                                PinnedItems.PinItem(Me.SelectedItems(0).FullPath)
+                            Else
+                                PinnedItems.UnpinItem(Me.SelectedItems(0).FullPath)
+                            End If
+                            e2.IsHandled = True
+                    End Select
+                End Sub
+            AddHandler _menu.RenameRequest,
+                Async Sub(s As Object, e As RenameRequestEventArgs)
+                    e.IsHandled = Await Me.DoRename(e.Pidl)
+                End Sub
+
+            Return _menu
+        End Function
 
         Protected MustOverride Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                           ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
@@ -314,15 +316,6 @@ Namespace Controls
             End Get
             Set(ByVal value As Folder)
                 SetCurrentValue(FolderProperty, value)
-            End Set
-        End Property
-
-        Public Property Menus As Menus
-            Get
-                Return GetValue(MenusProperty)
-            End Get
-            Set(ByVal value As Menus)
-                SetCurrentValue(MenusProperty, value)
             End Set
         End Property
 

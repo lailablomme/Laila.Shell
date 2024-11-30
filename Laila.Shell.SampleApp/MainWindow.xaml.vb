@@ -2,6 +2,7 @@
 Imports System.Windows.Controls.Primitives
 Imports Laila.MetroWindow.Data
 Imports Laila.Shell.Controls
+Imports Laila.Shell.Events
 
 Class MainWindow
     Private Const WINDOWPOSITION_FILENAME As String = "Laila.Shell.SampleApp.WindowPosition.dat"
@@ -53,14 +54,18 @@ Class MainWindow
         navigation.Folder.RefreshItemsAsync()
     End Sub
 
+    Private _newItemMenu As NewItemMenu
     Private Sub NewItemMenuButton_Checked(sender As Object, e As RoutedEventArgs)
         Dim button As ToggleButton = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
         If Not menus.NewItemMenu Is Nothing Then
-            AddHandler menus.NewItemMenu.Closed,
-                Sub(s2 As Object, e2 As EventArgs)
-                    button.IsChecked = False
-                End Sub
+            If Not menus.NewItemMenu.Equals(_newItemMenu) Then
+                AddHandler menus.NewItemMenu.Closed,
+                    Sub(s2 As Object, e2 As EventArgs)
+                        button.IsChecked = False
+                    End Sub
+                _newItemMenu = menus.NewItemMenu
+            End If
             menus.NewItemMenu.Placement = Primitives.PlacementMode.Bottom
             menus.NewItemMenu.PlacementTarget = button
             menus.NewItemMenu.IsOpen = True
@@ -70,19 +75,21 @@ Class MainWindow
     Private Sub CutButton_Click(sender As Object, e As RoutedEventArgs)
         Dim button As Button = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
-        menus.InvokeCommand("-1" & vbTab & "cut")
+        Clipboard.CutFiles(menus.SelectedItems)
+        menus.UpdateButtons()
     End Sub
 
     Private Sub CopyButton_Click(sender As Object, e As RoutedEventArgs)
         Dim button As Button = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
-        menus.InvokeCommand("-1" & vbTab & "copy")
+        Clipboard.CopyFiles(menus.SelectedItems)
+        menus.UpdateButtons()
     End Sub
 
     Private Sub PasteButton_Click(sender As Object, e As RoutedEventArgs)
         Dim button As Button = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
-        menus.InvokeCommand("-1" & vbTab & "paste")
+        Clipboard.PasteFiles(menus.Folder)
     End Sub
 
     Private Sub RenameButton_Click(sender As Object, e As RoutedEventArgs)
@@ -94,49 +101,39 @@ Class MainWindow
     Private Sub ShareButton_Click(sender As Object, e As RoutedEventArgs)
         Dim button As Button = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
-        menus.InvokeCommand("-1" & vbTab & "Windows.ModernShare")
+        Menus.DoShare(menus.SelectedItems)
     End Sub
 
     Private Sub DeleteButton_Click(sender As Object, e As RoutedEventArgs)
         Dim button As Button = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
-        menus.InvokeCommand("-1" & vbTab & "delete")
+        Menus.DoDelete(menus.SelectedItems)
     End Sub
 
-    Private _lastSortMenu As Laila.Shell.Controls.ContextMenu
     Private Sub SortMenuButton_Checked(sender As Object, e As RoutedEventArgs)
         Dim button As ToggleButton = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
-        If Not menus.SortMenu Is Nothing Then
-            If Not EqualityComparer(Of Laila.Shell.Controls.ContextMenu).Default.Equals(menus.SortMenu, _lastSortMenu) Then
-                AddHandler menus.SortMenu.Closed,
-                    Sub(s2 As Object, e2 As EventArgs)
-                        button.IsChecked = False
-                    End Sub
-                _lastSortMenu = menus.SortMenu
-            End If
-            menus.SortMenu.Placement = Primitives.PlacementMode.Bottom
-            menus.SortMenu.PlacementTarget = button
-            menus.SortMenu.IsOpen = True
-        End If
+        Dim sortMenu As SortMenu = New SortMenu() With {.Folder = menus.Folder}
+        AddHandler sortMenu.Closed,
+            Sub(s2 As Object, e2 As EventArgs)
+                button.IsChecked = False
+            End Sub
+        sortMenu.Placement = Primitives.PlacementMode.Bottom
+        sortMenu.PlacementTarget = button
+        sortMenu.IsOpen = True
     End Sub
 
-    Private _lastViewMenu As Laila.Shell.Controls.ContextMenu
     Private Sub ViewMenuButton_Checked(sender As Object, e As RoutedEventArgs)
         Dim button As ToggleButton = sender
         Dim menus As Laila.Shell.Controls.Menus = button.Tag
-        If Not menus.ViewMenu Is Nothing Then
-            If Not EqualityComparer(Of Laila.Shell.Controls.ContextMenu).Default.Equals(menus.ViewMenu, _lastViewMenu) Then
-                AddHandler menus.ViewMenu.Closed,
-                    Sub(s2 As Object, e2 As EventArgs)
-                        button.IsChecked = False
-                    End Sub
-                _lastViewMenu = menus.ViewMenu
-            End If
-            menus.ViewMenu.Placement = Primitives.PlacementMode.Bottom
-            menus.ViewMenu.PlacementTarget = button
-            menus.ViewMenu.IsOpen = True
-        End If
+        Dim viewMenu As ViewMenu = New ViewMenu() With {.Folder = menus.Folder}
+        AddHandler viewMenu.Closed,
+            Sub(s2 As Object, e2 As EventArgs)
+                button.IsChecked = False
+            End Sub
+        viewMenu.Placement = Primitives.PlacementMode.Bottom
+        viewMenu.PlacementTarget = button
+        viewMenu.IsOpen = True
     End Sub
 
     Private Sub view_Closed(sender As Object, e As EventArgs)

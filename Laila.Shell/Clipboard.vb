@@ -8,6 +8,62 @@ Imports System.Windows.Forms
 Public Class Clipboard
     Private Shared ReadOnly GMEM_MOVEABLE As Integer = &H2
 
+    Public Shared Function CanCopy(items As IEnumerable(Of Item)) As Boolean
+        Return Not items Is Nothing AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY))
+    End Function
+
+    Public Shared Function CanCut(items As IEnumerable(Of Item)) As Boolean
+        Return Not items Is Nothing AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE))
+    End Function
+
+    Public Shared Function CanPaste(folder As Folder) As Boolean
+        ' check for paste by checking if it would accept a drop
+        Dim dataObject As IDataObject
+        Functions.OleGetClipboard(dataObject)
+
+        Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
+        Try
+            Using parent2 As Folder = folder.GetParent()
+                If Not parent2 Is Nothing Then
+                    shellFolder = parent2.ShellFolder
+                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                Else
+                    ' desktop
+                    shellFolder = Shell.Desktop.ShellFolder
+                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                End If
+            End Using
+            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+            Else
+                dropTarget = Nothing
+            End If
+
+            If Not dropTarget Is Nothing Then
+                Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
+                Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
+                dropTarget.DragLeave()
+
+                Return hr = HRESULT.Ok AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
+            End If
+        Finally
+            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                Marshal.Release(dropTargetPtr)
+            End If
+            If Not dropTarget Is Nothing Then
+                Marshal.ReleaseComObject(dropTarget)
+            End If
+            If Not shellFolder Is Nothing Then
+                Marshal.ReleaseComObject(shellFolder)
+            End If
+            If Not dataObject Is Nothing Then
+                Marshal.ReleaseComObject(dataObject)
+            End If
+        End Try
+
+        Return False
+    End Function
+
     Public Shared Sub CopyFiles(items As IEnumerable(Of Item))
         Dim dataObject As IDataObject
 
@@ -32,6 +88,51 @@ Public Class Clipboard
         ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_MOVE)
     End Sub
 
+    Public Shared Sub PasteFiles(folder As Folder)
+        Dim dataObject As IDataObject
+        Functions.OleGetClipboard(dataObject)
+
+        Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
+        Try
+            Using parent2 As Folder = folder.GetParent()
+                If Not parent2 Is Nothing Then
+                    shellFolder = parent2.ShellFolder
+                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                Else
+                    ' desktop
+                    shellFolder = Shell.Desktop.ShellFolder
+                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                End If
+            End Using
+            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+            Else
+                dropTarget = Nothing
+            End If
+
+            If Not dropTarget Is Nothing Then
+                Dim effect As DROPEFFECT = ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.GetClipboard()
+                Dim grfKeyState As MK = MK.MK_LBUTTON
+                If effect = DROPEFFECT.DROPEFFECT_COPY Then grfKeyState = grfKeyState Or MK.MK_CONTROL
+                Dim hr As HRESULT = dropTarget.DragEnter(dataObject, grfKeyState, New WIN32POINT(), effect)
+                dropTarget.Drop(dataObject, grfKeyState, New WIN32POINT(), effect)
+            End If
+        Finally
+            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
+                Marshal.Release(dropTargetPtr)
+            End If
+            If Not dropTarget Is Nothing Then
+                Marshal.ReleaseComObject(dropTarget)
+            End If
+            If Not shellFolder Is Nothing Then
+                Marshal.ReleaseComObject(shellFolder)
+            End If
+            If Not dataObject Is Nothing Then
+                Marshal.ReleaseComObject(dataObject)
+            End If
+        End Try
+    End Sub
+
     Public Shared Function GetFileNameList(dataObj As IDataObject) As String()
         Dim files() As String
         files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(dataObj)?.Select(Function(i) i.FullPath).ToArray()
@@ -43,8 +144,14 @@ Public Class Clipboard
 
     Public Shared Function GetHasGlobalData(clipboardFormat As String)
         Dim dataObject As IDataObject
-        Functions.OleGetClipboard(dataObject)
-        Return GetHasGlobalData(dataObject, clipboardFormat)
+        Try
+            Functions.OleGetClipboard(dataObject)
+            Return GetHasGlobalData(dataObject, clipboardFormat)
+        Finally
+            If Not dataObject Is Nothing Then
+                Marshal.ReleaseComObject(dataObject)
+            End If
+        End Try
     End Function
 
     Public Shared Function GetHasGlobalData(dataObject As IDataObject, clipboardFormat As String)
@@ -62,7 +169,7 @@ Public Class Clipboard
         Return dataObject.QueryGetData(format) = 0
     End Function
 
-    Public Shared Function GetDataObjectFor(folder As Folder, items As List(Of Item)) As IDataObject
+    Public Shared Function GetDataObjectFor(folder As Folder, items As IEnumerable(Of Item)) As IDataObject
         Dim result As IDataObject
 
         ' make a DataObject for our list of items

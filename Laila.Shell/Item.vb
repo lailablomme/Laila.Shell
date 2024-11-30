@@ -124,10 +124,7 @@ Public Class Item
             shellItem2.GetAttributes(_attributes, _attributes)
             AddHandler Shell.Notification, AddressOf shell_Notification
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Adding to cache", DateTime.Now)
-            UIHelper.OnUIThreadAsync(
-                Sub()
-                    Shell.ItemsCache.Add(Me)
-                End Sub)
+            Shell.AddToItemsCache(Me)
         Else
             _fullPath = String.Empty
         End If
@@ -983,9 +980,9 @@ Public Class Item
                             _logicalParent._items.Remove(Me)
                             _logicalParent._isEnumerated = False
                         End If
-                        Shell.ItemsCache.Remove(Me)
                     End Sub)
 
+                Shell.RemoveFromItemsCache(Me)
                 Me.Pidl.Dispose()
             End If
             ' free unmanaged resources (unmanaged objects) and override finalizer
@@ -1007,7 +1004,7 @@ Public Class Item
 
     Public Function Clone() As Item
         If TypeOf Me Is Folder Then
-            Return New Folder(Me.ShellItem2, _logicalParent) With {._shellItem2 = Nothing}
+            Return New Folder( Me.ShellItem2, _logicalParent) With {._shellItem2 = Nothing}
         Else
             Return New Item(Me.ShellItem2, _logicalParent) With {._shellItem2 = Nothing}
         End If

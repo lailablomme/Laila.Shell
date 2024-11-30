@@ -217,12 +217,12 @@
                                 <Image Source="pack://application:,,,/Laila.Shell;component/Images/refresh16.png" Width="16" Height="16" />
                             </Button>
                         </StackPanel>
-                        <controls:AddressBar Grid.Column="1" Folder="{Binding Folder, Mode=TwoWay}" />
+                        <controls:AddressBar Grid.Column="1" Folder="{Binding Folder}" />
                     </Grid>
                     <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" />
-                    <controls:Menus x:Name="menus" UpdateDelay="450" Folder="{Binding Folder, Mode=TwoWay}" 
-                                    SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
-                                    IsSelecting="{Binding IsSelecting, ElementName=folderView}"/>
+                    <controls:Menus x:Name="menus" Folder="{Binding Folder}" 
+                                    SelectedItems="{Binding SelectedItems}"
+                                    FolderView="{Binding ., ElementName=folderView}" />
                     <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="White" Margin="-1" />
                     <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="5,0,0,1" Height="26">
                         <StackPanel Orientation="Horizontal">
@@ -349,12 +349,6 @@
                                 <ToggleButton.Style>
                                     <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SortMenu, ElementName=menus}" Value="{x:Null}">
-                                                <Setter Property="ToggleButton.IsEnabled" Value="False" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsEnabled, ElementName=SortMenuButton}" Value="False">
-                                                <Setter Property="ToggleButton.Opacity" Value="0.30" />
-                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </ToggleButton.Style>
@@ -368,14 +362,6 @@
                                           Tag="{Binding ., ElementName=menus}" ToolTip="Options for sorting and grouping.">
                                 <ToggleButton.Style>
                                     <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ViewMenu, ElementName=menus}" Value="{x:Null}">
-                                                <Setter Property="ToggleButton.IsEnabled" Value="False" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsEnabled, ElementName=ViewMenuButton}" Value="False">
-                                                <Setter Property="ToggleButton.Opacity" Value="0.30" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
                                     </Style>
                                 </ToggleButton.Style>
                                 <StackPanel Orientation="Horizontal">
@@ -389,7 +375,7 @@
                     <Separator Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" />
                     <controls:TreeView Grid.Row="4" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
                     <GridSplitter Grid.Row="4" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-                    <controls:FolderView Grid.Row="4" Grid.Column="2" x:Name="folderView" Menus="{Binding ., ElementName=menus, Mode=TwoWay}"
+                    <controls:FolderView Grid.Row="4" Grid.Column="2" x:Name="folderView"
                                          Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}" />
                 </Grid>
             </DataTemplate>
