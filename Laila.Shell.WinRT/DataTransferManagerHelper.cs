@@ -1,17 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.InteropServices;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.Foundation;
-using Windows.Storage.Streams;
-using Windows.Storage;
-using System.Collections;
-using static Laila.Shell.WinRT.DataTransferManagerHelper;
 
 namespace Laila.Shell.WinRT
 {

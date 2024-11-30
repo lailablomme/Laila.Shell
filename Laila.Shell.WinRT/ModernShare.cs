@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Interop;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
