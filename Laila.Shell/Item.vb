@@ -426,6 +426,25 @@ Public Class Item
         End Get
     End Property
 
+    Public Overridable ReadOnly Property StorageProviderUIStatusIcons16Async As ImageSource()
+        Get
+            Dim tcs As New TaskCompletionSource(Of ImageSource())
+
+            Shell.SlowTaskQueue.Add(
+                Sub()
+                    Try
+                        Dim result As ImageSource()
+                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").Icons16Async
+                        tcs.SetResult(result)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
+
+            Return tcs.Task.Result
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property StorageProviderUIStatusFirstIcon16Async As ImageSource
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource)
@@ -435,6 +454,25 @@ Public Class Item
                     Try
                         Dim result As ImageSource
                         result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").FirstIcon16Async
+                        tcs.SetResult(result)
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
+
+            Return tcs.Task.Result
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property StorageProviderUIStatusHasIconAsync As Boolean
+        Get
+            Dim tcs As New TaskCompletionSource(Of Boolean)
+
+            Shell.SlowTaskQueue.Add(
+                Sub()
+                    Try
+                        Dim result As Boolean
+                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").HasIcon
                         tcs.SetResult(result)
                     Catch ex As Exception
                         tcs.SetException(ex)
