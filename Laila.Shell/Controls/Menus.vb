@@ -176,8 +176,8 @@ Namespace Controls
                 Me.CanCopy = Clipboard.CanCopy(Me.SelectedItems)
                 Me.CanPaste = Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
-                Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
-                Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
+                Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
+                Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
             End If
         End Sub
 

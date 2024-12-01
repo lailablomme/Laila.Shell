@@ -1,19 +1,13 @@
-﻿Imports System.IO
-Imports System.Runtime.InteropServices
+﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
-Imports System.Runtime.Serialization
-Imports System.Text
-Imports System.Windows.Forms
 
 Public Class Clipboard
-    Private Shared ReadOnly GMEM_MOVEABLE As Integer = &H2
-
     Public Shared Function CanCopy(items As IEnumerable(Of Item)) As Boolean
-        Return Not items Is Nothing AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY))
+        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY))
     End Function
 
     Public Shared Function CanCut(items As IEnumerable(Of Item)) As Boolean
-        Return Not items Is Nothing AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE))
+        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE))
     End Function
 
     Public Shared Function CanPaste(folder As Folder) As Boolean

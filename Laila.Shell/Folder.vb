@@ -722,7 +722,7 @@ Public Class Folder
                                     If Not _items Is Nothing Then
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
+                                                Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(item1.Pidl))
                                                 If existing Is Nothing Then
                                                     _items.Add(item1)
                                                 Else
@@ -749,7 +749,7 @@ Public Class Folder
                                     If Not _items Is Nothing Then
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                Dim existing As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(item1.Pidl) AndAlso Not i.disposedValue)
+                                                Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(item1.Pidl))
                                                 If existing Is Nothing Then
                                                     _items.Add(item1)
                                                 Else
@@ -768,9 +768,9 @@ Public Class Folder
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If Not _items Is Nothing Then
-                        UIHelper.OnUIThreadAsync(
+                        UIHelper.OnUIThread(
                             Sub()
-                                Dim item As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue)
+                                Dim item As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
                                 If Not item Is Nothing Then
                                     If TypeOf item Is Folder Then
                                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -786,7 +786,7 @@ Public Class Folder
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         UIHelper.OnUIThread(
                             Sub()
-                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue) Is Nothing Then
+                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
                                     Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL)
                                     If Not item1 Is Nothing Then
                                         _items.Add(New Folder(item1, Me))
@@ -798,7 +798,7 @@ Public Class Folder
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim item As Item = _items.FirstOrDefault(Function(i) i.Pidl.Equals(e.Item1Pidl) AndAlso Not i.disposedValue)
+                                Dim item As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
                                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                                     Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                         .Folder = item,
