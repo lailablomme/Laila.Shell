@@ -151,7 +151,9 @@ Namespace Controls
         End Sub
 
         Private Sub invokeDefaultCommand(item As Item)
-            getMenu(Me.Folder, {item}).InvokeCommand(_menu.DefaultId)
+            getMenu(Me.Folder, {item}, True)
+            _menu.Make()
+            _menu.InvokeCommand(_menu.DefaultId)
         End Sub
 
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
@@ -214,7 +216,7 @@ Namespace Controls
                         Me.SelectedItems = Nothing
                     End If
 
-                    Me.PART_ListBox.ContextMenu = getMenu(Me.Folder, Me.SelectedItems)
+                    Me.PART_ListBox.ContextMenu = getMenu(Me.Folder, Me.SelectedItems, False)
                     e.Handled = True
                 ElseIf clickedItem Is Nothing AndAlso
                         UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
@@ -233,7 +235,7 @@ Namespace Controls
             _mouseItemDown = Nothing
         End Sub
 
-        Private Function getMenu(folder As Folder, selectedItems As IEnumerable(Of Item)) As RightClickMenu
+        Private Function getMenu(folder As Folder, selectedItems As IEnumerable(Of Item), isDefaultOnly As Boolean) As RightClickMenu
             If Not _menu Is Nothing Then
                 _menu.Dispose()
             End If
@@ -241,6 +243,7 @@ Namespace Controls
             _menu = New RightClickMenu()
             _menu.Folder = folder
             _menu.SelectedItems = selectedItems
+            _menu.IsDefaultOnly = isDefaultOnly
 
             AddHandler _menu.CommandInvoked,
                 Sub(s As Object, e2 As CommandInvokedEventArgs)

@@ -138,8 +138,15 @@ Public Class Item
             If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
                 Dim ptr As IntPtr
                 Try
-                    Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                    If Not _logicalParent Is Nothing Then
+                        Dim shellFolder As IShellFolder = _logicalParent.ShellFolder
+                        Functions.SHCreateItemWithParent(_logicalParent.Pidl.AbsolutePIDL, shellFolder, Me.Pidl.RelativePIDL, GetType(IShellItem2).GUID, ptr)
+                        Marshal.ReleaseComObject(shellFolder)
+                    Else
+                        Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                    End If
                     _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
+                    _shellItem2.Update(IntPtr.Zero)
                 Finally
                     If Not IntPtr.Zero.Equals(ptr) Then
                         Marshal.Release(ptr)
@@ -221,6 +228,7 @@ Public Class Item
     End Sub
 
     Public Overridable Sub Refresh()
+        Debug.WriteLine("Refreshing " & Me.DisplayName)
         Dim oldProperties As HashSet(Of [Property]) = _properties
         Dim oldDisplayName As String = Me.DisplayName
         Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue

@@ -586,6 +586,7 @@ Namespace Controls
                 .SelectedItems = {item},
                 .IsDefaultOnly = True
             }
+            _menu.Make()
             _menu.InvokeCommand(_menu.DefaultId)
         End Sub
 

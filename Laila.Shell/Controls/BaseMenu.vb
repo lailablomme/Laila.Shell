@@ -47,8 +47,10 @@ Namespace Controls
         Protected MustOverride Sub AddItems()
 
         Protected Overrides Sub OnOpened(e As RoutedEventArgs)
-            Make()
-            MyBase.OnOpened(e)
+            Using Shell.OverrideCursor(Cursors.Wait)
+                Me.Make()
+                MyBase.OnOpened(e)
+            End Using
         End Sub
 
         Protected Overridable Function DoRenameAfter(Tag As Tuple(Of Integer, String)) As Boolean
