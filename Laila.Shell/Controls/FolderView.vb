@@ -1,4 +1,7 @@
-﻿Imports System.ComponentModel
+﻿Imports System.Collections.Specialized
+Imports System.ComponentModel
+Imports System.Runtime.InteropServices
+Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
@@ -13,8 +16,9 @@ Namespace Controls
         Implements IDisposable
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
-        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(FolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly StatusTextProperty As DependencyProperty = DependencyProperty.Register("StatusText", GetType(String), GetType(FolderView), New FrameworkPropertyMetadata(String.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
@@ -98,11 +102,58 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property StatusText As String
+            Get
+                Return GetValue(StatusTextProperty)
+            End Get
+            Set(ByVal value As String)
+                SetCurrentValue(StatusTextProperty, value)
+            End Set
+        End Property
+
+        Private Sub updateStatusText()
+            If Not Me.Folder Is Nothing Then
+                Dim text As String = String.Format("{0} {1}", Me.Folder.Items.Count, If(Me.Folder.Items.Count = 1, "item", "items"))
+                If Not Me.SelectedItems Is Nothing AndAlso Not Me.SelectedItems.Count = 0 Then
+                    text &= String.Format("       {0} {1} selected", Me.SelectedItems.Count, If(Me.SelectedItems.Count = 1, "item", "items"))
+                    Dim size As UInt32 = Me.SelectedItems.Sum(Function(i) i.PropertiesByCanonicalName("System.Size").Value)
+                    If size > 0 Then
+                        Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
+                        Try
+                            Functions.PSGetPropertyDescriptionByName("System.Size", GetType(IPropertyDescription).GUID, propertyDescription)
+                            propertyDescription.GetPropertyKey(pkey)
+                        Finally
+                            If Not propertyDescription Is Nothing Then
+                                Marshal.ReleaseComObject(propertyDescription)
+                            End If
+                        End Try
+                        Dim buffer As StringBuilder = New StringBuilder()
+                        buffer.Append(New String(" ", 2050))
+                        Dim val As PROPVARIANT = New PROPVARIANT()
+                        val.SetValue(size)
+                        Functions.PSFormatForDisplay(pkey, val, PropertyDescriptionFormatOptions.None, buffer, 2048)
+                        text &= "   " & buffer.ToString()
+                    End If
+                    Dim storageProviderUIStatus As List(Of String) =
+                        Me.SelectedItems.Select(Function(i) _
+                            i.PropertiesByCanonicalName("System.StorageProviderUIStatus").Text).ToList()
+                    If storageProviderUIStatus.Count = 1 Then
+                        Dim status As String = storageProviderUIStatus.FirstOrDefault(Function(i) Not String.IsNullOrWhiteSpace(i))
+                        If Not status Is Nothing Then text &= "       " & status
+                    End If
+                End If
+                Me.StatusText = text
+            Else
+                Me.StatusText = String.Empty
+            End If
+        End Sub
+
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim fv As FolderView = d
             fv.SelectedItems = Nothing
             If Not e.OldValue Is Nothing Then
                 RemoveHandler CType(e.OldValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
+                RemoveHandler CType(e.OldValue, Folder).Items.CollectionChanged, AddressOf fv.folder_Items_CollectionChanged
             End If
             If Not e.NewValue Is Nothing Then
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
@@ -110,10 +161,16 @@ Namespace Controls
                 fv.changeView(folderViewState.View, e.NewValue)
                 CType(e.NewValue, Folder).View = folderViewState.View
                 AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
+                AddHandler CType(e.NewValue, Folder).Items.CollectionChanged, AddressOf fv.folder_Items_CollectionChanged
             End If
             If Not e.OldValue Is Nothing Then
                 CType(e.OldValue, Folder).IsActiveInFolderView = False
             End If
+            fv.updateStatusText()
+        End Sub
+
+        Private Sub folder_Items_CollectionChanged(sender As Object, e As NotifyCollectionChangedEventArgs)
+            updateStatusText()
         End Sub
 
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
@@ -154,6 +211,11 @@ Namespace Controls
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
             BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty, New Binding("IsSelecting") With {.Source = Me})
             Me.SelectedItems = selectedItems
+        End Sub
+
+        Shared Async Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim fv As FolderView = d
+            fv.updateStatusText()
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)
