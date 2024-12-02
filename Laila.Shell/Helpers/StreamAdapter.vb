@@ -34,11 +34,13 @@ Namespace Helpers
         Public Sub Read(pv() As Byte, cb As Integer, pcbRead As IntPtr) Implements IStream.Read
             openStream()
 
+            Debug.WriteLine("read " & cb & "  from pos=" & _fileStream.Position)
+
             If _fileStream.Position + cb > _fileStream.Length Then
                 cb = _fileStream.Length - _fileStream.Position
             End If
 
-            Dim bytesRead As Integer
+            Dim bytesRead As UInteger
             If cb > 0 Then
                 bytesRead = _fileStream.Read(pv, 0, cb)
             End If
@@ -46,6 +48,8 @@ Namespace Helpers
             If pcbRead <> IntPtr.Zero Then
                 Marshal.WriteInt32(pcbRead, bytesRead)
             End If
+
+            Debug.WriteLine("totalread " & bytesRead & "  to pos=" & _fileStream.Position)
 
             closeStream()
         End Sub
@@ -71,6 +75,8 @@ Namespace Helpers
             If plibNewPosition <> IntPtr.Zero Then
                 Marshal.WriteInt64(plibNewPosition, _fileStream.Position)
             End If
+
+            Debug.WriteLine("seek to pos=" & _fileStream.Position)
 
             closeStream()
         End Sub

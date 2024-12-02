@@ -187,6 +187,7 @@
     <None Remove="Images\normalicons16.png" />
     <None Remove="Images\paste16.png" />
     <None Remove="Images\pin16.png" />
+    <None Remove="Images\preview16.png" />
     <None Remove="Images\refresh16.png" />
     <None Remove="Images\rename16.png" />
     <None Remove="Images\share16.png" />
@@ -248,6 +249,7 @@
     <Resource Include="Images\normalicons16.png" />
     <Resource Include="Images\paste16.png" />
     <Resource Include="Images\pin16.png" />
+    <Resource Include="Images\preview16.png" />
     <Resource Include="Images\refresh16.png" />
     <Resource Include="Images\rename16.png" />
     <Resource Include="Images\share16.png" />
@@ -285,7 +287,6 @@
     <Folder Include="FileOperations\" />
     <Folder Include="Interop\ContextMenu\" />
     <Folder Include="Interop\Memory\" />
-    <Folder Include="Interop\Windows\" />
   </ItemGroup>
 
   <ItemGroup>

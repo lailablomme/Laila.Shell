@@ -11,6 +11,7 @@
     Public Shared Property BHID_StorageEnum As Guid = New Guid("4621a4e3-f0d6-4773-8a9c-46e77b174840")
     Public Shared Property BHID_ThumbnailHandler As Guid = New Guid("7b2e650a-8e20-4f4a-b09e-6597afc72fb0")
     Public Shared Property BHID_EnumItems As Guid = New Guid("94f60519-2850-4924-aa5a-d15e84868039")
+    Public Shared Property BHID_Stream As Guid = New Guid("1CEBB3AB-7C10-499A-A417-92CA16C4CB83")
     Public Shared Property IID_IPropertyBag As Guid = New Guid("55272A00-42CB-11CE-8135-00AA004BB851")
     Public Shared Property IID_IEnumShellItems As Guid = New Guid("70629033-e363-4a28-a567-0db78006e6d7")
     Public Shared Property IID_IPropertyDescription As Guid = New Guid("6f79d558-3e96-4549-a1d1-7d75d2288814")

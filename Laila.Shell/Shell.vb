@@ -33,7 +33,7 @@ Public Class Shell
     Private Shared _itemsCacheLock As Object = New Object()
     Private Shared _itemsCache As List(Of Item) = New List(Of Item)()
     Private Shared _isDebugVisible As Boolean = False
-    Private Shared _debugWindow As DebugTools.DebugWindow
+    Friend Shared _debugWindow As DebugTools.DebugWindow
 
     Private Shared _overrideCursorFunc As Func(Of Cursor, IDisposable) =
         Function(cursor As Cursor) As IDisposable

@@ -3,6 +3,7 @@ Imports System.Windows.Controls.Primitives
 Imports Laila.MetroWindow.Data
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
+Imports Laila.Shell.Helpers
 
 Class MainWindow
     Private Const WINDOWPOSITION_FILENAME As String = "Laila.Shell.SampleApp.WindowPosition.dat"
@@ -134,5 +135,29 @@ Class MainWindow
         viewMenu.Placement = Primitives.PlacementMode.Bottom
         viewMenu.PlacementTarget = button
         viewMenu.IsOpen = True
+    End Sub
+
+    Private _savedPreviewWidth As GridLength
+    Private Sub PreviewMenuButton_Checked(sender As Object, e As RoutedEventArgs)
+        Dim button As ToggleButton = sender
+        Dim previewer As Previewer = button.Tag
+        Dim splitter As GridSplitter = previewer.Tag
+        Dim grid As Grid = UIHelper.GetParentOfType(Of Grid)(previewer)
+        previewer.Visibility = Visibility.Visible
+        splitter.Visibility = Visibility.Visible
+        grid.ColumnDefinitions(3).Width = New GridLength(5, GridUnitType.Pixel)
+        grid.ColumnDefinitions(4).Width = _savedPreviewWidth
+    End Sub
+
+    Private Sub PreviewMenuButton_Unchecked(sender As Object, e As RoutedEventArgs)
+        Dim button As ToggleButton = sender
+        Dim previewer As Previewer = button.Tag
+        Dim splitter As GridSplitter = previewer.Tag
+        Dim grid As Grid = UIHelper.GetParentOfType(Of Grid)(previewer)
+        previewer.Visibility = Visibility.Collapsed
+        splitter.Visibility = Visibility.Collapsed
+        grid.ColumnDefinitions(3).Width = New GridLength(0, GridUnitType.Pixel)
+        _savedPreviewWidth = grid.ColumnDefinitions(4).Width
+        grid.ColumnDefinitions(4).Width = New GridLength(0, GridUnitType.Pixel)
     End Sub
 End Class

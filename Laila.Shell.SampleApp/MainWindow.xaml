@@ -12,7 +12,7 @@
         x:Name="view" 
         mc:Ignorable="d" Icon="{Binding SelectedItem.Folder.Icon[48], ElementName=tabControl}" 
         Title="{Binding SelectedItem.Folder.DisplayName, ElementName=tabControl}"
-        Height="450" Width="800">
+        Height="450" Width="800" MinWidth="550">
     <metroWindow:MetroWindow.Style>
         <Style TargetType="{x:Type local:MainWindow}">
             <Setter Property="OverridesDefaultStyle" Value="True" />
@@ -148,11 +148,13 @@
                         <ColumnDefinition Width="250" />
                         <ColumnDefinition Width="5" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="5" />
+                        <ColumnDefinition Width="250" />
                     </Grid.ColumnDefinitions>
 
                     <controls:Navigation x:Name="navigation" Folder="{Binding Folder, Mode=TwoWay}" />
-                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Background="#eeeeee" Margin="-1" />
-                    <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Margin="5,5,0,3">
+                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Background="#eeeeee" Margin="-1" />
+                    <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Margin="5,5,0,3">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -219,13 +221,17 @@
                         </StackPanel>
                         <controls:AddressBar Grid.Column="1" Folder="{Binding Folder}" />
                     </Grid>
-                    <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" />
+                    <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" />
                     <controls:Menus x:Name="menus" Folder="{Binding Folder}" 
                                     SelectedItems="{Binding SelectedItems}"
                                     FolderView="{Binding ., ElementName=folderView}" />
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="White" Margin="-1" />
-                    <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="5,0,0,1" Height="26">
-                        <StackPanel Orientation="Horizontal">
+                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Background="White" Margin="-1" />
+                    <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Margin="5,0,0,1" Height="26">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
                             <ToggleButton x:Name="NewItemMenuButton" Margin="0,0,5,0" Checked="NewItemMenuButton_Checked"
                                           Tag="{Binding ., ElementName=menus}" ToolTip="Make a new item in the current location.">
                                 <ToggleButton.Style>
@@ -371,12 +377,26 @@
                                 </StackPanel>
                             </ToggleButton>
                         </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ToggleButton x:Name="PreviewMenuButton" Margin="0,0,5,0" Checked="PreviewMenuButton_Checked" Unchecked="PreviewMenuButton_Unchecked"
+                                          Tag="{Binding ., ElementName=previewer}" ToolTip="Show or hide the preview window." IsChecked="True"
+                                          Style="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/preview16.png" />
+                                    <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">Preview</TextBlock>
+                                </StackPanel>
+                            </ToggleButton>
+                        </StackPanel>
                     </Grid>
-                    <Separator Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" />
+                    <Separator Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" />
                     <controls:TreeView Grid.Row="4" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
                     <GridSplitter Grid.Row="4" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
                     <controls:FolderView Grid.Row="4" Grid.Column="2" x:Name="folderView"
                                          Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}" />
+                    <GridSplitter Grid.Row="4" Grid.Column="3" ResizeDirection="Columns" Width="5" 
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="previewSplitter" />
+                    <controls:Previewer Grid.Row="4" Grid.Column="4" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
+                                        x:Name="previewer" Tag="{Binding ., ElementName=previewSplitter}" />
                 </Grid>
             </DataTemplate>
         </controls:TabControl.ContentTemplate>

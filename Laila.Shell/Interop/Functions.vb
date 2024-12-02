@@ -9,6 +9,19 @@ Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
     <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function ShowWindow(hwnd As IntPtr, nCmdShow As Integer) As Boolean
+    End Function
+    <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+    Public Shared Function AssocQueryStringW(
+        flags As AssocF,
+        str As AssocStr,
+        pszAssoc As String,
+        pszExtra As String,
+        pszOut As String,
+        ByRef pcchOut As UInteger
+    ) As Integer
+    End Function
+    <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function GetClipboardData(uFormat As UInteger) As IntPtr
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
@@ -143,6 +156,13 @@ Public Class Functions
     <DllImport("user32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
     Public Shared Function LoadCursor(hInstance As IntPtr, lpCursorName As String) As IntPtr
     End Function
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function SetWindowLong(hwnd As IntPtr, nIndex As Integer, dwNewLong As Integer) As Integer
+    End Function
+
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function GetWindowLong(hwnd As IntPtr, nIndex As Integer) As Integer
+    End Function
     Public Shared Function RegisterClipboardFormat(lpString As String) As Short
         Dim i As Integer = Functions.RegisterClipboardFormatWIN32(lpString)
         While i > Short.MaxValue
@@ -163,6 +183,23 @@ Public Class Functions
     Public Shared Function OpenClipboard(hWndNewOwner As IntPtr) As Boolean
     End Function
 
+    <DllImport("shlwapi.dll", CallingConvention:=CallingConvention.StdCall, PreserveSig:=True, CharSet:=CharSet.Unicode)>
+    Public Shared Function SHCreateStreamOnFileEx(
+        <[In]> ByVal pszFile As String,
+        <[In]> ByVal grfMode As Integer,
+        <[In]> ByVal dwAttributes As UInteger,
+        <[In]> ByVal fCreate As UInteger,
+        <[In]> ByVal pstmTemplate As IntPtr,
+        <Out> ByRef ppstm As IntPtr
+    ) As HRESULT
+    End Function
+    <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+    Public Shared Function SHCreateStreamOnFileW(
+        <[In]> ByVal fileName As String,
+        <[In]> ByVal grfMode As Integer,
+        <Out> ByRef ppstm As IStream
+    ) As Integer
+    End Function
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function CloseClipboard() As Boolean
     End Function
@@ -220,6 +257,14 @@ Public Class Functions
     End Function
     <DllImport("urlmon.dll")>
     Public Shared Function CopyStgMedium(ByRef pcstgmedSrc As STGMEDIUM, ByRef pstgmedDest As STGMEDIUM) As Integer
+    End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
+        ByRef riid As Guid,
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IPreviewHandler) As Integer
     End Function
     <DllImport("ole32.dll")>
     Public Shared Function CoCreateInstance(
