@@ -192,7 +192,7 @@ Public Class Shell
 
             Functions.OleUninitialize()
 
-            _w.Close()
+            System.Windows.Application.Current.Shutdown()
         End If
     End Sub
 

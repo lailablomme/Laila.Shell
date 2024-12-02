@@ -150,24 +150,24 @@ Namespace Behaviors
                             OrElse actualMousePos.X > _ptMax.X OrElse actualMousePos.Y > _ptMax.Y Then
                             If _scrollTimer Is Nothing Then
                                 _scrollTimer = New Timer(
-                                Sub()
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            Dim scrollMousePos As Point = e.GetPosition(_listBox)
-                                            If scrollMousePos.X < _ptMin.X Then
-                                                _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset - 10)
-                                            ElseIf scrollMousePos.X > _ptMax.X Then
-                                                _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset + 10)
-                                            End If
-                                            If scrollMousePos.Y < _ptMin.Y Then
-                                                _sv.ScrollToVerticalOffset(_sv.VerticalOffset - 10)
-                                            ElseIf scrollMousePos.Y > _ptMax.Y Then
-                                                _sv.ScrollToVerticalOffset(_sv.VerticalOffset + 10)
-                                            End If
+                                    Sub()
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Dim scrollMousePos As Point = e.GetPosition(_listBox)
+                                                If scrollMousePos.X < _ptMin.X Then
+                                                    _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset - 10)
+                                                ElseIf scrollMousePos.X > _ptMax.X Then
+                                                    _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset + 10)
+                                                End If
+                                                If scrollMousePos.Y < _ptMin.Y Then
+                                                    _sv.ScrollToVerticalOffset(_sv.VerticalOffset - 10)
+                                                ElseIf scrollMousePos.Y > _ptMax.Y Then
+                                                    _sv.ScrollToVerticalOffset(_sv.VerticalOffset + 10)
+                                                End If
 
-                                            onAfterMouseMove()
-                                        End Sub)
-                                End Sub, Nothing, 30, 30)
+                                                onAfterMouseMove()
+                                            End Sub)
+                                    End Sub, Nothing, 30, 30)
                             End If
                         Else
                             If Not _scrollTimer Is Nothing Then
@@ -222,6 +222,8 @@ Namespace Behaviors
                     End If
                 End If
             Next
+
+            _listBox.Focus()
         End Sub
 
         Public Property IsSelecting As Boolean

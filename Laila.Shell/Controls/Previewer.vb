@@ -170,9 +170,11 @@ Namespace Controls
                             'Dim color As Color = Colors.Red
                             'Dim c As UInteger = (CUInt(color.B) << 16) Or (CUInt(color.G) << 8) Or CUInt(color.R)
                             'CType(previewer._handler, IPreviewHandlerVisuals).SetTextColor(c)
+                            Dim el As IInputElement = Keyboard.FocusedElement
                             previewer._handler.SetWindow(hwnd, getRect(previewer))
                             previewer._handler.DoPreview()
                             previewer._handler.SetRect(getRect(previewer))
+                            If Not el Is Nothing Then el.Focus()
                         End If
                     End If
                 End If

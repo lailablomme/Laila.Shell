@@ -31,37 +31,40 @@ Namespace Controls
         Protected Overrides Sub OnOpened(e As RoutedEventArgs)
             MyBase.OnOpened(e)
 
-            If _list.Count > 0 Then
-                Dim buttonStyle As Style = FindResource("lailaShell_ContextMenuButtonStyle")
-                Dim toggleButtonStyle As Style = FindResource("lailaShell_ContextMenuToggleButtonStyle")
-                Dim ptButtonsTop As Point = _buttonsTop.PointToScreen(New Point(0, 0))
-                Dim ptButtonsBottom As Point = _buttonsBottom.PointToScreen(New Point(0, 0))
-                Dim ptMouse As Point = Application.Current.MainWindow.PointToScreen(Mouse.GetPosition(Application.Current.MainWindow))
+            UIHelper.OnUIThread(
+                Sub()
+                    If _list.Count > 0 Then
+                        Dim buttonStyle As Style = FindResource("lailaShell_ContextMenuButtonStyle")
+                        Dim toggleButtonStyle As Style = FindResource("lailaShell_ContextMenuToggleButtonStyle")
+                        Dim ptButtonsTop As Point = _buttonsTop.PointToScreen(New Point(0, 0))
+                        Dim ptButtonsBottom As Point = _buttonsBottom.PointToScreen(New Point(0, 0))
+                        Dim ptMouse As Point = Application.Current.MainWindow.PointToScreen(Mouse.GetPosition(Application.Current.MainWindow))
 
-                If Math.Abs(ptMouse.Y - ptButtonsTop.Y) < Math.Abs(ptMouse.Y - ptButtonsBottom.Y) Then
-                    For Each button In _list
-                        If TypeOf button Is Button AndAlso Not buttonStyle Is Nothing Then button.Style = buttonStyle
-                        If TypeOf button Is ToggleButton AndAlso Not toggleButtonStyle Is Nothing Then button.Style = toggleButtonStyle
-                        If Not button.Parent Is Nothing Then
-                            CType(button.Parent, Panel).Children.Remove(button)
+                        If Math.Abs(ptMouse.Y - ptButtonsTop.Y) < Math.Abs(ptMouse.Y - ptButtonsBottom.Y) Then
+                            For Each button In _list
+                                If TypeOf button Is Button AndAlso Not buttonStyle Is Nothing Then button.Style = buttonStyle
+                                If TypeOf button Is ToggleButton AndAlso Not toggleButtonStyle Is Nothing Then button.Style = toggleButtonStyle
+                                If Not button.Parent Is Nothing Then
+                                    CType(button.Parent, Panel).Children.Remove(button)
+                                End If
+                                _buttonsTop.Children.Add(button)
+                            Next
+                            Me.ShowButtonsTopOrBottom = TopOrBottom.Top
+                        Else
+                            For Each button In _list
+                                If TypeOf button Is Button AndAlso Not buttonStyle Is Nothing Then button.Style = buttonStyle
+                                If TypeOf button Is ToggleButton AndAlso Not toggleButtonStyle Is Nothing Then button.Style = toggleButtonStyle
+                                If Not button.Parent Is Nothing Then
+                                    CType(button.Parent, Panel).Children.Remove(button)
+                                End If
+                                _buttonsBottom.Children.Add(button)
+                            Next
+                            Me.ShowButtonsTopOrBottom = TopOrBottom.Bottom
                         End If
-                        _buttonsTop.Children.Add(button)
-                    Next
-                    Me.ShowButtonsTopOrBottom = TopOrBottom.Top
-                Else
-                    For Each button In _list
-                        If TypeOf button Is Button AndAlso Not buttonStyle Is Nothing Then button.Style = buttonStyle
-                        If TypeOf button Is ToggleButton AndAlso Not toggleButtonStyle Is Nothing Then button.Style = toggleButtonStyle
-                        If Not button.Parent Is Nothing Then
-                            CType(button.Parent, Panel).Children.Remove(button)
-                        End If
-                        _buttonsBottom.Children.Add(button)
-                    Next
-                    Me.ShowButtonsTopOrBottom = TopOrBottom.Bottom
-                End If
-            Else
-                Me.ShowButtonsTopOrBottom = TopOrBottom.None
-            End If
+                    Else
+                        Me.ShowButtonsTopOrBottom = TopOrBottom.None
+                    End If
+                End Sub, Threading.DispatcherPriority.ContextIdle)
         End Sub
 
         Public Property ShowButtonsTopOrBottom As TopOrBottom

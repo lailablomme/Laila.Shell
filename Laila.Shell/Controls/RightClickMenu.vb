@@ -48,8 +48,8 @@ Namespace Controls
             If Not menuItem Is Nothing Then Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
                 Else If hasPaste Then Me.Buttons.Add(MakeButton(New Tuple(Of Integer, String)(-1, "paste"), "Paste"))
             menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "rename")
-            If Not menuItem Is Nothing AndAlso Not Items Is Nothing AndAlso Items.Count = 1 Then _
-                    Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+            If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME)) Then _
+                Me.Buttons.Add(MakeButton(New Tuple(Of Integer, String)(-1, "rename"), "Rename"))
             menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "delete")
             If Not menuItem Is Nothing Then Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
             If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
