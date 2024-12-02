@@ -58,7 +58,7 @@ Namespace Controls
 
                             ' notify pinned items & frequent folders
                             Dim newFullPath As String =
-                        item.FullPath.Substring(0, item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1) + newName
+                                item.FullPath.Substring(0, item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1) + newName
                             PinnedItems.RenameItem(item.FullPath, newFullPath)
                             FrequentFolders.RenameItem(item.FullPath, newFullPath)
                         End If
