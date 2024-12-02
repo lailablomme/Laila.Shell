@@ -1,5 +1,6 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
@@ -21,6 +22,8 @@ Namespace Controls
         Private _window As Window
         Private _isThumbnail As Boolean
         Private _errorText As String
+        Private _timer As Timer
+        Private _isMade As Boolean
         Private PART_Message As TextBlock
         Private PART_Thumbnail As Image
 
@@ -79,7 +82,7 @@ Namespace Controls
             ElseIf Not String.IsNullOrWhiteSpace(_errorText) Then
                 PART_Message.Text = _errorText
                 PART_Message.Visibility = Visibility.Visible
-            ElseIf _handler Is Nothing AndAlso Not _isThumbnail Then
+            ElseIf _handler Is Nothing AndAlso Not _isThumbnail AndAlso _isMade Then
                 PART_Message.Text = "Preview is not available."
                 PART_Message.Visibility = Visibility.Visible
             Else
@@ -113,7 +116,22 @@ Namespace Controls
 
         Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             hidePreview(d)
-            showPreview(d)
+
+            Dim previewer As Previewer = d
+            If Not previewer._timer Is Nothing Then
+                previewer._timer.Dispose()
+                previewer._timer = Nothing
+            End If
+            previewer._timer = New Timer(New TimerCallback(
+                Sub()
+                    UIHelper.OnUIThread(
+                        Sub()
+                            previewer._timer.Dispose()
+                            previewer._timer = Nothing
+
+                            showPreview(d)
+                        End Sub)
+                End Sub), Nothing, 500, Timeout.Infinite)
         End Sub
 
         Private Shared Sub showPreview(previewer As Previewer)
@@ -137,7 +155,19 @@ Namespace Controls
                             h = HRESULT.False
                             If Not previewer._handler Is Nothing Then
                                 If h <> HRESULT.Ok AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
-                                    h = Functions.SHCreateStreamOnFileW(previewItem.FullPath, STGM.STGM_READ, previewer._stream)
+                                    Dim ptr As IntPtr
+                                    Try
+                                        h = previewItem.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_Stream, GetType(IStream).GUID, ptr)
+                                        If Not IntPtr.Zero.Equals(ptr) Then
+                                            previewer._stream = Marshal.GetObjectForIUnknown(ptr)
+                                        Else
+                                            h = Functions.SHCreateStreamOnFileW(previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, previewer._stream)
+                                        End If
+                                    Finally
+                                        If Not IntPtr.Zero.Equals(ptr) Then
+                                            Marshal.Release(ptr)
+                                        End If
+                                    End Try
                                     Debug.WriteLine("SHCreateStreamOnFileW=" & h.ToString())
                                     If h = HRESULT.Ok Then
                                         h = CType(previewer._handler, IInitializeWithStream).Initialize(previewer._stream, STGM.STGM_READ)
@@ -174,11 +204,13 @@ Namespace Controls
                             previewer._handler.SetWindow(hwnd, getRect(previewer))
                             previewer._handler.DoPreview()
                             previewer._handler.SetRect(getRect(previewer))
-                            If Not el Is Nothing Then el.Focus()
+                            If Not el Is Nothing AndAlso Not previewer._window Is Nothing _
+                                AndAlso previewer._window.IsKeyboardFocusWithin Then el.Focus()
                         End If
                     End If
                 End If
 
+                previewer._isMade = True
                 previewer.setMessage()
             End If
         End Sub
@@ -204,6 +236,8 @@ Namespace Controls
                 previewer._isThumbnail = False
                 previewer.PART_Thumbnail.Visibility = Visibility.Collapsed
             End If
+
+            previewer._isMade = False
 
             previewer.setMessage()
         End Sub

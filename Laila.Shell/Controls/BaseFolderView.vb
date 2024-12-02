@@ -64,11 +64,8 @@ Namespace Controls
                         _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListBox)
                         _selectionHelper.SelectionChanged =
                             Sub()
-                                UIHelper.OnUIThreadAsync(
-                                    Sub()
-                                        If Not Me.Folder Is Nothing Then _
-                                            Me.SelectedItems = _selectionHelper.SelectedItems
-                                    End Sub, Threading.DispatcherPriority.Input)
+                                If Not Me.Folder Is Nothing Then _
+                                    Me.SelectedItems = _selectionHelper.SelectedItems
                             End Sub
                         _selectionHelper.SetSelectedItems(Me.SelectedItems)
 

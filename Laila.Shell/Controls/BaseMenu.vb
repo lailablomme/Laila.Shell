@@ -294,6 +294,11 @@ Namespace Controls
         End Function
 
         Private Sub makeContextMenu(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
+            Dim parentFolderPidl As Pidl
+            Using parent2 = folder.GetParent()
+                parentFolderPidl = parent2.Pidl.Clone()
+            End Using
+
             Dim tcs As New TaskCompletionSource()
             Shell.FolderTaskQueue.Add(
                 Sub()
@@ -323,9 +328,7 @@ Namespace Controls
                                 itemPidls = {Shell.Desktop.Pidl.Clone()}
                             Else
                                 ' this is any other folder
-                                Using parent2 = folder.GetParent()
-                                    folderPidl = parent2.Pidl.Clone()
-                                End Using
+                                folderPidl = parentFolderPidl
                                 itemPidls = {folder.Pidl.Clone()}
                             End If
 
@@ -387,6 +390,7 @@ Namespace Controls
                             End Try
                         End If
                     Finally
+                        parentFolderPidl.Dispose()
                         folderPidl.Dispose()
                         For Each p In itemPidls
                             p.Dispose()

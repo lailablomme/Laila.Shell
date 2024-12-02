@@ -581,9 +581,12 @@ Public Class Folder
         _isLoaded = True
 
         If doRefreshItems Then
-            For Each item In toUpdate
-                updateProperties(item)
-            Next
+            Shell.SlowTaskQueue.Add(
+                Sub()
+                    For Each item In toUpdate
+                        updateProperties(item)
+                    Next
+                End Sub)
         End If
 
         UIHelper.OnUIThread(
@@ -817,24 +820,22 @@ Public Class Folder
                             End Sub)
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                    Using item1 = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
-                        If (Me.Pidl.Equals(e.Item1Pidl) OrElse Me.FullPath?.Equals(item1.FullPath) OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl)) _
-                                             AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
-                                             AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) Then
-                            _pendingUpdateCounter += 1
-                            Dim func As Func(Of Task) =
-                                Async Function() As Task
-                                    SyncLock _lock
-                                        updateItems(_items, True, True)
-                                    End SyncLock
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            _pendingUpdateCounter -= 1
-                                        End Sub)
-                                End Function
-                            Task.Run(func)
-                        End If
-                    End Using
+                    If (Me.Pidl.Equals(e.Item1Pidl) OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl)) _
+                        AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
+                        AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) Then
+                        _pendingUpdateCounter += 1
+                        Dim func As Func(Of Task) =
+                            Async Function() As Task
+                                SyncLock _lock
+                                    updateItems(_items, True, True)
+                                End SyncLock
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        _pendingUpdateCounter -= 1
+                                    End Sub)
+                            End Function
+                        Task.Run(func)
+                    End If
             End Select
         End If
     End Sub

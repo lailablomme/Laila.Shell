@@ -29,7 +29,7 @@ Public Class Item
     Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
     Private _isImage As Boolean?
-    Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+    Private _propertiesLock As Object = New Object()
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -792,51 +792,45 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
-            _propertiesLock.Wait()
-            Try
-                Dim [property] As [Property]
-                Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
-                [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
-                If [property] Is Nothing Then
-                    [property] = [Property].FromKey(key, Me.ShellItem2)
-                    If Not [property] Is Nothing Then _properties.Add([property])
-                End If
-                Return [property]
-            Finally
-                _propertiesLock.Release()
-            End Try
+            Dim [property] As [Property]
+            Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
+            [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
+            If [property] Is Nothing Then
+                [property] = [Property].FromKey(key, Me.ShellItem2)
+                SyncLock _propertiesLock
+                    If _properties.FirstOrDefault(Function(p) p.Key.Equals(key)) Is Nothing _
+                        AndAlso Not [property] Is Nothing Then _properties.Add([property])
+                End SyncLock
+            End If
+            Return [property]
         End Get
     End Property
 
     Public Overridable ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
         Get
-            _propertiesLock.Wait()
-            Try
-                Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
-                If [property] Is Nothing Then
-                    [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
-                    If Not [property] Is Nothing Then _properties.Add([property])
-                End If
-                Return [property]
-            Finally
-                _propertiesLock.Release()
-            End Try
+            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
+            If [property] Is Nothing Then
+                [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                SyncLock _propertiesLock
+                    If _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey)) Is Nothing _
+                        AndAlso Not [property] Is Nothing Then _properties.Add([property])
+                End SyncLock
+            End If
+            Return [property]
         End Get
     End Property
 
     Public Overridable ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
-            _propertiesLock.Wait()
-            Try
-                Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
-                If [property] Is Nothing Then
-                    [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
-                    If Not [property] Is Nothing Then _properties.Add([property])
-                End If
-                Return [property]
-            Finally
-                _propertiesLock.Release()
-            End Try
+            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
+            If [property] Is Nothing Then
+                [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                SyncLock _propertiesLock
+                    If _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName) Is Nothing _
+                        AndAlso Not [property] Is Nothing Then _properties.Add([property])
+                End SyncLock
+            End If
+            Return [property]
         End Get
     End Property
 
@@ -990,11 +984,9 @@ Public Class Item
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
-                    Using item1 = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
-                        If Me.Pidl.Equals(e.Item1Pidl) OrElse Me.FullPath?.Equals(item1.FullPath) Then
-                            Me.Refresh()
-                        End If
-                    End Using
+                    If Me.Pidl.Equals(e.Item1Pidl) Then
+                        Me.Refresh()
+                    End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If Me.Pidl.Equals(e.Item1Pidl) Then
                         Dim oldPidl As Pidl = Me.Pidl
@@ -1023,7 +1015,7 @@ Public Class Item
                 '    Dim i = 9
                 'End If
 
-                UIHelper.OnUIThreadAsync(
+                UIHelper.OnUIThread(
                     Sub()
                         If Not _logicalParent Is Nothing Then
                             _logicalParent._items.Remove(Me)
