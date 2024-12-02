@@ -95,12 +95,14 @@ Namespace Controls
                     For Each c As Control In wireItems
                         If (TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0) _
                         OrElse TypeOf c Is ButtonBase Then
-                            If TypeOf c Is System.Windows.Controls.Button Then
-                                AddHandler CType(c, System.Windows.Controls.Button).Click, AddressOf menuItem_Click
-                            ElseIf TypeOf c Is ToggleButton Then
-                                AddHandler CType(c, ToggleButton).Click, AddressOf menuItem_Click
-                            ElseIf TypeOf c Is MenuItem Then
-                                AddHandler CType(c, MenuItem).Click, AddressOf menuItem_Click
+                            If TypeOf c.Tag Is Tuple(Of Integer, String) Then
+                                If TypeOf c Is System.Windows.Controls.Button Then
+                                    AddHandler CType(c, System.Windows.Controls.Button).Click, AddressOf menuItem_Click
+                                ElseIf TypeOf c Is ToggleButton Then
+                                    AddHandler CType(c, ToggleButton).Click, AddressOf menuItem_Click
+                                ElseIf TypeOf c Is MenuItem Then
+                                    AddHandler CType(c, MenuItem).Click, AddressOf menuItem_Click
+                                End If
                             End If
                         ElseIf TypeOf c Is MenuItem Then
                             wireMenuItems(CType(c, MenuItem).Items.Cast(Of Control).ToList())

@@ -164,12 +164,12 @@ Namespace Controls
 
                         If Not previewer._handler Is Nothing AndAlso previewer.IsVisible Then
                             makeWindow(previewer)
-                            previewer._window.Show()
                             Dim ih As New WindowInteropHelper(previewer._window)
+                            ih.EnsureHandle()
                             Dim hwnd As IntPtr = ih.Handle
                             'Dim color As Color = Colors.Red
                             'Dim c As UInteger = (CUInt(color.B) << 16) Or (CUInt(color.G) << 8) Or CUInt(color.R)
-                            'Dim x = CType(previewer._handler, IPreviewHandlerVisuals) '.SetTextColor(c)
+                            'CType(previewer._handler, IPreviewHandlerVisuals).SetTextColor(c)
                             previewer._handler.SetWindow(hwnd, getRect(previewer))
                             previewer._handler.DoPreview()
                             previewer._handler.SetRect(getRect(previewer))
@@ -208,7 +208,6 @@ Namespace Controls
 
         Private Shared Function makeWindow(previewer As Previewer)
             previewer._window = New Window()
-            updateWindowCoords(previewer)
             previewer._window.SetValue(System.Windows.Shell.WindowChrome.WindowChromeProperty,
                 New System.Windows.Shell.WindowChrome() With {
                     .CaptionHeight = 0,
@@ -221,8 +220,10 @@ Namespace Controls
             previewer._window.ResizeMode = ResizeMode.NoResize
             previewer._window.ShowInTaskbar = False
             previewer._window.Owner = Window.GetWindow(previewer)
-            previewer._window.ShowActivated = False
             AddHandler previewer._window.Owner.SizeChanged, AddressOf previewer.owner_SizeChanged
+            previewer._window.ShowActivated = False
+            updateWindowCoords(previewer)
+            previewer._window.Show()
         End Function
 
         Private Sub owner_SizeChanged(s As Object, e As SizeChangedEventArgs)
