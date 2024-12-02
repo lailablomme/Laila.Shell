@@ -111,36 +111,43 @@ Namespace Controls
             End Set
         End Property
 
-        Private Sub updateStatusText()
+        Private Async Sub updateStatusText()
             If Not Me.Folder Is Nothing Then
                 Dim text As String = String.Format("{0} {1}", Me.Folder.Items.Count, If(Me.Folder.Items.Count = 1, "item", "items"))
                 If Not Me.SelectedItems Is Nothing AndAlso Not Me.SelectedItems.Count = 0 Then
                     text &= String.Format("       {0} {1} selected", Me.SelectedItems.Count, If(Me.SelectedItems.Count = 1, "item", "items"))
-                    Dim size As UInt32 = Me.SelectedItems.Sum(Function(i) i.PropertiesByCanonicalName("System.Size").Value)
-                    If size > 0 Then
-                        Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
-                        Try
-                            Functions.PSGetPropertyDescriptionByName("System.Size", GetType(IPropertyDescription).GUID, propertyDescription)
-                            propertyDescription.GetPropertyKey(pkey)
-                        Finally
-                            If Not propertyDescription Is Nothing Then
-                                Marshal.ReleaseComObject(propertyDescription)
+                    Dim items As IEnumerable(Of Item) = Me.SelectedItems.ToList()
+                    Dim tcs As New TaskCompletionSource()
+                    Shell.SlowTaskQueue.Add(
+                        Sub()
+                            Dim size As UInt32 = items.Sum(Function(i) i.PropertiesByCanonicalName("System.Size").Value)
+                            If size > 0 Then
+                                Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
+                                Try
+                                    Functions.PSGetPropertyDescriptionByName("System.Size", GetType(IPropertyDescription).GUID, propertyDescription)
+                                    propertyDescription.GetPropertyKey(pkey)
+                                Finally
+                                    If Not propertyDescription Is Nothing Then
+                                        Marshal.ReleaseComObject(propertyDescription)
+                                    End If
+                                End Try
+                                Dim buffer As StringBuilder = New StringBuilder()
+                                buffer.Append(New String(" ", 2050))
+                                Dim val As PROPVARIANT = New PROPVARIANT()
+                                val.SetValue(size)
+                                Functions.PSFormatForDisplay(pkey, val, PropertyDescriptionFormatOptions.None, buffer, 2048)
+                                text &= "   " & buffer.ToString()
                             End If
-                        End Try
-                        Dim buffer As StringBuilder = New StringBuilder()
-                        buffer.Append(New String(" ", 2050))
-                        Dim val As PROPVARIANT = New PROPVARIANT()
-                        val.SetValue(size)
-                        Functions.PSFormatForDisplay(pkey, val, PropertyDescriptionFormatOptions.None, buffer, 2048)
-                        text &= "   " & buffer.ToString()
-                    End If
-                    Dim storageProviderUIStatus As List(Of String) =
-                        Me.SelectedItems.Select(Function(i) _
-                            i.PropertiesByCanonicalName("System.StorageProviderUIStatus").Text).ToList()
-                    If storageProviderUIStatus.Count = 1 Then
-                        Dim status As String = storageProviderUIStatus.FirstOrDefault(Function(i) Not String.IsNullOrWhiteSpace(i))
-                        If Not status Is Nothing Then text &= "       " & status
-                    End If
+                            Dim storageProviderUIStatus As List(Of String) =
+                                items.Select(Function(i) _
+                                    i.PropertiesByCanonicalName("System.StorageProviderUIStatus").Text).ToList()
+                            If storageProviderUIStatus.Count = 1 Then
+                                Dim status As String = storageProviderUIStatus.FirstOrDefault(Function(i) Not String.IsNullOrWhiteSpace(i))
+                                If Not status Is Nothing Then text &= "       " & status
+                            End If
+                            tcs.SetResult()
+                        End Sub)
+                    Await tcs.Task
                 End If
                 Me.StatusText = text
             Else

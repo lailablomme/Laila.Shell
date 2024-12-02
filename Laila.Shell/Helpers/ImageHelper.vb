@@ -37,13 +37,15 @@ Public Class ImageHelper
     End Sub
 
     Public Shared Function IsImage(fullPath As String) As Boolean
-        Try
-            Using fs = New FileStream(fullPath, FileMode.Open, FileAccess.Read)
-                Return TypeOf _inspector.DetermineFileFormat(fs) Is Formats.Image
-            End Using
-        Catch ex As Exception
-            Return False
-        End Try
+        If IO.File.Exists(fullPath) Then
+            Try
+                Using fs = New FileStream(fullPath, FileMode.Open, FileAccess.Read)
+                    Return TypeOf _inspector.DetermineFileFormat(fs) Is Formats.Image
+                End Using
+            Catch ex As Exception
+            End Try
+        End If
+        Return False
     End Function
 
     Public Shared Function GetOverlayIcon(overlayIconIndex As Byte, size As Integer) As BitmapSource
