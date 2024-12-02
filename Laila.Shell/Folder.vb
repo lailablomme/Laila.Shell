@@ -286,20 +286,24 @@ Public Class Folder
     Public Overrides ReadOnly Property HasSubFolders As Boolean
         Get
             If Not disposedValue Then
-                Dim tcs As New TaskCompletionSource(Of SFGAO)
+                Dim tcs As New TaskCompletionSource(Of Boolean)
 
                 Shell.SlowTaskQueue.Add(
-                Sub()
-                    Try
-                        Dim attr As SFGAO = SFGAO.HASSUBFOLDER
-                        Me.ShellItem2.GetAttributes(attr, attr)
-                        tcs.SetResult(attr)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
+                    Sub()
+                        Try
+                            If _hasSubFolders.HasValue Then
+                                tcs.SetResult(_hasSubFolders.Value)
+                            Else
+                                Dim attr As SFGAO = SFGAO.HASSUBFOLDER
+                                Me.ShellItem2.GetAttributes(attr, attr)
+                                tcs.SetResult(attr.HasFlag(SFGAO.HASSUBFOLDER))
+                            End If
+                        Catch ex As Exception
+                            tcs.SetException(ex)
+                        End Try
+                    End Sub)
 
-                Return tcs.Task.Result.HasFlag(SFGAO.HASSUBFOLDER)
+                Return tcs.Task.Result
             Else
                 Return False
             End If
@@ -598,6 +602,7 @@ Public Class Folder
                     item.Dispose()
                 Next
 
+                _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
                 Me.NotifyOfPropertyChange("HasSubFolders")
             End Sub)
     End Sub

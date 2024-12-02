@@ -35,7 +35,7 @@
             <Setter Property="Foreground" Value="Black"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="0"/>
-            <Setter Property="Visibility" Value="Visible" />
+            <Setter Property="Visibility" Value="Hidden" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
@@ -51,11 +51,8 @@
                             </Image>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                            <DataTrigger Binding="{Binding HasSubFolders, IsAsync=True}" Value="True">
                                 <Setter Property="ToggleButton.Visibility" Value="Visible" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding HasSubFolders, IsAsync=True}" Value="False">
-                                <Setter Property="ToggleButton.Visibility" Value="Hidden" />
                             </DataTrigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="chevronImage" Property="RenderTransform">
