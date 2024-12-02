@@ -399,7 +399,7 @@
                     <controls:Previewer Grid.Row="4" Grid.Column="4" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
                                         x:Name="previewer" Tag="{Binding ., ElementName=previewSplitter}" />
                     <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5" Foreground="Gray"
-                               Text="{Binding StatusText, ElementName=folderView}" Margin="15,0,0,0" />
+                               Text="{Binding StatusText, ElementName=folderView, IsAsync=True}" Margin="15,0,0,0" />
                 </Grid>
             </DataTemplate>
         </controls:TabControl.ContentTemplate>
