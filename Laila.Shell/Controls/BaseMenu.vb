@@ -470,8 +470,8 @@ Namespace Controls
                                     cmi.lpVerb = Marshal.StringToHGlobalAnsi(id.Item2)
                                     cmi.lpVerbW = Marshal.StringToHGlobalUni(id.Item2)
                                 End If
-                                'cmi.lpDirectory = _parent.FullPath
-                                'cmi.lpDirectoryW = _parent.FullPath
+                                'cmi.lpDirectory = "c:\temp"
+                                'cmi.lpDirectoryW = "c:\temp"
                                 cmi.fMask = CMIC.UNICODE Or CMIC.ASYNCOK
                                 If Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then cmi.fMask = cmi.fMask Or CMIC.CONTROL_DOWN
                                 If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then cmi.fMask = cmi.fMask Or CMIC.SHIFT_DOWN

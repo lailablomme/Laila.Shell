@@ -8,6 +8,9 @@ Imports System.IO
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("kernel32.dll", SetLastError:=True)>
+    Public Shared Sub GetLocalTime(ByRef lpSystemTime As SYSTEMTIME)
+    End Sub
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function ShowWindow(hwnd As IntPtr, nCmdShow As Integer) As Boolean
     End Function

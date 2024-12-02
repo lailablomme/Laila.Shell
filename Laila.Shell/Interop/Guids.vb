@@ -20,5 +20,7 @@
     Public Shared Property CLSID_ApplicationDocumentLists As Guid = New Guid("86bec222-30f2-47e0-9f25-60d11cd75c28")
     Public Shared Property CLSID_OutArchiveZIP As Guid = New Guid("23170f69-40c1-278a-1000-000110010000")
     Public Shared Property CLSID_InArchiveZIP As Guid = New Guid("23170f69-40c1-278a-1000-000110010000")
+    Public Shared Property CLSID_SearchFolderItemFactory As Guid = New Guid("14010e02-bbbd-41f0-88e3-eda371216584")
+    Public Shared Property CLSID_QueryParserManager As Guid = New Guid("5088B39A-29B4-4d9d-8245-4EE289222F66")
     'https://gist.githubusercontent.com/stevemk14ebr/af8053c506ef895cd520f8017a81f913/raw/98944bc6ae995229d5231568a8ae73dd287e8b4f/guids
 End Class

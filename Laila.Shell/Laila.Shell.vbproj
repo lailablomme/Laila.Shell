@@ -190,6 +190,7 @@
     <None Remove="Images\preview16.png" />
     <None Remove="Images\refresh16.png" />
     <None Remove="Images\rename16.png" />
+    <None Remove="Images\search16.png" />
     <None Remove="Images\share16.png" />
     <None Remove="Images\smallicons16.png" />
     <None Remove="Images\sort16.png" />
@@ -252,6 +253,7 @@
     <Resource Include="Images\preview16.png" />
     <Resource Include="Images\refresh16.png" />
     <Resource Include="Images\rename16.png" />
+    <Resource Include="Images\search16.png" />
     <Resource Include="Images\share16.png" />
     <Resource Include="Images\smallicons16.png" />
     <Resource Include="Images\sort16.png" />

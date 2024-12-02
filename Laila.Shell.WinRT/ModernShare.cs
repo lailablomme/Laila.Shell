@@ -7,7 +7,7 @@ namespace Laila.Shell.WinRT
 {
     public class ModernShare
     {
-        public void ShowShareUI(List<string> filePaths, Window window)
+        public void ShowShareUI(IEnumerable<string> filePaths, Window window)
         {
             IntPtr hwnd = new WindowInteropHelper(window).Handle;
 

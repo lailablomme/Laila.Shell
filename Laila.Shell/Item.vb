@@ -138,7 +138,10 @@ Public Class Item
             If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
                 Dim ptr As IntPtr
                 Try
-                    Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                    Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
+                    If IntPtr.Zero.Equals(ptr) Then
+                        Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                    End If
                     If Not IntPtr.Zero.Equals(ptr) Then
                         _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
                         _shellItem2.Update(IntPtr.Zero)
@@ -251,7 +254,9 @@ Public Class Item
             Me.NotifyOfPropertyChange("IsImage")
             Me.NotifyOfPropertyChange("IsHidden")
             Me.NotifyOfPropertyChange("IsCompressed")
+            Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
             Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
+            Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
             For Each prop In oldProperties
                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIcon", prop.Key.ToString()))
@@ -985,9 +990,11 @@ Public Class Item
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
-                    If Me.Pidl.Equals(e.Item1Pidl) Then
-                        Me.Refresh()
-                    End If
+                    Using item1 = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
+                        If Me.Pidl.Equals(e.Item1Pidl) OrElse Me.FullPath?.Equals(item1.FullPath) Then
+                            Me.Refresh()
+                        End If
+                    End Using
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If Me.Pidl.Equals(e.Item1Pidl) Then
                         Dim oldPidl As Pidl = Me.Pidl

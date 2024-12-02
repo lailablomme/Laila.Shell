@@ -485,8 +485,9 @@ Public Class Folder
                         If Not enumShellItems Is Nothing Then
                             Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
                             'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
-                            enumShellItems.Next(1, shellItems, fetched)
+                            Dim h As HRESULT = enumShellItems.Next(1, shellItems, fetched)
                             While fetched = 1
+                                If Not h = HRESULT.Ok Then Throw New Exception(h.ToString())
                                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
                                 Dim attr2 As Integer = SFGAO.FOLDER
                                 shellItems(0).GetAttributes(attr2, attr2)
@@ -512,7 +513,7 @@ Public Class Folder
                                     Marshal.ReleaseComObject(shellItems(0))
                                 End If
                                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
-                                enumShellItems.Next(1, shellItems, fetched)
+                                h = enumShellItems.Next(1, shellItems, fetched)
                             End While
                         End If
                         Me.EnumerationException = Nothing
@@ -775,16 +776,18 @@ Public Class Folder
                     If Not _items Is Nothing Then
                         UIHelper.OnUIThread(
                             Sub()
-                                Dim item As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
-                                If Not item Is Nothing Then
-                                    If TypeOf item Is Folder Then
-                                        Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                            .Folder = item,
+                                Using item1 = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
+                                    Dim item2 As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso (i.Pidl.Equals(e.Item1Pidl) OrElse i.FullPath?.Equals(item1.FullPath)))
+                                    If Not item2 Is Nothing Then
+                                        If TypeOf item2 Is Folder Then
+                                            Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                            .Folder = item2,
                                             .[Event] = e.Event
                                         })
+                                        End If
+                                        item2.Dispose()
                                     End If
-                                    item.Dispose()
-                                End If
+                                End Using
                             End Sub)
                     End If
                 Case SHCNE.DRIVEADD

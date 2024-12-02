@@ -17,6 +17,7 @@
         <ResourceDictionary Source="/Laila.Shell;component/Controls/TileView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ContentView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/Previewer.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/SearchBox.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>
