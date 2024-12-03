@@ -578,7 +578,7 @@ Namespace Controls
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer
                 ' set large fields to null
-                If _contextMenu Is Nothing Then
+                If Not _contextMenu Is Nothing Then
                     Marshal.ReleaseComObject(_contextMenu)
                 End If
                 If Not _contextMenu2 Is Nothing Then
