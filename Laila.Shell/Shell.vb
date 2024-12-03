@@ -44,7 +44,7 @@ Public Class Shell
     Shared Sub New()
         Functions.OleInitialize(IntPtr.Zero)
 
-        For i = 1 To Math.Max(Environment.ProcessorCount / 2, 2)
+        For i = 1 To Environment.ProcessorCount
             Dim staThread As Thread = New Thread(
                 Sub()
                     Try
@@ -60,7 +60,7 @@ Public Class Shell
             staThread.Start()
             _threads.Add(staThread)
         Next
-        For i = 1 To Math.Max(Environment.ProcessorCount / 2, 2)
+        For i = 1 To 35
             Dim staThread As Thread = New Thread(
                 Sub()
                     Try
@@ -76,23 +76,21 @@ Public Class Shell
             staThread.Start()
             _threads.Add(staThread)
         Next
-        For i = 1 To Math.Max(Environment.ProcessorCount / 2, 2)
-            Dim staThread2 As Thread = New Thread(
-                Sub()
-                    Try
-                        ' Process tasks from the queue
-                        Functions.OleInitialize(IntPtr.Zero)
-                        For Each task In FolderTaskQueue.GetConsumingEnumerable(ShuttingDownToken)
-                            task.Invoke()
-                        Next
-                    Catch ex As OperationCanceledException
-                        Debug.WriteLine("FolderTaskQueue was canceled.")
-                    End Try
-                End Sub)
-            staThread2.SetApartmentState(ApartmentState.STA)
-            staThread2.Start()
-            _threads.Add(staThread2)
-        Next
+        Dim staThread2 As Thread = New Thread(
+            Sub()
+                Try
+                    ' Process tasks from the queue
+                    Functions.OleInitialize(IntPtr.Zero)
+                    For Each task In FolderTaskQueue.GetConsumingEnumerable(ShuttingDownToken)
+                        task.Invoke()
+                    Next
+                Catch ex As OperationCanceledException
+                    Debug.WriteLine("FolderTaskQueue was canceled.")
+                End Try
+            End Sub)
+        staThread2.SetApartmentState(ApartmentState.STA)
+        staThread2.Start()
+        _threads.Add(staThread2)
 
         Dim entry(0) As SHChangeNotifyEntry
         entry(0).pIdl = IntPtr.Zero
@@ -228,25 +226,25 @@ Public Class Shell
                     .[Event] = lEvent
                 }
 
+                Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
+
+                If Not e.Item1Pidl Is Nothing Then
+                    Using i = Item.FromPidl(pidl1, Nothing)
+                        Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
+                    End Using
+                End If
+                If Not e.Item2Pidl Is Nothing Then
+                    Using i = Item.FromPidl(pidl1, Nothing)
+                        Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
+                    End Using
+                End If
+
                 If Not IntPtr.Zero.Equals(pidl1) Then
                     e.Item1Pidl = New Pidl(pidl1)
                 End If
 
-                If Not IntPtr.Zero.Equals(pidl2) Then
+                If Not IntPtr.Zero.Equals(pidl1) Then
                     e.Item2Pidl = New Pidl(pidl2)
-                End If
-
-                Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
-
-                If Not e.Item1Pidl Is Nothing Then
-                    Using i = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
-                        Debug.WriteLine(BitConverter.ToString(e.Item1Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
-                    End Using
-                End If
-                If Not e.Item2Pidl Is Nothing Then
-                    Using i = Item.FromPidl(e.Item2Pidl.AbsolutePIDL, Nothing)
-                        Debug.WriteLine(BitConverter.ToString(e.Item2Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
-                    End Using
                 End If
 
                 RaiseEvent Notification(Nothing, e)

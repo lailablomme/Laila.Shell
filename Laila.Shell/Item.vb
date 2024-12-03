@@ -1037,14 +1037,20 @@ Public Class Item
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                     If Me.Pidl.Equals(e.Item1Pidl) Then
-                        Me.Refresh()
+                        Shell.SlowTaskQueue.Add(
+                            Sub()
+                                Me.Refresh()
+                            End Sub)
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If Me.Pidl.Equals(e.Item1Pidl) Then
                         Dim oldPidl As Pidl = Me.Pidl
                         _pidl = e.Item2Pidl.Clone()
                         oldPidl.Dispose()
-                        Me.Refresh()
+                        Shell.SlowTaskQueue.Add(
+                            Sub()
+                                Me.Refresh()
+                            End Sub)
                     End If
             End Select
         End If

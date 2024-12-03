@@ -494,16 +494,18 @@ End Sub
                             If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                             Else
-                                _selectionHelper.SetSelectedItems({clickedItem})
+                                Using Shell.OverrideCursor(Cursors.Wait)
+                                    _selectionHelper.SetSelectedItems({clickedItem})
 
-                                ' calling this async allows for better reponse to double-clicking an unselected item
-                                UIHelper.OnUIThreadAsync(
-                                    Sub()
-                                        If TypeOf clickedItem Is Folder Then
-                                            CType(clickedItem, Folder).LastScrollOffset = New Point()
-                                            Me.Folder = clickedItem
-                                        End If
-                                    End Sub, Threading.DispatcherPriority.Background)
+                                    ' this allows for better reponse to double-clicking an unselected item
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            If TypeOf clickedItem Is Folder Then
+                                                CType(clickedItem, Folder).LastScrollOffset = New Point()
+                                                Me.Folder = clickedItem
+                                            End If
+                                        End Sub, Threading.DispatcherPriority.Background)
+                                End Using
                             End If
                             e.Handled = True
                         End If
