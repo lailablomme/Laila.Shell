@@ -87,12 +87,30 @@ Public Class Item
         End Try
     End Function
 
+    'Friend Shared Function GetFullPathFromShellItem2(shellItem2 As IShellItem2) As String
+    '    Dim fullPath As String
+    '    shellItem2.GetDisplayName(SHGDN.FORPARSING, fullPath)
+    '    If Not fullPath Is Nothing AndAlso fullPath.StartsWith("::{") AndAlso fullPath.EndsWith("}") Then
+    '        fullPath = "shell:" & fullPath
+    '    End If
+    '    Return fullPath
+    'End Function
+
     Friend Shared Function GetFullPathFromShellItem2(shellItem2 As IShellItem2) As String
+        Dim ptr As IntPtr, pidl As IntPtr
         Dim fullPath As String
-        shellItem2.GetDisplayName(SHGDN.FORPARSING, fullPath)
-        If Not fullPath Is Nothing AndAlso fullPath.StartsWith("::{") AndAlso fullPath.EndsWith("}") Then
-            fullPath = "shell:" & fullPath
-        End If
+        Try
+            ptr = Marshal.GetIUnknownForObject(shellItem2)
+            Functions.SHGetIDListFromObject(ptr, pidl)
+            Functions.SHGetNameFromIDList(pidl, SIGDN.DESKTOPABSOLUTEPARSING, fullPath)
+        Finally
+            If Not IntPtr.Zero.Equals(ptr) Then
+                Marshal.Release(ptr)
+            End If
+            If Not IntPtr.Zero.Equals(pidl) Then
+                Marshal.FreeCoTaskMem(pidl)
+            End If
+        End Try
         Return fullPath
     End Function
 
@@ -114,7 +132,8 @@ Public Class Item
 
             _pidl = New Pidl(pidl)
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting full path", DateTime.Now)
-            _fullPath = Item.GetFullPathFromShellItem2(shellItem2)
+            '_fullPath = Item.GetFullPathFromShellItem2(shellItem2)
+            Functions.SHGetNameFromIDList(pidl, SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting display name", DateTime.Now)
             Dim dn As String = Me.DisplayName
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)

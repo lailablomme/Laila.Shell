@@ -8,6 +8,9 @@ Imports System.IO
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
+    Public Shared Function SHGetNameFromIDList(ByVal pidl As IntPtr, ByVal sigdnName As SIGDN, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String) As Integer
+    End Function
     <DllImport("kernel32.dll", SetLastError:=True)>
     Public Shared Sub GetLocalTime(ByRef lpSystemTime As SYSTEMTIME)
     End Sub

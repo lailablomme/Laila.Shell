@@ -111,19 +111,19 @@ Namespace Controls
             '    Sub()
             ' home and galery
             If Shell.GetSpecialFolders().ContainsKey("Home") Then
-                        homeFolder = Shell.GetSpecialFolder("Home").Clone()
-                        homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
-                    End If
-                    If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
-                        galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
-                        galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
-                    End If
+                homeFolder = Shell.GetSpecialFolder("Home").Clone()
+                homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
+            End If
+            If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
+                galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
+                galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
+            End If
 
-                    ' this computer & network
-                    thisComputer = Shell.GetSpecialFolder("This computer").Clone()
-                    thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
-                    network = Shell.GetSpecialFolder("Network").Clone()
-                    network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
+            ' this computer & network
+            thisComputer = Shell.GetSpecialFolder("This computer").Clone()
+            thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
+            network = Shell.GetSpecialFolder("Network").Clone()
+            network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
 
             '        tcs.SetResult()
             '    End Sub)
@@ -494,15 +494,16 @@ End Sub
                             If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
                                 CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                             Else
+                                _selectionHelper.SetSelectedItems({clickedItem})
+
                                 ' calling this async allows for better reponse to double-clicking an unselected item
                                 UIHelper.OnUIThreadAsync(
                                     Sub()
-                                        _selectionHelper.SetSelectedItems({clickedItem})
                                         If TypeOf clickedItem Is Folder Then
                                             CType(clickedItem, Folder).LastScrollOffset = New Point()
                                             Me.Folder = clickedItem
                                         End If
-                                    End Sub)
+                                    End Sub, Threading.DispatcherPriority.Background)
                             End If
                             e.Handled = True
                         End If

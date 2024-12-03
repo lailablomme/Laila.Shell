@@ -157,13 +157,15 @@ Namespace Controls
                                 If h <> HRESULT.Ok AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
                                     Dim ptr As IntPtr
                                     Try
-                                        h = previewItem.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_Stream, GetType(IStream).GUID, ptr)
-                                        Debug.WriteLine("BHID_Stream=" & h.ToString())
-                                        If Not IntPtr.Zero.Equals(ptr) Then
-                                            previewer._stream = Marshal.GetObjectForIUnknown(ptr)
+                                        If IO.File.Exists(previewItem.FullPath) Then
+                                            h = Functions.SHCreateStreamOnFileEx(previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, ptr)
+                                            Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
                                         Else
-                                            h = Functions.SHCreateStreamOnFileW(previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, previewer._stream)
-                                            Debug.WriteLine("SHCreateStreamOnFileW=" & h.ToString())
+                                            h = previewItem.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_Stream, GetType(IStream).GUID, ptr)
+                                            Debug.WriteLine("BHID_Stream=" & h.ToString())
+                                        End If
+                                        If Not IntPtr.Zero.Equals(ptr) AndAlso h = HRESULT.Ok Then
+                                            previewer._stream = Marshal.GetObjectForIUnknown(ptr)
                                         End If
                                     Finally
                                         If Not IntPtr.Zero.Equals(ptr) Then

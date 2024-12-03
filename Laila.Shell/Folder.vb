@@ -711,72 +711,56 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.CREATE
                     If _isLoaded Then
-                        Dim item1 As Item = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me)
-                        If Not item1 Is Nothing Then
-                            Using parentPidl = item1.Pidl.GetParent()
-                                If Me.Pidl.Equals(parentPidl) Then
-                                    If Not _items Is Nothing Then
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(item1.Pidl))
-                                                If existing Is Nothing Then
-                                                    _items.Add(item1)
-                                                Else
-                                                    existing.Refresh()
-                                                    item1.Dispose()
-                                                End If
-                                            End Sub)
-                                    Else
-                                        item1.Dispose()
-                                    End If
-                                Else
-                                    item1.Dispose()
+                        Using parentPidl = e.Item1Pidl.GetParent()
+                            If Me.Pidl.Equals(parentPidl) Then
+                                If Not _items Is Nothing Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
+                                            If existing Is Nothing Then
+                                                _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me))
+                                            Else
+                                                existing.Refresh()
+                                            End If
+                                        End Sub)
                                 End If
-                            End Using
-                        End If
+                            End If
+                        End Using
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
-                        Dim item1 As Item = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me)
-                        If Not item1 Is Nothing Then
-                            Using parentPidl = item1.Pidl.GetParent()
-                                If Me.Pidl.Equals(parentPidl) Then
-                                    If Not _items Is Nothing Then
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(item1.Pidl))
-                                                If existing Is Nothing Then
-                                                    _items.Add(item1)
-                                                Else
-                                                    existing.Refresh()
-                                                    item1.Dispose()
-                                                End If
-                                            End Sub)
-                                    Else
-                                        item1.Dispose()
-                                    End If
-                                Else
-                                    item1.Dispose()
+                        Using parentPidl = e.Item1Pidl.GetParent()
+                            If Me.Pidl.Equals(parentPidl) Then
+                                If Not _items Is Nothing Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
+                                            If existing Is Nothing Then
+                                                _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me))
+                                            Else
+                                                existing.Refresh()
+                                            End If
+                                        End Sub)
                                 End If
-                            End Using
-                        End If
+                            End If
+                        End Using
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
-                    If Not _items Is Nothing Then
+                    If Not _items Is Nothing AndAlso _isLoaded Then
                         UIHelper.OnUIThread(
                             Sub()
-                                Using item1 = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
-                                    Dim item2 As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso (i.Pidl.Equals(e.Item1Pidl) OrElse i.FullPath?.Equals(item1.FullPath)))
-                                    If Not item2 Is Nothing Then
-                                        If TypeOf item2 Is Folder Then
-                                            Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                Dim item1path As String
+                                Functions.SHGetNameFromIDList(e.Item1Pidl.AbsolutePIDL, SIGDN.DESKTOPABSOLUTEPARSING, item1path)
+                                Dim item2 As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso (i.Pidl.Equals(e.Item1Pidl) OrElse i.FullPath?.Equals(item1path)))
+                                If Not item2 Is Nothing Then
+                                    If TypeOf item2 Is Folder Then
+                                        Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                             .Folder = item2,
                                             .[Event] = e.Event
                                         })
-                                        End If
-                                        item2.Dispose()
                                     End If
-                                End Using
+                                    item2.Dispose()
+                                    End If
                             End Sub)
                     End If
                 Case SHCNE.DRIVEADD
