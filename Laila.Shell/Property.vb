@@ -284,7 +284,12 @@ Public Class [Property]
                     End Try
                 End Sub)
 
-            Return tcs.Task.Result
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Return tcs.Task.Result
+            Else
+                Return False
+            End If
         End Get
     End Property
 
@@ -344,9 +349,12 @@ Public Class [Property]
                     End Try
                 End Sub)
 
-            Dim imageReferences16 As String() = tcs.Task.Result
-            If Not imageReferences16 Is Nothing Then
-                Return imageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Dim imageReferences16 As String() = tcs.Task.Result
+                If Not imageReferences16 Is Nothing Then
+                    Return imageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
+                End If
             End If
             Return Nothing
         End Get

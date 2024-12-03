@@ -30,6 +30,7 @@ Public Class Item
     Private _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As Object = New Object()
+    Private _shellItemLock As Object = New Object()
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -135,24 +136,29 @@ Public Class Item
 
     Public ReadOnly Property ShellItem2 As IShellItem2
         Get
-            If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
-                Dim ptr As IntPtr
-                Try
-                    Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
-                    If IntPtr.Zero.Equals(ptr) Then
-                        Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
-                    End If
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
-                        _shellItem2.Update(IntPtr.Zero)
-                    End If
-                Finally
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        Marshal.Release(ptr)
-                    End If
-                End Try
-            End If
-            Return _shellItem2
+            SyncLock _shellItemLock
+                If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                    Dim ptr As IntPtr
+                    Try
+                        If _objectId = 20 Then
+                            Dim i = 9
+                        End If
+                        Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
+                        If IntPtr.Zero.Equals(ptr) Then
+                            Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                        End If
+                        If Not IntPtr.Zero.Equals(ptr) Then
+                            _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
+                            _shellItem2.Update(IntPtr.Zero)
+                        End If
+                    Finally
+                        If Not IntPtr.Zero.Equals(ptr) Then
+                            Marshal.Release(ptr)
+                        End If
+                    End Try
+                End If
+                Return _shellItem2
+            End SyncLock
         End Get
     End Property
 
@@ -214,10 +220,12 @@ Public Class Item
     End Property
 
     Public Overridable Sub ClearCache()
-        If Not _shellItem2 Is Nothing Then
-            _expiredShellItem2.Add(_shellItem2)
-            _shellItem2 = Nothing
-        End If
+        SyncLock _shellItemLock
+            If Not _shellItem2 Is Nothing Then
+                _expiredShellItem2.Add(_shellItem2)
+                _shellItem2 = Nothing
+            End If
+        End SyncLock
 
         For Each [property] In _properties
             [property].Dispose()
@@ -319,9 +327,9 @@ Public Class Item
                         Return CByte((shFileInfo.iIcon >> 24) And &HFF)
                     End If
                 Finally
-                    If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
-                        Functions.DestroyIcon(shFileInfo.hIcon)
-                    End If
+                    'If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
+                    '    Functions.DestroyIcon(shFileInfo.hIcon)
+                    'End If
                 End Try
             End If
             Return 0
@@ -351,9 +359,12 @@ Public Class Item
                     End Try
                 End Sub)
 
-            Dim overlayIconIndex As Byte = tcs.Task.Result
-            If overlayIconIndex > 0 Then
-                Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Dim overlayIconIndex As Byte = tcs.Task.Result
+                If overlayIconIndex > 0 Then
+                    Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
+                End If
             End If
             Return Nothing
         End Get
@@ -393,7 +404,12 @@ Public Class Item
                     End Try
                 End Sub)
 
-            Return tcs.Task.Result
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Return tcs.Task.Result
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
@@ -431,7 +447,12 @@ Public Class Item
                     End Try
                 End Sub)
 
-            Return tcs.Task.Result
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Return tcs.Task.Result
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
@@ -450,7 +471,12 @@ Public Class Item
                     End Try
                 End Sub)
 
-            Return tcs.Task.Result
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Return tcs.Task.Result
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
@@ -469,7 +495,12 @@ Public Class Item
                     End Try
                 End Sub)
 
-            Return tcs.Task.Result
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Return tcs.Task.Result
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
@@ -524,7 +555,12 @@ Public Class Item
                 End Sub)
 
             ' Wait for the result
-            Return tcs.Task.Result
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Return tcs.Task.Result
+            Else
+                Return False
+            End If
         End Get
     End Property
 
@@ -1001,15 +1037,23 @@ Public Class Item
     Protected Overridable Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
             disposedValue = True
-
+            If _objectId = 20 Then
+                Dim i = 9
+            End If
             If disposing Then
                 ' dispose managed state (managed objects)
                 RemoveHandler Shell.Notification, AddressOf shell_Notification
 
-                Me.ClearCache()
-                For Each item In _expiredShellItem2
-                    Marshal.ReleaseComObject(item)
-                Next
+                SyncLock _shellItemLock
+                    Me.ClearCache()
+                    'If Me.FullPath = "shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}" Then
+                    '    Dim i = 9
+                    'End If
+                    For Each item In _expiredShellItem2
+                        Marshal.ReleaseComObject(item)
+                    Next
+                    _expiredShellItem2.Clear()
+                End SyncLock
 
                 'If Me.FullPath = "C:\" AndAlso Not _logicalParent Is Nothing Then
                 '    Dim i = 9
@@ -1044,10 +1088,6 @@ Public Class Item
     End Sub
 
     Public Function Clone() As Item
-        If TypeOf Me Is Folder Then
-            Return New Folder( Me.ShellItem2, _logicalParent) With {._shellItem2 = Nothing}
-        Else
-            Return New Item(Me.ShellItem2, _logicalParent) With {._shellItem2 = Nothing}
-        End If
+        Return Item.FromPidl(Me.Pidl.AbsolutePIDL, _logicalParent)
     End Function
 End Class

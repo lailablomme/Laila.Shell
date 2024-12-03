@@ -22,6 +22,8 @@ Public Class Shell
 
     Public Shared IsStarted As ManualResetEvent = New ManualResetEvent(False)
     Public Shared IsShuttingDown As Boolean
+    Private Shared _shutDownTokensSource As CancellationTokenSource = New CancellationTokenSource()
+    Public Shared ShuttingDownToken As CancellationToken = _shutDownTokensSource.Token
 
     Private Shared _hNotify As UInt32
     Friend Shared _w As Window
@@ -46,10 +48,14 @@ Public Class Shell
         For i = 1 To Math.Max(Environment.ProcessorCount / 2, 2)
             Dim staThread As Thread = New Thread(
                 Sub()
-                    ' Process tasks from the queue
-                    For Each task In PriorityTaskQueue.GetConsumingEnumerable()
-                        task.Invoke()
-                    Next
+                    Try
+                        ' Process tasks from the queue
+                        For Each task In PriorityTaskQueue.GetConsumingEnumerable(ShuttingDownToken)
+                            task.Invoke()
+                        Next
+                    Catch ex As OperationCanceledException
+                        Debug.WriteLine("PriorityTaskQueue was canceled.")
+                    End Try
                 End Sub)
             staThread.SetApartmentState(ApartmentState.STA)
             staThread.IsBackground = True
@@ -59,10 +65,14 @@ Public Class Shell
         For i = 1 To Math.Max(Environment.ProcessorCount / 2, 2)
             Dim staThread As Thread = New Thread(
                 Sub()
-                    ' Process tasks from the queue
-                    For Each task In SlowTaskQueue.GetConsumingEnumerable()
-                        task.Invoke()
-                    Next
+                    Try
+                        ' Process tasks from the queue
+                        For Each task In SlowTaskQueue.GetConsumingEnumerable(ShuttingDownToken)
+                            task.Invoke()
+                        Next
+                    Catch ex As OperationCanceledException
+                        Debug.WriteLine("SlowTaskQueue was canceled.")
+                    End Try
                 End Sub)
             staThread.SetApartmentState(ApartmentState.STA)
             staThread.IsBackground = True
@@ -71,11 +81,15 @@ Public Class Shell
         Next
         Dim staThread2 As Thread = New Thread(
             Sub()
-                ' Process tasks from the queue
-                Functions.OleInitialize(IntPtr.Zero)
-                For Each task In FolderTaskQueue.GetConsumingEnumerable()
-                    task.Invoke()
-                Next
+                Try
+                    ' Process tasks from the queue
+                    Functions.OleInitialize(IntPtr.Zero)
+                    For Each task In FolderTaskQueue.GetConsumingEnumerable(ShuttingDownToken)
+                        task.Invoke()
+                    Next
+                Catch ex As OperationCanceledException
+                    Debug.WriteLine("FolderTaskQueue was canceled.")
+                End Try
             End Sub)
         staThread2.SetApartmentState(ApartmentState.STA)
         staThread2.IsBackground = True
@@ -173,7 +187,7 @@ Public Class Shell
     Private Shared Sub window_Closed(sender As Object, e As EventArgs)
         If System.Windows.Application.Current.ShutdownMode = ShutdownMode.OnLastWindowClose _
             AndAlso System.Windows.Application.Current.Windows.Cast(Of Window) _
-                .Where(Function(w) Not w.GetType().ToString().StartsWith("Microsoft.VisualStudio.")).Count <= 2 Then
+                .Where(Function(w) Not w.GetType().ToString().StartsWith("Microsoft.VisualStudio.")).Count <= 1 Then
             Shell.Shutdown()
         End If
     End Sub
@@ -181,14 +195,11 @@ Public Class Shell
     Public Shared Sub Shutdown()
         If Not Shell.IsShuttingDown Then
             Shell.IsShuttingDown = True
+            _shutDownTokensSource.Cancel()
 
             Functions.SHChangeNotifyDeregister(_hNotify)
 
             RaiseEvent ShuttingDown(Nothing, New EventArgs())
-
-            For Each item In Shell.ItemsCache.ToList()
-                item.Dispose()
-            Next
 
             Functions.OleUninitialize()
 
@@ -223,12 +234,12 @@ Public Class Shell
                 Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
 
                 If Not e.Item1Pidl Is Nothing Then
-                    Using i = Item.FromPidl(e.Item1Pidl.Clone().AbsolutePIDL, Nothing)
+                    Using i = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
                         Debug.WriteLine(BitConverter.ToString(e.Item1Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
                     End Using
                 End If
                 If Not e.Item2Pidl Is Nothing Then
-                    Using i = Item.FromPidl(e.Item2Pidl.Clone().AbsolutePIDL, Nothing)
+                    Using i = Item.FromPidl(e.Item2Pidl.AbsolutePIDL, Nothing)
                         Debug.WriteLine(BitConverter.ToString(e.Item2Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
                     End Using
                 End If

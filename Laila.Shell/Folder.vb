@@ -303,7 +303,12 @@ Public Class Folder
                         End Try
                     End Sub)
 
-                Return tcs.Task.Result
+                tcs.Task.Wait(Shell.ShuttingDownToken)
+                If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                    Return tcs.Task.Result
+                Else
+                    Return False
+                End If
             Else
                 Return False
             End If
@@ -716,16 +721,8 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.CREATE
                     If _isLoaded Then
-                        Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL)
-                        If Not item1ShellItem Is Nothing Then
-                            Dim attr As SFGAO = SFGAO.FOLDER
-                            item1ShellItem.GetAttributes(attr, attr)
-                            Dim item1 As Item
-                            If attr.HasFlag(SFGAO.FOLDER) Then
-                                item1 = New Folder(item1ShellItem, Me)
-                            Else
-                                item1 = New Item(item1ShellItem, Me)
-                            End If
+                        Dim item1 As Item = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me)
+                        If Not item1 Is Nothing Then
                             Using parentPidl = item1.Pidl.GetParent()
                                 If Me.Pidl.Equals(parentPidl) Then
                                     If Not _items Is Nothing Then
@@ -750,9 +747,8 @@ Public Class Folder
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
-                        Dim item1ShellItem As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL)
-                        If Not item1ShellItem Is Nothing Then
-                            Dim item1 As Folder = New Folder(item1ShellItem, Me)
+                        Dim item1 As Item = Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me)
+                        If Not item1 Is Nothing Then
                             Using parentPidl = item1.Pidl.GetParent()
                                 If Me.Pidl.Equals(parentPidl) Then
                                     If Not _items Is Nothing Then

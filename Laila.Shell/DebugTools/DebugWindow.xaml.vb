@@ -9,12 +9,12 @@ Namespace DebugTools
 
             ' Add any initialization after the InitializeComponent() call.
             Me.DataContext = Me
-            listView.ItemsSource = Shell.ItemsCache
+            listView.ItemsSource = Shell.ItemsCache.ToList()
         End Sub
 
         Private Sub listView_PreviewMouseDoubleClick(sender As Object, e As Input.MouseButtonEventArgs)
             listView.ItemsSource = Nothing
-            listView.ItemsSource = Shell.ItemsCache
+            listView.ItemsSource = Shell.ItemsCache.ToList()
         End Sub
     End Class
 End Namespace
