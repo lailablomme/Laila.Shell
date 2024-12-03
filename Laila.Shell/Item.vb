@@ -327,9 +327,9 @@ Public Class Item
                         Return CByte((shFileInfo.iIcon >> 24) And &HFF)
                     End If
                 Finally
-                    'If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
-                    '    Functions.DestroyIcon(shFileInfo.hIcon)
-                    'End If
+                    If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
+                        Functions.DestroyIcon(shFileInfo.hIcon)
+                    End If
                 End Try
             End If
             Return 0
