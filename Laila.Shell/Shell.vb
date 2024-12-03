@@ -199,7 +199,7 @@ Public Class Shell
 
             Functions.SHChangeNotifyDeregister(_hNotify)
 
-            RaiseEvent ShuttingDown(Nothing, New EventArgs())
+            'RaiseEvent ShuttingDown(Nothing, New EventArgs())
 
             Functions.OleUninitialize()
 
