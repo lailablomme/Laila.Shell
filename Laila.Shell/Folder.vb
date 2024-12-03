@@ -4,8 +4,6 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
-Imports System.Windows.Media
 Imports Laila.Shell.Helpers
 
 Public Class Folder
@@ -63,23 +61,18 @@ Public Class Folder
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
         Dim result As IShellFolder
         Dim ptr2 As IntPtr
-        shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, ptr2)
 
-        'Shell.startedEvent.WaitOne()
-        'Shell.FolderDispatcher.Invoke(
-        '     Sub()
         Try
-                     If Not IntPtr.Zero.Equals(ptr2) Then
-                         result = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IShellFolder))
-                     End If
-                 Finally
-                     If Not IntPtr.Zero.Equals(ptr2) Then
-                         Marshal.Release(ptr2)
-                     End If
-                 End Try
-        'End Sub)
+            shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, ptr2)
+            If Not IntPtr.Zero.Equals(ptr2) Then
+                result = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IShellFolder))
+            End If
+        Finally
+            If Not IntPtr.Zero.Equals(ptr2) Then
+                Marshal.Release(ptr2)
+            End If
+        End Try
 
-        ' Wait for the result
         Return result
     End Function
 
@@ -105,16 +98,13 @@ Public Class Folder
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            'If Not disposedValue AndAlso _shellFolder Is Nothing Then
             Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
-            'End If
-            'Return _shellFolder
         End Get
     End Property
 
     Public ReadOnly Property IsRootFolder As Boolean
         Get
-            Return Shell.SpecialFolders.Values.Contains(Me) OrElse Me.TreeRootIndex <> -1
+            Return Shell.GetSpecialFolders().Values.Contains(Me) OrElse Me.TreeRootIndex <> -1
         End Get
     End Property
 

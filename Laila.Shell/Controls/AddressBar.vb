@@ -154,7 +154,7 @@ Namespace Controls
                 Dim specialFoldersContextMenu As ContextMenu = New ContextMenu()
                 specialFoldersContextMenu.PlacementTarget = specialFoldersButton
                 specialFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
-                For Each specialFolder In Shell.SpecialFolders.Values.OrderBy(Function(f) f.DisplayName)
+                For Each specialFolder In Shell.GetSpecialFolders().Values.OrderBy(Function(f) f.DisplayName)
                     Dim specialFoldersMenuItem As MenuItem = New MenuItem()
                     specialFoldersMenuItem.Header = specialFolder.DisplayName
                     specialFoldersMenuItem.Tag = specialFolder

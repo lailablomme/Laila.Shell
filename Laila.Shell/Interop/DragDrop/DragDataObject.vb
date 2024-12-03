@@ -424,9 +424,6 @@ Public Class EnumFORMATETC
 
     Public Function [Next](celt As Integer, rgelt() As FORMATETC, pceltFetched() As Integer) As Integer Implements ComTypes.IEnumFORMATETC.Next
         Debug.WriteLine("EnumFORMATETC.Next " & celt)
-        If celt = 64 Then
-            Dim i = 9
-        End If
         Dim fetched As Integer = 0
         While currentIndex < formats.Length AndAlso fetched < celt
             rgelt(fetched) = formats(currentIndex)

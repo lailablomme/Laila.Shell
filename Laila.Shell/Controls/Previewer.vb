@@ -158,17 +158,18 @@ Namespace Controls
                                     Dim ptr As IntPtr
                                     Try
                                         h = previewItem.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_Stream, GetType(IStream).GUID, ptr)
+                                        Debug.WriteLine("BHID_Stream=" & h.ToString())
                                         If Not IntPtr.Zero.Equals(ptr) Then
                                             previewer._stream = Marshal.GetObjectForIUnknown(ptr)
                                         Else
                                             h = Functions.SHCreateStreamOnFileW(previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, previewer._stream)
+                                            Debug.WriteLine("SHCreateStreamOnFileW=" & h.ToString())
                                         End If
                                     Finally
                                         If Not IntPtr.Zero.Equals(ptr) Then
                                             Marshal.Release(ptr)
                                         End If
                                     End Try
-                                    Debug.WriteLine("SHCreateStreamOnFileW=" & h.ToString())
                                     If h = HRESULT.Ok Then
                                         h = CType(previewer._handler, IInitializeWithStream).Initialize(previewer._stream, STGM.STGM_READ)
                                         Debug.WriteLine("IPreviewHandler.IInitializeWithStream=" & h.ToString())
@@ -184,8 +185,7 @@ Namespace Controls
                                 End If
                                 If h <> HRESULT.Ok Then
                                     previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
-                                    Marshal.ReleaseComObject(previewer._handler)
-                                    previewer._handler = Nothing
+                                    hidePreview(previewer)
                                 End If
                             End If
                         Else
@@ -202,8 +202,14 @@ Namespace Controls
                             'CType(previewer._handler, IPreviewHandlerVisuals).SetTextColor(c)
                             Dim el As IInputElement = Keyboard.FocusedElement
                             previewer._handler.SetWindow(hwnd, getRect(previewer))
-                            previewer._handler.DoPreview()
-                            previewer._handler.SetRect(getRect(previewer))
+                            h = previewer._handler.DoPreview()
+                            Debug.WriteLine("IPreviewHandler.DoPreview=" & h.ToString())
+                            If h <> HRESULT.Ok Then
+                                previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
+                                hidePreview(previewer)
+                            Else
+                                previewer._handler.SetRect(getRect(previewer))
+                            End If
                             If Not el Is Nothing AndAlso Not previewer._window Is Nothing _
                                 AndAlso previewer._window.IsKeyboardFocusWithin Then el.Focus()
                         End If

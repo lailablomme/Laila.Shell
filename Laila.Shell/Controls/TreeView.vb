@@ -8,6 +8,7 @@ Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Data
 Imports System.Windows.Input
+Imports System.Windows.Media
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.PinnedItems
@@ -103,56 +104,68 @@ Namespace Controls
                     End Select
                 End Sub
 
-            Shell.IsStarted.WaitOne()
+            'Dim tcs As New TaskCompletionSource()
+            Dim homeFolder As Folder, galleryFolder As Folder, thisComputer As Folder, network As Folder
+
+            'Shell.FolderTaskQueue.Add(
+            '    Sub()
             ' home and galery
-            If Shell.SpecialFolders.ContainsKey("Home") Then
-                Dim homeFolder As Folder = Shell.SpecialFolders("Home").Clone()
-                homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0 : Items.Add(homeFolder)
-            End If
-            If Shell.SpecialFolders.ContainsKey("Gallery") Then
-                Dim galleryFolder As Folder = Shell.SpecialFolders("Gallery").Clone()
-                galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1 : Items.Add(galleryFolder)
-            End If
+            If Shell.GetSpecialFolders().ContainsKey("Home") Then
+                        homeFolder = Shell.GetSpecialFolder("Home").Clone()
+                        homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
+                    End If
+                    If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
+                        galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
+                        galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
+                    End If
 
+                    ' this computer & network
+                    thisComputer = Shell.GetSpecialFolder("This computer").Clone()
+                    thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
+                    network = Shell.GetSpecialFolder("Network").Clone()
+                    network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
+
+            '        tcs.SetResult()
+            '    End Sub)
+
+            'tcs.Task.Wait(Shell.ShuttingDownToken)
+            ' system
+            Me.Items.Add(homeFolder)
+            Me.Items.Add(galleryFolder)
             ' separators
-            Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
-            Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
-
-            ' this computer & network
-            Dim thisComputer As Folder = Shell.SpecialFolders("This computer").Clone()
-            thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0 : Items.Add(thisComputer)
-            Dim network As Folder = Shell.SpecialFolders("Network").Clone()
-            network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1 : Items.Add(network)
+            Me.Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
+            Me.Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
+            ' environment
+            Me.Items.Add(thisComputer)
+            Me.Items.Add(network)
 
             updatePinnedItems()
             updateFrequentFolders()
 
             ' frequent folders
             _frequentUpdateTimer = New Timer(New TimerCallback(
-                Sub()
-                    UIHelper.OnUIThread(
-                                Async Sub()
-                                    Await updateFrequentFolders()
-                                    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
-                                End Sub)
-                End Sub), Nothing, 1000 * 60, 1000 * 60)
+Sub()
+    UIHelper.OnUIThread(
+Async Sub()
+    Await updateFrequentFolders()
+    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+End Sub)
+End Sub), Nothing, 1000 * 60, 1000 * 60)
 
             AddHandler PinnedItems.ItemPinned,
-                Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                    Await updatePinnedItems()
-                    Await updateFrequentFolders()
-                    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
-                End Sub
+                    Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
+                        Await updatePinnedItems()
+                        Await updateFrequentFolders()
+                        CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+                    End Sub
             AddHandler PinnedItems.ItemUnpinned,
-                Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                    Await updatePinnedItems()
-                    Await updateFrequentFolders()
-                    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
-                End Sub
-
+Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
+    Await updatePinnedItems()
+    Await updateFrequentFolders()
+    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+End Sub
             CollectionViewSource.GetDefaultView(Me.Items).Refresh()
         End Sub
-
         Private Function GetIsSelectionDownFolder(folder As Folder) As Boolean
             If Not Me.SelectedItem Is Nothing AndAlso Me.SelectedItem.Equals(folder) Then
                 Return True

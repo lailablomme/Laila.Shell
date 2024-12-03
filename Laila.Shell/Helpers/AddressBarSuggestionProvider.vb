@@ -49,9 +49,9 @@ Namespace Helpers
                                        .ToLower().StartsWith(fileName.ToLower()) _
                                 OrElse (Not f.DisplayName Is Nothing AndAlso f.DisplayName.ToLower().StartsWith(fileName.ToLower()))).ToList()).ToList()
                     Else
-                        items = Shell.SpecialFolders.Values.Where(Function(f) f.DisplayName.ToLower().StartsWith(fileName.ToLower()) _
-                                                                      OrElse f.FullPath.ToLower().StartsWith(fileName.ToLower())) _
-                                                           .OrderBy(Function(f) f.DisplayName).Cast(Of Item).ToList()
+                        items = Shell.GetSpecialFolders().Values.Where(Function(f) f.DisplayName.ToLower().StartsWith(fileName.ToLower()) _
+                                                                       OrElse f.FullPath.ToLower().StartsWith(fileName.ToLower())) _
+                                                                .OrderBy(Function(f) f.DisplayName).Cast(Of Item).ToList()
                     End If
                     UIHelper.OnUIThread(
                         Sub()

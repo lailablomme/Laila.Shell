@@ -25,7 +25,7 @@ Namespace Controls
                         Dim factory As ISearchFolderItemFactory = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_SearchFolderItemFactory))
                         Dim arr As IShellItemArray
                         Dim pidls As List(Of Pidl) = Me.Folder.Items.Where(Function(i) TypeOf i Is Folder).Select(Function(i) i.Pidl).ToList()
-                        If Not Me.Folder.Pidl.Equals(Shell.SpecialFolders("This computer").Pidl) Then pidls.Insert(0, Me.Folder.Pidl)
+                        If Not Me.Folder.Pidl.Equals(Shell.GetSpecialFolder("This computer").Pidl) Then pidls.Insert(0, Me.Folder.Pidl)
                         Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), arr)
                         'Functions.SHCreateShellItemArrayFromShellItem(Me.Folder.ShellItem2, GetType(IShellItemArray).GUID, arr)
                         factory.SetScope(arr)

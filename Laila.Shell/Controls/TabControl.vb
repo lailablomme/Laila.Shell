@@ -307,11 +307,10 @@ Namespace Controls
             Private _selectedItems As IEnumerable(Of Item)
 
             Public Sub New()
-                Shell.PriorityTaskQueue.Add(
+                Shell.FolderTaskQueue.Add(
                     Sub()
-                        Shell.IsStarted.WaitOne()
-                        Dim folder As Folder = Shell.SpecialFolders("This computer").Clone()
-                        UIHelper.OnUIThreadAsync(
+                        Dim folder As Folder = Shell.GetSpecialFolder("This computer").Clone()
+                        UIHelper.OnUIThread(
                             Sub()
                                 Me.Folder = folder
                             End Sub, Threading.DispatcherPriority.ContextIdle)

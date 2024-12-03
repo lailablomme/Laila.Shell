@@ -24,7 +24,7 @@ Public Class Item
     Private _attributes As SFGAO
     Private _treeRootIndex As Long = -1
     Private _shellItem2 As IShellItem2
-    Private _objectId As Long = -1
+    Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
     Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
@@ -140,9 +140,6 @@ Public Class Item
                 If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
                     Dim ptr As IntPtr
                     Try
-                        If _objectId = 20 Then
-                            Dim i = 9
-                        End If
                         Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
                         If IntPtr.Zero.Equals(ptr) Then
                             Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
@@ -591,10 +588,10 @@ Public Class Item
 
     Public ReadOnly Property AddressBarDisplayName As String
         Get
-            If Not Shell.SpecialFolders.Values.FirstOrDefault(Function(f) f.FullPath = Me.FullPath) Is Nothing Then
+            If Not Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.FullPath = Me.FullPath) Is Nothing Then
                 Return Me.DisplayName
             Else
-                Dim specialFolderAsRoot As Folder = Shell.SpecialFolders.Values.FirstOrDefault(Function(f) Me.FullPath.StartsWith(f.FullPath))
+                Dim specialFolderAsRoot As Folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) Me.FullPath.StartsWith(f.FullPath))
                 If Not specialFolderAsRoot Is Nothing Then
                     Return specialFolderAsRoot.DisplayName & Me.FullPath.Substring(specialFolderAsRoot.FullPath.Length)
                 Else
@@ -875,7 +872,7 @@ Public Class Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
 
         Dim specialFolder As Folder =
-            Shell.SpecialFolders.Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)?.Clone()
+            Shell.GetSpecialFolders().Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)?.Clone()
         If Not specialFolder Is Nothing Then
             Return specialFolder
         End If
@@ -912,13 +909,13 @@ Public Class Item
 
             If isNetworkPath Then
                 ' network path
-                folder = Shell.SpecialFolders("Network").Clone()
+                folder = Shell.GetSpecialFolder("Network").Clone()
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.SpecialFolders("This computer").Clone()
+                folder = Shell.GetSpecialFolder("This computer").Clone()
             Else
                 ' root must be some special folder
-                folder = Shell.SpecialFolders.Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
+                folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
                                                                          OrElse f.FullPath.ToLower() = parts(0).ToLower())?.Clone()
                 start = 1
             End If
@@ -948,7 +945,7 @@ Public Class Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
 
         Dim specialFolder As Folder =
-            Shell.SpecialFolders.Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)?.Clone()
+            Shell.GetSpecialFolders().Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)?.Clone()
         If Not specialFolder Is Nothing Then
             Return specialFolder
         End If
@@ -985,13 +982,13 @@ Public Class Item
 
             If isNetworkPath Then
                 ' network path
-                folder = Shell.SpecialFolders("Network").Clone()
+                folder = Shell.GetSpecialFolder("Network").Clone()
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.SpecialFolders("This computer").Clone()
+                folder = Shell.GetSpecialFolder("This computer").Clone()
             Else
                 ' root must be some special folder
-                folder = Shell.SpecialFolders.Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
+                folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
                                                                          OrElse f.FullPath.ToLower() = parts(0).ToLower())?.Clone()
                 start = 1
             End If
@@ -1037,27 +1034,19 @@ Public Class Item
     Protected Overridable Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
             disposedValue = True
-            If _objectId = 20 Then
-                Dim i = 9
-            End If
+            Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
+
             If disposing Then
                 ' dispose managed state (managed objects)
                 RemoveHandler Shell.Notification, AddressOf shell_Notification
 
                 SyncLock _shellItemLock
                     Me.ClearCache()
-                    'If Me.FullPath = "shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}" Then
-                    '    Dim i = 9
-                    'End If
                     For Each item In _expiredShellItem2
                         Marshal.ReleaseComObject(item)
                     Next
                     _expiredShellItem2.Clear()
                 End SyncLock
-
-                'If Me.FullPath = "C:\" AndAlso Not _logicalParent Is Nothing Then
-                '    Dim i = 9
-                'End If
 
                 UIHelper.OnUIThread(
                     Sub()
