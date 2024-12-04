@@ -385,9 +385,6 @@ Public Class Folder
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
         updateItems(flags,
-            Function(fullPath As String) As Boolean
-                Return Not items.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue) Is Nothing
-            End Function,
             Sub(item As Item)
                 If Not items.Contains(item) Then
                     items.Add(item)
@@ -407,13 +404,7 @@ Public Class Folder
             End Function,
             Function(shellItem2 As IShellItem2)
                 Return New Item(shellItem2, Me)
-            End Function,
-            Sub(path As String)
-                Dim item As Item = items.FirstOrDefault(Function(i) i.FullPath = path AndAlso Not i.disposedValue)
-                If Not item Is Nothing Then
-                    item.Refresh()
-                End If
-            End Sub, doRefreshItems, isAsync)
+            End Function, doRefreshItems, isAsync)
 
         UIHelper.OnUIThread(
             Sub()
@@ -423,20 +414,20 @@ Public Class Folder
     End Sub
 
     Protected Sub updateItems(flags As UInt32,
-                              exists As Func(Of String, Boolean), add As Action(Of Item), remove As Action(Of Item),
+                              add As Action(Of Item), remove As Action(Of Item),
                               getPathsBefore As Func(Of List(Of String)), getToBeRemoved As Func(Of List(Of String), List(Of String), List(Of Item)),
                               makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
-                              updateProperties As Action(Of String), doRefreshItems As Boolean, isAsync As Boolean)
+                              doRefreshItems As Boolean, isAsync As Boolean)
         If disposedValue Then Return
 
         Dim pathsAfter As List(Of String) = New List(Of String)
-        Dim pathsBefore As List(Of String) = New List(Of String)
+        Dim itemsBefore As List(Of Item)
         Dim toAdd As List(Of Item) = New List(Of Item)()
-        Dim toUpdate As List(Of String) = New List(Of String)()
+        Dim toUpdate As List(Of Item) = New List(Of Item)()
 
         UIHelper.OnUIThread(
             Sub()
-                pathsBefore = getPathsBefore()
+                itemsBefore = _items.ToList()
             End Sub)
 
         If Not isWindows7OrLower() Then
@@ -490,7 +481,8 @@ Public Class Folder
                                 Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
                                 'Debug.WriteLine("{0:HH:mm:ss.ffff} " & fullPath, DateTime.Now)
                                 pathsAfter.Add(fullPath)
-                                If Not exists(fullPath) Then
+                                Dim existing As Item = itemsBefore.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue)
+                                If existing Is Nothing Then
                                     Dim newItem As Item
                                     Try
                                         'Debug.WriteLine("{0:HH:mm:ss.ffff} making item", DateTime.Now)
@@ -504,7 +496,7 @@ Public Class Folder
                                     End Try
                                 Else
                                     'Debug.WriteLine("{0:HH:mm:ss.ffff} Updating item", DateTime.Now)
-                                    toUpdate.Add(fullPath)
+                                    toUpdate.Add(existing)
                                     Marshal.ReleaseComObject(shellItems(0))
                                 End If
                                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
@@ -536,7 +528,8 @@ Public Class Folder
                             Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0))
                             Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItem2)
                             pathsAfter.Add(fullPath)
-                            If Not exists(fullPath) Then
+                            Dim existing As Item = itemsBefore.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue)
+                            If existing Is Nothing Then
                                 Dim attr2 As Integer = SFGAO.FOLDER
                                 shellFolder.GetAttributesOf(1, pidl, attr2)
                                 Dim newItem As Item
@@ -550,7 +543,7 @@ Public Class Folder
                                 Catch ex As Exception
                                 End Try
                             Else
-                                toUpdate.Add(fullPath)
+                                toUpdate.Add(existing)
                                 Marshal.ReleaseComObject(shellItem2)
                             End If
                             If count Mod 100 = 0 Then Thread.Sleep(1)
@@ -576,12 +569,9 @@ Public Class Folder
         _isLoaded = True
 
         If doRefreshItems Then
-            Shell.SlowTaskQueue.Add(
-                Sub()
-                    For Each item In toUpdate
-                        updateProperties(item)
-                    Next
-                End Sub)
+            For Each item In toUpdate
+                item.Refresh()
+            Next
         End If
 
         UIHelper.OnUIThread(
@@ -590,7 +580,7 @@ Public Class Folder
                     add(item)
                 Next
 
-                For Each item In getToBeRemoved(pathsBefore, pathsAfter)
+                For Each item In getToBeRemoved(itemsBefore.Select(Function(i) i.FullPath).ToList(), pathsAfter)
                     If TypeOf item Is Folder Then
                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                            .Folder = item,

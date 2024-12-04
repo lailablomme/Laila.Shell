@@ -26,11 +26,10 @@ Public Class Item
     Private _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
-    Private _expiredShellItem2 As List(Of IShellItem2) = New List(Of IShellItem2)
+    Private _shellItemHistory As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As Object = New Object()
-    Private _shellItemLock As Object = New Object()
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -135,7 +134,6 @@ Public Class Item
             '_fullPath = Item.GetFullPathFromShellItem2(shellItem2)
             Functions.SHGetNameFromIDList(pidl, SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting display name", DateTime.Now)
-            Dim dn As String = Me.DisplayName
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
             _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
             Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
@@ -155,26 +153,9 @@ Public Class Item
 
     Public ReadOnly Property ShellItem2 As IShellItem2
         Get
-            SyncLock _shellItemLock
-                If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
-                    Dim ptr As IntPtr
-                    Try
-                        Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
-                        If IntPtr.Zero.Equals(ptr) Then
-                            Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
-                        End If
-                        If Not IntPtr.Zero.Equals(ptr) Then
-                            _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
-                            _shellItem2.Update(IntPtr.Zero)
-                        End If
-                    Finally
-                        If Not IntPtr.Zero.Equals(ptr) Then
-                            Marshal.Release(ptr)
-                        End If
-                    End Try
-                End If
-                Return _shellItem2
-            End SyncLock
+            If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+            End If
+            Return _shellItem2
         End Get
     End Property
 
@@ -236,66 +217,82 @@ Public Class Item
     End Property
 
     Public Overridable Sub ClearCache()
-        SyncLock _shellItemLock
-            If Not _shellItem2 Is Nothing Then
-                _expiredShellItem2.Add(_shellItem2)
-                _shellItem2 = Nothing
-            End If
-        End SyncLock
+        If Not _shellItem2 Is Nothing Then
+            Dim ptr As IntPtr
+            Try
+                Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
+                If IntPtr.Zero.Equals(ptr) Then
+                    Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                End If
+                If Not IntPtr.Zero.Equals(ptr) Then
+                    _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
+                    _shellItem2.Update(IntPtr.Zero)
+                    _shellItemHistory.Add(_shellItem2)
+                End If
+            Finally
+                If Not IntPtr.Zero.Equals(ptr) Then
+                    Marshal.Release(ptr)
+                End If
+            End Try
+        End If
 
-        For Each [property] In _properties
+        Dim oldProperties As HashSet(Of [Property]) = _properties
+        _properties = New HashSet(Of [Property])()
+        For Each [property] In oldProperties
             [property].Dispose()
         Next
-        _properties = New HashSet(Of [Property])()
         _displayName = Nothing
     End Sub
 
+    Private _refreshLock As Object = New Object()
     Public Overridable Sub Refresh()
-        Debug.WriteLine("Refreshing " & Me.DisplayName)
-        Dim oldProperties As HashSet(Of [Property]) = _properties
-        Dim oldDisplayName As String = Me.DisplayName
-        Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
-        Me.ClearCache()
+        Shell.SlowTaskQueue.Add(
+            Sub()
+                SyncLock _refreshLock
+                    Debug.WriteLine("Refreshing " & Me.DisplayName)
+                    Dim oldProperties As HashSet(Of [Property]) = _properties
+                    Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
+                    Me.ClearCache()
 
-        If Not Me.ShellItem2 Is Nothing Then
-            _fullPath = Item.GetFullPathFromShellItem2(Me.ShellItem2)
-            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
-                Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
-                Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
-                Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
-            Me.ShellItem2.GetAttributes(_attributes, _attributes)
-            If Me.DisplayName <> oldDisplayName Then
-                Me.NotifyOfPropertyChange("DisplayName")
-            End If
-            If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
-                Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
-            End If
-            Me.NotifyOfPropertyChange("OverlayImageAsync")
-            Me.NotifyOfPropertyChange("IconAsync")
-            Me.NotifyOfPropertyChange("ImageAsync")
-            Me.NotifyOfPropertyChange("HasThumbnailAsync")
-            Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
-            Me.NotifyOfPropertyChange("IsImage")
-            Me.NotifyOfPropertyChange("IsHidden")
-            Me.NotifyOfPropertyChange("IsCompressed")
-            Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
-            Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
-            Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
-            For Each prop In oldProperties
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIcon", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIcon", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key.ToString()))
-                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key.ToString()))
-            Next
-        Else
-            Me.Dispose()
-        End If
+                    If Not Me.ShellItem2 Is Nothing Then
+                        _fullPath = Item.GetFullPathFromShellItem2(Me.ShellItem2)
+                        _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+                            Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
+                            Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
+                            Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
+                        Me.ShellItem2.GetAttributes(_attributes, _attributes)
+                        Me.NotifyOfPropertyChange("DisplayName")
+                        If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
+                            Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
+                        End If
+                        Me.NotifyOfPropertyChange("OverlayImageAsync")
+                        Me.NotifyOfPropertyChange("IconAsync")
+                        Me.NotifyOfPropertyChange("ImageAsync")
+                        Me.NotifyOfPropertyChange("HasThumbnailAsync")
+                        Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
+                        Me.NotifyOfPropertyChange("IsImage")
+                        Me.NotifyOfPropertyChange("IsHidden")
+                        Me.NotifyOfPropertyChange("IsCompressed")
+                        Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
+                        Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
+                        Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
+                        For Each prop In oldProperties
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIcon", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIcon", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key.ToString()))
+                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key.ToString()))
+                        Next
+                    Else
+                        Me.Dispose()
+                    End If
+                End SyncLock
+            End Sub)
     End Sub
 
     Public ReadOnly Property FullPath As String
@@ -391,7 +388,8 @@ Public Class Item
             If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
+                    Dim h As HRESULT
+                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
                     If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                         Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     End If
@@ -434,7 +432,8 @@ Public Class Item
             If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
+                    Dim h As HRESULT
+                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
                     If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                         Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     End If
@@ -544,7 +543,8 @@ Public Class Item
             If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(1, 1), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
+                    Dim h As HRESULT
+                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(1, 1), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
                     If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                         Return True
                     End If
@@ -594,7 +594,9 @@ Public Class Item
             Try
                 'Debug.WriteLine("GetDisplayName for " & Me.FullPath)
                 If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
+                    'SyncLock Me.ShellItemLock
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                    'End SyncLock
                 End If
                 'Debug.WriteLine(Me.PropertiesByKeyAsText("fceff153-e839-4cf3-a9e7-ea22832094b8:123").Text)
             Catch ex As Exception
@@ -846,12 +848,12 @@ Public Class Item
         Get
             Dim [property] As [Property]
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
-            [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
+            [property] = _properties.ToList().FirstOrDefault(Function(p) p.Key.Equals(key))
             If [property] Is Nothing Then
                 [property] = [Property].FromKey(key, Me.ShellItem2)
                 SyncLock _propertiesLock
                     If _properties.FirstOrDefault(Function(p) p.Key.Equals(key)) Is Nothing _
-                        AndAlso Not [property] Is Nothing Then _properties.Add([property])
+                                    AndAlso Not [property] Is Nothing Then _properties.Add([property])
                 End SyncLock
             End If
             Return [property]
@@ -860,7 +862,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
         Get
-            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
+            Dim [property] As [Property] = _properties.ToList().FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
             If [property] Is Nothing Then
                 [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                 SyncLock _propertiesLock
@@ -874,7 +876,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
-            Dim [property] As [Property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
+            Dim [property] As [Property] = _properties.ToList().FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
             If [property] Is Nothing Then
                 [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                 SyncLock _propertiesLock
@@ -1037,20 +1039,14 @@ Public Class Item
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                     If Me.Pidl.Equals(e.Item1Pidl) Then
-                        Shell.SlowTaskQueue.Add(
-                            Sub()
-                                Me.Refresh()
-                            End Sub)
+                        Me.Refresh()
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If Me.Pidl.Equals(e.Item1Pidl) Then
                         Dim oldPidl As Pidl = Me.Pidl
                         _pidl = e.Item2Pidl.Clone()
                         oldPidl.Dispose()
-                        Shell.SlowTaskQueue.Add(
-                            Sub()
-                                Me.Refresh()
-                            End Sub)
+                        Me.Refresh()
                     End If
             End Select
         End If
@@ -1065,13 +1061,14 @@ Public Class Item
                 ' dispose managed state (managed objects)
                 RemoveHandler Shell.Notification, AddressOf shell_Notification
 
-                SyncLock _shellItemLock
-                    Me.ClearCache()
-                    For Each item In _expiredShellItem2
-                        Marshal.ReleaseComObject(item)
-                    Next
-                    _expiredShellItem2.Clear()
-                End SyncLock
+                For Each [property] In _properties
+                    [property].Dispose()
+                Next
+                _properties.Clear()
+                For Each item In _shellItemHistory
+                    Marshal.ReleaseComObject(item)
+                Next
+                _shellItemHistory.Clear()
 
                 UIHelper.OnUIThread(
                     Sub()

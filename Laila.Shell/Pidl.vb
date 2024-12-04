@@ -19,7 +19,8 @@ Public Class Pidl
         Dim pidls As List(Of Pidl) = New List(Of Pidl)()
         For Each item In items
             Dim pidl As IntPtr = IntPtr.Zero
-            Dim punk As IntPtr = Marshal.GetIUnknownForObject(item.ShellItem2)
+            Dim punk As IntPtr
+            punk = Marshal.GetIUnknownForObject(item.ShellItem2)
             Functions.SHGetIDListFromObject(punk, pidl)
             pidls.Add(New Pidl(pidl))
             Marshal.Release(punk)

@@ -228,23 +228,17 @@ Public Class Shell
 
                 Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
 
-                If Not e.Item1Pidl Is Nothing Then
-                    Using i = Item.FromPidl(pidl1, Nothing)
-                        Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
-                    End Using
-                End If
-                If Not e.Item2Pidl Is Nothing Then
-                    Using i = Item.FromPidl(pidl1, Nothing)
-                        Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
-                    End Using
-                End If
-
                 If Not IntPtr.Zero.Equals(pidl1) Then
                     e.Item1Pidl = New Pidl(pidl1)
+                    Using i = Item.FromPidl(pidl1, Nothing)
+                        Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
+                    End Using
                 End If
-
-                If Not IntPtr.Zero.Equals(pidl1) Then
+                If Not IntPtr.Zero.Equals(pidl2) Then
                     e.Item2Pidl = New Pidl(pidl2)
+                    Using i = Item.FromPidl(pidl1, Nothing)
+                        Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
+                    End Using
                 End If
 
                 RaiseEvent Notification(Nothing, e)
