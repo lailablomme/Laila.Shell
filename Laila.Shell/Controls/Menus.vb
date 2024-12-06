@@ -72,6 +72,14 @@ Namespace Controls
                     End If
                 End Sub
 
+            Dim maxLen As Integer = 260
+            If item.IsDrive Then
+                Select Case item.PropertiesByCanonicalName("System.Volume.FileSystem").Text
+                    Case "NTFS" : maxLen = 32
+                    Case "FAT32" : maxLen = 11
+                End Select
+            End If
+
             ' make textbox
             Dim textBox As System.Windows.Controls.TextBox
             textBox = New System.Windows.Controls.TextBox() With {
@@ -80,7 +88,7 @@ Namespace Controls
                 .VerticalAlignment = VerticalAlignment.Top,
                 .Width = size.Width,
                 .Height = size.Height,
-                .MaxLength = 260,
+                .MaxLength = maxLen,
                 .TextWrapping = TextWrapping.Wrap,
                 .TextAlignment = textAlignment,
                 .UseLayoutRounding = True,
