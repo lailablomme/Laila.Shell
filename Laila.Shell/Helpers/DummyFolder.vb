@@ -16,9 +16,6 @@ Public Class DummyFolder
         Me.IsLoading = True
     End Sub
 
-    Public Overrides Sub ClearCache()
-    End Sub
-
     Public Overrides Sub Refresh()
     End Sub
 

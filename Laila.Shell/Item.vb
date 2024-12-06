@@ -216,80 +216,78 @@ Public Class Item
         End Get
     End Property
 
-    Public Overridable Sub ClearCache()
-        If Not _shellItem2 Is Nothing Then
-            Dim ptr As IntPtr
-            Try
-                Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
-                If IntPtr.Zero.Equals(ptr) Then
-                    Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
-                End If
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
-                    _shellItem2.Update(IntPtr.Zero)
-                    _shellItemHistory.Add(_shellItem2)
-                End If
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-            End Try
-        End If
-
-        Dim oldProperties As HashSet(Of [Property]) = _properties
-        _properties = New HashSet(Of [Property])()
-        For Each [property] In oldProperties
-            [property].Dispose()
-        Next
-        _displayName = Nothing
-    End Sub
-
     Private _refreshLock As Object = New Object()
     Public Overridable Sub Refresh()
         Shell.SlowTaskQueue.Add(
             Sub()
                 SyncLock _refreshLock
-                    Debug.WriteLine("Refreshing " & Me.DisplayName)
-                    Dim oldProperties As HashSet(Of [Property]) = _properties
-                    Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
-                    Me.ClearCache()
+                    If Not disposedValue Then
+                        Debug.WriteLine("Refreshing " & Me.DisplayName)
+                        Dim oldProperties As HashSet(Of [Property]) = _properties
+                        Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
-                    If Not Me.ShellItem2 Is Nothing Then
-                        _fullPath = Item.GetFullPathFromShellItem2(Me.ShellItem2)
-                        _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
-                            Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
-                            Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
-                            Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
-                        Me.ShellItem2.GetAttributes(_attributes, _attributes)
-                        Me.NotifyOfPropertyChange("DisplayName")
-                        If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
-                            Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
+                        If Not _shellItem2 Is Nothing Then
+                            Dim ptr As IntPtr
+                            Try
+                                Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
+                                If IntPtr.Zero.Equals(ptr) Then
+                                    Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                                End If
+                                If Not IntPtr.Zero.Equals(ptr) Then
+                                    _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
+                                    _shellItem2.Update(IntPtr.Zero)
+                                    _shellItemHistory.Add(_shellItem2)
+                                End If
+                            Finally
+                                If Not IntPtr.Zero.Equals(ptr) Then
+                                    Marshal.Release(ptr)
+                                End If
+                            End Try
                         End If
-                        Me.NotifyOfPropertyChange("OverlayImageAsync")
-                        Me.NotifyOfPropertyChange("IconAsync")
-                        Me.NotifyOfPropertyChange("ImageAsync")
-                        Me.NotifyOfPropertyChange("HasThumbnailAsync")
-                        Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
-                        Me.NotifyOfPropertyChange("IsImage")
-                        Me.NotifyOfPropertyChange("IsHidden")
-                        Me.NotifyOfPropertyChange("IsCompressed")
-                        Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
-                        Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
-                        Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
-                        For Each prop In oldProperties
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIcon", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIcon", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key.ToString()))
-                            Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key.ToString()))
+
+                        _properties = New HashSet(Of [Property])()
+                        For Each [property] In oldProperties
+                            [property].Dispose()
                         Next
-                    Else
-                        Me.Dispose()
+                        _displayName = Nothing
+
+                        If Not Me.ShellItem2 Is Nothing Then
+                            _fullPath = Item.GetFullPathFromShellItem2(Me.ShellItem2)
+                            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+                                Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
+                                Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
+                                Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
+                            Me.ShellItem2.GetAttributes(_attributes, _attributes)
+                            Me.NotifyOfPropertyChange("DisplayName")
+                            If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
+                                Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
+                            End If
+                            Me.NotifyOfPropertyChange("OverlayImageAsync")
+                            Me.NotifyOfPropertyChange("IconAsync")
+                            Me.NotifyOfPropertyChange("ImageAsync")
+                            Me.NotifyOfPropertyChange("HasThumbnailAsync")
+                            Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
+                            Me.NotifyOfPropertyChange("IsImage")
+                            Me.NotifyOfPropertyChange("IsHidden")
+                            Me.NotifyOfPropertyChange("IsCompressed")
+                            Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
+                            Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
+                            Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
+                            For Each prop In oldProperties
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIcon", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIcon", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key.ToString()))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key.ToString()))
+                            Next
+                        Else
+                            Me.Dispose()
+                        End If
                     End If
                 End SyncLock
             End Sub)
