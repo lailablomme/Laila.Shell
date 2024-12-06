@@ -124,13 +124,15 @@ Namespace Controls
             End If
             previewer._timer = New Timer(New TimerCallback(
                 Sub()
-                    UIHelper.OnUIThread(
-                        Sub()
-                            previewer._timer.Dispose()
-                            previewer._timer = Nothing
+                    If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                previewer._timer.Dispose()
+                                previewer._timer = Nothing
 
-                            showPreview(d)
-                        End Sub)
+                                showPreview(d)
+                            End Sub)
+                    End If
                 End Sub), Nothing, 500, Timeout.Infinite)
         End Sub
 

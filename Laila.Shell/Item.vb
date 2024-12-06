@@ -477,7 +477,9 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As ImageSource()
-                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").Icons16Async
+                        If Not Me.disposedValue Then
+                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").Icons16Async
+                        End If
                         tcs.SetResult(result)
                     Catch ex As Exception
                         tcs.SetException(ex)
@@ -501,7 +503,9 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As ImageSource
-                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").FirstIcon16Async
+                        If Not Me.disposedValue Then
+                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").FirstIcon16Async
+                        End If
                         tcs.SetResult(result)
                     Catch ex As Exception
                         tcs.SetException(ex)
@@ -525,7 +529,9 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As Boolean
-                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").HasIcon
+                        If Not Me.disposedValue Then
+                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").HasIcon
+                        End If
                         tcs.SetResult(result)
                     Catch ex As Exception
                         tcs.SetException(ex)
@@ -847,7 +853,7 @@ Public Class Item
             Dim [property] As [Property]
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
             [property] = _properties.ToList().FirstOrDefault(Function(p) p.Key.Equals(key))
-            If [property] Is Nothing Then
+            If [property] Is Nothing AndAlso Not disposedValue Then
                 [property] = [Property].FromKey(key, Me.ShellItem2)
                 SyncLock _propertiesLock
                     If _properties.FirstOrDefault(Function(p) p.Key.Equals(key)) Is Nothing _
@@ -861,7 +867,7 @@ Public Class Item
     Public Overridable ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
         Get
             Dim [property] As [Property] = _properties.ToList().FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
-            If [property] Is Nothing Then
+            If [property] Is Nothing AndAlso Not disposedValue Then
                 [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                 SyncLock _propertiesLock
                     If _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey)) Is Nothing _
@@ -875,7 +881,7 @@ Public Class Item
     Public Overridable ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
             Dim [property] As [Property] = _properties.ToList().FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
-            If [property] Is Nothing Then
+            If [property] Is Nothing AndAlso Not disposedValue Then
                 [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                 SyncLock _propertiesLock
                     If _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName) Is Nothing _

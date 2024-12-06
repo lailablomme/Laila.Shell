@@ -44,7 +44,9 @@ Namespace Controls
                         factory.SetDisplayName("Search in " & Me.Folder.DisplayName)
                         Dim shellItem As IShellItem2
                         factory.GetShellItem(GetType(IShellItem2).GUID, shellItem)
-                        Me.Folder = New Folder(shellItem, Nothing)
+                        Dim f As Folder = New Folder(shellItem, Nothing)
+                        f.View = "Content"
+                        Me.Folder = f
                     End If
                 End Sub
         End Sub
