@@ -8,6 +8,7 @@ Imports System.Windows.Input
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Shell32
 
 Namespace Controls
     Public Class Menus
@@ -46,14 +47,20 @@ Namespace Controls
                     If Not originalName = newName Then
                         ' rename item
                         If isDrive Then
-                            Functions.SetVolumeLabelW(item.FullPath, newName)
-                            Shell.RaiseNotificationEvent(Nothing, New NotificationEventArgs() With {
-                                                     .Item1Pidl = item.Pidl, .[Event] = SHCNE.UPDATEITEM})
+                            Try
+                                Dim shellApp As New Shell32.Shell()
+                                Dim folder As Shell32.Folder2 = shellApp.NameSpace(item.FullPath)
+                                Dim folderItem As FolderItem = folder.Self
+                                folderItem.Name = newName
+                            Catch ex As Exception
+                            End Try
                         Else
                             Dim fileOperation As IFileOperation
                             Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                            fileOperation.RenameItem(item.ShellItem2, newName, Nothing)
-                            fileOperation.PerformOperations()
+                            h = fileOperation.RenameItem(item.ShellItem2, newName, Nothing)
+                            Debug.WriteLine("RenameItem returned " & h)
+                            h = fileOperation.PerformOperations()
+                            Debug.WriteLine("PerformOperations returned " & h)
                             Marshal.ReleaseComObject(fileOperation)
 
                             ' notify pinned items & frequent folders
