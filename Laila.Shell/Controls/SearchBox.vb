@@ -51,7 +51,7 @@ Namespace Controls
 
             AddHandler Me.PART_CancelButton.Click,
                 Sub(s As Object, e As EventArgs)
-                    Me.PART_TextBox.Text = ""
+                    Me.PART_TextBox.Text = Nothing
                     Me.Navigation.Back()
                 End Sub
         End Sub
@@ -78,6 +78,8 @@ Namespace Controls
             Dim sb As SearchBox = d
             If Not e.NewValue Is Nothing AndAlso TypeOf e.NewValue Is SearchFolder Then
                 sb.PART_TextBox.Text = CType(e.NewValue, SearchFolder).Terms
+            Else
+                sb.PART_TextBox.Text = Nothing
             End If
         End Sub
     End Class

@@ -358,17 +358,6 @@ Namespace Controls
 
         Protected Overridable Sub Folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
-                Case "IsRefreshingItems"
-                    UIHelper.OnUIThread(
-                        Sub()
-                            Me.IsLoading = CType(sender, Folder).IsRefreshingItems
-
-                            If CType(sender, Folder).IsRefreshingItems Then
-                                Me.PART_ListBox.ItemsSource = Nothing
-                            Else
-                                Me.PART_ListBox.ItemsSource = CType(sender, Folder).Items
-                            End If
-                        End Sub)
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
                     Dim folder As Folder = CType(sender, Folder)
 
@@ -378,7 +367,7 @@ Namespace Controls
                                 setGrouping(folder)
                             End If
 
-                            If Not folder.IsRefreshingItems AndAlso Not Me.Folder Is Nothing Then
+                            If Not folder.IsRefreshingItems AndAlso Not Me.Folder Is Nothing AndAlso Not TypeOf folder Is SearchFolder Then
                                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
                                 folderViewState.SortPropertyName = folder.ItemsSortPropertyName
                                 folderViewState.SortDirection = folder.ItemsSortDirection
@@ -449,10 +438,12 @@ Namespace Controls
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
 
                 ' set sorting and grouping
-                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(newValue.FullPath)
-                newValue.ItemsSortPropertyName = folderViewState.SortPropertyName
-                newValue.ItemsSortDirection = folderViewState.SortDirection
-                newValue.ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
+                If Not TypeOf newValue Is SearchFolder Then
+                    Dim folderViewState As FolderViewState = FolderViewState.FromViewName(newValue.FullPath)
+                    newValue.ItemsSortPropertyName = folderViewState.SortPropertyName
+                    newValue.ItemsSortDirection = folderViewState.SortDirection
+                    newValue.ItemsGroupByPropertyName = folderViewState.GroupByPropertyName
+                End If
 
                 ' get notified of folder property changes
                 AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
