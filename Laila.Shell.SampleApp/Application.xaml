@@ -4,7 +4,8 @@
              xmlns:local="clr-namespace:Laila.Shell.SampleApp"
              xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell"
              StartupUri="MainWindow.xaml" 
-             DispatcherUnhandledException="Application_DispatcherUnhandledException">
+             DispatcherUnhandledException="Application_DispatcherUnhandledException"
+             ShutdownMode="OnLastWindowClose" >
     <Application.Resources>
         <Style x:Key="FocusVisual">
             <Setter Property="Control.Template">

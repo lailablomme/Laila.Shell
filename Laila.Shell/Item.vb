@@ -486,7 +486,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource())
 
-            Shell.SlowTaskQueue.Add(
+            Shell.PriorityTaskQueue.Add(
                 Sub()
                     Try
                         Dim result As ImageSource()
@@ -512,7 +512,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource)
 
-            Shell.SlowTaskQueue.Add(
+            Shell.PriorityTaskQueue.Add(
                 Sub()
                     Try
                         Dim result As ImageSource
@@ -538,7 +538,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of Boolean)
 
-            Shell.SlowTaskQueue.Add(
+            Shell.PriorityTaskQueue.Add(
                 Sub()
                     Try
                         Dim result As Boolean
@@ -578,7 +578,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of Boolean)
 
-            Shell.SlowTaskQueue.Add(
+            Shell.PriorityTaskQueue.Add(
                 Sub()
                     Try
                         tcs.SetResult(Me.HasThumbnail)

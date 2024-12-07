@@ -1,4 +1,5 @@
-﻿Imports System.Reflection
+﻿Imports System.Collections.Concurrent
+Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
@@ -34,8 +35,29 @@ Namespace Controls
         Private _isWaitingForCreate As Boolean
         Private _wasMade As Boolean
         Private disposedValue As Boolean
+        Private _staThread2 As Thread
+        Private _taskQueue As New BlockingCollection(Of Action)
+        Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
+        Private _disposeToken As CancellationToken = _disposeTokensSource.Token
 
         Public Sub New()
+            Shell.AddToMenuCache(Me)
+
+            _staThread2 = New Thread(
+            Sub()
+                Try
+                    ' Process tasks from the queue
+                    Functions.OleInitialize(IntPtr.Zero)
+                    For Each task In _taskQueue.GetConsumingEnumerable(_disposeToken)
+                        task.Invoke()
+                    Next
+                Catch ex As OperationCanceledException
+                    Debug.WriteLine("Menu TaskQueue was canceled.")
+                End Try
+            End Sub)
+            _staThread2.SetApartmentState(ApartmentState.STA)
+            _staThread2.Start()
+
             AddHandler Shell.Notification, AddressOf shell_Notification
 
             AddHandler Shell.ShuttingDown,
@@ -159,7 +181,7 @@ Namespace Controls
 
             If Not _contextMenu Is Nothing AndAlso Not IntPtr.Zero.Equals(_hMenu) Then
                 Dim tcs2 As New TaskCompletionSource()
-                Shell.FolderTaskQueue.Add(
+                _taskQueue.Add(
                     Sub()
                         Try
                             If parentIndex >= 0 Then
@@ -197,7 +219,7 @@ Namespace Controls
                     Dim tcs3 As New TaskCompletionSource
                     Dim bitmapSource As BitmapSource
 
-                    Shell.FolderTaskQueue.Add(
+                    _taskQueue.Add(
                         Sub()
                             Try
                                 mii = New MENUITEMINFO()
@@ -234,7 +256,7 @@ Namespace Controls
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
                         Dim tcs As New TaskCompletionSource, verb As String, id As Integer
-                        Shell.FolderTaskQueue.Add(
+                        _taskQueue.Add(
                             Sub()
                                 Try
                                     Dim cmd As StringBuilder = New StringBuilder()
@@ -302,7 +324,7 @@ Namespace Controls
             End Using
 
             Dim tcs As New TaskCompletionSource()
-            Shell.FolderTaskQueue.Add(
+            _taskQueue.Add(
                 Sub()
                     Dim ptrContextMenu As IntPtr
                     Dim folderPidl As Pidl
@@ -571,6 +593,8 @@ Namespace Controls
 
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then
+                disposedValue = True
+
                 If disposing Then
                     ' dispose managed state (managed objects)
                     RemoveHandler Shell.Notification, AddressOf shell_Notification
@@ -591,7 +615,9 @@ Namespace Controls
                     Functions.DestroyMenu(_hMenu)
                 End If
 
-                disposedValue = True
+                _disposeTokensSource.Cancel()
+
+                Shell.RemoveFromMenuCache(Me)
             End If
         End Sub
 

@@ -142,7 +142,7 @@ Namespace Controls
                                 text &= "   " & buffer.ToString()
                             End If
                             Dim storageProviderUIStatus As List(Of String) =
-                                items.Select(Function(i) _
+                                items.Where(Function(i) Not i.disposedValue).Select(Function(i) _
                                     i.PropertiesByCanonicalName("System.StorageProviderUIStatus").Text).ToList()
                             If storageProviderUIStatus.Count = 1 Then
                                 Dim status As String = storageProviderUIStatus.FirstOrDefault(Function(i) Not String.IsNullOrWhiteSpace(i))
