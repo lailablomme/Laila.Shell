@@ -400,9 +400,9 @@ Namespace Controls
             If Not bfv._timeSpentTimer Is Nothing Then bfv._timeSpentTimer.Dispose()
 
             ' hide listview so no-one sees us binding to the new folder and restoring the scroll position
-            'If Not bfv.PART_ListBox Is Nothing Then
-            '    bfv.PART_ListBox.Visibility = Visibility.Hidden
-            'End If
+            If Not bfv.PART_ListBox Is Nothing Then
+                bfv.PART_ListBox.Visibility = Visibility.Hidden
+            End If
 
             If Not e.OldValue Is Nothing Then
                 Dim oldValue As Folder = e.OldValue
@@ -413,6 +413,8 @@ Namespace Controls
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = bfv._lastScrollOffset
                 oldValue.LastScrollSize = bfv._lastScrollSize
+                bfv._scrollViewer.ScrollToHorizontalOffset(0)
+                bfv._scrollViewer.ScrollToVerticalOffset(0)
 
                 ' clear view binding
                 bfv.ClearBinding()
@@ -468,7 +470,7 @@ Namespace Controls
                         bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv._lastScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
 
                         ' show listview
-                        'bfv.PART_ListBox.Visibility = Visibility.Visible
+                        bfv.PART_ListBox.Visibility = Visibility.Visible
                     End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
 

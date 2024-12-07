@@ -190,7 +190,10 @@ Namespace Behaviors
                     Sub()
                         _isInitialResize = True
                         _skipResize = False
-                        resizeVisibleRows()
+                        Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
+                        If Not view Is Nothing AndAlso view.Count = 0 Then
+                            resizeVisibleRows()
+                        End If
 
                         If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
                             AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
@@ -421,8 +424,8 @@ Namespace Behaviors
                 i += 1
             Next
 
-            _skipResize = False
-            resizeVisibleRows()
+            '_skipResize = False
+            'resizeVisibleRows()
         End Sub
 
         Public Sub UpdateSortGlyphs()

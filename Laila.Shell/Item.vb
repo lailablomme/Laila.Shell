@@ -718,16 +718,17 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property ContentViewModeForBrowseProperties As [Property]()
+    Public ReadOnly Property ContentViewModeProperties As [Property]()
         Get
             If Not disposedValue Then
-                Dim PKEY_System_PropList_ContentViewModeForBrowse As New PROPERTYKEY() With {
-                .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
-                .pid = 13
-            }
-                Dim system_PropList_ContentViewModeForBrowse As String = Me.PropertiesByKey(PKEY_System_PropList_ContentViewModeForBrowse).Text
-                If Not String.IsNullOrWhiteSpace(system_PropList_ContentViewModeForBrowse) Then
-                    Dim propertyNames() As String = system_PropList_ContentViewModeForBrowse.Substring(5).Split(";")
+                Dim propList As String
+                If _logicalParent Is Nothing OrElse Not TypeOf _logicalParent Is SearchFolder Then
+                    propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForBrowse").Text
+                Else
+                    propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForSearch").Text
+                End If
+                If Not String.IsNullOrWhiteSpace(propList) Then
+                    Dim propertyNames() As String = propList.Substring(5).Split(";")
                     Dim properties As List(Of [Property]) = New List(Of [Property])()
                     For Each propCanonicalName In propertyNames
                         Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName.TrimStart("~"))

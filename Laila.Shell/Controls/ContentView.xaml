@@ -143,7 +143,7 @@
                                                     <converters:DoubleConverter x:Key="doubleConverter" />
                                                 </Grid.Resources>
                                                 <TextBlock Grid.Row="0" 
-                                                           Text="{Binding ContentViewModeForBrowseProperties[0].Text}" 
+                                                           Text="{Binding ContentViewModeProperties[0].Text}" 
                                                            TextTrimming="CharacterEllipsis" FontSize="14">
                                                     <TextBlock.Style>
                                                         <Style>
@@ -177,34 +177,34 @@
                                                                 <DataTrigger Binding="{Binding IsDrive}" Value="False">
                                                                     <Setter Property="TextBlock.Visibility" Value="Visible" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[1].DisplayNameWithColon}" Value=":">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[1].DisplayNameWithColon}" Value=":">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[1].Text}" Value="{x:Null}">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[1].Text}" Value="{x:Null}">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[1].Text}" Value="">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[1].Text}" Value="">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[1].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[1].Text, Mode=OneWay}" />
+                                                    <Run Text="{Binding ContentViewModeProperties[1].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
+                                                    <Run Text="{Binding ContentViewModeProperties[1].Text, Mode=OneWay}" />
                                                 </TextBlock>
-                                                <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Bottom"
+                                                <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Bottom" TextTrimming="CharacterEllipsis"
                                                            x:Name="textBlockProperty2">
                                                     <TextBlock.Style>
                                                         <Style>
                                                             <Setter Property="TextBlock.Visibility" Value="Visible" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[2].DisplayNameWithColon}" Value=":">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[2].DisplayNameWithColon}" Value=":">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[2].Text}" Value="{x:Null}">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[2].Text}" Value="{x:Null}">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[2].Text}" Value="">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[2].Text}" Value="">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
                                                                 <DataTrigger Value="Hidden">
@@ -220,22 +220,22 @@
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[2].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[2].Text, Mode=OneWay}" />
+                                                    <Run Text="{Binding ContentViewModeProperties[2].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
+                                                    <Run Text="{Binding ContentViewModeProperties[2].Text, Mode=OneWay}" />
                                                 </TextBlock>
-                                                <TextBlock Grid.Row="1" Grid.Column="2"
+                                                <TextBlock Grid.Row="1" Grid.Column="2" TextTrimming="CharacterEllipsis"
                                                            x:Name="textBlockProperty3">
                                                     <TextBlock.Style>
                                                         <Style>
                                                             <Setter Property="TextBlock.Visibility" Value="Visible" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[3].DisplayNameWithColon}" Value=":">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[3].DisplayNameWithColon}" Value=":">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[3].Text}" Value="{x:Null}">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[3].Text}" Value="{x:Null}">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[3].Text}" Value="">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[3].Text}" Value="">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
                                                                 <DataTrigger Value="Hidden">
@@ -251,48 +251,48 @@
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[3].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[3].Text, Mode=OneWay}" />
+                                                    <Run Text="{Binding ContentViewModeProperties[3].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
+                                                    <Run Text="{Binding ContentViewModeProperties[3].Text, Mode=OneWay}" />
                                                 </TextBlock>
                                                 <TextBlock Grid.Row="0" Grid.Column="5" TextTrimming="CharacterEllipsis" VerticalAlignment="Bottom">
                                                     <TextBlock.Style>
                                                         <Style>
                                                             <Setter Property="TextBlock.Visibility" Value="Visible" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[4].DisplayNameWithColon}" Value=":">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[4].DisplayNameWithColon}" Value=":">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[4].Text}" Value="{x:Null}">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[4].Text}" Value="{x:Null}">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[4].Text}" Value="">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[4].Text}" Value="">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[4].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[4].Text, Mode=OneWay}" />
+                                                    <Run Text="{Binding ContentViewModeProperties[4].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
+                                                    <Run Text="{Binding ContentViewModeProperties[4].Text, Mode=OneWay}" />
                                                 </TextBlock>
                                                 <TextBlock Grid.Row="1" Grid.Column="5" TextTrimming="CharacterEllipsis">
                                                     <TextBlock.Style>
                                                         <Style>
                                                             <Setter Property="TextBlock.Visibility" Value="Visible" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[5].DisplayNameWithColon}" Value=":">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[5].DisplayNameWithColon}" Value=":">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[5].Text}" Value="{x:Null}">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[5].Text}" Value="{x:Null}">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding ContentViewModeForBrowseProperties[5].Text}" Value="">
+                                                                <DataTrigger Binding="{Binding ContentViewModeProperties[5].Text}" Value="">
                                                                     <Setter Property="TextBlock.Visibility" Value="Hidden" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[5].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
-                                                    <Run Text="{Binding ContentViewModeForBrowseProperties[5].Text, Mode=OneWay}" />
+                                                    <Run Text="{Binding ContentViewModeProperties[5].DisplayNameWithColon, Mode=OneWay}" Foreground="Gray" />
+                                                    <Run Text="{Binding ContentViewModeProperties[5].Text, Mode=OneWay}" />
                                                 </TextBlock>
                                             </Grid>
                                         </Grid>

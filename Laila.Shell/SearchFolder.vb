@@ -62,6 +62,12 @@ Public Class SearchFolder
         Me.GetItemsAsync()
     End Sub
 
+    Public Sub CancelUpdate()
+        If Not _cancellationTokenSource Is Nothing Then
+            _cancellationTokenSource.Cancel()
+        End If
+    End Sub
+
     Protected Overrides Sub MakeNewShellItem()
         _shellItem2 = getShellItem(Me.Terms, Me.Parent)
     End Sub

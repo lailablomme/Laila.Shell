@@ -214,14 +214,14 @@ Namespace Controls
         End Sub
 
         Protected Overrides Sub MakeBinding(folder As Folder)
-            MyBase.MakeBinding(folder)
-
             If Not Me.PART_Ext Is Nothing Then
                 Me.PART_Ext.Folder = folder
             End If
             If Not Me.PART_ListBox Is Nothing Then
                 Me.ColumnsIn = buildColumnsIn(folder)
             End If
+
+            MyBase.MakeBinding(folder)
         End Sub
 
         Protected Overrides Sub Folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
