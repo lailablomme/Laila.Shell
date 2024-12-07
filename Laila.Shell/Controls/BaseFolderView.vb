@@ -284,14 +284,8 @@ Namespace Controls
                 Dim item As Item = (Await Me.Folder.GetItemsAsync()).FirstOrDefault(Function(i) i.Pidl.Equals(pidl))
                 If Not item Is Nothing Then
                     Me.SelectedItems = {item}
-                    UIHelper.OnUIThread(
-                        Sub()
-                        End Sub, Threading.DispatcherPriority.ContextIdle)
-                    Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromItem(item)
-                    If Not listBoxItem Is Nothing Then
-                        DoRename(listBoxItem)
-                        Return True
-                    End If
+                    DoRename(item)
+                    Return True
                 End If
             End If
             Return False
