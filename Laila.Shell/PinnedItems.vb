@@ -20,7 +20,7 @@ Public Class PinnedItems
         ' return existing pinned items, delete others
         Dim existingPinnedItems As List(Of Item) = New List(Of Item)()
         For Each pinnedItem In pinnedItems
-            Dim item As Item = Item.FromParsingName(pinnedItem.FullPath, Nothing)
+            Dim item As Item = Item.FromParsingName(pinnedItem.FullPath, Nothing, True)
             If Not item Is Nothing Then
                 existingPinnedItems.Add(item)
             Else

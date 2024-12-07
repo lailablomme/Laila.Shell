@@ -229,8 +229,13 @@ Namespace Controls
                 .pid = 3
             }
 
+            If TypeOf Me.Folder Is SearchFolder Then
+                _additionalProperties.Add("49691C90-7E17-101A-A91C-08002B2ECDA9:3")
+                _descriptions.Add("49691C90-7E17-101A-A91C-08002B2ECDA9:3", "Relevance")
+            End If
+
             Dim uniqueTypes As List(Of String) = New List(Of String)()
-            Dim items As List(Of Item) = Folder.GetItems()
+            Dim items As List(Of Item) = Me.Folder.Items.ToList()
 
             For Each item In items
                 Dim itemTypeText As String = item.PropertiesByCanonicalName("System.ItemTypeText").Text

@@ -1,0 +1,68 @@
+﻿Imports System.Drawing
+Imports System.Threading
+
+Public Class SearchFolder
+    Inherits Folder
+
+    Public Property Terms As String
+    Public Property Parent As Folder
+
+    Public Shared Function FromTerms(terms As String, parent As Folder) As SearchFolder
+        Return New SearchFolder(getShellItem(terms, parent)) With {.View = "Content", .Terms = terms, .Parent = parent}
+    End Function
+
+    Private Shared Function getShellItem(terms As String, parent As Folder) As IShellItem2
+        Dim factory As ISearchFolderItemFactory = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_SearchFolderItemFactory))
+        Dim arr As IShellItemArray
+        Dim pidls As List(Of Pidl)
+        If parent.Pidl.Equals(Shell.GetSpecialFolder("This computer").Pidl) Then
+            pidls = parent.GetItems().Where(Function(i) TypeOf i Is Folder).Select(Function(i) i.Pidl).ToList()
+        Else
+            pidls = New List(Of Pidl)() From {parent.Pidl}
+        End If
+        Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), arr)
+        factory.SetScope(arr)
+        Dim qpm As IQueryParserManager = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_QueryParserManager))
+        Dim qp As IQueryParser
+        qpm.CreateLoadedParser("SystemIndex", &H800, GetType(IQueryParser).GUID, qp)
+        Dim qs As IQuerySolution
+        qp.Parse(terms, Nothing, qs)
+        Dim cond As ICondition
+        qs.GetQuery(cond, Nothing)
+        Dim st As SYSTEMTIME
+        Functions.GetLocalTime(st)
+        Dim resolvedCond As ICondition
+        qs.Resolve(cond, &H40, st, resolvedCond)
+        factory.SetCondition(resolvedCond)
+        factory.SetDisplayName("Search in " & parent.DisplayName)
+        Dim shellItem As IShellItem2
+        factory.GetShellItem(GetType(IShellItem2).GUID, shellItem)
+        Return shellItem
+    End Function
+
+    Public Sub New(shellItem2 As IShellItem2)
+        MyBase.New(shellItem2, Nothing, False)
+
+        Me.View = "Content"
+        Me.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Text"
+        Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
+    End Sub
+
+    Public Sub Update(terms As String)
+        If Not _cancellationTokenSource Is Nothing Then
+            _cancellationTokenSource.Cancel()
+        End If
+        Me.Terms = terms
+        Me.Refresh()
+        For Each item In _items.ToList()
+            item._logicalParent = Nothing
+        Next
+        _items.Clear()
+        _isEnumerated = False
+        Me.GetItemsAsync()
+    End Sub
+
+    Protected Overrides Sub MakeNewShellItem()
+        _shellItem2 = getShellItem(Me.Terms, Me.Parent)
+    End Sub
+End Class

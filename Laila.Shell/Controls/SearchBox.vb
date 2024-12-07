@@ -1,14 +1,19 @@
-﻿Imports System.Windows
+﻿Imports System.Threading
+Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
+Imports Laila.Shell.Helpers
 
 Namespace Controls
     Public Class SearchBox
         Inherits Control
 
-        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(SearchBox), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(SearchBox), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
+        Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(SearchBox), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private PART_TextBox As TextBox
+        Private PART_CancelButton As Button
+        Private _timer As Timer
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(SearchBox), New FrameworkPropertyMetadata(GetType(SearchBox)))
@@ -18,36 +23,36 @@ Namespace Controls
             MyBase.OnApplyTemplate()
 
             PART_TextBox = Me.Template.FindName("PART_TextBox", Me)
+            PART_CancelButton = Me.Template.FindName("PART_CancelButton", Me)
 
-            AddHandler Me.PART_TextBox.PreviewKeyDown,
+            AddHandler Me.PART_TextBox.PreviewKeyUp,
                 Sub(s As Object, e As KeyEventArgs)
-                    If e.Key = Key.Enter AndAlso Not String.IsNullOrWhiteSpace(Me.PART_TextBox.Text) Then
-                        Dim factory As ISearchFolderItemFactory = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_SearchFolderItemFactory))
-                        Dim arr As IShellItemArray
-                        Dim pidls As List(Of Pidl) = Me.Folder.Items.Where(Function(i) TypeOf i Is Folder).Select(Function(i) i.Pidl).ToList()
-                        If Not Me.Folder.Pidl.Equals(Shell.GetSpecialFolder("This computer").Pidl) Then pidls.Insert(0, Me.Folder.Pidl)
-                        Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), arr)
-                        'Functions.SHCreateShellItemArrayFromShellItem(Me.Folder.ShellItem2, GetType(IShellItemArray).GUID, arr)
-                        factory.SetScope(arr)
-                        Dim qpm As IQueryParserManager = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_QueryParserManager))
-                        Dim qp As IQueryParser
-                        qpm.CreateLoadedParser("SystemIndex", &H800, GetType(IQueryParser).GUID, qp)
-                        Dim qs As IQuerySolution
-                        qp.Parse(Me.PART_TextBox.Text, Nothing, qs)
-                        Dim cond As ICondition
-                        qs.GetQuery(cond, Nothing)
-                        Dim st As SYSTEMTIME
-                        Functions.GetLocalTime(st)
-                        Dim resolvedCond As ICondition
-                        qs.Resolve(cond, &H40, st, resolvedCond)
-                        factory.SetCondition(resolvedCond)
-                        factory.SetDisplayName("Search in " & Me.Folder.DisplayName)
-                        Dim shellItem As IShellItem2
-                        factory.GetShellItem(GetType(IShellItem2).GUID, shellItem)
-                        Dim f As Folder = New Folder(shellItem, Nothing)
-                        f.View = "Content"
-                        Me.Folder = f
+                    If Not _timer Is Nothing Then
+                        _timer.Dispose()
                     End If
+
+                    _timer = New Timer(
+                        Sub()
+                            _timer.Dispose()
+                            _timer = Nothing
+
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    If Not TypeOf Me.Folder Is SearchFolder Then
+                                        Me.Folder = SearchFolder.FromTerms(Me.PART_TextBox.Text, Me.Folder)
+                                    ElseIf Not String.IsNullOrWhiteSpace(Me.PART_TextBox.Text) Then
+                                        CType(Me.Folder, SearchFolder).Update(Me.PART_TextBox.Text)
+                                    Else
+                                        Me.Navigation.Back()
+                                    End If
+                                End Sub)
+                        End Sub, Nothing, 450, Timeout.Infinite)
+                End Sub
+
+            AddHandler Me.PART_CancelButton.Click,
+                Sub(s As Object, e As EventArgs)
+                    Me.PART_TextBox.Text = ""
+                    Me.Navigation.Back()
                 End Sub
         End Sub
 
@@ -59,5 +64,21 @@ Namespace Controls
                 SetValue(FolderProperty, value)
             End Set
         End Property
+
+        Public Property Navigation As Navigation
+            Get
+                Return GetValue(NavigationProperty)
+            End Get
+            Set(value As Navigation)
+                SetValue(NavigationProperty, value)
+            End Set
+        End Property
+
+        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim sb As SearchBox = d
+            If Not e.NewValue Is Nothing AndAlso TypeOf e.NewValue Is SearchFolder Then
+                sb.PART_TextBox.Text = CType(e.NewValue, SearchFolder).Terms
+            End If
+        End Sub
     End Class
 End Namespace

@@ -8,8 +8,12 @@ Public Class NotifyPropertyChangedBase
 
     Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 
+    Public Property IsNotifying As Boolean = True
+
     Public Sub NotifyOfPropertyChange(propertyName As String)
-        RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
+        If Me.IsNotifying Then
+            RaiseEvent PropertyChanged(Me, New PropertyChangedEventArgs(propertyName))
+        End If
     End Sub
 
     Protected Sub SetValue(Of T)(ByRef member As T, value As T, <CallerMemberName> Optional propertyName As String = "")

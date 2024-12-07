@@ -74,7 +74,7 @@ Namespace Controls
             Me.PART_TextBox.IsEnabled = False
 
             If INVALID_VALUE.Equals(Me.SelectedValue) Then
-                Dim item As Item = Item.FromParsingName(Me.PART_TextBox.Text, Nothing)
+                Dim item As Item = Item.FromParsingName(Me.PART_TextBox.Text, Nothing, False)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                     CType(item, Folder).LastScrollOffset = New Point()
                     Me.Folder = item
@@ -105,23 +105,6 @@ Namespace Controls
             Me.PART_TextBox.IsEnabled = False
             Me.IsLoading = True
             Me.ShowNavigationButtons(Me.Folder, False)
-
-            clearSuggestionItems()
-        End Sub
-
-        Private Sub clearSuggestionItems()
-            Dim provider As AddressBarSuggestionProvider = Me.Provider
-            provider._lock.Wait()
-            Try
-                If Not provider._items Is Nothing Then
-                    For Each item In provider._items
-                        item.MaybeDispose()
-                    Next
-                End If
-                provider._items = Nothing
-            Finally
-                provider._lock.Release()
-            End Try
         End Sub
 
         Protected Overrides Sub TextBox_LostFocus(s As Object, e As RoutedEventArgs)
@@ -242,7 +225,6 @@ Namespace Controls
                             End If
                         End Function
                     Task.Run(Sub() func(subFoldersButton))
-                    currentFolder.MaybeDispose()
 
                     panel.Measure(New Size(1000, 1000))
                     If totalWidth + panel.DesiredSize.Width < Me.ActualWidth - 60 Then
@@ -257,7 +239,6 @@ Namespace Controls
                     End If
                     currentFolder = parent
                     If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
-                        currentFolder.MaybeDispose()
                         currentFolder = Nothing
                     End If
                 End While
@@ -297,7 +278,6 @@ Namespace Controls
                         End If
                         currentFolder = parent
                         If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
-                            currentFolder.MaybeDispose()
                             currentFolder = Nothing
                         End If
                     End While
@@ -319,7 +299,6 @@ Namespace Controls
                 End If
 
                 Me.IsLoading = False
-                clearSuggestionItems()
 
                 For Each f In previousVisibleFolders.Where(Function(f2) Not _visibleFolders.Contains(f2))
                     f.IsVisibleInAddressBar = False
@@ -362,8 +341,6 @@ Namespace Controls
                         f.IsVisibleInAddressBar = False
                     Next
                     _visibleFolders.Clear()
-
-                    clearSuggestionItems()
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

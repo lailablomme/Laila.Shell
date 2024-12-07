@@ -45,7 +45,7 @@ Namespace Controls
             Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
 
-            Me.PART_ListBox.Visibility = Visibility.Hidden
+            'Me.PART_ListBox.Visibility = Visibility.Hidden
 
             If Not Me.Folder Is Nothing Then
                 Me.MakeBinding(Me.Folder)
@@ -191,6 +191,7 @@ Namespace Controls
                     Using Shell.OverrideCursor(Cursors.Wait)
                         Me.SelectedItems = {clickedItem}
                         If TypeOf clickedItem Is Folder Then
+                            CType(clickedItem, Folder).LastScrollOffset = New Point()
                             Me.Host.Folder = clickedItem
                             UIHelper.OnUIThread(
                                 Sub()
@@ -410,15 +411,15 @@ Namespace Controls
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = TryCast(d, BaseFolderView)
 
-            bfv.IsLoading = True
+            'bfv.IsLoading = True
 
             ' stop recording time spent
             If Not bfv._timeSpentTimer Is Nothing Then bfv._timeSpentTimer.Dispose()
 
             ' hide listview so no-one sees us binding to the new folder and restoring the scroll position
-            If Not bfv.PART_ListBox Is Nothing Then
-                bfv.PART_ListBox.Visibility = Visibility.Hidden
-            End If
+            'If Not bfv.PART_ListBox Is Nothing Then
+            '    bfv.PART_ListBox.Visibility = Visibility.Hidden
+            'End If
 
             If Not e.OldValue Is Nothing Then
                 Dim oldValue As Folder = e.OldValue
@@ -453,13 +454,6 @@ Namespace Controls
                             End Sub)
                     End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
 
-                ' clear sorting and grouping for faster loading
-                newValue.ItemsSortPropertyName = Nothing
-                newValue.ItemsGroupByPropertyName = Nothing
-
-                ' load items
-                Await newValue.GetItemsAsync()
-
                 ' set sorting and grouping
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(newValue.FullPath)
                 newValue.ItemsSortPropertyName = folderViewState.SortPropertyName
@@ -471,6 +465,9 @@ Namespace Controls
 
                 ' bind view
                 bfv.MakeBinding(e.NewValue)
+
+                ' load items
+                Await newValue.GetItemsAsync()
 
                 ' async because otherwise we're a tad too early
                 UIHelper.OnUIThreadAsync(
@@ -486,11 +483,11 @@ Namespace Controls
                         bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv._lastScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
 
                         ' show listview
-                        bfv.PART_ListBox.Visibility = Visibility.Visible
+                        'bfv.PART_ListBox.Visibility = Visibility.Visible
                     End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
 
-            bfv.IsLoading = False
+            'bfv.IsLoading = False
         End Sub
 
         Protected Overridable Sub OnBeforeRestoreScrollOffset()

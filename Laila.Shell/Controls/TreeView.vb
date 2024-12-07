@@ -332,9 +332,6 @@ Namespace Controls
                         currentFolder = parent
                         parent = If(currentFolder._logicalParent Is Nothing, currentFolder.GetParent(), currentFolder._logicalParent)
                     End While
-                    If Not parent Is Nothing Then
-                        parent.MaybeDispose()
-                    End If
 
                     Dim tf As Folder
                     If Me.Items.ToList().Exists(Function(f1) f1.FullPath = currentFolder.FullPath AndAlso f1.TreeRootIndex <> -1) Then
@@ -342,13 +339,9 @@ Namespace Controls
                     Else
                         tf = Nothing
                     End If
-                    currentFolder.MaybeDispose()
 
                     Dim finish As Action(Of Folder) =
                         Sub(finishFolder As Folder)
-                            For Each item In list
-                                item.MaybeDispose()
-                            Next
                             If Not callback Is Nothing Then
                                 callback(finishFolder)
                             End If
@@ -360,7 +353,6 @@ Namespace Controls
                         Dim func As Func(Of Folder, Func(Of Boolean, Task), Task) =
                             Async Function(item As Folder, callback2 As Func(Of Boolean, Task)) As Task
                                 Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
-                                item.MaybeDispose()
                                 If Not tf2 Is Nothing Then
                                     tf.IsExpanded = True
                                     Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)

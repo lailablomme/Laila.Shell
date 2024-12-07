@@ -23,39 +23,40 @@ Public Class Item
     Private _isCut As Boolean
     Private _attributes As SFGAO
     Private _treeRootIndex As Long = -1
-    Private _shellItem2 As IShellItem2
+    Protected _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
     Private _shellItemHistory As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As Object = New Object()
+    Protected Property _doKeepAlive As Boolean
 
-    Public Shared Function FromParsingName(parsingName As String, parent As Folder) As Item
+    Public Shared Function FromParsingName(parsingName As String, parent As Folder, doKeepAlive As Boolean) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, parent)
+                Return New Folder(shellItem2, parent, doKeepAlive)
             Else
-                Return New Item(shellItem2, parent)
+                Return New Item(shellItem2, parent, doKeepAlive)
             End If
         Else
             Return Nothing
         End If
     End Function
 
-    Public Shared Function FromPidl(pidl As IntPtr, parent As Folder) As Item
+    Public Shared Function FromPidl(pidl As IntPtr, parent As Folder, doKeepAlive As Boolean) As Item
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromPidl(pidl)
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, parent)
+                Return New Folder(shellItem2, parent, doKeepAlive)
             Else
-                Return New Item(shellItem2, parent)
+                Return New Item(shellItem2, parent, doKeepAlive)
             End If
         Else
             Return Nothing
@@ -113,10 +114,11 @@ Public Class Item
         Return fullPath
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean)
         _objectCount += 1
         _objectId = _objectCount
         _shellItem2 = shellItem2
+        _doKeepAlive = doKeepAlive
         If Not shellItem2 Is Nothing Then
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting PIDL", DateTime.Now)
             Dim ptr As IntPtr, pidl As IntPtr
@@ -172,7 +174,9 @@ Public Class Item
     End Property
 
     Public Overridable Sub MaybeDispose()
-        If Not _logicalParent.IsActiveInFolderView AndAlso Not Me.IsVisibleInTree Then
+        If Not _doKeepAlive _
+            AndAlso (_logicalParent Is Nothing OrElse Not _logicalParent.IsActiveInFolderView) _
+            AndAlso Not Me.IsVisibleInTree Then
             Me.Dispose()
         End If
     End Sub
@@ -184,7 +188,6 @@ Public Class Item
         Set(value As Long)
             SetValue(_treeRootIndex, value)
             Me.NotifyOfPropertyChange("TreeSortKey")
-            Me.MaybeDispose()
         End Set
     End Property
 
@@ -216,6 +219,31 @@ Public Class Item
         End Get
     End Property
 
+    Protected Overridable Sub MakeNewShellItem()
+        Dim ptr As IntPtr
+        Try
+            Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
+            If IntPtr.Zero.Equals(ptr) Then
+                Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+            End If
+            If Not IntPtr.Zero.Equals(ptr) Then
+                _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
+                _shellItem2.Update(IntPtr.Zero)
+                _shellItemHistory.Add(_shellItem2)
+            End If
+        Finally
+            If Not IntPtr.Zero.Equals(ptr) Then
+                Marshal.Release(ptr)
+            End If
+        End Try
+    End Sub
+
+    Public ReadOnly Property TypeAsString As String
+        Get
+            Return Me.GetType().ToString()
+        End Get
+    End Property
+
     Private _refreshLock As Object = New Object()
     Public Overridable Sub Refresh()
         Shell.SlowTaskQueue.Add(
@@ -227,22 +255,7 @@ Public Class Item
                         Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
                         If Not _shellItem2 Is Nothing Then
-                            Dim ptr As IntPtr
-                            Try
-                                Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
-                                If IntPtr.Zero.Equals(ptr) Then
-                                    Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
-                                End If
-                                If Not IntPtr.Zero.Equals(ptr) Then
-                                    _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
-                                    _shellItem2.Update(IntPtr.Zero)
-                                    _shellItemHistory.Add(_shellItem2)
-                                End If
-                            Finally
-                                If Not IntPtr.Zero.Equals(ptr) Then
-                                    Marshal.Release(ptr)
-                                End If
-                            End Try
+                            Me.MakeNewShellItem()
                         End If
 
                         _properties = New HashSet(Of [Property])()
@@ -306,7 +319,7 @@ Public Class Item
                 Me.ShellItem2.GetParent(parentShellItem2)
             End If
             If Not parentShellItem2 Is Nothing Then
-                Return New Folder(parentShellItem2, Nothing)
+                Return New Folder(parentShellItem2, Nothing, True)
             End If
         End If
 
@@ -705,129 +718,121 @@ Public Class Item
         End Get
     End Property
 
-    'Public Overridable ReadOnly Property Properties(key As PROPERTYKEY) As [Property]
-    '    Get
-    '        Dim propertyDescription As IPropertyDescription
-    '        Try
-    '            Functions.PSGetPropertyDescription(key, GetType(IPropertyDescription).GUID, propertyDescription)
-    '            If Not propertyDescription Is Nothing Then
-    '                Dim canonicalName As String
-    '                propertyDescription.GetCanonicalName(canonicalName)
-    '                Return Me.Properties(canonicalName)
-    '            Else
-    '                Throw New Exception(String.Format("Property '{0}, {1}' not found.", key.fmtid.ToString(), key.pid))
-    '            End If
-    '        Finally
-    '            If Not propertyDescription Is Nothing Then
-    '                Marshal.ReleaseComObject(propertyDescription)
-    '            End If
-    '        End Try
-    '    End Get
-    'End Property
-
     Public ReadOnly Property ContentViewModeForBrowseProperties As [Property]()
         Get
-            Dim PKEY_System_PropList_ContentViewModeForBrowse As New PROPERTYKEY() With {
+            If Not disposedValue Then
+                Dim PKEY_System_PropList_ContentViewModeForBrowse As New PROPERTYKEY() With {
                 .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                 .pid = 13
             }
-            Dim system_PropList_ContentViewModeForBrowse As String = Me.PropertiesByKey(PKEY_System_PropList_ContentViewModeForBrowse).Text
-            If Not String.IsNullOrWhiteSpace(system_PropList_ContentViewModeForBrowse) Then
-                Dim propertyNames() As String = system_PropList_ContentViewModeForBrowse.Substring(5).Split(";")
-                Dim properties As List(Of [Property]) = New List(Of [Property])()
-                For Each propCanonicalName In propertyNames
-                    Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName.TrimStart("~"))
-                    If Not prop Is Nothing Then
-                        properties.Add(prop)
-                    Else
+                Dim system_PropList_ContentViewModeForBrowse As String = Me.PropertiesByKey(PKEY_System_PropList_ContentViewModeForBrowse).Text
+                If Not String.IsNullOrWhiteSpace(system_PropList_ContentViewModeForBrowse) Then
+                    Dim propertyNames() As String = system_PropList_ContentViewModeForBrowse.Substring(5).Split(";")
+                    Dim properties As List(Of [Property]) = New List(Of [Property])()
+                    For Each propCanonicalName In propertyNames
+                        Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName.TrimStart("~"))
+                        If Not prop Is Nothing Then
+                            properties.Add(prop)
+                        Else
+                            properties.Add(Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"))
+                        End If
+                    Next
+                    While properties.Count < 6
                         properties.Add(Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"))
-                    End If
-                Next
-                While properties.Count < 6
-                    properties.Add(Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"))
-                End While
-                Return properties.ToArray()
+                    End While
+                    Return properties.ToArray()
+                Else
+                    Return {
+                        Me.PropertiesByCanonicalName("System.ItemNameDisplay"),
+                        Me.PropertiesByCanonicalName("System.ItemTypeText"),
+                        Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"),
+                        Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"),
+                        Me.PropertiesByCanonicalName("System.DateModified"),
+                        Me.PropertiesByCanonicalName("System.Size")
+                    }
+                End If
             Else
-                Return {
-                    Me.PropertiesByCanonicalName("System.ItemNameDisplay"),
-                    Me.PropertiesByCanonicalName("System.ItemTypeText"),
-                    Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"),
-                    Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"),
-                    Me.PropertiesByCanonicalName("System.DateModified"),
-                    Me.PropertiesByCanonicalName("System.Size")
-                }
+                Return Nothing
             End If
         End Get
     End Property
 
     Public ReadOnly Property InfoTip As String
         Get
-            Dim PKEY_System_InfoTipText As New PROPERTYKEY() With {
+            If Not disposedValue Then
+                Dim PKEY_System_InfoTipText As New PROPERTYKEY() With {
                 .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                 .pid = 4
             }
-            Dim system_InfoTipText As String = Me.PropertiesByKey(PKEY_System_InfoTipText).Text
-            Dim properties() As String
-            If Not String.IsNullOrWhiteSpace(system_InfoTipText) Then
-                properties = system_InfoTipText.Substring(5).Split(";")
-            Else
-                properties = {"System.ItemTypeText", "System.Size"}
-            End If
-            Dim text As List(Of String) = New List(Of String)()
-            Dim i As Integer = 0
-            For Each propCanonicalName In properties
-                Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
-                If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
-                    text.Add(prop.DisplayName & ": " & prop.Text)
+                Dim system_InfoTipText As String = Me.PropertiesByKey(PKEY_System_InfoTipText).Text
+                Dim properties() As String
+                If Not String.IsNullOrWhiteSpace(system_InfoTipText) Then
+                    properties = system_InfoTipText.Substring(5).Split(";")
+                Else
+                    properties = {"System.ItemTypeText", "System.Size"}
                 End If
-                i += 1
-            Next
-            Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty
-            Try
-                System_StorageProviderUIStatus =
+                Dim text As List(Of String) = New List(Of String)()
+                Dim i As Integer = 0
+                For Each propCanonicalName In properties
+                    Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
+                    If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
+                        text.Add(prop.DisplayName & ": " & prop.Text)
+                    End If
+                    i += 1
+                Next
+                Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty
+                Try
+                    System_StorageProviderUIStatus =
                     [Property].FromKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey, Me.PropertyStore)
-                If System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                    If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.Text) Then
-                        text.Add(System_StorageProviderUIStatus.DisplayName & ": " & System_StorageProviderUIStatus.Text)
+                    If System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                        If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.Text) Then
+                            text.Add(System_StorageProviderUIStatus.DisplayName & ": " & System_StorageProviderUIStatus.Text)
+                        End If
+                        If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.ActivityText) Then
+                            text.Add(System_StorageProviderUIStatus.ActivityDisplayName & ": " & System_StorageProviderUIStatus.ActivityText)
+                        End If
                     End If
-                    If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.ActivityText) Then
-                        text.Add(System_StorageProviderUIStatus.ActivityDisplayName & ": " & System_StorageProviderUIStatus.ActivityText)
+                Finally
+                    If Not System_StorageProviderUIStatus Is Nothing Then
+                        System_StorageProviderUIStatus.Dispose()
                     End If
-                End If
-            Finally
-                If Not System_StorageProviderUIStatus Is Nothing Then
-                    System_StorageProviderUIStatus.Dispose()
-                End If
-            End Try
-            Return String.Join(vbCrLf, text)
+                End Try
+                Return String.Join(vbCrLf, text)
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
     Public ReadOnly Property TileViewProperties As String
         Get
-            Dim PKEY_System_PropList_TileInfo As New PROPERTYKEY() With {
+            If Not disposedValue Then
+                Dim PKEY_System_PropList_TileInfo As New PROPERTYKEY() With {
                 .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                 .pid = 3
             }
-            Dim system_PropList_TileInfo As String = Me.PropertiesByKey(PKEY_System_PropList_TileInfo).Text
-            Dim properties() As String
-            If Not String.IsNullOrWhiteSpace(system_PropList_TileInfo) Then
-                properties = system_PropList_TileInfo.Substring(5).Split(";")
-            Else
-                properties = {"System.ItemTypeText", "System.Size"}
-            End If
-            Dim text As List(Of String) = New List(Of String)()
-            Dim i As Integer = 0
-            For Each propCanonicalName In properties
-                If Not propCanonicalName.StartsWith("*") Then
-                    Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
-                    If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
-                        text.Add(If(i >= 2, prop.DisplayName & ": ", "") & prop.Text)
-                    End If
+                Dim system_PropList_TileInfo As String = Me.PropertiesByKey(PKEY_System_PropList_TileInfo).Text
+                Dim properties() As String
+                If Not String.IsNullOrWhiteSpace(system_PropList_TileInfo) Then
+                    properties = system_PropList_TileInfo.Substring(5).Split(";")
+                Else
+                    properties = {"System.ItemTypeText", "System.Size"}
                 End If
-                i += 1
-            Next
-            Return String.Join(vbCrLf, text)
+                Dim text As List(Of String) = New List(Of String)()
+                Dim i As Integer = 0
+                For Each propCanonicalName In properties
+                    If Not propCanonicalName.StartsWith("*") Then
+                        Dim prop As [Property] = Me.PropertiesByCanonicalName(propCanonicalName)
+                        If Not prop Is Nothing AndAlso Not String.IsNullOrWhiteSpace(prop.Text) Then
+                            text.Add(If(i >= 2, prop.DisplayName & ": ", "") & prop.Text)
+                        End If
+                    End If
+                    i += 1
+                Next
+                Return String.Join(vbCrLf, text)
+            Else
+                Return Nothing
+            End If
         End Get
     End Property
 
@@ -852,7 +857,9 @@ Public Class Item
         Get
             Dim [property] As [Property]
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
-            [property] = _properties.ToList().FirstOrDefault(Function(p) p.Key.Equals(key))
+            SyncLock _propertiesLock
+                [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
+            End SyncLock
             If [property] Is Nothing AndAlso Not disposedValue Then
                 [property] = [Property].FromKey(key, Me.ShellItem2)
                 SyncLock _propertiesLock
@@ -866,7 +873,10 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
         Get
-            Dim [property] As [Property] = _properties.ToList().FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
+            Dim [property] As [Property]
+            SyncLock _propertiesLock
+                [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
+            End SyncLock
             If [property] Is Nothing AndAlso Not disposedValue Then
                 [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                 SyncLock _propertiesLock
@@ -880,7 +890,10 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
-            Dim [property] As [Property] = _properties.ToList().FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
+            Dim [property] As [Property]
+            SyncLock _propertiesLock
+                [property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
+            End SyncLock
             If [property] Is Nothing AndAlso Not disposedValue Then
                 [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                 SyncLock _propertiesLock
@@ -1059,7 +1072,7 @@ Public Class Item
     Protected Overridable Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
             disposedValue = True
-            Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
+            'Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
 
             If disposing Then
                 ' dispose managed state (managed objects)
@@ -1074,6 +1087,9 @@ Public Class Item
                 Next
                 _shellItemHistory.Clear()
 
+                Shell.RemoveFromItemsCache(Me)
+                Me.Pidl.Dispose()
+
                 UIHelper.OnUIThread(
                     Sub()
                         If Not _logicalParent Is Nothing Then
@@ -1081,10 +1097,8 @@ Public Class Item
                             _logicalParent._isEnumerated = False
                         End If
                     End Sub)
-
-                Shell.RemoveFromItemsCache(Me)
-                Me.Pidl.Dispose()
             End If
+
             ' free unmanaged resources (unmanaged objects) and override finalizer
         End If
     End Sub
@@ -1103,6 +1117,6 @@ Public Class Item
     End Sub
 
     Public Function Clone() As Item
-        Return Item.FromPidl(Me.Pidl.AbsolutePIDL, _logicalParent)
+        Return Item.FromPidl(Me.Pidl.AbsolutePIDL, _logicalParent, _doKeepAlive)
     End Function
 End Class

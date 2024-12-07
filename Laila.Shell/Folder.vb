@@ -32,10 +32,8 @@ Public Class Folder
     Private _itemsSortPropertyName As String
     Private _itemsSortDirection As ListSortDirection
     Private _itemsGroupByPropertyName As String
-
-    Public Shared Function FromKnownFolderGuid(knownFolderGuid As Guid) As Folder
-        Return FromParsingName("shell:::" & knownFolderGuid.ToString("B"), Nothing)
-    End Function
+    Protected _cancellationTokenSource As CancellationTokenSource
+    Private _updateCompleted As TaskCompletionSource
 
     Public Shared Function FromDesktop() As Folder
         Dim ptr As IntPtr, pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -87,13 +85,13 @@ Public Class Folder
     'End Function
 
     Public Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder)
-        MyBase.New(shellItem2, parent)
+        MyBase.New(shellItem2, parent, True)
 
         shellFolder = shellFolder
     End Sub
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
-        MyBase.New(shellItem2, parent)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean)
+        MyBase.New(shellItem2, parent, doKeepAlive)
     End Sub
 
     Public ReadOnly Property ShellFolder As IShellFolder
@@ -131,8 +129,6 @@ Public Class Folder
                     item.IsExpanded = False
                 Next
             End If
-
-            Me.MaybeDispose()
         End Set
     End Property
 
@@ -142,8 +138,6 @@ Public Class Folder
         End Get
         Set(value As Boolean)
             SetValue(_isActiveInFolderView, value)
-
-            Me.MaybeDispose()
         End Set
     End Property
 
@@ -153,8 +147,6 @@ Public Class Folder
         End Get
         Set(value As Boolean)
             SetValue(_isVisibleInAddressBar, value)
-
-            Me.MaybeDispose()
         End Set
     End Property
 
@@ -164,19 +156,11 @@ Public Class Folder
         End Get
         Set(value As Boolean)
             SetValue(_isInHistory, value)
-
-            Me.MaybeDispose()
         End Set
     End Property
 
     Public Overrides Sub MaybeDispose()
-        If Not Me.IsActiveInFolderView Then
-            ' clear sorting and grouping for faster loading
-            Me.ItemsSortPropertyName = Nothing
-            Me.ItemsGroupByPropertyName = Nothing
-        End If
-        Me.DisposeItems()
-        If Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
+        If Not _doKeepAlive AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
             AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
             AndAlso (Me._logicalParent Is Nothing _
                      OrElse (Not Me._logicalParent.IsActiveInFolderView _
@@ -184,6 +168,7 @@ Public Class Folder
             AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
             Me.Dispose()
         End If
+        Me.DisposeItems()
     End Sub
 
     Public Sub DisposeItems()
@@ -381,6 +366,14 @@ Public Class Folder
                 Me.IsLoading = True
             End Sub)
 
+        If Not _cancellationTokenSource Is Nothing Then
+            _cancellationTokenSource.Cancel()
+        End If
+
+        Dim cts As CancellationTokenSource = New CancellationTokenSource()
+        _cancellationTokenSource = cts
+        _updateCompleted = New TaskCompletionSource()
+
         Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
@@ -400,24 +393,33 @@ Public Class Folder
                 Return items.Where(Function(i) pathsBefore.Contains(i.FullPath) AndAlso Not pathsAfter.Contains(i.FullPath)).ToList()
             End Function,
             Function(shellItem2 As IShellItem2)
-                Return New Folder(shellItem2, Me)
+                Return New Folder(shellItem2, Me, False)
             End Function,
             Function(shellItem2 As IShellItem2)
-                Return New Item(shellItem2, Me)
-            End Function, doRefreshItems, isAsync)
+                Return New Item(shellItem2, Me, False)
+            End Function, doRefreshItems, isAsync, cts.Token)
 
-        UIHelper.OnUIThread(
-            Sub()
-                Me.IsLoading = False
-                Debug.WriteLine("End loading " & Me.DisplayName)
-            End Sub)
+        If _cancellationTokenSource.Equals(cts) Then
+            UIHelper.OnUIThread(
+                Sub()
+                    Me.IsLoading = False
+                    Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
+                End Sub)
+
+            _updateCompleted.SetResult()
+        Else
+            UIHelper.OnUIThread(
+                Sub()
+                    Debug.WriteLine("End loading " & Me.DisplayName & " (didn't mark completion)" & If(cts.Token.IsCancellationRequested, " cancelled", ""))
+                End Sub)
+        End If
     End Sub
 
     Protected Sub updateItems(flags As UInt32,
                               add As Action(Of Item), remove As Action(Of Item),
                               getPathsBefore As Func(Of List(Of String)), getToBeRemoved As Func(Of List(Of String), List(Of String), List(Of Item)),
                               makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
-                              doRefreshItems As Boolean, isAsync As Boolean)
+                              doRefreshItems As Boolean, isAsync As Boolean, cancellationToken As CancellationToken)
         If disposedValue Then Return
 
         Dim pathsAfter As List(Of String) = New List(Of String)
@@ -470,38 +472,71 @@ Public Class Folder
                         End Try
                         If Not enumShellItems Is Nothing Then
                             Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
+                            Dim startedUpdate As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
                             'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
-                            Dim h As HRESULT = enumShellItems.Next(1, shellItems, fetched)
-                            While fetched = 1
-                                If Not h = HRESULT.Ok Then Throw New Exception(h.ToString())
-                                'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
-                                Dim attr2 As Integer = SFGAO.FOLDER
-                                shellItems(0).GetAttributes(attr2, attr2)
-                                'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting path", DateTime.Now)
-                                Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
-                                'Debug.WriteLine("{0:HH:mm:ss.ffff} " & fullPath, DateTime.Now)
-                                pathsAfter.Add(fullPath)
-                                Dim existing As Item = itemsBefore.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue)
-                                If existing Is Nothing Then
-                                    Dim newItem As Item
-                                    Try
-                                        'Debug.WriteLine("{0:HH:mm:ss.ffff} making item", DateTime.Now)
-                                        If CBool(attr2 And SFGAO.FOLDER) Then
-                                            newItem = makeNewFolder(shellItems(0))
-                                        Else
-                                            newItem = makeNewItem(shellItems(0))
-                                        End If
-                                        toAdd.Add(newItem)
-                                    Catch ex As Exception
-                                    End Try
-                                Else
-                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} Updating item", DateTime.Now)
-                                    toUpdate.Add(existing)
-                                    Marshal.ReleaseComObject(shellItems(0))
-                                End If
-                                'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
-                                h = enumShellItems.Next(1, shellItems, fetched)
-                            End While
+                            If Not cancellationToken.IsCancellationRequested Then
+                                Dim h As HRESULT = enumShellItems.Next(1, shellItems, fetched)
+                                While fetched = 1
+                                    If Not h = HRESULT.Ok Then Throw New Exception(h.ToString())
+                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
+                                    Dim attr2 As Integer = SFGAO.FOLDER
+                                    shellItems(0).GetAttributes(attr2, attr2)
+                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting path", DateTime.Now)
+                                    Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
+                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} " & fullPath, DateTime.Now)
+                                    pathsAfter.Add(fullPath)
+                                    Dim existing As Item = itemsBefore.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue)
+                                    If existing Is Nothing Then
+                                        Dim newItem As Item
+                                        Try
+                                            'Debug.WriteLine("{0:HH:mm:ss.ffff} making item", DateTime.Now)
+                                            If CBool(attr2 And SFGAO.FOLDER) Then
+                                                newItem = makeNewFolder(shellItems(0))
+                                            Else
+                                                newItem = makeNewItem(shellItems(0))
+                                            End If
+                                            toAdd.Add(newItem)
+                                        Catch ex As Exception
+                                        End Try
+                                    Else
+                                        'Debug.WriteLine("{0:HH:mm:ss.ffff} Updating item", DateTime.Now)
+                                        toUpdate.Add(existing)
+                                        Marshal.ReleaseComObject(shellItems(0))
+                                    End If
+                                    If cancellationToken.IsCancellationRequested Then Exit While
+                                    If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 Then
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                                                Dim sortPropertyName As String = Me.ItemsSortPropertyName
+                                                Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
+                                                Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
+                                                Me.IsNotifying = False
+                                                Using view.DeferRefresh()
+                                                    Me.ItemsSortPropertyName = Nothing
+                                                    Me.ItemsGroupByPropertyName = Nothing
+                                                End Using
+                                                For Each item In toAdd
+                                                    If cancellationToken.IsCancellationRequested Then Exit For
+                                                    add(item)
+                                                Next
+                                                Using view.DeferRefresh()
+                                                    Me.ItemsSortPropertyName = sortPropertyName
+                                                    Me.ItemsSortDirection = sortDirection
+                                                    Me.ItemsGroupByPropertyName = groupByPropertyName
+                                                End Using
+                                                view.Refresh()
+                                                Me.IsNotifying = True
+                                            End Sub, Threading.DispatcherPriority.Background)
+                                        toAdd.Clear()
+                                        lastUpdate = DateTime.Now
+                                        Thread.Sleep(10)
+                                    End If
+                                    If cancellationToken.IsCancellationRequested Then Exit While
+                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
+                                    h = enumShellItems.Next(1, shellItems, fetched)
+                                End While
+                            End If
                         End If
                         Me.EnumerationException = Nothing
                     Catch ex As Exception
@@ -565,35 +600,53 @@ Public Class Folder
             End Try
         End If
 
-        _isEnumerated = True
-        _isLoaded = True
+        If Not cancellationToken.IsCancellationRequested Then
+            _isEnumerated = True
+            _isLoaded = True
 
-        If doRefreshItems Then
-            For Each item In toUpdate
-                item.Refresh()
-            Next
+            If doRefreshItems Then
+                For Each item In toUpdate
+                    item.Refresh()
+                Next
+            End If
+
+            UIHelper.OnUIThread(
+                Sub()
+                    Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                    Dim sortPropertyName As String = Me.ItemsSortPropertyName
+                    Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
+                    Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
+                    Me.IsNotifying = False
+                    Using view.DeferRefresh()
+                        Me.ItemsSortPropertyName = Nothing
+                        Me.ItemsGroupByPropertyName = Nothing
+                    End Using
+                    For Each item In toAdd
+                        add(item)
+                    Next
+                    Using view.DeferRefresh()
+                        Me.ItemsSortPropertyName = sortPropertyName
+                        Me.ItemsSortDirection = sortDirection
+                        Me.ItemsGroupByPropertyName = groupByPropertyName
+                    End Using
+                    view.Refresh()
+                    Me.IsNotifying = True
+
+                    For Each item In getToBeRemoved(itemsBefore.Select(Function(i) i.FullPath).ToList(), pathsAfter)
+                        If TypeOf item Is Folder Then
+                            Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                               .Folder = item,
+                               .[Event] = SHCNE.RMDIR
+                            })
+                        End If
+                        remove(item)
+                        item.Dispose()
+                    Next
+
+                    _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
+                    Me.NotifyOfPropertyChange("HasSubFolders")
+                End Sub, Threading.DispatcherPriority.Background)
         End If
-
-        UIHelper.OnUIThread(
-            Sub()
-                For Each item In toAdd
-                    add(item)
-                Next
-
-                For Each item In getToBeRemoved(itemsBefore.Select(Function(i) i.FullPath).ToList(), pathsAfter)
-                    If TypeOf item Is Folder Then
-                        Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                           .Folder = item,
-                           .[Event] = SHCNE.RMDIR
-                        })
-                    End If
-                    remove(item)
-                    item.Dispose()
-                Next
-
-                _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
-                Me.NotifyOfPropertyChange("HasSubFolders")
-            End Sub)
     End Sub
 
     Public Property ItemsSortPropertyName As String
@@ -708,7 +761,7 @@ Public Class Folder
                                         Sub()
                                             Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
                                             If existing Is Nothing Then
-                                                _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me))
+                                                _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me, False))
                                             Else
                                                 existing.Refresh()
                                             End If
@@ -726,7 +779,7 @@ Public Class Folder
                                         Sub()
                                             Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
                                             If existing Is Nothing Then
-                                                _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me))
+                                                _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me, False))
                                             Else
                                                 existing.Refresh()
                                             End If
@@ -750,7 +803,7 @@ Public Class Folder
                                         })
                                     End If
                                     item2.Dispose()
-                                    End If
+                                End If
                             End Sub)
                     End If
                 Case SHCNE.DRIVEADD
@@ -760,7 +813,7 @@ Public Class Folder
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
                                     Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL)
                                     If Not item1 Is Nothing Then
-                                        _items.Add(New Folder(item1, Me))
+                                        _items.Add(New Folder(item1, Me, False))
                                     End If
                                 End If
                             End Sub)
@@ -808,6 +861,10 @@ Public Class Folder
 
     Protected Overrides Sub Dispose(disposing As Boolean)
         If Not disposedValue Then
+            If Not _cancellationTokenSource Is Nothing Then
+                _cancellationTokenSource.Cancel()
+            End If
+
             Me.DisposeItems()
 
             'If Not _shellFolder Is Nothing Then

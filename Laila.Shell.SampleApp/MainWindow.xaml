@@ -129,6 +129,19 @@
                            VerticalAlignment="Center" />
                     <Image Source="{Binding Folder.OverlayImage[16]}" HorizontalAlignment="Left" Width="16" Height="16"
                            VerticalAlignment="Center" />
+                    <Viewbox StretchDirection="Both" Stretch="Uniform" Width="16" Height="16">
+                        <Viewbox.Style>
+                            <Style>
+                                <Setter Property="Control.Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Folder.IsLoading}" Value="True">
+                                        <Setter Property="Control.Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Viewbox.Style>
+                        <controls:LoadingSpinner />
+                    </Viewbox>
                     <TextBlock Grid.Column="1" Text="{Binding Folder.DisplayName}" VerticalAlignment="Center" 
                                TextTrimming="CharacterEllipsis" />
                 </Grid>
@@ -222,7 +235,7 @@
                             </Button>
                         </StackPanel>
                         <controls:AddressBar Grid.Column="1" Folder="{Binding Folder}" />
-                        <controls:SearchBox Grid.Column="2" Folder="{Binding Folder}" Margin="5,0,5,0" />
+                        <controls:SearchBox Grid.Column="2" Folder="{Binding Folder}" Navigation="{Binding ., ElementName=navigation}" Margin="5,0,5,0" />
                     </Grid>
                     <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" />
                     <controls:Menus x:Name="menus" Folder="{Binding Folder}" 

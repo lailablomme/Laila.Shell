@@ -8,7 +8,7 @@ Namespace Helpers
         Implements ISuggestionProviderAsync
 
         Friend _lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
-        Friend _items As List(Of Item)
+        Friend _folder As Folder
 
         Public Async Function GetSuggestions(filter As String) As Task(Of IEnumerable) Implements ISuggestionProviderAsync.GetSuggestions
             Dim func As Func(Of Task(Of IEnumerable)) =
@@ -36,11 +36,12 @@ Namespace Helpers
                         End If
                     End If
                     If Not String.IsNullOrWhiteSpace(folderName) Then
-                        If folder Is Nothing Then folder = Item.FromParsingName(folderName, Nothing)
+                        If folder Is Nothing Then folder = Item.FromParsingName(folderName, Nothing, False)
                         If folder Is Nothing Then folder = Await Item.FromParsingNameDeepGetAsync(folderName)
                     End If
                     Dim items As List(Of Item)
                     If Not folder Is Nothing Then
+                        folder.IsVisibleInAddressBar = True
                         items = If(filter.EndsWith(IO.Path.DirectorySeparatorChar), New List(Of Item) From {folder}, New List(Of Item)).ToList() _
                             .Union((Await folder.GetItemsAsync()).Where(Function(f) _
                                 If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
@@ -53,16 +54,11 @@ Namespace Helpers
                                                                        OrElse f.FullPath.ToLower().StartsWith(fileName.ToLower())) _
                                                                 .OrderBy(Function(f) f.DisplayName).Cast(Of Item).ToList()
                     End If
-                    UIHelper.OnUIThread(
-                        Sub()
-                            If Not _items Is Nothing Then
-                                For Each item In _items
-                                    item.MaybeDispose()
-                                Next
-                            End If
-                            _items = New List(Of Item)()
-                            _items.AddRange(items)
-                        End Sub)
+
+                    If Not _folder Is Nothing Then
+                        _folder.IsVisibleInAddressBar = False
+                    End If
+                    _folder = folder
                     Return items
                 End Function
 
