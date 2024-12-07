@@ -54,6 +54,7 @@ Namespace Controls
                 Catch ex As OperationCanceledException
                     Debug.WriteLine("Menu TaskQueue was canceled.")
                 End Try
+                Functions.OleUninitialize()
             End Sub)
             _staThread2.SetApartmentState(ApartmentState.STA)
             _staThread2.Start()
