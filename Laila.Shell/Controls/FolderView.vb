@@ -120,7 +120,10 @@ Namespace Controls
                     Dim tcs As New TaskCompletionSource()
                     Shell.SlowTaskQueue.Add(
                         Sub()
-                            Dim size As UInt32 = items.Sum(Function(i) i.PropertiesByCanonicalName("System.Size").Value)
+                            Dim size As UInt64 = 0
+                            For Each item In items
+                                size += item.PropertiesByCanonicalName("System.Size").Value
+                            Next
                             If size > 0 Then
                                 Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
                                 Try

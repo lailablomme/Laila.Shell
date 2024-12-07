@@ -1,10 +1,10 @@
 ﻿Imports System.Runtime.InteropServices
 
-<StructLayout(LayoutKind.Sequential, CharSet:=CharSet.Unicode)>
+<StructLayout(LayoutKind.Sequential, CharSet:=CharSet.Auto)>
 Public Structure CM_COLUMNINFO
 	Public cbSize As UInt32
 
-	Public dwMask As UInt32
+	Public dwMask As CM_MASK
 
 	Public dwState As CM_STATE
 
