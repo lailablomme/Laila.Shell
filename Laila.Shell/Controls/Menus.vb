@@ -181,6 +181,7 @@ Namespace Controls
                     End Sub
                 Me.NewItemMenu = newItemMenu
             Else
+                newItemMenu.Dispose()
                 Me.NewItemMenu = Nothing
             End If
         End Sub
