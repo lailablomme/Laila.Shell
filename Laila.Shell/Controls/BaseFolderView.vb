@@ -33,6 +33,7 @@ Namespace Controls
         Private _typeToSearchTimer As Timer
         Private _typeToSearchString As String = ""
         Private _menu As RightClickMenu
+        Private _ignoreSelection As Boolean
         Private disposedValue As Boolean
 
         Shared Sub New()
@@ -64,7 +65,7 @@ Namespace Controls
                         _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListBox)
                         _selectionHelper.SelectionChanged =
                             Sub()
-                                If Not Me.Folder Is Nothing Then _
+                                If Not Me.Folder Is Nothing AndAlso Not _ignoreSelection Then _
                                     Me.SelectedItems = _selectionHelper.SelectedItems
                             End Sub
                         _selectionHelper.SetSelectedItems(Me.SelectedItems)
@@ -94,6 +95,12 @@ Namespace Controls
             AddHandler Me.PART_ListBox.MouseLeave, AddressOf OnListViewMouseLeave
             AddHandler Me.PreviewKeyDown, AddressOf OnListViewKeyDown
             AddHandler Me.PreviewTextInput, AddressOf OnListViewTextInput
+        End Sub
+
+        Public Sub SetSelectedItemsSoft(items As IEnumerable(Of Item))
+            _ignoreSelection = True
+            _selectionHelper.SetSelectedItems(items)
+            _ignoreSelection = False
         End Sub
 
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)

@@ -14,9 +14,11 @@ Public Class ListViewDropTarget
     Private _folderView As FolderView
     Private _lastOverItem As Item
     Private _lastDropTarget As IDropTarget
-    Private _dragOpenTimer As Timer
     Private _scrollTimer As Timer
     Private _scrollDirection As Boolean?
+    Private _prevSelectedItems As IEnumerable(Of Item)
+    Private _fileNameList() As String
+    Private _files As List(Of Item)
 
     Public Sub New(folderView As FolderView)
         _folderView = folderView
@@ -25,6 +27,10 @@ Public Class ListViewDropTarget
     Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
+        _fileNameList = Clipboard.GetFileNameList(pDataObj)
+        _files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(pDataObj)
+        _prevSelectedItems = _folderView.SelectedItems?.ToList()
+        If _prevSelectedItems Is Nothing Then _prevSelectedItems = {}
         _folderView.ActiveView.PART_ListBox.Focus()
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
     End Function
@@ -35,9 +41,12 @@ Public Class ListViewDropTarget
 
     Public Overrides Function DragLeave() As Integer
         Debug.WriteLine("DragLeave")
-        If Not _dragOpenTimer Is Nothing Then
-            _dragOpenTimer.Dispose()
+        If Not _files Is Nothing Then
+            For Each f In _files
+                f.Dispose()
+            Next
         End If
+        _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
         If Not _scrollTimer Is Nothing Then
             _scrollTimer.Dispose()
             _scrollDirection = Nothing
@@ -55,9 +64,12 @@ Public Class ListViewDropTarget
     End Function
 
     Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
-        If Not _dragOpenTimer Is Nothing Then
-            _dragOpenTimer.Dispose()
+        If Not _files Is Nothing Then
+            For Each f In _files
+                f.Dispose()
+            Next
         End If
+        _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
         If Not _scrollTimer Is Nothing Then
             _scrollTimer.Dispose()
             _scrollDirection = Nothing
@@ -148,29 +160,6 @@ Public Class ListViewDropTarget
 
         Dim overItem As Item = getOverItem(ptWIN32)
 
-        ' if we're over a folder, open it after two seconds of hovering
-        If TypeOf overItem Is Folder AndAlso Not overItem.Equals(_folderView.Folder) Then
-            If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
-                If Not _dragOpenTimer Is Nothing Then
-                    _dragOpenTimer.Dispose()
-                End If
-
-                _dragOpenTimer = New Timer(New TimerCallback(
-                    Sub()
-                        UIHelper.OnUIThread(
-                            Sub()
-                                _folderView.Folder = overItem
-                            End Sub)
-                        _dragOpenTimer.Dispose()
-                        _dragOpenTimer = Nothing
-                    End Sub), Nothing, 2000, 0)
-            End If
-        Else
-            If Not _dragOpenTimer Is Nothing Then
-                _dragOpenTimer.Dispose()
-            End If
-        End If
-
         If Not overItem Is Nothing Then
             If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 _lastOverItem = overItem
@@ -178,13 +167,39 @@ Public Class ListViewDropTarget
                 Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
                 Try
                     Using parent = overItem.GetParent()
-                        If Not parent Is Nothing Then
-                            shellFolder = parent.ShellFolder
-                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                        Else
-                            ' desktop
-                            shellFolder = Shell.Desktop.ShellFolder
-                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                        ' first check if we're not trying to drop on ourselves or our parent
+                        Dim isOurSelvesOrParent As Boolean
+                        If Not _files Is Nothing Then
+                            isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
+                            If Not isOurSelvesOrParent Then
+                                For Each file In _files
+                                    Using fileParent = file.GetParent()
+                                        isOurSelvesOrParent = Not fileParent Is Nothing _
+                                                AndAlso fileParent.Pidl.Equals(overItem.Pidl)
+                                    End Using
+                                    If isOurSelvesOrParent Then Exit For
+                                Next
+                            End If
+                        End If
+                        If Not _fileNameList Is Nothing AndAlso Not isOurSelvesOrParent Then
+                            isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
+                            If Not isOurSelvesOrParent Then
+                                isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) _
+                                        IO.Path.GetDirectoryName(f).ToLower().TrimEnd(IO.Path.DirectorySeparatorChar) _
+                                            = overItem.FullPath.ToLower().TrimEnd(IO.Path.DirectorySeparatorChar))
+                            End If
+                        End If
+
+                        If Not isOurSelvesOrParent Then
+                            ' try get droptarget
+                            If Not parent Is Nothing Then
+                                shellFolder = parent.ShellFolder
+                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                            Else
+                                ' desktop
+                                shellFolder = Shell.Desktop.ShellFolder
+                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                            End If
                         End If
                     End Using
                     If Not IntPtr.Zero.Equals(dropTargetPtr) Then
@@ -203,7 +218,7 @@ Public Class ListViewDropTarget
 
                 If Not dropTarget Is Nothing Then
                     Debug.WriteLine("Got dropTarget")
-                    _folderView.ActiveView.SelectedItems = {overItem}
+                    _folderView.ActiveView.SetSelectedItemsSoft({overItem}.Union(_prevSelectedItems))
                     If Not _lastDropTarget Is Nothing Then
                         Debug.WriteLine("      Got _lastDropTarget")
                         _lastDropTarget.DragLeave()
@@ -214,10 +229,11 @@ Public Class ListViewDropTarget
                         Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
                     Finally
                         _lastDropTarget = dropTarget
+                        customizeDropDescription(overItem, grfKeyState, pdwEffect)
                     End Try
                 Else
                     Debug.WriteLine("No dropTarget")
-                    _folderView.ActiveView.SelectedItems = Nothing
+                    _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
                     pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                     If Not _lastDropTarget Is Nothing Then
                         Try
@@ -231,14 +247,18 @@ Public Class ListViewDropTarget
                 End If
             ElseIf Not _lastDropTarget Is Nothing Then
                 Debug.WriteLine("DragOver")
-                Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
+                Try
+                    Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
+                Finally
+                    customizeDropDescription(overItem, grfKeyState, pdwEffect)
+                End Try
             Else
                 Debug.WriteLine("DROPEFFECT_NONE")
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
             End If
         Else
             Debug.WriteLine("overItem=Nothing")
-            _folderView.ActiveView.SelectedItems = Nothing
+            _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
             _lastOverItem = Nothing
             If Not _lastDropTarget Is Nothing Then
                 Try
@@ -253,4 +273,16 @@ Public Class ListViewDropTarget
 
         Return HRESULT.Ok
     End Function
+
+    Private Sub customizeDropDescription(overItem As Item, grfKeyState As MK, pdwEffect As DROPEFFECT)
+        If overItem.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" And grfKeyState.HasFlag(MK.MK_SHIFT) Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_WARNING, "Delete", "")
+        ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_COPY AndAlso Not overItem Is Nothing Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_COPY, "Copy to %1", overItem.DisplayName)
+        ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_MOVE AndAlso Not overItem Is Nothing Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_MOVE, "Move to %1", overItem.DisplayName)
+        ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_LINK AndAlso Not overItem Is Nothing Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Create shortcut in %1", overItem.DisplayName)
+        End If
+    End Sub
 End Class

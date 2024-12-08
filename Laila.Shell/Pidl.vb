@@ -68,19 +68,31 @@ Public Class Pidl
 
         ' read parent
         Dim offset As UInt32 = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32)) ' parent
-
-        ' read items
-        For i = 0 To count - 1
-            offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
-            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset))
-            Dim attr As SFGAO = SFGAO.FOLDER
-            shellItem2.GetAttributes(attr, attr)
-            If attr.HasFlag(SFGAO.FOLDER) Then
-                result.Add(New Folder(shellItem2, Nothing, True))
-            Else
-                result.Add(New Item(shellItem2, Nothing, True))
+        Dim parentShellFolder As IShellFolder
+        Try
+            If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) <> 0 Then
+                Using parentFolder = CType(Item.FromPidl(IntPtr.Add(start, offset), Nothing, True), Folder)
+                    parentShellFolder = parentFolder.ShellFolder
+                End Using
             End If
-        Next
+
+            ' read items
+            For i = 0 To count - 1
+                offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
+                Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
+                Dim attr As SFGAO = SFGAO.FOLDER
+                shellItem2.GetAttributes(attr, attr)
+                If attr.HasFlag(SFGAO.FOLDER) Then
+                    result.Add(New Folder(shellItem2, Nothing, True))
+                Else
+                    result.Add(New Item(shellItem2, Nothing, True))
+                End If
+            Next
+        Finally
+            If Not parentShellFolder Is Nothing Then
+                Marshal.ReleaseComObject(parentShellFolder)
+            End If
+        End Try
 
         Return result
     End Function

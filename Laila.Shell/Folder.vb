@@ -34,6 +34,7 @@ Public Class Folder
     Private _itemsGroupByPropertyName As String
     Protected _cancellationTokenSource As CancellationTokenSource
     Private _updateCompleted As TaskCompletionSource
+    Private _doSkipUPDATEDIR As Boolean
 
     Public Shared Function FromDesktop() As Folder
         Dim ptr As IntPtr, pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -422,6 +423,8 @@ Public Class Folder
                               doRefreshItems As Boolean, isAsync As Boolean, cancellationToken As CancellationToken)
         If disposedValue Then Return
 
+        If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = True
+
         Dim pathsAfter As List(Of String) = New List(Of String)
         Dim itemsBefore As List(Of Item)
         Dim toAdd As List(Of Item) = New List(Of Item)()
@@ -563,7 +566,7 @@ Public Class Folder
                     Dim pidl(0) As IntPtr, fetched As Integer, count As Integer = 0
                     While list.Next(1, pidl, fetched) = 0
                         Try
-                            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0))
+                            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(pidl(0), shellFolder)
                             Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItem2)
                             pathsAfter.Add(fullPath)
                             Dim existing As Item = itemsBefore.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue)
@@ -819,7 +822,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
-                                    Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL)
+                                    Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
                                     If Not item1 Is Nothing Then
                                         _items.Add(New Folder(item1, Me, False))
                                     End If
@@ -843,7 +846,8 @@ Public Class Folder
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If Me.Pidl.Equals(e.Item1Pidl) _
                         AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
-                        AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) Then
+                        AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) _
+                        AndAlso Not _doSkipUPDATEDIR Then
                         _pendingUpdateCounter += 1
                         Dim func As Func(Of Task) =
                             Async Function() As Task
@@ -857,6 +861,7 @@ Public Class Folder
                             End Function
                         Task.Run(func)
                     End If
+                    _doSkipUPDATEDIR = False
             End Select
         End If
     End Sub

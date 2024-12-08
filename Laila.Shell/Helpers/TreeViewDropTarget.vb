@@ -25,6 +25,7 @@ Public Class TreeViewDropTarget
     Private _prevSelectedItem As Item
     Private _newPinnedIndex As Long = -2
     Private _fileNameList() As String
+    Private _files As List(Of Item)
 
     Public Sub New(treeView As Laila.Shell.Controls.TreeView)
         _treeView = treeView
@@ -33,6 +34,7 @@ Public Class TreeViewDropTarget
     Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         _dataObject = pDataObj
         _fileNameList = Clipboard.GetFileNameList(pDataObj)
+        _files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(pDataObj)
         _prevSelectedItem = _treeView.SelectedItem
         _treeView.PART_ListBox.Focus()
         Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
@@ -43,6 +45,11 @@ Public Class TreeViewDropTarget
     End Function
 
     Public Overrides Function DragLeave() As Integer
+        If Not _files Is Nothing Then
+            For Each f In _files
+                f.Dispose()
+            Next
+        End If
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -68,6 +75,11 @@ Public Class TreeViewDropTarget
     End Function
 
     Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+        If Not _files Is Nothing Then
+            For Each f In _files
+                f.Dispose()
+            Next
+        End If
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -242,7 +254,7 @@ Public Class TreeViewDropTarget
 
             Debug.WriteLine("_newPinnedIndex=" & newPinnedIndex & "   overItem.TreeRootIndex=" & overItem.TreeRootIndex)
 
-            ' if we're over a folder, open it after two seconds of hovering
+            ' if we're over a folder, expand it after two seconds of hovering
             If TypeOf overItem Is Folder AndAlso newPinnedIndex = -2 Then
                 If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                     If Not _dragOpenTimer Is Nothing Then
@@ -253,9 +265,10 @@ Public Class TreeViewDropTarget
                     Sub()
                         UIHelper.OnUIThread(
                             Sub()
-                                _treeView.SetSelectedFolder(overItem)
-                                CType(overItem, Folder).IsExpanded = True
-                                _prevSelectedItem = overItem
+                                If Not CType(overItem, Folder).IsExpanded Then
+                                    CType(overItem, Folder).IsExpanded = True
+                                    _prevSelectedItem = overItem
+                                End If
                             End Sub)
                         _dragOpenTimer.Dispose()
                         _dragOpenTimer = Nothing
@@ -276,13 +289,39 @@ Public Class TreeViewDropTarget
                     Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
                     Try
                         Using parent = overItem.GetParent()
-                            If Not parent Is Nothing Then
-                                shellFolder = parent.ShellFolder
-                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                            Else
-                                ' desktop
-                                shellFolder = Shell.Desktop.ShellFolder
-                                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                            ' first check if we're not trying to drop on ourselves or our parent
+                            Dim isOurSelvesOrParent As Boolean
+                            If Not _files Is Nothing Then
+                                isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
+                                If Not isOurSelvesOrParent Then
+                                    For Each file In _files
+                                        Using fileParent = file.GetParent()
+                                            isOurSelvesOrParent = Not fileParent Is Nothing _
+                                                AndAlso fileParent.Pidl.Equals(overItem.Pidl)
+                                        End Using
+                                        If isOurSelvesOrParent Then Exit For
+                                    Next
+                                End If
+                            End If
+                            If Not _fileNameList Is Nothing AndAlso Not isOurSelvesOrParent Then
+                                isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
+                                If Not isOurSelvesOrParent Then
+                                    isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) _
+                                        IO.Path.GetDirectoryName(f).ToLower().TrimEnd(IO.Path.DirectorySeparatorChar) _
+                                            = overItem.FullPath.ToLower().TrimEnd(IO.Path.DirectorySeparatorChar))
+                                End If
+                            End If
+
+                            If Not isOurSelvesOrParent Then
+                                ' try get droptarget
+                                If Not parent Is Nothing Then
+                                    shellFolder = parent.ShellFolder
+                                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                                Else
+                                    ' desktop
+                                    shellFolder = Shell.Desktop.ShellFolder
+                                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                                End If
                             End If
                         End Using
                         If Not IntPtr.Zero.Equals(dropTargetPtr) Then
@@ -390,8 +429,14 @@ Public Class TreeViewDropTarget
     End Function
 
     Private Sub customizeDropDescription(overItem As Item, grfKeyState As MK, pdwEffect As DROPEFFECT)
-        If overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" And grfKeyState.HasFlag(MK.MK_SHIFT) Then
+        If overItem.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" And grfKeyState.HasFlag(MK.MK_SHIFT) Then
             WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_WARNING, "Delete", "")
+        ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_COPY AndAlso Not overItem Is Nothing Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_COPY, "Copy to %1", overItem.DisplayName)
+        ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_MOVE AndAlso Not overItem Is Nothing Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_MOVE, "Move to %1", overItem.DisplayName)
+        ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_LINK AndAlso Not overItem Is Nothing Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Create shortcut in %1", overItem.DisplayName)
         End If
     End Sub
 End Class

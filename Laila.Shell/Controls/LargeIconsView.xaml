@@ -62,7 +62,7 @@
                             </i:Interaction.Behaviors>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
-                                    <Setter Property="VerticalContentAlignment" Value="Top" />
+                                    <Setter Property="Margin" Value="5,1" />
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>

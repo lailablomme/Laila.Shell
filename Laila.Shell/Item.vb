@@ -49,10 +49,20 @@ Public Class Item
     End Function
 
     Public Shared Function FromPidl(pidl As IntPtr, parent As Folder, doKeepAlive As Boolean) As Item
-        Dim shellItem2 As IShellItem2 = GetIShellItem2FromPidl(pidl)
+        Dim shellItem2 As IShellItem2, shellFolder As IShellFolder
+        Try
+            shellItem2 = GetIShellItem2FromPidl(pidl, shellFolder)
+        Finally
+            If Not shellFolder Is Nothing Then
+                Marshal.ReleaseComObject(shellFolder)
+            End If
+        End Try
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
+            If Not parent Is Nothing Then
+                shellFolder = parent.ShellFolder
+            End If
             If attr.HasFlag(SFGAO.FOLDER) Then
                 Return New Folder(shellItem2, parent, doKeepAlive)
             Else
@@ -63,10 +73,14 @@ Public Class Item
         End If
     End Function
 
-    Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr) As IShellItem2
+    Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, parentShellFolder As IShellFolder) As IShellItem2
         Dim ptr As IntPtr
         Try
-            Functions.SHCreateItemFromIDList(pidl, Guids.IID_IShellItem2, ptr)
+            If parentShellFolder Is Nothing Then
+                Functions.SHCreateItemFromIDList(pidl, Guids.IID_IShellItem2, ptr)
+            Else
+                Functions.SHCreateItemWithParent(IntPtr.Zero, parentShellFolder, pidl, Guids.IID_IShellItem2, ptr)
+            End If
             Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2))
         Finally
             If Not IntPtr.Zero.Equals(ptr) Then

@@ -60,6 +60,11 @@
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
                             </i:Interaction.Behaviors>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Margin" Value="5,1" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border Padding="2" Width="69" VerticalAlignment="Top">
