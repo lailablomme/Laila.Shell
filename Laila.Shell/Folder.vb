@@ -34,7 +34,7 @@ Public Class Folder
     Private _itemsGroupByPropertyName As String
     Protected _cancellationTokenSource As CancellationTokenSource
     Private _updateCompleted As TaskCompletionSource
-    Private _doSkipUPDATEDIR As Boolean
+    Private _doSkipUPDATEDIR As DateTime?
 
     Public Shared Function FromDesktop() As Folder
         Dim ptr As IntPtr, pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -423,7 +423,7 @@ Public Class Folder
                               doRefreshItems As Boolean, isAsync As Boolean, cancellationToken As CancellationToken)
         If disposedValue Then Return
 
-        If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = True
+        If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
 
         Dim pathsAfter As List(Of String) = New List(Of String)
         Dim itemsBefore As List(Of Item)
@@ -851,7 +851,8 @@ Public Class Folder
                     If Me.Pidl.Equals(e.Item1Pidl) _
                         AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
                         AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) _
-                        AndAlso Not _doSkipUPDATEDIR Then
+                        AndAlso (Not _doSkipUPDATEDIR.HasValue _
+                                 OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 2000) Then
                         _pendingUpdateCounter += 1
                         Dim func As Func(Of Task) =
                             Async Function() As Task
@@ -865,7 +866,6 @@ Public Class Folder
                             End Function
                         Task.Run(func)
                     End If
-                    _doSkipUPDATEDIR = False
             End Select
         End If
     End Sub
