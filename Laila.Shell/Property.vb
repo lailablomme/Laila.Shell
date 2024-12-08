@@ -207,7 +207,7 @@ Public Class [Property]
         End Get
     End Property
 
-    Public ReadOnly Property Value As Object
+    Public Overridable ReadOnly Property Value As Object
         Get
             Return Me.RawValue.GetValue()
         End Get

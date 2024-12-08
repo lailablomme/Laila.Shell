@@ -74,6 +74,17 @@ Namespace Behaviors
             obj.SetValue(MinAutoSizeWidthProperty, value)
         End Sub
 
+        Public Shared ReadOnly ExtraAutoSizeMarginProperty As DependencyProperty =
+            DependencyProperty.RegisterAttached("ExtraAutoSizeMargin", GetType(Double), GetType(GridViewExtBehavior), New UIPropertyMetadata(Convert.ToDouble(0)))
+
+        Public Shared Function GetExtraAutoSizeMargin(obj As DependencyObject) As Double
+            Return obj.GetValue(ExtraAutoSizeMarginProperty)
+        End Function
+
+        Public Shared Sub SetExtraAutoSizeMargin(obj As DependencyObject, value As Double)
+            obj.SetValue(ExtraAutoSizeMarginProperty, value)
+        End Sub
+
         Public Shared ReadOnly CanHideProperty As DependencyProperty =
             DependencyProperty.RegisterAttached("CanHide", GetType(Boolean), GetType(GridViewExtBehavior), New UIPropertyMetadata(True))
 
@@ -722,6 +733,8 @@ Namespace Behaviors
                             End If
                         End If
 
+                        Dim extraAutoSizeMargin As Double = GetExtraAutoSizeMargin(hc.Column)
+
                         If list.Count > 0 Then
                             ' measure available rows
                             For Each item In list
@@ -732,8 +745,8 @@ Namespace Behaviors
                                         Dim c As GridViewColumn = activeCol.Column
                                         Dim el As UIElement = VisualTreeHelper.GetChild(rp, activeCol.OriginalIndex)
                                         el.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
-                                        If Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN) > width Then
-                                            width = Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN)
+                                        If Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN + extraAutoSizeMargin) > width Then
+                                            width = Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN + extraAutoSizeMargin)
                                         End If
                                     End If
                                 End If

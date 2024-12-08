@@ -132,6 +132,16 @@ Public Class System_StorageProviderUIStatusProperty
         End Get
     End Property
 
+    Public Overrides ReadOnly Property Value As Object
+        Get
+            If Not _system_StorageProviderStateProperty Is Nothing Then
+                Return _system_StorageProviderStateProperty.Value
+            Else
+                Return Nothing
+            End If
+        End Get
+    End Property
+
     Public ReadOnly Property ActivityText As String
         Get
             If Not _system_ItemCustomState_ValuesProperty Is Nothing Then
