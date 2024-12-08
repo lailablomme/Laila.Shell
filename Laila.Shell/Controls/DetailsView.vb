@@ -171,7 +171,7 @@ Namespace Controls
             textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis)
             textBlockFactory.SetValue(TextBlock.PaddingProperty, New Thickness(0, 0, 2, 0))
             textBlockFactory.SetValue(TextBlock.TextProperty, New Binding() With {
-                .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString())),
+                .Path = New PropertyPath(If(column.CanonicalName = "System.ItemNameDisplay", "DisplayName", String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))),
                 .Mode = BindingMode.OneWay
             })
             Dim textBlockStyle As Style = New Style(GetType(TextBlock))

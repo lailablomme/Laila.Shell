@@ -151,7 +151,7 @@
                                                     <converters:DoubleConverter x:Key="doubleConverter" />
                                                 </Grid.Resources>
                                                 <TextBlock Grid.Row="0" 
-                                                           Text="{Binding ContentViewModeProperties[0].Text}" 
+                                                           Text="{Binding DisplayName}" 
                                                            TextTrimming="CharacterEllipsis" FontSize="14">
                                                     <TextBlock.Style>
                                                         <Style>
