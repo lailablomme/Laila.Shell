@@ -139,6 +139,9 @@
                                                     </Image.Style>
                                                 </Image>
                                             </Border>
+                                            <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
+                                                      VerticalAlignment="Top" HorizontalAlignment="Left" x:Name="SelectionCheckBox"
+                                                      Visibility="Collapsed" Margin="-3,0,0,0"/>
                                             <Grid Grid.Row="1" HorizontalAlignment="Center" MaxWidth="96">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -187,6 +190,36 @@
                                             </Grid>
                                         </Grid>
                                     </Border>
+                                    <DataTemplate.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding CheckBoxVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="Visible" />
+                                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}}}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding CheckBoxVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="Visible" />
+                                                <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}}}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding CheckBoxVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="Visible" />
+                                                <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}}}" Value="False" />
+                                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}}}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Hidden" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>

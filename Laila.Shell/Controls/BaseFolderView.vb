@@ -34,6 +34,7 @@ Namespace Controls
         Private _typeToSearchString As String = ""
         Private _menu As RightClickMenu
         Private _ignoreSelection As Boolean
+        Private _checkBoxVisibility As Visibility = Visibility.Collapsed
         Private disposedValue As Boolean
 
         Shared Sub New()
@@ -102,6 +103,15 @@ Namespace Controls
             _selectionHelper.SetSelectedItems(items)
             _ignoreSelection = False
         End Sub
+
+        Public Property CheckBoxVisibility As Visibility
+            Get
+                Return _checkBoxVisibility
+            End Get
+            Set(value As Visibility)
+                _checkBoxVisibility = value
+            End Set
+        End Property
 
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox Then
@@ -426,6 +436,8 @@ Namespace Controls
                 ' clear view binding
                 bfv.ClearBinding()
             End If
+
+            bfv.CheckBoxVisibility = If(Shell.Settings.DoShowCheckBoxesToSelect, Visibility.Visible, Visibility.Collapsed)
 
             If Not e.NewValue Is Nothing Then
                 Dim newValue As Folder = e.NewValue

@@ -57,15 +57,19 @@
                             </ListView.Resources>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel SpacingMode="None" Orientation="Vertical" ItemSize="250,20">
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None" Orientation="Vertical">
                                         <vwp:VirtualizingWrapPanel.Style>
                                             <Style>
+                                                <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,20" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="0">
                                                         <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="20,0,0,0" />
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="1">
                                                         <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="0,0,0,0" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding CheckBoxVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="Visible">
+                                                        <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,20" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -81,12 +85,16 @@
                                     <Border>
                                         <Grid>
                                             <Grid.ColumnDefinitions >
+                                                <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="30" />
                                                 <ColumnDefinition Width="16" />
                                                 <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="200" SharedSizeGroup="A" />
                                             </Grid.ColumnDefinitions>
-                                            <ItemsControl Margin="0,0,2,0" ItemsSource="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}">
+                                            <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
+                                                      VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                      Visibility="Collapsed"/>
+                                            <ItemsControl Grid.Column="1" Margin="0,0,2,0" ItemsSource="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Image Source="{Binding .}" Width="14" Height="16" VerticalAlignment="Center" />
@@ -108,7 +116,7 @@
                                                     </Style>
                                                 </ItemsControl.Style>
                                             </ItemsControl>
-                                            <Image Grid.Column="1" Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
+                                            <Image Grid.Column="2" Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                 <Image.Style>
                                                     <Style>
@@ -123,7 +131,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Grid.Column="1" Source="{Binding OverlayImageAsync[16], IsAsync=True}" Width="16" Height="16" 
+                                            <Image Grid.Column="2" Source="{Binding OverlayImageAsync[16], IsAsync=True}" Width="16" Height="16" 
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                     VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                 <Image.Style>
@@ -139,7 +147,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <TextBlock Grid.Column="3" MaxWidth="200"
+                                            <TextBlock Grid.Column="4" MaxWidth="200"
                                                        Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
                                                     <Style>
@@ -153,6 +161,36 @@
                                             </TextBlock>
                                         </Grid>
                                     </Border>
+                                    <DataTemplate.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding CheckBoxVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="Visible" />
+                                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}}}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding CheckBoxVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="Visible" />
+                                                <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}}}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding CheckBoxVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="Visible" />
+                                                <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}}}" Value="False" />
+                                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}}}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Hidden" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
