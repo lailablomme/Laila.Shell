@@ -35,10 +35,10 @@ Public Class Settings
                 If Not hideFileExt Is Nothing AndAlso TypeOf hideFileExt Is Integer Then
                     Return CType(hideFileExt, Integer) <> 0
                 Else
-                    Return True
+                    Return False
                 End If
             Else
-                Return True
+                Return False
             End If
         End Using
     End Function
