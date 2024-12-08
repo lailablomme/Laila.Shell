@@ -219,9 +219,14 @@ Namespace Controls
                     End Using
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                     If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
-                            AndAlso Me.SelectedItems.Contains(clickedItem) _
-                            AndAlso Keyboard.Modifiers = ModifierKeys.None Then
-                        e.Handled = True
+                            AndAlso Me.SelectedItems.Contains(clickedItem) Then
+                        Dim checkBox As CheckBox = UIHelper.GetParentOfType(Of CheckBox)(e.OriginalSource)
+                        If Not checkBox Is Nothing AndAlso checkBox.IsChecked Then
+                            checkBox.IsChecked = False
+                            e.Handled = True
+                        ElseIf Keyboard.Modifiers = ModifierKeys.None Then
+                            e.Handled = True
+                        End If
                     End If
                 ElseIf e.RightButton = MouseButtonState.Pressed AndAlso
                         UIHelper.GetParentOfType(Of Primitives.ScrollBar)(e.OriginalSource) Is Nothing AndAlso
