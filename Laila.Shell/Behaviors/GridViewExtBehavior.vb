@@ -194,6 +194,7 @@ Namespace Behaviors
                         If Not view Is Nothing AndAlso view.Count = 0 Then
                             resizeVisibleRows()
                         End If
+                        UpdateSortGlyphs()
 
                         If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
                             AddHandler CType(_listView.ItemsSource, INotifyCollectionChanged).CollectionChanged,
@@ -214,7 +215,7 @@ Namespace Behaviors
                    Dim headerRowGrid As Grid = New Grid()
                    headerRowGrid.ColumnDefinitions.Add(New ColumnDefinition() With {.Width = New GridLength(MARGIN_LEFT, GridUnitType.Pixel)})
                    headerRowGrid.ColumnDefinitions.Add(New ColumnDefinition() With {.Width = New GridLength(1, GridUnitType.Star)})
-                   headerRowScrollViewer.Content = headerRowGrid
+                   headerRowScrollViewer.Content = New AdornerDecorator() With {.Child = headerRowGrid}
                    _headerRowPresenter.SetValue(Grid.ColumnProperty, 1)
                    headerRowGrid.Children.Add(_headerRowPresenter)
                    Dim headerRowMarginPresenter As GridViewHeaderRowPresenter = New GridViewHeaderRowPresenter()
@@ -430,24 +431,26 @@ Namespace Behaviors
 
         Public Sub UpdateSortGlyphs()
             ' fix sort glyphs
-            Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
-            For Each ch In hcs
-                GridViewColumnHeaderGlyphAdorner.Remove(ch, "GridViewExtBehavior.Sort")
-            Next
+            If Not _headerRowPresenter Is Nothing Then
+                Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+                For Each ch In hcs
+                    GridViewColumnHeaderGlyphAdorner.Remove(ch, "GridViewExtBehavior.Sort")
+                Next
 
-            Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
-            If Not view Is Nothing AndAlso (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
-                OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
-                AndAlso view.SortDescriptions.Count > 0 Then
-                Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
-                Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
-                If Not currentSortedColumnHeader Is Nothing Then
-                    If currentSort.Direction = ListSortDirection.Ascending Then
-                        GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
-                           "pack://application:,,,/Laila.Shell;component/Images/sortasc.png", HorizontalAlignment.Center)
-                    Else
-                        GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
-                           "pack://application:,,,/Laila.Shell;component/Images/sortdesc.png", HorizontalAlignment.Center)
+                Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
+                If Not view Is Nothing AndAlso (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
+                    OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
+                    AndAlso view.SortDescriptions.Count > 0 Then
+                    Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
+                    Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
+                    If Not currentSortedColumnHeader Is Nothing Then
+                        If currentSort.Direction = ListSortDirection.Ascending Then
+                            GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
+                               "pack://application:,,,/Laila.Shell;component/Images/sortasc.png", HorizontalAlignment.Center)
+                        Else
+                            GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
+                               "pack://application:,,,/Laila.Shell;component/Images/sortdesc.png", HorizontalAlignment.Center)
+                        End If
                     End If
                 End If
             End If

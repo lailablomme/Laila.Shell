@@ -435,6 +435,42 @@ Public Class Folder
                 itemsBefore = _items.ToList()
             End Sub)
 
+        Dim addItems As System.Action =
+            Sub()
+                If toAdd.Count > 0 Then
+                    Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+
+                    ' save sorting/grouping
+                    Dim sortPropertyName As String = Me.ItemsSortPropertyName
+                    Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
+                    Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
+
+                    ' disable sorting grouping
+                    If Not TypeOf Me Is SearchFolder Then
+                        Me.IsNotifying = False
+                        Using view.DeferRefresh()
+                            Me.ItemsSortPropertyName = Nothing
+                            Me.ItemsGroupByPropertyName = Nothing
+                        End Using
+                    End If
+
+                    ' add items
+                    For Each item In toAdd
+                        add(item)
+                    Next
+
+                    ' restore sorting/grouping
+                    If Not TypeOf Me Is SearchFolder Then
+                        Using view.DeferRefresh()
+                            Me.ItemsSortPropertyName = sortPropertyName
+                            Me.ItemsSortDirection = sortDirection
+                            Me.ItemsGroupByPropertyName = groupByPropertyName
+                        End Using
+                        Me.IsNotifying = True
+                    End If
+                End If
+            End Sub
+
         If Not isWindows7OrLower() Then
             Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
             Functions.CreateBindCtx(0, bindCtxPtr)
@@ -509,30 +545,8 @@ Public Class Folder
                                     If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 AndAlso toAdd.Count > 0 Then
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                                                Dim sortPropertyName As String = Me.ItemsSortPropertyName
-                                                Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
-                                                Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
-                                                If Not TypeOf Me Is SearchFolder Then
-                                                    Me.IsNotifying = False
-                                                    Using view.DeferRefresh()
-                                                        Me.ItemsSortPropertyName = Nothing
-                                                        Me.ItemsGroupByPropertyName = Nothing
-                                                    End Using
-                                                End If
-                                                For Each item In toAdd
-                                                    If cancellationToken.IsCancellationRequested Then Exit For
-                                                    add(item)
-                                                Next
-                                                If Not TypeOf Me Is SearchFolder Then
-                                                    Using view.DeferRefresh()
-                                                        Me.ItemsSortPropertyName = sortPropertyName
-                                                        Me.ItemsSortDirection = sortDirection
-                                                        Me.ItemsGroupByPropertyName = groupByPropertyName
-                                                    End Using
-                                                    Me.IsNotifying = True
-                                                End If
-                                            End Sub, Threading.DispatcherPriority.Background)
+                                                addItems()
+                                            End Sub)
                                         toAdd.Clear()
                                         lastUpdate = DateTime.Now
                                         Thread.Sleep(10)
@@ -605,43 +619,33 @@ Public Class Folder
             End Try
         End If
 
-        If Not cancellationToken.IsCancellationRequested Then
+        If cancellationToken.IsCancellationRequested Then
+            ' release ishellitems
+            For Each item In toUpdate
+                Marshal.ReleaseComObject(item.Item2)
+            Next
+        ElseIf Not cancellationToken.IsCancellationRequested Then
             _isEnumerated = True
             _isLoaded = True
 
             If doRefreshItems Then
+                ' refresh existing items
                 For Each item In toUpdate
                     item.Item1.Refresh(item.Item2)
+                Next
+            Else
+                ' release ishellitems
+                For Each item In toUpdate
+                    Marshal.ReleaseComObject(item.Item2)
                 Next
             End If
 
             UIHelper.OnUIThread(
                 Sub()
-                    If toAdd.Count > 0 Then
-                        Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                        Dim sortPropertyName As String = Me.ItemsSortPropertyName
-                        Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
-                        Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
-                        If Not TypeOf Me Is SearchFolder Then
-                            Me.IsNotifying = False
-                            Using view.DeferRefresh()
-                                Me.ItemsSortPropertyName = Nothing
-                                Me.ItemsGroupByPropertyName = Nothing
-                            End Using
-                        End If
-                        For Each item In toAdd
-                            add(item)
-                        Next
-                        If Not TypeOf Me Is SearchFolder Then
-                            Using view.DeferRefresh()
-                                Me.ItemsSortPropertyName = sortPropertyName
-                                Me.ItemsSortDirection = sortDirection
-                                Me.ItemsGroupByPropertyName = groupByPropertyName
-                            End Using
-                            Me.IsNotifying = True
-                        End If
-                    End If
+                    ' add new items
+                    addItems()
 
+                    ' remove items that weren't found anymore
                     For Each item In getToBeRemoved(itemsBefore.Select(Function(i) i.FullPath).ToList(), pathsAfter)
                         If TypeOf item Is Folder Then
                             Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -653,9 +657,10 @@ Public Class Folder
                         item.Dispose()
                     Next
 
+                    ' set and update HasSubFolders property
                     _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
                     Me.NotifyOfPropertyChange("HasSubFolders")
-                End Sub, Threading.DispatcherPriority.Background)
+                End Sub)
         End If
     End Sub
 
