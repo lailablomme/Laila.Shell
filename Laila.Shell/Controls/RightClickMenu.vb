@@ -64,7 +64,7 @@ Namespace Controls
 
             ' add view, sort and group by menus
             If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
-                Dim viewMenu As ViewMenu = New ViewMenu() With {.Folder = Me.Folder}
+                Dim viewMenu As ViewMenu = New ViewMenu() With {.Folder = Me.Folder, .MenuStyle = ViewMenuStyle.RightClickMenu}
                 Dim viewMenuItem As MenuItem = New MenuItem() With {
                     .Header = "View",
                     .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/view16.png", UriKind.Absolute))}

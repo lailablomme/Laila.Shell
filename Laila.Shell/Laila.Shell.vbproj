@@ -171,6 +171,7 @@
     <None Remove="Images\arrow_up16.png" />
     <None Remove="Images\check16.png" />
     <None Remove="Images\chevron16.png" />
+    <None Remove="Images\collapseall16.png" />
     <None Remove="Images\content16.png" />
     <None Remove="Images\copy16.png" />
     <None Remove="Images\cut16.png" />
@@ -179,6 +180,7 @@
     <None Remove="Images\dropdown_arrow.png" />
     <None Remove="Images\error16.png" />
     <None Remove="Images\error32.png" />
+    <None Remove="Images\expandall16.png" />
     <None Remove="Images\extralargeicons16.png" />
     <None Remove="Images\info16.png" />
     <None Remove="Images\largeicons16.png" />
@@ -235,6 +237,7 @@
     <Resource Include="Images\arrow_up16.png" />
     <Resource Include="Images\check16.png" />
     <Resource Include="Images\chevron16.png" />
+    <Resource Include="Images\collapseall16.png" />
     <Resource Include="Images\content16.png" />
     <Resource Include="Images\copy16.png" />
     <Resource Include="Images\cut16.png" />
@@ -243,6 +246,7 @@
     <Resource Include="Images\dropdown_arrow.png" />
     <Resource Include="Images\error16.png" />
     <Resource Include="Images\error32.png" />
+    <Resource Include="Images\expandall16.png" />
     <Resource Include="Images\extralargeicons16.png" />
     <Resource Include="Images\info16.png" />
     <Resource Include="Images\largeicons16.png" />

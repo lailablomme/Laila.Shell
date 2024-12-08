@@ -3,6 +3,7 @@ Imports System.Media
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Controls.Primitives
 Imports System.Windows.Input
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -387,7 +388,7 @@ Namespace Controls
                         Me.CheckBoxVisibility = If(Shell.Settings.DoShowCheckBoxesToSelect, Visibility.Visible, Visibility.Collapsed)
                     End If
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
-                        UIHelper.OnUIThread(
+                    UIHelper.OnUIThread(
                         Sub()
                             If e.PropertyName = "ItemsGroupByPropertyName" Then
                                 setGrouping(folder)
@@ -403,6 +404,24 @@ Namespace Controls
                             End If
                         End Sub)
             End Select
+        End Sub
+
+        Public Sub Folder_ExpandAllGroups(sender As Object, e As EventArgs)
+            Me.ExpandCollapseAllGroups(True)
+        End Sub
+
+        Public Sub Folder_CollapseAllGroups(sender As Object, e As EventArgs)
+            Me.ExpandCollapseAllGroups(False)
+        End Sub
+
+        Public Sub ExpandCollapseAllGroups(isExpanded As Boolean)
+            Dim groups As IEnumerable(Of GroupItem) = UIHelper.FindVisualChildren(Of GroupItem)(PART_ListBox)
+            For Each group In groups
+                Dim toggleButtons As IEnumerable(Of ToggleButton) = UIHelper.FindVisualChildren(Of ToggleButton)(group)
+                If toggleButtons.Count > 0 Then
+                    toggleButtons(0).IsChecked = isExpanded
+                End If
+            Next
         End Sub
 
         Private Sub setGrouping(folder As Folder)
@@ -433,8 +452,10 @@ Namespace Controls
             If Not e.OldValue Is Nothing Then
                 Dim oldValue As Folder = e.OldValue
 
-                ' stop listening for property changes
+                ' stop listening for events
                 RemoveHandler oldValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
+                RemoveHandler oldValue.ExpandAllGroups, AddressOf bfv.Folder_ExpandAllGroups
+                RemoveHandler oldValue.CollapseAllGroups, AddressOf bfv.Folder_CollapseAllGroups
 
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = bfv._lastScrollOffset
@@ -477,6 +498,8 @@ Namespace Controls
 
                 ' get notified of folder property changes
                 AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
+                AddHandler newValue.ExpandAllGroups, AddressOf bfv.Folder_ExpandAllGroups
+                AddHandler newValue.CollapseAllGroups, AddressOf bfv.Folder_CollapseAllGroups
 
                 ' bind view
                 bfv.MakeBinding(e.NewValue)

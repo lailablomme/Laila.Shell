@@ -1,5 +1,6 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 
 Namespace Controls
@@ -7,6 +8,7 @@ Namespace Controls
         Inherits ContextMenu
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(ViewMenu), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuStyleProperty As DependencyProperty = DependencyProperty.Register("MenuStyle", GetType(ViewMenuStyle), GetType(ViewMenu), New FrameworkPropertyMetadata(ViewMenuStyle.Toolbar, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private _isCheckingInternally As Boolean
 
@@ -43,6 +45,28 @@ Namespace Controls
                     End Sub
                 menu.Add(viewSubMenuItem)
             Next
+
+            If Me.MenuStyle = ViewMenuStyle.RightClickMenu Then
+                menu.Add(New Separator())
+                Dim expandAllGroupsMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Expand all groups",
+                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/expandall16.png")}
+                }
+                AddHandler expandAllGroupsMenuItem.Click,
+                    Sub(s As Object, e As EventArgs)
+                        Me.Folder.TriggerExpandAllGroups()
+                    End Sub
+                menu.Add(expandAllGroupsMenuItem)
+                Dim collapseAllGroupsMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Collapse all groups",
+                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/collapseall16.png")}
+                }
+                AddHandler collapseAllGroupsMenuItem.Click,
+                    Sub(s As Object, e As EventArgs)
+                        Me.Folder.TriggerCollapseAllGroups()
+                    End Sub
+                menu.Add(collapseAllGroupsMenuItem)
+            End If
         End Sub
 
         Public Property Folder As Folder
@@ -51,6 +75,15 @@ Namespace Controls
             End Get
             Set(value As Folder)
                 SetValue(FolderProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuStyle As ViewMenuStyle
+            Get
+                Return GetValue(MenuStyleProperty)
+            End Get
+            Set(value As ViewMenuStyle)
+                SetValue(MenuStyleProperty, value)
             End Set
         End Property
     End Class

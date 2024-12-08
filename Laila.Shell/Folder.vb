@@ -10,6 +10,8 @@ Public Class Folder
     Inherits Item
 
     Public Event LoadingStateChanged(isLoading As Boolean)
+    Public Event ExpandAllGroups As EventHandler
+    Public Event CollapseAllGroups As EventHandler
 
     Public Property LastScrollOffset As Point
     Public Property LastScrollSize As Size
@@ -761,6 +763,14 @@ Public Class Folder
             SetValue(_view, value)
         End Set
     End Property
+
+    Public Sub TriggerExpandAllGroups()
+        RaiseEvent ExpandAllGroups(Me, New EventArgs())
+    End Sub
+
+    Public Sub TriggerCollapseAllGroups()
+        RaiseEvent CollapseAllGroups(Me, New EventArgs())
+    End Sub
 
     Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)
