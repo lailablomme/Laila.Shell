@@ -428,7 +428,7 @@ Public Class Folder
         Dim pathsAfter As List(Of String) = New List(Of String)
         Dim itemsBefore As List(Of Item)
         Dim toAdd As List(Of Item) = New List(Of Item)()
-        Dim toUpdate As List(Of Item) = New List(Of Item)()
+        Dim toUpdate As List(Of Tuple(Of Item, IShellItem2)) = New List(Of Tuple(Of Item, IShellItem2))()
 
         UIHelper.OnUIThread(
             Sub()
@@ -503,8 +503,7 @@ Public Class Folder
                                         End Try
                                     Else
                                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Updating item", DateTime.Now)
-                                        toUpdate.Add(existing)
-                                        Marshal.ReleaseComObject(shellItems(0))
+                                        toUpdate.Add(New Tuple(Of Item, IShellItem2)(existing, shellItems(0)))
                                     End If
                                     If cancellationToken.IsCancellationRequested Then Exit While
                                     If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 AndAlso toAdd.Count > 0 Then
@@ -584,7 +583,7 @@ Public Class Folder
                                 Catch ex As Exception
                                 End Try
                             Else
-                                toUpdate.Add(existing)
+                                toUpdate.Add(New Tuple(Of Item, IShellItem2)(existing, shellItem2))
                                 Marshal.ReleaseComObject(shellItem2)
                             End If
                             If count Mod 100 = 0 Then Thread.Sleep(1)
@@ -612,7 +611,7 @@ Public Class Folder
 
             If doRefreshItems Then
                 For Each item In toUpdate
-                    item.Refresh()
+                    item.Item1.Refresh(item.Item2)
                 Next
             End If
 

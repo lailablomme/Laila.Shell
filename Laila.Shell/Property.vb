@@ -296,8 +296,13 @@ Public Class [Property]
     Public ReadOnly Property ImageReferences16 As String()
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                Dim i16 As Tuple(Of String, String()) =
-                    _imageReferences16.ToList().FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()))
+                _imageReferences16Lock.Wait()
+                Dim i16 As Tuple(Of String, String())
+                Try
+                    i16 = _imageReferences16.FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()))
+                Finally
+                    _imageReferences16Lock.Release()
+                End Try
                 If i16 Is Nothing Then
                     Dim result As String()
                     Dim propertyEnumType2 As IPropertyEnumType2

@@ -243,6 +243,8 @@ Public Class Item
             If Not IntPtr.Zero.Equals(ptr) Then
                 _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
                 _shellItem2.Update(IntPtr.Zero)
+                _shellItem2.Update(IntPtr.Zero)
+                _shellItem2.Update(IntPtr.Zero)
                 _shellItemHistory.Add(_shellItem2)
             End If
         Finally
@@ -259,7 +261,7 @@ Public Class Item
     End Property
 
     Private _refreshLock As Object = New Object()
-    Public Overridable Sub Refresh()
+    Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
         Shell.SlowTaskQueue.Add(
             Sub()
                 SyncLock _refreshLock
@@ -268,7 +270,10 @@ Public Class Item
                         Dim oldProperties As HashSet(Of [Property]) = _properties
                         Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
-                        If Not _shellItem2 Is Nothing Then
+                        If Not newShellItem Is Nothing Then
+                            _shellItem2 = newShellItem
+                            _shellItemHistory.Add(newShellItem)
+                        ElseIf Not _shellItem2 Is Nothing Then
                             Me.MakeNewShellItem()
                         End If
 
@@ -1105,7 +1110,7 @@ Public Class Item
                 Shell.RemoveFromItemsCache(Me)
                 Me.Pidl.Dispose()
 
-                UIHelper.OnUIThread(
+                UIHelper.OnUIThreadAsync(
                     Sub()
                         If Not _logicalParent Is Nothing Then
                             _logicalParent._items.Remove(Me)

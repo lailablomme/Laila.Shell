@@ -112,6 +112,7 @@ Namespace Controls
         End Property
 
         Private Async Sub updateStatusText()
+            Await Task.Delay(100)
             If Not Me.Folder Is Nothing Then
                 Dim text As String = String.Format("{0} {1}", Me.Folder.Items.Count, If(Me.Folder.Items.Count = 1, "item", "items"))
                 If Not Me.SelectedItems Is Nothing AndAlso Not Me.SelectedItems.Count = 0 Then
@@ -122,7 +123,7 @@ Namespace Controls
                         Sub()
                             Dim size As UInt64 = 0
                             For Each item In items
-                                size += item.PropertiesByCanonicalName("System.Size").Value
+                                size += item.PropertiesByCanonicalName("System.Size")?.Value
                             Next
                             If size > 0 Then
                                 Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
@@ -151,8 +152,10 @@ Namespace Controls
                             tcs.SetResult()
                         End Sub)
                     Await tcs.Task
+                    Me.StatusText = text
+                Else
+                    Me.StatusText = text
                 End If
-                Me.StatusText = text
             Else
                 Me.StatusText = String.Empty
             End If
