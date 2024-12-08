@@ -57,7 +57,7 @@
                             </ListView.Resources>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel SpacingMode="None" Orientation="Vertical" ItemSize="240,20">
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None" Orientation="Vertical" ItemSize="250,20">
                                         <vwp:VirtualizingWrapPanel.Style>
                                             <Style>
                                                 <Style.Triggers>
@@ -81,26 +81,34 @@
                                     <Border>
                                         <Grid>
                                             <Grid.ColumnDefinitions >
-                                                <ColumnDefinition Width="16" />
-                                                <ColumnDefinition Width="4" />
+                                                <ColumnDefinition Width="30" />
                                                 <ColumnDefinition Width="16" />
                                                 <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="200" SharedSizeGroup="A" />
                                             </Grid.ColumnDefinitions>
-                                            <Image Source="{Binding StorageProviderUIStatusFirstIcon16Async, IsAsync=True}"
-                                                   Width="14" Height="16">
-                                                <Image.Style>
+                                            <ItemsControl Margin="0,0,2,0" ItemsSource="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Image Source="{Binding .}" Width="14" Height="16" VerticalAlignment="Center" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.Style>
                                                     <Style>
-                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon, IsAsync=True}" Value="True">
-                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            <DataTrigger Binding="{Binding StorageProviderUIStatusHasIconAsync, IsAsync=True}" Value="True">
+                                                                <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
-                                                </Image.Style>
-                                            </Image>
-                                            <Image Grid.Column="2" Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
+                                                </ItemsControl.Style>
+                                            </ItemsControl>
+                                            <Image Grid.Column="1" Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                 <Image.Style>
                                                     <Style>
@@ -115,7 +123,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Grid.Column="2" Source="{Binding OverlayImageAsync[16], IsAsync=True}" Width="16" Height="16" 
+                                            <Image Grid.Column="1" Source="{Binding OverlayImageAsync[16], IsAsync=True}" Width="16" Height="16" 
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                     VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                 <Image.Style>
@@ -131,7 +139,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <TextBlock Grid.Column="4" MaxWidth="200"
+                                            <TextBlock Grid.Column="3" MaxWidth="200"
                                                        Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
                                                     <Style>

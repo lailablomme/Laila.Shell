@@ -74,28 +74,36 @@
                                     <Border>
                                         <Grid Width="{Binding ActualWidth, ElementName=PART_StackPanel}" Margin="-5,0,-10,0">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="16" />
-                                                <ColumnDefinition Width="4" />
+                                                <ColumnDefinition Width="34" />
                                                 <ColumnDefinition Width="48" />
                                                 <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Separator Margin="0,-3,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" 
+                                            <Separator Margin="0,-3,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True" />
-                                            <Image Source="{Binding StorageProviderUIStatusFirstIcon16Async, IsAsync=True}"
-                                                   Width="16" Height="16">
-                                                <Image.Style>
+                                            <ItemsControl Margin="0,0,2,0" ItemsSource="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Image Source="{Binding .}" Width="16" Height="16" VerticalAlignment="Center" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.Style>
                                                     <Style>
-                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon, IsAsync=True}" Value="True">
-                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            <DataTrigger Binding="{Binding StorageProviderUIStatusHasIconAsync, IsAsync=True}" Value="True">
+                                                                <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
-                                                </Image.Style>
-                                            </Image>
-                                            <Image Grid.Column="2" Source="{Binding ImageAsync[32], IsAsync=True}" Width="32" Height="32" 
+                                                </ItemsControl.Style>
+                                            </ItemsControl>
+                                            <Image Grid.Column="1" Source="{Binding ImageAsync[32], IsAsync=True}" Width="32" Height="32" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center">
                                                 <Image.Style>
                                                     <Style>
@@ -110,7 +118,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Grid.Column="2" Source="{Binding OverlayImageAsync[32], IsAsync=True}" Width="32" Height="32" 
+                                            <Image Grid.Column="1" Source="{Binding OverlayImageAsync[32], IsAsync=True}" Width="32" Height="32" 
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                     VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                 <Image.Style>
@@ -126,7 +134,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Grid Grid.Column="4" VerticalAlignment="Center" MaxHeight="51" x:Name="PART_PropertiesGrid">
+                                            <Grid Grid.Column="3" VerticalAlignment="Center" MaxHeight="51" x:Name="PART_PropertiesGrid">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="2.5*" MaxWidth="300" />
                                                     <ColumnDefinition Width="10" />

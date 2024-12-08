@@ -151,6 +151,11 @@
                                                             <Image Source="{Binding .}" Width="12" Height="11" Margin="0,3,1,0" VerticalAlignment="Top" />
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
                                                     <ItemsControl.Style>
                                                         <Style>
                                                             <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
