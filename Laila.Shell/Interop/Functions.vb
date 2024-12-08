@@ -8,6 +8,22 @@ Imports System.IO
 Public Class Functions
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function ToUnicode(
+        wVirtKey As UInteger,
+        wScanCode As UInteger,
+        lpKeyState As Byte(),
+        <MarshalAs(UnmanagedType.LPWStr)> pwszBuff As String,
+        cchBuff As Integer,
+        wFlags As UInteger) As Integer
+    End Function
+
+    <DllImport("user32.dll")>
+    Public Shared Function GetKeyboardState(lpKeyState As Byte()) As Boolean
+    End Function
+    <DllImport("user32.dll")>
+    Public Shared Function MapVirtualKey(uCode As UInteger, uMapType As UInteger) As UInteger
+    End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
     Public Shared Function SHGetNameFromIDList(ByVal pidl As IntPtr, ByVal sigdnName As SIGDN, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String) As Integer
     End Function

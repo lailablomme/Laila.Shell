@@ -1,10 +1,12 @@
 ﻿Imports Microsoft.Win32
 
 Public Class Settings
+    Inherits NotifyPropertyChangedBase
+
     Private Const HIDEKNOWNFILEEXTENSIONS_KEY As String = "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
     Private Const HIDEKNOWNFILEEXTENSIONS_VALUENAME As String = "HideFileExt"
 
-    Public Shared Property DoHideKnownFileExtensions As Boolean
+    Public Property DoHideKnownFileExtensions As Boolean
         Get
             Using key As RegistryKey = Registry.CurrentUser.OpenSubKey(HIDEKNOWNFILEEXTENSIONS_KEY)
                 If Not key Is Nothing Then
@@ -29,6 +31,7 @@ Public Class Settings
                     End Using
                 End If
             End Using
+            Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
         End Set
     End Property
 End Class

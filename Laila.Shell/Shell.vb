@@ -39,6 +39,8 @@ Public Class Shell
     Private Shared _isDebugVisible As Boolean = False
     Friend Shared _debugWindow As DebugTools.DebugWindow
 
+    Private Shared _settings As Settings = New Settings()
+
     Private Shared _overrideCursorFunc As Func(Of Cursor, IDisposable) =
         Function(cursor As Cursor) As IDisposable
             Return New OverrideCursor(cursor)
@@ -375,6 +377,12 @@ Public Class Shell
         Set(value As Func(Of Cursor, IDisposable))
             _overrideCursorFunc = value
         End Set
+    End Property
+
+    Public Shared ReadOnly Property Settings As Settings
+        Get
+            Return _settings
+        End Get
     End Property
 
     Friend Shared Sub RaiseFolderNotificationEvent(sender As Object, e As FolderNotificationEventArgs)
