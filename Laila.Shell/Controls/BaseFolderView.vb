@@ -379,11 +379,15 @@ Namespace Controls
         End Sub
 
         Protected Overridable Sub Folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
-            Select Case e.PropertyName
-                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
-                    Dim folder As Folder = CType(sender, Folder)
+            Dim folder As Folder = CType(sender, Folder)
 
-                    UIHelper.OnUIThread(
+            Select Case e.PropertyName
+                Case "IsRefreshingItems"
+                    If folder.IsRefreshingItems Then
+                        Me.CheckBoxVisibility = If(Shell.Settings.DoShowCheckBoxesToSelect, Visibility.Visible, Visibility.Collapsed)
+                    End If
+                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
+                        UIHelper.OnUIThread(
                         Sub()
                             If e.PropertyName = "ItemsGroupByPropertyName" Then
                                 setGrouping(folder)
