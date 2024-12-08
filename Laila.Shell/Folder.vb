@@ -852,7 +852,7 @@ Public Class Folder
                         AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
                         AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) _
                         AndAlso (Not _doSkipUPDATEDIR.HasValue _
-                                 OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 2000) Then
+                                 OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) Then
                         _pendingUpdateCounter += 1
                         Dim func As Func(Of Task) =
                             Async Function() As Task
@@ -866,6 +866,7 @@ Public Class Folder
                             End Function
                         Task.Run(func)
                     End If
+                    _doSkipUPDATEDIR = Nothing
             End Select
         End If
     End Sub
