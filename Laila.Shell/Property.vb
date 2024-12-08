@@ -12,7 +12,9 @@ Public Class [Property]
     Implements IDisposable
 
     Private Shared _descriptions As HashSet(Of Tuple(Of String, String, IPropertyDescription)) = New HashSet(Of Tuple(Of String, String, IPropertyDescription))
+    Private Shared _descriptionsLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _hasIcon As HashSet(Of Tuple(Of String, Boolean)) = New HashSet(Of Tuple(Of String, Boolean))()
+    Private Shared _hasIconLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _imageReferences16 As HashSet(Of Tuple(Of String, String())) = New HashSet(Of Tuple(Of String, String()))()
     Private Shared _imageReferences16Lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
 
@@ -25,28 +27,40 @@ Public Class [Property]
     Private _displayType As PropertyDisplayType = -1
 
     Private Shared Function getDescription(canonicalName As String) As Tuple(Of String, String, IPropertyDescription)
-        Dim desc As Tuple(Of String, String, IPropertyDescription) = _descriptions.FirstOrDefault(Function(d) d.Item1 = canonicalName)
-        If desc Is Nothing Then
-            Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
-            Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
-            If propertyDescription Is Nothing Then Return Nothing
-            propertyDescription.GetPropertyKey(pkey)
-            desc = New Tuple(Of String, String, IPropertyDescription)(canonicalName, pkey.ToString(), propertyDescription)
-            _descriptions.Add(desc)
-        End If
+        Dim desc As Tuple(Of String, String, IPropertyDescription)
+        _descriptionsLock.Wait()
+        Try
+            desc = _descriptions.FirstOrDefault(Function(d) d.Item1 = canonicalName)
+            If desc Is Nothing Then
+                Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
+                Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
+                If propertyDescription Is Nothing Then Return Nothing
+                propertyDescription.GetPropertyKey(pkey)
+                desc = New Tuple(Of String, String, IPropertyDescription)(canonicalName, pkey.ToString(), propertyDescription)
+                _descriptions.Add(desc)
+            End If
+        Finally
+            _descriptionsLock.Release()
+        End Try
         Return desc
     End Function
 
     Private Shared Function getDescription(pkey As PROPERTYKEY) As Tuple(Of String, String, IPropertyDescription)
-        Dim desc As Tuple(Of String, String, IPropertyDescription) = _descriptions.FirstOrDefault(Function(d) d.Item2 = pkey.ToString())
-        If desc Is Nothing Then
-            Dim propertyDescription As IPropertyDescription, canonicalName As String
-            Functions.PSGetPropertyDescription(pkey, GetType(IPropertyDescription).GUID, propertyDescription)
-            If propertyDescription Is Nothing Then Return Nothing
-            Functions.PSGetNameFromPropertyKey(pkey, canonicalName)
-            desc = New Tuple(Of String, String, IPropertyDescription)(canonicalName, pkey.ToString(), propertyDescription)
-            _descriptions.Add(desc)
-        End If
+        Dim desc As Tuple(Of String, String, IPropertyDescription)
+        _descriptionsLock.Wait()
+        Try
+            desc = _descriptions.FirstOrDefault(Function(d) d.Item2 = pkey.ToString())
+            If desc Is Nothing Then
+                Dim propertyDescription As IPropertyDescription, canonicalName As String
+                Functions.PSGetPropertyDescription(pkey, GetType(IPropertyDescription).GUID, propertyDescription)
+                If propertyDescription Is Nothing Then Return Nothing
+                Functions.PSGetNameFromPropertyKey(pkey, canonicalName)
+                desc = New Tuple(Of String, String, IPropertyDescription)(canonicalName, pkey.ToString(), propertyDescription)
+                _descriptions.Add(desc)
+            End If
+        Finally
+            _descriptionsLock.Release()
+        End Try
         Return desc
     End Function
 
@@ -230,42 +244,48 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property HasIcon As Boolean
         Get
-            Dim hi As Tuple(Of String, Boolean) = _hasIcon.FirstOrDefault(Function(hi2) hi2.Item1 = _propertyKey.ToString())
+            Dim hi As Tuple(Of String, Boolean)
 
-            If hi Is Nothing Then
-                Dim result As Boolean = False
-                If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                    Dim propertyEnumTypeList As IPropertyEnumTypeList
-                    Try
-                        Me.Description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
-                        Dim count As UInt32
-                        propertyEnumTypeList.GetCount(count)
-                        For x As UInt32 = 0 To count - 1
-                            Dim propertyEnumType2 As IPropertyEnumType2
-                            Try
-                                propertyEnumTypeList.GetAt(x, GetType(IPropertyEnumType2).GUID, propertyEnumType2)
-                                Dim imageReference As String
-                                propertyEnumType2.GetImageReference(imageReference)
-                                If Not String.IsNullOrWhiteSpace(imageReference) Then
-                                    result = True
-                                    Exit For
-                                End If
-                            Finally
-                                If Not propertyEnumType2 Is Nothing Then
-                                    Marshal.ReleaseComObject(propertyEnumType2)
-                                    propertyEnumType2 = Nothing
-                                End If
-                            End Try
-                        Next
-                    Finally
-                        If Not propertyEnumTypeList Is Nothing Then
-                            Marshal.ReleaseComObject(propertyEnumTypeList)
-                        End If
-                    End Try
+            _hasIconLock.Wait()
+            Try
+                hi = _hasIcon.FirstOrDefault(Function(hi2) hi2.Item1 = _propertyKey.ToString())
+                If hi Is Nothing Then
+                    Dim result As Boolean = False
+                    If Me.DisplayType = PropertyDisplayType.Enumerated Then
+                        Dim propertyEnumTypeList As IPropertyEnumTypeList
+                        Try
+                            Me.Description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
+                            Dim count As UInt32
+                            propertyEnumTypeList.GetCount(count)
+                            For x As UInt32 = 0 To count - 1
+                                Dim propertyEnumType2 As IPropertyEnumType2
+                                Try
+                                    propertyEnumTypeList.GetAt(x, GetType(IPropertyEnumType2).GUID, propertyEnumType2)
+                                    Dim imageReference As String
+                                    propertyEnumType2.GetImageReference(imageReference)
+                                    If Not String.IsNullOrWhiteSpace(imageReference) Then
+                                        result = True
+                                        Exit For
+                                    End If
+                                Finally
+                                    If Not propertyEnumType2 Is Nothing Then
+                                        Marshal.ReleaseComObject(propertyEnumType2)
+                                        propertyEnumType2 = Nothing
+                                    End If
+                                End Try
+                            Next
+                        Finally
+                            If Not propertyEnumTypeList Is Nothing Then
+                                Marshal.ReleaseComObject(propertyEnumTypeList)
+                            End If
+                        End Try
+                    End If
+                    hi = New Tuple(Of String, Boolean)(_propertyKey.ToString(), result)
+                    _hasIcon.Add(hi)
                 End If
-                hi = New Tuple(Of String, Boolean)(_propertyKey.ToString(), result)
-                _hasIcon.Add(hi)
-            End If
+            Finally
+                _hasIconLock.Release()
+            End Try
 
             Return hi.Item2
         End Get

@@ -23,8 +23,8 @@ Namespace Controls
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
             point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
-            point.X += 16 + 4 + 2 + 16 + 4
-            point.Y += 1
+            point.X += 30 + 16 + 4 - 2
+            point.Y += 0
             listBoxItem.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
             size.Width = listBoxItem.DesiredSize.Width - 16 - 4 - 2
             size.Height = listBoxItem.DesiredSize.Height

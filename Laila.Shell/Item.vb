@@ -15,10 +15,10 @@ Public Class Item
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
     Protected _properties As HashSet(Of [Property]) = New HashSet(Of [Property])
-    Protected _fullPath As String
+    Friend _fullPath As String
     Friend disposedValue As Boolean
     Friend _logicalParent As Folder
-    Protected _displayName As String
+    Friend _displayName As String
     Private _isPinned As Boolean
     Private _isCut As Boolean
     Private _attributes As SFGAO
@@ -148,7 +148,6 @@ Public Class Item
             _pidl = New Pidl(pidl)
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting full path", DateTime.Now)
             '_fullPath = Item.GetFullPathFromShellItem2(shellItem2)
-            Functions.SHGetNameFromIDList(pidl, SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting display name", DateTime.Now)
             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
             _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
@@ -304,15 +303,12 @@ Public Class Item
                             Me.NotifyOfPropertyChange("IsCompressed")
                             Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
                             Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
-                            Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
                             For Each prop In oldProperties
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIcon", prop.Key.ToString()))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key.ToString()))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key.ToString()))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIcon", prop.Key.ToString()))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key.ToString()))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key.ToString()))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key.ToString()))
@@ -327,6 +323,14 @@ Public Class Item
 
     Public ReadOnly Property FullPath As String
         Get
+            Try
+                If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue Then
+                    Functions.SHGetNameFromIDList(Me.Pidl.AbsolutePIDL, SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
+                End If
+            Catch ex As Exception
+                ' sometimes the treeview will try to sort us just as we're in the process of disposing
+            End Try
+
             Return _fullPath
         End Get
     End Property
@@ -628,13 +632,9 @@ Public Class Item
     Public Overridable ReadOnly Property DisplayName As String
         Get
             Try
-                'Debug.WriteLine("GetDisplayName for " & Me.FullPath)
                 If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
-                    'SyncLock Me.ShellItemLock
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
-                    'End SyncLock
                 End If
-                'Debug.WriteLine(Me.PropertiesByKeyAsText("fceff153-e839-4cf3-a9e7-ea22832094b8:123").Text)
             Catch ex As Exception
                 ' sometimes the treeview will try to sort us just as we're in the process of disposing
             End Try

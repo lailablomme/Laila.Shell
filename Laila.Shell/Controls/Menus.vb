@@ -40,7 +40,31 @@ Namespace Controls
         End Sub
 
         Friend Shared Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
-            Dim originalName As String, isDrive As Boolean
+            Dim originalName As String, ext As String = "", isDrive As Boolean
+
+            ' make sure we get the latest values according to the DoHideKnownFileExtensions setting
+            item._fullPath = Nothing
+            item._displayName = Nothing
+
+            ' get name and extension
+            If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
+                isDrive = True
+                item.ShellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
+            ElseIf IO.Path.GetFileName(item.FullPath).StartsWith(item.DisplayName) Then
+                originalName = item.DisplayName
+            ElseIf Settings.DoHideKnownFileExtensions Then
+                originalName = IO.Path.GetFileNameWithoutExtension(item.FullPath)
+            Else
+                originalName = IO.Path.GetFileName(item.FullPath)
+            End If
+
+            If Not isDrive Then
+                If Settings.DoHideKnownFileExtensions Then
+                    ext = IO.Path.GetFileName(item.FullPath).Substring(originalName.Length)
+                Else
+                    ext = IO.Path.GetExtension(item.FullPath)
+                End If
+            End If
 
             Dim doRename As Action(Of String) =
                 Sub(newName As String)
@@ -55,9 +79,13 @@ Namespace Controls
                             Catch ex As Exception
                             End Try
                         Else
+                            Dim composedFullName As String =
+                                If(isDrive OrElse Not Settings.DoHideKnownFileExtensions,
+                                    newName, newName & ext)
+
                             Dim fileOperation As IFileOperation
                             Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                            h = fileOperation.RenameItem(item.ShellItem2, newName, Nothing)
+                            h = fileOperation.RenameItem(item.ShellItem2, composedFullName, Nothing)
                             Debug.WriteLine("RenameItem returned " & h)
                             h = fileOperation.PerformOperations()
                             Debug.WriteLine("PerformOperations returned " & h)
@@ -65,7 +93,7 @@ Namespace Controls
 
                             ' notify pinned items & frequent folders
                             Dim newFullPath As String =
-                                item.FullPath.Substring(0, item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1) + newName
+                                item.FullPath.Substring(0, item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1) + composedFullName
                             PinnedItems.RenameItem(item.FullPath, newFullPath)
                             FrequentFolders.RenameItem(item.FullPath, newFullPath)
                         End If
@@ -96,20 +124,14 @@ Namespace Controls
                 .FontSize = fontSize
             }
             textBox.SetValue(Panel.ZIndexProperty, 100)
-            If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
-                isDrive = True
-                item.ShellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
-            Else
-                originalName = item.DisplayName
-            End If
             textBox.Text = originalName
             grid.Children.Add(textBox)
             textBox.Focus()
 
             ' select filename without extension
             textBox.SelectionStart = 0
-            If textBox.Text.Contains(".") Then
-                textBox.SelectionLength = textBox.Text.IndexOf(".")
+            If Not isDrive AndAlso Not Settings.DoHideKnownFileExtensions AndAlso ext.Length > 0 Then
+                textBox.SelectionLength = textBox.Text.Length - ext.Length
             Else
                 textBox.SelectionLength = textBox.Text.Length
             End If
