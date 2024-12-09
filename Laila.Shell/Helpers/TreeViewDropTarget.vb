@@ -307,7 +307,8 @@ Public Class TreeViewDropTarget
                                 isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
                                 If Not isOurSelvesOrParent Then
                                     isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) _
-                                        IO.Path.GetDirectoryName(f).ToLower().TrimEnd(IO.Path.DirectorySeparatorChar) _
+                                        Not IO.Path.GetDirectoryName(f) Is Nothing _
+                                        AndAlso IO.Path.GetDirectoryName(f).ToLower().TrimEnd(IO.Path.DirectorySeparatorChar) _
                                             = overItem.FullPath.ToLower().TrimEnd(IO.Path.DirectorySeparatorChar))
                                 End If
                             End If
