@@ -17,7 +17,6 @@ Public Class Settings
             Dim val As SHELLSTATE
             val.Data1 = If(value, 0, SSF.SSF_SHOWEXTENSIONS)
             Functions.SHGetSetSettings(val, mask, True)
-            onDoHideKnownFileExtensionsChanged()
         End Set
     End Property
 
@@ -30,7 +29,6 @@ Public Class Settings
         End SyncLock
         For Each item In list
             item._displayName = Nothing
-            item.ShellItem2.Update(IntPtr.Zero)
             item.NotifyOfPropertyChange("DisplayName")
         Next
     End Sub
@@ -47,7 +45,6 @@ Public Class Settings
             Dim val As SHELLSTATE
             val.Data10 = If(value, 8, 0)
             Functions.SHGetSetSettings(val, mask, True)
-            Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
         End Set
     End Property
 
