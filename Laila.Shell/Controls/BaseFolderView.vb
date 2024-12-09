@@ -18,6 +18,7 @@ Namespace Controls
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly HasCheckBoxesForItemsProperty As DependencyProperty = DependencyProperty.Register("HasCheckBoxesForItems", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -35,7 +36,6 @@ Namespace Controls
         Private _typeToSearchString As String = ""
         Private _menu As RightClickMenu
         Private _ignoreSelection As Boolean
-        Private _checkBoxVisibility As Visibility = Visibility.Collapsed
         Private disposedValue As Boolean
 
         Shared Sub New()
@@ -53,6 +53,14 @@ Namespace Controls
             If Not Me.Folder Is Nothing Then
                 Me.MakeBinding(Me.Folder)
             End If
+
+            AddHandler Shell.Settings.PropertyChanged,
+                Sub(s As Object, e As PropertyChangedEventArgs)
+                    Select Case e.PropertyName
+                        Case "DoShowCheckBoxesToSelect"
+                            Me.HasCheckBoxesForItems = Shell.Settings.DoShowCheckBoxesToSelect
+                    End Select
+                End Sub
 
             AddHandler Shell.ShuttingDown,
                 Sub(s As Object, e As EventArgs)
@@ -104,15 +112,6 @@ Namespace Controls
             _selectionHelper.SetSelectedItems(items)
             _ignoreSelection = False
         End Sub
-
-        Public Property CheckBoxVisibility As Visibility
-            Get
-                Return _checkBoxVisibility
-            End Get
-            Set(value As Visibility)
-                _checkBoxVisibility = value
-            End Set
-        End Property
 
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox Then
@@ -365,6 +364,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property HasCheckBoxesForItems As Boolean
+            Get
+                Return GetValue(HasCheckBoxesForItemsProperty)
+            End Get
+            Set(ByVal value As Boolean)
+                SetCurrentValue(HasCheckBoxesForItemsProperty, value)
+            End Set
+        End Property
+
         Protected Overridable Sub ClearBinding()
             If Not Me.PART_ListBox Is Nothing Then
                 Me.PART_ListBox.ItemsSource = Nothing
@@ -385,7 +393,7 @@ Namespace Controls
             Select Case e.PropertyName
                 Case "IsRefreshingItems"
                     If folder.IsRefreshingItems Then
-                        Me.CheckBoxVisibility = If(Shell.Settings.DoShowCheckBoxesToSelect, Visibility.Visible, Visibility.Collapsed)
+                        Me.HasCheckBoxesForItems = Shell.Settings.DoShowCheckBoxesToSelect
                     End If
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
                     UIHelper.OnUIThread(
@@ -467,7 +475,7 @@ Namespace Controls
                 bfv.ClearBinding()
             End If
 
-            bfv.CheckBoxVisibility = If(Shell.Settings.DoShowCheckBoxesToSelect, Visibility.Visible, Visibility.Collapsed)
+            bfv.HasCheckBoxesForItems = Shell.Settings.DoShowCheckBoxesToSelect
 
             If Not e.NewValue Is Nothing Then
                 Dim newValue As Folder = e.NewValue

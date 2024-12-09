@@ -34,7 +34,7 @@ Public Class Shell
 
     Private Shared _menuCacheLock As Object = New Object()
     Private Shared _menuCache As List(Of BaseMenu) = New List(Of BaseMenu)()
-    Private Shared _itemsCacheLock As Object = New Object()
+    Friend Shared _itemsCacheLock As Object = New Object()
     Private Shared _itemsCache As List(Of Tuple(Of Item, DateTime)) = New List(Of Tuple(Of Item, DateTime))()
     Private Shared _isDebugVisible As Boolean = False
     Friend Shared _debugWindow As DebugTools.DebugWindow

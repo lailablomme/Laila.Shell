@@ -260,7 +260,9 @@ Public Class Item
     End Property
 
     Private _refreshLock As Object = New Object()
-    Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
+    Public Overridable Function Refresh(Optional newShellItem As IShellItem2 = Nothing) As TaskCompletionSource
+        Dim tcs As TaskCompletionSource = New TaskCompletionSource()
+
         Shell.SlowTaskQueue.Add(
             Sub()
                 SyncLock _refreshLock
@@ -317,9 +319,13 @@ Public Class Item
                             Me.Dispose()
                         End If
                     End If
+
+                    tcs.SetResult()
                 End SyncLock
             End Sub)
-    End Sub
+
+        Return tcs
+    End Function
 
     Public ReadOnly Property FullPath As String
         Get

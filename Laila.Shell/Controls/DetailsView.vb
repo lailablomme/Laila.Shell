@@ -95,10 +95,10 @@ Namespace Controls
             Dim checkBoxTrigger1 As MultiDataTrigger = New MultiDataTrigger()
             checkBoxTrigger1.Conditions.Add(New Condition() With {
                 .Binding = New Binding() With {
-                    .Path = New PropertyPath("CheckBoxVisibility"),
+                    .Path = New PropertyPath("HasCheckBoxesForItems"),
                     .Source = Me
                 },
-                .Value = Visibility.Visible
+                .Value = True
             })
             checkBoxTrigger1.Conditions.Add(New Condition() With {
                 .Binding = New Binding() With {
@@ -122,10 +122,10 @@ Namespace Controls
             Dim checkBoxTrigger2 As MultiDataTrigger = New MultiDataTrigger()
             checkBoxTrigger2.Conditions.Add(New Condition() With {
                 .Binding = New Binding() With {
-                    .Path = New PropertyPath("CheckBoxVisibility"),
+                    .Path = New PropertyPath("HasCheckBoxesForItems"),
                     .Source = Me
                 },
-                .Value = Visibility.Visible
+                .Value = True
             })
             checkBoxTrigger2.Conditions.Add(New Condition() With {
                 .Binding = New Binding() With {
@@ -149,10 +149,10 @@ Namespace Controls
             Dim checkBoxTrigger3 As MultiDataTrigger = New MultiDataTrigger()
             checkBoxTrigger3.Conditions.Add(New Condition() With {
                 .Binding = New Binding() With {
-                    .Path = New PropertyPath("CheckBoxVisibility"),
+                    .Path = New PropertyPath("HasCheckBoxesForItems"),
                     .Source = Me
                 },
-                .Value = Visibility.Visible
+                .Value = True
             })
             checkBoxTrigger3.Conditions.Add(New Condition() With {
                 .Binding = New Binding() With {

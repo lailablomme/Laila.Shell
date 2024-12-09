@@ -6,6 +6,29 @@ Imports System.Runtime.InteropServices.ComTypes
 Imports System.IO
 
 Public Class Functions
+
+    <DllImport("shell32.dll", SetLastError:=True)>
+    Public Shared Sub SHGetSetSettings(
+    ByRef value As UInt32,
+    dwMask As SSF,
+    bSet As Boolean
+)
+    End Sub
+    <DllImport("user32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
+    Public Shared Function SendMessageTimeout(
+    hWnd As IntPtr,
+    Msg As UInteger,
+    wParam As IntPtr,
+    lParam As String,
+    flags As UInteger,
+    timeout As UInteger,
+    ByRef result As IntPtr
+) As IntPtr
+    End Function
+
+    Public Shared Property HWND_BROADCAST As IntPtr = CType(&HFFFF, IntPtr)
+    Public Const WM_SETTINGCHANGE As UInteger = &H1A
+    Public Const SMTO_ABORTIFHUNG As UInteger = &H2
     Public Const STGM_READWRITE As Integer = 2
     Public Const STR_ENUM_ITEMS_FLAGS As String = "EnumItemsFlags"
     <DllImport("user32.dll", SetLastError:=True)>

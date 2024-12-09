@@ -67,6 +67,36 @@ Namespace Controls
                     End Sub
                 menu.Add(collapseAllGroupsMenuItem)
             End If
+
+            If Me.MenuStyle = ViewMenuStyle.Toolbar Then
+                menu.Add(New Separator())
+                Dim viewSubMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "View"
+                }
+                menu.Add(viewSubMenuItem)
+                Dim checkBoxesForItemsMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Checkboxes for items",
+                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/filecheck16.png")},
+                    .IsCheckable = True,
+                    .IsChecked = Shell.Settings.DoShowCheckBoxesToSelect
+                }
+                AddHandler checkBoxesForItemsMenuItem.Click,
+                    Sub(s As Object, e As EventArgs)
+                        Shell.Settings.DoShowCheckBoxesToSelect = checkBoxesForItemsMenuItem.IsChecked
+                    End Sub
+                viewSubMenuItem.Items.Add(checkBoxesForItemsMenuItem)
+                Dim fileNameExtensionsMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Filename extensions",
+                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/fileext16.png")},
+                    .IsCheckable = True,
+                    .IsChecked = Not Shell.Settings.DoHideKnownFileExtensions
+                }
+                AddHandler fileNameExtensionsMenuItem.Click,
+                    Sub(s As Object, e As EventArgs)
+                        Shell.Settings.DoHideKnownFileExtensions = Not fileNameExtensionsMenuItem.IsChecked
+                    End Sub
+                viewSubMenuItem.Items.Add(fileNameExtensionsMenuItem)
+            End If
         End Sub
 
         Public Property Folder As Folder

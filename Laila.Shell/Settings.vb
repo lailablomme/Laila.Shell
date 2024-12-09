@@ -1,4 +1,6 @@
-﻿Imports Microsoft.Win32
+﻿Imports System.Runtime.InteropServices
+Imports System.Windows.Documents
+Imports Microsoft.Win32
 
 Public Class Settings
     Inherits NotifyPropertyChangedBase
@@ -10,11 +12,27 @@ Public Class Settings
 
     Public Property DoHideKnownFileExtensions As Boolean
         Get
-            Return Settings.GetRegistryBoolean(HIDEKNOWNFILEEXTENSIONS_KEY, HIDEKNOWNFILEEXTENSIONS_VALUENAME)
+            Dim mask As SSF = SSF.SSF_SHOWEXTENSIONS
+            Dim val As SSF
+            Functions.SHGetSetSettings(val, mask, False)
+            Return Not val.HasFlag(SSF.SSF_SHOWEXTENSIONS)
         End Get
         Set(value As Boolean)
-            Settings.SetRegistryBoolean(HIDEKNOWNFILEEXTENSIONS_KEY, HIDEKNOWNFILEEXTENSIONS_VALUENAME, value)
+            Dim mask As SSF = SSF.SSF_SHOWEXTENSIONS
+            Dim val As SSF = If(value, 0, SSF.SSF_SHOWEXTENSIONS)
+            Functions.SHGetSetSettings(val, mask, True)
+            Dim h As HRESULT = Marshal.GetLastWin32Error()
             Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
+
+            Dim list As List(Of Item)
+            SyncLock Shell._itemsCacheLock
+                list = Shell.ItemsCache.Select(Function(i) i.Item1).ToList()
+            End SyncLock
+            For Each item In list
+                item._displayName = Nothing
+                item.ShellItem2.Update(IntPtr.zero)
+                item.NotifyOfPropertyChange("DisplayName")
+            Next
         End Set
     End Property
 
@@ -24,7 +42,7 @@ Public Class Settings
         End Get
         Set(value As Boolean)
             Settings.SetRegistryBoolean(SHOWCHECKBOXESTOSELECT_KEY, SHOWCHECKBOXESTOSELECT_VALUENAME, value)
-            Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
+            Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
         End Set
     End Property
 
@@ -44,13 +62,9 @@ Public Class Settings
     End Function
 
     Private Shared Sub SetRegistryBoolean(key As String, valueName As String, value As Boolean)
-        Using registryKey As RegistryKey = Registry.CurrentUser.OpenSubKey(key)
+        Using registryKey As RegistryKey = Registry.CurrentUser.CreateSubKey(key, True)
             If Not key Is Nothing Then
                 registryKey.SetValue(valueName, If(value, 1, 0))
-            Else
-                Using newRegistryKey As RegistryKey = Registry.CurrentUser.CreateSubKey(key)
-                    newRegistryKey.SetValue(valueName, If(value, 1, 0))
-                End Using
             End If
         End Using
     End Sub
