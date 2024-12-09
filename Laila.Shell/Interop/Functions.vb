@@ -9,7 +9,7 @@ Public Class Functions
 
     <DllImport("shell32.dll", SetLastError:=True)>
     Public Shared Sub SHGetSetSettings(
-    ByRef value As UInt32,
+    ByRef value As SHELLSTATE,
     dwMask As SSF,
     bSet As Boolean
 )

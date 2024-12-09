@@ -5,53 +5,63 @@ Imports Microsoft.Win32
 Public Class Settings
     Inherits NotifyPropertyChangedBase
 
-    Private Const HIDEKNOWNFILEEXTENSIONS_KEY As String = "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-    Private Const HIDEKNOWNFILEEXTENSIONS_VALUENAME As String = "HideFileExt"
-    Private Const SHOWCHECKBOXESTOSELECT_KEY As String = "Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-    Private Const SHOWCHECKBOXESTOSELECT_VALUENAME As String = "AutoCheckSelect"
-
     Public Property DoHideKnownFileExtensions As Boolean
         Get
             Dim mask As SSF = SSF.SSF_SHOWEXTENSIONS
-            Dim val As SSF
+            Dim val As SHELLSTATE
             Functions.SHGetSetSettings(val, mask, False)
-            Return Not val.HasFlag(SSF.SSF_SHOWEXTENSIONS)
+            Return Not val.Data1 = SSF.SSF_SHOWEXTENSIONS
         End Get
         Set(value As Boolean)
             Dim mask As SSF = SSF.SSF_SHOWEXTENSIONS
-            Dim val As SSF = If(value, 0, SSF.SSF_SHOWEXTENSIONS)
+            Dim val As SHELLSTATE
+            val.Data1 = If(value, 0, SSF.SSF_SHOWEXTENSIONS)
             Functions.SHGetSetSettings(val, mask, True)
-            Dim h As HRESULT = Marshal.GetLastWin32Error()
-            Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
-
-            Dim list As List(Of Item)
-            SyncLock Shell._itemsCacheLock
-                list = Shell.ItemsCache.Select(Function(i) i.Item1).ToList()
-            End SyncLock
-            For Each item In list
-                item._displayName = Nothing
-                item.ShellItem2.Update(IntPtr.zero)
-                item.NotifyOfPropertyChange("DisplayName")
-            Next
+            onDoHideKnownFileExtensionsChanged()
         End Set
     End Property
 
+    Private Sub onDoHideKnownFileExtensionsChanged()
+        Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
+
+        Dim list As List(Of Item)
+        SyncLock Shell._itemsCacheLock
+            list = Shell.ItemsCache.Select(Function(i) i.Item1).ToList()
+        End SyncLock
+        For Each item In list
+            item._displayName = Nothing
+            item.ShellItem2.Update(IntPtr.Zero)
+            item.NotifyOfPropertyChange("DisplayName")
+        Next
+    End Sub
+
     Public Property DoShowCheckBoxesToSelect As Boolean
         Get
-            Return Settings.GetRegistryBoolean(SHOWCHECKBOXESTOSELECT_KEY, SHOWCHECKBOXESTOSELECT_VALUENAME)
+            Dim mask As SSF = SSF.SSF_AUTOCHECKSELECT
+            Dim val As SHELLSTATE
+            Functions.SHGetSetSettings(val, mask, False)
+            Return val.Data10 = 8
         End Get
         Set(value As Boolean)
-            Settings.SetRegistryBoolean(SHOWCHECKBOXESTOSELECT_KEY, SHOWCHECKBOXESTOSELECT_VALUENAME, value)
+            Dim mask As SSF = SSF.SSF_AUTOCHECKSELECT
+            Dim val As SHELLSTATE
+            val.Data10 = If(value, 8, 0)
+            Functions.SHGetSetSettings(val, mask, True)
             Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
         End Set
     End Property
 
+    Friend Sub OnSettingChange()
+        onDoHideKnownFileExtensionsChanged()
+        Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
+    End Sub
+
     Private Shared Function GetRegistryBoolean(key As String, valueName As String) As Boolean
         Using registryKey As RegistryKey = Registry.CurrentUser.OpenSubKey(key)
             If Not key Is Nothing Then
-                Dim hideFileExt As Object = registryKey.GetValue(valueName)
-                If Not hideFileExt Is Nothing AndAlso TypeOf hideFileExt Is Integer Then
-                    Return CType(hideFileExt, Integer) <> 0
+                Dim val As Object = registryKey.GetValue(valueName)
+                If Not val Is Nothing AndAlso TypeOf val Is Integer Then
+                    Return CType(val, Integer) <> 0
                 Else
                     Return False
                 End If
