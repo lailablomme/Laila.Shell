@@ -285,6 +285,7 @@ Namespace Controls
             textBlockFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center)
             textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis)
             textBlockFactory.SetValue(TextBlock.PaddingProperty, New Thickness(0, 0, 2, 0))
+            textBlockFactory.SetValue(TextBlock.TagProperty, "PART_DisplayName")
             textBlockFactory.SetValue(TextBlock.TextProperty, New Binding() With {
                 .Path = New PropertyPath(If(column.CanonicalName = "System.ItemNameDisplay", "DisplayName", String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))),
                 .Mode = BindingMode.OneWay
@@ -352,31 +353,15 @@ Namespace Controls
 
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
-            Dim column As Column = Me.Folder.Columns("System.ItemNameDisplay")
-            If Not column Is Nothing Then
-                Dim headers As IEnumerable(Of GridViewColumnHeader) =
-                    UIHelper.FindVisualChildren(Of GridViewColumnHeader)(Me.PART_ListBox)
-                Dim header As GridViewColumnHeader =
-                    headers.FirstOrDefault(Function(h) Not h.Column Is Nothing _
-                        AndAlso h.Column.GetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty) _
-                            = String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
-                If Not header Is Nothing Then
-                    Dim width As Double = header.ActualWidth
-                    Dim ptLeft As Point = Me.PointFromScreen(header.PointToScreen(New Point(0, 0)))
-                    If header.Column.GetValue(Behaviors.GridViewExtBehavior.ColumnIndexProperty) = 0 Then
-                        ptLeft.X += 20
-                        width -= 20
-                    End If
-                    Dim ptTop As Point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
-
-                    point.X = ptLeft.X + 2 + If(Me.HasCheckBoxesForItems, 16, 0)
-                    point.Y = ptTop.Y + 1
-                    size.Width = width - 5 - If(Me.HasCheckBoxesForItems, 16, 0)
-                    size.Height = listBoxItem.ActualHeight
-                End If
-            End If
+            Dim textBlock As TextBlock = UIHelper.FindVisualChildren(Of TextBlock)(listBoxItem) _
+                .FirstOrDefault(Function(b) Not b.Tag Is Nothing AndAlso b.Tag = "PART_DisplayName")
+            point = Me.PointFromScreen(textBlock.PointToScreen(New Point(0, 0)))
+            point.X += -2
+            point.Y += -1
+            size.Width = textBlock.ActualWidth + 4
+            size.Height = textBlock.ActualHeight + 2
             textAlignment = TextAlignment.Left
-            fontSize = Me.FontSize
+            fontSize = textBlock.FontSize
         End Sub
 
         Public Property ColumnsIn As Behaviors.GridViewExtBehavior.ColumnsInData
