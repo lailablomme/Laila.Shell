@@ -80,7 +80,7 @@
                                                 <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Separator Margin="0,-3,0,0" VerticalAlignment="Top" Grid.ColumnSpan="4" 
+                                            <Separator Margin="0,-3,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True" />
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                       VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
@@ -154,7 +154,7 @@
                                                     <converters:CollapseTrimmedTextBlockConverter x:Key="collapseTrimmedTextBlockConverter" />
                                                     <converters:DoubleConverter x:Key="doubleConverter" />
                                                 </Grid.Resources>
-                                                <TextBlock Grid.Row="0" 
+                                                <TextBlock Grid.Row="0" x:Name="PART_DisplayName" 
                                                            Text="{Binding DisplayName}" 
                                                            TextTrimming="CharacterEllipsis" FontSize="14">
                                                     <TextBlock.Style>

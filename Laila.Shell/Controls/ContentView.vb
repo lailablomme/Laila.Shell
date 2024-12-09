@@ -2,6 +2,7 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports Laila.Shell.Helpers
 
 Namespace Controls
     Public Class ContentView
@@ -13,14 +14,15 @@ Namespace Controls
 
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
-            point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
-            point.X += 31 + 2 + 48 + 2
-            point.Y += 1
-            listBoxItem.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
-            size.Width = 300 + 4
-            size.Height = 20
+            Dim textBlock As TextBlock = UIHelper.FindVisualChildren(Of TextBlock)(listBoxItem) _
+                .FirstOrDefault(Function(b) b.Name = "PART_DisplayName")
+            point = Me.PointFromScreen(textBlock.PointToScreen(New Point(0, 0)))
+            point.X += -2
+            point.Y += -1
+            size.Width = textBlock.ActualWidth + 4
+            size.Height = textBlock.ActualHeight + 2
             textAlignment = TextAlignment.Left
-            fontSize = 14
+            fontSize = textBlock.FontSize
         End Sub
     End Class
 End Namespace

@@ -140,7 +140,8 @@
                                                     <converters:DoubleConverter x:Key="doubleConverter" />
                                                 </Grid.Resources>
                                                 <TextBlock Grid.Row="0" TextWrapping="Wrap" MaxWidth="200" MaxHeight="34" 
-                                                       Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
+                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
+                                                           x:Name="PART_DisplayName">
                                                     <TextBlock.Style>
                                                         <Style>
                                                             <Style.Triggers>

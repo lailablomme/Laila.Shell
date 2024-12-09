@@ -355,11 +355,11 @@ Namespace Controls
             Dim column As Column = Me.Folder.Columns("System.ItemNameDisplay")
             If Not column Is Nothing Then
                 Dim headers As IEnumerable(Of GridViewColumnHeader) =
-                                            UIHelper.FindVisualChildren(Of GridViewColumnHeader)(Me.PART_ListBox)
+                    UIHelper.FindVisualChildren(Of GridViewColumnHeader)(Me.PART_ListBox)
                 Dim header As GridViewColumnHeader =
-                                            headers.FirstOrDefault(Function(h) Not h.Column Is Nothing _
-                                                AndAlso h.Column.GetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty) _
-                                                    = String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
+                    headers.FirstOrDefault(Function(h) Not h.Column Is Nothing _
+                        AndAlso h.Column.GetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty) _
+                            = String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
                 If Not header Is Nothing Then
                     Dim width As Double = header.ActualWidth
                     Dim ptLeft As Point = Me.PointFromScreen(header.PointToScreen(New Point(0, 0)))
@@ -369,9 +369,9 @@ Namespace Controls
                     End If
                     Dim ptTop As Point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
 
-                    point.X = ptLeft.X + 2
+                    point.X = ptLeft.X + 2 + If(Me.HasCheckBoxesForItems, 16, 0)
                     point.Y = ptTop.Y + 1
-                    size.Width = width - 5
+                    size.Width = width - 5 - If(Me.HasCheckBoxesForItems, 16, 0)
                     size.Height = listBoxItem.ActualHeight
                 End If
             End If

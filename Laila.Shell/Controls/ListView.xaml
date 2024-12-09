@@ -147,7 +147,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <TextBlock Grid.Column="4" MaxWidth="200"
+                                            <TextBlock Grid.Column="4" MaxWidth="200" x:Name="PART_DisplayName"
                                                        Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
                                                     <Style>
