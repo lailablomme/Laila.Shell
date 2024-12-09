@@ -281,7 +281,7 @@ Public Class Shell
     End Sub
 
     Private Shared Function hwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
-        Debug.WriteLine(CType(msg, WM).ToString())
+        'Debug.WriteLine(CType(msg, WM).ToString())
         If msg = WM.USER + 1 Then
             ' we received an SHChangeNotify message - go get the data
             Dim pppidl As IntPtr = IntPtr.Zero
