@@ -448,8 +448,8 @@ Namespace Controls
                                             End If
                                         Case "rename"
                                             Dim pt As Point = Me.PointFromScreen(treeViewItem.PointToScreen(New Point(0, 0)))
-                                            pt.X += clickedItem.TreeMargin.Left + 37
-                                            pt.Y -= 1
+                                            pt.X += clickedItem.TreeMargin.Left + 41
+                                            pt.Y -= 0
                                             Menus.DoRename(pt, New Size(Me.ActualWidth - pt.X - 2, treeViewItem.ActualHeight),
                                                         TextAlignment.Left, Me.FontSize, clickedItem, Me.PART_Grid)
                                             e2.IsHandled = True
