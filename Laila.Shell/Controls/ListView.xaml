@@ -68,7 +68,7 @@
                                                     <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="1">
                                                         <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="0,0,0,0" />
                                                     </DataTrigger>
-                                                    <DataTrigger Binding="{Binding CheckBoxVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="Visible">
+                                                    <DataTrigger Binding="{Binding HasCheckBoxesForItems, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="True">
                                                         <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,20" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
