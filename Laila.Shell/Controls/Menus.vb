@@ -57,8 +57,9 @@ Namespace Controls
                 isWithExt = True
             ElseIf IO.Path.GetFileName(item.FullPath).StartsWith(item.DisplayName) Then
                 originalName = item.DisplayName
-                ext = IO.Path.GetFileName(item.FullPath).Substring(originalName.Length)
-                isWithExt = False
+                ext = IO.Path.GetFileName(item.FullPath) _
+                    .Substring(IO.Path.GetFileNameWithoutExtension(item.FullPath).Length)
+                isWithExt = originalName = IO.Path.GetFileName(item.FullPath)
             ElseIf doHideKnownFileExtensions Then
                 originalName = IO.Path.GetFileNameWithoutExtension(item.FullPath)
                 ext = IO.Path.GetExtension(item.FullPath)
