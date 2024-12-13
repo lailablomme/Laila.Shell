@@ -311,9 +311,9 @@ Public Class Folder
     Public Sub RefreshItems()
         Me.IsRefreshingItems = True
         For Each item In _items.ToList()
-            _items.Remove(item)
-            item.Dispose()
+            item._logicalParent = Nothing
         Next
+        _items.Clear()
         _isEnumerated = False
         Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
         view.SortDescriptions.Clear()
@@ -327,9 +327,9 @@ Public Class Folder
     Public Async Function RefreshItemsAsync() As Task
         Me.IsRefreshingItems = True
         For Each item In _items.ToList()
-            _items.Remove(item)
-            item.Dispose()
+            item._logicalParent = Nothing
         Next
+        _items.Clear()
         _isEnumerated = False
         Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
         view.SortDescriptions.Clear()
@@ -440,34 +440,45 @@ Public Class Folder
         Dim addItems As System.Action =
             Sub()
                 If toAdd.Count > 0 Then
-                    Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                    Dim view As CollectionView
+
+                    UIHelper.OnUIThread(
+                        Sub()
+                            view = CollectionViewSource.GetDefaultView(Me.Items)
+                        End Sub)
 
                     ' save sorting/grouping
                     Dim sortPropertyName As String = Me.ItemsSortPropertyName
                     Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
                     Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
 
-                    ' disable sorting grouping
-                    If Not TypeOf Me Is SearchFolder Then
-                        Me.IsNotifying = False
-                        Using view.DeferRefresh()
-                            Me.ItemsSortPropertyName = Nothing
-                            Me.ItemsGroupByPropertyName = Nothing
-                        End Using
-                    End If
+                    UIHelper.OnUIThread(
+                        Sub()
+                            ' disable sorting grouping
+                            If Not TypeOf Me Is SearchFolder Then
+                                Me.IsNotifying = False
+                                Using view.DeferRefresh()
+                                    Me.ItemsSortPropertyName = Nothing
+                                    Me.ItemsGroupByPropertyName = Nothing
+                                End Using
+                            End If
+                        End Sub)
 
                     ' add items
                     _items.AddRange(toAdd)
 
-                    ' restore sorting/grouping
-                    If Not TypeOf Me Is SearchFolder Then
-                        Using view.DeferRefresh()
-                            Me.ItemsSortPropertyName = sortPropertyName
-                            Me.ItemsSortDirection = sortDirection
-                            Me.ItemsGroupByPropertyName = groupByPropertyName
-                        End Using
-                        Me.IsNotifying = True
-                    End If
+                    UIHelper.OnUIThread(
+                        Sub()
+                            ' restore sorting/grouping
+                            If Not TypeOf Me Is SearchFolder Then
+                                Using view.DeferRefresh()
+                                    Me.ItemsSortPropertyName = sortPropertyName
+                                    Me.ItemsSortDirection = sortDirection
+                                    Me.ItemsGroupByPropertyName = groupByPropertyName
+                                End Using
+                                Me.IsNotifying = True
+                            End If
+                        End Sub)
                 End If
             End Sub
 
@@ -535,6 +546,17 @@ Public Class Folder
                                                 newItem = makeNewItem(shellItems(0))
                                             End If
                                             toAdd.Add(newItem)
+
+                                            ' preload sort property
+                                            If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
+                                                If Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText") Then
+                                                    Dim pkey As String = Me.ItemsSortPropertyName.Substring(Me.ItemsSortPropertyName.IndexOf("[") + 1)
+                                                    pkey = pkey.Substring(0, pkey.IndexOf("]"))
+                                                    Dim sortValue As Object = newItem.PropertiesByKeyAsText(pkey).Value
+                                                ElseIf Me.ItemsSortPropertyName = "ItemNameDisplaySortValue" Then
+                                                    Dim sortValue As Object = newItem.ItemNameDisplaySortValue
+                                                End If
+                                            End If
                                         Catch ex As Exception
                                         End Try
                                     Else
@@ -544,10 +566,7 @@ Public Class Folder
                                     If cancellationToken.IsCancellationRequested Then Exit While
                                     If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
                                         AndAlso toAdd.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                addItems()
-                                            End Sub)
+                                        addItems()
                                         toAdd.Clear()
                                         lastUpdate = DateTime.Now
                                         Thread.Sleep(10)
@@ -641,11 +660,11 @@ Public Class Folder
                 Next
             End If
 
+            ' add new items
+            addItems()
+
             UIHelper.OnUIThread(
                 Sub()
-                    ' add new items
-                    addItems()
-
                     ' remove items that weren't found anymore
                     For Each item In getToBeRemoved(itemsBefore.Select(Function(i) i.FullPath).ToList(), pathsAfter)
                         If TypeOf item Is Folder Then

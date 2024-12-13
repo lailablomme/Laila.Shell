@@ -667,12 +667,24 @@ Namespace Controls
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Reset
+                    ' add new folders
                     For Each item In collection.Where(Function(i) _
                         TypeOf i Is Folder _
                         AndAlso (CType(i, Folder)._logicalParent Is Nothing OrElse CType(i, Folder)._logicalParent.IsExpanded) _
                         AndAlso Not Me.Items.Contains(i))
                         Me.Items.Add(item)
                     Next
+
+                    ' remove removed folders
+                    Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
+                        AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
+                    If Not folder Is Nothing Then
+                        For Each item In Me.Items.Where(Function(i) _
+                            Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder) _
+                            AndAlso Not collection.Contains(i)).ToList()
+                            Me.Items.Remove(item)
+                        Next
+                    End If
             End Select
         End Sub
 

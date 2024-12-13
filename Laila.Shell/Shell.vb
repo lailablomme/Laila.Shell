@@ -94,7 +94,11 @@ Public Class Shell
             Sub()
                 Try
                     While Not ShuttingDownToken.IsCancellationRequested
-                        For Each item In _itemsCache.ToList()
+                        Dim list As List(Of Tuple(Of Item, DateTime))
+                        SyncLock _itemsCacheLock
+                            list = Shell.ItemsCache.ToList()
+                        End SyncLock
+                        For Each item In list
                             If ShuttingDownToken.IsCancellationRequested Then Exit For
                             If Not item Is Nothing AndAlso Not item.Item1 Is Nothing AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 2000 Then
                                 item.Item1.MaybeDispose()
