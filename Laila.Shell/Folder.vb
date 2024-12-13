@@ -445,15 +445,12 @@ Public Class Folder
                     UIHelper.OnUIThread(
                         Sub()
                             view = CollectionViewSource.GetDefaultView(Me.Items)
-                        End Sub)
 
-                    ' save sorting/grouping
-                    Dim sortPropertyName As String = Me.ItemsSortPropertyName
-                    Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
-                    Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
+                            ' save sorting/grouping
+                            Dim sortPropertyName As String = Me.ItemsSortPropertyName
+                            Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
+                            Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
 
-                    UIHelper.OnUIThread(
-                        Sub()
                             ' disable sorting grouping
                             If Not TypeOf Me Is SearchFolder Then
                                 Me.IsNotifying = False
@@ -462,13 +459,10 @@ Public Class Folder
                                     Me.ItemsGroupByPropertyName = Nothing
                                 End Using
                             End If
-                        End Sub)
 
-                    ' add items
-                    _items.AddRange(toAdd)
+                            ' add items
+                            _items.AddRange(toAdd)
 
-                    UIHelper.OnUIThread(
-                        Sub()
                             ' restore sorting/grouping
                             If Not TypeOf Me Is SearchFolder Then
                                 Using view.DeferRefresh()
