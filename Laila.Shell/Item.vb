@@ -23,7 +23,7 @@ Public Class Item
     Private _isCut As Boolean
     Private _attributes As SFGAO
     Private _treeRootIndex As Long = -1
-    Protected _shellItem2 As IShellItem2
+    Friend _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
     Private _shellItemHistory As List(Of IShellItem2) = New List(Of IShellItem2)
