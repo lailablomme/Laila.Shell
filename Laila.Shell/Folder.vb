@@ -521,60 +521,65 @@ Public Class Folder
                             If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
                         End Try
                         If Not enumShellItems Is Nothing Then
-                            Dim shellItems(0) As IShellItem, fetched As UInt32 = 1
+                            Dim shellItems(9999) As IShellItem, fetched As UInt32 = 1
                             Dim startedUpdate As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
                             'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
                             If Not cancellationToken.IsCancellationRequested Then
-                                Dim h As HRESULT = enumShellItems.Next(1, shellItems, fetched)
-                                While fetched = 1
-                                    If Not h = HRESULT.Ok Then Throw New Exception(h.ToString())
-                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
-                                    Dim attr2 As Integer = SFGAO.FOLDER
-                                    shellItems(0).GetAttributes(attr2, attr2)
-                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting path", DateTime.Now)
-                                    Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(0))
-                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} " & fullPath, DateTime.Now)
-                                    pathsAfter.Add(fullPath)
-                                    Dim existing As Item = itemsBefore.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue)
-                                    If existing Is Nothing Then
-                                        Dim newItem As Item
-                                        Try
-                                            'Debug.WriteLine("{0:HH:mm:ss.ffff} making item", DateTime.Now)
-                                            If CBool(attr2 And SFGAO.FOLDER) Then
-                                                newItem = makeNewFolder(shellItems(0))
-                                            Else
-                                                newItem = makeNewItem(shellItems(0))
-                                            End If
-                                            toAdd.Add(newItem)
-
-                                            ' preload sort property
-                                            If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
-                                                If Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText") Then
-                                                    Dim pkey As String = Me.ItemsSortPropertyName.Substring(Me.ItemsSortPropertyName.IndexOf("[") + 1)
-                                                    pkey = pkey.Substring(0, pkey.IndexOf("]"))
-                                                    Dim sortValue As Object = newItem.PropertiesByKeyAsText(pkey).Value
-                                                ElseIf Me.ItemsSortPropertyName = "ItemNameDisplaySortValue" Then
-                                                    Dim sortValue As Object = newItem.ItemNameDisplaySortValue
+                                Dim h As HRESULT = enumShellItems.Next(10000, shellItems, fetched)
+                                While fetched > 0
+                                    Debug.WriteLine("{0:HH:mm:ss.ffff} Fetched " & fetched & " items", DateTime.Now)
+                                    For x = 0 To fetched - 1
+                                        'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
+                                        Dim attr2 As Integer = SFGAO.FOLDER
+                                        shellItems(x).GetAttributes(attr2, attr2)
+                                        'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting path", DateTime.Now)
+                                        Dim fullPath As String = Item.GetFullPathFromShellItem2(shellItems(x))
+                                        'Debug.WriteLine("{0:HH:mm:ss.ffff} " & fullPath, DateTime.Now)
+                                        pathsAfter.Add(fullPath)
+                                        Dim existing As Item = itemsBefore.FirstOrDefault(Function(i) i.FullPath = fullPath AndAlso Not i.disposedValue)
+                                        If existing Is Nothing Then
+                                            Dim newItem As Item
+                                            Try
+                                                'Debug.WriteLine("{0:HH:mm:ss.ffff} making item", DateTime.Now)
+                                                If CBool(attr2 And SFGAO.FOLDER) Then
+                                                    newItem = makeNewFolder(shellItems(x))
+                                                Else
+                                                    newItem = makeNewItem(shellItems(x))
                                                 End If
-                                            End If
-                                        Catch ex As Exception
-                                        End Try
-                                    Else
-                                        'Debug.WriteLine("{0:HH:mm:ss.ffff} Updating item", DateTime.Now)
-                                        toUpdate.Add(New Tuple(Of Item, IShellItem2)(existing, shellItems(0)))
-                                    End If
-                                    If cancellationToken.IsCancellationRequested Then Exit While
-                                    If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
-                                        AndAlso toAdd.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
-                                        addItems()
-                                        toAdd.Clear()
-                                        lastUpdate = DateTime.Now
-                                        Thread.Sleep(10)
-                                    End If
-                                    If cancellationToken.IsCancellationRequested Then Exit While
-                                    'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
-                                    h = enumShellItems.Next(1, shellItems, fetched)
+                                                toAdd.Add(newItem)
+
+                                                ' preload sort property
+                                                If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
+                                                    If Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText") Then
+                                                        Dim pkey As String = Me.ItemsSortPropertyName.Substring(Me.ItemsSortPropertyName.IndexOf("[") + 1)
+                                                        pkey = pkey.Substring(0, pkey.IndexOf("]"))
+                                                        Dim sortValue As Object = newItem.PropertiesByKeyAsText(pkey).Value
+                                                    ElseIf Me.ItemsSortPropertyName = "ItemNameDisplaySortValue" Then
+                                                        Dim sortValue As Object = newItem.ItemNameDisplaySortValue
+                                                    End If
+                                                End If
+                                            Catch ex As Exception
+                                            End Try
+                                        Else
+                                            'Debug.WriteLine("{0:HH:mm:ss.ffff} Updating item", DateTime.Now)
+                                            toUpdate.Add(New Tuple(Of Item, IShellItem2)(existing, shellItems(x)))
+                                        End If
+                                        If cancellationToken.IsCancellationRequested Then Exit While
+                                        If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
+                                            AndAlso toAdd.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
+                                            addItems()
+                                            toAdd.Clear()
+                                            lastUpdate = DateTime.Now
+                                            Thread.Sleep(10)
+                                        End If
+                                        If cancellationToken.IsCancellationRequested Then Exit While
+                                    Next
+                                    Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
+                                    h = enumShellItems.Next(10000, shellItems, fetched)
                                 End While
+                                If fetched = 0 AndAlso Not (h = HRESULT.Ok OrElse h = HRESULT.False) Then
+                                    Throw New Exception(h.ToString())
+                                End If
                             End If
                         End If
                         Me.EnumerationException = Nothing
