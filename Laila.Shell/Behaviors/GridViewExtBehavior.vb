@@ -213,6 +213,8 @@ Namespace Behaviors
                                     Select Case e2.Action
                                         Case NotifyCollectionChangedAction.Add
                                             _skipResize = False
+                                        Case NotifyCollectionChangedAction.Reset
+                                            _skipResize = False
                                     End Select
                                 End Sub
                         End If

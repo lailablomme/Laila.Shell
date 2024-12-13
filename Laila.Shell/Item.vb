@@ -134,29 +134,7 @@ Public Class Item
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
         If Not shellItem2 Is Nothing Then
-            'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting PIDL", DateTime.Now)
-            Dim ptr As IntPtr, pidl As IntPtr
-            Try
-                ptr = Marshal.GetIUnknownForObject(_shellItem2)
-                Functions.SHGetIDListFromObject(ptr, pidl)
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-            End Try
-
-            _pidl = New Pidl(pidl)
-            'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting full path", DateTime.Now)
-            '_fullPath = Item.GetFullPathFromShellItem2(shellItem2)
-            'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting display name", DateTime.Now)
-            'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
-            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
-            Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
-            Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
-            Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED
-            shellItem2.GetAttributes(_attributes, _attributes)
             AddHandler Shell.Notification, AddressOf shell_Notification
-            'Debug.WriteLine("{0:HH:mm:ss.ffff} Adding to cache", DateTime.Now)
             Shell.AddToItemsCache(Me)
         Else
             _fullPath = String.Empty
@@ -176,6 +154,18 @@ Public Class Item
 
     Public ReadOnly Property Pidl As Pidl
         Get
+            If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
+                Dim ptr As IntPtr, pidlptr As IntPtr
+                Try
+                    ptr = Marshal.GetIUnknownForObject(_shellItem2)
+                    Functions.SHGetIDListFromObject(ptr, pidlptr)
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr) Then
+                        Marshal.Release(ptr)
+                    End If
+                End Try
+                _pidl = New Pidl(pidlptr)
+            End If
             Return _pidl
         End Get
     End Property
@@ -717,6 +707,13 @@ Public Class Item
 
     Public ReadOnly Property Attributes As SFGAO
         Get
+            If _attributes = 0 Then
+                _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+                                Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
+                                Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
+                                Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED
+                ShellItem2.GetAttributes(_attributes, _attributes)
+            End If
             Return _attributes
         End Get
     End Property
@@ -1114,7 +1111,9 @@ Public Class Item
                 _shellItemHistory.Clear()
 
                 Shell.RemoveFromItemsCache(Me)
-                Me.Pidl.Dispose()
+                If Not _pidl Is Nothing Then
+                    _pidl.Dispose()
+                End If
 
                 UIHelper.OnUIThreadAsync(
                     Sub()

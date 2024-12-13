@@ -17,7 +17,7 @@ Public Class Folder
     Public Property LastScrollSize As Size
 
     Private _columns As List(Of Column)
-    Friend _items As ObservableCollection(Of Item) = New ObservableCollection(Of Item)()
+    Friend _items As CustomObservableCollection(Of Item) = New CustomObservableCollection(Of Item)()
     Private _isExpanded As Boolean
     Private _isLoading As Boolean
     Private _isRefreshingItems As Boolean
@@ -457,9 +457,7 @@ Public Class Folder
                     End If
 
                     ' add items
-                    For Each item In toAdd
-                        add(item)
-                    Next
+                    _items.AddRange(toAdd)
 
                     ' restore sorting/grouping
                     If Not TypeOf Me Is SearchFolder Then
@@ -544,7 +542,8 @@ Public Class Folder
                                         toUpdate.Add(New Tuple(Of Item, IShellItem2)(existing, shellItems(0)))
                                     End If
                                     If cancellationToken.IsCancellationRequested Then Exit While
-                                    If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 AndAlso toAdd.Count > 0 Then
+                                    If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
+                                        AndAlso toAdd.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
                                         UIHelper.OnUIThread(
                                             Sub()
                                                 addItems()

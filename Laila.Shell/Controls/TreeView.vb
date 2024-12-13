@@ -640,6 +640,8 @@ Namespace Controls
         End Sub
 
         Private Sub folder_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)
+            Dim collection As ObservableCollection(Of Item) = s
+
             Select Case e.Action
                 Case NotifyCollectionChangedAction.Add
                     For Each item In e.NewItems
@@ -665,7 +667,12 @@ Namespace Controls
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Reset
-                    Throw New NotSupportedException()
+                    For Each item In collection.Where(Function(i) _
+                        TypeOf i Is Folder _
+                        AndAlso (CType(i, Folder)._logicalParent Is Nothing OrElse CType(i, Folder)._logicalParent.IsExpanded) _
+                        AndAlso Not Me.Items.Contains(i))
+                        Me.Items.Add(item)
+                    Next
             End Select
         End Sub
 
