@@ -7,14 +7,6 @@ Namespace Helpers
     Public Class CustomObservableCollection(Of T)
         Inherits ObservableCollection(Of T)
 
-        Private _lock As Object = New Object()
-
-        Public Sub New()
-            MyBase.New()
-
-            BindingOperations.EnableCollectionSynchronization(Me, _lock)
-        End Sub
-
         Public Sub AddRange(range As IEnumerable(Of T))
             Me.CheckReentrancy()
 

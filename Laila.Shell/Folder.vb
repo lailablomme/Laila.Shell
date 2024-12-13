@@ -777,14 +777,12 @@ Public Class Folder
                                 If Not _items Is Nothing Then
                                     UIHelper.OnUIThread(
                                         Sub()
-                                            SyncLock _lock
-                                                Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
-                                                If existing Is Nothing Then
-                                                    _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me, False))
-                                                Else
-                                                    existing.Refresh()
-                                                End If
-                                            End SyncLock
+                                            Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
+                                            If existing Is Nothing Then
+                                                _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me, False))
+                                            Else
+                                                existing.Refresh()
+                                            End If
                                         End Sub)
                                 End If
                             End If
@@ -797,14 +795,12 @@ Public Class Folder
                                 If Not _items Is Nothing Then
                                     UIHelper.OnUIThread(
                                         Sub()
-                                            SyncLock _lock
-                                                Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
-                                                If existing Is Nothing Then
-                                                    _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me, False))
-                                                Else
-                                                    existing.Refresh()
-                                                End If
-                                            End SyncLock
+                                            Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
+                                            If existing Is Nothing Then
+                                                _items.Add(Item.FromPidl(e.Item1Pidl.AbsolutePIDL, Me, False))
+                                            Else
+                                                existing.Refresh()
+                                            End If
                                         End Sub)
                                 End If
                             End If
@@ -817,9 +813,7 @@ Public Class Folder
                                 Dim item1path As String
                                 Functions.SHGetNameFromIDList(e.Item1Pidl.AbsolutePIDL, SIGDN.DESKTOPABSOLUTEPARSING, item1path)
                                 Dim item2 As Item
-                                SyncLock _lock
-                                    item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso (i.Pidl.Equals(e.Item1Pidl) OrElse i.FullPath?.Equals(item1path)))
-                                End SyncLock
+                                item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso (i.Pidl.Equals(e.Item1Pidl) OrElse i.FullPath?.Equals(item1path)))
                                 If Not item2 Is Nothing Then
                                     If TypeOf item2 Is Folder Then
                                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -835,14 +829,12 @@ Public Class Folder
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         UIHelper.OnUIThread(
                             Sub()
-                                SyncLock _lock
-                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
-                                        Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
-                                        If Not item1 Is Nothing Then
-                                            _items.Add(New Folder(item1, Me, False))
-                                        End If
+                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
+                                    Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1Pidl.AbsolutePIDL, Nothing)
+                                    If Not item1 Is Nothing Then
+                                        _items.Add(New Folder(item1, Me, False))
                                     End If
-                                End SyncLock
+                                End If
                             End Sub)
                     End If
                 Case SHCNE.DRIVEREMOVED
@@ -850,9 +842,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item As Item
-                                SyncLock _lock
-                                    item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
-                                End SyncLock
+                                item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl.Equals(e.Item1Pidl))
                                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                                     Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                         .Folder = item,
