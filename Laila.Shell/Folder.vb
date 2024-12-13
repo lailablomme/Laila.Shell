@@ -876,8 +876,8 @@ Public Class Folder
                             End Sub)
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                    If Me.Pidl.Equals(e.Item1Pidl) _
-                        AndAlso Not _items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
+                    If (Me.Pidl.Equals(e.Item1Pidl) OrElse Shell.Desktop.FullPath.Equals(e.Item1FullPath)) _
+                        AndAlso Not Me.Items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
                         AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) _
                         AndAlso (Not _doSkipUPDATEDIR.HasValue _
                                  OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) Then

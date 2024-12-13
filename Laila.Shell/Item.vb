@@ -422,8 +422,11 @@ Public Class Item
                     h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
                     If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                         Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    Else
+                        Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
                     End If
                 Catch ex As Exception
+                    Debug.WriteLine("IShellItemImageFactory.GetImage failed with " & ex.ToString())
                 Finally
                     Functions.DeleteObject(hbitmap)
                 End Try
@@ -466,8 +469,11 @@ Public Class Item
                     h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
                     If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                         Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    Else
+                        Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
                     End If
                 Catch ex As Exception
+                    Debug.WriteLine("IShellItemImageFactory.GetImage failed with " & ex.ToString())
                 Finally
                     Functions.DeleteObject(hbitmap)
                 End Try

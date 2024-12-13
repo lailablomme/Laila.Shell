@@ -308,12 +308,14 @@ Public Class Shell
                 If Not IntPtr.Zero.Equals(pidl1) Then
                     e.Item1Pidl = New Pidl(pidl1)
                     Using i = Item.FromPidl(pidl1, Nothing, True)
+                        e.Item1FullPath = i.FullPath
                         Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
                     End Using
                 End If
                 If Not IntPtr.Zero.Equals(pidl2) Then
                     e.Item2Pidl = New Pidl(pidl2)
                     Using i = Item.FromPidl(pidl1, Nothing, True)
+                        e.Item2FullPath = i.FullPath
                         Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
                     End Using
                 End If
