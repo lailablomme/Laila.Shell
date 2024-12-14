@@ -1,11 +1,6 @@
-﻿Imports System.ComponentModel
-Imports System.Data
-Imports System.Windows
+﻿Imports System.Windows
 Imports System.Windows.Controls
-Imports System.Windows.Controls.Primitives
-Imports System.Windows.Data
 Imports Laila.Shell.Helpers
-Imports WpfToolkit.Controls
 
 Namespace Controls
     Public Class ListView
@@ -15,9 +10,6 @@ Namespace Controls
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ListView), New FrameworkPropertyMetadata(GetType(ListView)))
-        End Sub
-
-        Protected Overrides Async Sub OnBeforeRestoreScrollOffset()
         End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,

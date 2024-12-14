@@ -169,10 +169,16 @@ Public Class Item
         End Get
     End Property
 
+    Public ReadOnly Property IsReadyForDispose As Boolean
+        Get
+            Return Not _doKeepAlive _
+                AndAlso (_parent Is Nothing OrElse (Not _parent.IsActiveInFolderView AndAlso Not _parent.IsVisibleInAddressBar)) _
+                AndAlso Not Me.IsVisibleInTree
+        End Get
+    End Property
+
     Public Overridable Sub MaybeDispose()
-        If Not _doKeepAlive _
-            AndAlso (_parent Is Nothing OrElse Not _parent.IsActiveInFolderView) _
-            AndAlso Not Me.IsVisibleInTree Then
+        If Me.IsReadyForDispose Then
             Me.Dispose()
         End If
     End Sub
@@ -246,10 +252,10 @@ Public Class Item
     Public Overridable Function Refresh(Optional newShellItem As IShellItem2 = Nothing) As TaskCompletionSource
         Dim tcs As TaskCompletionSource = New TaskCompletionSource()
 
-        Shell.SlowTaskQueue.Add(
+        Dim t As Thread = New Thread(
             Sub()
                 SyncLock _refreshLock
-                    If Not disposedValue Then
+                    If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                         Debug.WriteLine("Refreshing " & Me.DisplayName)
                         Dim oldProperties As HashSet(Of [Property]) = _properties
                         Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
@@ -306,6 +312,8 @@ Public Class Item
                     tcs.SetResult()
                 End SyncLock
             End Sub)
+        t.SetApartmentState(ApartmentState.MTA)
+        t.Start()
 
         Return tcs
     End Function
@@ -1079,11 +1087,11 @@ Public Class Item
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM
-                    If Me.FullPath.Equals(e.Item1.FullPath) Then
+                    If Me.Pidl?.Equals(e.Item1.Pidl) Then
                         Me.Refresh()
                     End If
                 Case SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
-                    If Me.IsDrive AndAlso Me.FullPath.Equals(e.Item1.FullPath) Then
+                    If Me.IsDrive AndAlso Me.FullPath?.Equals(e.Item1.FullPath) Then
                         Me.Refresh()
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
@@ -1098,39 +1106,41 @@ Public Class Item
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
-        If Not disposedValue Then
-            disposedValue = True
-            'Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
+        SyncLock _refreshLock
+            If Not disposedValue Then
+                disposedValue = True
+                'Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
 
-            If disposing Then
-                ' dispose managed state (managed objects)
-                RemoveHandler Shell.Notification, AddressOf shell_Notification
+                If disposing Then
+                    ' dispose managed state (managed objects)
+                    RemoveHandler Shell.Notification, AddressOf shell_Notification
 
-                For Each [property] In _properties
-                    [property].Dispose()
-                Next
-                _properties.Clear()
-                For Each item In _shellItemHistory
-                    Marshal.ReleaseComObject(item)
-                Next
-                _shellItemHistory.Clear()
+                    For Each [property] In _properties
+                        [property].Dispose()
+                    Next
+                    _properties.Clear()
+                    For Each item In _shellItemHistory
+                        Marshal.ReleaseComObject(item)
+                    Next
+                    _shellItemHistory.Clear()
 
-                Shell.RemoveFromItemsCache(Me)
-                If Not _pidl Is Nothing Then
-                    _pidl.Dispose()
+                    Shell.RemoveFromItemsCache(Me)
+                    If Not _pidl Is Nothing Then
+                        _pidl.Dispose()
+                    End If
+
+                    UIHelper.OnUIThreadAsync(
+                        Sub()
+                            If Not _parent Is Nothing Then
+                                _parent._items.Remove(Me)
+                                _parent._isEnumerated = False
+                            End If
+                        End Sub)
                 End If
 
-                UIHelper.OnUIThreadAsync(
-                    Sub()
-                        If Not _parent Is Nothing Then
-                            _parent._items.Remove(Me)
-                            _parent._isEnumerated = False
-                        End If
-                    End Sub)
+                ' free unmanaged resources (unmanaged objects) and override finalizer
             End If
-
-            ' free unmanaged resources (unmanaged objects) and override finalizer
-        End If
+        End SyncLock
     End Sub
 
     ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
