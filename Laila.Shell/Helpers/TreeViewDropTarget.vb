@@ -116,7 +116,7 @@ Public Class TreeViewDropTarget
                     fo.DeleteItems(_dataObject)
                     fo.PerformOperations()
                     Marshal.ReleaseComObject(fo)
-                    Return HRESULT.Ok
+                    Return HRESULT.S_OK
                 Else
                     Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
                     Debug.WriteLine("drop=" & h.ToString())
@@ -362,7 +362,7 @@ Public Class TreeViewDropTarget
                             End Try
                         End If
                         _newPinnedIndex = newPinnedIndex
-                        Return HRESULT.Ok
+                        Return HRESULT.S_OK
                     End If
                 ElseIf Not _lastDropTarget Is Nothing Then
                     _newPinnedIndex = newPinnedIndex
@@ -380,7 +380,7 @@ Public Class TreeViewDropTarget
                     _newPinnedIndex = newPinnedIndex
                     pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                     _treeView.SetSelectedItem(Nothing)
-                    Return HRESULT.Ok
+                    Return HRESULT.S_OK
                 End If
             ElseIf newPinnedIndex <> -2 Then
                 pdwEffect = DROPEFFECT.DROPEFFECT_LINK
@@ -396,7 +396,7 @@ Public Class TreeViewDropTarget
                 End If
                 WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
                 _newPinnedIndex = newPinnedIndex
-                Return HRESULT.Ok
+                Return HRESULT.S_OK
             End If
         End If
 
@@ -419,7 +419,7 @@ Public Class TreeViewDropTarget
         _newPinnedIndex = newPinnedIndex
         'Debug.WriteLine("_newPinnedIndex=NO ITEM")
 
-        Return HRESULT.Ok
+        Return HRESULT.S_OK
     End Function
 
     Private Sub customizeDropDescription(overItem As Item, grfKeyState As MK, pdwEffect As DROPEFFECT)

@@ -36,7 +36,7 @@ Public Class Clipboard
                 Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
                 dropTarget.DragLeave()
 
-                Return hr = HRESULT.Ok AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
+                Return hr = HRESULT.S_OK AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
             End If
         Finally
             If Not IntPtr.Zero.Equals(dropTargetPtr) Then

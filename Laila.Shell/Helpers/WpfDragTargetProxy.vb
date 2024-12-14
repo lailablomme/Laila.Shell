@@ -33,7 +33,7 @@ Namespace Helpers
                     Functions.RevokeDragDrop(hwnd)
                     Dim h As HRESULT = Functions.RegisterDragDrop(hwnd, _instance)
                     Debug.WriteLine("RegisterDragDrop returned " & h.ToString())
-                    If Not h = HRESULT.Ok Then
+                    If Not h = HRESULT.S_OK Then
                         Dim ex As InvalidOperationException = New InvalidOperationException("Error registering drag and drop.")
                         ex.HResult = h
                         Throw ex
@@ -54,7 +54,7 @@ Namespace Helpers
                 If Not _controls.Keys.ToList().Exists(Function(c) GetHwndFromControl(c).Equals(hwnd)) Then
                     Dim h As HRESULT = Functions.RevokeDragDrop(hwnd)
                     Debug.WriteLine("RevokeDragDrop returned " & h.ToString())
-                    If Not h = HRESULT.Ok Then
+                    If Not h = HRESULT.S_OK Then
                         Dim ex As InvalidOperationException = New InvalidOperationException("Error revoking drag and drop.")
                         ex.HResult = h
                         Throw ex
@@ -162,7 +162,7 @@ Namespace Helpers
             Else
                 _activeDropTarget = Nothing
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-                Return HRESULT.Ok
+                Return HRESULT.S_OK
             End If
         End Function
 
@@ -209,7 +209,7 @@ Namespace Helpers
                         _activeDropTarget = Nothing
                     End Try
                 End If
-                Return HRESULT.Ok
+                Return HRESULT.S_OK
             End If
         End Function
 
@@ -225,7 +225,7 @@ Namespace Helpers
                     _activeDropTarget = Nothing
                 End Try
             Else
-                Return HRESULT.Ok
+                Return HRESULT.S_OK
             End If
         End Function
 
@@ -238,7 +238,7 @@ Namespace Helpers
                 Return dropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
             Else
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-                Return HRESULT.Ok
+                Return HRESULT.S_OK
             End If
         End Function
     End Class

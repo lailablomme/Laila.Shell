@@ -77,7 +77,7 @@ Namespace Helpers
             _lastOverItem = overItem
 
             pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-            Return HRESULT.Ok
+            Return HRESULT.S_OK
         End Function
     End Class
 End Namespace

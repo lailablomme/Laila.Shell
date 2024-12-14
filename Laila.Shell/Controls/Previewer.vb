@@ -155,10 +155,10 @@ Namespace Controls
                         Dim cc As ClassContext = ClassContext.LocalServer
                         If Debugger.IsAttached Then cc = cc Or ClassContext.InProcServer
                         Dim h As HRESULT = Functions.CoCreateInstance(clsid, IntPtr.Zero, cc, GetType(IPreviewHandler).GUID, previewer._handler)
-                        If h = HRESULT.Ok Then
-                            h = HRESULT.False
+                        If h = HRESULT.S_OK Then
+                            h = HRESULT.S_FALSE
                             If Not previewer._handler Is Nothing Then
-                                If h <> HRESULT.Ok AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
+                                If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
                                     Dim ptr As IntPtr
                                     Try
                                         If IO.File.Exists(previewItem.FullPath) Then
@@ -168,7 +168,7 @@ Namespace Controls
                                             h = previewItem.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_Stream, GetType(IStream).GUID, ptr)
                                             Debug.WriteLine("BHID_Stream=" & h.ToString())
                                         End If
-                                        If Not IntPtr.Zero.Equals(ptr) AndAlso h = HRESULT.Ok Then
+                                        If Not IntPtr.Zero.Equals(ptr) AndAlso h = HRESULT.S_OK Then
                                             previewer._stream = Marshal.GetObjectForIUnknown(ptr)
                                         End If
                                     Finally
@@ -176,20 +176,20 @@ Namespace Controls
                                             Marshal.Release(ptr)
                                         End If
                                     End Try
-                                    If h = HRESULT.Ok Then
+                                    If h = HRESULT.S_OK Then
                                         h = CType(previewer._handler, IInitializeWithStream).Initialize(previewer._stream, STGM.STGM_READ)
                                         Debug.WriteLine("IPreviewHandler.IInitializeWithStream=" & h.ToString())
                                     End If
                                 End If
-                                If h <> HRESULT.Ok AndAlso TypeOf previewer._handler Is IInitializeWithFile Then
+                                If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithFile Then
                                     h = CType(previewer._handler, IInitializeWithFile).Initialize(previewItem.FullPath, STGM.STGM_READ)
                                     Debug.WriteLine("IPreviewHandler.IInitializeWithFile=" & h.ToString())
                                 End If
-                                If h <> HRESULT.Ok AndAlso TypeOf previewer._handler Is IInitializeWithItem Then
+                                If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithItem Then
                                     h = CType(previewer._handler, IInitializeWithItem).Initialize(previewItem, STGM.STGM_READ)
                                     Debug.WriteLine("IPreviewHandler.IInitializeWithItem=" & h.ToString())
                                 End If
-                                If h <> HRESULT.Ok Then
+                                If h <> HRESULT.S_OK Then
                                     previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
                                     hidePreview(previewer)
                                 End If
@@ -210,7 +210,7 @@ Namespace Controls
                             previewer._handler.SetWindow(hwnd, getRect(previewer))
                             h = previewer._handler.DoPreview()
                             Debug.WriteLine("IPreviewHandler.DoPreview=" & h.ToString())
-                            If h <> HRESULT.Ok Then
+                            If h <> HRESULT.S_OK Then
                                 previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
                                 hidePreview(previewer)
                             Else

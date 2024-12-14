@@ -84,7 +84,7 @@ Public Class ListViewDropTarget
                     fo.DeleteItems(_dataObject)
                     fo.PerformOperations()
                     Marshal.ReleaseComObject(fo)
-                    Return HRESULT.Ok
+                    Return HRESULT.S_OK
                 Else
                     Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
                     Debug.WriteLine("drop=" & h.ToString())
@@ -265,7 +265,7 @@ Public Class ListViewDropTarget
             pdwEffect = DROPEFFECT.DROPEFFECT_NONE
         End If
 
-        Return HRESULT.Ok
+        Return HRESULT.S_OK
     End Function
 
     Private Sub customizeDropDescription(overItem As Item, grfKeyState As MK, pdwEffect As DROPEFFECT)

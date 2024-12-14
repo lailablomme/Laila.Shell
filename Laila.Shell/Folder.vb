@@ -514,8 +514,8 @@ Public Class Folder
                                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
                                 h = enumShellItems.Next(celt, shellItems, fetched)
                             End While
-                            If fetched = 0 AndAlso Not (h = HRESULT.Ok OrElse h = HRESULT.False) Then
-                                Throw New Exception(h.ToString())
+                            If fetched = 0 AndAlso Not (h = HRESULT.S_OK OrElse h = HRESULT.S_FALSE) Then
+                                Throw Marshal.GetExceptionForHR(h)
                             End If
                         End If
                     End If
