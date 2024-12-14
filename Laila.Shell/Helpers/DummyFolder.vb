@@ -16,8 +16,8 @@ Public Class DummyFolder
         Me.IsLoading = True
     End Sub
 
-    Public Overrides Function Refresh(Optional newShellItem As IShellItem2 = Nothing) As TaskCompletionSource
-    End Function
+    Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
+    End Sub
 
     Public Overrides ReadOnly Property DisplayName As String
         Get

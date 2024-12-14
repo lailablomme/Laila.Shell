@@ -25,6 +25,8 @@ Public Class System_StorageProviderUIStatusProperty
 
     Private _didReadData As Boolean
 
+    Private _imageReference16 As String()
+
     Public Sub New()
         MyBase.New(System_StorageProviderUIStatusKey, CType(Nothing, IPropertyStore))
     End Sub
@@ -160,24 +162,28 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Overrides ReadOnly Property ImageReferences16 As String()
         Get
-            Dim imageReferences As List(Of String) = New List(Of String)()
+            If _imageReference16 Is Nothing Then
+                Dim imageReferences As List(Of String) = New List(Of String)()
 
-            If Not _system_StorageProviderStateProperty Is Nothing Then
-                Dim mainReferences As String() = _system_StorageProviderStateProperty.ImageReferences16
-                If Not mainReferences Is Nothing Then
-                    imageReferences.AddRange(mainReferences)
+                If Not _system_StorageProviderStateProperty Is Nothing Then
+                    Dim mainReferences As String() = _system_StorageProviderStateProperty.ImageReferences16
+                    If Not mainReferences Is Nothing Then
+                        imageReferences.AddRange(mainReferences)
+                    End If
                 End If
+
+                If Not _system_ItemCustomState_IconReferencesProperty Is Nothing Then
+                    If Not String.IsNullOrWhiteSpace(_system_ItemCustomState_IconReferencesProperty.Text) Then
+                        For Each iconReference In _system_ItemCustomState_IconReferencesProperty.Text.Split(";")
+                            imageReferences.Add(iconReference)
+                        Next
+                    End If
+                End If
+
+                _imageReference16 = imageReferences.ToArray()
             End If
 
-            If Not _system_ItemCustomState_IconReferencesProperty Is Nothing Then
-                If Not String.IsNullOrWhiteSpace(_system_ItemCustomState_IconReferencesProperty.Text) Then
-                    For Each iconReference In _system_ItemCustomState_IconReferencesProperty.Text.Split(";")
-                        imageReferences.Add(iconReference)
-                    Next
-                End If
-            End If
-
-            Return imageReferences.ToArray()
+            Return _imageReference16
         End Get
     End Property
 

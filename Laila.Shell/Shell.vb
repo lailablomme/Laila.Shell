@@ -18,6 +18,7 @@ Public Class Shell
 
     Public Shared SlowTaskQueue As New BlockingCollection(Of Action)
     Public Shared PriorityTaskQueue As New BlockingCollection(Of Action)
+    Public Shared MTATaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
 
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
@@ -89,6 +90,24 @@ Public Class Shell
             staThread.SetApartmentState(ApartmentState.STA)
             staThread.Start()
             _threads.Add(staThread)
+        Next
+
+        ' threads for mta
+        For i = 1 To 25
+            Dim mtaThread As Thread = New Thread(
+                Sub()
+                    Try
+                        ' Process tasks from the queue
+                        For Each task In MTATaskQueue.GetConsumingEnumerable(ShuttingDownToken)
+                            task.Invoke()
+                        Next
+                    Catch ex As OperationCanceledException
+                        Debug.WriteLine("MTATaskQueue was canceled.")
+                    End Try
+                End Sub)
+            mtaThread.SetApartmentState(ApartmentState.MTA)
+            mtaThread.Start()
+            _threads.Add(mtaThread)
         Next
 
         ' thread for disposing items

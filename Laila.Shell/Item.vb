@@ -101,23 +101,23 @@ Public Class Item
     '    Return fullPath
     'End Function
 
-    Friend Shared Function GetFullPathFromShellItem2(shellItem2 As IShellItem2) As String
-        Dim ptr As IntPtr, pidl As IntPtr
-        Dim fullPath As String
-        Try
-            ptr = Marshal.GetIUnknownForObject(shellItem2)
-            Functions.SHGetIDListFromObject(ptr, pidl)
-            Functions.SHGetNameFromIDList(pidl, SIGDN.DESKTOPABSOLUTEPARSING, fullPath)
-        Finally
-            If Not IntPtr.Zero.Equals(ptr) Then
-                Marshal.Release(ptr)
-            End If
-            If Not IntPtr.Zero.Equals(pidl) Then
-                Marshal.FreeCoTaskMem(pidl)
-            End If
-        End Try
-        Return fullPath
-    End Function
+    'Friend Shared Function GetFullPathFromShellItem2(shellItem2 As IShellItem2) As String
+    '    Dim ptr As IntPtr, pidl As IntPtr
+    '    Dim fullPath As String
+    '    Try
+    '        ptr = Marshal.GetIUnknownForObject(shellItem2)
+    '        Functions.SHGetIDListFromObject(ptr, pidl)
+    '        Functions.SHGetNameFromIDList(pidl, SIGDN.DESKTOPABSOLUTEPARSING, fullPath)
+    '    Finally
+    '        If Not IntPtr.Zero.Equals(ptr) Then
+    '            Marshal.Release(ptr)
+    '        End If
+    '        If Not IntPtr.Zero.Equals(pidl) Then
+    '            Marshal.FreeCoTaskMem(pidl)
+    '        End If
+    '    End Try
+    '    Return fullPath
+    'End Function
 
     Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean)
         _objectCount += 1
@@ -173,14 +173,22 @@ Public Class Item
 
     Public Overridable Sub MaybePrepareForDispose()
         If Me.IsReadyToPrepareForDispose Then
-            _parent = Nothing
+            ' remove from parent collection
+            UIHelper.OnUIThreadAsync(
+                Sub()
+                    If Not _parent Is Nothing Then
+                        _parent._items.Remove(Me)
+                        _parent._isEnumerated = False
+                        _parent = Nothing
+                    End If
+                End Sub)
         End If
     End Sub
 
     Public Overridable ReadOnly Property IsReadyForDispose As Boolean
         Get
             Return Not _doKeepAlive _
-                AndAlso (_parent Is Nothing OrElse (Not _parent.IsActiveInFolderView AndAlso Not _parent.IsVisibleInAddressBar)) _
+                AndAlso (_parent Is Nothing OrElse (Not _parent.IsActiveInFolderView)) _
                 AndAlso Not Me.IsVisibleInTree
         End Get
     End Property
@@ -258,100 +266,89 @@ Public Class Item
         End Get
     End Property
 
-    Public Overridable Function Refresh(Optional newShellItem As IShellItem2 = Nothing) As TaskCompletionSource
-        Dim tcs As TaskCompletionSource = New TaskCompletionSource()
+    Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
+        SyncLock _refreshLock
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                Debug.WriteLine("Refreshing " & Me.DisplayName)
+                Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
-        Dim t As Thread = New Thread(
-            Sub()
-                SyncLock _refreshLock
-                    If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
-                        Debug.WriteLine("Refreshing " & Me.DisplayName)
-                        Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
-
-                        If Not newShellItem Is Nothing Then
-                            If Not _shellItem2 Is Nothing Then
-                                _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
-                            End If
-                            _shellItem2 = newShellItem
-                        ElseIf Not _shellItem2 Is Nothing Then
-                            Me.MakeNewShellItem()
-                        End If
-
-                        Dim oldPropertiesByKey As Dictionary(Of String, [Property])
-                        Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])
-                        oldPropertiesByKey = _propertiesByKey
-                        oldPropertiesByCanonicalName = _propertiesByCanonicalName
-                        _propertiesByKey = New Dictionary(Of String, [Property])()
-                        _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
-                        For Each [property] In oldPropertiesByKey.Values
-                            [property].Dispose()
-                        Next
-                        For Each [property] In oldPropertiesByCanonicalName.Values
-                            [property].Dispose()
-                        Next
-
-                        _displayName = Nothing
-
-                        If Not Me.ShellItem2 Is Nothing Then
-                            _fullPath = Item.GetFullPathFromShellItem2(Me.ShellItem2)
-                            _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
-                                Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
-                                Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
-                                Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
-                            Me.ShellItem2.GetAttributes(_attributes, _attributes)
-
-                            ' preload System_StorageProviderUIStatus images
-                            Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                                = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
-                            If Not System_StorageProviderUIStatus Is Nothing _
-                                        AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                                Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
-                            End If
-
-                            Me.NotifyOfPropertyChange("DisplayName")
-                            If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
-                                Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
-                            End If
-                            Me.NotifyOfPropertyChange("OverlayImageAsync")
-                            Me.NotifyOfPropertyChange("IconAsync")
-                            Me.NotifyOfPropertyChange("ImageAsync")
-                            Me.NotifyOfPropertyChange("HasThumbnailAsync")
-                            Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
-                            Me.NotifyOfPropertyChange("IsImage")
-                            Me.NotifyOfPropertyChange("IsHidden")
-                            Me.NotifyOfPropertyChange("IsCompressed")
-                            Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
-                            Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
-                            Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
-                            Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
-                            Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
-                            For Each prop In oldPropertiesByKey
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIconAsync", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
-                            Next
-                            For Each prop In oldPropertiesByCanonicalName
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIconAsync", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
-                            Next
-                        Else
-                            Me.Dispose()
-                        End If
+                If Not newShellItem Is Nothing Then
+                    If Not _shellItem2 Is Nothing Then
+                        _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
                     End If
+                    _shellItem2 = newShellItem
+                ElseIf Not _shellItem2 Is Nothing Then
+                    Me.MakeNewShellItem()
+                End If
 
-                    tcs.SetResult()
-                End SyncLock
-            End Sub)
-        t.SetApartmentState(ApartmentState.MTA)
-        t.Start()
+                Dim oldPropertiesByKey As Dictionary(Of String, [Property])
+                Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])
+                oldPropertiesByKey = _propertiesByKey
+                oldPropertiesByCanonicalName = _propertiesByCanonicalName
+                _propertiesByKey = New Dictionary(Of String, [Property])()
+                _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
+                For Each [property] In oldPropertiesByKey.Values
+                    [property].Dispose()
+                Next
+                For Each [property] In oldPropertiesByCanonicalName.Values
+                    [property].Dispose()
+                Next
 
-        Return tcs
-    End Function
+                _displayName = Nothing
+
+                If Not Me.ShellItem2 Is Nothing Then
+                    _fullPath = Me.FullPath
+                    _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+                        Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
+                        Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
+                        Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
+                    Me.ShellItem2.GetAttributes(_attributes, _attributes)
+
+                    ' preload System_StorageProviderUIStatus images
+                    'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                    '    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                    'If Not System_StorageProviderUIStatus Is Nothing _
+                    '            AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                    '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                    'End If
+
+                    Me.NotifyOfPropertyChange("DisplayName")
+                    If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
+                        Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
+                    End If
+                    Me.NotifyOfPropertyChange("OverlayImageAsync")
+                    Me.NotifyOfPropertyChange("IconAsync")
+                    Me.NotifyOfPropertyChange("ImageAsync")
+                    Me.NotifyOfPropertyChange("HasThumbnailAsync")
+                    Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
+                    Me.NotifyOfPropertyChange("IsImage")
+                    Me.NotifyOfPropertyChange("IsHidden")
+                    Me.NotifyOfPropertyChange("IsCompressed")
+                    Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
+                    Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
+                    Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
+                    Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
+                    Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
+                    For Each prop In oldPropertiesByKey
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIconAsync", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
+                    Next
+                    For Each prop In oldPropertiesByCanonicalName
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIconAsync", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
+                    Next
+                Else
+                    Me.Dispose()
+                End If
+            End If
+        End SyncLock
+    End Sub
 
     Public ReadOnly Property FullPath As String
         Get
@@ -925,8 +922,15 @@ Public Class Item
             _propertiesLock.Wait()
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey, [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                    _propertiesLock.Release()
                     [property] = [Property].FromKey(key, Me.ShellItem2)
-                    _propertiesByKey.Add(propertyKey, [property])
+                    _propertiesLock.Wait()
+                    If Not _propertiesByKey.ContainsKey(propertyKey) Then
+                        _propertiesByKey.Add(propertyKey, [property])
+                    Else
+                        [property].Dispose()
+                        [property] = _propertiesByKey(propertyKey)
+                    End If
                 End If
             Finally
                 _propertiesLock.Release()
@@ -941,8 +945,15 @@ Public Class Item
             _propertiesLock.Wait()
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                    _propertiesLock.Release()
                     [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
-                    _propertiesByKey.Add(propertyKey.ToString(), [property])
+                    _propertiesLock.Wait()
+                    If Not _propertiesByKey.ContainsKey(propertyKey.ToString()) Then
+                        _propertiesByKey.Add(propertyKey.ToString(), [property])
+                    Else
+                        [property].Dispose()
+                        [property] = _propertiesByKey(propertyKey.ToString())
+                    End If
                 End If
             Finally
                 _propertiesLock.Release()
@@ -957,8 +968,15 @@ Public Class Item
             _propertiesLock.Wait()
             Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                    _propertiesLock.Release()
                     [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
-                    _propertiesByCanonicalName.Add(canonicalName, [property])
+                    _propertiesLock.Wait()
+                    If Not _propertiesByCanonicalName.ContainsKey(canonicalName) Then
+                        _propertiesByCanonicalName.Add(canonicalName, [property])
+                    Else
+                        [property].Dispose()
+                        [property] = _propertiesByCanonicalName(canonicalName)
+                    End If
                 End If
             Finally
                 _propertiesLock.Release()
@@ -1118,11 +1136,17 @@ Public Class Item
             Select Case e.Event
                 Case SHCNE.UPDATEITEM
                     If Me.Pidl?.Equals(e.Item1.Pidl) Then
-                        Me.Refresh()
+                        Shell.MTATaskQueue.Add(
+                            Sub()
+                                Me.Refresh()
+                            End Sub)
                     End If
                 Case SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                     If Me.IsDrive AndAlso Me.FullPath?.Equals(e.Item1.FullPath) Then
-                        Me.Refresh()
+                        Shell.MTATaskQueue.Add(
+                            Sub()
+                                Me.Refresh()
+                            End Sub)
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If Me.FullPath.Equals(e.Item1.FullPath) Then

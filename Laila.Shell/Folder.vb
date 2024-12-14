@@ -403,7 +403,8 @@ Public Class Folder
                                  cancellationToken As CancellationToken)
         If disposedValue OrElse Me.IsReadyForDispose Then Return
 
-        Dim result As List(Of Item) = New List(Of Item)()
+        Dim result As Dictionary(Of String, Item) = New Dictionary(Of String, Item)
+        Dim newFullPaths As HashSet(Of String) = New HashSet(Of String)()
 
         If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
 
@@ -420,6 +421,8 @@ Public Class Folder
         Dim addItems As System.Action =
             Sub()
                 If result.Count > 0 Then
+                    Dim existingItems() As Tuple(Of Item, Item)
+
                     UIHelper.OnUIThread(
                         Sub()
                             Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
@@ -429,37 +432,66 @@ Public Class Folder
                             Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
                             Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
 
-                            ' disable sorting grouping
                             If Not TypeOf Me Is SearchFolder Then
-                                Me.IsNotifying = False
-                                Using view.DeferRefresh()
-                                    Me.ItemsSortPropertyName = Nothing
-                                    Me.ItemsGroupByPropertyName = Nothing
-                                End Using
-                            End If
+                                If _items.Count = 0 Then
+                                    ' disable sorting grouping
+                                    Me.IsNotifying = False
+                                    Using view.DeferRefresh()
+                                        Me.ItemsSortPropertyName = Nothing
+                                        Me.ItemsGroupByPropertyName = Nothing
+                                    End Using
 
-                            ' add items
-                            If Not TypeOf Me Is SearchFolder Then
-                                For Each item In _items
-                                    item.MaybePrepareForDispose()
-                                Next
-                                RaiseEvent BeforeResetItems(Me, New EventArgs())
-                                _items.ReplaceWithRange(result)
-                                RaiseEvent AfterResetItems(Me, New EventArgs())
+                                    ' add items
+                                    For Each item In _items
+                                        item.MaybePrepareForDispose()
+                                    Next
+                                    RaiseEvent BeforeResetItems(Me, New EventArgs())
+                                    _items.ReplaceWithRange(result.Values)
+                                    RaiseEvent AfterResetItems(Me, New EventArgs())
+
+                                    ' restore sorting/grouping
+                                    Using view.DeferRefresh()
+                                        Me.ItemsSortPropertyName = sortPropertyName
+                                        Me.ItemsSortDirection = sortDirection
+                                        Me.ItemsGroupByPropertyName = groupByPropertyName
+                                    End Using
+                                    Me.IsNotifying = True
+                                Else
+                                    Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
+                                    For Each item In _items
+                                        previousFullPaths.Add(item.FullPath)
+                                    Next
+                                    Dim newItems As Item() = result.Values.Where(Function(i) Not previousFullPaths.Contains(i.FullPath)).ToArray()
+                                    Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(i.FullPath)).ToArray()
+                                    existingItems = _items.Where(Function(i) newFullPaths.Contains(i.FullPath)) _
+                                        .Select(Function(i) New Tuple(Of Item, Item)(i, result(i.FullPath))).ToArray()
+
+                                    ' add items
+                                    For Each item In newItems
+                                        Me.Items.Add(item)
+                                    Next
+                                    ' remove items
+                                    For Each item In removedItems
+                                        Me.Items.Remove(item)
+                                    Next
+                                End If
                             Else
-                                _items.AddRange(result)
-                            End If
-
-                            ' restore sorting/grouping
-                            If Not TypeOf Me Is SearchFolder Then
-                                Using view.DeferRefresh()
-                                    Me.ItemsSortPropertyName = sortPropertyName
-                                    Me.ItemsSortDirection = sortDirection
-                                    Me.ItemsGroupByPropertyName = groupByPropertyName
-                                End Using
-                                Me.IsNotifying = True
+                                ' add items
+                                _items.AddRange(result.Values)
                             End If
                         End Sub)
+
+                    ' refresh existing items
+                    If Not existingItems Is Nothing Then
+                        For Each item In existingItems
+                            Shell.MTATaskQueue.Add(
+                                Sub()
+                                    item.Item1.Refresh(item.Item2.ShellItem2)
+                                    item.Item2._shellItem2 = Nothing
+                                    item.Item2.MaybePrepareForDispose()
+                                End Sub)
+                        Next
+                    End If
                 End If
             End Sub
 
@@ -520,7 +552,7 @@ Public Class Folder
                                         newItem = makeNewItem(shellItems(x))
                                     End If
 
-                                    result.Add(newItem)
+                                    result.Add(newItem.FullPath, newItem)
 
                                     ' preload sort property
                                     If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
@@ -533,9 +565,6 @@ Public Class Folder
                                         End If
                                     End If
 
-                                    ' preload pidl
-                                    Dim pidl As Pidl = newItem.Pidl
-
                                     ' preload System_StorageProviderUIStatus images
                                     Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
                                         = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
@@ -544,7 +573,10 @@ Public Class Folder
                                         Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
                                     End If
 
+                                    newFullPaths.Add(newItem.FullPath)
+
                                     If cancellationToken.IsCancellationRequested Then Exit While
+
                                     If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
                                         AndAlso result.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
                                         addItems()
@@ -577,11 +609,11 @@ Public Class Folder
         End If
 
         If Not cancellationToken.IsCancellationRequested Then
-            _isEnumerated = True
-            _isLoaded = True
-
             ' add new items
             addItems()
+
+            _isEnumerated = True
+            _isLoaded = True
 
             ' set and update HasSubFolders property
             _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing

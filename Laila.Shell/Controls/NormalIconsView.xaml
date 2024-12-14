@@ -148,7 +148,8 @@
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
                                                 </Grid.ColumnDefinitions>
-                                                <ItemsControl Margin="0,0,2,0" ItemsSource="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}">
+                                                <ItemsControl Margin="0,0,2,0" ItemsSource="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}"
+                                                              Width="{Binding StorageProviderUIStatusIconWidth12}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <Image Source="{Binding .}" Width="12" Height="12" Margin="0,3,1,0" VerticalAlignment="Top" />

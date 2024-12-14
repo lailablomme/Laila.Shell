@@ -47,9 +47,9 @@ Namespace Controls
                     gvc.SetValue(Behaviors.GridViewExtBehavior.SortPropertyNameProperty, "ItemNameDisplaySortValue")
                     gvc.SetValue(Behaviors.GridViewExtBehavior.CanHideProperty, False)
                 End If
-                If [property].HasIcon Then
-                    gvc.SetValue(Behaviors.GridViewExtBehavior.ExtraAutoSizeMarginProperty, Convert.ToDouble(15))
-                End If
+                'If [property].HasIcon Then
+                '    gvc.SetValue(Behaviors.GridViewExtBehavior.ExtraAutoSizeMarginProperty, Convert.ToDouble(15))
+                'End If
                 gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
 
                 Dim isVisibleDescriptor As DependencyPropertyDescriptor =
@@ -267,6 +267,10 @@ Namespace Controls
                 itemsControlFactory.SetValue(Grid.ColumnProperty, 2)
                 itemsControlFactory.SetValue(ItemsControl.ItemsPanelProperty, itemsPanelTemplate)
                 itemsControlFactory.SetValue(ItemsControl.ItemTemplateProperty, itemTemplate)
+                itemsControlFactory.SetValue(ItemsControl.WidthProperty, New Binding() With {
+                    .Path = New PropertyPath("StorageProviderUIStatusIconWidth16"),
+                    .Mode = BindingMode.OneWay
+                })
                 itemsControlFactory.SetValue(ItemsControl.ItemsSourceProperty, New Binding() With {
                     .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", column.PROPERTYKEY.ToString())),
                     .Mode = BindingMode.OneWay,
