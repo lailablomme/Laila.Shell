@@ -14,7 +14,10 @@ Namespace Helpers
                 Me.Items.Add(i)
             Next
 
-            Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
+            UIHelper.OnUIThread(
+                Sub()
+                    Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
+                End Sub)
         End Sub
     End Class
 End Namespace

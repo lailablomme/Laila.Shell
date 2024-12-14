@@ -53,7 +53,8 @@ Public Class SearchFolder
             _cancellationTokenSource.Cancel()
         End If
         Me.Terms = terms
-        Me.Refresh()
+        _shellItem2 = getShellItem(terms, Me.Parent)
+        _shellItemHistory.Add(_shellItem2)
         For Each item In _items.ToList()
             item._parent = Nothing
         Next

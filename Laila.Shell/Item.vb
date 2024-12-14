@@ -28,7 +28,7 @@ Public Class Item
     Friend _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
-    Private _shellItemHistory As List(Of IShellItem2) = New List(Of IShellItem2)
+    Protected _shellItemHistory As List(Of IShellItem2) = New List(Of IShellItem2)
     Private _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As Object = New Object()

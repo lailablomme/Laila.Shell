@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
 Imports System.Windows.Forms
+Imports System.Windows.Threading
 Imports Laila.Shell.Helpers
 
 Public Class Folder
@@ -321,14 +322,16 @@ Public Class Folder
 
         Dim t As Thread = New Thread(
             Sub()
-                Try
-                    SyncLock _lock
-                        updateItems(_items, True)
-                    End SyncLock
-                    tcs.SetResult(_items.ToList())
-                Catch ex As Exception
-                    tcs.SetException(ex)
-                End Try
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    Sub()
+                        Try
+                            updateItems(_items, True)
+                            tcs.SetResult(_items.ToList())
+                        Catch ex As Exception
+                            tcs.SetException(ex)
+                        End Try
+                    End Sub)
+                Dispatcher.Run()
             End Sub)
         t.SetApartmentState(ApartmentState.MTA)
         t.Start()
@@ -390,15 +393,19 @@ Public Class Folder
         Dim addItems As System.Action =
             Sub()
                 If result.Count > 0 Then
+                    Dim view As CollectionView
                     UIHelper.OnUIThread(
                         Sub()
-                            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                            view = CollectionViewSource.GetDefaultView(Me.Items)
+                        End Sub)
 
-                            ' save sorting/grouping
-                            Dim sortPropertyName As String = Me.ItemsSortPropertyName
+                    ' save sorting/grouping
+                    Dim sortPropertyName As String = Me.ItemsSortPropertyName
                             Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
                             Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
 
+                    UIHelper.OnUIThread(
+                        Sub()
                             ' disable sorting grouping
                             If Not TypeOf Me Is SearchFolder Then
                                 Me.IsNotifying = False
@@ -407,10 +414,13 @@ Public Class Folder
                                     Me.ItemsGroupByPropertyName = Nothing
                                 End Using
                             End If
+                        End Sub)
 
-                            ' add items
-                            _items.AddRange(result)
+                    ' add items
+                    _items.AddRange(result)
 
+                    UIHelper.OnUIThread(
+                        Sub()
                             ' restore sorting/grouping
                             If Not TypeOf Me Is SearchFolder Then
                                 Using view.DeferRefresh()
