@@ -508,6 +508,18 @@ Public Class Functions
     Public Shared Function SHGetIDListFromObject(ByVal punk As IntPtr, ByRef ppidl As IntPtr) As Integer
     End Function
 
+    <DllImport("shell32.dll", SetLastError:=True)>
+    Public Shared Function ILCombine(
+        ByVal pidl1 As IntPtr,
+        ByVal pidl2 As IntPtr
+    ) As IntPtr
+    End Function
+    <DllImport("shell32.dll", SetLastError:=True)>
+    Public Shared Function ILFindChild(
+        ByVal pidlParent As IntPtr,
+        ByVal pidlChild As IntPtr
+    ) As IntPtr
+    End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
     Public Shared Function ILIsEqual(ByVal pidl1 As IntPtr, ByVal pidl2 As IntPtr) As Boolean
     End Function

@@ -318,11 +318,9 @@ Namespace Controls
 
         Private Sub makeContextMenu(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             Dim parentFolderPidl As Pidl
-            Using parent2 = folder.GetParent()
-                If Not parent2 Is Nothing Then
-                    parentFolderPidl = parent2.Pidl.Clone()
-                End If
-            End Using
+            If Not folder.Parent Is Nothing Then
+                parentFolderPidl = folder.Parent.Pidl.Clone()
+            End If
 
             Dim tcs As New TaskCompletionSource()
             _taskQueue.Add(
@@ -331,9 +329,11 @@ Namespace Controls
                     Dim folderPidl As Pidl
                     Dim itemPidls As Pidl()
                     Dim flags As Integer = CMF.CMF_NORMAL
-                    Dim shellFolder As IShellFolder = folder.ShellFolder
+                    Dim shellFolder As IShellFolder
 
                     Try
+                        shellFolder = Folder.GetIShellFolderFromIShellItem2(folder.ShellItem2)
+
                         If Not items Is Nothing AndAlso items.Count > 0 Then
                             ' user clicked on an item
                             flags = flags Or CMF.CMF_ITEMMENU
@@ -454,6 +454,7 @@ Namespace Controls
                 Sub()
                     folder = Me.Folder
                     selectedItems = Me.SelectedItems
+                    Debug.WriteLine("Pidl=" & BitConverter.ToString(Me.SelectedItems(0).Pidl.Bytes))
 
                     e = New CommandInvokedEventArgs() With {
                         .Id = id.Item1,
@@ -546,7 +547,7 @@ Namespace Controls
                     Case SHCNE.CREATE, SHCNE.MKDIR
                         If _isWaitingForCreate Then
                             Dim e2 As RenameRequestEventArgs = New RenameRequestEventArgs()
-                            e2.Pidl = e.Item1Pidl.Clone()
+                            e2.FullPath = e.Item1.FullPath
                             Await Task.Delay(250)
                             UIHelper.OnUIThread(
                                 Sub()
@@ -559,7 +560,6 @@ Namespace Controls
                                         End If
                                     End If
                                 End Sub)
-                            e2.Pidl.Dispose()
                         End If
                 End Select
             End If

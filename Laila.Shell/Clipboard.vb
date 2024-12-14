@@ -17,16 +17,14 @@ Public Class Clipboard
 
         Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
         Try
-            Using parent2 As Folder = folder.GetParent()
-                If Not parent2 Is Nothing Then
-                    shellFolder = parent2.ShellFolder
-                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                Else
-                    ' desktop
-                    shellFolder = Shell.Desktop.ShellFolder
-                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                End If
-            End Using
+            If Not folder.Parent Is Nothing Then
+                shellFolder = folder.Parent.ShellFolder
+                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+            Else
+                ' desktop
+                shellFolder = Shell.Desktop.ShellFolder
+                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+            End If
             If Not IntPtr.Zero.Equals(dropTargetPtr) Then
                 dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
             Else
@@ -47,9 +45,6 @@ Public Class Clipboard
             If Not dropTarget Is Nothing Then
                 Marshal.ReleaseComObject(dropTarget)
             End If
-            If Not shellFolder Is Nothing Then
-                Marshal.ReleaseComObject(shellFolder)
-            End If
             If Not dataObject Is Nothing Then
                 Marshal.ReleaseComObject(dataObject)
             End If
@@ -61,9 +56,7 @@ Public Class Clipboard
     Public Shared Sub CopyFiles(items As IEnumerable(Of Item))
         Dim dataObject As IDataObject
 
-        Using parent = items(0).GetParent()
-            dataObject = Clipboard.GetDataObjectFor(parent, items)
-        End Using
+        dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
 
         Functions.OleSetClipboard(dataObject)
 
@@ -73,9 +66,7 @@ Public Class Clipboard
     Public Shared Sub CutFiles(items As IEnumerable(Of Item))
         Dim dataObject As IDataObject
 
-        Using parent = items(0).GetParent()
-            dataObject = Clipboard.GetDataObjectFor(parent, items)
-        End Using
+        dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
 
         Functions.OleSetClipboard(dataObject)
 
@@ -88,16 +79,14 @@ Public Class Clipboard
 
         Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
         Try
-            Using parent2 As Folder = folder.GetParent()
-                If Not parent2 Is Nothing Then
-                    shellFolder = parent2.ShellFolder
-                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                Else
-                    ' desktop
-                    shellFolder = Shell.Desktop.ShellFolder
-                    shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                End If
-            End Using
+            If Not folder.Parent Is Nothing Then
+                shellFolder = folder.Parent.ShellFolder
+                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+            Else
+                ' desktop
+                shellFolder = Shell.Desktop.ShellFolder
+                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+            End If
             If Not IntPtr.Zero.Equals(dropTargetPtr) Then
                 dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
             Else
@@ -117,9 +106,6 @@ Public Class Clipboard
             End If
             If Not dropTarget Is Nothing Then
                 Marshal.ReleaseComObject(dropTarget)
-            End If
-            If Not shellFolder Is Nothing Then
-                Marshal.ReleaseComObject(shellFolder)
             End If
             If Not dataObject Is Nothing Then
                 Marshal.ReleaseComObject(dataObject)
@@ -189,9 +175,6 @@ Public Class Clipboard
             End If
             If Not initDropTarget Is Nothing Then
                 Marshal.ReleaseComObject(initDropTarget)
-            End If
-            If Not shellFolder Is Nothing Then
-                Marshal.ReleaseComObject(shellFolder)
             End If
         End Try
 

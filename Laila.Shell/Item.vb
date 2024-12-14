@@ -1,9 +1,11 @@
+Imports System.CodeDom
 Imports System.Drawing
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
@@ -17,7 +19,7 @@ Public Class Item
     Protected _properties As HashSet(Of [Property]) = New HashSet(Of [Property])
     Friend _fullPath As String
     Friend disposedValue As Boolean
-    Friend _logicalParent As Folder
+    Friend _parent As Folder
     Friend _displayName As String
     Private _isPinned As Boolean
     Private _isCut As Boolean
@@ -50,19 +52,10 @@ Public Class Item
 
     Public Shared Function FromPidl(pidl As IntPtr, parent As Folder, doKeepAlive As Boolean) As Item
         Dim shellItem2 As IShellItem2, shellFolder As IShellFolder
-        Try
-            shellItem2 = GetIShellItem2FromPidl(pidl, shellFolder)
-        Finally
-            If Not shellFolder Is Nothing Then
-                Marshal.ReleaseComObject(shellFolder)
-            End If
-        End Try
+        shellItem2 = GetIShellItem2FromPidl(pidl, parent?.ShellFolder)
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
-            If Not parent Is Nothing Then
-                shellFolder = parent.ShellFolder
-            End If
             If attr.HasFlag(SFGAO.FOLDER) Then
                 Return New Folder(shellItem2, parent, doKeepAlive)
             Else
@@ -140,7 +133,7 @@ Public Class Item
             _fullPath = String.Empty
         End If
         If Not logicalParent Is Nothing Then
-            _logicalParent = logicalParent
+            _parent = logicalParent
         End If
     End Sub
 
@@ -172,13 +165,13 @@ Public Class Item
 
     Public ReadOnly Property IsVisibleInTree As Boolean
         Get
-            Return Me.TreeRootIndex <> -1 OrElse (Not _logicalParent Is Nothing AndAlso _logicalParent.IsExpanded)
+            Return Me.TreeRootIndex <> -1 OrElse (Not _parent Is Nothing AndAlso _parent.IsExpanded)
         End Get
     End Property
 
     Public Overridable Sub MaybeDispose()
         If Not _doKeepAlive _
-            AndAlso (_logicalParent Is Nothing OrElse Not _logicalParent.IsActiveInFolderView) _
+            AndAlso (_parent Is Nothing OrElse Not _parent.IsActiveInFolderView) _
             AndAlso Not Me.IsVisibleInTree Then
             Me.Dispose()
         End If
@@ -201,7 +194,7 @@ Public Class Item
             Else
                 Dim itemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
                 If itemNameDisplaySortValue Is Nothing Then itemNameDisplaySortValue = ""
-                Return _logicalParent.TreeSortKey & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
+                Return Me.Parent.TreeSortKey & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
             End If
         End Get
     End Property
@@ -210,11 +203,11 @@ Public Class Item
         Get
             Dim level As Integer = 0
             If Me.TreeRootIndex = -1 Then
-                Dim lp As Folder = _logicalParent
+                Dim lp As Folder = Me.Parent
                 While Not lp Is Nothing
                     level += 1
                     If lp.TreeRootIndex <> -1 Then Exit While
-                    lp = lp._logicalParent
+                    lp = lp.Parent
                 End While
             End If
 
@@ -321,7 +314,7 @@ Public Class Item
         Get
             Try
                 If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue Then
-                    Functions.SHGetNameFromIDList(Me.Pidl.AbsolutePIDL, SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
+                    Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
                 End If
             Catch ex As Exception
                 ' sometimes the treeview will try to sort us just as we're in the process of disposing
@@ -331,19 +324,21 @@ Public Class Item
         End Get
     End Property
 
-    Public Function GetParent() As Folder
-        If Not Me.FullPath.Equals(Shell.Desktop.FullPath) Then
-            Dim parentShellItem2 As IShellItem2
-            If Not Me.ShellItem2 Is Nothing Then
-                Me.ShellItem2.GetParent(parentShellItem2)
+    Public ReadOnly Property Parent As Folder
+        Get
+            If Not disposedValue AndAlso _parent Is Nothing AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
+                Dim parentShellItem2 As IShellItem2
+                If Not Me.ShellItem2 Is Nothing Then
+                    Me.ShellItem2.GetParent(parentShellItem2)
+                End If
+                If Not parentShellItem2 Is Nothing Then
+                    _parent = New Folder(parentShellItem2, Nothing, True)
+                    _parent.Items.Add(Me)
+                End If
             End If
-            If Not parentShellItem2 Is Nothing Then
-                Return New Folder(parentShellItem2, Nothing, True)
-            End If
-        End If
-
-        Return Nothing
-    End Function
+            Return _parent
+        End Get
+    End Property
 
     Public Property IsPinned As Boolean
         Get
@@ -750,7 +745,7 @@ Public Class Item
         Get
             If Not disposedValue Then
                 Dim propList As String
-                If _logicalParent Is Nothing OrElse Not TypeOf _logicalParent Is SearchFolder Then
+                If _parent Is Nothing OrElse Not TypeOf _parent Is SearchFolder Then
                     propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForBrowse").Text
                 Else
                     propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForSearch").Text
@@ -1083,14 +1078,18 @@ Public Class Item
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         If Not disposedValue Then
             Select Case e.Event
-                Case SHCNE.UPDATEITEM, SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
-                    If Me.Pidl.Equals(e.Item1Pidl) Then
+                Case SHCNE.UPDATEITEM
+                    If Me.FullPath.Equals(e.Item1.FullPath) Then
+                        Me.Refresh()
+                    End If
+                Case SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
+                    If Me.IsDrive AndAlso Me.FullPath.Equals(e.Item1.FullPath) Then
                         Me.Refresh()
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
-                    If Me.Pidl.Equals(e.Item1Pidl) Then
+                    If Me.FullPath.Equals(e.Item1.FullPath) Then
                         Dim oldPidl As Pidl = Me.Pidl
-                        _pidl = e.Item2Pidl.Clone()
+                        _pidl = e.Item2.Pidl.Clone()
                         oldPidl.Dispose()
                         Me.Refresh()
                     End If
@@ -1123,9 +1122,9 @@ Public Class Item
 
                 UIHelper.OnUIThreadAsync(
                     Sub()
-                        If Not _logicalParent Is Nothing Then
-                            _logicalParent._items.Remove(Me)
-                            _logicalParent._isEnumerated = False
+                        If Not _parent Is Nothing Then
+                            _parent._items.Remove(Me)
+                            _parent._isEnumerated = False
                         End If
                     End Sub)
             End If
@@ -1148,6 +1147,6 @@ Public Class Item
     End Sub
 
     Public Function Clone() As Item
-        Return Item.FromPidl(Me.Pidl.AbsolutePIDL, _logicalParent, _doKeepAlive)
+        Return Item.FromPidl(Me.Pidl.AbsolutePIDL, _parent, _doKeepAlive)
     End Function
 End Class

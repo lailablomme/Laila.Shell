@@ -62,8 +62,8 @@ Namespace Controls
             Me.ActiveView.DoRename(item)
         End Sub
 
-        Public Async Function DoRename(pidl As Pidl) As Task(Of Boolean)
-            Return Await Me.ActiveView.DoRename(pidl)
+        Public Async Function DoRename(fullPath As String) As Task(Of Boolean)
+            Return Await Me.ActiveView.DoRename(fullPath)
         End Function
 
         Public Property ActiveView As BaseFolderView

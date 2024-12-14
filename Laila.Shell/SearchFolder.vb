@@ -55,7 +55,7 @@ Public Class SearchFolder
         Me.Terms = terms
         Me.Refresh()
         For Each item In _items.ToList()
-            item._logicalParent = Nothing
+            item._parent = Nothing
         Next
         _items.Clear()
         _isEnumerated = False

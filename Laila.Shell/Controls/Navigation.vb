@@ -99,9 +99,7 @@ Namespace Controls
         End Sub
 
         Public Sub Up()
-            Dim parent As Folder = Me.Folder._logicalParent
-            If parent Is Nothing Then parent =
-                If(Me.Folder._logicalParent Is Nothing, Me.Folder.GetParent(), Me.Folder._logicalParent)
+            Dim parent As Folder = Me.Folder.Parent
             parent.LastScrollOffset = New Point()
             parent.IsInHistory = True
             Me.Folder = parent
@@ -123,14 +121,12 @@ Namespace Controls
                 Me.Folder.IsInHistory = True
                 _pointer = _list.Count - 1
             End If
-            Using parent = Me.Folder.GetParent()
-                Me.CanBack = _pointer > 0
-                Me.CanForward = _pointer < _list.Count - 1
-                Me.CanUp = Not parent Is Nothing
-                Me.BackText = If(_pointer - 1 >= 0, "Back to " & _list(_pointer - 1).DisplayName, "")
-                Me.ForwardText = If(_pointer + 1 <= _list.Count - 1, "Forward to " & _list(_pointer + 1).DisplayName, "")
-                Me.UpText = If(Not parent Is Nothing, "Up to " & parent.DisplayName, "")
-            End Using
+            Me.CanBack = _pointer > 0
+            Me.CanForward = _pointer < _list.Count - 1
+            Me.CanUp = Not Me.Folder.Parent Is Nothing
+            Me.BackText = If(_pointer - 1 >= 0, "Back to " & _list(_pointer - 1).DisplayName, "")
+            Me.ForwardText = If(_pointer + 1 <= _list.Count - 1, "Forward to " & _list(_pointer + 1).DisplayName, "")
+            Me.UpText = If(Not Me.Folder.Parent Is Nothing, "Up to " & Me.Folder.Parent.DisplayName, "")
         End Sub
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)

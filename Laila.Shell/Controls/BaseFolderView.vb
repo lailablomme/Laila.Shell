@@ -292,7 +292,7 @@ Namespace Controls
                 End Sub
             AddHandler _menu.RenameRequest,
                 Async Sub(s As Object, e As RenameRequestEventArgs)
-                    e.IsHandled = Await Me.DoRename(e.Pidl)
+                    e.IsHandled = Await Me.DoRename(e.FullPath)
                 End Sub
 
             Return _menu
@@ -301,9 +301,9 @@ Namespace Controls
         Protected MustOverride Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                           ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
 
-        Public Async Function DoRename(pidl As Pidl) As Task(Of Boolean)
+        Public Async Function DoRename(fullPath As String) As Task(Of Boolean)
             If Not Me.Folder Is Nothing Then
-                Dim item As Item = (Await Me.Folder.GetItemsAsync()).FirstOrDefault(Function(i) i.Pidl.Equals(pidl))
+                Dim item As Item = (Await Me.Folder.GetItemsAsync()).FirstOrDefault(Function(i) i.FullPath?.Equals(fullPath))
                 If Not item Is Nothing Then
                     Me.SelectedItems = {item}
                     DoRename(item)

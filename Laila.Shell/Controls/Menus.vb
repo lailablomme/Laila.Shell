@@ -187,23 +187,21 @@ Namespace Controls
         End Sub
 
         Public Shared Sub DoDelete(items As IEnumerable(Of Item))
-            Using parent = items(0).GetParent()
-                Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                Dim dataObject As IDataObject
-                Try
-                    dataObject = Clipboard.GetDataObjectFor(parent, items)
-                    If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                    fo.DeleteItems(dataObject)
-                    fo.PerformOperations()
-                Finally
-                    If Not fo Is Nothing Then
-                        Marshal.ReleaseComObject(fo)
-                    End If
-                    If Not dataObject Is Nothing Then
-                        Marshal.ReleaseComObject(dataObject)
-                    End If
-                End Try
-            End Using
+            Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+            Dim dataObject As IDataObject
+            Try
+                dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+                If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                fo.DeleteItems(dataObject)
+                fo.PerformOperations()
+            Finally
+                If Not fo Is Nothing Then
+                    Marshal.ReleaseComObject(fo)
+                End If
+                If Not dataObject Is Nothing Then
+                    Marshal.ReleaseComObject(dataObject)
+                End If
+            End Try
         End Sub
 
         Public Shared Sub DoShare(items As IEnumerable(Of Item))
@@ -228,7 +226,7 @@ Namespace Controls
                 AddHandler newItemMenu.RenameRequest,
                     Async Sub(s As Object, e As RenameRequestEventArgs)
                         If Not Me.FolderView Is Nothing Then
-                            e.IsHandled = Await Me.FolderView.DoRename(e.Pidl)
+                            e.IsHandled = Await Me.FolderView.DoRename(e.FullPath)
                         End If
                     End Sub
                 Me.NewItemMenu = newItemMenu

@@ -2,7 +2,7 @@
     Public Class RenameRequestEventArgs
         Inherits EventArgs
 
-        Public Property Pidl As Pidl
+        Public Property FullPath As String
         Public Property IsHandled As Boolean
     End Class
 End Namespace

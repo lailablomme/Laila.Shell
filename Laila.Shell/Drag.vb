@@ -43,9 +43,7 @@ Public Class Drag
             Try
                 Debug.WriteLine("Drag.Start")
 
-                Using parent = items(0).GetParent()
-                    _dataObject = Clipboard.GetDataObjectFor(parent, items.ToList())
-                End Using
+                _dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items.ToList())
 
                 makeDragImageObjects(items)
                 InitializeDragImage()

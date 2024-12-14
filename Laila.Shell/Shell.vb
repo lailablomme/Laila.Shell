@@ -157,8 +157,8 @@ Public Class Shell
         ' add special folders
         Shell.SlowTaskQueue.Add(
             Sub()
-                addSpecialFolder("Home", Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, False))
                 addSpecialFolder("Desktop", Folder.FromDesktop())
+                addSpecialFolder("Home", Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, False))
                 addSpecialFolder("Documents", Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing, False))
                 addSpecialFolder("Pictures", Folder.FromParsingName("shell:::{24ad3ad4-a569-4530-98e1-ab02f9417aa8}", Nothing, False))
                 addSpecialFolder("Downloads", Folder.FromParsingName("shell:::{088e3905-0323-4b02-9826-5d99428e115f}", Nothing, False))
@@ -306,22 +306,19 @@ Public Class Shell
                 Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
 
                 If Not IntPtr.Zero.Equals(pidl1) Then
-                    e.Item1Pidl = New Pidl(pidl1)
-                    Using i = Item.FromPidl(pidl1, Nothing, True)
-                        e.Item1FullPath = i.FullPath
-                        Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
-                    End Using
+                    e.Item1 = Item.FromPidl(pidl1, Nothing, True)
+                    Debug.WriteLine(BitConverter.ToString(e.Item1.Pidl.Bytes) & vbCrLf & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")")
                 End If
                 If Not IntPtr.Zero.Equals(pidl2) Then
-                    e.Item2Pidl = New Pidl(pidl2)
-                    Using i = Item.FromPidl(pidl1, Nothing, True)
-                        e.Item2FullPath = i.FullPath
-                        Debug.WriteLine(BitConverter.ToString(i.Pidl.Bytes) & vbCrLf & i.DisplayName & " (" & i.FullPath & ")")
-                    End Using
+                    e.Item2 = Item.FromPidl(pidl2, Nothing, True)
+                    Debug.WriteLine(BitConverter.ToString(e.Item2.Pidl.Bytes) & vbCrLf & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")")
                 End If
 
                 ' notify components
                 RaiseEvent Notification(Nothing, e)
+
+                If Not e.Item1 Is Nothing Then e.Item1.Dispose()
+                If Not e.Item2 Is Nothing Then e.Item2.Dispose()
 
                 ' unlock
                 Functions.SHChangeNotification_Unlock(hLock)

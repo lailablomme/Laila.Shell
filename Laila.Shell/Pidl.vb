@@ -18,12 +18,7 @@ Public Class Pidl
     Public Shared Function CreateShellIDListArray(items As IEnumerable(Of Item)) As IntPtr
         Dim pidls As List(Of Pidl) = New List(Of Pidl)()
         For Each item In items
-            Dim pidl As IntPtr = IntPtr.Zero
-            Dim punk As IntPtr
-            punk = Marshal.GetIUnknownForObject(item.ShellItem2)
-            Functions.SHGetIDListFromObject(punk, pidl)
-            pidls.Add(New Pidl(pidl))
-            Marshal.Release(punk)
+            pidls.Add(item.Pidl)
         Next
 
         Dim mem As MemoryStream = New MemoryStream()
@@ -69,30 +64,25 @@ Public Class Pidl
         ' read parent
         Dim offset As UInt32 = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32)) ' parent
         Dim parentShellFolder As IShellFolder
-        Try
-            If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) <> 0 Then
-                Using parentFolder = CType(Item.FromPidl(IntPtr.Add(start, offset), Nothing, True), Folder)
-                    parentShellFolder = parentFolder.ShellFolder
-                End Using
-            End If
 
-            ' read items
-            For i = 0 To count - 1
-                offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
-                Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
-                Dim attr As SFGAO = SFGAO.FOLDER
-                shellItem2.GetAttributes(attr, attr)
-                If attr.HasFlag(SFGAO.FOLDER) Then
-                    result.Add(New Folder(shellItem2, Nothing, True))
-                Else
-                    result.Add(New Item(shellItem2, Nothing, True))
-                End If
-            Next
-        Finally
-            If Not parentShellFolder Is Nothing Then
-                Marshal.ReleaseComObject(parentShellFolder)
+        If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) <> 0 Then
+            Using parentFolder = CType(Item.FromPidl(IntPtr.Add(start, offset), Nothing, True), Folder)
+                parentShellFolder = parentFolder.ShellFolder
+            End Using
+        End If
+
+        ' read items
+        For i = 0 To count - 1
+            offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
+            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
+            Dim attr As SFGAO = SFGAO.FOLDER
+            shellItem2.GetAttributes(attr, attr)
+            If attr.HasFlag(SFGAO.FOLDER) Then
+                result.Add(New Folder(shellItem2, Nothing, True))
+            Else
+                result.Add(New Item(shellItem2, Nothing, True))
             End If
-        End Try
+        Next
 
         Return result
     End Function
@@ -156,6 +146,12 @@ Public Class Pidl
     Public ReadOnly Property RelativePIDL As IntPtr
         Get
             Return _lastId
+        End Get
+    End Property
+
+    Public ReadOnly Property DekstopRelativePIDL As IntPtr
+        Get
+            Return Functions.ILFindChild(Shell.Desktop.Pidl.AbsolutePIDL, _pidl)
         End Get
     End Property
 

@@ -56,9 +56,9 @@ Namespace Controls
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
                      Select Case e.Event
                          Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                             If Not Me.SelectedItem Is Nothing AndAlso Not e.Folder._logicalParent Is Nothing _
+                             If Not Me.SelectedItem Is Nothing AndAlso Not e.Folder.Parent Is Nothing _
                                 AndAlso Me.GetIsSelectionDownFolder(e.Folder) Then
-                                 Await Me.SetSelectedFolder(e.Folder._logicalParent)
+                                 Await Me.SetSelectedFolder(e.Folder.Parent)
                              End If
                      End Select
                  End Sub
@@ -73,8 +73,8 @@ Namespace Controls
                                     Not i.disposedValue _
                                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
                                     AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                                    AndAlso Not i.Pidl Is Nothing _
-                                    AndAlso i.Pidl.Equals(e.Item1Pidl)) Is Nothing Then
+                                    AndAlso Not i.FullPath Is Nothing _
+                                    AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing Then
                                         updatePinnedItems()
                                         updateFrequentFolders()
                                     End If
@@ -85,18 +85,16 @@ Namespace Controls
                                     If Not Me.Items.FirstOrDefault(
                                         Function(i)
                                             If Not i.disposedValue Then
-                                                Using parent = i.GetParent()
-                                                    Return i.TreeRootIndex >= TreeRootSection.PINNED _
-                                            AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                                            AndAlso (Not parent Is Nothing _
-                                                     AndAlso Not parent.Pidl Is Nothing _
-                                                     AndAlso parent.Pidl.Equals(e.Item1Pidl))
-                                                End Using
+                                                Return i.TreeRootIndex >= TreeRootSection.PINNED _
+                                        AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
+                                        AndAlso (Not i.Parent Is Nothing _
+                                                 AndAlso Not i.Parent.FullPath Is Nothing _
+                                                 AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
                                             Else
                                                 Return False
                                             End If
                                         End Function) Is Nothing _
-                                    OrElse Shell.Desktop.Pidl.Equals(e.Item1Pidl) Then
+                                    OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath) Then
                                         updatePinnedItems()
                                         updateFrequentFolders()
                                     End If
@@ -321,16 +319,14 @@ Namespace Controls
                 Dim currentFolder As Folder = folder
                 Dim noRecursive As List(Of String) = New List(Of String)()
                 If Not currentFolder Is Nothing Then
-                    Dim parent As Folder = If(currentFolder._logicalParent Is Nothing, currentFolder.GetParent(), currentFolder._logicalParent)
-                    While Not parent Is Nothing _
-                        AndAlso parent.FullPath <> Shell.Desktop.FullPath _
+                    While Not currentFolder.Parent Is Nothing _
+                        AndAlso currentFolder.Parent.FullPath <> Shell.Desktop.FullPath _
                         AndAlso currentFolder.TreeRootIndex = -1 _
                         AndAlso Not noRecursive.Contains(currentFolder.FullPath)
                         noRecursive.Add(currentFolder.FullPath)
                         list.Add(currentFolder)
                         Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
-                        currentFolder = parent
-                        parent = If(currentFolder._logicalParent Is Nothing, currentFolder.GetParent(), currentFolder._logicalParent)
+                        currentFolder = currentFolder.Parent
                     End While
 
                     Dim tf As Folder
@@ -428,13 +424,11 @@ Namespace Controls
                                 End If
                             End If
 
-                            Dim parent As Folder = clickedItem.GetParent()
-
                             If Not _menu Is Nothing Then
                                 _menu.Dispose()
                             End If
                             _menu = New RightClickMenu() With {
-                                .Folder = If(parent Is Nothing, Shell.Desktop, parent),
+                                .Folder = If(clickedItem.Parent Is Nothing, Shell.Desktop, clickedItem.Parent),
                                 .SelectedItems = {clickedItem}
                             }
                             AddHandler _menu.CommandInvoked,
@@ -465,11 +459,6 @@ Namespace Controls
 
                             PART_ListBox.ContextMenu = _menu
                             e.Handled = True
-
-                            AddHandler PART_ListBox.ContextMenu.Closed,
-                                             Sub(s2 As Object, e2 As Object)
-                                                 If Not parent Is Nothing Then parent.Dispose()
-                                             End Sub
                         Else
                             PART_ListBox.ContextMenu = Nothing
                         End If
@@ -624,7 +613,7 @@ Namespace Controls
                             RemoveHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder))
+                                AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder))
                                 UIHelper.OnUIThreadAsync(
                                     Sub()
                                         If Me.Items.Contains(item2) Then
@@ -640,12 +629,10 @@ Namespace Controls
         End Sub
 
         Private Sub folder_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)
-            Dim collection As ObservableCollection(Of Item) = s
-
             Select Case e.Action
                 Case NotifyCollectionChangedAction.Add
                     For Each item In e.NewItems
-                        If TypeOf item Is Folder AndAlso (CType(item, Folder)._logicalParent Is Nothing OrElse CType(item, Folder)._logicalParent.IsExpanded) Then
+                        If TypeOf item Is Folder AndAlso (CType(item, Folder).Parent Is Nothing OrElse CType(item, Folder).Parent.IsExpanded) Then
                             Me.Items.Add(item)
                         End If
                     Next
@@ -667,22 +654,16 @@ Namespace Controls
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Reset
-                    ' add new folders
-                    For Each item In collection.Where(Function(i) _
-                        TypeOf i Is Folder _
-                        AndAlso (CType(i, Folder)._logicalParent Is Nothing OrElse CType(i, Folder)._logicalParent.IsExpanded) _
-                        AndAlso Not Me.Items.Contains(i))
-                        Me.Items.Add(item)
-                    Next
-
-                    ' remove removed folders
+                    Dim collection As ObservableCollection(Of Item) = s
                     Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
                     If Not folder Is Nothing Then
-                        For Each item In Me.Items.Where(Function(i) _
-                            Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder) _
-                            AndAlso Not collection.Contains(i)).ToList()
+                        For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
                             Me.Items.Remove(item)
+                        Next
+                        For Each item In collection.Where(Function(i) TypeOf i Is Folder)
+                            Me.Items.Add(item)
                         Next
                     End If
             End Select
@@ -713,7 +694,7 @@ Namespace Controls
                     UIHelper.OnUIThread(
                         Sub()
                             list = Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
+                                AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
                         End Sub)
                     For Each item2 In list
                         item2.NotifyOfPropertyChange("TreeSortKey")
@@ -776,9 +757,9 @@ Namespace Controls
 
                     For Each item In Me.Items.ToList()
                         If Not TypeOf item Is SeparatorFolder Then
-                            item._logicalParent = Nothing
                             item.TreeRootIndex = -1
                             item.IsExpanded = False
+                            item._parent = Nothing
                         End If
                     Next
 

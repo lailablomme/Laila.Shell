@@ -233,11 +233,10 @@ Namespace Controls
                     Else
                         Exit While
                     End If
-                    Dim parent As Folder = If(currentFolder._logicalParent Is Nothing, currentFolder.GetParent(), currentFolder._logicalParent)
-                    If parent Is Nothing OrElse parent.FullPath = Shell.Desktop.FullPath Then
+                    If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
                         computerImage.Source = currentFolder.Icon(16)
                     End If
-                    currentFolder = parent
+                    currentFolder = currentFolder.Parent
                     If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
                         currentFolder = Nothing
                     End If
@@ -272,11 +271,10 @@ Namespace Controls
                                     Me.Folder = moreMenuItem.Tag
                                 End Sub
                         moreContextMenu.Items.Add(moreMenuItem)
-                        Dim parent As Folder = If(currentFolder._logicalParent Is Nothing, currentFolder.GetParent(), currentFolder._logicalParent)
-                        If parent Is Nothing OrElse parent.FullPath = Shell.Desktop.FullPath Then
+                        If currentFolder.Parent Is Nothing OrElse currentFolder.Parent.FullPath = Shell.Desktop.FullPath Then
                             computerImage.Source = currentFolder.Icon(16)
                         End If
-                        currentFolder = parent
+                        currentFolder = currentFolder.Parent
                         If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
                             currentFolder = Nothing
                         End If
