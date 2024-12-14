@@ -454,7 +454,6 @@ Namespace Controls
                 Sub()
                     folder = Me.Folder
                     selectedItems = Me.SelectedItems
-                    Debug.WriteLine("Pidl=" & BitConverter.ToString(Me.SelectedItems(0).Pidl.Bytes))
 
                     e = New CommandInvokedEventArgs() With {
                         .Id = id.Item1,
