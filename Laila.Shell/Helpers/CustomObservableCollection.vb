@@ -7,10 +7,8 @@ Namespace Helpers
     Public Class CustomObservableCollection(Of T)
         Inherits ObservableCollection(Of T)
 
-        Public Sub ReplaceWithRange(range As IEnumerable(Of T))
+        Public Sub AddRange(range As IEnumerable(Of T))
             Me.CheckReentrancy()
-
-            Me.Items.Clear()
 
             For Each i In range
                 Me.Items.Add(i)

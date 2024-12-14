@@ -4,6 +4,7 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
+Imports System.Windows.Forms
 Imports Laila.Shell.Helpers
 
 Public Class Folder
@@ -296,78 +297,52 @@ Public Class Folder
 
     Public Sub RefreshItems()
         Me.IsRefreshingItems = True
-        'For Each item In _items.ToList()
-        '    item._logicalParent = Nothing
-        'Next
-        '_items.Clear()
         _isEnumerated = False
-        'Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-        'view.SortDescriptions.Clear()
-        'view.GroupDescriptions.Clear()
         Me.GetItems()
-        'Me.ItemsGroupByPropertyName = Me.ItemsGroupByPropertyName
-        'Me.ItemsSortPropertyName = Me.ItemsSortPropertyName
         Me.IsRefreshingItems = False
     End Sub
 
     Public Async Function RefreshItemsAsync() As Task
         Me.IsRefreshingItems = True
-        'For Each item In _items.ToList()
-        '    item._logicalParent = Nothing
-        'Next
-        '_items.Clear()
         _isEnumerated = False
-        'Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-        'view.SortDescriptions.Clear()
-        'view.GroupDescriptions.Clear()
         Await GetItemsAsync()
-        'Me.ItemsSortPropertyName = Me.ItemsSortPropertyName
-        'Me.ItemsGroupByPropertyName = Me.ItemsGroupByPropertyName
         Me.IsRefreshingItems = False
     End Function
 
     Public Overridable Function GetItems() As List(Of Item)
         If Not _isEnumerated Then
-            updateItems(_items, , False)
+            updateItems(_items, False)
         End If
         Return _items.ToList()
     End Function
 
     Public Overridable Async Function GetItemsAsync() As Task(Of List(Of Item))
-        Dim func As Func(Of Task(Of List(Of Item))) =
-            Async Function() As Task(Of List(Of Item))
-                Dim tcs As New TaskCompletionSource(Of List(Of Item))
+        Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
-                Shell.PriorityTaskQueue.Add(
-                    Sub()
-                        Try
-                            SyncLock _lock
-                                If Not _isEnumerated Then
-                                    updateItems(_items,, True)
-                                End If
-                            End SyncLock
-                            tcs.SetResult(_items.ToList())
-                        Catch ex As Exception
-                            tcs.SetException(ex)
-                        End Try
-                    End Sub)
+        Dim t As Thread = New Thread(
+            Sub()
+                Try
+                    SyncLock _lock
+                        updateItems(_items, True)
+                    End SyncLock
+                    tcs.SetResult(_items.ToList())
+                Catch ex As Exception
+                    tcs.SetException(ex)
+                End Try
+            End Sub)
+        t.SetApartmentState(ApartmentState.MTA)
+        t.Start()
 
-                tcs.Task.Wait(Shell.ShuttingDownToken)
-                If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                    Return tcs.Task.Result
-                End If
-                Return Nothing
-            End Function
-
-        Return Await Task.Run(func)
+        Await tcs.Task.WaitAsync(Shell.ShuttingDownToken)
+        If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+            Return tcs.Task.Result
+        End If
+        Return Nothing
     End Function
 
-    Protected Sub updateItems(items As ObservableCollection(Of Item), Optional doRefreshItems As Boolean = False, Optional isAsync As Boolean = False)
-        UIHelper.OnUIThread(
-            Sub()
-                Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
-                Me.IsLoading = True
-            End Sub)
+    Protected Sub updateItems(items As ObservableCollection(Of Item), Optional isAsync As Boolean = False)
+        Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
+        Me.IsLoading = True
 
         If Not _cancellationTokenSource Is Nothing Then
             _cancellationTokenSource.Cancel()
@@ -380,7 +355,7 @@ Public Class Folder
         Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
-        updateItems(flags,
+        enumerateItems(flags,
             Function(shellItem2 As IShellItem2)
                 Return New Folder(shellItem2, Me, False)
             End Function,
@@ -389,38 +364,35 @@ Public Class Folder
             End Function, cts.Token)
 
         If _cancellationTokenSource.Equals(cts) Then
-            UIHelper.OnUIThread(
-                Sub()
-                    Me.IsLoading = False
-                    Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
-                End Sub)
+            Me.IsLoading = False
+            Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
 
             _updateCompleted.SetResult()
         Else
-            UIHelper.OnUIThread(
-                Sub()
-                    Debug.WriteLine("End loading " & Me.DisplayName & " (didn't mark completion)" & If(cts.Token.IsCancellationRequested, " cancelled", ""))
-                End Sub)
+            Debug.WriteLine("End loading " & Me.DisplayName & " (didn't mark completion)" & If(cts.Token.IsCancellationRequested, " cancelled", ""))
         End If
     End Sub
 
-    Protected Sub updateItems(flags As UInt32,
-                              makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
-                              cancellationToken As CancellationToken)
+    Protected Sub enumerateItems(flags As UInt32,
+                                 makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
+                                 cancellationToken As CancellationToken)
         If disposedValue Then Return
+
+        Dim result As List(Of Item) = New List(Of Item)()
 
         If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
 
-        Dim toAdd As List(Of Item) = New List(Of Item)()
+        UIHelper.OnUIThread(
+            Sub()
+                Me.Items.Clear()
+            End Sub)
 
         Dim addItems As System.Action =
             Sub()
-                If toAdd.Count > 0 Then
-                    Dim view As CollectionView
-
+                If result.Count > 0 Then
                     UIHelper.OnUIThread(
                         Sub()
-                            view = CollectionViewSource.GetDefaultView(Me.Items)
+                            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
 
                             ' save sorting/grouping
                             Dim sortPropertyName As String = Me.ItemsSortPropertyName
@@ -437,7 +409,7 @@ Public Class Folder
                             End If
 
                             ' add items
-                            _items.ReplaceWithRange(toAdd)
+                            _items.AddRange(result)
 
                             ' restore sorting/grouping
                             If Not TypeOf Me Is SearchFolder Then
@@ -490,13 +462,14 @@ Public Class Folder
                         If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
                     End Try
                     If Not enumShellItems Is Nothing Then
-                        Dim shellItems(9999) As IShellItem, fetched As UInt32 = 1
+                        Dim celt As Integer = If(TypeOf Me Is SearchFolder, 1, 10000)
+                        Dim shellItems(celt - 1) As IShellItem, fetched As UInt32 = 1
                         Dim startedUpdate As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
                         If Not cancellationToken.IsCancellationRequested Then
-                            Dim h As HRESULT = enumShellItems.Next(10000, shellItems, fetched)
+                            Dim h As HRESULT = enumShellItems.Next(celt, shellItems, fetched)
                             While fetched > 0
-                                Debug.WriteLine("{0:HH:mm:ss.ffff} Fetched " & fetched & " items", DateTime.Now)
+                                'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetched " & fetched & " items", DateTime.Now)
                                 For x = 0 To fetched - 1
                                     'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
                                     Dim attr2 As Integer = SFGAO.FOLDER
@@ -508,7 +481,7 @@ Public Class Folder
                                         newItem = makeNewItem(shellItems(x))
                                     End If
 
-                                    toAdd.Add(newItem)
+                                    result.Add(newItem)
 
                                     ' preload sort property
                                     If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
@@ -525,16 +498,16 @@ Public Class Folder
 
                                     If cancellationToken.IsCancellationRequested Then Exit While
                                     If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
-                                        AndAlso toAdd.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
+                                        AndAlso result.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
                                         addItems()
-                                        toAdd.Clear()
+                                        result.Clear()
                                         lastUpdate = DateTime.Now
                                         Thread.Sleep(10)
                                     End If
                                     If cancellationToken.IsCancellationRequested Then Exit While
                                 Next
-                                Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
-                                h = enumShellItems.Next(10000, shellItems, fetched)
+                                'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
+                                h = enumShellItems.Next(celt, shellItems, fetched)
                             End While
                             If fetched = 0 AndAlso Not (h = HRESULT.Ok OrElse h = HRESULT.False) Then
                                 Throw New Exception(h.ToString())
