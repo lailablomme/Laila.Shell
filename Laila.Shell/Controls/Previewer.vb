@@ -127,8 +127,10 @@ Namespace Controls
                     If Not Shell.ShuttingDownToken.IsCancellationRequested Then
                         UIHelper.OnUIThread(
                             Sub()
-                                previewer._timer.Dispose()
-                                previewer._timer = Nothing
+                                If Not previewer._timer Is Nothing Then
+                                    previewer._timer.Dispose()
+                                    previewer._timer = Nothing
+                                End If
 
                                 showPreview(d)
                             End Sub)
