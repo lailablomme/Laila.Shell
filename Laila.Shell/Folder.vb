@@ -322,16 +322,14 @@ Public Class Folder
 
         Dim t As Thread = New Thread(
             Sub()
-                Dispatcher.CurrentDispatcher.BeginInvoke(
-                    Sub()
-                        Try
-                            updateItems(_items, True)
-                            tcs.SetResult(_items.ToList())
-                        Catch ex As Exception
-                            tcs.SetException(ex)
-                        End Try
-                    End Sub)
-                Dispatcher.Run()
+                Try
+                    If Not _isEnumerated Then
+                        updateItems(_items, True)
+                    End If
+                    tcs.SetResult(_items.ToList())
+                Catch ex As Exception
+                    tcs.SetException(ex)
+                End Try
             End Sub)
         t.SetApartmentState(ApartmentState.MTA)
         t.Start()
@@ -385,27 +383,25 @@ Public Class Folder
 
         If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
 
-        UIHelper.OnUIThread(
-            Sub()
-                Me.Items.Clear()
-            End Sub)
+        If TypeOf Me Is SearchFolder Then
+            UIHelper.OnUIThread(
+                Sub()
+                    Me.Items.Clear()
+                End Sub)
+        End If
 
         Dim addItems As System.Action =
             Sub()
                 If result.Count > 0 Then
-                    Dim view As CollectionView
                     UIHelper.OnUIThread(
                         Sub()
-                            view = CollectionViewSource.GetDefaultView(Me.Items)
-                        End Sub)
+                            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
 
-                    ' save sorting/grouping
-                    Dim sortPropertyName As String = Me.ItemsSortPropertyName
+                            ' save sorting/grouping
+                            Dim sortPropertyName As String = Me.ItemsSortPropertyName
                             Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
                             Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
 
-                    UIHelper.OnUIThread(
-                        Sub()
                             ' disable sorting grouping
                             If Not TypeOf Me Is SearchFolder Then
                                 Me.IsNotifying = False
@@ -414,13 +410,12 @@ Public Class Folder
                                     Me.ItemsGroupByPropertyName = Nothing
                                 End Using
                             End If
-                        End Sub)
 
-                    ' add items
-                    _items.AddRange(result)
+                            If Not TypeOf Me Is SearchFolder Then _items.Clear()
 
-                    UIHelper.OnUIThread(
-                        Sub()
+                            ' add items
+                            _items.AddRange(result)
+
                             ' restore sorting/grouping
                             If Not TypeOf Me Is SearchFolder Then
                                 Using view.DeferRefresh()
@@ -744,6 +739,7 @@ Public Class Folder
                         AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) _
                         AndAlso (Not _doSkipUPDATEDIR.HasValue _
                                  OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) Then
+                            _isEnumerated = False
                             Me.GetItemsAsync()
                         End If
                     End If
