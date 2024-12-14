@@ -105,7 +105,7 @@ Public Class Folder
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            If Not disposedValue AndAlso _shellFolder Is Nothing Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose AndAlso _shellFolder Is Nothing Then
                 _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
             End If
             Return _shellFolder
@@ -171,23 +171,20 @@ Public Class Folder
         End Set
     End Property
 
-    Public Overrides Sub MaybeDispose()
-        If Not _doKeepAlive AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
-            AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
-            AndAlso (Me._parent Is Nothing _
-                     OrElse (Not Me._parent.IsActiveInFolderView _
-                             AndAlso Not _parent.IsVisibleInAddressBar)) _
-            AndAlso Not Me.IsInHistory AndAlso _items.Count = 0 Then
-            Me.Dispose()
-        End If
-        Me.DisposeItems()
-    End Sub
+    Public Overrides ReadOnly Property IsReadyForDispose As Boolean
+        Get
+            Return Not _doKeepAlive AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
+                AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
+                AndAlso (Me._parent Is Nothing _
+                         OrElse (Not Me._parent.IsActiveInFolderView _
+                                 AndAlso Not _parent.IsVisibleInAddressBar)) _
+                AndAlso Not Me.IsInHistory AndAlso _items.Count = 0
+        End Get
+    End Property
 
-    Public Sub DisposeItems()
-        If Not Me.IsLoading Then
-            For Each item In _items.ToList()
-                item.MaybeDispose()
-            Next
+    Public Overrides Sub MaybeDispose()
+        If Me.IsReadyForDispose Then
+            Me.Dispose()
         End If
     End Sub
 
@@ -263,7 +260,7 @@ Public Class Folder
 
     Public Overrides ReadOnly Property HasSubFolders As Boolean
         Get
-            If Not disposedValue Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                 Dim tcs As New TaskCompletionSource(Of Boolean)
 
                 Shell.SlowTaskQueue.Add(
@@ -271,10 +268,12 @@ Public Class Folder
                         Try
                             If _hasSubFolders.HasValue Then
                                 tcs.SetResult(_hasSubFolders.Value)
-                            Else
+                            ElseIf Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                                 Dim attr As SFGAO = SFGAO.HASSUBFOLDER
                                 Me.ShellItem2.GetAttributes(attr, attr)
                                 tcs.SetResult(attr.HasFlag(SFGAO.HASSUBFOLDER))
+                            Else
+                                tcs.SetResult(False)
                             End If
                         Catch ex As Exception
                             tcs.SetException(ex)
@@ -392,7 +391,7 @@ Public Class Folder
     Protected Sub enumerateItems(flags As UInt32,
                                  makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
                                  cancellationToken As CancellationToken)
-        If disposedValue Then Return
+        If disposedValue OrElse Me.IsReadyForDispose Then Return
 
         Dim result As List(Of Item) = New List(Of Item)()
 
@@ -682,7 +681,7 @@ Public Class Folder
     Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)
 
-        If Not disposedValue Then
+        If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
             Select Case e.Event
                 Case SHCNE.CREATE
                     If _isLoaded Then
@@ -690,7 +689,7 @@ Public Class Folder
                             If Not _items Is Nothing Then
                                 UIHelper.OnUIThread(
                                     Sub()
-                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                         If existing Is Nothing Then
                                             _items.Add(Item.FromPidl(e.Item1.Pidl.AbsolutePIDL, Me, False))
                                         Else
@@ -706,7 +705,7 @@ Public Class Folder
                             If Not _items Is Nothing Then
                                 UIHelper.OnUIThread(
                                     Sub()
-                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                         If existing Is Nothing Then
                                             _items.Add(Item.FromPidl(e.Item1.Pidl.AbsolutePIDL, Me, False))
                                         Else
@@ -721,7 +720,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item2 As Item
-                                item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                 If Not item2 Is Nothing Then
                                     If TypeOf item2 Is Folder Then
                                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -737,7 +736,7 @@ Public Class Folder
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         UIHelper.OnUIThread(
                             Sub()
-                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
                                     Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1.Pidl.AbsolutePIDL, Nothing)
                                     If Not item1 Is Nothing Then
                                         _items.Add(New Folder(item1, Me, False))
@@ -750,7 +749,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item As Item
-                                item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                                     Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                         .Folder = item,
@@ -790,7 +789,9 @@ Public Class Folder
                 _cancellationTokenSource.Cancel()
             End If
 
-            Me.DisposeItems()
+            For Each item In _items
+                item.Dispose()
+            Next
 
             If Not _shellFolder Is Nothing Then
                 Marshal.ReleaseComObject(_shellFolder)

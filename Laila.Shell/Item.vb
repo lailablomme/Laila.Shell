@@ -1,11 +1,7 @@
-Imports System.CodeDom
-Imports System.Drawing
 Imports System.IO
 Imports System.Runtime.InteropServices
-Imports System.Text
 Imports System.Threading
 Imports System.Windows
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
@@ -16,7 +12,8 @@ Public Class Item
 
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
-    Protected _properties As HashSet(Of [Property]) = New HashSet(Of [Property])
+    Protected _propertiesByKey As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
+    Protected _propertiesByCanonicalName As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Friend _fullPath As String
     Friend disposedValue As Boolean
     Friend _parent As Folder
@@ -28,11 +25,12 @@ Public Class Item
     Friend _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
-    Protected _shellItemHistory As List(Of IShellItem2) = New List(Of IShellItem2)
+    Friend _shellItemHistory As List(Of Tuple(Of IShellItem2, DateTime)) = New List(Of Tuple(Of IShellItem2, DateTime))
     Private _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As Object = New Object()
-    Protected Property _doKeepAlive As Boolean
+    Friend _refreshLock As Object = New Object()
+    Protected _doKeepAlive As Boolean
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder, doKeepAlive As Boolean) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -139,15 +137,13 @@ Public Class Item
 
     Public ReadOnly Property ShellItem2 As IShellItem2
         Get
-            If Not disposedValue AndAlso _shellItem2 Is Nothing AndAlso Not Me.Pidl Is Nothing Then
-            End If
             Return _shellItem2
         End Get
     End Property
 
     Public ReadOnly Property Pidl As Pidl
         Get
-            If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
+            If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose AndAlso Not _shellItem2 Is Nothing Then
                 Dim ptr As IntPtr, pidlptr As IntPtr
                 Try
                     ptr = Marshal.GetIUnknownForObject(_shellItem2)
@@ -169,7 +165,7 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property IsReadyForDispose As Boolean
+    Public Overridable ReadOnly Property IsReadyForDispose As Boolean
         Get
             Return Not _doKeepAlive _
                 AndAlso (_parent Is Nothing OrElse (Not _parent.IsActiveInFolderView AndAlso Not _parent.IsVisibleInAddressBar)) _
@@ -229,11 +225,13 @@ Public Class Item
                 Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
             End If
             If Not IntPtr.Zero.Equals(ptr) Then
+                If Not _shellItem2 Is Nothing Then
+                    _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
+                End If
                 _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
                 _shellItem2.Update(IntPtr.Zero)
                 _shellItem2.Update(IntPtr.Zero)
                 _shellItem2.Update(IntPtr.Zero)
-                _shellItemHistory.Add(_shellItem2)
             End If
         Finally
             If Not IntPtr.Zero.Equals(ptr) Then
@@ -248,7 +246,6 @@ Public Class Item
         End Get
     End Property
 
-    Private _refreshLock As Object = New Object()
     Public Overridable Function Refresh(Optional newShellItem As IShellItem2 = Nothing) As TaskCompletionSource
         Dim tcs As TaskCompletionSource = New TaskCompletionSource()
 
@@ -257,20 +254,32 @@ Public Class Item
                 SyncLock _refreshLock
                     If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                         Debug.WriteLine("Refreshing " & Me.DisplayName)
-                        Dim oldProperties As HashSet(Of [Property]) = _properties
                         Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
                         If Not newShellItem Is Nothing Then
+                            If Not _shellItem2 Is Nothing Then
+                                _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
+                            End If
                             _shellItem2 = newShellItem
-                            _shellItemHistory.Add(newShellItem)
                         ElseIf Not _shellItem2 Is Nothing Then
                             Me.MakeNewShellItem()
                         End If
 
-                        _properties = New HashSet(Of [Property])()
-                        For Each [property] In oldProperties
-                            [property].Dispose()
-                        Next
+                        Dim oldPropertiesByKey As Dictionary(Of String, [Property])
+                        Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])
+                        SyncLock _propertiesLock
+                            oldPropertiesByKey = _propertiesByKey
+                            oldPropertiesByCanonicalName = _propertiesByCanonicalName
+                            _propertiesByKey = New Dictionary(Of String, [Property])()
+                            _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
+                            For Each [property] In oldPropertiesByKey.Values
+                                [property].Dispose()
+                            Next
+                            For Each [property] In oldPropertiesByCanonicalName.Values
+                                [property].Dispose()
+                            Next
+                        End SyncLock
+
                         _displayName = Nothing
 
                         If Not Me.ShellItem2 Is Nothing Then
@@ -294,15 +303,17 @@ Public Class Item
                             Me.NotifyOfPropertyChange("IsCompressed")
                             Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
                             Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
-                            For Each prop In oldProperties
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key.ToString()))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key.ToString()))
+                            For Each prop In oldPropertiesByKey
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
+                            Next
+                            For Each prop In oldPropertiesByCanonicalName
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
                             Next
                         Else
                             Me.Dispose()
@@ -321,7 +332,7 @@ Public Class Item
     Public ReadOnly Property FullPath As String
         Get
             Try
-                If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue Then
+                If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                     Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
                 End If
             Catch ex As Exception
@@ -334,7 +345,8 @@ Public Class Item
 
     Public ReadOnly Property Parent As Folder
         Get
-            If Not disposedValue AndAlso _parent Is Nothing AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose _
+                AndAlso _parent Is Nothing AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
                 Dim parentShellItem2 As IShellItem2
                 If Not Me.ShellItem2 Is Nothing Then
                     Me.ShellItem2.GetParent(parentShellItem2)
@@ -418,7 +430,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
-            If Not disposedValue Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                 Dim hbitmap As IntPtr
                 Try
                     Dim h As HRESULT
@@ -465,7 +477,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
         Get
-            If Not disposedValue Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                 Dim hbitmap As IntPtr
                 Try
                     Dim h As HRESULT
@@ -518,7 +530,7 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As ImageSource()
-                        If Not Me.disposedValue Then
+                        If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
                             result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").Icons16Async
                         End If
                         tcs.SetResult(result)
@@ -544,7 +556,7 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As ImageSource
-                        If Not Me.disposedValue Then
+                        If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
                             result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").FirstIcon16Async
                         End If
                         tcs.SetResult(result)
@@ -570,7 +582,7 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As Boolean
-                        If Not Me.disposedValue Then
+                        If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
                             result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").HasIcon
                         End If
                         tcs.SetResult(result)
@@ -585,7 +597,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property HasThumbnail As Boolean
         Get
-            If Not disposedValue Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                 Dim hbitmap As IntPtr
                 Try
                     Dim h As HRESULT
@@ -637,7 +649,7 @@ Public Class Item
     Public Overridable ReadOnly Property DisplayName As String
         Get
             Try
-                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
+                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                 End If
             Catch ex As Exception
@@ -751,7 +763,7 @@ Public Class Item
 
     Public ReadOnly Property ContentViewModeProperties As [Property]()
         Get
-            If Not disposedValue Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                 Dim propList As String
                 If _parent Is Nothing OrElse Not TypeOf _parent Is SearchFolder Then
                     propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForBrowse").Text
@@ -791,11 +803,11 @@ Public Class Item
 
     Public ReadOnly Property InfoTip As String
         Get
-            If Not disposedValue Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                 Dim PKEY_System_InfoTipText As New PROPERTYKEY() With {
-                .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
-                .pid = 4
-            }
+                    .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
+                    .pid = 4
+                }
                 Dim system_InfoTipText As String = Me.PropertiesByKey(PKEY_System_InfoTipText).Text
                 Dim properties() As String
                 If Not String.IsNullOrWhiteSpace(system_InfoTipText) Then
@@ -815,7 +827,7 @@ Public Class Item
                 Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty
                 Try
                     System_StorageProviderUIStatus =
-                    [Property].FromKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey, Me.PropertyStore)
+                        Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
                     If System_StorageProviderUIStatus.RawValue.vt <> 0 Then
                         If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.Text) Then
                             text.Add(System_StorageProviderUIStatus.DisplayName & ": " & System_StorageProviderUIStatus.Text)
@@ -838,7 +850,7 @@ Public Class Item
 
     Public ReadOnly Property TileViewProperties As String
         Get
-            If Not disposedValue Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                 Dim PKEY_System_PropList_TileInfo As New PROPERTYKEY() With {
                 .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                 .pid = 3
@@ -890,15 +902,11 @@ Public Class Item
             Dim [property] As [Property]
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
             SyncLock _propertiesLock
-                [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(key))
+                If Not _propertiesByKey.TryGetValue(propertyKey, [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                    [property] = [Property].FromKey(key, Me.ShellItem2)
+                    _propertiesByKey.Add(propertyKey, [property])
+                End If
             End SyncLock
-            If [property] Is Nothing AndAlso Not disposedValue Then
-                [property] = [Property].FromKey(key, Me.ShellItem2)
-                SyncLock _propertiesLock
-                    If _properties.FirstOrDefault(Function(p) p.Key.Equals(key)) Is Nothing _
-                                    AndAlso Not [property] Is Nothing Then _properties.Add([property])
-                End SyncLock
-            End If
             Return [property]
         End Get
     End Property
@@ -907,15 +915,11 @@ Public Class Item
         Get
             Dim [property] As [Property]
             SyncLock _propertiesLock
-                [property] = _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey))
+                If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                    [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                    _propertiesByKey.Add(propertyKey.ToString(), [property])
+                End If
             End SyncLock
-            If [property] Is Nothing AndAlso Not disposedValue Then
-                [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
-                SyncLock _propertiesLock
-                    If _properties.FirstOrDefault(Function(p) p.Key.Equals(propertyKey)) Is Nothing _
-                        AndAlso Not [property] Is Nothing Then _properties.Add([property])
-                End SyncLock
-            End If
             Return [property]
         End Get
     End Property
@@ -924,15 +928,11 @@ Public Class Item
         Get
             Dim [property] As [Property]
             SyncLock _propertiesLock
-                [property] = _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName)
+                If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                    [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                    _propertiesByCanonicalName.Add(canonicalName, [property])
+                End If
             End SyncLock
-            If [property] Is Nothing AndAlso Not disposedValue Then
-                [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
-                SyncLock _propertiesLock
-                    If _properties.FirstOrDefault(Function(p) p.CanonicalName = canonicalName) Is Nothing _
-                        AndAlso Not [property] Is Nothing Then _properties.Add([property])
-                End SyncLock
-            End If
             Return [property]
         End Get
     End Property
@@ -1084,7 +1084,7 @@ Public Class Item
     End Function
 
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
-        If Not disposedValue Then
+        If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM
                     If Me.Pidl?.Equals(e.Item1.Pidl) Then
@@ -1112,23 +1112,12 @@ Public Class Item
                 'Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
 
                 If disposing Then
-                    ' dispose managed state (managed objects)
+                    ' dispose managed state (managed objects):
+
+                    ' unsubscribe from notifications
                     RemoveHandler Shell.Notification, AddressOf shell_Notification
 
-                    For Each [property] In _properties
-                        [property].Dispose()
-                    Next
-                    _properties.Clear()
-                    For Each item In _shellItemHistory
-                        Marshal.ReleaseComObject(item)
-                    Next
-                    _shellItemHistory.Clear()
-
-                    Shell.RemoveFromItemsCache(Me)
-                    If Not _pidl Is Nothing Then
-                        _pidl.Dispose()
-                    End If
-
+                    ' remove from parent collection
                     UIHelper.OnUIThreadAsync(
                         Sub()
                             If Not _parent Is Nothing Then
@@ -1136,6 +1125,34 @@ Public Class Item
                                 _parent._isEnumerated = False
                             End If
                         End Sub)
+
+                    ' dispose properties
+                    For Each [property] In _propertiesByKey
+                        [property].Value.Dispose()
+                    Next
+                    _propertiesByKey.Clear()
+                    For Each [property] In _propertiesByCanonicalName
+                        [property].Value.Dispose()
+                    Next
+                    _propertiesByCanonicalName.Clear()
+
+                    ' dispose shellitems
+                    For Each item In _shellItemHistory
+                        Marshal.ReleaseComObject(item)
+                    Next
+                    _shellItemHistory.Clear()
+                    If Not _shellItem2 Is Nothing Then
+                        Marshal.ReleaseComObject(_shellItem2)
+                        _shellItem2 = Nothing
+                    End If
+
+                    ' remove from cache
+                    Shell.RemoveFromItemsCache(Me)
+
+                    ' dispose pidl
+                    If Not _pidl Is Nothing Then
+                        _pidl.Dispose()
+                    End If
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

@@ -70,7 +70,7 @@ Namespace Controls
                             UIHelper.OnUIThread(
                                 Sub()
                                     If Not Me.Items.FirstOrDefault(Function(i) _
-                                    Not i.disposedValue _
+                                    Not i.disposedValue AndAlso Not i.IsReadyForDispose _
                                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
                                     AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                                     AndAlso Not i.FullPath Is Nothing _
@@ -84,12 +84,12 @@ Namespace Controls
                                 Sub()
                                     If Not Me.Items.FirstOrDefault(
                                         Function(i)
-                                            If Not i.disposedValue Then
+                                            If Not i.disposedValue AndAlso Not i.IsReadyForDispose Then
                                                 Return i.TreeRootIndex >= TreeRootSection.PINNED _
-                                        AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                                        AndAlso (Not i.Parent Is Nothing _
-                                                 AndAlso Not i.Parent.FullPath Is Nothing _
-                                                 AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
+                                                    AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
+                                                    AndAlso (Not i.Parent Is Nothing _
+                                                    AndAlso Not i.Parent.FullPath Is Nothing _
+                                                    AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
                                             Else
                                                 Return False
                                             End If

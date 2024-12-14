@@ -53,8 +53,10 @@ Public Class SearchFolder
             _cancellationTokenSource.Cancel()
         End If
         Me.Terms = terms
+        If Not _shellItem2 Is Nothing Then
+            _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
+        End If
         _shellItem2 = getShellItem(terms, Me.Parent)
-        _shellItemHistory.Add(_shellItem2)
         For Each item In _items.ToList()
             item._parent = Nothing
         Next

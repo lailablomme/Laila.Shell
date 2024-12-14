@@ -95,16 +95,38 @@ Public Class Shell
         Dim staThread3 As Thread = New Thread(
             Sub()
                 Try
+                    ' while we're not shutting down...
                     While Not ShuttingDownToken.IsCancellationRequested
+                        ' take a snapshot of the shellitem cache...
                         Dim list As List(Of Tuple(Of Item, DateTime))
                         SyncLock _itemsCacheLock
                             list = Shell.ItemsCache.ToList()
                         End SyncLock
+
+                        ' ...and go through it
                         For Each item In list
                             If ShuttingDownToken.IsCancellationRequested Then Exit For
+
+                            ' try to dispose the item
                             If Not item Is Nothing AndAlso Not item.Item1 Is Nothing AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
                                 item.Item1.MaybeDispose()
                             End If
+
+                            ' if the item was not disposed...
+                            If Not item.Item1.disposedValue Then
+                                SyncLock item.Item1._refreshLock
+                                    ' ...clean up the shellitem history
+                                    ' (we suppose after 30 seconds a shellitem won't be in use anywhere anymore)
+                                    For Each shellItemEntry In item.Item1._shellItemHistory.Take(item.Item1._shellItemHistory.Count - 1).ToList()
+                                        If DateTime.Now.Subtract(shellItemEntry.Item2).TotalMilliseconds > 30000 Then
+                                            Marshal.ReleaseComObject(shellItemEntry.Item1)
+                                            item.Item1._shellItemHistory.Remove(shellItemEntry)
+                                        End If
+                                    Next
+                                End SyncLock
+                            End If
+
+                            ' don't hog the process
                             Thread.Sleep(10)
                         Next
                         Thread.Sleep(5000)

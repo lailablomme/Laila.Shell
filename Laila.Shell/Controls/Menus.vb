@@ -240,7 +240,7 @@ Namespace Controls
             If Not Shell.ShuttingDownToken.IsCancellationRequested Then
                 Me.CanCut = Clipboard.CanCut(Me.SelectedItems)
                 Me.CanCopy = Clipboard.CanCopy(Me.SelectedItems)
-                Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
+                Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
                 Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
