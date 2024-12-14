@@ -28,7 +28,7 @@ Public Class Item
     Friend _shellItemHistory As List(Of Tuple(Of IShellItem2, DateTime)) = New List(Of Tuple(Of IShellItem2, DateTime))
     Private _pidl As Pidl
     Private _isImage As Boolean?
-    Private _propertiesLock As Object = New Object()
+    Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Friend _refreshLock As Object = New Object()
     Protected _doKeepAlive As Boolean
 
@@ -165,6 +165,18 @@ Public Class Item
         End Get
     End Property
 
+    Public Overridable ReadOnly Property IsReadyToPrepareForDispose As Boolean
+        Get
+            Return Not _parent Is Nothing AndAlso Not _parent.IsActiveInFolderView
+        End Get
+    End Property
+
+    Public Overridable Sub MaybePrepareForDispose()
+        If Me.IsReadyToPrepareForDispose Then
+            _parent = Nothing
+        End If
+    End Sub
+
     Public Overridable ReadOnly Property IsReadyForDispose As Boolean
         Get
             Return Not _doKeepAlive _
@@ -267,18 +279,16 @@ Public Class Item
 
                         Dim oldPropertiesByKey As Dictionary(Of String, [Property])
                         Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])
-                        SyncLock _propertiesLock
-                            oldPropertiesByKey = _propertiesByKey
-                            oldPropertiesByCanonicalName = _propertiesByCanonicalName
-                            _propertiesByKey = New Dictionary(Of String, [Property])()
-                            _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
-                            For Each [property] In oldPropertiesByKey.Values
-                                [property].Dispose()
-                            Next
-                            For Each [property] In oldPropertiesByCanonicalName.Values
-                                [property].Dispose()
-                            Next
-                        End SyncLock
+                        oldPropertiesByKey = _propertiesByKey
+                        oldPropertiesByCanonicalName = _propertiesByCanonicalName
+                        _propertiesByKey = New Dictionary(Of String, [Property])()
+                        _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
+                        For Each [property] In oldPropertiesByKey.Values
+                            [property].Dispose()
+                        Next
+                        For Each [property] In oldPropertiesByCanonicalName.Values
+                            [property].Dispose()
+                        Next
 
                         _displayName = Nothing
 
@@ -289,6 +299,15 @@ Public Class Item
                                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                                 Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
                             Me.ShellItem2.GetAttributes(_attributes, _attributes)
+
+                            ' preload System_StorageProviderUIStatus images
+                            Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                                = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                            If Not System_StorageProviderUIStatus Is Nothing _
+                                        AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                                Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                            End If
+
                             Me.NotifyOfPropertyChange("DisplayName")
                             If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
                                 Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
@@ -301,19 +320,24 @@ Public Class Item
                             Me.NotifyOfPropertyChange("IsImage")
                             Me.NotifyOfPropertyChange("IsHidden")
                             Me.NotifyOfPropertyChange("IsCompressed")
-                            Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
                             Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
+                            Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
+                            Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
+                            Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
+                            Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
                             For Each prop In oldPropertiesByKey
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIconAsync", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
                             Next
                             For Each prop In oldPropertiesByCanonicalName
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
-                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
                                 Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIconAsync", prop.Key))
+                                Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
                             Next
                         Else
                             Me.Dispose()
@@ -531,7 +555,7 @@ Public Class Item
                     Try
                         Dim result As ImageSource()
                         If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
-                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").Icons16Async
+                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16Async
                         End If
                         tcs.SetResult(result)
                     Catch ex As Exception
@@ -557,7 +581,7 @@ Public Class Item
                     Try
                         Dim result As ImageSource
                         If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
-                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").FirstIcon16Async
+                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.FirstIcon16Async
                         End If
                         tcs.SetResult(result)
                     Catch ex As Exception
@@ -583,7 +607,7 @@ Public Class Item
                     Try
                         Dim result As Boolean
                         If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
-                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2").HasIcon
+                            result = If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.HasIcon, False)
                         End If
                         tcs.SetResult(result)
                     Catch ex As Exception
@@ -592,6 +616,18 @@ Public Class Item
                 End Sub)
 
             Return tcs.Task.Result
+        End Get
+    End Property
+
+    Public ReadOnly Property StorageProviderUIStatusIconWidth12 As Double
+        Get
+            Return If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.ImageReferences16.Count, 0) * 12
+        End Get
+    End Property
+
+    Public ReadOnly Property StorageProviderUIStatusIconWidth16 As Double
+        Get
+            Return If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.ImageReferences16.Count, 0) * 16
         End Get
     End Property
 
@@ -665,7 +701,7 @@ Public Class Item
             If Not Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.FullPath = Me.FullPath) Is Nothing Then
                 Return Me.DisplayName
             Else
-                Dim specialFolderAsRoot As Folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) Me.FullPath.StartsWith(f.FullPath))
+                Dim specialFolderAsRoot As Folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) Me.FullPath?.StartsWith(f.FullPath))
                 If Not specialFolderAsRoot Is Nothing Then
                     Return specialFolderAsRoot.DisplayName & Me.FullPath.Substring(specialFolderAsRoot.FullPath.Length)
                 Else
@@ -697,14 +733,6 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property RelativePath As String
-        Get
-            Dim result As String
-            Me.ShellItem2.GetDisplayName(SHGDN.FORPARSING Or SHGDN.INFOLDER, result)
-            Return result
-        End Get
-    End Property
-
     Public Property IsCut As Boolean
         Get
             Return _isCut
@@ -728,7 +756,7 @@ Public Class Item
 
     Public ReadOnly Property Attributes As SFGAO
         Get
-            If _attributes = 0 Then
+            If _attributes = 0 AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                 _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
@@ -824,23 +852,16 @@ Public Class Item
                     End If
                     i += 1
                 Next
-                Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty
-                Try
-                    System_StorageProviderUIStatus =
-                        Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
-                    If System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                        If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.Text) Then
-                            text.Add(System_StorageProviderUIStatus.DisplayName & ": " & System_StorageProviderUIStatus.Text)
-                        End If
-                        If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.ActivityText) Then
-                            text.Add(System_StorageProviderUIStatus.ActivityDisplayName & ": " & System_StorageProviderUIStatus.ActivityText)
-                        End If
+                Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                If System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                    If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.Text) Then
+                        text.Add(System_StorageProviderUIStatus.DisplayName & ": " & System_StorageProviderUIStatus.Text)
                     End If
-                Finally
-                    If Not System_StorageProviderUIStatus Is Nothing Then
-                        System_StorageProviderUIStatus.Dispose()
+                    If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.ActivityText) Then
+                        text.Add(System_StorageProviderUIStatus.ActivityDisplayName & ": " & System_StorageProviderUIStatus.ActivityText)
                     End If
-                End Try
+                End If
                 Return String.Join(vbCrLf, text)
             Else
                 Return Nothing
@@ -901,12 +922,15 @@ Public Class Item
         Get
             Dim [property] As [Property]
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
-            SyncLock _propertiesLock
+            _propertiesLock.Wait()
+            Try
                 If Not _propertiesByKey.TryGetValue(propertyKey, [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                     [property] = [Property].FromKey(key, Me.ShellItem2)
                     _propertiesByKey.Add(propertyKey, [property])
                 End If
-            End SyncLock
+            Finally
+                _propertiesLock.Release()
+            End Try
             Return [property]
         End Get
     End Property
@@ -914,12 +938,15 @@ Public Class Item
     Public Overridable ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
         Get
             Dim [property] As [Property]
-            SyncLock _propertiesLock
+            _propertiesLock.Wait()
+            Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                     [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                     _propertiesByKey.Add(propertyKey.ToString(), [property])
                 End If
-            End SyncLock
+            Finally
+                _propertiesLock.Release()
+            End Try
             Return [property]
         End Get
     End Property
@@ -927,12 +954,15 @@ Public Class Item
     Public Overridable ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
             Dim [property] As [Property]
-            SyncLock _propertiesLock
+            _propertiesLock.Wait()
+            Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
                     [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                     _propertiesByCanonicalName.Add(canonicalName, [property])
                 End If
-            End SyncLock
+            Finally
+                _propertiesLock.Release()
+            End Try
             Return [property]
         End Get
     End Property
@@ -1138,7 +1168,7 @@ Public Class Item
 
                     ' dispose shellitems
                     For Each item In _shellItemHistory
-                        Marshal.ReleaseComObject(item)
+                        Marshal.ReleaseComObject(item.Item1)
                     Next
                     _shellItemHistory.Clear()
                     If Not _shellItem2 Is Nothing Then

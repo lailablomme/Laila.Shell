@@ -438,8 +438,8 @@ Namespace Behaviors
                 i += 1
             Next
 
-            '_skipResize = False
-            'resizeVisibleRows()
+            _skipResize = False
+            resizeVisibleRows()
         End Sub
 
         Public Sub UpdateSortGlyphs()
@@ -728,14 +728,14 @@ Namespace Behaviors
 
                         ' measure header
                         Dim hc As GridViewColumnHeader = hcs.FirstOrDefault(Function(i) activeCol.Column.Equals(i.Column))
+                        Dim extraAutoSizeMargin As Double
                         If Not hc Is Nothing Then
                             hc.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
                             If Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN) > width Then
                                 width = Math.Ceiling(hc.DesiredSize.Width + COLUMN_MARGIN)
                             End If
+                            extraAutoSizeMargin = GetExtraAutoSizeMargin(hc.Column)
                         End If
-
-                        Dim extraAutoSizeMargin As Double = GetExtraAutoSizeMargin(hc.Column)
 
                         If list.Count > 0 Then
                             ' measure available rows

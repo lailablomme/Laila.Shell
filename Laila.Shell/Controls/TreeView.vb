@@ -662,7 +662,8 @@ Namespace Controls
                                 AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
                             Me.Items.Remove(item)
                         Next
-                        For Each item In collection.Where(Function(i) TypeOf i Is Folder)
+                        For Each item In collection.Where(Function(i) _
+                            Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso TypeOf i Is Folder)
                             Me.Items.Add(item)
                         Next
                     End If

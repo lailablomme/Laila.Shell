@@ -86,16 +86,6 @@
                                                         <StackPanel Orientation="Horizontal" />
                                                     </ItemsPanelTemplate>
                                                 </ItemsControl.ItemsPanel>
-                                                <ItemsControl.Style>
-                                                    <Style>
-                                                        <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding StorageProviderUIStatusHasIconAsync, IsAsync=True}" Value="True">
-                                                                <Setter Property="ItemsControl.Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ItemsControl.Style>
                                             </ItemsControl>
                                             <Image Grid.Column="2" Source="{Binding ImageAsync[48], IsAsync=True}" Width="48" Height="48" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center">

@@ -238,8 +238,8 @@ Namespace Controls
             Dim items As List(Of Item) = Me.Folder.Items.ToList()
 
             For Each item In items
-                Dim itemTypeText As String = item.PropertiesByCanonicalName("System.ItemTypeText").Text
-                If Not uniqueTypes.Contains(itemTypeText) Then
+                Dim itemTypeText As String = item.PropertiesByCanonicalName("System.ItemTypeText")?.Text
+                If Not String.IsNullOrWhiteSpace(itemTypeText) AndAlso Not uniqueTypes.Contains(itemTypeText) Then
                     uniqueTypes.Add(itemTypeText)
                     getProperties(item, PKEY_System_InfoTipText)
                     getProperties(item, PKEY_System_PropList_TileInfo)

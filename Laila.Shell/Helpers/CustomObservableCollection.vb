@@ -7,6 +7,18 @@ Namespace Helpers
     Public Class CustomObservableCollection(Of T)
         Inherits ObservableCollection(Of T)
 
+        Public Sub ReplaceWithRange(range As IEnumerable(Of T))
+            Me.CheckReentrancy()
+
+            Me.Items.Clear()
+
+            For Each i In range
+                Me.Items.Add(i)
+            Next
+
+            Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
+        End Sub
+
         Public Sub AddRange(range As IEnumerable(Of T))
             Me.CheckReentrancy()
 
@@ -14,10 +26,7 @@ Namespace Helpers
                 Me.Items.Add(i)
             Next
 
-            UIHelper.OnUIThread(
-                Sub()
-                    Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
-                End Sub)
+            Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
         End Sub
     End Class
 End Namespace

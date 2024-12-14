@@ -97,7 +97,7 @@
                                             <ItemsControl Grid.Column="1" Margin="0,0,2,0" ItemsSource="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Image Source="{Binding .}" Width="14" Height="16" VerticalAlignment="Center" />
+                                                        <Image Source="{Binding .}" Width="12" Height="12" VerticalAlignment="Center" />
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                                 <ItemsControl.ItemsPanel>
@@ -105,16 +105,6 @@
                                                         <StackPanel Orientation="Horizontal" />
                                                     </ItemsPanelTemplate>
                                                 </ItemsControl.ItemsPanel>
-                                                <ItemsControl.Style>
-                                                    <Style>
-                                                        <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding StorageProviderUIStatusHasIconAsync, IsAsync=True}" Value="True">
-                                                                <Setter Property="ItemsControl.Visibility" Value="Visible" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ItemsControl.Style>
                                             </ItemsControl>
                                             <Image Grid.Column="2" Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">

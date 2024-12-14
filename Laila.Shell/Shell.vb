@@ -109,6 +109,7 @@ Public Class Shell
 
                             ' try to dispose the item
                             If Not item Is Nothing AndAlso Not item.Item1 Is Nothing AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
+                                item.Item1.MaybePrepareForDispose()
                                 item.Item1.MaybeDispose()
                             End If
 
@@ -116,7 +117,8 @@ Public Class Shell
                             If Not item.Item1.disposedValue Then
                                 SyncLock item.Item1._refreshLock
                                     ' ...clean up the shellitem history
-                                    ' (we suppose after 30 seconds a shellitem won't be in use anywhere anymore)
+                                    ' (we suppose after 30 seconds an expired shellitem
+                                    '  won't be in use anywhere anymore)
                                     For Each shellItemEntry In item.Item1._shellItemHistory.Take(item.Item1._shellItemHistory.Count - 1).ToList()
                                         If DateTime.Now.Subtract(shellItemEntry.Item2).TotalMilliseconds > 30000 Then
                                             Marshal.ReleaseComObject(shellItemEntry.Item1)

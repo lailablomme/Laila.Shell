@@ -290,7 +290,7 @@ Public Class [Property]
         End Get
     End Property
 
-    Public ReadOnly Property ImageReferences16 As String()
+    Public Overridable ReadOnly Property ImageReferences16 As String()
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then
                 _imageReferences16Lock.Wait()
@@ -324,7 +324,7 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property Icons16 As ImageSource()
         Get
-            Return Me.ImageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
+            Return Me.ImageReferences16?.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
         End Get
     End Property
 
@@ -355,14 +355,14 @@ Public Class [Property]
     Public ReadOnly Property FirstIcon16 As ImageSource
         Get
             Dim icons16() As ImageSource = Me.Icons16
-            Return If(icons16.Count > 0, icons16(0), Nothing)
+            Return If(Not icons16 Is Nothing AndAlso icons16.Count > 0, icons16(0), Nothing)
         End Get
     End Property
 
     Public Overridable ReadOnly Property FirstIcon16Async As ImageSource
         Get
             Dim icons16() As ImageSource = Me.Icons16Async
-            Return If(icons16.Count > 0, icons16(0), Nothing)
+            Return If(Not icons16 Is Nothing AndAlso icons16.Count > 0, icons16(0), Nothing)
         End Get
     End Property
 

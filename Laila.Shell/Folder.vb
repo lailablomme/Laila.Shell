@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
 Imports System.Windows.Forms
+Imports System.Windows.Media
 Imports System.Windows.Threading
 Imports Laila.Shell.Helpers
 
@@ -171,6 +172,15 @@ Public Class Folder
         End Set
     End Property
 
+    Public Overrides ReadOnly Property IsReadyToPrepareForDispose As Boolean
+        Get
+            Return MyBase.IsReadyToPrepareForDispose AndAlso Not _parent.IsExpanded _
+                AndAlso Not _parent.IsVisibleInAddressBar _
+                AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsVisibleInAddressBar _
+                AndAlso Not Me.IsVisibleInTree
+        End Get
+    End Property
+
     Public Overrides ReadOnly Property IsReadyForDispose As Boolean
         Get
             Return Not _doKeepAlive AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
@@ -324,7 +334,7 @@ Public Class Folder
     Public Overridable Function GetItems() As List(Of Item)
         SyncLock _lock
             If Not _isEnumerated Then
-                updateItems(_items, False)
+                enumerateItems(_items, False)
             End If
             Return _items.ToList()
         End SyncLock
@@ -338,7 +348,7 @@ Public Class Folder
                 Try
                     SyncLock _lock
                         If Not _isEnumerated Then
-                            updateItems(_items, True)
+                            enumerateItems(_items, True)
                         End If
                         tcs.SetResult(_items.ToList())
                     End SyncLock
@@ -356,7 +366,7 @@ Public Class Folder
         Return Nothing
     End Function
 
-    Protected Sub updateItems(items As ObservableCollection(Of Item), Optional isAsync As Boolean = False)
+    Protected Sub enumerateItems(items As ObservableCollection(Of Item), Optional isAsync As Boolean = False)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
         Me.IsLoading = True
         Me.IsEmpty = False
@@ -401,7 +411,7 @@ Public Class Folder
             UIHelper.OnUIThread(
                 Sub()
                     For Each item In Me.Items
-                        item._parent = Nothing
+                        item.MaybePrepareForDispose()
                     Next
                     Me.Items.Clear()
                 End Sub)
@@ -428,18 +438,16 @@ Public Class Folder
                                 End Using
                             End If
 
+                            ' add items
                             If Not TypeOf Me Is SearchFolder Then
                                 For Each item In _items
-                                    item._parent = Nothing
+                                    item.MaybePrepareForDispose()
                                 Next
                                 RaiseEvent BeforeResetItems(Me, New EventArgs())
-                                _items.Clear()
-                            End If
-
-                            ' add items
-                            _items.AddRange(result)
-                            If Not TypeOf Me Is SearchFolder Then
+                                _items.ReplaceWithRange(result)
                                 RaiseEvent AfterResetItems(Me, New EventArgs())
+                            Else
+                                _items.AddRange(result)
                             End If
 
                             ' restore sorting/grouping
@@ -525,7 +533,16 @@ Public Class Folder
                                         End If
                                     End If
 
+                                    ' preload pidl
                                     Dim pidl As Pidl = newItem.Pidl
+
+                                    ' preload System_StorageProviderUIStatus images
+                                    Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                                        = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                                    If Not System_StorageProviderUIStatus Is Nothing _
+                                        AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                                        Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                                    End If
 
                                     If cancellationToken.IsCancellationRequested Then Exit While
                                     If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
@@ -685,11 +702,11 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.CREATE
                     If _isLoaded Then
-                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.FullPath?.Equals(Me.FullPath) Then
                             If Not _items Is Nothing Then
                                 UIHelper.OnUIThread(
                                     Sub()
-                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.FullPath?.Equals(e.Item1.FullPath))
                                         If existing Is Nothing Then
                                             _items.Add(Item.FromPidl(e.Item1.Pidl.AbsolutePIDL, Me, False))
                                         Else
@@ -701,11 +718,11 @@ Public Class Folder
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
-                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.FullPath?.Equals(Me.FullPath) Then
                             If Not _items Is Nothing Then
                                 UIHelper.OnUIThread(
                                     Sub()
-                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.FullPath?.Equals(e.Item1.FullPath))
                                         If existing Is Nothing Then
                                             _items.Add(Item.FromPidl(e.Item1.Pidl.AbsolutePIDL, Me, False))
                                         Else
@@ -720,7 +737,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item2 As Item
-                                item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.FullPath?.Equals(e.Item1.FullPath))
                                 If Not item2 Is Nothing Then
                                     If TypeOf item2 Is Folder Then
                                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -736,7 +753,7 @@ Public Class Folder
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         UIHelper.OnUIThread(
                             Sub()
-                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.FullPath?.Equals(e.Item1.FullPath)) Is Nothing Then
                                     Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1.Pidl.AbsolutePIDL, Nothing)
                                     If Not item1 Is Nothing Then
                                         _items.Add(New Folder(item1, Me, False))
@@ -749,7 +766,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item As Item
-                                item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.FullPath?.Equals(e.Item1.FullPath))
                                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                                     Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                         .Folder = item,
@@ -760,12 +777,12 @@ Public Class Folder
                             End Sub)
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                    If (Me.Pidl?.Equals(e.Item1.Pidl) OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath)) Then
+                    If (Me.FullPath?.Equals(e.Item1.FullPath) OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath)) Then
                         If Not Me.Items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
-                        AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) _
-                        AndAlso (Not _doSkipUPDATEDIR.HasValue _
-                                 OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) _
-                        AndAlso Not TypeOf Me Is SearchFolder Then
+                            AndAlso (Me.IsExpanded OrElse Me.IsActiveInFolderView) _
+                            AndAlso (Not _doSkipUPDATEDIR.HasValue _
+                                     OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) _
+                            AndAlso Not TypeOf Me Is SearchFolder Then
                             _isEnumerated = False
                             Me.GetItemsAsync()
                         End If
