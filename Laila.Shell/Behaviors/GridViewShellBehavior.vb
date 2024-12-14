@@ -3,6 +3,8 @@ Imports Laila.Shell.Controls
 Imports System.ComponentModel
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Data
+Imports System.Windows.Forms
 
 Namespace Behaviors
     Public Class GridViewShellBehavior
@@ -12,24 +14,27 @@ Namespace Behaviors
 
         Protected Overrides Sub SetSort(propertyName As String, direction As ListSortDirection)
             If Not Me.Folder Is Nothing Then
-                Dim isSwitchingDirection As Boolean
-                If Not propertyName.Equals(Me.Folder.ItemsSortPropertyName) Then
-                    Me.Folder.ItemsSortPropertyName = propertyName
-                Else
-                    isSwitchingDirection = True
-                End If
+                Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Folder.Items)
+                Using view.DeferRefresh()
+                    Dim isSwitchingDirection As Boolean
+                    If Not propertyName.Equals(Me.Folder.ItemsSortPropertyName) Then
+                        Me.Folder.ItemsSortPropertyName = propertyName
+                    Else
+                        isSwitchingDirection = True
+                    End If
 
-                If Not String.IsNullOrWhiteSpace(Me.Folder.ItemsSortPropertyName) Then
-                    If direction <> -1 AndAlso Me.Folder.ItemsSortDirection <> direction Then
-                        Me.Folder.ItemsSortDirection = direction
-                    ElseIf direction = -1 AndAlso isSwitchingDirection Then
-                        If Me.Folder.ItemsSortDirection = ListSortDirection.Ascending Then
-                            Me.Folder.ItemsSortDirection = ListSortDirection.Descending
-                        Else
-                            Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
+                    If Not String.IsNullOrWhiteSpace(Me.Folder.ItemsSortPropertyName) Then
+                        If direction <> -1 AndAlso Me.Folder.ItemsSortDirection <> direction Then
+                            Me.Folder.ItemsSortDirection = direction
+                        ElseIf direction = -1 AndAlso isSwitchingDirection Then
+                            If Me.Folder.ItemsSortDirection = ListSortDirection.Ascending Then
+                                Me.Folder.ItemsSortDirection = ListSortDirection.Descending
+                            Else
+                                Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
+                            End If
                         End If
                     End If
-                End If
+                End Using
             End If
         End Sub
 

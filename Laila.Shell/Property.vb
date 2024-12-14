@@ -109,18 +109,22 @@ Public Class [Property]
     Public Sub New(canonicalName As String, Optional propertyStore As IPropertyStore = Nothing)
         _canonicalName = canonicalName
         _propertyDescription = [Property].getDescription(canonicalName)
-        _propertyDescription.GetPropertyKey(_propertyKey)
-        If Not propertyStore Is Nothing Then
-            propertyStore.GetValue(_propertyKey, _rawValue)
+        If Not _propertyDescription Is Nothing Then
+            _propertyDescription.GetPropertyKey(_propertyKey)
+            If Not propertyStore Is Nothing Then
+                propertyStore.GetValue(_propertyKey, _rawValue)
+            End If
         End If
     End Sub
 
     Public Sub New(canonicalName As String, shellItem2 As IShellItem2)
         _canonicalName = canonicalName
         _propertyDescription = [Property].getDescription(canonicalName)
-        _propertyDescription.GetPropertyKey(_propertyKey)
-        If Not shellItem2 Is Nothing Then
-            shellItem2.GetProperty(_propertyKey, _rawValue)
+        If Not _propertyDescription Is Nothing Then
+            _propertyDescription.GetPropertyKey(_propertyKey)
+            If Not shellItem2 Is Nothing Then
+                shellItem2.GetProperty(_propertyKey, _rawValue)
+            End If
         End If
     End Sub
 
@@ -293,14 +297,13 @@ Public Class [Property]
                 Dim i16 As String()
                 Try
                     If Not _imageReferences16.TryGetValue(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), i16) Then
-                        Dim result As String()
                         Dim propertyEnumType2 As IPropertyEnumType2
                         Try
                             propertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description)
                             Dim imageReference As String
                             propertyEnumType2.GetImageReference(imageReference)
                             If Not String.IsNullOrWhiteSpace(imageReference) Then
-                                result = {imageReference}
+                                i16 = {imageReference}
                             End If
                         Finally
                             If Not propertyEnumType2 Is Nothing Then

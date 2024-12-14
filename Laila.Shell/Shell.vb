@@ -102,12 +102,12 @@ Public Class Shell
                         End SyncLock
                         For Each item In list
                             If ShuttingDownToken.IsCancellationRequested Then Exit For
-                            If Not item Is Nothing AndAlso Not item.Item1 Is Nothing AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 2000 Then
+                            If Not item Is Nothing AndAlso Not item.Item1 Is Nothing AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
                                 item.Item1.MaybeDispose()
                             End If
-                            Thread.Sleep(25)
+                            Thread.Sleep(10)
                         Next
-                        Thread.Sleep(10000)
+                        Thread.Sleep(5000)
                     End While
                 Catch ex As OperationCanceledException
                     Debug.WriteLine("Disposing thread was canceled.")
@@ -250,20 +250,6 @@ Public Class Shell
                     item.Dispose()
                 Next
             End SyncLock
-
-            ' clean up items
-            Dim list As List(Of Tuple(Of Item, DateTime))
-            SyncLock _itemsCacheLock
-                list = Shell.ItemsCache.ToList()
-            End SyncLock
-            While Not list.Count = 0
-                For Each item In list
-                    item.Item1.Dispose()
-                Next
-                SyncLock _itemsCacheLock
-                    list = Shell.ItemsCache.ToList()
-                End SyncLock
-            End While
 
             ' dispose controls
             RaiseEvent ShuttingDown(Nothing, New EventArgs())
