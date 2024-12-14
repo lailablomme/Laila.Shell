@@ -363,6 +363,32 @@
                             <Image Grid.Column="1" Source="../Images/error32.png" Width="32" Height="32" VerticalAlignment="Top" HorizontalAlignment="Left" />
                             <TextBlock Grid.Column="2" Text="{Binding Folder.EnumerationException.Message}" VerticalAlignment="Center" />
                         </Grid>
+                        <Grid VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="3">
+                            <Grid.Style>
+                                <Style>
+                                    <Setter Property="Grid.Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Folder.EnumerationException}" Value="{x:Null}" />
+                                                <Condition Binding="{Binding Folder.IsEmpty}" Value="True" />
+                                                <Condition Binding="{Binding Visibility, ElementName=PART_ListView}" Value="Visible" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="Grid.Visibility" Value="Visible" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="This folder is empty." Margin="0,5,0,0" 
+                                       TextAlignment="Center" TextWrapping="Wrap" Foreground="Gray" />
+                        </Grid>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

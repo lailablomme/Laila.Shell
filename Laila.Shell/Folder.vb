@@ -40,6 +40,7 @@ Public Class Folder
     Private _updateCompleted As TaskCompletionSource
     Private _doSkipUPDATEDIR As DateTime?
     Private _shellFolder As IShellFolder
+    Private _isEmpty As Boolean
 
     Public Shared Function FromDesktop() As Folder
         Dim ptr As IntPtr, pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -107,6 +108,15 @@ Public Class Folder
             End If
             Return _shellFolder
         End Get
+    End Property
+
+    Public Property IsEmpty As Boolean
+        Get
+            Return _isEmpty
+        End Get
+        Protected Set(value As Boolean)
+            SetValue(_isEmpty, value)
+        End Set
     End Property
 
     Public ReadOnly Property IsRootFolder As Boolean
@@ -344,6 +354,7 @@ Public Class Folder
     Protected Sub updateItems(items As ObservableCollection(Of Item), Optional isAsync As Boolean = False)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
         Me.IsLoading = True
+        Me.IsEmpty = False
 
         If Not _cancellationTokenSource Is Nothing Then
             _cancellationTokenSource.Cancel()
@@ -366,6 +377,7 @@ Public Class Folder
 
         If _cancellationTokenSource.Equals(cts) Then
             Me.IsLoading = False
+            Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
 
             _updateCompleted.SetResult()
