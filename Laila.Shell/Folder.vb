@@ -121,16 +121,7 @@ Public Class Folder
             SetValue(_isExpanded, value)
 
             If value Then
-                Dim t As Func(Of Task) =
-                    Async Function() As Task
-                        SyncLock _lock
-                            If Not _isEnumerated Then
-                                updateItems(_items,, True)
-                            End If
-                        End SyncLock
-                    End Function
-
-                Task.Run(t)
+                Me.GetItemsAsync()
             Else
                 For Each item In _items.Where(Function(i) TypeOf i Is Folder).ToList()
                     item.IsExpanded = False
@@ -345,13 +336,27 @@ Public Class Folder
     Public Overridable Async Function GetItemsAsync() As Task(Of List(Of Item))
         Dim func As Func(Of Task(Of List(Of Item))) =
             Async Function() As Task(Of List(Of Item))
-                SyncLock _lock
-                    If Not _isEnumerated Then
-                        updateItems(_items,, True)
-                    End If
-                End SyncLock
+                Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
-                Return _items.ToList()
+                Shell.PriorityTaskQueue.Add(
+                    Sub()
+                        Try
+                            SyncLock _lock
+                                If Not _isEnumerated Then
+                                    updateItems(_items,, True)
+                                End If
+                            End SyncLock
+                            tcs.SetResult(_items.ToList())
+                        Catch ex As Exception
+                            tcs.SetException(ex)
+                        End Try
+                    End Sub)
+
+                tcs.Task.Wait(Shell.ShuttingDownToken)
+                If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                    Return tcs.Task.Result
+                End If
+                Return Nothing
             End Function
 
         Return Await Task.Run(func)
@@ -756,18 +761,7 @@ Public Class Folder
                         AndAlso (_isEnumerated OrElse Me.IsExpanded OrElse Me.IsActiveInFolderView) _
                         AndAlso (Not _doSkipUPDATEDIR.HasValue _
                                  OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) Then
-                            _pendingUpdateCounter += 1
-                            Dim func As Func(Of Task) =
-                                Async Function() As Task
-                                    SyncLock _lock
-                                        updateItems(_items, True, True)
-                                    End SyncLock
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            _pendingUpdateCounter -= 1
-                                        End Sub)
-                                End Function
-                            Task.Run(func)
+                            Me.GetItemsAsync()
                         End If
                     End If
                     _doSkipUPDATEDIR = Nothing

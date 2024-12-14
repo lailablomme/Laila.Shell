@@ -26,14 +26,13 @@ Public Class ImageHelper
     Shared Sub New()
         _recognised = FileFormatLocator.GetFormats().OfType(Of FileSignatures.Formats.Image)()
         _inspector = New FileFormatInspector(_recognised)
+    End Sub
 
-        UIHelper.OnUIThread(
-            Sub()
-                Functions.SHGetImageList(SHIL.SHIL_SMALL, GetType(IImageList).GUID, _imageListSmall)
-                Functions.SHGetImageList(SHIL.SHIL_LARGE, GetType(IImageList).GUID, _imageListLarge)
-                Functions.SHGetImageList(SHIL.SHIL_EXTRALARGE, GetType(IImageList).GUID, _imageListExtraLarge)
-                Functions.SHGetImageList(SHIL.SHIL_JUMBO, GetType(IImageList).GUID, _imageListJumbo)
-            End Sub)
+    Public Shared Sub Load()
+        Functions.SHGetImageList(SHIL.SHIL_SMALL, GetType(IImageList).GUID, _imageListSmall)
+        Functions.SHGetImageList(SHIL.SHIL_LARGE, GetType(IImageList).GUID, _imageListLarge)
+        Functions.SHGetImageList(SHIL.SHIL_EXTRALARGE, GetType(IImageList).GUID, _imageListExtraLarge)
+        Functions.SHGetImageList(SHIL.SHIL_JUMBO, GetType(IImageList).GUID, _imageListJumbo)
     End Sub
 
     Public Shared Function IsImage(fullPath As String) As Boolean

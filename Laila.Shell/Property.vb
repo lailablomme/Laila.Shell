@@ -1,8 +1,10 @@
-﻿Imports System.Runtime.InteropServices
+﻿Imports System.ComponentModel
+Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Forms
+Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
@@ -11,11 +13,12 @@ Public Class [Property]
     Inherits NotifyPropertyChangedBase
     Implements IDisposable
 
-    Private Shared _descriptions As HashSet(Of Tuple(Of String, String, IPropertyDescription)) = New HashSet(Of Tuple(Of String, String, IPropertyDescription))
+    Private Shared _descriptionsByCanonicalName As Dictionary(Of String, IPropertyDescription) = New Dictionary(Of String, IPropertyDescription)
+    Private Shared _descriptionsByPropertyKey As Dictionary(Of String, IPropertyDescription) = New Dictionary(Of String, IPropertyDescription)
     Private Shared _descriptionsLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
-    Private Shared _hasIcon As HashSet(Of Tuple(Of String, Boolean)) = New HashSet(Of Tuple(Of String, Boolean))()
+    Private Shared _hasIcon As Dictionary(Of String, Boolean) = New Dictionary(Of String, Boolean)()
     Private Shared _hasIconLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
-    Private Shared _imageReferences16 As HashSet(Of Tuple(Of String, String())) = New HashSet(Of Tuple(Of String, String()))()
+    Private Shared _imageReferences16 As Dictionary(Of String, String()) = New Dictionary(Of String, String())()
     Private Shared _imageReferences16Lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
 
     Protected _canonicalName As String
@@ -26,49 +29,43 @@ Public Class [Property]
     Private _rawValue As PROPVARIANT
     Private _displayType As PropertyDisplayType = -1
 
-    Private Shared Function getDescription(canonicalName As String) As Tuple(Of String, String, IPropertyDescription)
-        Dim desc As Tuple(Of String, String, IPropertyDescription)
+    Private Shared Function getDescription(canonicalName As String) As IPropertyDescription
         _descriptionsLock.Wait()
+        Dim propertyDescription As IPropertyDescription
         Try
-            desc = _descriptions.FirstOrDefault(Function(d) d.Item1 = canonicalName)
-            If desc Is Nothing Then
-                Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
+            If Not _descriptionsByCanonicalName.TryGetValue(canonicalName, propertyDescription) Then
+                Dim pkey As PROPERTYKEY
                 Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
                 If propertyDescription Is Nothing Then Return Nothing
-                propertyDescription.GetPropertyKey(pkey)
-                desc = New Tuple(Of String, String, IPropertyDescription)(canonicalName, pkey.ToString(), propertyDescription)
-                _descriptions.Add(desc)
+                _descriptionsByCanonicalName.Add(canonicalName, propertyDescription)
             End If
         Finally
             _descriptionsLock.Release()
         End Try
-        Return desc
+        Return propertyDescription
     End Function
 
-    Private Shared Function getDescription(pkey As PROPERTYKEY) As Tuple(Of String, String, IPropertyDescription)
-        Dim desc As Tuple(Of String, String, IPropertyDescription)
+    Private Shared Function getDescription(pkey As PROPERTYKEY) As IPropertyDescription
         _descriptionsLock.Wait()
+        Dim propertyDescription As IPropertyDescription
         Try
-            desc = _descriptions.FirstOrDefault(Function(d) d.Item2 = pkey.ToString())
-            If desc Is Nothing Then
-                Dim propertyDescription As IPropertyDescription, canonicalName As String
+            If Not _descriptionsByPropertyKey.TryGetValue(pkey.ToString(), propertyDescription) Then
+                Dim canonicalName As String
                 Functions.PSGetPropertyDescription(pkey, GetType(IPropertyDescription).GUID, propertyDescription)
                 If propertyDescription Is Nothing Then Return Nothing
-                Functions.PSGetNameFromPropertyKey(pkey, canonicalName)
-                desc = New Tuple(Of String, String, IPropertyDescription)(canonicalName, pkey.ToString(), propertyDescription)
-                _descriptions.Add(desc)
+                _descriptionsByPropertyKey.Add(pkey.ToString(), propertyDescription)
             End If
         Finally
             _descriptionsLock.Release()
         End Try
-        Return desc
+        Return propertyDescription
     End Function
 
     Public Shared Function FromCanonicalName(canonicalName As String) As [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
             Return New System_StorageProviderUIStatusProperty()
         Else
-            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
+            Dim desc As IPropertyDescription = [Property].getDescription(canonicalName)
             If Not desc Is Nothing Then
                 Return New [Property](canonicalName)
             Else
@@ -81,12 +78,7 @@ Public Class [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
             Return New System_StorageProviderUIStatusProperty(propertyStore)
         Else
-            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
-            If Not desc Is Nothing Then
-                Return New [Property](canonicalName, propertyStore)
-            Else
-                Return Nothing
-            End If
+            Return New [Property](canonicalName, propertyStore)
         End If
     End Function
 
@@ -94,12 +86,7 @@ Public Class [Property]
         If canonicalName = "System.StorageProviderUIStatus" Then
             Return New System_StorageProviderUIStatusProperty(shellItem2)
         Else
-            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
-            If Not desc Is Nothing Then
-                Return New [Property](canonicalName, shellItem2)
-            Else
-                Return Nothing
-            End If
+            Return New [Property](canonicalName, shellItem2)
         End If
     End Function
 
@@ -107,12 +94,7 @@ Public Class [Property]
         If propertyKey.Equals(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey) Then
             Return New System_StorageProviderUIStatusProperty(propertyStore)
         Else
-            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(propertyKey)
-            If Not desc Is Nothing Then
-                Return New [Property](propertyKey, propertyStore)
-            Else
-                Return Nothing
-            End If
+            Return New [Property](propertyKey, propertyStore)
         End If
     End Function
 
@@ -120,20 +102,14 @@ Public Class [Property]
         If propertyKey.Equals(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey) Then
             Return New System_StorageProviderUIStatusProperty(shellItem2)
         Else
-            Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(propertyKey)
-            If Not desc Is Nothing Then
-                Return New [Property](propertyKey, shellItem2)
-            Else
-                Return Nothing
-            End If
+            Return New [Property](propertyKey, shellItem2)
         End If
     End Function
 
     Public Sub New(canonicalName As String, Optional propertyStore As IPropertyStore = Nothing)
         _canonicalName = canonicalName
-        Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
-        _propertyKey = New PROPERTYKEY(desc.Item2)
-        _propertyDescription = desc.Item3
+        _propertyDescription = [Property].getDescription(canonicalName)
+        _propertyDescription.GetPropertyKey(_propertyKey)
         If Not propertyStore Is Nothing Then
             propertyStore.GetValue(_propertyKey, _rawValue)
         End If
@@ -141,9 +117,8 @@ Public Class [Property]
 
     Public Sub New(canonicalName As String, shellItem2 As IShellItem2)
         _canonicalName = canonicalName
-        Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(canonicalName)
-        _propertyKey = New PROPERTYKEY(desc.Item2)
-        _propertyDescription = desc.Item3
+        _propertyDescription = [Property].getDescription(canonicalName)
+        _propertyDescription.GetPropertyKey(_propertyKey)
         If Not shellItem2 Is Nothing Then
             shellItem2.GetProperty(_propertyKey, _rawValue)
         End If
@@ -151,9 +126,6 @@ Public Class [Property]
 
     Public Sub New(propertyKey As PROPERTYKEY, propertyStore As IPropertyStore)
         _propertyKey = propertyKey
-        Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(propertyKey)
-        _canonicalName = desc.Item1
-        _propertyDescription = desc.Item3
         If Not propertyStore Is Nothing Then
             propertyStore.GetValue(_propertyKey, _rawValue)
         End If
@@ -161,9 +133,6 @@ Public Class [Property]
 
     Public Sub New(propertyKey As PROPERTYKEY, shellItem2 As IShellItem2)
         _propertyKey = propertyKey
-        Dim desc As Tuple(Of String, String, IPropertyDescription) = [Property].getDescription(propertyKey)
-        _canonicalName = desc.Item1
-        _propertyDescription = desc.Item3
         If Not shellItem2 Is Nothing Then
             shellItem2.GetProperty(_propertyKey, _rawValue)
         End If
@@ -171,6 +140,9 @@ Public Class [Property]
 
     Public ReadOnly Property CanonicalName As String
         Get
+            If String.IsNullOrWhiteSpace(_canonicalName) Then
+                Functions.PSGetNameFromPropertyKey(_propertyKey, _canonicalName)
+            End If
             Return _canonicalName
         End Get
     End Property
@@ -197,6 +169,9 @@ Public Class [Property]
 
     Public ReadOnly Property Description As IPropertyDescription
         Get
+            If _propertyDescription Is Nothing Then
+                _propertyDescription = [Property].getDescription(_propertyKey)
+            End If
             Return _propertyDescription
         End Get
     End Property
@@ -244,12 +219,11 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property HasIcon As Boolean
         Get
-            Dim hi As Tuple(Of String, Boolean)
+            Dim hi As Boolean
 
             _hasIconLock.Wait()
             Try
-                hi = _hasIcon.FirstOrDefault(Function(hi2) hi2.Item1 = _propertyKey.ToString())
-                If hi Is Nothing Then
+                If Not _hasIcon.TryGetValue(_propertyKey.ToString(), hi) Then
                     Dim result As Boolean = False
                     If Me.DisplayType = PropertyDisplayType.Enumerated Then
                         Dim propertyEnumTypeList As IPropertyEnumTypeList
@@ -280,14 +254,13 @@ Public Class [Property]
                             End If
                         End Try
                     End If
-                    hi = New Tuple(Of String, Boolean)(_propertyKey.ToString(), result)
-                    _hasIcon.Add(hi)
+                    _hasIcon.Add(_propertyKey.ToString(), hi)
                 End If
             Finally
                 _hasIconLock.Release()
             End Try
 
-            Return hi.Item2
+            Return hi
         End Get
     End Property
 
@@ -317,38 +290,29 @@ Public Class [Property]
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then
                 _imageReferences16Lock.Wait()
-                Dim i16 As Tuple(Of String, String())
+                Dim i16 As String()
                 Try
-                    i16 = _imageReferences16.FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()))
+                    If Not _imageReferences16.TryGetValue(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), i16) Then
+                        Dim result As String()
+                        Dim propertyEnumType2 As IPropertyEnumType2
+                        Try
+                            propertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description)
+                            Dim imageReference As String
+                            propertyEnumType2.GetImageReference(imageReference)
+                            If Not String.IsNullOrWhiteSpace(imageReference) Then
+                                result = {imageReference}
+                            End If
+                        Finally
+                            If Not propertyEnumType2 Is Nothing Then
+                                Marshal.ReleaseComObject(propertyEnumType2)
+                            End If
+                        End Try
+                        _imageReferences16.Add(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), i16)
+                    End If
                 Finally
                     _imageReferences16Lock.Release()
                 End Try
-                If i16 Is Nothing Then
-                    Dim result As String()
-                    Dim propertyEnumType2 As IPropertyEnumType2
-                    Try
-                        propertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description)
-                        Dim imageReference As String
-                        propertyEnumType2.GetImageReference(imageReference)
-                        If Not String.IsNullOrWhiteSpace(imageReference) Then
-                            result = {imageReference}
-                        End If
-                    Finally
-                        If Not propertyEnumType2 Is Nothing Then
-                            Marshal.ReleaseComObject(propertyEnumType2)
-                        End If
-                    End Try
-                    _imageReferences16Lock.Wait()
-                    Try
-                        i16 = New Tuple(Of String, String())(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), result)
-                        If _imageReferences16.FirstOrDefault(Function(i) i.Item1 = String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue())) Is Nothing Then
-                            _imageReferences16.Add(i16)
-                        End If
-                    Finally
-                        _imageReferences16Lock.Release()
-                    End Try
-                End If
-                Return i16.Item2
+                Return i16
             Else
                 Return Nothing
             End If

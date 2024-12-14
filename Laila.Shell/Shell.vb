@@ -53,6 +53,8 @@ Public Class Shell
         ' initialize com & ole
         Functions.OleInitialize(IntPtr.Zero)
 
+        ImageHelper.Load()
+
         ' threads for async retrieving of icons, images and overlays
         For i = 1 To 25
             Dim staThread As Thread = New Thread(
