@@ -164,7 +164,7 @@
                                                         <Style>
                                                             <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding StorageProviderUIStatusHasIconAsync, IsAsync=True}" Value="True">
+                                                                <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
                                                                     <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                                     <Setter Property="ItemsControl.Width" Value="{Binding StorageProviderUIStatusIconWidth12}" />
                                                                     <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
@@ -182,7 +182,7 @@
                                                                 <DataTrigger Binding="{Binding IsCompressed}" Value="True">
                                                                     <Setter Property="TextBlock.Foreground" Value="Blue" />
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding StorageProviderUIStatusHasIconAsync, IsAsync=True}" Value="True">
+                                                                <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
                                                                     <Setter Property="TextBlock.TextAlignment" Value="Left" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>

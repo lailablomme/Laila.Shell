@@ -324,7 +324,7 @@ Public Class Item
                     Me.NotifyOfPropertyChange("IsHidden")
                     Me.NotifyOfPropertyChange("IsCompressed")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
-                    Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIconAsync")
+                    Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIcon")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
@@ -594,24 +594,9 @@ Public Class Item
         End Get
     End Property
 
-    Public Overridable ReadOnly Property StorageProviderUIStatusHasIconAsync As Boolean
+    Public Overridable ReadOnly Property StorageProviderUIStatusHasIcon As Boolean
         Get
-            Dim tcs As New TaskCompletionSource(Of Boolean)
-
-            Shell.PriorityTaskQueue.Add(
-                Sub()
-                    Try
-                        Dim result As Boolean
-                        If Not Me.disposedValue Then
-                            result = If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.HasIcon, False)
-                        End If
-                        tcs.SetResult(result)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            Return tcs.Task.Result
+            Return If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.HasIcon, False)
         End Get
     End Property
 

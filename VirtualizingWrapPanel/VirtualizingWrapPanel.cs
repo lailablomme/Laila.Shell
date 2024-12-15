@@ -291,12 +291,12 @@ namespace WpfToolkit.Controls
             }
             else if (e.Action == NotifyCollectionChangedAction.Reset)
             {
-                itemSizesCache.Clear();
+                //itemSizesCache.Clear();
 
-                if (AllowDifferentSizedItems && ItemSizeProvider is null)
-                {
-                    ScrollOffset = new Point(0, 0);
-                }
+                //if (AllowDifferentSizedItems && ItemSizeProvider is null)
+                //{
+                //    ScrollOffset = new Point(0, 0);
+                //}
             }
         }
 

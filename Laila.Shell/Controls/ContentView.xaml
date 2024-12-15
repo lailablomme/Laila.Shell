@@ -101,7 +101,7 @@
                                                     <Style>
                                                         <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding StorageProviderUIStatusHasIconAsync, IsAsync=True}" Value="True">
+                                                            <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
                                                                 <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                                 <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
                                                             </DataTrigger>

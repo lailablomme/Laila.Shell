@@ -24,6 +24,7 @@ Public Class System_StorageProviderUIStatusProperty
     Private _propertyStore2 As IPropertyStore
 
     Private _didReadData As Boolean
+    Private _hasData As Boolean
 
     Private _imageReference16 As String()
 
@@ -33,78 +34,77 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Sub New(propertyStore As IPropertyStore)
         MyBase.New(System_StorageProviderUIStatusKey, propertyStore)
-        If Not propertyStore Is Nothing Then
-            readData()
-        End If
+        If Not propertyStore Is Nothing Then _hasData = True
     End Sub
 
     Public Sub New(shellItem2 As IShellItem2)
         MyBase.New(System_StorageProviderUIStatusKey, shellItem2)
-        If Not shellItem2 Is Nothing Then
-            readData()
-        End If
+        If Not shellItem2 Is Nothing Then _hasData = True
     End Sub
 
     Private Sub readData()
-        _didReadData = True
+        If Not _didReadData Then
+            _didReadData = True
 
-        Dim ptr As IntPtr, persistSerializedPropStorage As IPersistSerializedPropStorage
-        If _propertyStore1 Is Nothing AndAlso Me.RawValue.vt > 0 Then
-            Try
-                Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
-                _propertyStore1 = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
-                persistSerializedPropStorage = _propertyStore1
-                persistSerializedPropStorage.SetFlags(0)
-                persistSerializedPropStorage.SetPropertyStorage(
+            Dim ptr As IntPtr, persistSerializedPropStorage As IPersistSerializedPropStorage
+            If _propertyStore1 Is Nothing AndAlso Me.RawValue.vt > 0 Then
+                Try
+                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
+                    _propertyStore1 = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
+                    persistSerializedPropStorage = _propertyStore1
+                    persistSerializedPropStorage.SetFlags(0)
+                    persistSerializedPropStorage.SetPropertyStorage(
                     MyBase.RawValue.union.bstrblobVal.pData, MyBase.RawValue.union.bstrblobVal.cbSize)
 
-                If _system_StorageProviderStateProperty Is Nothing Then
-                    _system_StorageProviderStateProperty = New [Property](_system_StorageProviderStateKey, _propertyStore1)
-                End If
-                If _system_StorageProviderCustomStatesProperty Is Nothing Then
-                    _system_StorageProviderCustomStatesProperty = New [Property](_system_StorageProviderCustomStatesKey, _propertyStore1)
-                End If
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-            End Try
-        End If
+                    If _system_StorageProviderStateProperty Is Nothing Then
+                        _system_StorageProviderStateProperty = New [Property](_system_StorageProviderStateKey, _propertyStore1)
+                    End If
+                    If _system_StorageProviderCustomStatesProperty Is Nothing Then
+                        _system_StorageProviderCustomStatesProperty = New [Property](_system_StorageProviderCustomStatesKey, _propertyStore1)
+                    End If
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr) Then
+                        Marshal.Release(ptr)
+                    End If
+                End Try
+            End If
 
-        If _propertyStore2 Is Nothing AndAlso Not _propertyStore1 Is Nothing Then
-            Try
-                Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
-                _propertyStore2 = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
-                persistSerializedPropStorage = _propertyStore2
-                persistSerializedPropStorage.SetFlags(0)
-                persistSerializedPropStorage.SetPropertyStorage(
-                    _system_StorageProviderCustomStatesProperty.RawValue.union.bstrblobVal.pData,
-                    _system_StorageProviderCustomStatesProperty.RawValue.union.bstrblobVal.cbSize)
+            If _propertyStore2 Is Nothing AndAlso Not _propertyStore1 Is Nothing Then
+                Try
+                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
+                    _propertyStore2 = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
+                    persistSerializedPropStorage = _propertyStore2
+                    persistSerializedPropStorage.SetFlags(0)
+                    persistSerializedPropStorage.SetPropertyStorage(
+                        _system_StorageProviderCustomStatesProperty.RawValue.union.bstrblobVal.pData,
+                        _system_StorageProviderCustomStatesProperty.RawValue.union.bstrblobVal.cbSize)
 
-                If _system_ItemCustomState_ValuesProperty Is Nothing Then
-                    _system_ItemCustomState_ValuesProperty = New [Property](_system_ItemCustomState_ValuesKey, _propertyStore2)
-                End If
-                If _system_ItemCustomState_IconReferencesProperty Is Nothing Then
-                    _system_ItemCustomState_IconReferencesProperty = New [Property](_system_ItemCustomState_IconReferencesKey, _propertyStore2)
-                End If
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-                If Not _propertyStore1 Is Nothing Then
-                    Marshal.ReleaseComObject(_propertyStore1)
-                    _propertyStore1 = Nothing
-                End If
-                If Not _propertyStore2 Is Nothing Then
-                    Marshal.ReleaseComObject(_propertyStore2)
-                    _propertyStore2 = Nothing
-                End If
-            End Try
+                    If _system_ItemCustomState_ValuesProperty Is Nothing Then
+                        _system_ItemCustomState_ValuesProperty = New [Property](_system_ItemCustomState_ValuesKey, _propertyStore2)
+                    End If
+                    If _system_ItemCustomState_IconReferencesProperty Is Nothing Then
+                        _system_ItemCustomState_IconReferencesProperty = New [Property](_system_ItemCustomState_IconReferencesKey, _propertyStore2)
+                    End If
+                Finally
+                    If Not IntPtr.Zero.Equals(ptr) Then
+                        Marshal.Release(ptr)
+                    End If
+                    If Not _propertyStore1 Is Nothing Then
+                        Marshal.ReleaseComObject(_propertyStore1)
+                        _propertyStore1 = Nothing
+                    End If
+                    If Not _propertyStore2 Is Nothing Then
+                        Marshal.ReleaseComObject(_propertyStore2)
+                        _propertyStore2 = Nothing
+                    End If
+                End Try
+            End If
         End If
     End Sub
 
     Public Overrides ReadOnly Property DisplayName As String
         Get
+            readData()
             If Not _system_StorageProviderStateProperty Is Nothing Then
                 Return _system_StorageProviderStateProperty.DisplayName
             Else
@@ -115,6 +115,7 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public ReadOnly Property ActivityDisplayName As String
         Get
+            readData()
             If Not _system_StorageProviderCustomStatesProperty Is Nothing Then
                 Return _system_StorageProviderCustomStatesProperty.DisplayName()
             Else
@@ -125,6 +126,7 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Overrides ReadOnly Property Text As String
         Get
+            readData()
             If Not disposedValue AndAlso String.IsNullOrWhiteSpace(_text) _
                 AndAlso Not _system_StorageProviderStateProperty Is Nothing Then
                 _text = _system_StorageProviderStateProperty.Text
@@ -136,6 +138,7 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Overrides ReadOnly Property Value As Object
         Get
+            readData()
             If Not _system_StorageProviderStateProperty Is Nothing Then
                 Return _system_StorageProviderStateProperty.Value
             Else
@@ -146,6 +149,7 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public ReadOnly Property ActivityText As String
         Get
+            readData()
             If Not _system_ItemCustomState_ValuesProperty Is Nothing Then
                 Return _system_ItemCustomState_ValuesProperty.Text
             Else
@@ -156,12 +160,13 @@ Public Class System_StorageProviderUIStatusProperty
 
     Public Overrides ReadOnly Property HasIcon As Boolean
         Get
-            Return Not _didReadData OrElse Me.RawValue.vt > 0
+            Return Not _hasData OrElse Me.RawValue.vt > 0
         End Get
     End Property
 
     Public Overrides ReadOnly Property ImageReferences16 As String()
         Get
+            readData()
             If _imageReference16 Is Nothing Then
                 Dim imageReferences As List(Of String) = New List(Of String)()
 
