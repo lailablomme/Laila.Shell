@@ -435,28 +435,20 @@ Public Class Folder
                             Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
                             Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
 
+                            ' disable sorting grouping
+                            Me.IsNotifying = False
+                            Using view.DeferRefresh()
+                                Me.ItemsSortPropertyName = Nothing
+                                Me.ItemsGroupByPropertyName = Nothing
+                            End Using
+
                             If Not TypeOf Me Is SearchFolder Then
                                 If _items.Count = 0 Then
-                                    ' disable sorting grouping
-                                    Me.IsNotifying = False
-                                    Using view.DeferRefresh()
-                                        Me.ItemsSortPropertyName = Nothing
-                                        Me.ItemsGroupByPropertyName = Nothing
-                                    End Using
-
                                     ' add items
                                     For Each item In _items
                                         item.MaybePrepareForDispose()
                                     Next
                                     _items.AddRange(result.Values)
-
-                                    ' restore sorting/grouping
-                                    Using view.DeferRefresh()
-                                        Me.ItemsSortPropertyName = sortPropertyName
-                                        Me.ItemsSortDirection = sortDirection
-                                        Me.ItemsGroupByPropertyName = groupByPropertyName
-                                    End Using
-                                    Me.IsNotifying = True
                                 Else
                                     Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
                                     For Each item In _items
@@ -480,6 +472,14 @@ Public Class Folder
                                 ' add items
                                 _items.AddRange(result.Values)
                             End If
+
+                            ' restore sorting/grouping
+                            Using view.DeferRefresh()
+                                Me.ItemsSortPropertyName = sortPropertyName
+                                Me.ItemsSortDirection = sortDirection
+                                Me.ItemsGroupByPropertyName = groupByPropertyName
+                            End Using
+                            Me.IsNotifying = True
                         End Sub)
 
                     ' refresh existing items
@@ -561,7 +561,7 @@ Public Class Folder
                         If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
                     End Try
                     If Not enumShellItems Is Nothing Then
-                        Dim celt As Integer = If(TypeOf Me Is SearchFolder, 1, 10000)
+                        Dim celt As Integer = If(TypeOf Me Is SearchFolder, 1, 25000)
                         Dim shellItems(celt - 1) As IShellItem, fetched As UInt32 = 1
                         Dim startedUpdate As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
@@ -617,7 +617,7 @@ Public Class Folder
                                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
                                 h = enumShellItems.Next(celt, shellItems, fetched)
                             End While
-                            If fetched = 0 AndAlso Not (h = HRESULT.S_OK OrElse h = HRESULT.S_FALSE) Then
+                            If fetched = 0 AndAlso Not (h = HRESULT.S_OK OrElse h = HRESULT.S_FALSE OrElse h = HRESULT.ERROR_INVALID_PARAMETER) Then
                                 Throw Marshal.GetExceptionForHR(h)
                             End If
                         End If
