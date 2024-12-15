@@ -391,7 +391,7 @@ Public Class Item
 
     Public ReadOnly Property OverlayIconIndex As Byte
         Get
-            If IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath) Then
+            If Not disposedValue AndAlso IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath) Then
                 Dim shFileInfo As New SHFILEINFO()
                 Try
                     Dim result As IntPtr = Functions.SHGetFileInfo(
@@ -450,7 +450,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+            If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
                     Dim h As HRESULT
@@ -497,7 +497,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
         Get
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+            If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
                     Dim h As HRESULT
@@ -550,7 +550,7 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As ImageSource()
-                        If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
+                        If Not Me.disposedValue Then
                             result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16Async
                         End If
                         tcs.SetResult(result)
@@ -576,7 +576,7 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As ImageSource
-                        If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
+                        If Not Me.disposedValue Then
                             result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.FirstIcon16Async
                         End If
                         tcs.SetResult(result)
@@ -602,7 +602,7 @@ Public Class Item
                 Sub()
                     Try
                         Dim result As Boolean
-                        If Not Me.disposedValue AndAlso Not Me.IsReadyForDispose Then
+                        If Not Me.disposedValue Then
                             result = If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.HasIcon, False)
                         End If
                         tcs.SetResult(result)
@@ -629,7 +629,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property HasThumbnail As Boolean
         Get
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+            If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
                     Dim h As HRESULT
@@ -681,7 +681,7 @@ Public Class Item
     Public Overridable ReadOnly Property DisplayName As String
         Get
             Try
-                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                 End If
             Catch ex As Exception
@@ -752,7 +752,7 @@ Public Class Item
 
     Public ReadOnly Property Attributes As SFGAO
         Get
-            If _attributes = 0 AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+            If _attributes = 0 AndAlso Not disposedValue Then
                 _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
@@ -787,7 +787,7 @@ Public Class Item
 
     Public ReadOnly Property ContentViewModeProperties As [Property]()
         Get
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+            If Not disposedValue Then
                 Dim propList As String
                 If _parent Is Nothing OrElse Not TypeOf _parent Is SearchFolder Then
                     propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForBrowse").Text
@@ -827,7 +827,7 @@ Public Class Item
 
     Public ReadOnly Property InfoTip As String
         Get
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+            If Not disposedValue Then
                 Dim PKEY_System_InfoTipText As New PROPERTYKEY() With {
                     .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                     .pid = 4
@@ -867,7 +867,7 @@ Public Class Item
 
     Public ReadOnly Property TileViewProperties As String
         Get
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+            If Not disposedValue Then
                 Dim PKEY_System_PropList_TileInfo As New PROPERTYKEY() With {
                 .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                 .pid = 3
@@ -920,7 +920,7 @@ Public Class Item
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
             _propertiesLock.Wait()
             Try
-                If Not _propertiesByKey.TryGetValue(propertyKey, [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                If Not _propertiesByKey.TryGetValue(propertyKey, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
                     [property] = [Property].FromKey(key, Me.ShellItem2)
                     _propertiesLock.Wait()
@@ -943,7 +943,7 @@ Public Class Item
             Dim [property] As [Property]
             _propertiesLock.Wait()
             Try
-                If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
                     [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                     _propertiesLock.Wait()
@@ -966,7 +966,7 @@ Public Class Item
             Dim [property] As [Property]
             _propertiesLock.Wait()
             Try
-                If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
                     [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                     _propertiesLock.Wait()
