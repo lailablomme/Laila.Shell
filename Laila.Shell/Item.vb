@@ -143,7 +143,7 @@ Public Class Item
 
     Public ReadOnly Property Pidl As Pidl
         Get
-            If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose AndAlso Not _shellItem2 Is Nothing Then
+            If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                 Dim ptr As IntPtr, pidlptr As IntPtr
                 Try
                     ptr = Marshal.GetIUnknownForObject(_shellItem2)
@@ -551,7 +551,7 @@ Public Class Item
                     Try
                         Dim result As ImageSource()
                         If Not Me.disposedValue Then
-                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16Async
+                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16
                         End If
                         tcs.SetResult(result)
                     Catch ex As Exception
@@ -577,7 +577,7 @@ Public Class Item
                     Try
                         Dim result As ImageSource
                         If Not Me.disposedValue Then
-                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.FirstIcon16Async
+                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.FirstIcon16
                         End If
                         tcs.SetResult(result)
                     Catch ex As Exception

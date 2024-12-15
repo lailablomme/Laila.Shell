@@ -269,7 +269,8 @@ Namespace Controls
                 itemsControlFactory.SetValue(ItemsControl.ItemTemplateProperty, itemTemplate)
                 itemsControlFactory.SetValue(ItemsControl.WidthProperty, New Binding() With {
                     .Path = New PropertyPath("StorageProviderUIStatusIconWidth16"),
-                    .Mode = BindingMode.OneWay
+                    .Mode = BindingMode.OneWay,
+                    .IsAsync = True
                 })
                 itemsControlFactory.SetValue(ItemsControl.ItemsSourceProperty, New Binding() With {
                     .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", column.PROPERTYKEY.ToString())),

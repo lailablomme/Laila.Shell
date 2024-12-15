@@ -40,13 +40,11 @@ Public Class Folder
     Private _itemsGroupByPropertyName As String
     Protected _enumerationCancellationTokenSource As CancellationTokenSource
     Private _threadsCancellationTokenSource As CancellationTokenSource
-    Private _updateCompleted As TaskCompletionSource
     Private _doSkipUPDATEDIR As DateTime?
     Private _shellFolder As IShellFolder
     Private _isEmpty As Boolean
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _threadsLock As Object = New Object()
-    Private _mtaTaskQueue As New BlockingCollection(Of Action)
 
     Public Shared Function FromDesktop() As Folder
         Dim ptr As IntPtr, pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -486,39 +484,52 @@ Public Class Folder
                     If Not existingItems Is Nothing _
                         AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested _
                         AndAlso Not _enumerationCancellationTokenSource.IsCancellationRequested Then
+
+                        Dim size As Integer = Math.Max(1, Math.Min(existingItems.Count / 10, 100))
+                        Dim chuncks()() As Tuple(Of Item, Item) = existingItems.Chunk(existingItems.Count / size).ToArray()
+
                         SyncLock _threadsLock
-                            If _threads.Count = 0 Then
+                            If _threadsCancellationTokenSource Is Nothing Then
                                 _threadsCancellationTokenSource = New CancellationTokenSource()
                                 Shell.AddToCancellationTokenSources(_threadsCancellationTokenSource)
-
-                                ' threads for refreshing
-                                For i = 1 To 25
-                                    Dim mtaThread As Thread = New Thread(
-                                        Sub()
-                                            Try
-                                                ' Process tasks from the queue
-                                                For Each task In _mtaTaskQueue.GetConsumingEnumerable(_threadsCancellationTokenSource.Token)
-                                                    task.Invoke()
-                                                Next
-                                            Catch ex As OperationCanceledException
-                                                Debug.WriteLine("Folder MTATaskQueue was canceled for " & Me.FullPath)
-                                            End Try
-                                        End Sub)
-                                    mtaThread.SetApartmentState(ApartmentState.MTA)
-                                    mtaThread.Start()
-                                    _threads.Add(mtaThread)
-                                Next
                             End If
-                        End SyncLock
 
-                        For Each item In existingItems
-                            _mtaTaskQueue.Add(
-                                Sub()
-                                    item.Item1.Refresh(item.Item2.ShellItem2)
-                                    item.Item2._shellItem2 = Nothing
-                                    item.Item2.MaybePrepareForDispose()
-                                End Sub)
-                        Next
+                            ' threads for refreshing
+                            For i = 0 To chuncks.Count - 1
+                                Dim j As Integer = i
+                                Dim mtaThread As Thread = New Thread(
+                                    Sub()
+                                        Try
+                                            'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
+
+                                            ' Process tasks from the queue
+                                            For Each item In chuncks(j)
+                                                If _threadsCancellationTokenSource.Token.IsCancellationRequested Then
+                                                    Exit For
+                                                End If
+
+                                                Try
+                                                    item.Item1.Refresh(item.Item2.ShellItem2)
+                                                    item.Item2._shellItem2 = Nothing
+                                                    item.Item2.MaybePrepareForDispose()
+                                                Catch ex As Exception
+                                                    Debug.WriteLine("Exception refreshing " & item.Item1.FullPath & ": " & ex.Message)
+                                                End Try
+                                            Next
+
+                                            SyncLock _threadsLock
+                                                _threads.Remove(mtaThread)
+                                            End SyncLock
+                                            'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") finished for " & Me.FullPath)
+                                        Catch ex As OperationCanceledException
+                                            Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") was canceled for " & Me.FullPath)
+                                        End Try
+                                    End Sub)
+                                mtaThread.SetApartmentState(ApartmentState.MTA)
+                                mtaThread.Start()
+                                _threads.Add(mtaThread)
+                            Next
+                        End SyncLock
                     End If
                 End If
             End Sub
