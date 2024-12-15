@@ -1,4 +1,5 @@
-﻿Imports System.Collections.ObjectModel
+﻿Imports System.Collections.Concurrent
+Imports System.Collections.ObjectModel
 Imports System.ComponentModel
 Imports System.Runtime.InteropServices
 Imports System.Threading
@@ -15,8 +16,6 @@ Public Class Folder
     Public Event LoadingStateChanged(isLoading As Boolean)
     Public Event ExpandAllGroups As EventHandler
     Public Event CollapseAllGroups As EventHandler
-    Public Event BeforeResetItems As EventHandler
-    Public Event AfterResetItems As EventHandler
 
     Public Property LastScrollOffset As Point
     Public Property LastScrollSize As Size
@@ -39,11 +38,15 @@ Public Class Folder
     Private _itemsSortPropertyName As String
     Private _itemsSortDirection As ListSortDirection
     Private _itemsGroupByPropertyName As String
-    Protected _cancellationTokenSource As CancellationTokenSource
+    Protected _enumerationCancellationTokenSource As CancellationTokenSource
+    Private _threadsCancellationTokenSource As CancellationTokenSource
     Private _updateCompleted As TaskCompletionSource
     Private _doSkipUPDATEDIR As DateTime?
     Private _shellFolder As IShellFolder
     Private _isEmpty As Boolean
+    Private _threads As List(Of Thread) = New List(Of Thread)()
+    Private _threadsLock As Object = New Object()
+    Private _mtaTaskQueue As New BlockingCollection(Of Action)
 
     Public Shared Function FromDesktop() As Folder
         Dim ptr As IntPtr, pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -371,12 +374,12 @@ Public Class Folder
         Me.IsLoading = True
         Me.IsEmpty = False
 
-        If Not _cancellationTokenSource Is Nothing Then
-            _cancellationTokenSource.Cancel()
+        If Not _enumerationCancellationTokenSource Is Nothing Then
+            _enumerationCancellationTokenSource.Cancel()
         End If
 
         Dim cts As CancellationTokenSource = New CancellationTokenSource()
-        _cancellationTokenSource = cts
+        _enumerationCancellationTokenSource = cts
 
         Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
@@ -389,7 +392,7 @@ Public Class Folder
                 Return New Item(shellItem2, Me, False)
             End Function, cts.Token)
 
-        If _cancellationTokenSource.Equals(cts) Then
+        If _enumerationCancellationTokenSource.Equals(cts) Then
             Me.IsLoading = False
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
@@ -445,9 +448,7 @@ Public Class Folder
                                     For Each item In _items
                                         item.MaybePrepareForDispose()
                                     Next
-                                    RaiseEvent BeforeResetItems(Me, New EventArgs())
-                                    _items.ReplaceWithRange(result.Values)
-                                    RaiseEvent AfterResetItems(Me, New EventArgs())
+                                    _items.AddRange(result.Values)
 
                                     ' restore sorting/grouping
                                     Using view.DeferRefresh()
@@ -482,9 +483,36 @@ Public Class Folder
                         End Sub)
 
                     ' refresh existing items
-                    If Not existingItems Is Nothing Then
+                    If Not existingItems Is Nothing _
+                        AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested _
+                        AndAlso Not _enumerationCancellationTokenSource.IsCancellationRequested Then
+                        SyncLock _threadsLock
+                            If _threads.Count = 0 Then
+                                _threadsCancellationTokenSource = New CancellationTokenSource()
+                                Shell.AddToCancellationTokenSources(_threadsCancellationTokenSource)
+
+                                ' threads for refreshing
+                                For i = 1 To 25
+                                    Dim mtaThread As Thread = New Thread(
+                                        Sub()
+                                            Try
+                                                ' Process tasks from the queue
+                                                For Each task In _mtaTaskQueue.GetConsumingEnumerable(_threadsCancellationTokenSource.Token)
+                                                    task.Invoke()
+                                                Next
+                                            Catch ex As OperationCanceledException
+                                                Debug.WriteLine("Folder MTATaskQueue was canceled for " & Me.FullPath)
+                                            End Try
+                                        End Sub)
+                                    mtaThread.SetApartmentState(ApartmentState.MTA)
+                                    mtaThread.Start()
+                                    _threads.Add(mtaThread)
+                                Next
+                            End If
+                        End SyncLock
+
                         For Each item In existingItems
-                            Shell.MTATaskQueue.Add(
+                            _mtaTaskQueue.Add(
                                 Sub()
                                     item.Item1.Refresh(item.Item2.ShellItem2)
                                     item.Item2._shellItem2 = Nothing
@@ -566,12 +594,12 @@ Public Class Folder
                                     End If
 
                                     ' preload System_StorageProviderUIStatus images
-                                    Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                                        = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
-                                    If Not System_StorageProviderUIStatus Is Nothing _
-                                        AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                                        Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
-                                    End If
+                                    'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                                    '    = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                                    'If Not System_StorageProviderUIStatus Is Nothing _
+                                    '    AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                                    '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                                    'End If
 
                                     newFullPaths.Add(newItem.FullPath)
 
@@ -834,8 +862,13 @@ Public Class Folder
         MyBase.Dispose(disposing)
 
         If Not disposedValue Then
-            If Not _cancellationTokenSource Is Nothing Then
-                _cancellationTokenSource.Cancel()
+            If Not _enumerationCancellationTokenSource Is Nothing Then
+                _enumerationCancellationTokenSource.Cancel()
+            End If
+
+            If Not _threadsCancellationTokenSource Is Nothing Then
+                _threadsCancellationTokenSource.Cancel()
+                Shell.RemoveFromCancellationTokenSources(_threadsCancellationTokenSource)
             End If
 
             For Each item In _items

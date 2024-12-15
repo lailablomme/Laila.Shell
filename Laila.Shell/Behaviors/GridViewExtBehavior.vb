@@ -438,8 +438,10 @@ Namespace Behaviors
                 i += 1
             Next
 
-            _skipResize = False
-            resizeVisibleRows()
+            If _listView.Items.Count > 0 Then
+                _skipResize = False
+                resizeVisibleRows()
+            End If
         End Sub
 
         Public Sub UpdateSortGlyphs()

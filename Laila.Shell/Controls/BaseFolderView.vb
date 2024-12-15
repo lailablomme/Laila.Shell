@@ -37,7 +37,6 @@ Namespace Controls
         Private _menu As RightClickMenu
         Private _ignoreSelection As Boolean
         Private disposedValue As Boolean
-        Private _selectedItemsBeforeReset As List(Of String)
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -423,21 +422,6 @@ Namespace Controls
             Me.ExpandCollapseAllGroups(False)
         End Sub
 
-        Public Sub Folder_BeforeResetItems(sender As Object, e As EventArgs)
-            If Not Me.SelectedItems Is Nothing Then
-                _selectedItemsBeforeReset = Me.SelectedItems.Select(Function(i) i.FullPath).ToList()
-            Else
-                _selectedItemsBeforeReset = Nothing
-            End If
-        End Sub
-
-        Public Sub Folder_AfterResetItems(sender As Object, e As EventArgs)
-            Dim selectedItemsBeforeReset As List(Of String) = _selectedItemsBeforeReset?.ToList()
-            If Not selectedItemsBeforeReset Is Nothing Then
-                Me.SelectedItems = Me.Folder.Items.Where(Function(i) selectedItemsBeforeReset.Contains(i.FullPath))
-            End If
-        End Sub
-
         Public Sub ExpandCollapseAllGroups(isExpanded As Boolean)
             Dim groups As IEnumerable(Of GroupItem) = UIHelper.FindVisualChildren(Of GroupItem)(PART_ListBox)
             For Each group In groups
@@ -480,9 +464,6 @@ Namespace Controls
                 RemoveHandler oldValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
                 RemoveHandler oldValue.ExpandAllGroups, AddressOf bfv.Folder_ExpandAllGroups
                 RemoveHandler oldValue.CollapseAllGroups, AddressOf bfv.Folder_CollapseAllGroups
-                RemoveHandler oldValue.BeforeResetItems, AddressOf bfv.Folder_BeforeResetItems
-                RemoveHandler oldValue.AfterResetItems, AddressOf bfv.Folder_AfterResetItems
-                bfv._selectedItemsBeforeReset = Nothing
 
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = bfv._lastScrollOffset
@@ -527,8 +508,6 @@ Namespace Controls
                 AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
                 AddHandler newValue.ExpandAllGroups, AddressOf bfv.Folder_ExpandAllGroups
                 AddHandler newValue.CollapseAllGroups, AddressOf bfv.Folder_CollapseAllGroups
-                AddHandler newValue.BeforeResetItems, AddressOf bfv.Folder_BeforeResetItems
-                AddHandler newValue.AfterResetItems, AddressOf bfv.Folder_AfterResetItems
 
                 ' bind view
                 bfv.MakeBinding(e.NewValue)

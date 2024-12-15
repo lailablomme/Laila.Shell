@@ -269,7 +269,6 @@ Public Class Item
     Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
         SyncLock _refreshLock
             If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
-                Debug.WriteLine("Refreshing " & Me.DisplayName)
                 Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
                 If Not newShellItem Is Nothing Then

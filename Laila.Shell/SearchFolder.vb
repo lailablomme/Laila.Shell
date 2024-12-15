@@ -49,8 +49,8 @@ Public Class SearchFolder
     End Sub
 
     Public Sub Update(terms As String)
-        If Not _cancellationTokenSource Is Nothing Then
-            _cancellationTokenSource.Cancel()
+        If Not _enumerationCancellationTokenSource Is Nothing Then
+            _enumerationCancellationTokenSource.Cancel()
         End If
         Me.Terms = terms
         If Not _shellItem2 Is Nothing Then
@@ -66,8 +66,8 @@ Public Class SearchFolder
     End Sub
 
     Public Sub CancelUpdate()
-        If Not _cancellationTokenSource Is Nothing Then
-            _cancellationTokenSource.Cancel()
+        If Not _enumerationCancellationTokenSource Is Nothing Then
+            _enumerationCancellationTokenSource.Cancel()
         End If
     End Sub
 

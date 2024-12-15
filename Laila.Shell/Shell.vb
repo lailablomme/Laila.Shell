@@ -24,6 +24,8 @@ Public Class Shell
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
     Private Shared _shutDownTokensSource As CancellationTokenSource = New CancellationTokenSource()
     Public Shared ShuttingDownToken As CancellationToken = _shutDownTokensSource.Token
+    Private Shared _cancellationTokenSources As List(Of CancellationTokenSource) = New List(Of CancellationTokenSource)()
+    Private Shared _cancellationTokenSourcesLock As Object = New Object()
     Private Shared _mainWindow As Window
 
     Private Shared _hNotify As UInt32
@@ -74,6 +76,24 @@ Public Class Shell
             _threads.Add(staThread)
         Next
 
+        ' threads for mta
+        For i = 1 To 25
+            Dim mtaThread As Thread = New Thread(
+                Sub()
+                    Try
+                        ' Process tasks from the queue
+                        For Each task In MTATaskQueue.GetConsumingEnumerable(ShuttingDownToken)
+                            task.Invoke()
+                        Next
+                    Catch ex As OperationCanceledException
+                        Debug.WriteLine("MTATaskQueue was canceled.")
+                    End Try
+                End Sub)
+            mtaThread.SetApartmentState(ApartmentState.STA)
+            mtaThread.Start()
+            _threads.Add(mtaThread)
+        Next
+
         ' threads for everything else async
         For i = 1 To 25
             Dim staThread As Thread = New Thread(
@@ -90,24 +110,6 @@ Public Class Shell
             staThread.SetApartmentState(ApartmentState.STA)
             staThread.Start()
             _threads.Add(staThread)
-        Next
-
-        ' threads for mta
-        For i = 1 To 25
-            Dim mtaThread As Thread = New Thread(
-                Sub()
-                    Try
-                        ' Process tasks from the queue
-                        For Each task In MTATaskQueue.GetConsumingEnumerable(ShuttingDownToken)
-                            task.Invoke()
-                        Next
-                    Catch ex As OperationCanceledException
-                        Debug.WriteLine("MTATaskQueue was canceled.")
-                    End Try
-                End Sub)
-            mtaThread.SetApartmentState(ApartmentState.MTA)
-            mtaThread.Start()
-            _threads.Add(mtaThread)
         Next
 
         ' thread for disposing items
@@ -300,6 +302,14 @@ Public Class Shell
             ' cancel threads
             _shutDownTokensSource.Cancel()
 
+            ' clean up folder threads
+            SyncLock _cancellationTokenSourcesLock
+                For Each item In _cancellationTokenSources.ToList()
+                    item.Cancel()
+                    _cancellationTokenSources.Remove(item)
+                Next
+            End SyncLock
+
             ' wait for threads to shut down
             While Not _threads.FirstOrDefault(Function(t) t.IsAlive) Is Nothing
                 System.Windows.Application.Current.Dispatcher.Invoke(
@@ -462,6 +472,18 @@ Public Class Shell
     Friend Shared Sub RemoveFromMenuCache(item As BaseMenu)
         SyncLock _menuCacheLock
             _menuCache.Remove(item)
+        End SyncLock
+    End Sub
+
+    Friend Shared Sub AddToCancellationTokenSources(item As CancellationTokenSource)
+        SyncLock _cancellationTokenSourcesLock
+            _cancellationTokenSources.Add(item)
+        End SyncLock
+    End Sub
+
+    Friend Shared Sub RemoveFromCancellationTokenSources(item As CancellationTokenSource)
+        SyncLock _cancellationTokenSourcesLock
+            _cancellationTokenSources.Remove(item)
         End SyncLock
     End Sub
 End Class
