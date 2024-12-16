@@ -52,7 +52,7 @@ Namespace Controls
                 Me.Buttons.Add(MakeButton(New Tuple(Of Integer, String)(-1, "rename"), "Rename"))
             menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "delete")
             If Not menuItem Is Nothing Then Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-            If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
+            If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Not String.IsNullOrWhiteSpace(Me.SelectedItems(0).FullPath) Then
                 Dim test As Item = Item.FromParsingName(Me.SelectedItems(0).FullPath, Nothing, True)
                 If Not test Is Nothing Then ' this won't work for all items 
                     test.Dispose()

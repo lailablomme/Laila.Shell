@@ -4,6 +4,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
+Imports System.Windows.Data
 Imports System.Windows.Input
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -382,7 +383,8 @@ Namespace Controls
             If Not Me.PART_ListBox Is Nothing Then
                 setGrouping(folder)
 
-                Me.PART_ListBox.ItemsSource = folder.Items
+                Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(folder.Items)
+                Me.PART_ListBox.ItemsSource = view
             End If
         End Sub
 

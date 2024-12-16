@@ -450,12 +450,12 @@ Public Class Folder
                                 Else
                                     Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
                                     For Each item In _items
-                                        previousFullPaths.Add(item.FullPath)
+                                        previousFullPaths.Add(If(item.FullPath, item.DisplayName))
                                     Next
-                                    Dim newItems As Item() = result.Values.Where(Function(i) Not previousFullPaths.Contains(i.FullPath)).ToArray()
-                                    Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(i.FullPath)).ToArray()
-                                    existingItems = _items.Where(Function(i) newFullPaths.Contains(i.FullPath)) _
-                                        .Select(Function(i) New Tuple(Of Item, Item)(i, result(i.FullPath))).ToArray()
+                                    Dim newItems As Item() = result.Values.Where(Function(i) Not previousFullPaths.Contains(If(i.FullPath, i.DisplayName))).ToArray()
+                                    Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(If(i.FullPath, i.DisplayName))).ToArray()
+                                    existingItems = _items.Where(Function(i) newFullPaths.Contains(If(i.FullPath, i.DisplayName))) _
+                                        .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(i.FullPath, i.DisplayName)))).ToArray()
 
                                     ' add items
                                     For Each item In newItems
@@ -603,7 +603,7 @@ Public Class Folder
                                         newItem = makeNewItem(shellItems(x))
                                     End If
 
-                                    result.Add(newItem.FullPath, newItem)
+                                    result.Add(If(newItem.FullPath, newItem.DisplayName), newItem)
 
                                     ' preload sort property
                                     If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
@@ -624,7 +624,7 @@ Public Class Folder
                                     '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
                                     'End If
 
-                                    newFullPaths.Add(newItem.FullPath)
+                                    newFullPaths.Add(If(newItem.FullPath, newItem.DisplayName))
 
                                     If cancellationToken.IsCancellationRequested Then Exit While
 
@@ -881,7 +881,7 @@ Public Class Folder
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If (Me.FullPath?.Equals(e.Item1.FullPath) OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath)) Then
                         If Not Me.Items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
-                            AndAlso (Me.IsExpanded OrElse Me.IsActiveInFolderView) _
+                            AndAlso (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                             AndAlso (Not _doSkipUPDATEDIR.HasValue _
                                      OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) _
                             AndAlso Not TypeOf Me Is SearchFolder Then

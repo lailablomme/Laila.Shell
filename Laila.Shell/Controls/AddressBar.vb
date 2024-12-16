@@ -27,6 +27,7 @@ Namespace Controls
         Private _visibleFolders As List(Of Folder) = New List(Of Folder)
         Private disposedValue As Boolean
         Private ReadOnly _lock As New SemaphoreSlim(1, 1)
+        Private _menu As RightClickMenu
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(AddressBar), New FrameworkPropertyMetadata(GetType(AddressBar)))
@@ -197,12 +198,30 @@ Namespace Controls
                                         .Direction = ListSortDirection.Ascending
                                     })
                                     subFoldersContextMenu.ItemsSource = view
+                                    'subFoldersContextMenu.SetBinding(ItemsContextMenu.ItemsSourceProperty,
+                                    '    New Binding() With {
+                                    '        .Path = New PropertyPath("Items"),
+                                    '        .Source = subFolder
+                                    '    })
                                 End Sub)
 
                             AddHandler subFoldersContextMenu.ItemClicked,
-                                Sub(clickedSubFolder As Folder, e2 As EventArgs)
-                                    clickedSubFolder.LastScrollOffset = New Point()
-                                    Me.Folder = clickedSubFolder
+                                Sub(clickedItem As Item, e2 As EventArgs)
+                                    If TypeOf clickedItem Is Folder Then
+                                        CType(clickedItem, Folder).LastScrollOffset = New Point()
+                                        Me.Folder = clickedItem
+                                    Else
+                                        If Not _menu Is Nothing Then
+                                            _menu.Dispose()
+                                        End If
+                                        _menu = New RightClickMenu() With {
+                                            .Folder = subFolder,
+                                            .SelectedItems = {clickedItem},
+                                            .IsDefaultOnly = True
+                                        }
+                                        _menu.Make()
+                                        _menu.InvokeCommand(_menu.DefaultId)
+                                    End If
                                 End Sub
                             AddHandler subFoldersContextMenu.Closed,
                                 Sub(s2 As Object, e2 As EventArgs)

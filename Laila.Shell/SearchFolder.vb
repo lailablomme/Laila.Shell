@@ -45,7 +45,7 @@ Public Class SearchFolder
         MyBase.New(shellItem2, Nothing, False)
 
         Me.View = "Content"
-        Me.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Text"
+        Me.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Value"
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
     End Sub
 
