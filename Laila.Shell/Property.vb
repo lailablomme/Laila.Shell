@@ -28,6 +28,7 @@ Public Class [Property]
     Protected disposedValue As Boolean
     Private _rawValue As PROPVARIANT
     Private _displayType As PropertyDisplayType = -1
+    Protected _val As Object
 
     Private Shared Function getDescription(canonicalName As String) As IPropertyDescription
         _descriptionsLock.Wait()
@@ -188,7 +189,10 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property Value As Object
         Get
-            Return Me.RawValue.GetValue()
+            If _val Is Nothing Then
+                _val = Me.RawValue.GetValue()
+            End If
+            Return _val
         End Get
     End Property
 

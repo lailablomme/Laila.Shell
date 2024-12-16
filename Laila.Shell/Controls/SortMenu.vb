@@ -1,6 +1,7 @@
 ﻿Imports System.ComponentModel
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Input
 Imports Laila.Shell.Helpers
 
 Namespace Controls
@@ -48,13 +49,15 @@ Namespace Controls
             Dim sortMenuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
                 Sub(s2 As Object, e2 As RoutedEventArgs)
                     If Not _isCheckingInternally Then
-                        If CType(s2, MenuItem).Tag.ToString().Substring(5).IndexOf(":") >= 0 Then
-                            Me.Folder.ItemsSortPropertyName =
-                                String.Format("PropertiesByKeyAsText[{0}].Text",
-                                                CType(s2, MenuItem).Tag.ToString().Substring(5))
-                        Else
-                            Me.Folder.ItemsSortPropertyName = CType(s2, MenuItem).Tag.ToString().Substring(5)
-                        End If
+                        Using Shell.OverrideCursor(Cursors.Wait)
+                            If CType(s2, MenuItem).Tag.ToString().Substring(5).IndexOf(":") >= 0 Then
+                                Me.Folder.ItemsSortPropertyName =
+                                    String.Format("PropertiesByKeyAsText[{0}].Value",
+                                                    CType(s2, MenuItem).Tag.ToString().Substring(5))
+                            Else
+                                Me.Folder.ItemsSortPropertyName = CType(s2, MenuItem).Tag.ToString().Substring(5)
+                            End If
+                        End Using
                     End If
                 End Sub)
             Dim menuItemUncheckedAction As RoutedEventHandler = New RoutedEventHandler(
@@ -71,7 +74,7 @@ Namespace Controls
                     .Tag = "Sort:" & If(propName = PKEY_System_ItemNameDisplay, "ItemNameDisplaySortValue", propName),
                     .IsCheckable = True
                 }
-                menuItem.IsChecked = menuItem.Tag.ToString() = "Sort:" & sortPropertyName
+                menuItem.IsChecked = menuItem.Tag.ToString().ToUpper() = "SORT:" & sortPropertyName?.ToUpper()
                 AddHandler menuItem.Checked, sortMenuItemCheckedAction
                 AddHandler menuItem.Unchecked, menuItemUncheckedAction
                 menu.Add(menuItem)
@@ -85,7 +88,7 @@ Namespace Controls
                         .Tag = "Sort:" & If(propName = PKEY_System_ItemNameDisplay, "ItemNameDisplaySortValue", propName),
                         .IsCheckable = True
                     }
-                    menuItem.IsChecked = menuItem.Tag.ToString() = "Sort:" & sortPropertyName
+                    menuItem.IsChecked = menuItem.Tag.ToString().ToUpper() = "SORT:" & sortPropertyName?.ToUpper()
                     AddHandler menuItem.Checked, sortMenuItemCheckedAction
                     AddHandler menuItem.Unchecked, menuItemUncheckedAction
                     moreMenuItem.Items.Add(menuItem)
@@ -102,7 +105,9 @@ Namespace Controls
             AddHandler sortAscendingMenuItem.Checked,
                 Sub(s2 As Object, e2 As EventArgs)
                     If Not _isCheckingInternally Then
-                        Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
+                        Using Shell.OverrideCursor(Cursors.Wait)
+                            Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
+                        End Using
                     End If
                 End Sub
             AddHandler sortAscendingMenuItem.Unchecked, menuItemUncheckedAction
@@ -116,7 +121,9 @@ Namespace Controls
             AddHandler sortDescendingMenuItem.Checked,
                 Sub(s2 As Object, e2 As EventArgs)
                     If Not _isCheckingInternally Then
-                        Me.Folder.ItemsSortDirection = ListSortDirection.Descending
+                        Using Shell.OverrideCursor(Cursors.Wait)
+                            Me.Folder.ItemsSortDirection = ListSortDirection.Descending
+                        End Using
                     End If
                 End Sub
             AddHandler sortDescendingMenuItem.Unchecked, menuItemUncheckedAction
@@ -133,9 +140,11 @@ Namespace Controls
             Dim groupByMenuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
                 Sub(s2 As Object, e2 As RoutedEventArgs)
                     If Not _isCheckingInternally Then
-                        Me.Folder.ItemsGroupByPropertyName =
-                            String.Format("PropertiesByKeyAsText[{0}].Text",
-                                            CType(s2, MenuItem).Tag.ToString().Substring(6))
+                        Using Shell.OverrideCursor(Cursors.Wait)
+                            Me.Folder.ItemsGroupByPropertyName =
+                                String.Format("PropertiesByKeyAsText[{0}].Text",
+                                                CType(s2, MenuItem).Tag.ToString().Substring(6))
+                        End Using
                     End If
                 End Sub)
             Dim menuItemUncheckedAction As RoutedEventHandler = New RoutedEventHandler(
@@ -152,7 +161,7 @@ Namespace Controls
                     .Tag = "Group:" & propName,
                     .IsCheckable = True
                 }
-                menuItem.IsChecked = menuItem.Tag.ToString() = "Group:" & groupByPropertyName
+                menuItem.IsChecked = menuItem.Tag.ToString().ToUpper() = "GROUP:" & groupByPropertyName?.ToUpper()
                 AddHandler menuItem.Checked, groupByMenuItemCheckedAction
                 AddHandler menuItem.Unchecked, menuItemUncheckedAction
                 menu.Add(menuItem)
@@ -163,7 +172,7 @@ Namespace Controls
                     .Tag = "Group:" & propName,
                     .IsCheckable = True
                 }
-                menuItem.IsChecked = menuItem.Tag.ToString() = "Group:" & groupByPropertyName
+                menuItem.IsChecked = menuItem.Tag.ToString().ToUpper() = "GROUP:" & groupByPropertyName?.ToUpper()
                 AddHandler menuItem.Checked, groupByMenuItemCheckedAction
                 AddHandler menuItem.Unchecked, menuItemUncheckedAction
                 menu.Add(menuItem)
@@ -186,23 +195,15 @@ Namespace Controls
         Private Sub getProperties()
             If _didGetProperties Then Return
 
-            Dim viewState As FolderViewState = FolderViewState.FromViewName(Folder.FullPath)
-            If Not viewState Is Nothing AndAlso Not viewState.Columns Is Nothing AndAlso Not viewState.Columns.Count = 0 Then
-                For Each viewStateColumn In viewState.Columns.Where(Function(c) c.IsVisible)
-                    Dim pKey As String = viewStateColumn.Name.Substring(viewStateColumn.Name.IndexOf("[") + 1)
-                    pKey = pKey.Substring(0, pKey.IndexOf("]"))
-                    Dim column As Column = Folder.Columns.FirstOrDefault(Function(c) c.PROPERTYKEY.ToString() = pKey)
-                    If Not column Is Nothing Then
-                        _primaryProperties.Add(column.PROPERTYKEY.ToString())
-                        _descriptions.Add(column.PROPERTYKEY.ToString(), column.DisplayName)
-                    End If
-                Next
-            Else
-                For Each column In Folder.Columns.Where(Function(c) c.IsVisible)
-                    _primaryProperties.Add(column.PROPERTYKEY.ToString())
-                    _descriptions.Add(column.PROPERTYKEY.ToString(), column.DisplayName)
-                Next
-            End If
+            For Each column In Folder.Columns.Take(5)
+                _primaryProperties.Add(column.PROPERTYKEY.ToString())
+                _descriptions.Add(column.PROPERTYKEY.ToString(), column.DisplayName)
+            Next
+
+            For Each column In Folder.Columns.Skip(5).Take(5)
+                _additionalProperties.Add(column.PROPERTYKEY.ToString())
+                _descriptions.Add(column.PROPERTYKEY.ToString(), column.DisplayName)
+            Next
 
             Dim getProperties As Action(Of Item, PROPERTYKEY) =
                 Sub(item As Item, pKey As PROPERTYKEY)
@@ -229,18 +230,18 @@ Namespace Controls
                 .pid = 3
             }
 
-            If TypeOf Me.Folder Is SearchFolder Then
-                _additionalProperties.Add("49691C90-7E17-101A-A91C-08002B2ECDA9:3")
-                _descriptions.Add("49691C90-7E17-101A-A91C-08002B2ECDA9:3", "Relevance")
-            End If
+            'If TypeOf Me.Folder Is SearchFolder Then
+            '    _additionalProperties.Add("49691C90-7E17-101A-A91C-08002B2ECDA9:3")
+            '    _descriptions.Add("49691C90-7E17-101A-A91C-08002B2ECDA9:3", "Relevance")
+            'End If
 
             Dim uniqueTypes As List(Of String) = New List(Of String)()
             Dim items As List(Of Item) = Me.Folder.Items.ToList()
 
             For Each item In items
-                Dim itemTypeText As String = item.PropertiesByCanonicalName("System.ItemTypeText")?.Text
-                If Not String.IsNullOrWhiteSpace(itemTypeText) AndAlso Not uniqueTypes.Contains(itemTypeText) Then
-                    uniqueTypes.Add(itemTypeText)
+                Dim ext As String = IO.Path.GetExtension(item.FullPath)
+                If Not String.IsNullOrWhiteSpace(ext) AndAlso Not uniqueTypes.Contains(ext) Then
+                    uniqueTypes.Add(ext)
                     getProperties(item, PKEY_System_InfoTipText)
                     getProperties(item, PKEY_System_PropList_TileInfo)
                 End If

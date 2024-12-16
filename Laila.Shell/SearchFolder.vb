@@ -1,5 +1,6 @@
 ﻿Imports System.Drawing
 Imports System.Threading
+Imports System.Windows.Media
 
 Public Class SearchFolder
     Inherits Folder

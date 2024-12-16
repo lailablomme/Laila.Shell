@@ -1,5 +1,6 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 
@@ -32,7 +33,9 @@ Namespace Controls
                 AddHandler viewSubMenuItem.Checked,
                     Sub(s2 As Object, e2 As EventArgs)
                         If Not _isCheckingInternally Then
-                            Me.Folder.View = item.Key
+                            Using Shell.OverrideCursor(Cursors.Wait)
+                                Me.Folder.View = item.Key
+                            End Using
                         End If
                     End Sub
                 AddHandler viewSubMenuItem.Unchecked,
@@ -46,7 +49,7 @@ Namespace Controls
                 menu.Add(viewSubMenuItem)
             Next
 
-            If Me.MenuStyle = ViewMenuStyle.RightClickMenu Then
+            If Me.MenuStyle = ViewMenuStyle.RightClickMenu AndAlso Not String.IsNullOrWhiteSpace(Me.Folder.ItemsGroupByPropertyName) Then
                 menu.Add(New Separator())
                 Dim expandAllGroupsMenuItem As MenuItem = New MenuItem() With {
                     .Header = "Expand all groups",

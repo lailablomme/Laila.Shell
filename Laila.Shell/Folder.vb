@@ -426,21 +426,21 @@ Public Class Folder
 
                     UIHelper.OnUIThread(
                         Sub()
-                            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-
-                            ' save sorting/grouping
-                            Dim sortPropertyName As String = Me.ItemsSortPropertyName
-                            Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
-                            Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
-
-                            ' disable sorting grouping
-                            Me.IsNotifying = False
-                            Using view.DeferRefresh()
-                                Me.ItemsSortPropertyName = Nothing
-                                Me.ItemsGroupByPropertyName = Nothing
-                            End Using
-
                             If Not TypeOf Me Is SearchFolder Then
+                                Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+
+                                ' save sorting/grouping
+                                Dim sortPropertyName As String = Me.ItemsSortPropertyName
+                                Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
+                                Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
+
+                                ' disable sorting grouping
+                                Me.IsNotifying = False
+                                Using view.DeferRefresh()
+                                    Me.ItemsSortPropertyName = Nothing
+                                    Me.ItemsGroupByPropertyName = Nothing
+                                End Using
+
                                 If _items.Count = 0 Then
                                     ' add items
                                     For Each item In _items
@@ -466,22 +466,23 @@ Public Class Folder
                                         Me.Items.Remove(item)
                                     Next
                                 End If
-                            Else
-                                ' add items
-                                _items.AddRange(result.Values)
-                            End If
 
-                            ' restore sorting/grouping
-                            Using view.DeferRefresh()
-                                Me.ItemsSortPropertyName = sortPropertyName
-                                Me.ItemsSortDirection = sortDirection
-                                Me.ItemsGroupByPropertyName = groupByPropertyName
-                            End Using
-                            Me.IsNotifying = True
+                                ' restore sorting/grouping
+                                Using view.DeferRefresh()
+                                    Me.ItemsSortPropertyName = sortPropertyName
+                                    Me.ItemsSortDirection = sortDirection
+                                    Me.ItemsGroupByPropertyName = groupByPropertyName
+                                End Using
+                                Me.IsNotifying = True
+                            Else
+                                For Each item In result.Values
+                                    Me.Items.Add(item)
+                                Next
+                            End If
                         End Sub)
 
                     ' refresh existing items
-                    If Not existingItems Is Nothing _
+                    If Not existingItems Is Nothing AndAlso existingItems.Count > 0 _
                         AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested _
                         AndAlso Not _enumerationCancellationTokenSource.IsCancellationRequested Then
 
@@ -512,6 +513,17 @@ Public Class Folder
                                                     item.Item1.Refresh(item.Item2.ShellItem2)
                                                     item.Item2._shellItem2 = Nothing
                                                     item.Item2.MaybePrepareForDispose()
+
+                                                    ' preload sort property
+                                                    If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
+                                                        If Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText") Then
+                                                            Dim pkey As String = Me.ItemsSortPropertyName.Substring(Me.ItemsSortPropertyName.IndexOf("[") + 1)
+                                                            pkey = pkey.Substring(0, pkey.IndexOf("]"))
+                                                            Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(pkey).Value
+                                                        ElseIf Me.ItemsSortPropertyName = "ItemNameDisplaySortValue" Then
+                                                            Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
+                                                        End If
+                                                    End If
                                                 Catch ex As Exception
                                                     Debug.WriteLine("Exception refreshing " & item.Item1.FullPath & ": " & ex.Message)
                                                 End Try
@@ -574,7 +586,7 @@ Public Class Folder
                     If Not enumShellItems Is Nothing Then
                         Dim celt As Integer = If(TypeOf Me Is SearchFolder, 1, 25000)
                         Dim shellItems(celt - 1) As IShellItem, fetched As UInt32 = 1
-                        Dim startedUpdate As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
+                        Dim lastRefresh As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
                         If Not cancellationToken.IsCancellationRequested Then
                             Dim h As HRESULT = enumShellItems.Next(celt, shellItems, fetched)
@@ -616,12 +628,20 @@ Public Class Folder
 
                                     If cancellationToken.IsCancellationRequested Then Exit While
 
-                                    If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
+                                    If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 2000 _
                                         AndAlso result.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
                                         addItems()
                                         result.Clear()
                                         lastUpdate = DateTime.Now
-                                        Thread.Sleep(10)
+
+                                        If DateTime.Now.Subtract(lastRefresh).TotalMilliseconds >= 25000 Then
+                                            UIHelper.OnUIThread(
+                                                Sub()
+                                                    Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                                                    view.Refresh()
+                                                End Sub)
+                                            lastRefresh = DateTime.Now
+                                        End If
                                     End If
                                     If cancellationToken.IsCancellationRequested Then Exit While
                                 Next
@@ -651,12 +671,23 @@ Public Class Folder
             ' add new items
             addItems()
 
+            If TypeOf Me Is SearchFolder Then
+                UIHelper.OnUIThread(
+                    Sub()
+                        Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                        view.Refresh()
+                    End Sub)
+            End If
+
             _isEnumerated = True
             _isLoaded = True
 
-            ' set and update HasSubFolders property
-            _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
-            Me.NotifyOfPropertyChange("HasSubFolders")
+            UIHelper.OnUIThread(
+                Sub()
+                    ' set and update HasSubFolders property
+                    _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
+                    Me.NotifyOfPropertyChange("HasSubFolders")
+                End Sub)
         End If
     End Sub
 

@@ -50,10 +50,6 @@ Namespace Controls
 
             'Me.PART_ListBox.Visibility = Visibility.Hidden
 
-            If Not Me.Folder Is Nothing Then
-                Me.MakeBinding(Me.Folder)
-            End If
-
             AddHandler Shell.Settings.PropertyChanged,
                 Sub(s As Object, e As PropertyChangedEventArgs)
                     Select Case e.PropertyName
@@ -71,31 +67,7 @@ Namespace Controls
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
                         _isLoaded = True
-
-                        _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListBox)
-                        _selectionHelper.SelectionChanged =
-                            Sub()
-                                If Not Me.Folder Is Nothing AndAlso Not _ignoreSelection Then _
-                                    Me.SelectedItems = _selectionHelper.SelectedItems
-                            End Sub
-                        _selectionHelper.SetSelectedItems(Me.SelectedItems)
-
-                        _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
-                        AddHandler _scrollViewer.ScrollChanged,
-                            Sub(s2 As Object, e2 As ScrollChangedEventArgs)
-                                If Not Me.Folder Is Nothing Then
-                                    _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
-                                    _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
-                                End If
-                                'UIHelper.OnUIThreadAsync(
-                                'Sub()
-                                '    GC.Collect()
-                                'End Sub)
-                            End Sub
-
-                        If Not Me.Folder Is Nothing Then
-                            setGrouping(Me.Folder)
-                        End If
+                        Me.PART_ListBox_Loaded()
                     End If
                 End Sub
 
@@ -105,6 +77,33 @@ Namespace Controls
             AddHandler Me.PART_ListBox.MouseLeave, AddressOf OnListViewMouseLeave
             AddHandler Me.PreviewKeyDown, AddressOf OnListViewKeyDown
             AddHandler Me.PreviewTextInput, AddressOf OnListViewTextInput
+        End Sub
+
+        Protected Overridable Sub PART_ListBox_Loaded()
+            If Not Me.Folder Is Nothing Then
+                Me.MakeBinding(Me.Folder)
+            End If
+
+            _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListBox)
+            _selectionHelper.SelectionChanged =
+                Sub()
+                    If Not Me.Folder Is Nothing AndAlso Not _ignoreSelection Then _
+                                    Me.SelectedItems = _selectionHelper.SelectedItems
+                End Sub
+            _selectionHelper.SetSelectedItems(Me.SelectedItems)
+
+            _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
+            AddHandler _scrollViewer.ScrollChanged,
+                Sub(s2 As Object, e2 As ScrollChangedEventArgs)
+                    If Not Me.Folder Is Nothing Then
+                        _lastScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
+                        _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
+                    End If
+                End Sub
+
+            If Not Me.Folder Is Nothing Then
+                setGrouping(Me.Folder)
+            End If
         End Sub
 
         Public Sub SetSelectedItemsSoft(items As IEnumerable(Of Item))
