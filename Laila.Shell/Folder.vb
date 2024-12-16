@@ -406,6 +406,7 @@ Public Class Folder
 
         Dim result As Dictionary(Of String, Item) = New Dictionary(Of String, Item)
         Dim newFullPaths As HashSet(Of String) = New HashSet(Of String)()
+        Dim doRefreshAfter As Boolean
 
         If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
 
@@ -465,6 +466,8 @@ Public Class Folder
                                     For Each item In removedItems
                                         Me.Items.Remove(item)
                                     Next
+
+                                    doRefreshAfter = True
                                 End If
 
                                 ' restore sorting/grouping
@@ -478,6 +481,8 @@ Public Class Folder
                                 For Each item In result.Values
                                     Me.Items.Add(item)
                                 Next
+
+                                doRefreshAfter = True
                             End If
                         End Sub)
 
@@ -671,7 +676,7 @@ Public Class Folder
             ' add new items
             addItems()
 
-            If TypeOf Me Is SearchFolder Then
+            If doRefreshAfter Then
                 UIHelper.OnUIThread(
                     Sub()
                         Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
