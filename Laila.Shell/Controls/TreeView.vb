@@ -70,7 +70,7 @@ Namespace Controls
                             UIHelper.OnUIThread(
                                 Sub()
                                     If Not Me.Items.FirstOrDefault(Function(i) _
-                                    Not i.disposedValue AndAlso Not i.IsReadyForDispose _
+                                    Not i.disposedValue _
                                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
                                     AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                                     AndAlso Not i.FullPath Is Nothing _
@@ -84,7 +84,7 @@ Namespace Controls
                                 Sub()
                                     If Not Me.Items.FirstOrDefault(
                                         Function(i)
-                                            If Not i.disposedValue AndAlso Not i.IsReadyForDispose Then
+                                            If Not i.disposedValue Then
                                                 Return i.TreeRootIndex >= TreeRootSection.PINNED _
                                                     AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                                                     AndAlso (Not i.Parent Is Nothing _
@@ -663,7 +663,7 @@ Namespace Controls
                             Me.Items.Remove(item)
                         Next
                         For Each item In collection.Where(Function(i) _
-                            Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso TypeOf i Is Folder)
+                            Not i.disposedValue AndAlso TypeOf i Is Folder)
                             Me.Items.Add(item)
                         Next
                     End If

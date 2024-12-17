@@ -252,7 +252,7 @@ Public Class Item
 
     Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
         SyncLock _refreshLock
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose AndAlso Not _shellItem2 Is Nothing Then
+            If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                 Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
                 If Not newShellItem Is Nothing Then
@@ -336,7 +336,7 @@ Public Class Item
     Public ReadOnly Property FullPath As String
         Get
             Try
-                If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+                If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
                 End If
             Catch ex As Exception
@@ -349,15 +349,15 @@ Public Class Item
 
     Public ReadOnly Property Parent As Folder
         Get
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose _
-                AndAlso _parent Is Nothing AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
+            If Not disposedValue _
+                AndAlso (_parent Is Nothing OrElse _parent.disposedValue) _
+                AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
                 Dim parentShellItem2 As IShellItem2
                 If Not Me.ShellItem2 Is Nothing Then
                     Me.ShellItem2.GetParent(parentShellItem2)
                 End If
                 If Not parentShellItem2 Is Nothing Then
-                    _parent = New Folder(parentShellItem2, Nothing, True, True)
-                    _parent.Items.Add(Me)
+                    _parent = New Folder(parentShellItem2, Nothing, False, True)
                 End If
             End If
             Return _parent
@@ -1100,7 +1100,7 @@ Public Class Item
     End Function
 
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
-        If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+        If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM
                     If Me.Pidl?.Equals(e.Item1.Pidl) Then

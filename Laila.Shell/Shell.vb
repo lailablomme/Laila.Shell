@@ -201,7 +201,7 @@ Public Class Shell
             End Sub
 
         ' add special folders
-        Shell.SlowTaskQueue.Add(
+        Shell.MTATaskQueue.Add(
             Sub()
                 addSpecialFolder("Desktop", Folder.FromDesktop())
                 addSpecialFolder("Home", Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, False))

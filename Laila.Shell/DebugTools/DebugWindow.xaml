@@ -10,62 +10,13 @@
         <ListView x:Name="listView" PreviewMouseDoubleClick="listView_PreviewMouseDoubleClick">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="DisplayName" DisplayMemberBinding="{Binding DisplayName}" />
-                    <GridViewColumn Header="IsRootFolder" DisplayMemberBinding="{Binding IsRootFolder}" />
-                    <GridViewColumn Header="IsExpanded" DisplayMemberBinding="{Binding IsExpanded}" />
-                    <GridViewColumn Header="IsActiveInFolderView" DisplayMemberBinding="{Binding IsActiveInFolderView}" />
-                    <GridViewColumn Header="IsVisibleInAddressBar" DisplayMemberBinding="{Binding IsVisibleInAddressBar}" />
+                    <GridViewColumn Header="DisplayName" DisplayMemberBinding="{Binding Item1.DisplayName}" />
+                    <GridViewColumn Header="IsRootFolder" DisplayMemberBinding="{Binding Item1.IsRootFolder}" />
+                    <GridViewColumn Header="IsExpanded" DisplayMemberBinding="{Binding Item1.IsExpanded}" />
+                    <GridViewColumn Header="IsActiveInFolderView" DisplayMemberBinding="{Binding Item1.IsActiveInFolderView}" />
+                    <GridViewColumn Header="IsVisibleInAddressBar" DisplayMemberBinding="{Binding Item1.IsVisibleInAddressBar}" />
                 </GridView>
             </ListView.View>
-            <ListView.Resources>
-                <Style TargetType="ListViewItem">
-                    <Setter Property="SnapsToDevicePixels" Value="True"/>
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderBrush" Value="Transparent"/>
-                    <Setter Property="BorderThickness" Value="1"/>
-                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                    <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="ListViewItem">
-                                <Grid Height="20">
-                                    <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
-                                                            Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
-                                        <GridViewRowPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
-                                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                                    </Border>
-                                </Grid>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
-                                        <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
-                                    </Trigger>
-                                    <MultiTrigger>
-                                        <MultiTrigger.Conditions>
-                                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
-                                            <Condition Property="IsSelected" Value="True"/>
-                                        </MultiTrigger.Conditions>
-                                        <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Background}"/>
-                                        <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Border}"/>
-                                    </MultiTrigger>
-                                    <MultiTrigger>
-                                        <MultiTrigger.Conditions>
-                                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
-                                            <Condition Property="IsSelected" Value="True"/>
-                                        </MultiTrigger.Conditions>
-                                        <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Background}"/>
-                                        <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
-                                    </MultiTrigger>
-                                    <Trigger Property="IsEnabled" Value="False">
-                                        <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </ListView.Resources>
         </ListView>
     </Grid>
 </Window>
