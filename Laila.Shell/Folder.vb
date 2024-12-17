@@ -506,8 +506,10 @@ Public Class Folder
                                                 End If
 
                                                 Try
-                                                    item.Item1.Refresh(item.Item2.ShellItem2)
-                                                    item.Item2._shellItem2 = Nothing
+                                                    SyncLock item.Item2._refreshLock
+                                                        item.Item1.Refresh(item.Item2.ShellItem2)
+                                                        item.Item2._shellItem2 = Nothing
+                                                    End SyncLock
                                                     item.Item2._parent = Nothing
 
                                                     ' preload sort property
