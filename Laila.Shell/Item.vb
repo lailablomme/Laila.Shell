@@ -1126,14 +1126,14 @@ Public Class Item
                             End Sub)
                     End If
                 Case SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
-                    If Me.IsDrive AndAlso Me.FullPath?.Equals(e.Item1.FullPath) Then
+                    If Me.IsDrive AndAlso Me.FullPath?.Equals(e.Item1?.FullPath) Then
                         Shell.MTATaskQueue.Add(
                             Sub()
                                 Me.Refresh()
                             End Sub)
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
-                    If Me.FullPath.Equals(e.Item1.FullPath) Then
+                    If Me.FullPath?.Equals(e.Item1?.FullPath) Then
                         Dim oldPidl As Pidl = Me.Pidl
                         _pidl = e.Item2.Pidl.Clone()
                         oldPidl.Dispose()
