@@ -95,14 +95,17 @@ Public Class Folder
     '    End Try
     'End Function
 
-    Public Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder)
-        MyBase.New(shellItem2, parent, True)
+    ''' <summary>
+    ''' This one is used for creating the root Desktop folder only.
+    ''' </summary>
+    Friend Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder)
+        MyBase.New(shellItem2, parent, True, True)
 
         _shellFolder = shellFolder
     End Sub
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean)
-        MyBase.New(shellItem2, parent, doKeepAlive)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean)
+        MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates)
     End Sub
 
     Public ReadOnly Property ShellFolder As IShellFolder
@@ -171,15 +174,6 @@ Public Class Folder
         Set(value As Boolean)
             SetValue(_isInHistory, value)
         End Set
-    End Property
-
-    Public Overrides ReadOnly Property IsReadyToPrepareForDispose As Boolean
-        Get
-            Return MyBase.IsReadyToPrepareForDispose AndAlso Not _parent.IsExpanded _
-                AndAlso Not _parent.IsVisibleInAddressBar _
-                AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsVisibleInAddressBar _
-                AndAlso Not Me.IsVisibleInTree
-        End Get
     End Property
 
     Public Overrides ReadOnly Property IsReadyForDispose As Boolean
@@ -384,10 +378,10 @@ Public Class Folder
 
         enumerateItems(flags,
             Function(shellItem2 As IShellItem2)
-                Return New Folder(shellItem2, Me, False)
+                Return New Folder(shellItem2, Me, False, True)
             End Function,
             Function(shellItem2 As IShellItem2)
-                Return New Item(shellItem2, Me, False)
+                Return New Item(shellItem2, Me, False, True)
             End Function, cts.Token)
 
         If _enumerationCancellationTokenSource.Equals(cts) Then
@@ -414,7 +408,7 @@ Public Class Folder
             UIHelper.OnUIThread(
                 Sub()
                     For Each item In Me.Items
-                        item.MaybePrepareForDispose()
+                        item._parent = Nothing
                     Next
                     Me.Items.Clear()
                 End Sub)
@@ -444,9 +438,6 @@ Public Class Folder
 
                                 If _items.Count = 0 Then
                                     ' add items
-                                    For Each item In _items
-                                        item.MaybePrepareForDispose()
-                                    Next
                                     _items.AddRange(result.Values)
                                 Else
                                     Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
@@ -517,7 +508,7 @@ Public Class Folder
                                                 Try
                                                     item.Item1.Refresh(item.Item2.ShellItem2)
                                                     item.Item2._shellItem2 = Nothing
-                                                    item.Item2.MaybePrepareForDispose()
+                                                    item.Item2._parent = Nothing
 
                                                     ' preload sort property
                                                     If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
@@ -863,7 +854,7 @@ Public Class Folder
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso Not i.IsReadyForDispose AndAlso i.FullPath?.Equals(e.Item1.FullPath)) Is Nothing Then
                                     Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1.Pidl.AbsolutePIDL, Nothing)
                                     If Not item1 Is Nothing Then
-                                        _items.Add(New Folder(item1, Me, False))
+                                        _items.Add(New Folder(item1, Me, False, True))
                                     End If
                                 End If
                             End Sub)

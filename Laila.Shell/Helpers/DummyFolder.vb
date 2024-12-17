@@ -9,7 +9,7 @@ Public Class DummyFolder
     Private _displayName As String
 
     Public Sub New(displayName As String, logicalParent As Folder, Optional id As String = Nothing)
-        MyBase.New(Nothing, logicalParent, True)
+        MyBase.New(Nothing, logicalParent, True, False)
 
         _displayName = displayName
         _fullPath = "dummy" & If(id Is Nothing, Guid.NewGuid().ToString(), id)

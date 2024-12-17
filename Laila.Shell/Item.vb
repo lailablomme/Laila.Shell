@@ -32,32 +32,34 @@ Public Class Item
     Friend _refreshLock As Object = New Object()
     Protected _doKeepAlive As Boolean
 
-    Public Shared Function FromParsingName(parsingName As String, parent As Folder, doKeepAlive As Boolean) As Item
+    Public Shared Function FromParsingName(parsingName As String, parent As Folder,
+                                           Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
         Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, parent, doKeepAlive)
+                Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates)
             Else
-                Return New Item(shellItem2, parent, doKeepAlive)
+                Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates)
             End If
         Else
             Return Nothing
         End If
     End Function
 
-    Public Shared Function FromPidl(pidl As IntPtr, parent As Folder, doKeepAlive As Boolean) As Item
+    Public Shared Function FromPidl(pidl As IntPtr, parent As Folder,
+                                    Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
         Dim shellItem2 As IShellItem2, shellFolder As IShellFolder
         shellItem2 = GetIShellItem2FromPidl(pidl, parent?.ShellFolder)
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, parent, doKeepAlive)
+                Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates)
             Else
-                Return New Item(shellItem2, parent, doKeepAlive)
+                Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates)
             End If
         Else
             Return Nothing
@@ -119,13 +121,15 @@ Public Class Item
     '    Return fullPath
     'End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean)
         _objectCount += 1
         _objectId = _objectCount
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
         If Not shellItem2 Is Nothing Then
-            AddHandler Shell.Notification, AddressOf shell_Notification
+            If doHookUpdates Then
+                AddHandler Shell.Notification, AddressOf shell_Notification
+            End If
             Shell.AddToItemsCache(Me)
         Else
             _fullPath = String.Empty
@@ -164,26 +168,6 @@ Public Class Item
             Return Me.TreeRootIndex <> -1 OrElse (Not _parent Is Nothing AndAlso _parent.IsExpanded)
         End Get
     End Property
-
-    Public Overridable ReadOnly Property IsReadyToPrepareForDispose As Boolean
-        Get
-            Return Not _parent Is Nothing AndAlso Not _parent.IsActiveInFolderView
-        End Get
-    End Property
-
-    Public Overridable Sub MaybePrepareForDispose()
-        If Me.IsReadyToPrepareForDispose Then
-            ' remove from parent collection
-            UIHelper.OnUIThreadAsync(
-                Sub()
-                    If Not _parent Is Nothing Then
-                        _parent._items.Remove(Me)
-                        _parent._isEnumerated = False
-                        _parent = Nothing
-                    End If
-                End Sub)
-        End If
-    End Sub
 
     Public Overridable ReadOnly Property IsReadyForDispose As Boolean
         Get
@@ -268,7 +252,7 @@ Public Class Item
 
     Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
         SyncLock _refreshLock
-            If Not disposedValue AndAlso Not Me.IsReadyForDispose Then
+            If Not disposedValue AndAlso Not Me.IsReadyForDispose AndAlso Not _shellItem2 Is Nothing Then
                 Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
                 If Not newShellItem Is Nothing Then
@@ -372,7 +356,7 @@ Public Class Item
                     Me.ShellItem2.GetParent(parentShellItem2)
                 End If
                 If Not parentShellItem2 Is Nothing Then
-                    _parent = New Folder(parentShellItem2, Nothing, True)
+                    _parent = New Folder(parentShellItem2, Nothing, True, True)
                     _parent.Items.Add(Me)
                 End If
             End If

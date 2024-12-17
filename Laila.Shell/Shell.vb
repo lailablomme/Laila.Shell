@@ -130,7 +130,6 @@ Public Class Shell
 
                             ' try to dispose the item
                             If Not item Is Nothing AndAlso Not item.Item1 Is Nothing AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
-                                item.Item1.MaybePrepareForDispose()
                                 item.Item1.MaybeDispose()
                             End If
 
@@ -347,11 +346,11 @@ Public Class Shell
                 Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
 
                 If Not IntPtr.Zero.Equals(pidl1) Then
-                    e.Item1 = Item.FromPidl(pidl1, Nothing, True)
+                    e.Item1 = Item.FromPidl(pidl1, Nothing, True, False)
                     Debug.WriteLine(BitConverter.ToString(e.Item1.Pidl.Bytes) & vbCrLf & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")")
                 End If
                 If Not IntPtr.Zero.Equals(pidl2) Then
-                    e.Item2 = Item.FromPidl(pidl2, Nothing, True)
+                    e.Item2 = Item.FromPidl(pidl2, Nothing, True, False)
                     Debug.WriteLine(BitConverter.ToString(e.Item2.Pidl.Bytes) & vbCrLf & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")")
                 End If
 

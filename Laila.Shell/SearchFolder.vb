@@ -42,7 +42,7 @@ Public Class SearchFolder
     End Function
 
     Public Sub New(shellItem2 As IShellItem2)
-        MyBase.New(shellItem2, Nothing, False)
+        MyBase.New(shellItem2, Nothing, False, True)
 
         Me.View = "Content"
         Me.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Value"

@@ -78,9 +78,9 @@ Public Class Pidl
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If attr.HasFlag(SFGAO.FOLDER) Then
-                result.Add(New Folder(shellItem2, Nothing, True))
+                result.Add(New Folder(shellItem2, Nothing, True, True))
             Else
-                result.Add(New Item(shellItem2, Nothing, True))
+                result.Add(New Item(shellItem2, Nothing, True, True))
             End If
         Next
 
