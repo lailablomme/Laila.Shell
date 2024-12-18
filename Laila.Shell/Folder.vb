@@ -45,6 +45,8 @@ Public Class Folder
     Private _isEmpty As Boolean
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _threadsLock As Object = New Object()
+    Private _isListening As Boolean
+    Private _listeningLock As Object = New Object()
 
     Public Shared Function FromDesktop() As Folder
         Dim ptr As IntPtr, pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -102,6 +104,9 @@ Public Class Folder
         MyBase.New(shellItem2, parent, True, True)
 
         _shellFolder = shellFolder
+
+        Shell.StartListening(Me)
+        _isListening = True
     End Sub
 
     Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean)
@@ -536,6 +541,13 @@ Public Class Folder
                 End If
             End Sub
 
+        SyncLock _listeningLock
+            If Not _isListening AndAlso Not _shellItem2 Is Nothing Then
+                Shell.StartListening(Me)
+                _isListening = True
+            End If
+        End SyncLock
+
         Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
         Functions.CreateBindCtx(0, bindCtxPtr)
         bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
@@ -891,9 +903,15 @@ Public Class Folder
     End Function
 
     Protected Overrides Sub Dispose(disposing As Boolean)
-        MyBase.Dispose(disposing)
-
         If Not disposedValue Then
+            MyBase.Dispose(disposing)
+
+            SyncLock _listeningLock
+                If _isListening Then
+                    Shell.StopListening(Me)
+                End If
+            End SyncLock
+
             If Not _enumerationCancellationTokenSource Is Nothing Then
                 _enumerationCancellationTokenSource.Cancel()
             End If

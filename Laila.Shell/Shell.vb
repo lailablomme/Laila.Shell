@@ -28,7 +28,6 @@ Public Class Shell
     Private Shared _cancellationTokenSourcesLock As Object = New Object()
     Private Shared _mainWindow As Window
 
-    Private Shared _hNotify As UInt32
     Friend Shared _w As Window
     Public Shared _hwnd As IntPtr
 
@@ -179,20 +178,6 @@ Public Class Shell
         source.AddHook(AddressOf hwndHook)
         _hwnd = hwnd
 
-        ' start receiving notifications
-        Dim entry(0) As SHChangeNotifyEntry
-        entry(0).pIdl = IntPtr.Zero
-        entry(0).Recursively = True
-
-        _hNotify = Functions.SHChangeNotifyRegister(
-            hwnd,
-            SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel Or SHCNRF.RecursiveInterrupt,
-            SHCNE.ALLEVENTS,
-            WM.USER + 1,
-            1,
-            entry)
-
-
         Dim addSpecialFolder As Action(Of String, Item) =
             Sub(name As String, item As Item)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
@@ -285,9 +270,6 @@ Public Class Shell
     ''' </summary>
     Public Shared Sub Shutdown()
         If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-            ' stop receiving notifications
-            Functions.SHChangeNotifyDeregister(_hNotify)
-
             ' clean up menus and their threads
             SyncLock _menuCacheLock
                 For Each item In Shell.MenuCache.ToList()
@@ -483,6 +465,58 @@ Public Class Shell
     Friend Shared Sub RemoveFromCancellationTokenSources(item As CancellationTokenSource)
         SyncLock _cancellationTokenSourcesLock
             _cancellationTokenSources.Remove(item)
+        End SyncLock
+    End Sub
+
+    Private Shared _listenersLock As Object = New Object()
+    Private Shared _listenerhNotifies As Dictionary(Of String, UInt32) = New Dictionary(Of String, UInt32)()
+    Private Shared _listenerCount As Dictionary(Of String, Integer) = New Dictionary(Of String, Integer)()
+
+    Public Shared Sub StartListening(folder As Folder)
+        Dim mustStart As Boolean
+        SyncLock _listenersLock
+            mustStart = Not _listenerhNotifies.ContainsKey(folder.FullPath)
+        End SyncLock
+
+        If mustStart Then
+            ' start receiving notifications
+            Dim entry(0) As SHChangeNotifyEntry
+            entry(0).pIdl = folder.Pidl.AbsolutePIDL
+            entry(0).Recursively = False
+
+            Dim hNotify As UInt32 =
+                Functions.SHChangeNotifyRegister(
+                    _hwnd,
+                    SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
+                    SHCNE.ALLEVENTS,
+                    WM.USER + 1,
+                    1,
+                    entry)
+
+            SyncLock _listenersLock
+                _listenerhNotifies.Add(folder.FullPath, hNotify)
+                _listenerCount.Add(folder.FullPath, 1)
+            End SyncLock
+        Else
+            SyncLock _listenersLock
+                _listenerCount(folder.FullPath) += 1
+            End SyncLock
+        End If
+    End Sub
+
+    Public Shared Sub StopListening(folder As Folder)
+        SyncLock _listenersLock
+            Dim count As Integer
+            If _listenerCount.TryGetValue(folder.FullPath, count) Then
+                If count = 1 Then
+                    ' stop receiving notifications
+                    Functions.SHChangeNotifyDeregister(_listenerhNotifies(folder.FullPath))
+                    _listenerhNotifies.Remove(folder.FullPath)
+                    _listenerCount.Remove(folder.FullPath)
+                Else
+                    _listenerCount(folder.FullPath) -= 1
+                End If
+            End If
         End SyncLock
     End Sub
 End Class
