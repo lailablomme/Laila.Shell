@@ -438,7 +438,7 @@ Public Class Folder
 
                                 If _items.Count = 0 Then
                                     ' add items
-                                    _items.AddRange(result.Values)
+                                    _items.UpdateRange(result.Values, Nothing)
                                 Else
                                     Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
                                     For Each item In _items
@@ -449,16 +449,8 @@ Public Class Folder
                                     existingItems = _items.Where(Function(i) newFullPaths.Contains(If(i.FullPath, i.DisplayName))) _
                                         .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(i.FullPath, i.DisplayName)))).ToArray()
 
-                                    ' add items
-                                    For Each item In newItems
-                                        Me.Items.Add(item)
-                                    Next
-                                    ' remove items
-                                    For Each item In removedItems
-                                        Me.Items.Remove(item)
-                                    Next
-
-                                    doRefreshAfter = True
+                                    ' add/remove items
+                                    _items.UpdateRange(newItems, removedItems)
                                 End If
 
                                 ' restore sorting/grouping

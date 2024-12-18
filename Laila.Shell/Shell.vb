@@ -186,7 +186,7 @@ Public Class Shell
 
         _hNotify = Functions.SHChangeNotifyRegister(
             hwnd,
-            SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
+            SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel Or SHCNRF.RecursiveInterrupt,
             SHCNE.ALLEVENTS,
             WM.USER + 1,
             1,
