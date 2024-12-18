@@ -41,6 +41,24 @@ Namespace Behaviors
             End If
         End Sub
 
+        Public Shared ReadOnly LeftMarginProperty As DependencyProperty = DependencyProperty.Register("LeftMargin", GetType(Double), GetType(GridViewExtBehavior), New FrameworkPropertyMetadata(Convert.ToDouble(0), AddressOf OnLeftMarginChanged))
+
+        Public Property LeftMargin() As Double
+            Get
+                Return GetValue(LeftMarginProperty)
+            End Get
+            Set(ByVal value As Double)
+                SetValue(LeftMarginProperty, value)
+            End Set
+        End Property
+
+        Shared Sub OnLeftMarginChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim gveb As GridViewExtBehavior = d
+            If Not gveb._marginColumnDefinition Is Nothing Then
+                gveb._marginColumnDefinition.Width = New GridLength(e.NewValue + MARGIN_LEFT, GridUnitType.Pixel)
+            End If
+        End Sub
+
         Public Shared ReadOnly ColumnIndexProperty As DependencyProperty =
             DependencyProperty.RegisterAttached("ColumnIndex", GetType(Integer), GetType(GridViewExtBehavior), New UIPropertyMetadata(-1))
 
@@ -175,6 +193,7 @@ Namespace Behaviors
         Private _isInitialResize As Boolean = True
         Private _resizeTimer As Timer
         Private _gridViewState As GridViewStateData
+        Private _marginColumnDefinition As ColumnDefinition
 
         Public ReadOnly Property ColumnIndexFor(propertyName As String) As Integer
             Get
@@ -226,7 +245,8 @@ Namespace Behaviors
                    _headerRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
                    Dim headerRowScrollViewer As ScrollViewer = _headerRowPresenter.Parent
                    Dim headerRowGrid As Grid = New Grid()
-                   headerRowGrid.ColumnDefinitions.Add(New ColumnDefinition() With {.Width = New GridLength(MARGIN_LEFT, GridUnitType.Pixel)})
+                   _marginColumnDefinition = New ColumnDefinition() With {.Width = New GridLength(Me.LeftMargin + MARGIN_LEFT, GridUnitType.Pixel)}
+                   headerRowGrid.ColumnDefinitions.Add(_marginColumnDefinition)
                    headerRowGrid.ColumnDefinitions.Add(New ColumnDefinition() With {.Width = New GridLength(1, GridUnitType.Star)})
                    headerRowScrollViewer.Content = New AdornerDecorator() With {.Child = headerRowGrid}
                    _headerRowPresenter.SetValue(Grid.ColumnProperty, 1)

@@ -61,9 +61,6 @@ Namespace Controls
             Dim template As DataTemplate = New DataTemplate()
 
             Dim gridFactory As FrameworkElementFactory = New FrameworkElementFactory(GetType(Grid))
-            Dim columnDefinition0 As FrameworkElementFactory = New FrameworkElementFactory(GetType(ColumnDefinition))
-            columnDefinition0.SetValue(ColumnDefinition.WidthProperty, New GridLength(1, GridUnitType.Auto))
-            gridFactory.AppendChild(columnDefinition0)
             Dim columnDefinition1 As FrameworkElementFactory = New FrameworkElementFactory(GetType(ColumnDefinition))
             columnDefinition1.SetValue(ColumnDefinition.WidthProperty, New GridLength(1, GridUnitType.Auto))
             gridFactory.AppendChild(columnDefinition1)
@@ -74,137 +71,10 @@ Namespace Controls
             columnDefinition3.SetValue(ColumnDefinition.WidthProperty, New GridLength(1, GridUnitType.Star))
             gridFactory.AppendChild(columnDefinition3)
 
-            Dim checkBoxFactory As FrameworkElementFactory = New FrameworkElementFactory(GetType(CheckBox))
-            checkBoxFactory.SetValue(CheckBox.VerticalAlignmentProperty, VerticalAlignment.Center)
-            checkBoxFactory.SetValue(CheckBox.MarginProperty, New Thickness(-2, 0, 4, 0))
-            checkBoxFactory.SetValue(CheckBox.IsCheckedProperty, New Binding() With {
-                    .Path = New PropertyPath("IsSelected"),
-                    .RelativeSource = New RelativeSource() With {
-                        .Mode = RelativeSourceMode.FindAncestor,
-                        .AncestorType = GetType(ListViewItem)
-                    }
-                })
-            Dim checkBoxTrigger0 As MultiDataTrigger = New MultiDataTrigger()
-            checkBoxTrigger0.Conditions.Add(New Condition() With {
-                .Binding = New Binding() With {
-                    .Path = New PropertyPath("HasCheckBoxesForItems"),
-                    .Source = Me
-                },
-                .Value = True
-            })
-            checkBoxTrigger0.Conditions.Add(New Condition() With {
-                .Binding = New Binding() With {
-                    .Path = New PropertyPath(String.Format("ColumnIndexFor[PropertiesByKeyAsText[{0}].Value]", column.PROPERTYKEY.ToString())),
-                    .Source = Me.PART_Ext,
-                    .Mode = BindingMode.OneWay
-                },
-                .Value = 0
-            })
-            checkBoxTrigger0.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Hidden))
-            Dim checkBoxTrigger1 As MultiDataTrigger = New MultiDataTrigger()
-            checkBoxTrigger1.Conditions.Add(New Condition() With {
-                .Binding = New Binding() With {
-                    .Path = New PropertyPath("HasCheckBoxesForItems"),
-                    .Source = Me
-                },
-                .Value = True
-            })
-            checkBoxTrigger1.Conditions.Add(New Condition() With {
-                .Binding = New Binding() With {
-                    .Path = New PropertyPath("IsMouseOver"),
-                    .RelativeSource = New RelativeSource() With {
-                        .Mode = RelativeSourceMode.FindAncestor,
-                        .AncestorType = GetType(ListViewItem)
-                    }
-                },
-                .Value = True
-            })
-            checkBoxTrigger1.Conditions.Add(New Condition() With {
-                .Binding = New Binding() With {
-                    .Path = New PropertyPath(String.Format("ColumnIndexFor[PropertiesByKeyAsText[{0}].Value]", column.PROPERTYKEY.ToString())),
-                    .Source = Me.PART_Ext,
-                    .Mode = BindingMode.OneWay
-                },
-                .Value = 0
-            })
-            checkBoxTrigger1.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Visible))
-            Dim checkBoxTrigger2 As MultiDataTrigger = New MultiDataTrigger()
-            checkBoxTrigger2.Conditions.Add(New Condition() With {
-                .Binding = New Binding() With {
-                    .Path = New PropertyPath("HasCheckBoxesForItems"),
-                    .Source = Me
-                },
-                .Value = True
-            })
-            checkBoxTrigger2.Conditions.Add(New Condition() With {
-                .Binding = New Binding() With {
-                    .Path = New PropertyPath("IsSelected"),
-                    .RelativeSource = New RelativeSource() With {
-                        .Mode = RelativeSourceMode.FindAncestor,
-                        .AncestorType = GetType(ListViewItem)
-                    }
-                },
-                .Value = True
-            })
-            checkBoxTrigger2.Conditions.Add(New Condition() With {
-                .Binding = New Binding() With {
-                    .Path = New PropertyPath(String.Format("ColumnIndexFor[PropertiesByKeyAsText[{0}].Value]", column.PROPERTYKEY.ToString())),
-                    .Source = Me.PART_Ext,
-                    .Mode = BindingMode.OneWay
-                },
-                .Value = 0
-            })
-            checkBoxTrigger2.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Visible))
-            'Dim checkBoxTrigger3 As MultiDataTrigger = New MultiDataTrigger()
-            'checkBoxTrigger3.Conditions.Add(New Condition() With {
-            '    .Binding = New Binding() With {
-            '        .Path = New PropertyPath("HasCheckBoxesForItems"),
-            '        .Source = Me
-            '    },
-            '    .Value = True
-            '})
-            'checkBoxTrigger3.Conditions.Add(New Condition() With {
-            '    .Binding = New Binding() With {
-            '        .Path = New PropertyPath("IsMouseOver"),
-            '        .RelativeSource = New RelativeSource() With {
-            '            .Mode = RelativeSourceMode.FindAncestor,
-            '            .AncestorType = GetType(ListViewItem)
-            '        }
-            '    },
-            '    .Value = False
-            '})
-            'checkBoxTrigger3.Conditions.Add(New Condition() With {
-            '    .Binding = New Binding() With {
-            '        .Path = New PropertyPath("IsSelected"),
-            '        .RelativeSource = New RelativeSource() With {
-            '            .Mode = RelativeSourceMode.FindAncestor,
-            '            .AncestorType = GetType(ListViewItem)
-            '        }
-            '    },
-            '    .Value = False
-            '})
-            'checkBoxTrigger3.Conditions.Add(New Condition() With {
-            '    .Binding = New Binding() With {
-            '        .Path = New PropertyPath(String.Format("ColumnIndexFor[PropertiesByKeyAsText[{0}].Value]", column.PROPERTYKEY.ToString())),
-            '        .ElementName = "ext",
-            '        .Mode = BindingMode.OneWay
-            '    },
-            '    .Value = 0
-            '})
-            'checkBoxTrigger3.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Hidden))
-            Dim checkBoxStyle As Style = New Style(GetType(CheckBox))
-            checkBoxStyle.Setters.Add(New Setter(CheckBox.VisibilityProperty, Visibility.Collapsed))
-            checkBoxStyle.Triggers.Add(checkBoxTrigger0)
-            checkBoxStyle.Triggers.Add(checkBoxTrigger1)
-            checkBoxStyle.Triggers.Add(checkBoxTrigger2)
-            'checkBoxStyle.Triggers.Add(checkBoxTrigger3)
-            checkBoxFactory.SetValue(CheckBox.StyleProperty, checkBoxStyle)
-            gridFactory.AppendChild(checkBoxFactory)
-
             Dim getIconFactory As Func(Of String, FrameworkElementFactory) =
                 Function(bindTo As String) As FrameworkElementFactory
                     Dim imageFactory1 As FrameworkElementFactory = New FrameworkElementFactory(GetType(Image))
-                    imageFactory1.SetValue(Grid.ColumnProperty, 1)
+                    imageFactory1.SetValue(Grid.ColumnProperty, 0)
                     imageFactory1.SetValue(Image.MarginProperty, New Thickness(0, 0, 4, 0))
                     imageFactory1.SetValue(Image.WidthProperty, Convert.ToDouble(16))
                     imageFactory1.SetValue(Image.HeightProperty, Convert.ToDouble(16))
@@ -274,7 +144,7 @@ Namespace Controls
                 itemsPanelTemplate.VisualTree = stackPanelFactory
 
                 Dim itemsControlFactory As FrameworkElementFactory = New FrameworkElementFactory(GetType(ItemsControl))
-                itemsControlFactory.SetValue(Grid.ColumnProperty, 2)
+                itemsControlFactory.SetValue(Grid.ColumnProperty, 1)
                 itemsControlFactory.SetValue(ItemsControl.ItemsPanelProperty, itemsPanelTemplate)
                 itemsControlFactory.SetValue(ItemsControl.ItemTemplateProperty, itemTemplate)
                 itemsControlFactory.SetValue(ItemsControl.WidthProperty, New Binding() With {
@@ -293,7 +163,7 @@ Namespace Controls
             End If
 
             Dim textBlockFactory As FrameworkElementFactory = New FrameworkElementFactory(GetType(TextBlock))
-            textBlockFactory.SetValue(Grid.ColumnProperty, 3)
+            textBlockFactory.SetValue(Grid.ColumnProperty, 2)
             textBlockFactory.SetValue(Grid.ColumnSpanProperty, 2)
             textBlockFactory.SetValue(TextBlock.TextAlignmentProperty, column.Alignment)
             textBlockFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center)

@@ -12,6 +12,19 @@ Namespace Behaviors
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(GridViewShellBehavior), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
+        Private Const CHECKBOX_WIDTH As Double = 14
+
+        Public Sub New()
+            Me.LeftMargin = If(Shell.Settings.DoShowCheckBoxesToSelect, CHECKBOX_WIDTH, 0)
+            AddHandler Shell.Settings.PropertyChanged,
+                Sub(s As Object, e As PropertyChangedEventArgs)
+                    Select Case e.PropertyName
+                        Case "DoShowCheckBoxesToSelect"
+                            Me.LeftMargin = If(Shell.Settings.DoShowCheckBoxesToSelect, CHECKBOX_WIDTH, 0)
+                    End Select
+                End Sub
+        End Sub
+
         Protected Overrides Sub SetSort(propertyName As String, direction As ListSortDirection)
             Using Shell.OverrideCursor(Cursors.Wait)
                 If Not Me.Folder Is Nothing Then

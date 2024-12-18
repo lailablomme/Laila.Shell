@@ -25,7 +25,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:DetailsView}">
-                    <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                    <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True"
+                          Tag="{Binding HasCheckBoxesForItems, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" FocusVisualStyle="{x:Null}"  
                                   VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
@@ -36,7 +37,7 @@
                                     <VirtualizingStackPanel Margin="20,0,0,0" x:Name="PART_StackPanel" />
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
-                            <ListView.Resources>
+                            <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="SnapsToDevicePixels" Value="True"/>
                                     <Setter Property="Background" Value="Transparent"/>
@@ -51,12 +52,53 @@
                                                     <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
                                                             Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True"
                                                             Tag="{Binding ., RelativeSource={RelativeSource Mode=TemplatedParent}}">
-                                                        <GridViewRowPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
-                                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
+                                                                      VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                                      Visibility="Collapsed"/>
+                                                            <GridViewRowPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" 
+                                                                                  x:Name="rowPresenter" />
+                                                        </Grid>
                                                     </Border>
                                                 </Grid>
                                                 <ControlTemplate.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Tag, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=Self}}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                                            <Setter Property="GridViewRowPresenter.Margin" TargetName="rowPresenter" Value="14,0,0,0" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Tag, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                                            <Setter Property="GridViewRowPresenter.Margin" TargetName="rowPresenter" Value="14,0,0,0" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Tag, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="False" />
+                                                            <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=Self}}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Hidden" />
+                                                            <Setter Property="GridViewRowPresenter.Margin" TargetName="rowPresenter" Value="14,0,0,0" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
                                                     <Trigger Property="IsMouseOver" Value="True">
                                                         <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
                                                         <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
@@ -85,6 +127,8 @@
                                         </Setter.Value>
                                     </Setter>
                                 </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.ContainerStyle>
                                         <Style TargetType="{x:Type GroupItem}">
