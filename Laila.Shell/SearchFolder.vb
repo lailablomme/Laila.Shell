@@ -1,4 +1,5 @@
 ﻿Imports System.Drawing
+Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Media
 
@@ -54,10 +55,12 @@ Public Class SearchFolder
             _enumerationCancellationTokenSource.Cancel()
         End If
         Me.Terms = terms
-        If Not _shellItem2 Is Nothing Then
-            _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
-        End If
+        Dim oldShellItem2 As IShellItem2 = _shellItem2
         _shellItem2 = getShellItem(terms, Me.Parent)
+        If Not oldShellItem2 Is Nothing Then
+            '_shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
+            Marshal.ReleaseComObject(oldShellItem2)
+        End If
         For Each item In _items.ToList()
             item._parent = Nothing
         Next
@@ -69,6 +72,8 @@ Public Class SearchFolder
     Public Sub CancelUpdate()
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
+            Marshal.ReleaseComObject(_shellItem2)
+            _shellItem2 = Nothing
         End If
     End Sub
 
