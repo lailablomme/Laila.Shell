@@ -381,7 +381,7 @@
                                 </StackPanel>
                             </ToggleButton>
                             <ToggleButton x:Name="ViewMenuButton" Margin="0,0,5,0" Checked="ViewMenuButton_Checked"
-                                          Tag="{Binding ., ElementName=menus}" ToolTip="Options for sorting and grouping.">
+                                          Tag="{Binding ., ElementName=menus}" ToolTip="Layout and view options.">
                                 <ToggleButton.Style>
                                     <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
                                     </Style>
