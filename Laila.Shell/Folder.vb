@@ -5,7 +5,7 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
-Imports System.Windows.Forms
+Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Threading
 Imports Laila.Shell.Helpers
@@ -318,17 +318,21 @@ Public Class Folder
     End Property
 
     Public Sub RefreshItems()
-        Me.IsRefreshingItems = True
-        _isEnumerated = False
-        Me.GetItems()
-        Me.IsRefreshingItems = False
+        Using Shell.OverrideCursor(Cursors.AppStarting)
+            Me.IsRefreshingItems = True
+            _isEnumerated = False
+            Me.GetItems()
+            Me.IsRefreshingItems = False
+        End Using
     End Sub
 
     Public Async Function RefreshItemsAsync() As Task
-        Me.IsRefreshingItems = True
-        _isEnumerated = False
-        Await GetItemsAsync()
-        Me.IsRefreshingItems = False
+        Using Shell.OverrideCursor(Cursors.AppStarting)
+            Me.IsRefreshingItems = True
+            _isEnumerated = False
+            Await GetItemsAsync()
+            Me.IsRefreshingItems = False
+        End Using
     End Function
 
     Public Overridable Function GetItems() As List(Of Item)

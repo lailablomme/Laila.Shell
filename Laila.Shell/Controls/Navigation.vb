@@ -1,4 +1,5 @@
 ﻿Imports System.Windows
+Imports System.Windows.Input
 Imports Laila.Shell.Helpers
 
 Namespace Controls
@@ -85,24 +86,30 @@ Namespace Controls
         End Property
 
         Public Sub Back()
-            _isFolderChanging = True
-            _pointer -= 1
-            Me.Folder = _list(_pointer)
-            _isFolderChanging = False
+            Using Shell.OverrideCursor(Cursors.Wait)
+                _isFolderChanging = True
+                _pointer -= 1
+                Me.Folder = _list(_pointer)
+                _isFolderChanging = False
+            End Using
         End Sub
 
         Public Sub Forward()
-            _isFolderChanging = True
-            _pointer += 1
-            Me.Folder = _list(_pointer)
-            _isFolderChanging = False
+            Using Shell.OverrideCursor(Cursors.Wait)
+                _isFolderChanging = True
+                _pointer += 1
+                Me.Folder = _list(_pointer)
+                _isFolderChanging = False
+            End Using
         End Sub
 
         Public Sub Up()
-            Dim parent As Folder = Me.Folder.Parent
-            parent.LastScrollOffset = New Point()
-            parent.IsInHistory = True
-            Me.Folder = parent
+            Using Shell.OverrideCursor(Cursors.Wait)
+                Dim parent As Folder = Me.Folder.Parent
+                parent.LastScrollOffset = New Point()
+                parent.IsInHistory = True
+                Me.Folder = parent
+            End Using
         End Sub
 
         Friend Sub OnFolderChangedInternal()
