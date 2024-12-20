@@ -472,42 +472,53 @@ Namespace Behaviors
                     GridViewColumnHeaderGlyphAdorner.Remove(ch, "GridViewExtBehavior.Sort")
                 Next
 
-                Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
-                If Not view Is Nothing AndAlso (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
-                    OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
-                    AndAlso view.SortDescriptions.Count > 0 Then
-                    Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
-                    Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
-                    If Not currentSortedColumnHeader Is Nothing Then
-                        If currentSort.Direction = ListSortDirection.Ascending Then
-                            GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
+                Dim currentSortedColumnHeader As GridViewColumnHeader = Me.GetCurrentSortedColumnHeader()
+                If Not currentSortedColumnHeader Is Nothing Then
+                    If Me.GetCurrentSortDirection() = ListSortDirection.Ascending Then
+                        GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
                                "pack://application:,,,/Laila.Shell;component/Images/sortasc.png", HorizontalAlignment.Center)
-                        Else
-                            GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
+                    Else
+                        GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
                                "pack://application:,,,/Laila.Shell;component/Images/sortdesc.png", HorizontalAlignment.Center)
-                        End If
                     End If
                 End If
             End If
         End Sub
 
-        Protected Function GetCurrentSortedColumnHeader() As GridViewColumnHeader
+        Protected Overridable Function GetCurrentSortPropertyName() As String
             Dim view As ICollectionView = _listView.Items
-            Dim currentSort As SortDescription
             If (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
                 OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
                 AndAlso view.SortDescriptions.Count > 0 Then
-                currentSort = view.SortDescriptions(view.SortDescriptions.Count - 1)
+                Return view.SortDescriptions(view.SortDescriptions.Count - 1).PropertyName
+            Else
+                Return Nothing
+            End If
+        End Function
 
+        Protected Overridable Function GetCurrentSortDirection() As ListSortDirection
+            Dim view As ICollectionView = _listView.Items
+            If (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
+                OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
+                AndAlso view.SortDescriptions.Count > 0 Then
+                Return view.SortDescriptions(view.SortDescriptions.Count - 1).Direction
+            Else
+                Return Nothing
+            End If
+        End Function
+
+        Protected Function GetCurrentSortedColumnHeader() As GridViewColumnHeader
+            Dim currentSortPropertyName As String = Me.GetCurrentSortPropertyName()
+            If Not String.IsNullOrWhiteSpace(currentSortPropertyName) Then
                 Dim result As GridViewColumnHeader =
                     UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter) _
                         .FirstOrDefault(Function(h) Not h.Column Is Nothing _
-                            AndAlso (EqualityComparer(Of String).Default.Equals(GetSortPropertyName(h.Column), currentSort.PropertyName)))
+                            AndAlso (EqualityComparer(Of String).Default.Equals(GetSortPropertyName(h.Column), currentSortPropertyName)))
                 If result Is Nothing Then
                     result =
                     UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter) _
                         .FirstOrDefault(Function(h) Not h.Column Is Nothing _
-                            AndAlso (EqualityComparer(Of String).Default.Equals(GetPropertyName(h.Column), currentSort.PropertyName)))
+                            AndAlso (EqualityComparer(Of String).Default.Equals(GetPropertyName(h.Column), currentSortPropertyName)))
                 End If
                 Return result
             Else
@@ -591,15 +602,12 @@ Namespace Behaviors
                             If String.IsNullOrEmpty(propertyName) Then
                                 propertyName = GetPropertyName(column.Column)
                             End If
-                            If view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count Then
-                                Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
-                                If currentSort.PropertyName = propertyName Then
-                                    ResetSortDescriptions(view)
+                            If Me.GetCurrentSortPropertyName() = propertyName Then
+                                ResetSortDescriptions(view)
 
-                                    Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
-                                    If Not currentSortedColumnHeader Is Nothing Then
-                                        GridViewColumnHeaderGlyphAdorner.Remove(currentSortedColumnHeader, "GridViewSort")
-                                    End If
+                                Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
+                                If Not currentSortedColumnHeader Is Nothing Then
+                                    GridViewColumnHeaderGlyphAdorner.Remove(currentSortedColumnHeader, "GridViewSort")
                                 End If
                             End If
                         End If
@@ -807,13 +815,10 @@ Namespace Behaviors
                 _gridViewState.Columns.Add(columnState)
             Next
 
-            Dim view As ICollectionView = _listView.Items
-            If (String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) _
-                OrElse view.SortDescriptions.Count > Me.ColumnsIn.PrimarySortProperties.Split(",").Count) _
-                AndAlso view.SortDescriptions.Count > 0 Then
-                Dim currentSort As SortDescription = view.SortDescriptions(view.SortDescriptions.Count - 1)
-                _gridViewState.SortPropertyName = currentSort.PropertyName
-                _gridViewState.SortDirection = currentSort.Direction
+            Dim currentSortPropertyName As String = Me.GetCurrentSortPropertyName()
+            If Not String.IsNullOrWhiteSpace(currentSortPropertyName) Then
+                _gridViewState.SortPropertyName = currentSortPropertyName
+                _gridViewState.SortDirection = Me.GetCurrentSortDirection()
             End If
             _gridViewState.GroupByPropertyName = _groupByPropertyName
 

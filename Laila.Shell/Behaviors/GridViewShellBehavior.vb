@@ -57,6 +57,22 @@ Namespace Behaviors
 
         End Sub
 
+        Protected Overrides Function GetCurrentSortDirection() As ListSortDirection
+            If Not Me.Folder Is Nothing Then
+                Return Me.Folder.ItemsSortDirection
+            Else
+                Return ListSortDirection.Ascending
+            End If
+        End Function
+
+        Protected Overrides Function GetCurrentSortPropertyName() As String
+            If Not Me.Folder Is Nothing Then
+                Return Me.Folder.ItemsSortPropertyName
+            Else
+                Return Nothing
+            End If
+        End Function
+
         Protected Overrides Sub SetGrouping(propertyName As String)
             If Not Me.Folder Is Nothing Then
                 Me.Folder.ItemsGroupByPropertyName = propertyName

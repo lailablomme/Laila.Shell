@@ -1,6 +1,6 @@
 ﻿Namespace Helpers
-    Public Class TreeViewStringComparer
-        Inherits StringComparer
+    Public Class StringComparer
+        Inherits System.StringComparer
 
         Public Overrides Function Compare(x As String, y As String) As Integer
             Return String.Compare(x, y, StringComparison.OrdinalIgnoreCase)

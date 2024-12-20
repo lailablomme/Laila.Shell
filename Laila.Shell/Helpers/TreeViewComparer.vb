@@ -1,15 +1,15 @@
 ﻿Imports System.ComponentModel
 
 Namespace Helpers
-    Public Class TreeViewPropertyComparer
+    Public Class TreeViewComparer
         Implements IComparer
 
         Private ReadOnly _propertyName As String
-        Private ReadOnly _comparer As TreeViewStringComparer
+        Private ReadOnly _comparer As StringComparer
 
         Public Sub New(propertyName As String)
             _propertyName = propertyName
-            _comparer = New TreeViewStringComparer()
+            _comparer = New StringComparer()
         End Sub
 
         Public Function Compare(x As Object, y As Object) As Integer Implements IComparer.Compare

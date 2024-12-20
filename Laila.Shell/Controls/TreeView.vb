@@ -44,7 +44,7 @@ Namespace Controls
 
             Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
             view.Filter = AddressOf filter
-            CType(view, ListCollectionView).CustomSort = New TreeViewPropertyComparer("TreeSortKey")
+            CType(view, ListCollectionView).CustomSort = New TreeViewComparer("TreeSortKey")
             AddHandler Me.Items.CollectionChanged, AddressOf items_CollectionChanged
 
             AddHandler Shell.ShuttingDown,
