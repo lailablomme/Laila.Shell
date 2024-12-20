@@ -64,11 +64,11 @@ Public Class Pidl
         ' read parent
         Dim offset As UInt32 = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32)) ' parent
         Dim parentShellFolder As IShellFolder
+        Dim parentFolder As Folder
 
         If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) <> 0 Then
-            Using parentFolder = CType(Item.FromPidl(IntPtr.Add(start, offset), Nothing, True), Folder)
-                parentShellFolder = parentFolder.ShellFolder
-            End Using
+            parentFolder = CType(Item.FromPidl(IntPtr.Add(start, offset), Nothing, True), Folder)
+            parentShellFolder = parentFolder.ShellFolder
         End If
 
         ' read items
@@ -83,6 +83,10 @@ Public Class Pidl
                 result.Add(New Item(shellItem2, Nothing, True, True))
             End If
         Next
+
+        If Not parentFolder Is Nothing Then
+            parentFolder.Dispose()
+        End If
 
         Return result
     End Function
