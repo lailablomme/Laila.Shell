@@ -283,6 +283,15 @@ Public Class Shell
             ' cancel threads
             _shutDownTokensSource.Cancel()
 
+            ' stop receiving notifications
+            SyncLock _listenersLock
+                For Each item In _listenerhNotifies.ToList()
+                    Functions.SHChangeNotifyDeregister(item.Value)
+                    _listenerhNotifies.Remove(item.Key)
+                    _listenerCount.Remove(item.Key)
+                Next
+            End SyncLock
+
             ' clean up folder threads
             SyncLock _cancellationTokenSourcesLock
                 For Each item In _cancellationTokenSources.ToList()
@@ -473,6 +482,10 @@ Public Class Shell
     Private Shared _listenerCount As Dictionary(Of String, Integer) = New Dictionary(Of String, Integer)()
 
     Public Shared Sub StartListening(folder As Folder)
+        If Shell.ShuttingDownToken.IsCancellationRequested Then
+            Return
+        End If
+
         Dim mustStart As Boolean
         SyncLock _listenersLock
             mustStart = Not _listenerhNotifies.ContainsKey(folder.FullPath)
