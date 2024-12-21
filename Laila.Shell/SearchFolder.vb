@@ -36,7 +36,7 @@ Public Class SearchFolder
         Dim resolvedCond As ICondition
         qs.Resolve(cond, &H40, st, resolvedCond)
         factory.SetCondition(resolvedCond)
-        factory.SetDisplayName("Search in " & parent.DisplayName)
+        factory.SetDisplayName("Search results for " & parent.DisplayName)
         Dim shellItem As IShellItem2
         factory.GetShellItem(GetType(IShellItem2).GUID, shellItem)
         Return shellItem
