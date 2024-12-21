@@ -55,9 +55,9 @@ Namespace Helpers
             If propertyName = "ItemNameDisplaySortValue" Then
                 Return item.ItemNameDisplaySortValue
             ElseIf propertyName.StartsWith("PropertiesByKeyAsText[") Then
-                Return item.PropertiesByKeyAsText(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1)).Value
+                Return item.PropertiesByKeyAsText(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1))?.Value
             ElseIf propertyName.StartsWith("PropertiesByCanonicalName[") Then
-                Return item.PropertiesByCanonicalName(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1)).Value
+                Return item.PropertiesByCanonicalName(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1))?.Value
             Else
                 Throw New NotSupportedException()
             End If
@@ -67,9 +67,9 @@ Namespace Helpers
             If propertyName = "ItemNameDisplaySortValue" Then
                 Return item.ItemNameDisplaySortValue
             ElseIf propertyName.StartsWith("PropertiesByKeyAsText[") Then
-                Return item.PropertiesByKeyAsText(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1)).Text
+                Return item.PropertiesByKeyAsText(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1))?.Text
             ElseIf propertyName.StartsWith("PropertiesByCanonicalName[") Then
-                Return item.PropertiesByCanonicalName(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1)).Text
+                Return item.PropertiesByCanonicalName(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1))?.Text
             Else
                 Throw New NotSupportedException()
             End If

@@ -31,6 +31,7 @@ Public Class Item
     Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Friend _refreshLock As Object = New Object()
     Protected _doKeepAlive As Boolean
+    Private _contentViewModeProperties() As [Property]
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
@@ -221,28 +222,25 @@ Public Class Item
         End Get
     End Property
 
-    Protected Overridable Sub MakeNewShellItem()
-        Dim ptr As IntPtr
+    Protected Overridable Function GetNewShellItem() As IShellItem2
+        Dim ptr As IntPtr, result As IShellItem2
         Try
-            Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
+            Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
             If IntPtr.Zero.Equals(ptr) Then
-                Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
+                Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
             End If
             If Not IntPtr.Zero.Equals(ptr) Then
-                If Not _shellItem2 Is Nothing Then
-                    _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
-                End If
-                _shellItem2 = Marshal.GetObjectForIUnknown(ptr)
-                _shellItem2.Update(IntPtr.Zero)
-                _shellItem2.Update(IntPtr.Zero)
-                _shellItem2.Update(IntPtr.Zero)
+                result = Marshal.GetObjectForIUnknown(ptr)
+                result.Update(IntPtr.Zero)
+                Return result
             End If
         Finally
             If Not IntPtr.Zero.Equals(ptr) Then
                 Marshal.Release(ptr)
             End If
         End Try
-    End Sub
+        Return Nothing
+    End Function
 
     Public ReadOnly Property TypeAsString As String
         Get
@@ -255,13 +253,13 @@ Public Class Item
             If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                 Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
+                If Not _shellItem2 Is Nothing Then
+                    _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
+                End If
                 If Not newShellItem Is Nothing Then
-                    If Not _shellItem2 Is Nothing Then
-                        _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
-                    End If
                     _shellItem2 = newShellItem
                 ElseIf Not _shellItem2 Is Nothing Then
-                    Me.MakeNewShellItem()
+                    _shellItem2 = Me.GetNewShellItem()
                 End If
 
                 Dim oldPropertiesByKey As Dictionary(Of String, [Property])
@@ -756,7 +754,7 @@ Public Class Item
 
     Public ReadOnly Property ContentViewModeProperties As [Property]()
         Get
-            If Not disposedValue Then
+            If Not disposedValue AndAlso _contentViewModeProperties Is Nothing Then
                 Dim propList As String
                 If _parent Is Nothing OrElse Not TypeOf _parent Is SearchFolder Then
                     propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForBrowse").Text
@@ -777,9 +775,9 @@ Public Class Item
                     While properties.Count < 6
                         properties.Add(Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"))
                     End While
-                    Return properties.ToArray()
+                    _contentViewModeProperties = properties.ToArray()
                 Else
-                    Return {
+                    _contentViewModeProperties = {
                         Me.PropertiesByCanonicalName("System.ItemNameDisplay"),
                         Me.PropertiesByCanonicalName("System.ItemTypeText"),
                         Me.PropertiesByCanonicalName("System.LayoutPattern.PlaceHolder"),
@@ -788,9 +786,9 @@ Public Class Item
                         Me.PropertiesByCanonicalName("System.Size")
                     }
                 End If
-            Else
-                Return Nothing
             End If
+
+            Return _contentViewModeProperties
         End Get
     End Property
 

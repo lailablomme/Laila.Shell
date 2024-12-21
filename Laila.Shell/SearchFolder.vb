@@ -7,10 +7,9 @@ Public Class SearchFolder
     Inherits Folder
 
     Public Property Terms As String
-    Public Property Parent As Folder
 
     Public Shared Function FromTerms(terms As String, parent As Folder) As SearchFolder
-        Return New SearchFolder(getShellItem(terms, parent)) With {.View = "Content", .Terms = terms, .Parent = parent}
+        Return New SearchFolder(getShellItem(terms, parent), parent) With {.View = "Content", .Terms = terms}
     End Function
 
     Private Shared Function getShellItem(terms As String, parent As Folder) As IShellItem2
@@ -42,8 +41,8 @@ Public Class SearchFolder
         Return shellItem
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2)
-        MyBase.New(shellItem2, Nothing, False, True)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
+        MyBase.New(shellItem2, parent, False, True)
 
         Me.View = "Content"
         Me.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Value"
@@ -51,25 +50,33 @@ Public Class SearchFolder
     End Sub
 
     Public Sub Update(terms As String)
+        ' cancel enumeration
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
         End If
+
+        ' set new terms
         Me.Terms = terms
+
+        ' destroy shellitem to cancel enumeration
         Dim oldShellItem2 As IShellItem2 = _shellItem2
         _shellItem2 = getShellItem(terms, Me.Parent)
         If Not oldShellItem2 Is Nothing Then
-            '_shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
             Marshal.ReleaseComObject(oldShellItem2)
         End If
+
+        ' clear collection
         For Each item In _items.ToList()
             item._parent = Nothing
         Next
         _items.Clear()
+
+        ' re-enumerate
         _isEnumerated = False
         Me.GetItemsAsync()
     End Sub
 
-    Public Sub CancelUpdate()
+    Public Sub Destroy()
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
             Marshal.ReleaseComObject(_shellItem2)
@@ -77,7 +84,7 @@ Public Class SearchFolder
         End If
     End Sub
 
-    Protected Overrides Sub MakeNewShellItem()
-        _shellItem2 = getShellItem(Me.Terms, Me.Parent)
-    End Sub
+    Protected Overrides Function GetNewShellItem() As IShellItem2
+        Return getShellItem(Me.Terms, Me.Parent)
+    End Function
 End Class

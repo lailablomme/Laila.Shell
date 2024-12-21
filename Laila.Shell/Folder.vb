@@ -398,8 +398,16 @@ Public Class Folder
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
         Else
+            If Not TypeOf Me Is SearchFolder Then
+                ' destroy shellitem to cancel enumeration
+                Dim oldShellItem2 As IShellItem2 = _shellItem2
+                _shellItem2 = Me.GetNewShellItem()
+                If Not oldShellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(oldShellItem2)
+                End If
+            End If
             Debug.WriteLine("End loading " & Me.DisplayName & " (didn't mark completion)" & If(cts.Token.IsCancellationRequested, " cancelled", ""))
-        End If
+            End If
     End Sub
 
     Protected Sub enumerateItems(flags As UInt32,
@@ -431,20 +439,6 @@ Public Class Folder
                     UIHelper.OnUIThread(
                         Sub()
                             If Not TypeOf Me Is SearchFolder Then
-                                Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-
-                                ' save sorting/grouping
-                                Dim sortPropertyName As String = Me.ItemsSortPropertyName
-                                Dim sortDirection As ListSortDirection = Me.ItemsSortDirection
-                                Dim groupByPropertyName As String = Me.ItemsGroupByPropertyName
-
-                                ' disable sorting grouping
-                                Me.IsNotifying = False
-                                Using view.DeferRefresh()
-                                    Me.ItemsSortPropertyName = Nothing
-                                    Me.ItemsGroupByPropertyName = Nothing
-                                End Using
-
                                 If _items.Count = 0 Then
                                     ' add items
                                     _items.UpdateRange(result.Values, Nothing)
@@ -461,19 +455,11 @@ Public Class Folder
                                     ' add/remove items
                                     _items.UpdateRange(newItems, removedItems)
                                 End If
-
-                                ' restore sorting/grouping
-                                Using view.DeferRefresh()
-                                    Me.ItemsSortPropertyName = sortPropertyName
-                                    Me.ItemsSortDirection = sortDirection
-                                    Me.ItemsGroupByPropertyName = groupByPropertyName
-                                End Using
-                                Me.IsNotifying = True
                             Else
-                                Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-
+                                ' add items
+                                Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                 For Each item In result.Values
-                                    _items.InsertSorted(item, view.CustomSort)
+                                    _items.InsertSorted(item, c)
                                 Next
                             End If
                         End Sub)
@@ -622,6 +608,11 @@ Public Class Folder
                                         End If
                                     End If
 
+                                    ' preload Content view mode properties
+                                    If Me.View = "Content" Then
+                                        Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
+                                    End If
+
                                     ' preload System_StorageProviderUIStatus images
                                     'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
                                     '    = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
@@ -639,15 +630,6 @@ Public Class Folder
                                         addItems()
                                         result.Clear()
                                         lastUpdate = DateTime.Now
-
-                                        If DateTime.Now.Subtract(lastRefresh).TotalMilliseconds >= 25000 Then
-                                            UIHelper.OnUIThread(
-                                                Sub()
-                                                    Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                                                    view.Refresh()
-                                                End Sub)
-                                            lastRefresh = DateTime.Now
-                                        End If
                                     End If
                                     If cancellationToken.IsCancellationRequested Then Exit While
                                 Next

@@ -43,7 +43,7 @@ Namespace Controls
                                     ElseIf Not String.IsNullOrWhiteSpace(Me.PART_TextBox.Text) Then
                                         CType(Me.Folder, SearchFolder).Update(Me.PART_TextBox.Text)
                                     Else
-                                        CType(Me.Folder, SearchFolder).CancelUpdate()
+                                        CType(Me.Folder, SearchFolder).Destroy()
                                         Me.Navigation.Back()
                                     End If
                                 End Sub)
@@ -53,7 +53,7 @@ Namespace Controls
             AddHandler Me.PART_CancelButton.Click,
                 Sub(s As Object, e As EventArgs)
                     Me.PART_TextBox.Text = Nothing
-                    CType(Me.Folder, SearchFolder).CancelUpdate()
+                    CType(Me.Folder, SearchFolder).Destroy()
                     Me.Navigation.Back()
                 End Sub
         End Sub

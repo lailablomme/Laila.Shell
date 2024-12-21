@@ -514,23 +514,27 @@ Namespace Controls
                 bfv.MakeBinding(e.NewValue)
 
                 ' load items
-                Await newValue.GetItemsAsync()
+                If Not TypeOf newValue Is SearchFolder Then
+                    Await newValue.GetItemsAsync()
+                End If
 
                 ' async because otherwise we're a tad too early
                 UIHelper.OnUIThreadAsync(
                     Async Sub()
-                        Await Task.Delay(50)
+                        If Not TypeOf newValue Is SearchFolder Then
+                            Await Task.Delay(50)
 
-                        ' restore folder scroll position
-                        bfv._lastScrollOffset = newValue.LastScrollOffset
-                        bfv._lastScrollSize = newValue.LastScrollSize
-                        bfv._scrollViewer.ScrollToHorizontalOffset(If(bfv._lastScrollSize.Width = 0, 0, bfv._lastScrollOffset.X * bfv._scrollViewer.ScrollableWidth / bfv._lastScrollSize.Width))
-                        bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv._lastScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
+                            ' restore folder scroll position
+                            bfv._lastScrollOffset = newValue.LastScrollOffset
+                            bfv._lastScrollSize = newValue.LastScrollSize
+                            bfv._scrollViewer.ScrollToHorizontalOffset(If(bfv._lastScrollSize.Width = 0, 0, bfv._lastScrollOffset.X * bfv._scrollViewer.ScrollableWidth / bfv._lastScrollSize.Width))
+                            bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv._lastScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
+                        End If
 
                         ' show listview
                         bfv.PART_ListBox.Visibility = Visibility.Visible
                     End Sub, Threading.DispatcherPriority.ContextIdle)
-            End If
+                End If
 
             'bfv.IsLoading = False
         End Sub

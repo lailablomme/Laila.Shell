@@ -318,7 +318,9 @@ Namespace Controls
 
         Private Sub makeContextMenu(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             Dim parentFolderPidl As Pidl
-            If Not folder.Parent Is Nothing Then
+            If TypeOf folder Is SearchFolder Then
+                parentFolderPidl = Shell.Desktop.Pidl.Clone()
+            ElseIf Not folder.Parent Is Nothing Then
                 parentFolderPidl = folder.Parent.Pidl.Clone()
             End If
 

@@ -169,15 +169,17 @@
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
-                                                <ProgressBar Grid.Row="1" Maximum="100" Height="14" Margin="0,0,0,2"
-                                                             Value="{Binding PropertiesByCanonicalName[System.PercentFull].Value, 
-                                                                Mode=OneWay, Converter={StaticResource doubleConverter}}">
+                                                <ProgressBar Grid.Row="1" Maximum="100" Height="14" Margin="0,0,0,2">
                                                     <ProgressBar.Style>
                                                         <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
                                                             <Setter Property="ProgressBar.Visibility" Value="Collapsed" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsDrive}" Value="True">
                                                                     <Setter Property="ProgressBar.Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsDrive}" Value="True">
+                                                                    <Setter Property="ProgressBar.Value" Value="{Binding PropertiesByCanonicalName[System.PercentFull].Value, 
+                                                                                                                         Mode=OneWay, Converter={StaticResource doubleConverter}}" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
