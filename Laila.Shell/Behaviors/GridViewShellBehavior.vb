@@ -73,6 +73,14 @@ Namespace Behaviors
             End If
         End Function
 
+        Protected Overrides Function GetCurrentGroupByPropertyName() As String
+            If Not Me.Folder Is Nothing Then
+                Return Me.Folder.ItemsGroupByPropertyName
+            Else
+                Return Nothing
+            End If
+        End Function
+
         Protected Overrides Sub SetGrouping(propertyName As String)
             If Not Me.Folder Is Nothing Then
                 Me.Folder.ItemsGroupByPropertyName = propertyName

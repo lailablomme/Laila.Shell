@@ -187,7 +187,6 @@ Namespace Behaviors
         Private _activeColumns As List(Of ActiveColumnStateData)
         Private _dontWrite As Boolean = False
         Private _clickedColumn As GridViewColumn
-        Private _groupByPropertyName As String
         Private _scrollViewer As ScrollViewer
         Private _skipResize As Boolean
         Private _isInitialResize As Boolean = True
@@ -220,8 +219,8 @@ Namespace Behaviors
                     Sub()
                         _isInitialResize = True
                         _skipResize = False
-                        Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
-                        If Not view Is Nothing AndAlso view.Count = 0 Then
+                        Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
+                        If Not view Is Nothing AndAlso view.IsEmpty Then
                             resizeVisibleRows()
                         End If
                         UpdateSortGlyphs()
@@ -363,16 +362,18 @@ Namespace Behaviors
                 showHideColumns()
 
                 ' set sort from state
-                Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
-                ResetSortDescriptions(view)
-                If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(_gridViewState.SortPropertyName) Then
-                    Me.SetSort(_gridViewState.SortPropertyName, _gridViewState.SortDirection)
-                Else
-                    Dim initialSortPropertyName As String = GetSortPropertyName(_activeColumns(0).Column)
-                    If String.IsNullOrWhiteSpace(initialSortPropertyName) Then
-                        initialSortPropertyName = GetPropertyName(_activeColumns(0).Column)
+                If String.IsNullOrWhiteSpace(Me.GetCurrentSortPropertyName()) Then
+                    Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
+                    ResetSortDescriptions(view)
+                    If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(_gridViewState.SortPropertyName) Then
+                        Me.SetSort(_gridViewState.SortPropertyName, _gridViewState.SortDirection)
+                    Else
+                        Dim initialSortPropertyName As String = GetSortPropertyName(_activeColumns(0).Column)
+                        If String.IsNullOrWhiteSpace(initialSortPropertyName) Then
+                            initialSortPropertyName = GetPropertyName(_activeColumns(0).Column)
+                        End If
+                        Me.SetSort(initialSortPropertyName, ListSortDirection.Ascending)
                     End If
-                    Me.SetSort(initialSortPropertyName, ListSortDirection.Ascending)
                 End If
 
                 UpdateSortGlyphs()
@@ -394,15 +395,14 @@ Namespace Behaviors
                 Next
 
                 ' set initial group by
-                If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrWhiteSpace(_gridViewState.GroupByPropertyName) Then
-                    _groupByPropertyName = _gridViewState.GroupByPropertyName
-                    SetGrouping(_groupByPropertyName)
-                ElseIf Not String.IsNullOrWhiteSpace(Me.ColumnsIn.InitialGroupByPropertyName) Then
-                    _groupByPropertyName = Me.ColumnsIn.InitialGroupByPropertyName
-                    SetGrouping(_groupByPropertyName)
-                Else
-                    _groupByPropertyName = Nothing
-                    SetGrouping(_groupByPropertyName)
+                If String.IsNullOrWhiteSpace(Me.GetCurrentGroupByPropertyName()) Then
+                    If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrWhiteSpace(_gridViewState.GroupByPropertyName) Then
+                        SetGrouping(_gridViewState.GroupByPropertyName)
+                    ElseIf Not String.IsNullOrWhiteSpace(Me.ColumnsIn.InitialGroupByPropertyName) Then
+                        SetGrouping(Me.ColumnsIn.InitialGroupByPropertyName)
+                    Else
+                        SetGrouping(Nothing)
+                    End If
                 End If
             End If
         End Sub
@@ -484,6 +484,15 @@ Namespace Behaviors
                 End If
             End If
         End Sub
+
+        Protected Overridable Function GetCurrentGroupByPropertyName() As String
+            Dim view As ICollectionView = _listView.Items
+            If view.GroupDescriptions.Count > 0 AndAlso TypeOf view.GroupDescriptions(0) Is PropertyGroupDescription Then
+                Return CType(view.GroupDescriptions(0), PropertyGroupDescription).PropertyName
+            Else
+                Return Nothing
+            End If
+        End Function
 
         Protected Overridable Function GetCurrentSortPropertyName() As String
             Dim view As ICollectionView = _listView.Items
@@ -627,8 +636,7 @@ Namespace Behaviors
                     AddHandler groupMenuItem.Checked,
                         Sub(s2 As Object, e2 As EventArgs)
                             If Not _clickedColumn Is Nothing Then
-                                _groupByPropertyName = propertyName
-                                SetGrouping(_groupByPropertyName)
+                                SetGrouping(propertyName)
 
                                 RaiseEvent GroupByChanged(Me, New EventArgs())
 
@@ -639,8 +647,7 @@ Namespace Behaviors
                     AddHandler groupMenuItem.Unchecked,
                         Sub(s2 As Object, e2 As EventArgs)
                             If Not _clickedColumn Is Nothing Then
-                                _groupByPropertyName = Nothing
-                                SetGrouping(_groupByPropertyName)
+                                SetGrouping(Nothing)
 
                                 RaiseEvent GroupByChanged(Me, New EventArgs())
 
@@ -657,7 +664,7 @@ Namespace Behaviors
                     _clickedColumn = Nothing
                     If Not String.IsNullOrEmpty(propertyName) Then
                         groupMenuItem.IsEnabled = True
-                        groupMenuItem.IsChecked = _groupByPropertyName = propertyName
+                        groupMenuItem.IsChecked = Me.GetCurrentGroupByPropertyName() = propertyName
                     Else
                         groupMenuItem.IsEnabled = False
                         groupMenuItem.IsChecked = False
@@ -820,7 +827,7 @@ Namespace Behaviors
                 _gridViewState.SortPropertyName = currentSortPropertyName
                 _gridViewState.SortDirection = Me.GetCurrentSortDirection()
             End If
-            _gridViewState.GroupByPropertyName = _groupByPropertyName
+            _gridViewState.GroupByPropertyName = Me.GetCurrentGroupByPropertyName()
 
             Me.WriteState(Me.ColumnsIn.ViewName, _gridViewState)
         End Sub

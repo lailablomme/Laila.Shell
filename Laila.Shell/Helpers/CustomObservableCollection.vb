@@ -24,5 +24,38 @@ Namespace Helpers
 
             Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
         End Sub
+
+        Public Sub InsertSorted(newItem As T, comparer As IComparer)
+            ' Find the correct index using the comparer
+            Dim index As Integer = FindInsertionIndex(newItem, comparer)
+
+            ' Insert the item at the correct position
+            If index >= 0 AndAlso index <= Me.Items.Count Then
+                Me.Items.Insert(index, newItem)
+                Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newItem, index))
+            End If
+        End Sub
+
+        ' Find the correct index for insertion using the IComparer
+        Private Function FindInsertionIndex(item As T, comparer As IComparer) As Integer
+            Dim low As Integer = 0
+            Dim high As Integer = Me.Items.Count - 1
+
+            While low <= high
+                Dim mid As Integer = (low + high) \ 2
+                Dim comparisonResult As Integer = comparer.Compare(Me.Items(mid), item)
+
+                If comparisonResult = 0 Then
+                    Return mid ' Item already exists, return that index
+                ElseIf comparisonResult < 0 Then
+                    low = mid + 1
+                Else
+                    high = mid - 1
+                End If
+            End While
+
+            Return low ' Return the insertion index where the item should be inserted
+        End Function
+
     End Class
 End Namespace

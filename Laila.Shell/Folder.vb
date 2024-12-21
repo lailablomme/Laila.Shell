@@ -470,11 +470,11 @@ Public Class Folder
                                 End Using
                                 Me.IsNotifying = True
                             Else
-                                For Each item In result.Values
-                                    Me.Items.Add(item)
-                                Next
+                                Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Me.Items)
 
-                                doRefreshAfter = True
+                                For Each item In result.Values
+                                    _items.InsertSorted(item, view.CustomSort)
+                                Next
                             End If
                         End Sub)
 
