@@ -516,23 +516,25 @@ Public Class Shell
     End Sub
 
     Public Shared Function RunOnSTAThread(Of TResult)(action As Action(Of TaskCompletionSource(Of TResult)), maxRetries As Integer)
-        Dim tcs As New TaskCompletionSource(Of TResult)
-
-        Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        action.Invoke(tcs)
-                    Catch ex As Exception
-                        Debug.WriteLine("RunOnSTAThread: " & ex.Message)
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
+        Dim tcs As TaskCompletionSource(Of TResult)
         Dim didComplete As Boolean = False, numTries = 1
         While Not didComplete AndAlso numTries <= 3
             Try
+                tcs = New TaskCompletionSource(Of TResult)()
+                Shell.STATaskQueue.Add(
+                    Sub()
+                        Try
+                            action.Invoke(tcs)
+                        Catch ex As Exception
+                            Debug.WriteLine("RunOnSTAThread: " & ex.Message)
+                            tcs.SetException(ex)
+                        End Try
+                    End Sub)
                 tcs.Task.Wait(Shell.ShuttingDownToken)
                 didComplete = True
+                If numTries > 1 Then
+                    Debug.WriteLine("RunOnSTAThread succeeded after " & numTries & " tries")
+                End If
             Catch ex As Exception
                 numTries += 1
             End Try
