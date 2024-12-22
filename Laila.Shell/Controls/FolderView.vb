@@ -132,7 +132,7 @@ Namespace Controls
                     text &= String.Format("       {0} {1} selected", Me.SelectedItems.Count, If(Me.SelectedItems.Count = 1, "item", "items"))
                     Dim items As IEnumerable(Of Item) = Me.SelectedItems.ToList()
                     Dim tcs As New TaskCompletionSource()
-                    Shell.STATaskQueue.Add(
+                    Shell.MTATaskQueue.Add(
                         Sub()
                             Dim size As UInt64 = 0
                             For Each item In items

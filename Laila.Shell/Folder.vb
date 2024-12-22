@@ -22,7 +22,7 @@ Public Class Folder
     Private _isExpanded As Boolean
     Private _isLoading As Boolean
     Private _isRefreshingItems As Boolean
-    Friend _lock As Object = New Object()
+    Friend _lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private _isLoaded As Boolean
     Private _enumerationException As Exception
     Friend _isEnumerated As Boolean
@@ -157,6 +157,10 @@ Public Class Folder
         End Get
         Set(value As Boolean)
             SetValue(_isActiveInFolderView, value)
+
+            If Not value And TypeOf Me Is SearchFolder Then
+                Me.CancelEnumeration()
+            End If
         End Set
     End Property
 
@@ -270,22 +274,22 @@ Public Class Folder
             If Not disposedValue Then
                 Dim tcs As New TaskCompletionSource(Of Boolean)
 
-                Shell.STATaskQueue.Add(
-                    Sub()
-                        Try
-                            If _hasSubFolders.HasValue Then
-                                tcs.SetResult(_hasSubFolders.Value)
-                            ElseIf Not disposedValue Then
-                                Dim attr As SFGAO = SFGAO.HASSUBFOLDER
-                                Me.ShellItem2.GetAttributes(attr, attr)
-                                tcs.SetResult(attr.HasFlag(SFGAO.HASSUBFOLDER))
-                            Else
-                                tcs.SetResult(False)
-                            End If
-                        Catch ex As Exception
-                            tcs.SetException(ex)
-                        End Try
-                    End Sub)
+                Shell.MTATaskQueue.Add(
+                     Sub()
+                         Try
+                             If _hasSubFolders.HasValue Then
+                                 tcs.SetResult(_hasSubFolders.Value)
+                             ElseIf Not disposedValue Then
+                                 Dim attr As SFGAO = SFGAO.HASSUBFOLDER
+                                 Me.ShellItem2.GetAttributes(attr, attr)
+                                 tcs.SetResult(attr.HasFlag(SFGAO.HASSUBFOLDER))
+                             Else
+                                 tcs.SetResult(False)
+                             End If
+                         Catch ex As Exception
+                             tcs.SetException(ex)
+                         End Try
+                     End Sub)
 
                 tcs.Task.Wait(Shell.ShuttingDownToken)
                 If Not Shell.ShuttingDownToken.IsCancellationRequested Then
@@ -333,12 +337,15 @@ Public Class Folder
     End Function
 
     Public Overridable Function GetItems() As List(Of Item)
-        SyncLock _lock
+        _lock.Wait()
+        Try
             If Not _isEnumerated Then
                 enumerateItems(_items, False)
             End If
             Return _items.ToList()
-        End SyncLock
+        Finally
+            _lock.Release()
+        End Try
     End Function
 
     Public Overridable Async Function GetItemsAsync() As Task(Of List(Of Item))
@@ -346,15 +353,16 @@ Public Class Folder
 
         Shell.MTATaskQueue.Add(
             Sub()
+                _lock.Wait()
                 Try
-                    SyncLock _lock
-                        If Not _isEnumerated Then
-                            enumerateItems(_items, True)
-                        End If
-                        tcs.SetResult(_items.ToList())
-                    End SyncLock
+                    If Not _isEnumerated Then
+                        enumerateItems(_items, True)
+                    End If
+                    tcs.SetResult(_items.ToList())
                 Catch ex As Exception
                     tcs.SetException(ex)
+                Finally
+                    _lock.Release()
                 End Try
             End Sub)
         't.SetApartmentState(ApartmentState.MTA)
@@ -366,6 +374,12 @@ Public Class Folder
         End If
         Return Nothing
     End Function
+
+    Friend Sub CancelEnumeration()
+        If Not _enumerationCancellationTokenSource Is Nothing Then
+            _enumerationCancellationTokenSource.Cancel()
+        End If
+    End Sub
 
     Protected Sub enumerateItems(items As ObservableCollection(Of Item), Optional isAsync As Boolean = False)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
@@ -543,8 +557,7 @@ Public Class Folder
             End Try
 
             If Not propertyBag Is Nothing Then
-                Dim var As PROPVARIANT
-                Dim enumShellItems As IEnumShellItems
+                Dim var As PROPVARIANT, enumShellItems As IEnumShellItems
                 Try
                     var.vt = VarEnum.VT_UI4
                     var.union.uintVal = flags

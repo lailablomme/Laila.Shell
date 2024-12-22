@@ -468,6 +468,7 @@ Public Class Item
                         If Not result Is Nothing Then result.Freeze()
                         tcs.SetResult(result)
                     Catch ex As Exception
+                        Debug.WriteLine("IconAsync: " & ex.Message)
                         tcs.SetException(ex)
                     End Try
                 End Sub)

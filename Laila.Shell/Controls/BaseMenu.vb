@@ -44,18 +44,18 @@ Namespace Controls
             Shell.AddToMenuCache(Me)
 
             _staThread2 = New Thread(
-            Sub()
-                Try
-                    ' Process tasks from the queue
-                    Functions.OleInitialize(IntPtr.Zero)
-                    For Each task In _taskQueue.GetConsumingEnumerable(_disposeToken)
-                        task.Invoke()
-                    Next
-                Catch ex As OperationCanceledException
-                    Debug.WriteLine("Menu TaskQueue was canceled.")
-                End Try
-                Functions.OleUninitialize()
-            End Sub)
+                Sub()
+                    Try
+                        ' Process tasks from the queue
+                        Functions.OleInitialize(IntPtr.Zero)
+                        For Each task In _taskQueue.GetConsumingEnumerable(_disposeToken)
+                            task.Invoke()
+                        Next
+                    Catch ex As OperationCanceledException
+                        Debug.WriteLine("Menu TaskQueue was canceled.")
+                    End Try
+                    Functions.OleUninitialize()
+                End Sub)
             _staThread2.SetApartmentState(ApartmentState.STA)
             _staThread2.Start()
 

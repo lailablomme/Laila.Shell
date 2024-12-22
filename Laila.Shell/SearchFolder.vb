@@ -58,12 +58,15 @@ Public Class SearchFolder
         ' set new terms
         Me.Terms = terms
 
-        ' destroy shellitem to cancel enumeration
+        ' get new shellitem
         Dim oldShellItem2 As IShellItem2 = _shellItem2
         _shellItem2 = getShellItem(terms, Me.Parent)
         If Not oldShellItem2 Is Nothing Then
             Marshal.ReleaseComObject(oldShellItem2)
         End If
+
+        ' allow new enum
+        _lock.Release()
 
         ' clear collection
         For Each item In _items.ToList()
@@ -74,14 +77,6 @@ Public Class SearchFolder
         ' re-enumerate
         _isEnumerated = False
         Me.GetItemsAsync()
-    End Sub
-
-    Public Sub Destroy()
-        If Not _enumerationCancellationTokenSource Is Nothing Then
-            _enumerationCancellationTokenSource.Cancel()
-            Marshal.ReleaseComObject(_shellItem2)
-            _shellItem2 = Nothing
-        End If
     End Sub
 
     Protected Overrides Function GetNewShellItem() As IShellItem2

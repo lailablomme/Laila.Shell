@@ -66,16 +66,17 @@ Public Class Shell
                             task.Invoke()
                         Next
                     Catch ex As OperationCanceledException
-                        Debug.WriteLine("MTA1TaskQueue was canceled.")
+                        Debug.WriteLine("MTATaskQueue thread was canceled.")
                     End Try
                 End Sub)
             mtaThread.SetApartmentState(ApartmentState.MTA)
+            mtaThread.IsBackground = True
             mtaThread.Start()
             _threads.Add(mtaThread)
         Next
 
         ' threads for ui async
-        For i = 1 To 35
+        For i = 1 To 55
             Dim staThread As Thread = New Thread(
                 Sub()
                     Try
@@ -84,10 +85,11 @@ Public Class Shell
                             task.Invoke()
                         Next
                     Catch ex As OperationCanceledException
-                        Debug.WriteLine("SlowTaskQueue was canceled.")
+                        Debug.WriteLine("STATaskQueue thread was canceled.")
                     End Try
                 End Sub)
             staThread.SetApartmentState(ApartmentState.STA)
+            staThread.Priority = ThreadPriority.Highest
             staThread.Start()
             _threads.Add(staThread)
         Next
@@ -129,7 +131,7 @@ Public Class Shell
                             End If
 
                             ' don't hog the process
-                            Thread.Sleep(10)
+                            Thread.Sleep(2)
                         Next
                         Thread.Sleep(5000)
                     End While
@@ -280,13 +282,6 @@ Public Class Shell
                     _cancellationTokenSources.Remove(item)
                 Next
             End SyncLock
-
-            ' wait for threads to shut down
-            While Not _threads.FirstOrDefault(Function(t) t.IsAlive) Is Nothing
-                System.Windows.Application.Current.Dispatcher.Invoke(
-                    Sub()
-                    End Sub, Threading.DispatcherPriority.Background)
-            End While
 
             ' uninitialize ole
             Functions.OleUninitialize()
