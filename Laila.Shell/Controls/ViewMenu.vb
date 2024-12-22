@@ -99,6 +99,17 @@ Namespace Controls
                         Shell.Settings.DoHideKnownFileExtensions = Not fileNameExtensionsMenuItem.IsChecked
                     End Sub
                 viewSubMenuItem.Items.Add(fileNameExtensionsMenuItem)
+                Dim hiddenItemsMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Hidden items",
+                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/eye16.png")},
+                    .IsCheckable = True,
+                    .IsChecked = Shell.Settings.DoShowHiddenFilesAndFolders
+                }
+                AddHandler hiddenItemsMenuItem.Click,
+                    Sub(s As Object, e As EventArgs)
+                        Shell.Settings.DoShowHiddenFilesAndFolders = hiddenItemsMenuItem.IsChecked
+                    End Sub
+                viewSubMenuItem.Items.Add(hiddenItemsMenuItem)
             End If
         End Sub
 

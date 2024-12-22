@@ -5,6 +5,15 @@ Imports Microsoft.Win32
 Public Class Settings
     Inherits NotifyPropertyChangedBase
 
+    Private _doHideKnownFileExtensions As Boolean
+    Private _doShowProtectedOperatingSystemFiles As Boolean
+    Private _doShowCheckBoxesToSelect As Boolean
+    Private _doShowHiddenFilesAndFolders As Boolean
+
+    Public Sub New()
+        Me.OnSettingChange()
+    End Sub
+
     Public Property DoHideKnownFileExtensions As Boolean
         Get
             Dim mask As SSF = SSF.SSF_SHOWEXTENSIONS
@@ -20,18 +29,35 @@ Public Class Settings
         End Set
     End Property
 
-    Private Sub onDoHideKnownFileExtensionsChanged()
-        Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
+    Public Property DoShowProtectedOperatingSystemFiles As Boolean
+        Get
+            Dim mask As SSF = SSF.SSF_SHOWSUPERHIDDEN
+            Dim val As SHELLSTATE
+            Functions.SHGetSetSettings(val, mask, False)
+            Return val.Data2 = 128
+        End Get
+        Set(value As Boolean)
+            Dim mask As SSF = SSF.SSF_SHOWSUPERHIDDEN
+            Dim val As SHELLSTATE
+            val.Data2 = If(value, 128, 0)
+            Functions.SHGetSetSettings(val, mask, True)
+        End Set
+    End Property
 
-        Dim list As List(Of Item)
-        SyncLock Shell._itemsCacheLock
-            list = Shell.ItemsCache.Select(Function(i) i.Item1).ToList()
-        End SyncLock
-        For Each item In list
-            item._displayName = Nothing
-            item.NotifyOfPropertyChange("DisplayName")
-        Next
-    End Sub
+    Public Property DoShowHiddenFilesAndFolders As Boolean
+        Get
+            Dim mask As SSF = SSF.SSF_SHOWALLOBJECTS
+            Dim val As SHELLSTATE
+            Functions.SHGetSetSettings(val, mask, False)
+            Return val.Data1 = 1
+        End Get
+        Set(value As Boolean)
+            Dim mask As SSF = SSF.SSF_SHOWALLOBJECTS
+            Dim val As SHELLSTATE
+            val.Data1 = If(value, 1, 0)
+            Functions.SHGetSetSettings(val, mask, True)
+        End Set
+    End Property
 
     Public Property DoShowCheckBoxesToSelect As Boolean
         Get
@@ -49,8 +75,27 @@ Public Class Settings
     End Property
 
     Friend Sub OnSettingChange()
-        onDoHideKnownFileExtensionsChanged()
-        Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
+        Dim b As Boolean
+        b = Me.DoHideKnownFileExtensions
+        If Not b = _doHideKnownFileExtensions Then
+            _doHideKnownFileExtensions = b
+            Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
+        End If
+        b = Me.DoShowCheckBoxesToSelect
+        If Not b = _doShowCheckBoxesToSelect Then
+            _doShowCheckBoxesToSelect = b
+            Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
+        End If
+        b = Me.DoShowProtectedOperatingSystemFiles
+        If Not b = _doShowProtectedOperatingSystemFiles Then
+            _doShowProtectedOperatingSystemFiles = b
+            Me.NotifyOfPropertyChange("DoShowProtectedOperatingSystemFiles")
+        End If
+        b = Me.DoShowHiddenFilesAndFolders
+        If Not b = _doShowHiddenFilesAndFolders Then
+            _doShowHiddenFilesAndFolders = b
+            Me.NotifyOfPropertyChange("DoShowHiddenFilesAndFolders")
+        End If
     End Sub
 
     Private Shared Function GetRegistryBoolean(key As String, valueName As String) As Boolean

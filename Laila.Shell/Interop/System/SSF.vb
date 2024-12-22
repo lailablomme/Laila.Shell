@@ -5,7 +5,7 @@ Public Enum SSF As UInt32
     SSF_HIDDENFILEEXTENSIONS = &H4      ' Hide extensions for known file types
     SSF_SHOWSYSFILES = &H20             ' Show system files
     SSF_DOUBLECLICKINWEBVIEW = &H80     ' Double-click in web view
-    SSF_SHOWSUPERHIDDEN = &H100         ' Show super-hidden files
+    SSF_SHOWSUPERHIDDEN = &H40000         ' Show super-hidden files
     SSF_SEPPROCESS = &H400              ' Separate process for folders
     SSF_NONETCRAWLING = &H800           ' No network crawling
     SSF_STARTPANELON = &H4000           ' Start panel on

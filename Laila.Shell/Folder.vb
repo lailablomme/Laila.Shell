@@ -404,7 +404,9 @@ Public Class Folder
         Dim cts As CancellationTokenSource = New CancellationTokenSource()
         _enumerationCancellationTokenSource = cts
 
-        Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.INCLUDEHIDDEN Or SHCONTF.INCLUDESUPERHIDDEN Or SHCONTF.STORAGE
+        Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS
+        If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
+        If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
         enumerateItems(flags,
@@ -911,6 +913,19 @@ Public Class Folder
                     _doSkipUPDATEDIR = Nothing
             End Select
         End If
+    End Sub
+
+    Protected Overrides Sub Settings_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
+        MyBase.Settings_PropertyChanged(s, e)
+
+        Select Case e.PropertyName
+            Case "DoShowProtectedOperatingSystemFiles", "DoShowHiddenFilesAndFolders"
+                If _isLoaded AndAlso _isEnumerated Then
+                    Me.CancelEnumeration()
+                    _isEnumerated = False
+                    Me.GetItemsAsync()
+                End If
+        End Select
     End Sub
 
     Protected Function isWindows7OrLower() As Boolean

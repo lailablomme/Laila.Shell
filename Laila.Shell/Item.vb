@@ -1,3 +1,4 @@
+Imports System.ComponentModel
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Threading
@@ -136,6 +137,7 @@ Public Class Item
         If Not logicalParent Is Nothing Then
             _parent = logicalParent
         End If
+        AddHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
     End Sub
 
     Public Sub HookUpdates()
@@ -622,7 +624,7 @@ Public Class Item
     Public Overridable ReadOnly Property DisplayName As String
         Get
             Try
-                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
+                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                 End If
             Catch ex As Exception
@@ -1095,6 +1097,14 @@ Public Class Item
                     End If
             End Select
         End If
+    End Sub
+
+    Protected Overridable Sub Settings_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
+        Select Case e.PropertyName
+            Case "DoHideKnownFileExtensions"
+                _displayName = Nothing
+                Me.NotifyOfPropertyChange("DisplayName")
+        End Select
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
