@@ -158,7 +158,7 @@ Public Class Folder
         Set(value As Boolean)
             SetValue(_isActiveInFolderView, value)
 
-            If Not value And TypeOf Me Is SearchFolder Then
+            If Not value AndAlso TypeOf Me Is SearchFolder AndAlso Me.IsLoading Then
                 Me.CancelEnumeration()
             End If
         End Set
@@ -321,6 +321,9 @@ Public Class Folder
     Public Sub RefreshItems()
         Using Shell.OverrideCursor(Cursors.AppStarting)
             Me.IsRefreshingItems = True
+            If Me.IsLoading Then
+                Me.CancelEnumeration()
+            End If
             _isEnumerated = False
             Me.GetItems()
             Me.IsRefreshingItems = False
@@ -330,6 +333,9 @@ Public Class Folder
     Public Async Function RefreshItemsAsync() As Task
         Using Shell.OverrideCursor(Cursors.AppStarting)
             Me.IsRefreshingItems = True
+            If Me.IsLoading Then
+                Me.CancelEnumeration()
+            End If
             _isEnumerated = False
             Await GetItemsAsync()
             Me.IsRefreshingItems = False
@@ -337,14 +343,17 @@ Public Class Folder
     End Function
 
     Public Overridable Function GetItems() As List(Of Item)
+        Dim isCancelled As Boolean
         _lock.Wait()
         Try
             If Not _isEnumerated Then
-                enumerateItems(_items, False)
+                enumerateItems(_items, False, isCancelled)
             End If
             Return _items.ToList()
         Finally
-            _lock.Release()
+            If _lock.CurrentCount = 0 Then
+                _lock.Release()
+            End If
         End Try
     End Function
 
@@ -353,16 +362,19 @@ Public Class Folder
 
         Shell.MTATaskQueue.Add(
             Sub()
+                Dim isCancelled As Boolean
                 _lock.Wait()
                 Try
                     If Not _isEnumerated Then
-                        enumerateItems(_items, True)
+                        enumerateItems(_items, True, isCancelled)
                     End If
                     tcs.SetResult(_items.ToList())
                 Catch ex As Exception
                     tcs.SetException(ex)
                 Finally
-                    _lock.Release()
+                    If _lock.CurrentCount = 0 Then
+                        _lock.Release()
+                    End If
                 End Try
             End Sub)
         't.SetApartmentState(ApartmentState.MTA)
@@ -378,17 +390,16 @@ Public Class Folder
     Friend Sub CancelEnumeration()
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
+            If _lock.CurrentCount = 0 Then
+                _lock.Release()
+            End If
         End If
     End Sub
 
-    Protected Sub enumerateItems(items As ObservableCollection(Of Item), Optional isAsync As Boolean = False)
+    Protected Sub enumerateItems(items As ObservableCollection(Of Item), isAsync As Boolean, ByRef isCancelled As Boolean)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
         Me.IsLoading = True
         Me.IsEmpty = False
-
-        If Not _enumerationCancellationTokenSource Is Nothing Then
-            _enumerationCancellationTokenSource.Cancel()
-        End If
 
         Dim cts As CancellationTokenSource = New CancellationTokenSource()
         _enumerationCancellationTokenSource = cts
@@ -409,6 +420,7 @@ Public Class Folder
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
         Else
+            isCancelled = True
             Debug.WriteLine("End loading " & Me.DisplayName & " (didn't mark completion)" & If(cts.Token.IsCancellationRequested, " cancelled", ""))
         End If
     End Sub
@@ -464,6 +476,7 @@ Public Class Folder
                                 For Each item In result.Values
                                     _items.InsertSorted(item, c)
                                 Next
+                                'existingItems = result.Values.Select(Function(i) New Tuple(Of Item, Item)(i, Nothing)).ToArray()
                             End If
                         End Sub)
 
@@ -484,7 +497,7 @@ Public Class Folder
                             ' threads for refreshing
                             For i = 0 To chuncks.Count - 1
                                 Dim j As Integer = i
-                                Shell.MTATaskQueue.Add(
+                                Dim mtaThread As Thread = New Thread(
                                     Sub()
                                         Try
                                             'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
@@ -496,11 +509,15 @@ Public Class Folder
                                                 End If
 
                                                 Try
-                                                    SyncLock item.Item2._refreshLock
-                                                        item.Item1.Refresh(item.Item2.ShellItem2)
-                                                        item.Item2._shellItem2 = Nothing
-                                                    End SyncLock
-                                                    item.Item2._parent = Nothing
+                                                    If Not item.Item2 Is Nothing Then
+                                                        SyncLock item.Item2._refreshLock
+                                                            item.Item1.Refresh(item.Item2.ShellItem2)
+                                                            item.Item2._shellItem2 = Nothing
+                                                        End SyncLock
+                                                        item.Item2._parent = Nothing
+                                                    Else
+                                                        item.Item1.Refresh()
+                                                    End If
 
                                                     ' preload sort property
                                                     If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
@@ -517,17 +534,17 @@ Public Class Folder
                                                 End Try
                                             Next
 
-                                            'SyncLock _threadsLock
-                                            '    _threads.Remove(mtaThread)
-                                            'End SyncLock
+                                            SyncLock _threadsLock
+                                                _threads.Remove(mtaThread)
+                                            End SyncLock
                                             'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") finished for " & Me.FullPath)
                                         Catch ex As OperationCanceledException
                                             Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") was canceled for " & Me.FullPath)
                                         End Try
                                     End Sub)
-                                'mtaThread.SetApartmentState(ApartmentState.MTA)
-                                'mtaThread.Start()
-                                '_threads.Add(mtaThread)
+                                mtaThread.SetApartmentState(ApartmentState.MTA)
+                                mtaThread.Start()
+                                _threads.Add(mtaThread)
                             Next
                         End SyncLock
                     End If

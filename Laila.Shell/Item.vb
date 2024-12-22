@@ -412,23 +412,13 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlayImageAsync(size As Integer) As ImageSource
         Get
-            Dim tcs As New TaskCompletionSource(Of Byte)
+            Dim overlayIconIndex As Byte? = Shell.RunOnSTAThread(
+                Sub(tcs As TaskCompletionSource(Of Byte?))
+                    tcs.SetResult(Me.OverlayIconIndex)
+                End Sub, 3)
 
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        tcs.SetResult(Me.OverlayIconIndex)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Dim overlayIconIndex As Byte = tcs.Task.Result
-                If overlayIconIndex > 0 Then
-                    Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
-                End If
+            If overlayIconIndex.HasValue AndAlso overlayIconIndex > 0 Then
+                Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
             End If
             Return Nothing
         End Get
@@ -439,15 +429,22 @@ Public Class Item
             If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT
-                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
-                    If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                        Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                    Else
-                        Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
+                    Dim h As HRESULT, result As ImageSource
+                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
+                    If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                        result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     End If
-                Catch ex As Exception
-                    Debug.WriteLine("IShellItemImageFactory.GetImage failed with " & ex.ToString())
+                    If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
+                        OrElse (Not result Is Nothing AndAlso result.Width < size AndAlso result.Height < size) Then
+                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
+                        If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                            result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        Else
+                            Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
+                            Throw Marshal.GetExceptionForHR(h)
+                        End If
+                    End If
+                    Return result
                 Finally
                     Functions.DeleteObject(hbitmap)
                 End Try
@@ -458,27 +455,13 @@ Public Class Item
 
     Public Overridable ReadOnly Property IconAsync(size As Integer) As ImageSource
         Get
-            Dim tcs As New TaskCompletionSource(Of ImageSource)
-
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        Dim result As ImageSource
-                        result = Me.Icon(size)
-                        If Not result Is Nothing Then result.Freeze()
-                        tcs.SetResult(result)
-                    Catch ex As Exception
-                        Debug.WriteLine("IconAsync: " & ex.Message)
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Return tcs.Task.Result
-            Else
-                Return Nothing
-            End If
+            Return Shell.RunOnSTAThread(
+                Sub(tcs As TaskCompletionSource(Of ImageSource))
+                    Dim result As ImageSource
+                    result = Me.Icon(size)
+                    If Not result Is Nothing Then result.Freeze()
+                    tcs.SetResult(result)
+                End Sub, 3)
         End Get
     End Property
 
@@ -487,15 +470,22 @@ Public Class Item
             If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT
-                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
-                    If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                        Return Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                    Else
-                        Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
+                    Dim h As HRESULT, result As ImageSource
+                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
+                    If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                        result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                     End If
-                Catch ex As Exception
-                    Debug.WriteLine("IShellItemImageFactory.GetImage failed with " & ex.ToString())
+                    If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
+                        OrElse (Not result Is Nothing AndAlso result.Width < size AndAlso result.Height < size) Then
+                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
+                        If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                            result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        Else
+                            Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
+                            Throw Marshal.GetExceptionForHR(h)
+                        End If
+                    End If
+                    Return result
                 Finally
                     Functions.DeleteObject(hbitmap)
                 End Try
@@ -506,26 +496,13 @@ Public Class Item
 
     Public Overridable ReadOnly Property ImageAsync(size As Integer) As ImageSource
         Get
-            Dim tcs As New TaskCompletionSource(Of ImageSource)
-
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        Dim result As ImageSource
-                        result = Me.Image(size)
-                        If Not result Is Nothing Then result.Freeze()
-                        tcs.SetResult(result)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Return tcs.Task.Result
-            Else
-                Return Nothing
-            End If
+            Return Shell.RunOnSTAThread(
+                Sub(tcs As TaskCompletionSource(Of ImageSource))
+                    Dim result As ImageSource
+                    result = Me.Image(size)
+                    If Not result Is Nothing Then result.Freeze()
+                    tcs.SetResult(result)
+                End Sub, 3)
         End Get
     End Property
 
@@ -620,21 +597,13 @@ Public Class Item
 
     Public Overridable ReadOnly Property HasThumbnailAsync As Boolean
         Get
-            Dim tcs As New TaskCompletionSource(Of Boolean)
+            Dim result As Boolean? = Shell.RunOnSTAThread(
+                Sub(tcs As TaskCompletionSource(Of Boolean?))
+                    tcs.SetResult(Me.HasThumbnail)
+                End Sub, 3)
 
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        tcs.SetResult(Me.HasThumbnail)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            ' Wait for the result
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Return tcs.Task.Result
+            If result.HasValue Then
+                Return result.Value
             Else
                 Return False
             End If

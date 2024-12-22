@@ -121,4 +121,6 @@
     ERROR_NO_MEDIA_IN_DRIVE = &H800703F0  ' No media in drive
     ERROR_MEDIA_CHANGED = &H800704B0      ' The media has been changed
     ERROR_UNRECOGNIZED_MEDIA = &H800704C4 ' Unrecognized media
+
+    RPC_E_WRONG_THREAD = &H8001010E
 End Enum

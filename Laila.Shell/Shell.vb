@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Input
 Imports System.Windows.Interop
+Imports System.Windows.Media
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -513,4 +514,34 @@ Public Class Shell
             End If
         End SyncLock
     End Sub
+
+    Public Shared Function RunOnSTAThread(Of TResult)(action As Action(Of TaskCompletionSource(Of TResult)), maxRetries As Integer)
+        Dim tcs As New TaskCompletionSource(Of TResult)
+
+        Shell.STATaskQueue.Add(
+                Sub()
+                    Try
+                        action.Invoke(tcs)
+                    Catch ex As Exception
+                        Debug.WriteLine("RunOnSTAThread: " & ex.Message)
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
+
+        Dim didComplete As Boolean = False, numTries = 1
+        While Not didComplete AndAlso numTries <= 3
+            Try
+                tcs.Task.Wait(Shell.ShuttingDownToken)
+                didComplete = True
+            Catch ex As Exception
+                numTries += 1
+            End Try
+        End While
+        If didComplete AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
+            Return tcs.Task.Result
+        Else
+            Return Nothing
+        End If
+    End Function
+
 End Class

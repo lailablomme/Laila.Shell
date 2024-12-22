@@ -50,9 +50,9 @@ Public Class SearchFolder
     End Sub
 
     Public Sub Update(terms As String)
-        ' cancel enumeration
-        If Not _enumerationCancellationTokenSource Is Nothing Then
-            _enumerationCancellationTokenSource.Cancel()
+        If Me.IsLoading Then
+            ' cancel enumeration
+            Me.CancelEnumeration()
         End If
 
         ' set new terms
@@ -64,9 +64,6 @@ Public Class SearchFolder
         If Not oldShellItem2 Is Nothing Then
             Marshal.ReleaseComObject(oldShellItem2)
         End If
-
-        ' allow new enum
-        _lock.Release()
 
         ' clear collection
         For Each item In _items.ToList()
