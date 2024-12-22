@@ -53,7 +53,9 @@ Namespace Controls
             ' get name and extension
             If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
                 isDrive = True
-                item.ShellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
+                SyncLock item._shellItemLock
+                    item.ShellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
+                End SyncLock
                 ext = ""
                 isWithExt = True
             ElseIf IO.Path.GetFileName(item.FullPath).StartsWith(item.DisplayName) Then
@@ -88,7 +90,9 @@ Namespace Controls
 
                             Dim fileOperation As IFileOperation
                             Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                            h = fileOperation.RenameItem(item.ShellItem2, composedFullName, Nothing)
+                            SyncLock item._shellItemLock
+                                h = fileOperation.RenameItem(item.ShellItem2, composedFullName, Nothing)
+                            End SyncLock
                             Debug.WriteLine("RenameItem returned " & h)
                             h = fileOperation.PerformOperations()
                             Debug.WriteLine("PerformOperations returned " & h)

@@ -31,7 +31,6 @@ Public Class Folder
     Private _isInHistory As Boolean
     Private _view As String
     Private _hasSubFolders As Boolean?
-    Private _pendingUpdateCounter As Integer
     Private _itemsSortPropertyName As String
     Private _itemsSortDirection As ListSortDirection
     Private _itemsGroupByPropertyName As String
@@ -112,9 +111,12 @@ Public Class Folder
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            If Not disposedValue AndAlso _shellFolder Is Nothing Then
-                _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
-            End If
+            SyncLock _shellItemLock
+                If Not disposedValue AndAlso _shellFolder Is Nothing Then
+                    _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+                End If
+            End SyncLock
+
             Return _shellFolder
         End Get
     End Property
@@ -281,7 +283,11 @@ Public Class Folder
                                  tcs.SetResult(_hasSubFolders.Value)
                              ElseIf Not disposedValue Then
                                  Dim attr As SFGAO = SFGAO.HASSUBFOLDER
-                                 Me.ShellItem2.GetAttributes(attr, attr)
+                                 Dim shellItem As IShellItem2
+                                 SyncLock _shellItemLock
+                                     shellItem = Me.ShellItem2
+                                 End SyncLock
+                                 shellItem.GetAttributes(attr, attr)
                                  tcs.SetResult(attr.HasFlag(SFGAO.HASSUBFOLDER))
                              Else
                                  tcs.SetResult(False)
@@ -512,7 +518,7 @@ Public Class Folder
 
                                                 Try
                                                     If Not item.Item2 Is Nothing Then
-                                                        SyncLock item.Item2._refreshLock
+                                                        SyncLock item.Item2._shellItemLock
                                                             item.Item1.Refresh(item.Item2.ShellItem2)
                                                             item.Item2._shellItem2 = Nothing
                                                         End SyncLock
@@ -586,12 +592,13 @@ Public Class Folder
 
                     Dim ptr2 As IntPtr
                     Try
-                        Dim shellItem2 As IShellItem2 = Me.ShellItem2
-                        If Not shellItem2 Is Nothing Then
-                            shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
-                            If Not IntPtr.Zero.Equals(ptr2) Then
-                                enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
-                            End If
+                        Dim shellItem2 As IShellItem2
+                        SyncLock _shellItemLock
+                            shellItem2 = Me.ShellItem2
+                        End SyncLock
+                        shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                        If Not IntPtr.Zero.Equals(ptr2) Then
+                            enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
                         End If
                     Finally
                         If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
@@ -900,8 +907,8 @@ Public Class Folder
                             End Sub)
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                    If (Me.FullPath?.Equals(e.Item1.FullPath) OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath)) Then
-                        If Not Me.Items Is Nothing AndAlso _isLoaded AndAlso _pendingUpdateCounter <= 2 _
+                    If Me.FullPath?.Equals(e.Item1.FullPath) Then
+                        If _isLoaded _
                             AndAlso (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                             AndAlso (Not _doSkipUPDATEDIR.HasValue _
                                      OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) _

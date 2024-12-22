@@ -117,8 +117,8 @@ Public Class Shell
                             End If
 
                             ' if the item was not disposed...
-                            If Not item.Item1.disposedValue Then
-                                SyncLock item.Item1._refreshLock
+                            SyncLock item.Item1._shellItemLock
+                                If Not item.Item1.disposedValue Then
                                     ' ...clean up the shellitem history
                                     ' (we suppose after 30 seconds an expired shellitem
                                     '  won't be in use anywhere anymore)
@@ -128,8 +128,8 @@ Public Class Shell
                                             item.Item1._shellItemHistory.Remove(shellItemEntry)
                                         End If
                                     Next
-                                End SyncLock
-                            End If
+                                End If
+                            End SyncLock
 
                             ' don't hog the process
                             Thread.Sleep(2)

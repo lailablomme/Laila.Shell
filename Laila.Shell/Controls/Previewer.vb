@@ -165,7 +165,9 @@ Namespace Controls
                                             h = Functions.SHCreateStreamOnFileEx(previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, ptr)
                                             Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
                                         Else
-                                            h = previewItem.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_Stream, GetType(IStream).GUID, ptr)
+                                            SyncLock previewItem._shellItemLock
+                                                h = previewItem.ShellItem2.BindToHandler(IntPtr.Zero, Guids.BHID_Stream, GetType(IStream).GUID, ptr)
+                                            End SyncLock
                                             Debug.WriteLine("BHID_Stream=" & h.ToString())
                                         End If
                                         If Not IntPtr.Zero.Equals(ptr) AndAlso h = HRESULT.S_OK Then

@@ -30,7 +30,7 @@ Public Class Item
     Private _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
-    Friend _refreshLock As Object = New Object()
+    Friend _shellItemLock As Object = New Object()
     Protected _doKeepAlive As Boolean
     Private _contentViewModeProperties() As [Property]
 
@@ -253,7 +253,7 @@ Public Class Item
     End Property
 
     Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
-        SyncLock _refreshLock
+        SyncLock _shellItemLock
             If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                 Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
@@ -339,13 +339,11 @@ Public Class Item
 
     Public ReadOnly Property FullPath As String
         Get
-            Try
+            SyncLock _shellItemLock
                 If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
                 End If
-            Catch ex As Exception
-                ' sometimes the treeview will try to sort us just as we're in the process of disposing
-            End Try
+            End SyncLock
 
             Return _fullPath
         End Get
@@ -357,9 +355,11 @@ Public Class Item
                 AndAlso (_parent Is Nothing OrElse _parent.disposedValue) _
                 AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
                 Dim parentShellItem2 As IShellItem2
-                If Not Me.ShellItem2 Is Nothing Then
-                    Me.ShellItem2.GetParent(parentShellItem2)
-                End If
+                SyncLock _shellItemLock
+                    If Not Me.ShellItem2 Is Nothing Then
+                        Me.ShellItem2.GetParent(parentShellItem2)
+                    End If
+                End SyncLock
                 If Not parentShellItem2 Is Nothing Then
                     _parent = New Folder(parentShellItem2, Nothing, False, True)
                 End If
@@ -431,22 +431,24 @@ Public Class Item
             If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT, result As ImageSource
-                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
-                    If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                        result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                    End If
-                    If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
-                        OrElse (Not result Is Nothing AndAlso result.Width < size AndAlso result.Height < size) Then
-                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
-                        If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                    SyncLock _shellItemLock
+                        Dim h As HRESULT, result As ImageSource
+                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
+                        If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                             result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        Else
-                            Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
-                            Throw Marshal.GetExceptionForHR(h)
                         End If
-                    End If
-                    Return result
+                        If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
+                        OrElse (Not result Is Nothing AndAlso result.Width < size AndAlso result.Height < size) Then
+                            h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
+                            If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                                result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            Else
+                                Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
+                                Throw Marshal.GetExceptionForHR(h)
+                            End If
+                        End If
+                        Return result
+                    End SyncLock
                 Finally
                     Functions.DeleteObject(hbitmap)
                 End Try
@@ -472,22 +474,24 @@ Public Class Item
             If Not disposedValue Then
                 Dim hbitmap As IntPtr
                 Try
-                    Dim h As HRESULT, result As ImageSource
-                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
-                    If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                        result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                    End If
-                    If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
-                        OrElse (Not result Is Nothing AndAlso result.Width < size AndAlso result.Height < size) Then
-                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
-                        If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                    SyncLock _shellItemLock
+                        Dim h As HRESULT, result As ImageSource
+                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
+                        If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                             result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        Else
-                            Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
-                            Throw Marshal.GetExceptionForHR(h)
                         End If
-                    End If
-                    Return result
+                        If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
+                        OrElse (Not result Is Nothing AndAlso result.Width < size AndAlso result.Height < size) Then
+                            h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
+                            If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                                result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            Else
+                                Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
+                                Throw Marshal.GetExceptionForHR(h)
+                            End If
+                        End If
+                        Return result
+                    End SyncLock
                 Finally
                     Functions.DeleteObject(hbitmap)
                 End Try
@@ -584,7 +588,9 @@ Public Class Item
                 Dim hbitmap As IntPtr
                 Try
                     Dim h As HRESULT
-                    h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(1, 1), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
+                    SyncLock _shellItemLock
+                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(1, 1), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
+                    End SyncLock
                     If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                         Return True
                     End If
@@ -623,13 +629,11 @@ Public Class Item
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
-            Try
-                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+            SyncLock _shellItemLock
+                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                 End If
-            Catch ex As Exception
-                ' sometimes the treeview will try to sort us just as we're in the process of disposing
-            End Try
+            End SyncLock
 
             Return _displayName
         End Get
@@ -700,7 +704,9 @@ Public Class Item
                                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                                 Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED
-                ShellItem2.GetAttributes(_attributes, _attributes)
+                SyncLock _shellItemLock
+                    ShellItem2.GetAttributes(_attributes, _attributes)
+                End SyncLock
             End If
             Return _attributes
         End Get
@@ -840,22 +846,22 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property PropertyStore As IPropertyStore
-        Get
-            Dim ptr As IntPtr
-            Try
-                Me.ShellItem2.GetPropertyStore(0, GetType(IPropertyStore).GUID, ptr)
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Return Marshal.GetObjectForIUnknown(ptr)
-                End If
-            Finally
-                If Not IntPtr.Zero.Equals(ptr) Then
-                    Marshal.Release(ptr)
-                End If
-            End Try
-            Return Nothing
-        End Get
-    End Property
+    'Public ReadOnly Property PropertyStore As IPropertyStore
+    '    Get
+    '        Dim ptr As IntPtr
+    '        Try
+    '            Me.ShellItem2.GetPropertyStore(0, GetType(IPropertyStore).GUID, ptr)
+    '            If Not IntPtr.Zero.Equals(ptr) Then
+    '                Return Marshal.GetObjectForIUnknown(ptr)
+    '            End If
+    '        Finally
+    '            If Not IntPtr.Zero.Equals(ptr) Then
+    '                Marshal.Release(ptr)
+    '            End If
+    '        End Try
+    '        Return Nothing
+    '    End Get
+    'End Property
 
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
@@ -865,7 +871,9 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = [Property].FromKey(key, Me.ShellItem2)
+                    SyncLock _shellItemLock
+                        [property] = [Property].FromKey(key, Me.ShellItem2)
+                    End SyncLock
                     _propertiesLock.Wait()
                     If Not _propertiesByKey.ContainsKey(propertyKey) Then
                         _propertiesByKey.Add(propertyKey, [property])
@@ -888,7 +896,9 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                    SyncLock _shellItemLock
+                        [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                    End SyncLock
                     _propertiesLock.Wait()
                     If Not _propertiesByKey.ContainsKey(propertyKey.ToString()) Then
                         _propertiesByKey.Add(propertyKey.ToString(), [property])
@@ -911,7 +921,9 @@ Public Class Item
             Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                    SyncLock _shellItemLock
+                        [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                    End SyncLock
                     _propertiesLock.Wait()
                     If Not _propertiesByCanonicalName.ContainsKey(canonicalName) Then
                         _propertiesByCanonicalName.Add(canonicalName, [property])
@@ -1108,7 +1120,7 @@ Public Class Item
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
-        SyncLock _refreshLock
+        SyncLock _shellItemLock
             If Not disposedValue Then
                 disposedValue = True
                 'Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)

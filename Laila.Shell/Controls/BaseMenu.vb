@@ -334,7 +334,9 @@ Namespace Controls
                     Dim shellFolder As IShellFolder
 
                     Try
-                        shellFolder = Folder.GetIShellFolderFromIShellItem2(folder.ShellItem2)
+                        SyncLock folder._shellItemLock
+                            shellFolder = Folder.GetIShellFolderFromIShellItem2(folder.ShellItem2)
+                        End SyncLock
 
                         If Not items Is Nothing AndAlso items.Count > 0 Then
                             ' user clicked on an item
