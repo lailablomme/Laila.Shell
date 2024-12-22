@@ -497,7 +497,7 @@ Public Class Folder
                             ' threads for refreshing
                             For i = 0 To chuncks.Count - 1
                                 Dim j As Integer = i
-                                Dim mtaThread As Thread = New Thread(
+                                Shell.MTATaskQueue.Add(
                                     Sub()
                                         Try
                                             'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
@@ -534,17 +534,17 @@ Public Class Folder
                                                 End Try
                                             Next
 
-                                            SyncLock _threadsLock
-                                                _threads.Remove(mtaThread)
-                                            End SyncLock
+                                            'SyncLock _threadsLock
+                                            '    _threads.Remove(mtaThread)
+                                            'End SyncLock
                                             'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") finished for " & Me.FullPath)
                                         Catch ex As OperationCanceledException
                                             Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") was canceled for " & Me.FullPath)
                                         End Try
                                     End Sub)
-                                mtaThread.SetApartmentState(ApartmentState.MTA)
-                                mtaThread.Start()
-                                _threads.Add(mtaThread)
+                                'mtaThread.SetApartmentState(ApartmentState.MTA)
+                                'mtaThread.Start()
+                                '_threads.Add(mtaThread)
                             Next
                         End SyncLock
                     End If
