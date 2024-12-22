@@ -28,6 +28,7 @@ Namespace Controls
         Public Shared ReadOnly CanShareProperty As DependencyProperty = DependencyProperty.Register("CanShare", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private disposedValue As Boolean
+        Private Shared _rightClickMenu As RightClickMenu
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
@@ -205,12 +206,28 @@ Namespace Controls
         End Sub
 
         Public Shared Sub DoShare(items As IEnumerable(Of Item))
-            Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
-            Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
-            Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
-            Dim instance As Object = Activator.CreateInstance(type)
-            methodInfo.Invoke(instance, {items.ToList().Select(Function(i) i.FullPath).ToList(),
-                              System.Windows.Application.Current.MainWindow})
+            If (Shell.GetSpecialFolders().ContainsKey("OneDrive") _
+                AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive").FullPath & IO.Path.DirectorySeparatorChar)) _
+                OrElse (Shell.GetSpecialFolders().ContainsKey("OneDrive Business") _
+                        AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive Business").FullPath & IO.Path.DirectorySeparatorChar)) Then
+                If Not _rightClickMenu Is Nothing Then
+                    _rightClickMenu.Dispose()
+                End If
+                _rightClickMenu = New RightClickMenu() With {
+                    .Folder = items(0).Parent,
+                    .SelectedItems = items,
+                    .IsDefaultOnly = True
+                }
+                _rightClickMenu.Make()
+                _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}"))
+            Else
+                Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
+                Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
+                Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
+                Dim instance As Object = Activator.CreateInstance(type)
+                methodInfo.Invoke(instance, {items.ToList().Select(Function(i) i.FullPath).ToList(),
+                                  System.Windows.Application.Current.MainWindow})
+            End If
         End Sub
 
         Public Sub UpdateNewItemMenu()
@@ -243,7 +260,15 @@ Namespace Controls
                 Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
-                Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
+                If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 _
+                    AndAlso (Shell.GetSpecialFolders().ContainsKey("OneDrive") _
+                    AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive").FullPath & IO.Path.DirectorySeparatorChar)) _
+                    OrElse (Shell.GetSpecialFolders().ContainsKey("OneDrive Business") _
+                            AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive Business").FullPath & IO.Path.DirectorySeparatorChar)) Then
+                    Me.CanShare = True
+                Else
+                    Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
+                End If
             End If
         End Sub
 
