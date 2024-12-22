@@ -290,16 +290,16 @@ Public Class TreeViewDropTarget
                     Try
                         ' first check if we're not trying to drop on ourselves or our parent
                         Dim isOurSelvesOrParent As Boolean
-                            If Not _files Is Nothing Then
-                                isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
-                                If Not isOurSelvesOrParent Then
-                                    For Each file In _files
+                        If Not _files Is Nothing Then
+                            isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
+                            If Not isOurSelvesOrParent Then
+                                For Each file In _files
                                     isOurSelvesOrParent = Not file.Parent Is Nothing _
                                         AndAlso file.Parent.Pidl.Equals(overItem.Pidl)
                                     If isOurSelvesOrParent Then Exit For
                                 Next
-                                End If
                             End If
+                        End If
                         If Not _fileNameList Is Nothing AndAlso Not isOurSelvesOrParent Then
                             isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
                             If Not isOurSelvesOrParent Then
@@ -431,6 +431,8 @@ Public Class TreeViewDropTarget
             WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_MOVE, "Move to %1", overItem.DisplayName)
         ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_LINK AndAlso Not overItem Is Nothing Then
             WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Create shortcut in %1", overItem.DisplayName)
+        ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_OPEN AndAlso Not overItem Is Nothing Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_COPY, "Open with %1", If(overItem.PropertiesByCanonicalName("System.FileDescription")?.Text, overItem.DisplayName))
         End If
     End Sub
 End Class

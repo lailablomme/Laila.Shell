@@ -176,13 +176,13 @@ Public Class Drag
 
             Dim wParam As IntPtr
             If dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_MOVE) Then
-                wParam = DROPIMAGETYPE.DROPIMAGE_MOVE
+                wParam = 2
             ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_COPY) Then
-                wParam = DROPIMAGETYPE.DROPIMAGE_COPY
+                wParam = 3
             ElseIf dwEffect.HasFlag(DROPEFFECT.DROPEFFECT_LINK) Then
-                wParam = DROPIMAGETYPE.DROPIMAGE_LINK
+                wParam = 4
             Else
-                wParam = DROPIMAGETYPE.DROPIMAGE_NONE
+                wParam = 1
             End If
 
             Dim hwnd As IntPtr? = getGlobalDataDWord("DragWindow")

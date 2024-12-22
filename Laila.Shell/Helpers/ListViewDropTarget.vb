@@ -244,6 +244,7 @@ Public Class ListViewDropTarget
                 Try
                     Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
                 Finally
+                    Debug.WriteLine("pdwEffect=" & pdwEffect)
                     customizeDropDescription(overItem, grfKeyState, pdwEffect)
                 End Try
             Else
@@ -277,6 +278,8 @@ Public Class ListViewDropTarget
             WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_MOVE, "Move to %1", overItem.DisplayName)
         ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_LINK AndAlso Not overItem Is Nothing Then
             WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Create shortcut in %1", overItem.DisplayName)
+        ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_OPEN AndAlso Not overItem Is Nothing Then
+            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_COPY, "Open with %1", If(overItem.PropertiesByCanonicalName("System.FileDescription")?.Text, overItem.DisplayName))
         End If
     End Sub
 End Class
