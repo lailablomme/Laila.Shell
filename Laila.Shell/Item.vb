@@ -1118,6 +1118,7 @@ Public Class Item
 
                     ' unsubscribe from notifications
                     RemoveHandler Shell.Notification, AddressOf shell_Notification
+                    RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
 
                     ' remove from parent collection
                     UIHelper.OnUIThreadAsync(

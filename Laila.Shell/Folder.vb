@@ -920,7 +920,7 @@ Public Class Folder
 
         Select Case e.PropertyName
             Case "DoShowProtectedOperatingSystemFiles", "DoShowHiddenFilesAndFolders"
-                If _isLoaded AndAlso _isEnumerated Then
+                If _isLoaded AndAlso _isEnumerated AndAlso Not disposedValue Then
                     Me.CancelEnumeration()
                     _isEnumerated = False
                     Me.GetItemsAsync()
