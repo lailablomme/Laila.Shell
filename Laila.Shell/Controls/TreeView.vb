@@ -596,14 +596,14 @@ Namespace Controls
                             Dim folder As Folder = item
                             AddHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             AddHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
-                            For Each item2 In folder._items.Where(Function(i) TypeOf i Is Folder)
-                                UIHelper.OnUIThreadAsync(
-                                    Sub()
+                            UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    For Each item2 In folder._items.Where(Function(i) TypeOf i Is Folder AndAlso i.IsVisibleInTree).ToList()
                                         If Not Me.Items.Contains(item2) Then
                                             Me.Items.Add(item2)
                                         End If
-                                    End Sub)
-                            Next
+                                    Next
+                                End Sub)
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Remove
@@ -612,15 +612,15 @@ Namespace Controls
                             Dim folder As Folder = item
                             RemoveHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
-                            For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder))
-                                UIHelper.OnUIThreadAsync(
-                                    Sub()
+                            UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                        AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
                                         If Me.Items.Contains(item2) Then
                                             Me.Items.Remove(item2)
                                         End If
-                                    End Sub)
-                            Next
+                                    Next
+                                End Sub)
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Reset
@@ -632,7 +632,7 @@ Namespace Controls
             Select Case e.Action
                 Case NotifyCollectionChangedAction.Add
                     For Each item In e.NewItems
-                        If TypeOf item Is Folder AndAlso (CType(item, Folder).Parent Is Nothing OrElse CType(item, Folder).Parent.IsExpanded) Then
+                        If TypeOf item Is Folder AndAlso CType(item, Item).IsVisibleInTree Then
                             Me.Items.Add(item)
                         End If
                     Next
@@ -644,7 +644,7 @@ Namespace Controls
                     Next
                 Case NotifyCollectionChangedAction.Replace
                     For Each item In e.NewItems
-                        If TypeOf item Is Folder Then
+                        If TypeOf item Is Folder AndAlso CType(item, Item).IsVisibleInTree Then
                             Me.Items.Add(item)
                         End If
                     Next
@@ -663,7 +663,7 @@ Namespace Controls
                             Me.Items.Remove(item)
                         Next
                         For Each item In collection.Where(Function(i) _
-                            Not i.disposedValue AndAlso TypeOf i Is Folder)
+                            Not i.disposedValue AndAlso i.IsVisibleInTree AndAlso TypeOf i Is Folder)
                             Me.Items.Add(item)
                         Next
                     End If
@@ -679,16 +679,22 @@ Namespace Controls
                         Sub()
                             If folder.IsExpanded Then
                                 For Each item In folder.Items
-                                    If TypeOf item Is Folder AndAlso Not Me.Items.Contains(item) Then
-                                        Me.Items.Add(item)
+                                    If TypeOf item Is Folder Then
+                                        If Not Me.Items.Contains(item) Then
+                                            Me.Items.Add(item)
+                                        End If
                                     End If
                                     If Me.SelectedItem Is Nothing AndAlso Not Me.Folder Is Nothing _
-                                AndAlso item.Pidl.Equals(Me.Folder.Pidl) Then
+                                        AndAlso item.Pidl.Equals(Me.Folder.Pidl) Then
                                         Me.SetSelectedItem(item)
                                     End If
                                 Next
+                            Else
+                                For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                    AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
+                                    Me.Items.Remove(item)
+                                Next
                             End If
-                            CollectionViewSource.GetDefaultView(Me.Items).Refresh()
                         End Sub)
                 Case "TreeSortKey"
                     Dim list As List(Of Item)

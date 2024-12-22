@@ -1091,7 +1091,7 @@ Public Class Item
                         Me.Refresh()
                     End If
                 Case SHCNE.FREESPACE
-                    If Me.IsDrive Then
+                    If Me.IsDrive AndAlso Me.Pidl?.Equals(e.Item1.Pidl) Then
                         Me.Refresh()
                     End If
                 Case SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
