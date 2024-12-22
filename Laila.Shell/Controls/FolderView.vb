@@ -24,7 +24,7 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
         End Sub
 
-        Private _views As Dictionary(Of String, Control) = New Dictionary(Of String, Control)()
+        Private _views As Dictionary(Of String, Control)
         Private _activeView As BaseFolderView
         Private _dropTarget As IDropTarget
         Private PART_Grid As Grid
@@ -42,6 +42,7 @@ Namespace Controls
                     If Not _isLoaded Then
                         _isLoaded = True
 
+                        _views = New Dictionary(Of String, Control)()
                         For Each view In Shell.FolderViews
                             Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(view.Key).Item2)
                             Me.ActiveView.Host = Me
@@ -54,6 +55,10 @@ Namespace Controls
                         UIHelper.OnUIThread(
                             Sub()
                             End Sub, Threading.DispatcherPriority.Loaded)
+
+                        If Not Me.Folder Is Nothing Then
+                            changeView(Me.Folder.View, Me.Folder)
+                        End If
 
                         _dropTarget = New ListViewDropTarget(Me)
                         WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
@@ -209,36 +214,29 @@ Namespace Controls
         End Sub
 
         Private Sub changeView(newValue As String, folder As Folder)
-            Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
-            Dim hasFocus As Boolean
-            If Not Me.ActiveView Is Nothing Then
-                hasFocus = Me.ActiveView.IsKeyboardFocusWithin
-                Me.ActiveView.Folder = Nothing
-                BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
-                BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty)
-            End If
-            For Each v In _views.Values
-                v.SetValue(Panel.ZIndexProperty, 0)
-            Next
-            If Not _views.ContainsKey(newValue) Then
-                Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(newValue).Item2)
-                Me.ActiveView.Host = Me
-                _views.Add(newValue, Me.ActiveView)
-                If Not Me.PART_Grid Is Nothing Then
-                    Me.PART_Grid.Children.Add(Me.ActiveView)
+            If Not _views Is Nothing Then
+                Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
+                Dim hasFocus As Boolean
+                If Not Me.ActiveView Is Nothing Then
+                    hasFocus = Me.ActiveView.IsKeyboardFocusWithin
+                    Me.ActiveView.Folder = Nothing
+                    BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
+                    BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty)
                 End If
-            Else
+                For Each v In _views.Values
+                    v.SetValue(Panel.ZIndexProperty, 0)
+                Next
                 Me.ActiveView = _views(newValue)
+                Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
+                If hasFocus Then Me.ActiveView.Focus()
+                Me.ActiveView.Folder = folder
+                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+                folderViewState.View = newValue
+                folderViewState.Persist()
+                BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
+                BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty, New Binding("IsSelecting") With {.Source = Me})
+                Me.SelectedItems = selectedItems
             End If
-            Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
-            If hasFocus Then Me.ActiveView.Focus()
-            Me.ActiveView.Folder = folder
-            Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
-            folderViewState.View = newValue
-            folderViewState.Persist()
-            BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
-            BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty, New Binding("IsSelecting") With {.Source = Me})
-            Me.SelectedItems = selectedItems
         End Sub
 
         Shared Async Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)

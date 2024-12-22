@@ -26,20 +26,36 @@ Public Class FrequentFolders
                     .Where(Function(f) Not String.IsNullOrWhiteSpace(f.FullPath) _
                         AndAlso Not f.FullPath.StartsWith("\\") AndAlso IO.Directory.Exists(f.FullPath)).ToList()
 
-                Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
-                Dim count As Integer = 0
-                For Each folder In mostFrequent1
-                    Dim f As Folder = Item.FromParsingName(folder.FullPath, Nothing, True)
-                    If Not f Is Nothing AndAlso Not PinnedItems.GetIsPinned(f.FullPath) Then
-                        mostFrequent2.Add(f)
-                        count += 1
-                        If count = 5 Then Exit For
-                    ElseIf Not f Is Nothing Then
-                        f.Dispose()
-                    End If
-                Next
+                Dim tcs As New TaskCompletionSource(Of IEnumerable(Of Item))
 
-                Return mostFrequent2
+                Shell.MTATaskQueue.Add(
+                    Sub()
+                        Try
+                            Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
+                            Dim count As Integer = 0
+                            For Each folder In mostFrequent1
+                                Dim f As Folder = Item.FromParsingName(folder.FullPath, Nothing, True)
+                                If Not f Is Nothing AndAlso Not PinnedItems.GetIsPinned(f.FullPath) Then
+                                    mostFrequent2.Add(f)
+                                    count += 1
+                                    If count = 5 Then Exit For
+                                ElseIf Not f Is Nothing Then
+                                    f.Dispose()
+                                End If
+                            Next
+
+                            tcs.SetResult(mostFrequent2)
+                        Catch ex As Exception
+                            tcs.SetException(ex)
+                        End Try
+                    End Sub)
+
+                tcs.Task.Wait(Shell.ShuttingDownToken)
+                If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                    Return tcs.Task.Result
+                Else
+                    Return {}
+                End If
             End Using
         End SyncLock
     End Function

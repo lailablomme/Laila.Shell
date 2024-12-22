@@ -273,36 +273,30 @@ Public Class Folder
 
     Public Overrides ReadOnly Property HasSubFolders As Boolean
         Get
-            If Not disposedValue Then
-                Dim tcs As New TaskCompletionSource(Of Boolean)
+            Dim tcs As New TaskCompletionSource(Of Boolean)
 
-                Shell.MTATaskQueue.Add(
-                     Sub()
-                         Try
-                             If _hasSubFolders.HasValue Then
-                                 tcs.SetResult(_hasSubFolders.Value)
-                             ElseIf Not disposedValue Then
-                                 Dim attr As SFGAO = SFGAO.HASSUBFOLDER
-                                 Dim shellItem As IShellItem2
-                                 SyncLock _shellItemLock
-                                     shellItem = Me.ShellItem2
-                                 End SyncLock
-                                 shellItem.GetAttributes(attr, attr)
-                                 tcs.SetResult(attr.HasFlag(SFGAO.HASSUBFOLDER))
-                             Else
-                                 tcs.SetResult(False)
-                             End If
-                         Catch ex As Exception
-                             tcs.SetException(ex)
-                         End Try
-                     End Sub)
+            Shell.MTATaskQueue.Add(
+                Sub()
+                    Try
+                        If _hasSubFolders.HasValue Then
+                            tcs.SetResult(_hasSubFolders.Value)
+                        ElseIf Not disposedValue Then
+                            Dim attr As SFGAO = SFGAO.HASSUBFOLDER
+                            SyncLock _shellItemLock
+                                Me.ShellItem2.GetAttributes(attr, attr)
+                            End SyncLock
+                            tcs.SetResult(attr.HasFlag(SFGAO.HASSUBFOLDER))
+                        Else
+                            tcs.SetResult(False)
+                        End If
+                    Catch ex As Exception
+                        tcs.SetException(ex)
+                    End Try
+                End Sub)
 
-                tcs.Task.Wait(Shell.ShuttingDownToken)
-                If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                    Return tcs.Task.Result
-                Else
-                    Return False
-                End If
+            tcs.Task.Wait(Shell.ShuttingDownToken)
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                Return tcs.Task.Result
             Else
                 Return False
             End If

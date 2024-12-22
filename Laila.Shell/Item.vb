@@ -26,7 +26,6 @@ Public Class Item
     Friend _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
-    Friend _shellItemHistory As List(Of Tuple(Of IShellItem2, DateTime)) = New List(Of Tuple(Of IShellItem2, DateTime))
     Private _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
@@ -257,14 +256,13 @@ Public Class Item
             If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                 Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
-                If Not _shellItem2 Is Nothing Then
-                    _shellItemHistory.Add(New Tuple(Of IShellItem2, Date)(_shellItem2, DateTime.Now))
-                End If
+                Dim oldShellItem As IShellItem2 = _shellItem2
                 If Not newShellItem Is Nothing Then
                     _shellItem2 = newShellItem
                 ElseIf Not _shellItem2 Is Nothing Then
                     _shellItem2 = Me.GetNewShellItem()
                 End If
+                Marshal.ReleaseComObject(oldShellItem)
 
                 Dim oldPropertiesByKey As Dictionary(Of String, [Property])
                 Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])
@@ -1151,11 +1149,7 @@ Public Class Item
                     Next
                     _propertiesByCanonicalName.Clear()
 
-                    ' dispose shellitems
-                    For Each item In _shellItemHistory
-                        Marshal.ReleaseComObject(item.Item1)
-                    Next
-                    _shellItemHistory.Clear()
+                    ' dispose shellitem
                     If Not _shellItem2 Is Nothing Then
                         Marshal.ReleaseComObject(_shellItem2)
                         _shellItem2 = Nothing

@@ -1,5 +1,4 @@
-﻿Imports System.Runtime.InteropServices
-Imports System.Windows.Documents
+﻿Imports System.Windows.Input
 Imports Microsoft.Win32
 
 Public Class Settings
@@ -11,7 +10,7 @@ Public Class Settings
     Private _doShowHiddenFilesAndFolders As Boolean
 
     Public Sub New()
-        Me.OnSettingChange()
+        Me.OnSettingChange(False)
     End Sub
 
     Public Property DoHideKnownFileExtensions As Boolean
@@ -74,28 +73,30 @@ Public Class Settings
         End Set
     End Property
 
-    Friend Sub OnSettingChange()
-        Dim b As Boolean
-        b = Me.DoHideKnownFileExtensions
-        If Not b = _doHideKnownFileExtensions Then
-            _doHideKnownFileExtensions = b
-            Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
-        End If
-        b = Me.DoShowCheckBoxesToSelect
-        If Not b = _doShowCheckBoxesToSelect Then
-            _doShowCheckBoxesToSelect = b
-            Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
-        End If
-        b = Me.DoShowProtectedOperatingSystemFiles
-        If Not b = _doShowProtectedOperatingSystemFiles Then
-            _doShowProtectedOperatingSystemFiles = b
-            Me.NotifyOfPropertyChange("DoShowProtectedOperatingSystemFiles")
-        End If
-        b = Me.DoShowHiddenFilesAndFolders
-        If Not b = _doShowHiddenFilesAndFolders Then
-            _doShowHiddenFilesAndFolders = b
-            Me.NotifyOfPropertyChange("DoShowHiddenFilesAndFolders")
-        End If
+    Friend Sub OnSettingChange(Optional doNotify As Boolean = True)
+        Using Shell.OverrideCursor(Cursors.Wait)
+            Dim b As Boolean
+            b = Me.DoHideKnownFileExtensions
+            If Not b = _doHideKnownFileExtensions Then
+                _doHideKnownFileExtensions = b
+                If doNotify Then Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
+            End If
+            b = Me.DoShowCheckBoxesToSelect
+            If Not b = _doShowCheckBoxesToSelect Then
+                _doShowCheckBoxesToSelect = b
+                If doNotify Then Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
+            End If
+            b = Me.DoShowProtectedOperatingSystemFiles
+            If Not b = _doShowProtectedOperatingSystemFiles Then
+                _doShowProtectedOperatingSystemFiles = b
+                If doNotify Then Me.NotifyOfPropertyChange("DoShowProtectedOperatingSystemFiles")
+            End If
+            b = Me.DoShowHiddenFilesAndFolders
+            If Not b = _doShowHiddenFilesAndFolders Then
+                _doShowHiddenFilesAndFolders = b
+                If doNotify Then Me.NotifyOfPropertyChange("DoShowHiddenFilesAndFolders")
+            End If
+        End Using
     End Sub
 
     Private Shared Function GetRegistryBoolean(key As String, valueName As String) As Boolean

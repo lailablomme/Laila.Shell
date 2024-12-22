@@ -78,10 +78,12 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim sb As SearchBox = d
-            If Not e.NewValue Is Nothing AndAlso TypeOf e.NewValue Is SearchFolder Then
-                sb.PART_TextBox.Text = CType(e.NewValue, SearchFolder).Terms
-            Else
-                sb.PART_TextBox.Text = Nothing
+            If Not sb.PART_TextBox Is Nothing Then
+                If Not e.NewValue Is Nothing AndAlso TypeOf e.NewValue Is SearchFolder Then
+                    sb.PART_TextBox.Text = CType(e.NewValue, SearchFolder).Terms
+                Else
+                    sb.PART_TextBox.Text = Nothing
+                End If
             End If
         End Sub
     End Class

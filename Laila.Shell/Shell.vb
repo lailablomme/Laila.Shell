@@ -41,12 +41,12 @@ Public Class Shell
     Private Shared _isDebugVisible As Boolean = False
     Friend Shared _debugWindow As DebugTools.DebugWindow
 
-    Private Shared _settings As Settings = New Settings()
-
     Private Shared _overrideCursorFunc As Func(Of Cursor, IDisposable) =
         Function(cursor As Cursor) As IDisposable
             Return New OverrideCursor(cursor)
         End Function
+
+    Private Shared _settings As Settings = New Settings()
 
     Shared Sub New()
         ' watch for windows being loaded so we can gracefully shutdown when they're closed
@@ -116,23 +116,8 @@ Public Class Shell
                                 item.Item1.MaybeDispose()
                             End If
 
-                            ' if the item was not disposed...
-                            SyncLock item.Item1._shellItemLock
-                                If Not item.Item1.disposedValue Then
-                                    ' ...clean up the shellitem history
-                                    ' (we suppose after 30 seconds an expired shellitem
-                                    '  won't be in use anywhere anymore)
-                                    For Each shellItemEntry In item.Item1._shellItemHistory.Take(item.Item1._shellItemHistory.Count - 1).ToList()
-                                        If DateTime.Now.Subtract(shellItemEntry.Item2).TotalMilliseconds > 30000 Then
-                                            Marshal.ReleaseComObject(shellItemEntry.Item1)
-                                            item.Item1._shellItemHistory.Remove(shellItemEntry)
-                                        End If
-                                    Next
-                                End If
-                            End SyncLock
-
                             ' don't hog the process
-                            Thread.Sleep(2)
+                            Thread.Sleep(1)
                         Next
                         Thread.Sleep(5000)
                     End While

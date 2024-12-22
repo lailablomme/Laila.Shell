@@ -18,17 +18,33 @@ Public Class PinnedItems
         End Using
 
         ' return existing pinned items, delete others
-        Dim existingPinnedItems As List(Of Item) = New List(Of Item)()
-        For Each pinnedItem In pinnedItems
-            Dim item As Item = Item.FromParsingName(pinnedItem.FullPath, Nothing, True)
-            If Not item Is Nothing Then
-                existingPinnedItems.Add(item)
-            Else
-                UnpinItem(pinnedItem.FullPath)
-            End If
-        Next
+        Dim tcs As New TaskCompletionSource(Of IEnumerable(Of Item))
 
-        Return existingPinnedItems
+        Shell.MTATaskQueue.Add(
+            Sub()
+                Try
+                    Dim existingPinnedItems As List(Of Item) = New List(Of Item)()
+                    For Each pinnedItem In pinnedItems
+                        Dim item As Item = Item.FromParsingName(pinnedItem.FullPath, Nothing, True)
+                        If Not item Is Nothing Then
+                            existingPinnedItems.Add(item)
+                        Else
+                            UnpinItem(pinnedItem.FullPath)
+                        End If
+                    Next
+
+                    tcs.SetResult(existingPinnedItems)
+                Catch ex As Exception
+                    tcs.SetException(ex)
+                End Try
+            End Sub)
+
+        tcs.Task.Wait(Shell.ShuttingDownToken)
+        If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+            Return tcs.Task.Result
+        Else
+            Return {}
+        End If
     End Function
 
     Public Shared Function GetIsPinned(fullPath As String) As Boolean

@@ -310,10 +310,7 @@ Namespace Controls
                 Shell.MTATaskQueue.Add(
                     Sub()
                         Dim folder As Folder = Shell.GetSpecialFolder("This computer").Clone()
-                        UIHelper.OnUIThread(
-                            Sub()
-                                Me.Folder = folder
-                            End Sub, Threading.DispatcherPriority.ContextIdle)
+                        Me.Folder = folder
                     End Sub)
             End Sub
 
