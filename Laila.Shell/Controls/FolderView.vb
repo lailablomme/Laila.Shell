@@ -42,6 +42,19 @@ Namespace Controls
                     If Not _isLoaded Then
                         _isLoaded = True
 
+                        For Each view In Shell.FolderViews
+                            Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(view.Key).Item2)
+                            Me.ActiveView.Host = Me
+                            _views.Add(view.Key, Me.ActiveView)
+                            If Not Me.PART_Grid Is Nothing Then
+                                Me.PART_Grid.Children.Add(Me.ActiveView)
+                            End If
+                        Next
+
+                        UIHelper.OnUIThread(
+                            Sub()
+                            End Sub, Threading.DispatcherPriority.Loaded)
+
                         _dropTarget = New ListViewDropTarget(Me)
                         WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
                     End If
@@ -119,7 +132,7 @@ Namespace Controls
                     text &= String.Format("       {0} {1} selected", Me.SelectedItems.Count, If(Me.SelectedItems.Count = 1, "item", "items"))
                     Dim items As IEnumerable(Of Item) = Me.SelectedItems.ToList()
                     Dim tcs As New TaskCompletionSource()
-                    Shell.SlowTaskQueue.Add(
+                    Shell.STATaskQueue.Add(
                         Sub()
                             Dim size As UInt64 = 0
                             For Each item In items

@@ -219,10 +219,7 @@ Namespace Behaviors
                     Sub()
                         _isInitialResize = True
                         _skipResize = False
-                        Dim view As ICollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
-                        If Not view Is Nothing AndAlso view.IsEmpty Then
-                            resizeVisibleRows()
-                        End If
+                        resizeVisibleRows()
                         UpdateSortGlyphs()
 
                         If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
@@ -363,8 +360,7 @@ Namespace Behaviors
 
                 ' set sort from state
                 If String.IsNullOrWhiteSpace(Me.GetCurrentSortPropertyName()) Then
-                    Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
-                    ResetSortDescriptions(view)
+                    ResetSortDescriptions()
                     If Not _gridViewState Is Nothing AndAlso Not String.IsNullOrEmpty(_gridViewState.SortPropertyName) Then
                         Me.SetSort(_gridViewState.SortPropertyName, _gridViewState.SortDirection)
                     Else
@@ -407,7 +403,8 @@ Namespace Behaviors
             End If
         End Sub
 
-        Protected Overridable Sub ResetSortDescriptions(view As ICollectionView)
+        Protected Overridable Sub ResetSortDescriptions()
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(_listView.ItemsSource)
             view.SortDescriptions.Clear()
             If Not String.IsNullOrWhiteSpace(Me.ColumnsIn.PrimarySortProperties) Then
                 For Each firstSortProperty In Me.ColumnsIn.PrimarySortProperties.Split(",")
@@ -458,10 +455,8 @@ Namespace Behaviors
                 i += 1
             Next
 
-            If _listView.Items.Count > 0 Then
-                _skipResize = False
-                resizeVisibleRows()
-            End If
+            _skipResize = False
+            resizeVisibleRows()
         End Sub
 
         Public Sub UpdateSortGlyphs()
@@ -606,13 +601,12 @@ Namespace Behaviors
                             ' write state
                             writeState()
 
-                            Dim view As ICollectionView = _listView.Items
                             Dim propertyName As String = GetSortPropertyName(column.Column)
                             If String.IsNullOrEmpty(propertyName) Then
                                 propertyName = GetPropertyName(column.Column)
                             End If
                             If Me.GetCurrentSortPropertyName() = propertyName Then
-                                ResetSortDescriptions(view)
+                                ResetSortDescriptions()
 
                                 Dim currentSortedColumnHeader As GridViewColumnHeader = GetCurrentSortedColumnHeader()
                                 If Not currentSortedColumnHeader Is Nothing Then

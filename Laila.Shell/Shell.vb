@@ -16,8 +16,7 @@ Public Class Shell
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
     Public Shared Event ShuttingDown As EventHandler
 
-    Public Shared SlowTaskQueue As New BlockingCollection(Of Action)
-    Public Shared PriorityTaskQueue As New BlockingCollection(Of Action)
+    Public Shared STATaskQueue As New BlockingCollection(Of Action)
     Public Shared MTATaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
 
@@ -57,26 +56,8 @@ Public Class Shell
 
         ImageHelper.Load()
 
-        ' threads for async retrieving of icons, images and overlays
-        For i = 1 To 25
-            Dim staThread As Thread = New Thread(
-                Sub()
-                    Try
-                        ' Process tasks from the queue
-                        For Each task In PriorityTaskQueue.GetConsumingEnumerable(ShuttingDownToken)
-                            task.Invoke()
-                        Next
-                    Catch ex As OperationCanceledException
-                        Debug.WriteLine("PriorityTaskQueue was canceled.")
-                    End Try
-                End Sub)
-            staThread.SetApartmentState(ApartmentState.STA)
-            staThread.Start()
-            _threads.Add(staThread)
-        Next
-
-        ' threads for mta
-        For i = 1 To 25
+        ' threads for mta (folders, items, ...)
+        For i = 1 To 35
             Dim mtaThread As Thread = New Thread(
                 Sub()
                     Try
@@ -85,21 +66,21 @@ Public Class Shell
                             task.Invoke()
                         Next
                     Catch ex As OperationCanceledException
-                        Debug.WriteLine("MTATaskQueue was canceled.")
+                        Debug.WriteLine("MTA1TaskQueue was canceled.")
                     End Try
                 End Sub)
-            mtaThread.SetApartmentState(ApartmentState.STA)
+            mtaThread.SetApartmentState(ApartmentState.MTA)
             mtaThread.Start()
             _threads.Add(mtaThread)
         Next
 
-        ' threads for everything else async
-        For i = 1 To 25
+        ' threads for ui async
+        For i = 1 To 35
             Dim staThread As Thread = New Thread(
                 Sub()
                     Try
                         ' Process tasks from the queue
-                        For Each task In SlowTaskQueue.GetConsumingEnumerable(ShuttingDownToken)
+                        For Each task In STATaskQueue.GetConsumingEnumerable(ShuttingDownToken)
                             task.Invoke()
                         Next
                     Catch ex As OperationCanceledException
@@ -112,7 +93,7 @@ Public Class Shell
         Next
 
         ' thread for disposing items
-        Dim staThread3 As Thread = New Thread(
+        Dim disposeThread As Thread = New Thread(
             Sub()
                 Try
                     ' while we're not shutting down...
@@ -156,9 +137,9 @@ Public Class Shell
                     Debug.WriteLine("Disposing thread was canceled.")
                 End Try
             End Sub)
-        staThread3.SetApartmentState(ApartmentState.STA)
-        staThread3.Start()
-        _threads.Add(staThread3)
+        disposeThread.SetApartmentState(ApartmentState.MTA)
+        disposeThread.Start()
+        _threads.Add(disposeThread)
 
         ' make window to receive SHChangeNotify messages and for building
         ' the drag and drop image
@@ -329,30 +310,35 @@ Public Class Shell
                 pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                 Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
-                ' make eventargs
-                Dim e As NotificationEventArgs = New NotificationEventArgs() With {
-                    .[Event] = lEvent
-                }
+                Shell.MTATaskQueue.Add(
+                    Sub()
+                        ' make eventargs
+                        Dim e As NotificationEventArgs = New NotificationEventArgs() With {
+                            .[Event] = lEvent
+                        }
 
-                Debug.WriteLine(lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString())
+                        Dim text As String = lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString() & Environment.NewLine
 
-                If Not IntPtr.Zero.Equals(pidl1) Then
-                    e.Item1 = Item.FromPidl(pidl1, Nothing, True, False)
-                    Debug.WriteLine(BitConverter.ToString(e.Item1.Pidl.Bytes) & vbCrLf & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")")
-                End If
-                If Not IntPtr.Zero.Equals(pidl2) Then
-                    e.Item2 = Item.FromPidl(pidl2, Nothing, True, False)
-                    Debug.WriteLine(BitConverter.ToString(e.Item2.Pidl.Bytes) & vbCrLf & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")")
-                End If
+                        If Not IntPtr.Zero.Equals(pidl1) Then
+                            e.Item1 = Item.FromPidl(pidl1, Nothing, False, False)
+                            text &= BitConverter.ToString(e.Item1.Pidl.Bytes) & vbCrLf & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")" & Environment.NewLine
+                        End If
+                        If Not IntPtr.Zero.Equals(pidl2) Then
+                            e.Item2 = Item.FromPidl(pidl2, Nothing, False, False)
+                            text &= BitConverter.ToString(e.Item2.Pidl.Bytes) & vbCrLf & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")" & Environment.NewLine
+                        End If
 
-                ' notify components
-                RaiseEvent Notification(Nothing, e)
+                        Debug.Write(text)
 
-                If Not e.Item1 Is Nothing Then e.Item1.Dispose()
-                If Not e.Item2 Is Nothing Then e.Item2.Dispose()
+                        ' notify components
+                        RaiseEvent Notification(Nothing, e)
 
-                ' unlock
-                Functions.SHChangeNotification_Unlock(hLock)
+                        If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
+                        If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
+
+                        ' unlock
+                        Functions.SHChangeNotification_Unlock(hLock)
+                    End Sub)
             End If
         ElseIf msg = WM.SETTINGCHANGE Then
             Shell.Settings.OnSettingChange()

@@ -54,10 +54,10 @@ Namespace Helpers
         Private Function getPropertyValue(item As Item, propertyName As String) As Object
             If propertyName = "ItemNameDisplaySortValue" Then
                 Return item.ItemNameDisplaySortValue
-            ElseIf propertyName.StartsWith("PropertiesByKeyAsText[") Then
-                Return item.PropertiesByKeyAsText(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1))?.Value
-            ElseIf propertyName.StartsWith("PropertiesByCanonicalName[") Then
-                Return item.PropertiesByCanonicalName(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1))?.Value
+            ElseIf propertyName.Substring(0, 18) = "PropertiesByKeyAsT" Then
+                Return item.PropertiesByKeyAsText(propertyName.Substring(22, propertyName.LastIndexOf("]") - 22))?.Value
+            ElseIf propertyName.Substring(0, 18) = "PropertiesByCanoni" Then
+                Return item.PropertiesByCanonicalName(propertyName.Substring(26, propertyName.LastIndexOf("]") - 26))?.Value
             Else
                 Throw New NotSupportedException()
             End If
@@ -66,10 +66,10 @@ Namespace Helpers
         Private Function getPropertyText(item As Item, propertyName As String) As Object
             If propertyName = "ItemNameDisplaySortValue" Then
                 Return item.ItemNameDisplaySortValue
-            ElseIf propertyName.StartsWith("PropertiesByKeyAsText[") Then
-                Return item.PropertiesByKeyAsText(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1))?.Text
-            ElseIf propertyName.StartsWith("PropertiesByCanonicalName[") Then
-                Return item.PropertiesByCanonicalName(propertyName.Substring(propertyName.IndexOf("[") + 1, propertyName.IndexOf("]") - propertyName.IndexOf("[") - 1))?.Text
+            ElseIf propertyName.Substring(0, 18) = "PropertiesByKeyAsT" Then
+                Return item.PropertiesByKeyAsText(propertyName.Substring(22, propertyName.LastIndexOf("]") - 22))?.Text
+            ElseIf propertyName.Substring(0, 18) = "PropertiesByCanoni" Then
+                Return item.PropertiesByCanonicalName(propertyName.Substring(26, propertyName.LastIndexOf("]") - 26))?.Text
             Else
                 Throw New NotSupportedException()
             End If

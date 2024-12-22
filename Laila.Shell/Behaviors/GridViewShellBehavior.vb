@@ -53,7 +53,7 @@ Namespace Behaviors
             End Using
         End Sub
 
-        Protected Overrides Sub ResetSortDescriptions(view As ICollectionView)
+        Protected Overrides Sub ResetSortDescriptions()
 
         End Sub
 

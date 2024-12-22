@@ -1,13 +1,10 @@
-﻿Imports System.Collections.Concurrent
-Imports System.Collections.ObjectModel
+﻿Imports System.Collections.ObjectModel
 Imports System.ComponentModel
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
 Imports System.Windows.Input
-Imports System.Windows.Media
-Imports System.Windows.Threading
 Imports Laila.Shell.Helpers
 
 Public Class Folder
@@ -273,7 +270,7 @@ Public Class Folder
             If Not disposedValue Then
                 Dim tcs As New TaskCompletionSource(Of Boolean)
 
-                Shell.SlowTaskQueue.Add(
+                Shell.STATaskQueue.Add(
                     Sub()
                         Try
                             If _hasSubFolders.HasValue Then
@@ -347,7 +344,7 @@ Public Class Folder
     Public Overridable Async Function GetItemsAsync() As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
-        Dim t As Thread = New Thread(
+        Shell.MTATaskQueue.Add(
             Sub()
                 Try
                     SyncLock _lock
@@ -360,8 +357,8 @@ Public Class Folder
                     tcs.SetException(ex)
                 End Try
             End Sub)
-        t.SetApartmentState(ApartmentState.MTA)
-        t.Start()
+        't.SetApartmentState(ApartmentState.MTA)
+        't.Start()
 
         Await tcs.Task.WaitAsync(Shell.ShuttingDownToken)
         If Not Shell.ShuttingDownToken.IsCancellationRequested Then
@@ -398,16 +395,8 @@ Public Class Folder
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
         Else
-            If Not TypeOf Me Is SearchFolder Then
-                ' destroy shellitem to cancel enumeration
-                Dim oldShellItem2 As IShellItem2 = _shellItem2
-                _shellItem2 = Me.GetNewShellItem()
-                If Not oldShellItem2 Is Nothing Then
-                    Marshal.ReleaseComObject(oldShellItem2)
-                End If
-            End If
             Debug.WriteLine("End loading " & Me.DisplayName & " (didn't mark completion)" & If(cts.Token.IsCancellationRequested, " cancelled", ""))
-            End If
+        End If
     End Sub
 
     Protected Sub enumerateItems(flags As UInt32,
@@ -481,7 +470,7 @@ Public Class Folder
                             ' threads for refreshing
                             For i = 0 To chuncks.Count - 1
                                 Dim j As Integer = i
-                                Dim mtaThread As Thread = New Thread(
+                                Shell.MTATaskQueue.Add(
                                     Sub()
                                         Try
                                             'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
@@ -504,7 +493,7 @@ Public Class Folder
                                                         If Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText") Then
                                                             Dim pkey As String = Me.ItemsSortPropertyName.Substring(Me.ItemsSortPropertyName.IndexOf("[") + 1)
                                                             pkey = pkey.Substring(0, pkey.IndexOf("]"))
-                                                            Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(pkey).Value
+                                                            Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(pkey)?.Value
                                                         ElseIf Me.ItemsSortPropertyName = "ItemNameDisplaySortValue" Then
                                                             Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
                                                         End If
@@ -514,17 +503,17 @@ Public Class Folder
                                                 End Try
                                             Next
 
-                                            SyncLock _threadsLock
-                                                _threads.Remove(mtaThread)
-                                            End SyncLock
+                                            'SyncLock _threadsLock
+                                            '    _threads.Remove(mtaThread)
+                                            'End SyncLock
                                             'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") finished for " & Me.FullPath)
                                         Catch ex As OperationCanceledException
                                             Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") was canceled for " & Me.FullPath)
                                         End Try
                                     End Sub)
-                                mtaThread.SetApartmentState(ApartmentState.MTA)
-                                mtaThread.Start()
-                                _threads.Add(mtaThread)
+                                'mtaThread.SetApartmentState(ApartmentState.MTA)
+                                'mtaThread.Start()
+                                '_threads.Add(mtaThread)
                             Next
                         End SyncLock
                     End If
@@ -608,8 +597,8 @@ Public Class Folder
                                         End If
                                     End If
 
-                                    ' preload Content view mode properties
-                                    If Me.View = "Content" Then
+                                    ' preload Content view mode properties because searchfolder is slow
+                                    If TypeOf Me Is SearchFolder Then
                                         Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
                                     End If
 
@@ -684,9 +673,30 @@ Public Class Folder
             Return _itemsSortPropertyName
         End Get
         Set(value As String)
-            Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
             If Not view Is Nothing Then
-                view.CustomSort = New ItemComparer(Me.ItemsGroupByPropertyName, value, Me._itemsSortDirection)
+                Dim desc As SortDescription
+                If Not String.IsNullOrWhiteSpace(value) Then
+                    desc = New SortDescription() With {
+                        .PropertyName = value,
+                        .Direction = Me.ItemsSortDirection
+                    }
+                End If
+                If view.SortDescriptions.Count = 0 AndAlso Not String.IsNullOrWhiteSpace(value) Then
+                    view.SortDescriptions.Add(desc)
+                ElseIf Not String.IsNullOrWhiteSpace(value) Then
+                    view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
+                ElseIf Not String.IsNullOrWhiteSpace(Me.ItemsGroupByPropertyName) _
+                    AndAlso String.IsNullOrWhiteSpace(value) _
+                    AndAlso view.SortDescriptions.Count > 1 Then
+                    For x = 2 To view.SortDescriptions.Count
+                        view.SortDescriptions.RemoveAt(view.SortDescriptions.Count - 1)
+                    Next
+                ElseIf String.IsNullOrWhiteSpace(Me.ItemsGroupByPropertyName) _
+                    AndAlso String.IsNullOrWhiteSpace(value) Then
+                    view.SortDescriptions.Clear()
+                End If
+
                 Me.SetValue(_itemsSortPropertyName, value)
             End If
         End Set
@@ -697,9 +707,16 @@ Public Class Folder
             Return _itemsSortDirection
         End Get
         Set(value As ListSortDirection)
-            Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
             If Not view Is Nothing Then
-                view.CustomSort = New ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, value)
+                For x = 0 To view.SortDescriptions.Count - 1
+                    Dim desc As SortDescription = New SortDescription() With {
+                        .PropertyName = view.SortDescriptions(x).PropertyName,
+                        .Direction = value
+                    }
+                    view.SortDescriptions(x) = desc
+                Next
+
                 Me.SetValue(_itemsSortDirection, value)
             End If
         End Set
@@ -710,19 +727,31 @@ Public Class Folder
             Return _itemsGroupByPropertyName
         End Get
         Set(value As String)
-            Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
             If Not view Is Nothing Then
-                view.CustomSort = New ItemComparer(value, Me.ItemsSortPropertyName, Me._itemsSortDirection)
                 If Not String.IsNullOrWhiteSpace(value) Then
                     Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(value)
+                    Dim groupSortDesc As SortDescription = New SortDescription() With {
+                        .PropertyName = value,
+                        .Direction = Me.ItemsSortDirection
+                    }
                     If view.GroupDescriptions.Count > 0 Then
                         view.GroupDescriptions(0) = groupDescription
                     Else
                         view.GroupDescriptions.Add(groupDescription)
                     End If
+                    If view.SortDescriptions.Count = 1 Then
+                        view.SortDescriptions.Insert(0, groupSortDesc)
+                    ElseIf view.SortDescriptions.Count = 2 Then
+                        view.SortDescriptions(0) = groupSortDesc
+                    End If
                 ElseIf view.GroupDescriptions.Count > 0 Then
                     view.GroupDescriptions.Clear()
+                    If view.SortDescriptions.Count > 0 Then
+                        view.SortDescriptions.RemoveAt(0)
+                    End If
                 End If
+
                 Me.SetValue(_itemsGroupByPropertyName, value)
             End If
         End Set
@@ -754,11 +783,16 @@ Public Class Folder
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.FullPath?.Equals(Me.FullPath) Then
                             If Not _items Is Nothing Then
+                                e.Item1.Refresh()
                                 UIHelper.OnUIThread(
                                     Sub()
                                         Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(e.Item1.FullPath))
                                         If existing Is Nothing Then
-                                            _items.Add(Item.FromPidl(e.Item1.Pidl.AbsolutePIDL, Me, False))
+                                            e.Item1._parent = Me
+                                            e.Item1.HookUpdates()
+                                            e.IsHandled1 = True
+                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                            _items.InsertSorted(e.Item1, c)
                                         Else
                                             existing.Refresh()
                                         End If
@@ -770,11 +804,16 @@ Public Class Folder
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.FullPath?.Equals(Me.FullPath) Then
                             If Not _items Is Nothing Then
+                                e.Item1.Refresh()
                                 UIHelper.OnUIThread(
                                     Sub()
                                         Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(e.Item1.FullPath))
                                         If existing Is Nothing Then
-                                            _items.Add(Item.FromPidl(e.Item1.Pidl.AbsolutePIDL, Me, False))
+                                            e.Item1._parent = Me
+                                            e.Item1.HookUpdates()
+                                            e.IsHandled1 = True
+                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                            _items.InsertSorted(e.Item1, c)
                                         Else
                                             existing.Refresh()
                                         End If
@@ -801,13 +840,15 @@ Public Class Folder
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
+                        e.Item1.Refresh()
                         UIHelper.OnUIThread(
                             Sub()
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(e.Item1.FullPath)) Is Nothing Then
-                                    Dim item1 As IShellItem2 = Item.GetIShellItem2FromPidl(e.Item1.Pidl.AbsolutePIDL, Nothing)
-                                    If Not item1 Is Nothing Then
-                                        _items.Add(New Folder(item1, Me, False, True))
-                                    End If
+                                    e.Item1._parent = Me
+                                    e.Item1.HookUpdates()
+                                    e.IsHandled1 = True
+                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                    _items.InsertSorted(e.Item1, c)
                                 End If
                             End Sub)
                     End If

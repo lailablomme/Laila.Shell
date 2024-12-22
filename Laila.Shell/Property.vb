@@ -276,7 +276,7 @@ Public Class [Property]
         Get
             Dim tcs As New TaskCompletionSource(Of Boolean)
 
-            Shell.PriorityTaskQueue.Add(
+            Shell.MTATaskQueue.Add(
                 Sub()
                     Try
                         tcs.SetResult(Me.HasIcon)
@@ -336,7 +336,7 @@ Public Class [Property]
         Get
             Dim tcs As New TaskCompletionSource(Of String())
 
-            Shell.PriorityTaskQueue.Add(
+            Shell.MTATaskQueue.Add(
                 Sub()
                     Try
                         tcs.SetResult(Me.ImageReferences16)

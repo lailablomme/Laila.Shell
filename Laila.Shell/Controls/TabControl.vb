@@ -307,7 +307,7 @@ Namespace Controls
             Private _selectedItems As IEnumerable(Of Item)
 
             Public Sub New()
-                Shell.PriorityTaskQueue.Add(
+                Shell.MTATaskQueue.Add(
                     Sub()
                         Dim folder As Folder = Shell.GetSpecialFolder("This computer").Clone()
                         UIHelper.OnUIThread(

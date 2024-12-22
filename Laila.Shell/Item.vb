@@ -128,9 +128,7 @@ Public Class Item
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
         If Not shellItem2 Is Nothing Then
-            If doHookUpdates Then
-                AddHandler Shell.Notification, AddressOf shell_Notification
-            End If
+            If doHookUpdates Then Me.HookUpdates()
             Shell.AddToItemsCache(Me)
         Else
             _fullPath = String.Empty
@@ -138,6 +136,10 @@ Public Class Item
         If Not logicalParent Is Nothing Then
             _parent = logicalParent
         End If
+    End Sub
+
+    Public Sub HookUpdates()
+        AddHandler Shell.Notification, AddressOf shell_Notification
     End Sub
 
     Public ReadOnly Property ShellItem2 As IShellItem2
@@ -327,6 +329,8 @@ Public Class Item
                 Else
                     Me.Dispose()
                 End If
+            Else
+                Debug.WriteLine(Me.FullPath & "  " & disposedValue)
             End If
         End SyncLock
     End Sub
@@ -410,7 +414,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of Byte)
 
-            Shell.PriorityTaskQueue.Add(
+            Shell.STATaskQueue.Add(
                 Sub()
                     Try
                         tcs.SetResult(Me.OverlayIconIndex)
@@ -456,7 +460,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource)
 
-            Shell.PriorityTaskQueue.Add(
+            Shell.STATaskQueue.Add(
                 Sub()
                     Try
                         Dim result As ImageSource
@@ -503,7 +507,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource)
 
-            Shell.PriorityTaskQueue.Add(
+            Shell.STATaskQueue.Add(
                 Sub()
                     Try
                         Dim result As ImageSource
@@ -528,7 +532,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource())
 
-            Shell.PriorityTaskQueue.Add(
+            Shell.MTATaskQueue.Add(
                 Sub()
                     Try
                         Dim result As ImageSource()
@@ -554,7 +558,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource)
 
-            Shell.PriorityTaskQueue.Add(
+            Shell.MTATaskQueue.Add(
                 Sub()
                     Try
                         Dim result As ImageSource
@@ -617,7 +621,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of Boolean)
 
-            Shell.PriorityTaskQueue.Add(
+            Shell.STATaskQueue.Add(
                 Sub()
                     Try
                         tcs.SetResult(Me.HasThumbnail)
@@ -1102,17 +1106,15 @@ Public Class Item
             Select Case e.Event
                 Case SHCNE.UPDATEITEM
                     If Me.Pidl?.Equals(e.Item1.Pidl) Then
-                        Shell.MTATaskQueue.Add(
-                            Sub()
-                                Me.Refresh()
-                            End Sub)
+                        Me.Refresh()
                     End If
-                Case SHCNE.FREESPACE, SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
+                Case SHCNE.FREESPACE
+                    If Me.IsDrive Then
+                        Me.Refresh()
+                    End If
+                Case SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                     If Me.IsDrive AndAlso Me.FullPath?.Equals(e.Item1?.FullPath) Then
-                        Shell.MTATaskQueue.Add(
-                            Sub()
-                                Me.Refresh()
-                            End Sub)
+                        Me.Refresh()
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If Me.FullPath?.Equals(e.Item1?.FullPath) Then
@@ -1196,4 +1198,8 @@ Public Class Item
     Public Function Clone() As Item
         Return Item.FromPidl(Me.Pidl.AbsolutePIDL, _parent, _doKeepAlive)
     End Function
+
+    Protected Overrides Sub Finalize()
+        MyBase.Finalize()
+    End Sub
 End Class
