@@ -217,6 +217,8 @@ Namespace Controls
                     pinnedItem.Dispose()
                     If existingPinnedItem.TreeRootIndex <> TreeRootSection.PINNED + count Then
                         existingPinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
+                        Me.Items.Remove(existingPinnedItem)
+                        Me.Items.Add(existingPinnedItem)
                     End If
                 End If
                 count += 1
@@ -262,6 +264,8 @@ Namespace Controls
                     frequentFolder.Dispose()
                     If existingFrequentFolder.TreeRootIndex <> TreeRootSection.FREQUENT + count Then
                         existingFrequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
+                        Me.Items.Remove(existingFrequentFolder)
+                        Me.Items.Add(existingFrequentFolder)
                     End If
                 End If
                 count += 1

@@ -4,6 +4,7 @@
                     xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
                     xmlns:converters="clr-namespace:Laila.Shell.Converters"
                     xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
+                    xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
     <Style TargetType="{x:Type local:ContentView}">
@@ -81,6 +82,9 @@
                                                 <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
+                                            <Grid.Resources>
+                                                <shell:ImageHelper x:Key="imageHelper" />
+                                            </Grid.Resources>
                                             <Separator Margin="0,-3,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True" />
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
@@ -109,8 +113,46 @@
                                                     </Style>
                                                 </ItemsControl.Style>
                                             </ItemsControl>
+                                            <Image Grid.Column="2" Source="{Binding DefaultFileIconLarge, Source={StaticResource imageHelper}}" Width="32" Height="32"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                    <Condition Binding="{Binding IsFolder}" Value="False" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Image Grid.Column="2" Source="{Binding DefaultFolderIconLarge, Source={StaticResource imageHelper}}" Width="32" Height="32"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                    <Condition Binding="{Binding IsFolder}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
                                             <Image Grid.Column="2" Source="{Binding ImageAsync[32], IsAsync=True}" Width="32" Height="32" 
-                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center">
+                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center" x:Name="PART_Image">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>

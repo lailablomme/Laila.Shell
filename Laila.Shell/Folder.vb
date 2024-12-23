@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Data
 Imports System.Windows.Input
+Imports System.Windows.Media
 Imports Laila.Shell.Helpers
 
 Public Class Folder

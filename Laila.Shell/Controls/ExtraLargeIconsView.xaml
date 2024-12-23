@@ -3,6 +3,7 @@
                     xmlns:local="clr-namespace:Laila.Shell.Controls"
                     xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
                     xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
+                    xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
     <Style TargetType="{x:Type local:ExtraLargeIconsView}">
@@ -74,7 +75,49 @@
                                                 <RowDefinition Height="216" />
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
-                                            <Image Source="{Binding ImageAsync[216], IsAsync=True}" Width="216" Height="216" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                            <Grid.Resources>
+                                                <shell:ImageHelper x:Key="imageHelper" />
+                                            </Grid.Resources>
+                                            <Image Source="{Binding DefaultFileIconJumbo, Source={StaticResource imageHelper}}" Width="216" Height="216"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                    <Condition Binding="{Binding IsFolder}" Value="False" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Image Source="{Binding DefaultFolderIconJumbo, Source={StaticResource imageHelper}}" Width="216" Height="216"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                    <Condition Binding="{Binding IsFolder}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Image Source="{Binding ImageAsync[216], IsAsync=True}" Width="216" Height="216" 
+                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" x:Name="PART_Image">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>

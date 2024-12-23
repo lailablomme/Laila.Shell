@@ -5,6 +5,7 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Forms
+Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports FileSignatures
 Imports FileSignatures.Formats
@@ -22,17 +23,53 @@ Public Class ImageHelper
     Private Shared _imageListExtraLarge As IImageList
     Private Shared _imageListJumbo As IImageList
 
+    Public Shared Property DefaultFileIconSmall As ImageSource
+    Public Shared Property DefaultFileIconLarge As ImageSource
+    Public Shared Property DefaultFileIconExtraLarge As ImageSource
+    Public Shared Property DefaultFileIconJumbo As ImageSource
+    Public Shared Property DefaultFolderIconSmall As ImageSource
+    Public Shared Property DefaultFolderIconLarge As ImageSource
+    Public Shared Property DefaultFolderIconExtraLarge As ImageSource
+    Public Shared Property DefaultFolderIconJumbo As ImageSource
+
 
     Shared Sub New()
         _recognised = FileFormatLocator.GetFormats().OfType(Of FileSignatures.Formats.Image)()
         _inspector = New FileFormatInspector(_recognised)
     End Sub
 
+    Private Shared Function getFileIcon(attributes As Integer, size As Integer) As ImageSource
+        Dim shfi As New SHFILEINFO(), result As BitmapSource
+        Try
+            Functions.SHGetFileInfo(
+                "c:\dummy",
+                attributes,
+                shfi,
+                Marshal.SizeOf(shfi),
+                SHGFI.SHGFI_ICON Or SHGFI.SHGFI_USEFILEATTRIBUTES)
+            Return ImageHelper.GetIcon(shfi.iIcon, size)
+        Finally
+            If Not IntPtr.Zero.Equals(shfi.hIcon) Then
+                Functions.DestroyIcon(shfi.hIcon)
+            End If
+        End Try
+        Return result
+    End Function
+
     Public Shared Sub Load()
         Functions.SHGetImageList(SHIL.SHIL_SMALL, GetType(IImageList).GUID, _imageListSmall)
         Functions.SHGetImageList(SHIL.SHIL_LARGE, GetType(IImageList).GUID, _imageListLarge)
         Functions.SHGetImageList(SHIL.SHIL_EXTRALARGE, GetType(IImageList).GUID, _imageListExtraLarge)
         Functions.SHGetImageList(SHIL.SHIL_JUMBO, GetType(IImageList).GUID, _imageListJumbo)
+
+        DefaultFileIconSmall = getFileIcon(&H80, 16)
+        DefaultFileIconLarge = getFileIcon(&H80, 32)
+        DefaultFileIconExtraLarge = getFileIcon(&H80, 48)
+        DefaultFileIconJumbo = getFileIcon(&H80, 128)
+        DefaultFolderIconSmall = getFileIcon(&H10, 16)
+        DefaultFolderIconLarge = getFileIcon(&H10, 32)
+        DefaultFolderIconExtraLarge = getFileIcon(&H10, 48)
+        DefaultFolderIconJumbo = getFileIcon(&H10, 128)
     End Sub
 
     Public Shared Function IsImage(fullPath As String) As Boolean

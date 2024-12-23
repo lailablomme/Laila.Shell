@@ -4,6 +4,7 @@ Imports Laila.Shell.Helpers
 Imports System.ComponentModel
 Imports System.Windows.Data
 Imports System.Windows.Media
+Imports System.Reflection
 
 Namespace Controls
     Public Class DetailsView
@@ -119,6 +120,77 @@ Namespace Controls
                     imageFactory1.SetValue(Image.StyleProperty, style)
                     Return imageFactory1
                 End Function
+
+            Dim getDefaultIconFactory As Func(Of String, Boolean, FrameworkElementFactory) =
+                Function(bindTo As String, isFolder As Boolean) As FrameworkElementFactory
+                    Dim imageFactory0 As FrameworkElementFactory = New FrameworkElementFactory(GetType(Image))
+                    imageFactory0.SetValue(Grid.ColumnProperty, 0)
+                    imageFactory0.SetValue(Image.MarginProperty, New Thickness(0, 0, 4, 0))
+                    imageFactory0.SetValue(Image.WidthProperty, Convert.ToDouble(16))
+                    imageFactory0.SetValue(Image.HeightProperty, Convert.ToDouble(16))
+                    imageFactory0.SetValue(Image.HorizontalAlignmentProperty, HorizontalAlignment.Left)
+                    imageFactory0.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center)
+                    imageFactory0.SetValue(Image.SourceProperty, New Binding() With {
+                        .Path = New PropertyPath("DefaultIconSmall"),
+                        .Mode = BindingMode.OneWay
+                    })
+                    Dim style0 As Style = New Style(GetType(Image))
+                    style0.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Collapsed))
+                    style0.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(1)))
+                    Dim dataTrigger02 As DataTrigger = New DataTrigger() With {
+                        .Binding = New Binding("IsHidden") With
+                                    {
+                                        .Mode = BindingMode.OneWay
+                                    },
+                        .Value = True
+                    }
+                    dataTrigger02.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(0.5)))
+                    style0.Triggers.Add(dataTrigger02)
+                    Dim dataTrigger03 As DataTrigger = New DataTrigger() With {
+                        .Binding = New Binding("IsCut") With
+                                    {
+                                        .Mode = BindingMode.OneWay
+                                    },
+                        .Value = True
+                    }
+                    dataTrigger03.Setters.Add(New Setter(Image.OpacityProperty, Convert.ToDouble(0.5)))
+                    style0.Triggers.Add(dataTrigger03)
+                    Dim dataTrigger04 As MultiDataTrigger = New MultiDataTrigger()
+                    Dim dataTrigger04Condition1 As Condition = New Condition() With {
+                        .Binding = New Binding() With {
+                            .Path = New PropertyPath("IconAsync[16]"),
+                            .Mode = BindingMode.OneWay,
+                            .IsAsync = True
+                        },
+                        .Value = Nothing
+                    }
+                    dataTrigger04.Conditions.Add(dataTrigger04Condition1)
+                    Dim dataTrigger04Condition2 As Condition = New Condition() With {
+                        .Binding = New Binding() With {
+                            .Path = New PropertyPath("IsFolder"),
+                            .Mode = BindingMode.OneWay
+                        },
+                        .Value = isFolder
+                    }
+                    dataTrigger04.Conditions.Add(dataTrigger04Condition2)
+                    Dim dataTrigger04Condition3 As Condition = New Condition() With {
+                        .Binding = New Binding(String.Format("ColumnIndexFor[PropertiesByKeyAsText[{0}].Value]", column.PROPERTYKEY.ToString())) With
+                                    {
+                                        .ElementName = "ext",
+                                        .Mode = BindingMode.OneWay
+                                    },
+                        .Value = 0
+                    }
+                    dataTrigger04.Conditions.Add(dataTrigger04Condition3)
+                    dataTrigger04.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Visible))
+                    style0.Triggers.Add(dataTrigger04)
+                    style0.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Collapsed))
+                    imageFactory0.SetValue(Image.StyleProperty, style0)
+                    Return imageFactory0
+                End Function
+
+            gridFactory.AppendChild(getDefaultIconFactory("DefaultFileIconSmall", False))
+            gridFactory.AppendChild(getDefaultIconFactory("DefaultFolderIconSmall", True))
             gridFactory.AppendChild(getIconFactory("IconAsync[16]"))
             gridFactory.AppendChild(getIconFactory("OverlayImageAsync[16]"))
 
