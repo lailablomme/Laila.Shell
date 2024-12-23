@@ -130,40 +130,38 @@ Namespace Controls
             ' system
             Me.Items.Add(homeFolder)
             Me.Items.Add(galleryFolder)
-                    ' separators
-                    Me.Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
-                    Me.Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
-                    ' environment
-                    Me.Items.Add(thisComputer)
-                    Me.Items.Add(network)
+            ' separators
+            Me.Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
+            Me.Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
+            ' environment
+            Me.Items.Add(thisComputer)
+            Me.Items.Add(network)
 
-                    updatePinnedItems()
-                    updateFrequentFolders()
+            updatePinnedItems()
+            updateFrequentFolders()
 
-                    ' frequent folders
-                    _frequentUpdateTimer = New Timer(New TimerCallback(
+            ' frequent folders
+            _frequentUpdateTimer = New Timer(New TimerCallback(
                 Sub()
                     UIHelper.OnUIThread(
                         Async Sub()
                             Await updateFrequentFolders()
-                            CollectionViewSource.GetDefaultView(Me.Items).Refresh()
                         End Sub)
                 End Sub), Nothing, 1000 * 60, 1000 * 60)
 
-                    AddHandler PinnedItems.ItemPinned,
-                    Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                        Await updatePinnedItems()
-                        Await updateFrequentFolders()
-                        CollectionViewSource.GetDefaultView(Me.Items).Refresh()
-                    End Sub
-                    AddHandler PinnedItems.ItemUnpinned,
+            AddHandler PinnedItems.ItemPinned,
                 Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
                     Await updatePinnedItems()
                     Await updateFrequentFolders()
-                    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
                 End Sub
-                    CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+            AddHandler PinnedItems.ItemUnpinned,
+                Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
+                    Await updatePinnedItems()
+                    Await updateFrequentFolders()
                 End Sub
+
+            CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+        End Sub
 
         Private Function GetIsSelectionDownFolder(folder As Folder) As Boolean
             If Not Me.SelectedItem Is Nothing AndAlso Me.SelectedItem.Equals(folder) Then
