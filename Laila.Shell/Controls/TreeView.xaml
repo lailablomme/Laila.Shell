@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Laila.Shell.Controls"
+                    xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers">
 
     <Style x:Key="FocusVisual">
@@ -156,8 +157,62 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
+                                        <Grid.Resources>
+                                            <shell:ImageHelper x:Key="imageHelper" />
+                                        </Grid.Resources>
                                         <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" />
-                                        <Image Grid.Column="1" Source="{Binding IconAsync[16], IsAsync=True}" Margin="5,0,4,0" Width="16" Height="16">
+                                        <Image Grid.Column="1" Source="{Binding DefaultFileIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                            <Image.Style>
+                                                <Style>
+                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                <Condition Binding="{Binding IsFolder}" Value="False" />
+                                                            </MultiDataTrigger.Conditions>
+                                                            <MultiDataTrigger.Setters>
+                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            </MultiDataTrigger.Setters>
+                                                        </MultiDataTrigger>
+                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
+                                        <Image Grid.Column="1" Source="{Binding DefaultFolderIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                            <Image.Style>
+                                                <Style>
+                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                <Condition Binding="{Binding IsFolder}" Value="True" />
+                                                            </MultiDataTrigger.Conditions>
+                                                            <MultiDataTrigger.Setters>
+                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            </MultiDataTrigger.Setters>
+                                                        </MultiDataTrigger>
+                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
+                                        <Image Grid.Column="1" Source="{Binding IconAsync[16], IsAsync=True}" 
+                                               Margin="5,0,4,0" Width="16" Height="16" x:Name="PART_Image">
                                             <Image.Style>
                                                 <Style>
                                                     <Setter Property="Image.Opacity" Value="1" />

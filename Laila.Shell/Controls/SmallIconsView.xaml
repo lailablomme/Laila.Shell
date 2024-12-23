@@ -117,6 +117,9 @@
                                                                     <Setter Property="Image.Visibility" Value="Visible" />
                                                                 </MultiDataTrigger.Setters>
                                                             </MultiDataTrigger>
+                                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Image.Style>
@@ -136,12 +139,15 @@
                                                                     <Setter Property="Image.Visibility" Value="Visible" />
                                                                 </MultiDataTrigger.Setters>
                                                             </MultiDataTrigger>
+                                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
                                             <Image Grid.Column="2" Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
-                                                   UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" x:Name="PART_Image">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>
