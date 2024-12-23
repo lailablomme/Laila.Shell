@@ -132,7 +132,8 @@ Namespace Controls
                     imageFactory0.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center)
                     imageFactory0.SetValue(Image.SourceProperty, New Binding() With {
                         .Path = New PropertyPath(bindTo),
-                        .Mode = BindingMode.OneWay
+                        .Mode = BindingMode.OneWay,
+                        .Source = New ImageHelper()
                     })
                     Dim style0 As Style = New Style(GetType(Image))
                     style0.Setters.Add(New Setter(Image.VisibilityProperty, Visibility.Collapsed))
