@@ -131,7 +131,7 @@ Namespace Controls
                     imageFactory0.SetValue(Image.HorizontalAlignmentProperty, HorizontalAlignment.Left)
                     imageFactory0.SetValue(Image.VerticalAlignmentProperty, VerticalAlignment.Center)
                     imageFactory0.SetValue(Image.SourceProperty, New Binding() With {
-                        .Path = New PropertyPath("DefaultIconSmall"),
+                        .Path = New PropertyPath(bindTo),
                         .Mode = BindingMode.OneWay
                     })
                     Dim style0 As Style = New Style(GetType(Image))
