@@ -152,15 +152,8 @@ Public Class Item
     Public ReadOnly Property Pidl As Pidl
         Get
             If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
-                Dim ptr As IntPtr, pidlptr As IntPtr
-                Try
-                    ptr = Marshal.GetIUnknownForObject(_shellItem2)
-                    Functions.SHGetIDListFromObject(ptr, pidlptr)
-                Finally
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        Marshal.Release(ptr)
-                    End If
-                End Try
+                Dim pidlptr As IntPtr
+                Functions.SHGetIDListFromObject(_shellItem2, pidlptr)
                 _pidl = New Pidl(pidlptr)
             End If
             Return _pidl
@@ -514,7 +507,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource())
 
-            Shell.MTATaskQueue.Add(
+            Shell.STATaskQueue.Add(
                 Sub()
                     Try
                         Dim result As ImageSource()
@@ -540,7 +533,7 @@ Public Class Item
         Get
             Dim tcs As New TaskCompletionSource(Of ImageSource)
 
-            Shell.MTATaskQueue.Add(
+            Shell.STATaskQueue.Add(
                 Sub()
                     Try
                         Dim result As ImageSource
@@ -870,14 +863,18 @@ Public Class Item
                 If Not _propertiesByKey.TryGetValue(propertyKey, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
                     SyncLock _shellItemLock
-                        [property] = [Property].FromKey(key, Me.ShellItem2)
+                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                            [property] = [Property].FromKey(key, Me.ShellItem2)
+                        End If
                     End SyncLock
                     _propertiesLock.Wait()
-                    If Not _propertiesByKey.ContainsKey(propertyKey) Then
-                        _propertiesByKey.Add(propertyKey, [property])
-                    Else
-                        [property].Dispose()
-                        [property] = _propertiesByKey(propertyKey)
+                    If Not [property] Is Nothing Then
+                        If Not _propertiesByKey.ContainsKey(propertyKey) Then
+                            _propertiesByKey.Add(propertyKey, [property])
+                        Else
+                            [property].Dispose()
+                            [property] = _propertiesByKey(propertyKey)
+                        End If
                     End If
                 End If
             Finally
@@ -895,14 +892,18 @@ Public Class Item
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
                     SyncLock _shellItemLock
-                        [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                            [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                        End If
                     End SyncLock
                     _propertiesLock.Wait()
-                    If Not _propertiesByKey.ContainsKey(propertyKey.ToString()) Then
-                        _propertiesByKey.Add(propertyKey.ToString(), [property])
-                    Else
-                        [property].Dispose()
-                        [property] = _propertiesByKey(propertyKey.ToString())
+                    If Not [property] Is Nothing Then
+                        If Not _propertiesByKey.ContainsKey(propertyKey.ToString()) Then
+                            _propertiesByKey.Add(propertyKey.ToString(), [property])
+                        Else
+                            [property].Dispose()
+                            [property] = _propertiesByKey(propertyKey.ToString())
+                        End If
                     End If
                 End If
             Finally
@@ -920,14 +921,18 @@ Public Class Item
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
                     SyncLock _shellItemLock
-                        [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                            [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                        End If
                     End SyncLock
                     _propertiesLock.Wait()
-                    If Not _propertiesByCanonicalName.ContainsKey(canonicalName) Then
-                        _propertiesByCanonicalName.Add(canonicalName, [property])
-                    Else
-                        [property].Dispose()
-                        [property] = _propertiesByCanonicalName(canonicalName)
+                    If Not [property] Is Nothing Then
+                        If Not _propertiesByCanonicalName.ContainsKey(canonicalName) Then
+                            _propertiesByCanonicalName.Add(canonicalName, [property])
+                        Else
+                            [property].Dispose()
+                            [property] = _propertiesByCanonicalName(canonicalName)
+                        End If
                     End If
                 End If
             Finally
@@ -1089,6 +1094,9 @@ Public Class Item
                 Case SHCNE.UPDATEITEM
                     If Me.Pidl?.Equals(e.Item1.Pidl) Then
                         Me.Refresh()
+                        If Not _parent Is Nothing Then
+                            _parent.Refresh()
+                        End If
                     End If
                 Case SHCNE.FREESPACE
                     If Me.IsDrive AndAlso Me.Pidl?.Equals(e.Item1.Pidl) Then

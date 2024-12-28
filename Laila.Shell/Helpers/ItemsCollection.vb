@@ -4,7 +4,7 @@ Imports System.ComponentModel
 Imports System.Windows.Data
 
 Namespace Helpers
-    Public Class CustomObservableCollection(Of T)
+    Public Class ItemsCollection(Of T)
         Inherits ObservableCollection(Of T)
 
         Public Sub UpdateRange(itemsToAdd As IEnumerable(Of T), itemsToRemove As IEnumerable(Of T))

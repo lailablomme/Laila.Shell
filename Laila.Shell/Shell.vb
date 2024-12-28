@@ -18,7 +18,6 @@ Public Class Shell
     Public Shared Event ShuttingDown As EventHandler
 
     Public Shared STATaskQueue As New BlockingCollection(Of Action)
-    Public Shared MTATaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
 
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
@@ -57,27 +56,8 @@ Public Class Shell
 
         ImageHelper.Load()
 
-        ' threads for mta (folders, items, ...)
-        For i = 1 To 35
-            Dim mtaThread As Thread = New Thread(
-                Sub()
-                    Try
-                        ' Process tasks from the queue
-                        For Each task In MTATaskQueue.GetConsumingEnumerable(ShuttingDownToken)
-                            task.Invoke()
-                        Next
-                    Catch ex As OperationCanceledException
-                        Debug.WriteLine("MTATaskQueue thread was canceled.")
-                    End Try
-                End Sub)
-            mtaThread.SetApartmentState(ApartmentState.MTA)
-            mtaThread.IsBackground = True
-            mtaThread.Start()
-            _threads.Add(mtaThread)
-        Next
-
-        ' threads for ui async
-        For i = 1 To 55
+        ' all sta threads, because not every shell item supports mta
+        For i = 1 To 75
             Dim staThread As Thread = New Thread(
                 Sub()
                     Try
@@ -155,7 +135,7 @@ Public Class Shell
             End Sub
 
         ' add special folders
-        Shell.MTATaskQueue.Add(
+        Shell.STATaskQueue.Add(
             Sub()
                 addSpecialFolder("Desktop", Folder.FromDesktop())
                 addSpecialFolder("Home", Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, False))
@@ -169,7 +149,7 @@ Public Class Shell
                 addSpecialFolder("Network", Folder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing, False))
                 addSpecialFolder("Gallery", Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing, False))
                 addSpecialFolder("Recycle Bin", Folder.FromParsingName("shell:::{645FF040-5081-101B-9F08-00AA002F954E}", Nothing, False))
-                'addSpecialFolder("Recent", CType(Folder.FromParsingName(Environment.ExpandEnvironmentVariables("%APPDATA%\Microsoft\Windows"), Nothing), Folder) _
+                addSpecialFolder("Recent", Folder.FromParsingName(Environment.ExpandEnvironmentVariables("%APPDATA%\Microsoft\Windows\Recent"), Nothing, False))
                 '                                 .GetItems().First(Function(i) i.FullPath.EndsWith("\Recent")))
                 addSpecialFolder("OneDrive", Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing, False))
                 addSpecialFolder("OneDrive Business", Folder.FromParsingName("shell:::{04271989-C4D2-BEC7-A521-3DF166FAB4BA}", Nothing, False))
@@ -249,6 +229,15 @@ Public Class Shell
             ' dispose controls
             RaiseEvent ShuttingDown(Nothing, New EventArgs())
 
+            ' clean up items
+            Dim items As List(Of Item)
+            SyncLock Shell._itemsCacheLock
+                items = Shell.ItemsCache.Select(Function(i) i.Item1).ToList()
+            End SyncLock
+            For Each item In items
+                item.Dispose()
+            Next
+
             ' cancel threads
             _shutDownTokensSource.Cancel()
 
@@ -291,7 +280,7 @@ Public Class Shell
                 pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                 Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
-                Shell.MTATaskQueue.Add(
+                Shell.STATaskQueue.Add(
                     Sub()
                         ' make eventargs
                         Dim e As NotificationEventArgs = New NotificationEventArgs() With {

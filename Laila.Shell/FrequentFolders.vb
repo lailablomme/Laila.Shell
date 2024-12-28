@@ -28,7 +28,7 @@ Public Class FrequentFolders
 
                 Dim tcs As New TaskCompletionSource(Of IEnumerable(Of Item))
 
-                Shell.MTATaskQueue.Add(
+                Shell.STATaskQueue.Add(
                     Sub()
                         Try
                             Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()

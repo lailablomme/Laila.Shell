@@ -19,7 +19,7 @@ Public Class Folder
     Public Property LastScrollSize As Size
 
     Private _columns As List(Of Column)
-    Friend _items As CustomObservableCollection(Of Item) = New CustomObservableCollection(Of Item)()
+    Friend _items As ItemsCollection(Of Item) = New ItemsCollection(Of Item)()
     Private _isExpanded As Boolean
     Private _isLoading As Boolean
     Private _isRefreshingItems As Boolean
@@ -36,12 +36,9 @@ Public Class Folder
     Private _itemsSortDirection As ListSortDirection
     Private _itemsGroupByPropertyName As String
     Protected _enumerationCancellationTokenSource As CancellationTokenSource
-    Private _threadsCancellationTokenSource As CancellationTokenSource
     Private _doSkipUPDATEDIR As DateTime?
     Private _shellFolder As IShellFolder
     Private _isEmpty As Boolean
-    Private _threads As List(Of Thread) = New List(Of Thread)()
-    Private _threadsLock As Object = New Object()
     Private _isListening As Boolean
     Private _listeningLock As Object = New Object()
 
@@ -276,7 +273,7 @@ Public Class Folder
         Get
             Dim tcs As New TaskCompletionSource(Of Boolean)
 
-            Shell.MTATaskQueue.Add(
+            Shell.STATaskQueue.Add(
                 Sub()
                     Try
                         If _hasSubFolders.HasValue Then
@@ -319,18 +316,6 @@ Public Class Folder
         End Get
     End Property
 
-    Public Sub RefreshItems()
-        Using Shell.OverrideCursor(Cursors.AppStarting)
-            Me.IsRefreshingItems = True
-            If Me.IsLoading Then
-                Me.CancelEnumeration()
-            End If
-            _isEnumerated = False
-            Me.GetItems()
-            Me.IsRefreshingItems = False
-        End Using
-    End Sub
-
     Public Async Function RefreshItemsAsync() As Task
         Using Shell.OverrideCursor(Cursors.AppStarting)
             Me.IsRefreshingItems = True
@@ -344,11 +329,21 @@ Public Class Folder
     End Function
 
     Public Overridable Function GetItems() As List(Of Item)
-        Dim isCancelled As Boolean
         _lock.Wait()
         Try
             If Not _isEnumerated Then
-                enumerateItems(_items, False, isCancelled)
+                Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
+                    = _enumerationCancellationTokenSource
+
+                Dim cts As CancellationTokenSource = New CancellationTokenSource()
+                _enumerationCancellationTokenSource = cts
+
+                enumerateItems(_items, False, cts.Token)
+
+                ' terminate previous enumeration thread
+                If Not prevEnumerationCancellationTokenSource Is Nothing Then
+                    prevEnumerationCancellationTokenSource.Cancel()
+                End If
             End If
             Return _items.ToList()
         Finally
@@ -361,13 +356,13 @@ Public Class Folder
     Public Overridable Async Function GetItemsAsync() As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
-        Shell.MTATaskQueue.Add(
+        Shell.STATaskQueue.Add(
             Sub()
-                Dim isCancelled As Boolean
                 _lock.Wait()
                 Try
                     If Not _isEnumerated Then
-                        enumerateItems(_items, True, isCancelled)
+                        _enumerationCancellationTokenSource = New CancellationTokenSource()
+                        enumerateItems(_items, True, _enumerationCancellationTokenSource.Token)
                     End If
                     tcs.SetResult(_items.ToList())
                 Catch ex As Exception
@@ -378,8 +373,6 @@ Public Class Folder
                     End If
                 End Try
             End Sub)
-        't.SetApartmentState(ApartmentState.MTA)
-        't.Start()
 
         Await tcs.Task.WaitAsync(Shell.ShuttingDownToken)
         If Not Shell.ShuttingDownToken.IsCancellationRequested Then
@@ -388,7 +381,7 @@ Public Class Folder
         Return Nothing
     End Function
 
-    Friend Sub CancelEnumeration()
+    Friend Overridable Sub CancelEnumeration()
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
             If _lock.CurrentCount = 0 Then
@@ -397,39 +390,29 @@ Public Class Folder
         End If
     End Sub
 
-    Protected Sub enumerateItems(items As ObservableCollection(Of Item), isAsync As Boolean, ByRef isCancelled As Boolean)
+    Protected Sub enumerateItems(items As ObservableCollection(Of Item), isAsync As Boolean,
+                                 cancellationToken As CancellationToken)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
         Me.IsLoading = True
         Me.IsEmpty = False
-
-        Dim cts As CancellationTokenSource = New CancellationTokenSource()
-        _enumerationCancellationTokenSource = cts
 
         Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS
         If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
         If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
-        enumerateItems(flags,
-            Function(shellItem2 As IShellItem2)
-                Return New Folder(shellItem2, Me, False, True)
-            End Function,
-            Function(shellItem2 As IShellItem2)
-                Return New Item(shellItem2, Me, False, True)
-            End Function, cts.Token)
+        enumerateItems(flags, cancellationToken)
 
-        If _enumerationCancellationTokenSource.Equals(cts) Then
+        If Not cancellationToken.IsCancellationRequested Then
             Me.IsLoading = False
             Me.IsEmpty = _items.Count = 0
-            Debug.WriteLine("End loading " & Me.DisplayName & If(cts.Token.IsCancellationRequested, " cancelled", ""))
+            Debug.WriteLine("End loading " & Me.DisplayName)
         Else
-            isCancelled = True
-            Debug.WriteLine("End loading " & Me.DisplayName & " (didn't mark completion)" & If(cts.Token.IsCancellationRequested, " cancelled", ""))
+            Debug.WriteLine("Cancelled loading " & Me.DisplayName)
         End If
     End Sub
 
     Protected Sub enumerateItems(flags As UInt32,
-                                 makeNewFolder As Func(Of IShellItem2, Item), makeNewItem As Func(Of IShellItem2, Item),
                                  cancellationToken As CancellationToken)
         If disposedValue Then Return
 
@@ -437,17 +420,18 @@ Public Class Folder
         Dim newFullPaths As HashSet(Of String) = New HashSet(Of String)()
         Dim doRefreshAfter As Boolean
 
-        If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
-
-        If TypeOf Me Is SearchFolder Then
-            UIHelper.OnUIThread(
-                Sub()
-                    For Each item In Me.Items
-                        item._parent = Nothing
-                    Next
-                    Me.Items.Clear()
-                End Sub)
+        ' pre-parse sort property 
+        Dim isSortPropertyByText As Boolean, sortPropertyKey As String, isSortPropertyDisplaySortValue As Boolean
+        If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
+            isSortPropertyByText = Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText")
+            If isSortPropertyByText Then
+                sortPropertyKey = Me.ItemsSortPropertyName.Substring(Me.ItemsSortPropertyName.IndexOf("[") + 1)
+                sortPropertyKey = sortPropertyKey.Substring(0, sortPropertyKey.IndexOf("]"))
+            End If
+            isSortPropertyDisplaySortValue = Me.ItemsSortPropertyName = "ItemNameDisplaySortValue"
         End If
+
+        If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
 
         Dim addItems As System.Action =
             Sub()
@@ -456,100 +440,99 @@ Public Class Folder
 
                     UIHelper.OnUIThread(
                         Sub()
-                            If Not TypeOf Me Is SearchFolder Then
-                                If _items.Count = 0 Then
-                                    ' add items
-                                    _items.UpdateRange(result.Values, Nothing)
-                                Else
-                                    Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
-                                    For Each item In _items
-                                        previousFullPaths.Add(If(item.FullPath, item.DisplayName))
-                                    Next
-                                    Dim newItems As Item() = result.Values.Where(Function(i) Not previousFullPaths.Contains(If(i.FullPath, i.DisplayName))).ToArray()
-                                    Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(If(i.FullPath, i.DisplayName))).ToArray()
-                                    existingItems = _items.Where(Function(i) newFullPaths.Contains(If(i.FullPath, i.DisplayName))) _
+                            If Not cancellationToken.IsCancellationRequested _
+                                AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                                If Not TypeOf Me Is SearchFolder Then
+                                    If _items.Count = 0 Then
+                                        ' this happens the first time a folder is loaded
+                                        _items.UpdateRange(result.Values, Nothing)
+                                        For Each item In result.Values
+                                            item.HookUpdates()
+                                        Next
+                                    Else
+                                        ' this happens when a folder is refreshed
+                                        Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
+                                        For Each item In _items
+                                            previousFullPaths.Add(If(item.FullPath, item.DisplayName))
+                                        Next
+                                        Dim newItems As Item() = result.Values.Where(Function(i) Not previousFullPaths.Contains(If(i.FullPath, i.DisplayName))).ToArray()
+                                        Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(If(i.FullPath, i.DisplayName))).ToArray()
+                                        existingItems = _items.Where(Function(i) newFullPaths.Contains(If(i.FullPath, i.DisplayName))) _
                                         .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(i.FullPath, i.DisplayName)))).ToArray()
 
-                                    ' add/remove items
-                                    _items.UpdateRange(newItems, removedItems)
+                                        ' add/remove items
+                                        _items.UpdateRange(newItems, removedItems)
+                                        For Each item In newItems
+                                            item.HookUpdates()
+                                        Next
+                                    End If
+                                Else
+                                    ' this is for search folders
+                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                    For Each item In result.Values
+                                        _items.InsertSorted(item, c)
+                                    Next
+                                    For Each item In result.Values
+                                        item.HookUpdates()
+                                    Next
                                 End If
-                            Else
-                                ' add items
-                                Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                For Each item In result.Values
-                                    _items.InsertSorted(item, c)
-                                Next
-                                'existingItems = result.Values.Select(Function(i) New Tuple(Of Item, Item)(i, Nothing)).ToArray()
                             End If
                         End Sub)
 
-                    ' refresh existing items
+                    ' refresh existing items (this never happens for search folders, so it won't ever be
+                    ' cancelled, except when forcefully disposing items, so basically only on shutdown
                     If Not existingItems Is Nothing AndAlso existingItems.Count > 0 _
                         AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested _
-                        AndAlso Not _enumerationCancellationTokenSource.IsCancellationRequested Then
+                        AndAlso Not cancellationToken.IsCancellationRequested Then
 
                         Dim size As Integer = Math.Max(1, Math.Min(existingItems.Count / 10, 100))
                         Dim chuncks()() As Tuple(Of Item, Item) = existingItems.Chunk(existingItems.Count / size).ToArray()
+                        Dim tcses As List(Of TaskCompletionSource) = New List(Of TaskCompletionSource)()
 
-                        SyncLock _threadsLock
-                            If _threadsCancellationTokenSource Is Nothing Then
-                                _threadsCancellationTokenSource = New CancellationTokenSource()
-                                Shell.AddToCancellationTokenSources(_threadsCancellationTokenSource)
-                            End If
+                        ' threads for refreshing
+                        For i = 0 To chuncks.Count - 1
+                            Dim j As Integer = i
+                            Dim tcs As TaskCompletionSource = New TaskCompletionSource()
+                            tcses.Add(tcs)
+                            Shell.STATaskQueue.Add(
+                                 Sub()
+                                     'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
 
-                            ' threads for refreshing
-                            For i = 0 To chuncks.Count - 1
-                                Dim j As Integer = i
-                                Shell.MTATaskQueue.Add(
-                                    Sub()
-                                        Try
-                                            'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
+                                     ' Process tasks from the queue
+                                     For Each item In chuncks(j)
+                                         If cancellationToken.IsCancellationRequested _
+                                            OrElse Shell.ShuttingDownToken.IsCancellationRequested Then
+                                             Exit For
+                                         End If
 
-                                            ' Process tasks from the queue
-                                            For Each item In chuncks(j)
-                                                If _threadsCancellationTokenSource.Token.IsCancellationRequested Then
-                                                    Exit For
-                                                End If
+                                         Try
+                                             If Not item.Item2 Is Nothing Then
+                                                 SyncLock item.Item2._shellItemLock
+                                                     item.Item1.Refresh(item.Item2.ShellItem2)
+                                                     item.Item2._shellItem2 = Nothing
+                                                 End SyncLock
+                                                 item.Item2._parent = Nothing
+                                             Else
+                                                 item.Item1.Refresh()
+                                             End If
 
-                                                Try
-                                                    If Not item.Item2 Is Nothing Then
-                                                        SyncLock item.Item2._shellItemLock
-                                                            item.Item1.Refresh(item.Item2.ShellItem2)
-                                                            item.Item2._shellItem2 = Nothing
-                                                        End SyncLock
-                                                        item.Item2._parent = Nothing
-                                                    Else
-                                                        item.Item1.Refresh()
-                                                    End If
+                                             ' preload sort property
+                                             If isSortPropertyByText Then
+                                                 Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(sortPropertyKey)?.Value
+                                             ElseIf isSortPropertyDisplaySortValue Then
+                                                 Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
+                                             End If
+                                         Catch ex As Exception
+                                             Debug.WriteLine("Exception refreshing " & item.Item1.FullPath & ": " & ex.Message)
+                                         End Try
+                                     Next
+                                     'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") finished for " & Me.FullPath)
 
-                                                    ' preload sort property
-                                                    If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
-                                                        If Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText") Then
-                                                            Dim pkey As String = Me.ItemsSortPropertyName.Substring(Me.ItemsSortPropertyName.IndexOf("[") + 1)
-                                                            pkey = pkey.Substring(0, pkey.IndexOf("]"))
-                                                            Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(pkey)?.Value
-                                                        ElseIf Me.ItemsSortPropertyName = "ItemNameDisplaySortValue" Then
-                                                            Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
-                                                        End If
-                                                    End If
-                                                Catch ex As Exception
-                                                    Debug.WriteLine("Exception refreshing " & item.Item1.FullPath & ": " & ex.Message)
-                                                End Try
-                                            Next
+                                     tcs.SetResult()
+                                 End Sub)
+                        Next
 
-                                            'SyncLock _threadsLock
-                                            '    _threads.Remove(mtaThread)
-                                            'End SyncLock
-                                            'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") finished for " & Me.FullPath)
-                                        Catch ex As OperationCanceledException
-                                            Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") was canceled for " & Me.FullPath)
-                                        End Try
-                                    End Sub)
-                                'mtaThread.SetApartmentState(ApartmentState.MTA)
-                                'mtaThread.Start()
-                                '_threads.Add(mtaThread)
-                            Next
-                        End SyncLock
+                        Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), cancellationToken)
                     End If
                 End If
             End Sub
@@ -598,65 +581,71 @@ Public Class Folder
                     Finally
                         If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
                     End Try
+
                     If Not enumShellItems Is Nothing Then
                         Dim celt As Integer = If(TypeOf Me Is SearchFolder, 1, 25000)
                         Dim shellItems(celt - 1) As IShellItem, fetched As UInt32 = 1
                         Dim lastRefresh As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
-                        If Not cancellationToken.IsCancellationRequested Then
+                        If Not cancellationToken.IsCancellationRequested _
+                            AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
                             Dim h As HRESULT = enumShellItems.Next(celt, shellItems, fetched)
                             While fetched > 0
                                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetched " & fetched & " items", DateTime.Now)
                                 For x = 0 To fetched - 1
                                     'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
-                                    Dim attr2 As Integer = SFGAO.FOLDER
-                                    shellItems(x).GetAttributes(attr2, attr2)
-                                    Dim newItem As Item
-                                    If CBool(attr2 And SFGAO.FOLDER) Then
-                                        newItem = makeNewFolder(shellItems(x))
-                                    Else
-                                        newItem = makeNewItem(shellItems(x))
-                                    End If
-
-                                    result.Add(If(newItem.FullPath, newItem.DisplayName), newItem)
-
-                                    ' preload sort property
-                                    If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
-                                        If Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText") Then
-                                            Dim pkey As String = Me.ItemsSortPropertyName.Substring(Me.ItemsSortPropertyName.IndexOf("[") + 1)
-                                            pkey = pkey.Substring(0, pkey.IndexOf("]"))
-                                            Dim sortValue As Object = newItem.PropertiesByKeyAsText(pkey).Value
-                                        ElseIf Me.ItemsSortPropertyName = "ItemNameDisplaySortValue" Then
-                                            Dim sortValue As Object = newItem.ItemNameDisplaySortValue
+                                    If Not cancellationToken.IsCancellationRequested _
+                                        AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                                        Dim attr2 As Integer = SFGAO.FOLDER
+                                        shellItems(x).GetAttributes(attr2, attr2)
+                                        Dim newItem As Item
+                                        If CBool(attr2 And SFGAO.FOLDER) Then
+                                            newItem = New Folder(shellItems(x), Me, False, False)
+                                        Else
+                                            newItem = New Item(shellItems(x), Me, False, False)
                                         End If
+
+                                        Try
+                                            result.Add(If(newItem.FullPath, newItem.DisplayName), newItem)
+
+                                            ' preload sort property
+                                            If isSortPropertyByText Then
+                                                Dim sortValue As Object = newItem.PropertiesByKeyAsText(sortPropertyKey)?.Value
+                                            ElseIf isSortPropertyDisplaySortValue Then
+                                                Dim sortValue As Object = newItem.ItemNameDisplaySortValue
+                                            End If
+
+                                            ' preload Content view mode properties because searchfolder is slow
+                                            If TypeOf Me Is SearchFolder Then
+                                                Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
+                                            End If
+
+                                            ' preload System_StorageProviderUIStatus images
+                                            'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                                            '    = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                                            'If Not System_StorageProviderUIStatus Is Nothing _
+                                            '    AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                                            '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                                            'End If
+
+                                            newFullPaths.Add(If(newItem.FullPath, newItem.DisplayName))
+                                        Catch ex As Exception
+                                            ' there might be double items, we want to skip them without
+                                            ' checking for .Contains everytime, to save processing time
+                                        End Try
+
+                                        If (DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
+                                        OrElse result.Count >= 10) AndAlso TypeOf Me Is SearchFolder Then
+                                            addItems()
+                                            result.Clear()
+                                            lastUpdate = DateTime.Now
+                                        End If
+                                    Else
+                                        Marshal.ReleaseComObject(shellItems(x))
                                     End If
-
-                                    ' preload Content view mode properties because searchfolder is slow
-                                    If TypeOf Me Is SearchFolder Then
-                                        Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
-                                    End If
-
-                                    ' preload System_StorageProviderUIStatus images
-                                    'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                                    '    = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
-                                    'If Not System_StorageProviderUIStatus Is Nothing _
-                                    '    AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                                    '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
-                                    'End If
-
-                                    newFullPaths.Add(If(newItem.FullPath, newItem.DisplayName))
-
-                                    If cancellationToken.IsCancellationRequested Then Exit While
-
-                                    If DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 2000 _
-                                        AndAlso result.Count > 0 AndAlso TypeOf Me Is SearchFolder Then
-                                        addItems()
-                                        result.Clear()
-                                        lastUpdate = DateTime.Now
-                                    End If
-                                    If cancellationToken.IsCancellationRequested Then Exit While
                                 Next
                                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
+                                If cancellationToken.IsCancellationRequested Then Exit While
                                 h = enumShellItems.Next(celt, shellItems, fetched)
                             End While
                             If fetched = 0 AndAlso Not (h = HRESULT.S_OK OrElse h = HRESULT.S_FALSE OrElse h = HRESULT.ERROR_INVALID_PARAMETER) Then
@@ -681,14 +670,6 @@ Public Class Folder
         If Not cancellationToken.IsCancellationRequested Then
             ' add new items
             addItems()
-
-            If doRefreshAfter Then
-                UIHelper.OnUIThread(
-                    Sub()
-                        Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                        view.Refresh()
-                    End Sub)
-            End If
 
             _isEnumerated = True
             _isLoaded = True
@@ -946,14 +927,7 @@ Public Class Folder
                 End If
             End SyncLock
 
-            If Not _enumerationCancellationTokenSource Is Nothing Then
-                _enumerationCancellationTokenSource.Cancel()
-            End If
-
-            If Not _threadsCancellationTokenSource Is Nothing Then
-                _threadsCancellationTokenSource.Cancel()
-                Shell.RemoveFromCancellationTokenSources(_threadsCancellationTokenSource)
-            End If
+            Me.CancelEnumeration()
 
             For Each item In _items
                 item.Dispose()

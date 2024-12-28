@@ -105,7 +105,7 @@ Namespace Controls
             Dim tcs As New TaskCompletionSource()
             Dim homeFolder As Folder, galleryFolder As Folder, thisComputer As Folder, network As Folder
 
-            Shell.MTATaskQueue.Add(
+            Shell.STATaskQueue.Add(
                 Sub()
                     ' home and galery
                     If Shell.GetSpecialFolders().ContainsKey("Home") Then

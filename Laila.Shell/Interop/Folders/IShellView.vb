@@ -15,7 +15,7 @@ Public Interface IShellView
     Sub UIActivate(<MarshalAs(UnmanagedType.U4)> uState As UInt32)
     Sub Refresh()
     <PreserveSig>
-    Function CreateViewWindow(<MarshalAs(UnmanagedType.Interface)> psvPrevious As IShellView, ByRef pfs As FOLDERSETTINGS, <MarshalAs(UnmanagedType.Interface)> psb As IShellBrowser, ByRef prcVie As Rect, ByRef phWnd As IntPtr) As Integer
+    Function CreateViewWindow(<MarshalAs(UnmanagedType.Interface)> psvPrevious As IShellView, ByRef pfs As FOLDERSETTINGS, <MarshalAs(UnmanagedType.Interface)> psb As IShellBrowser, ByRef prcVie As WIN32RECT, ByRef phWnd As IntPtr) As Integer
     Sub DestroyViewWindow()
     Sub GetCurrentInfo(ByRef lpfs As FOLDERSETTINGS)
     Sub AddPropertySheetPages(<MarshalAs(UnmanagedType.U4)> dwReserved As UInt32, ByRef lpfn As IntPtr, lparam As IntPtr)

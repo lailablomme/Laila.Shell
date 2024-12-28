@@ -8,6 +8,8 @@ Public Class SearchFolder
 
     Public Property Terms As String
 
+    Private _threadCompletionSource As TaskCompletionSource = New TaskCompletionSource()
+
     Public Shared Function FromTerms(terms As String, parent As Folder) As SearchFolder
         Return New SearchFolder(getShellItem(terms, parent), parent) With {.View = "Content", .Terms = terms}
     End Function
@@ -49,6 +51,51 @@ Public Class SearchFolder
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
     End Sub
 
+    Public Overrides Async Function GetItemsAsync() As Task(Of List(Of Item))
+        Dim tcs As New TaskCompletionSource(Of List(Of Item))
+
+        Dim staThread As Thread = New Thread(New ThreadStart(
+            Sub()
+                Dim threadCompletionSource As TaskCompletionSource = _threadCompletionSource
+
+                _lock.Wait()
+                Try
+                    If Not _isEnumerated Then
+                        Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
+                            = _enumerationCancellationTokenSource
+
+                        _enumerationCancellationTokenSource = New CancellationTokenSource()
+                        enumerateItems(_items, True, _enumerationCancellationTokenSource.Token)
+
+                        ' terminate previous enumeration thread
+                        If Not prevEnumerationCancellationTokenSource Is Nothing Then
+                            prevEnumerationCancellationTokenSource.Cancel()
+                        End If
+                    End If
+                    tcs.SetResult(_items.ToList())
+                Catch ex As Exception
+                    tcs.SetException(ex)
+                Finally
+                    If _lock.CurrentCount = 0 Then
+                        _lock.Release()
+                    End If
+                End Try
+
+                If Not threadCompletionSource Is Nothing Then
+                    threadCompletionSource.Task.Wait()
+                End If
+            End Sub))
+        staThread.IsBackground = True
+        staThread.SetApartmentState(ApartmentState.STA)
+        staThread.Start()
+
+        Await tcs.Task.WaitAsync(Shell.ShuttingDownToken)
+        If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+            Return tcs.Task.Result
+        End If
+        Return Nothing
+    End Function
+
     Public Sub Update(terms As String)
         If Me.IsLoading Then
             ' cancel enumeration
@@ -65,15 +112,36 @@ Public Class SearchFolder
             Marshal.ReleaseComObject(oldShellItem2)
         End If
 
-        ' clear collection
-        For Each item In _items.ToList()
-            item._parent = Nothing
-        Next
-        _items.Clear()
-
         ' re-enumerate
         _isEnumerated = False
         Me.GetItemsAsync()
+    End Sub
+
+    Friend Overrides Sub CancelEnumeration()
+        If Not _enumerationCancellationTokenSource Is Nothing Then
+            _enumerationCancellationTokenSource.Cancel()
+            If _lock.CurrentCount = 0 Then
+                _lock.Release()
+            End If
+
+            ' clear collection
+            For Each item In _items.ToList()
+                item._parent = Nothing
+                SyncLock item._shellItemLock
+                    Dim si2 As IShellItem2 = item.ShellItem2
+                    If Not si2 Is Nothing Then
+                        item._shellItem2 = Nothing
+                        Marshal.ReleaseComObject(si2)
+                    End If
+                End SyncLock
+            Next
+            _items.Clear()
+
+            ' terminate thread
+            If Not _threadCompletionSource.Task.IsCompleted Then
+                _threadCompletionSource.SetResult()
+            End If
+        End If
     End Sub
 
     Protected Overrides Function GetNewShellItem() As IShellItem2

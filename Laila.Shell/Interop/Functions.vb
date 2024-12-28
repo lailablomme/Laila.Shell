@@ -4,9 +4,23 @@ Imports System.Windows
 Imports System.Windows.Shapes
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.IO
+Imports Shell32
+Imports Laila.Shell.Controls
 
 Public Class Functions
 
+    <DllImport("shell32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
+    Public Shared Function SHCreateShellFolderView(
+        ByVal pcsfv As SFV_CREATE,
+        <Out> ByRef ppsv As IShellView
+    ) As Integer
+    End Function
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function MoveWindow(hWnd As IntPtr, X As Integer, Y As Integer, nWidth As Integer, nHeight As Integer, bRepaint As Boolean) As Boolean
+    End Function
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function SetParent(hWndChild As IntPtr, hWndNewParent As IntPtr) As IntPtr
+    End Function
     <DllImport("shell32.dll", SetLastError:=True)>
     Public Shared Sub SHGetSetSettings(
     ByRef value As SHELLSTATE,
@@ -303,6 +317,22 @@ Public Class Functions
     <DllImport("urlmon.dll")>
     Public Shared Function CopyStgMedium(ByRef pcstgmedSrc As STGMEDIUM, ByRef pstgmedDest As STGMEDIUM) As Integer
     End Function
+    '<DllImport("ole32.dll")>
+    'Public Shared Function CoCreateInstance(
+    '    ByRef clsid As Guid,
+    '    ByVal pUnkOuter As IntPtr,
+    '    ByVal dwClsContext As UInteger,
+    '    ByRef riid As Guid,
+    '    <MarshalAs(UnmanagedType.Interface)> ByRef ppv As FolderView.IExplorerHost) As Integer
+    'End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
+        ByRef riid As Guid,
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IShellFolder) As Integer
+    End Function
     <DllImport("ole32.dll")>
     Public Shared Function CoCreateInstance(
         ByRef clsid As Guid,
@@ -506,6 +536,9 @@ Public Class Functions
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
     Public Shared Function SHGetIDListFromObject(ByVal punk As IntPtr, ByRef ppidl As IntPtr) As Integer
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
+    Public Shared Function SHGetIDListFromObject(<MarshalAs(UnmanagedType.Interface)> punk As IShellItem2, ByRef ppidl As IntPtr) As Integer
     End Function
 
     <DllImport("shell32.dll", SetLastError:=True)>

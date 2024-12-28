@@ -20,7 +20,7 @@ Public Class PinnedItems
         ' return existing pinned items, delete others
         Dim tcs As New TaskCompletionSource(Of IEnumerable(Of Item))
 
-        Shell.MTATaskQueue.Add(
+        Shell.STATaskQueue.Add(
             Sub()
                 Try
                     Dim existingPinnedItems As List(Of Item) = New List(Of Item)()

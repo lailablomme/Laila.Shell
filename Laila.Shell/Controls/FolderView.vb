@@ -1,14 +1,18 @@
 ﻿Imports System.Collections.Specialized
 Imports System.ComponentModel
+Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports System.Windows.Forms.Design
+Imports System.Windows.Forms.Integration
 Imports System.Windows.Media
 Imports Laila.Shell.Behaviors
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports OpenMcdf
 
 Namespace Controls
     Public Class FolderView
@@ -137,7 +141,7 @@ Namespace Controls
                     text &= String.Format("       {0} {1} selected", Me.SelectedItems.Count, If(Me.SelectedItems.Count = 1, "item", "items"))
                     Dim items As IEnumerable(Of Item) = Me.SelectedItems.ToList()
                     Dim tcs As New TaskCompletionSource()
-                    Shell.MTATaskQueue.Add(
+                    Shell.STATaskQueue.Add(
                         Sub()
                             Dim size As UInt64 = 0
                             For Each item In items
@@ -266,5 +270,6 @@ Namespace Controls
             Dispose(disposing:=True)
             GC.SuppressFinalize(Me)
         End Sub
+
     End Class
 End Namespace
