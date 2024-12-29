@@ -19,7 +19,10 @@ Namespace Controls
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly HasCheckBoxesForItemsProperty As DependencyProperty = DependencyProperty.Register("HasCheckBoxesForItems", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowCheckBoxesToSelectProperty As DependencyProperty = DependencyProperty.Register("DoShowCheckBoxesToSelect", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowCheckBoxesToSelectOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowCheckBoxesToSelectOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowCheckBoxesToSelectOverrideChanged))
+        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -49,13 +52,13 @@ Namespace Controls
             Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
 
-            'Me.PART_ListBox.Visibility = Visibility.Hidden
-
             AddHandler Shell.Settings.PropertyChanged,
                 Sub(s As Object, e As PropertyChangedEventArgs)
                     Select Case e.PropertyName
                         Case "DoShowCheckBoxesToSelect"
-                            Me.HasCheckBoxesForItems = Shell.Settings.DoShowCheckBoxesToSelect
+                            setDoShowCheckBoxesToSelect()
+                        Case "DoShowEncryptedOrCompressedFilesInColor"
+                            setDoShowEncryptedOrCompressedFilesInColor()
                     End Select
                 End Sub
 
@@ -364,14 +367,67 @@ Namespace Controls
             End Set
         End Property
 
-        Public Property HasCheckBoxesForItems As Boolean
+        Public Property DoShowCheckBoxesToSelect As Boolean
             Get
-                Return GetValue(HasCheckBoxesForItemsProperty)
+                Return GetValue(DoShowCheckBoxesToSelectProperty)
             End Get
-            Set(ByVal value As Boolean)
-                SetCurrentValue(HasCheckBoxesForItemsProperty, value)
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowCheckBoxesToSelectProperty, value)
             End Set
         End Property
+
+        Private Sub setDoShowCheckBoxesToSelect()
+            If Me.DoShowCheckBoxesToSelectOverride.HasValue Then
+                Me.DoShowCheckBoxesToSelect = Me.DoShowCheckBoxesToSelectOverride.Value
+            Else
+                Me.DoShowCheckBoxesToSelect = Shell.Settings.DoShowCheckBoxesToSelect
+            End If
+        End Sub
+
+        Public Property DoShowCheckBoxesToSelectOverride As Boolean?
+            Get
+                Return GetValue(DoShowCheckBoxesToSelectOverrideProperty)
+            End Get
+            Protected Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowCheckBoxesToSelectOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowCheckBoxesToSelectOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoShowCheckBoxesToSelect()
+        End Sub
+
+        Public Property DoShowEncryptedOrCompressedFilesInColor As Boolean
+            Get
+                Return GetValue(DoShowEncryptedOrCompressedFilesInColorProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowEncryptedOrCompressedFilesInColor()
+            If Me.DoShowEncryptedOrCompressedFilesInColorOverride.HasValue Then
+                Me.DoShowEncryptedOrCompressedFilesInColor = Me.DoShowEncryptedOrCompressedFilesInColorOverride.Value
+            Else
+                Me.DoShowEncryptedOrCompressedFilesInColor = Shell.Settings.DoShowEncryptedOrCompressedFilesInColor
+            End If
+        End Sub
+
+        Public Property DoShowEncryptedOrCompressedFilesInColorOverride As Boolean?
+            Get
+                Return GetValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty)
+            End Get
+            Protected Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoShowEncryptedOrCompressedFilesInColor()
+        End Sub
 
         Protected Overridable Sub ClearBinding()
             If Not Me.PART_ListBox Is Nothing Then
@@ -393,9 +449,6 @@ Namespace Controls
 
             Select Case e.PropertyName
                 Case "IsRefreshingItems"
-                    If folder.IsRefreshingItems Then
-                        Me.HasCheckBoxesForItems = Shell.Settings.DoShowCheckBoxesToSelect
-                    End If
                 Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
                     UIHelper.OnUIThread(
                         Sub()
@@ -476,7 +529,8 @@ Namespace Controls
                 bfv.ClearBinding()
             End If
 
-            bfv.HasCheckBoxesForItems = Shell.Settings.DoShowCheckBoxesToSelect
+            bfv.setDoShowCheckBoxesToSelect()
+            bfv.setDoShowEncryptedOrCompressedFilesInColor()
 
             If Not e.NewValue Is Nothing Then
                 Dim newValue As Folder = e.NewValue

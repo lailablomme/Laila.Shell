@@ -8,6 +8,7 @@ Public Class Settings
     Private _doShowProtectedOperatingSystemFiles As Boolean
     Private _doShowCheckBoxesToSelect As Boolean
     Private _doShowHiddenFilesAndFolders As Boolean
+    Private _doShowEncryptedOrCompressedFilesInColor As Boolean
 
     Public Sub New()
         Me.OnSettingChange(False)
@@ -73,6 +74,21 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property DoShowEncryptedOrCompressedFilesInColor As Boolean
+        Get
+            Dim mask As SSF = SSF.SSF_SHOWCOMPCOLOR
+            Dim val As SHELLSTATE
+            Functions.SHGetSetSettings(val, mask, False)
+            Return val.Data1 = 16
+        End Get
+        Set(value As Boolean)
+            Dim mask As SSF = SSF.SSF_SHOWCOMPCOLOR
+            Dim val As SHELLSTATE
+            val.Data1 = If(value, 16, 0)
+            Functions.SHGetSetSettings(val, mask, True)
+        End Set
+    End Property
+
     Friend Sub OnSettingChange(Optional doNotify As Boolean = True)
         Using Shell.OverrideCursor(Cursors.Wait)
             Dim b As Boolean
@@ -95,6 +111,11 @@ Public Class Settings
             If Not b = _doShowHiddenFilesAndFolders Then
                 _doShowHiddenFilesAndFolders = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowHiddenFilesAndFolders")
+            End If
+            b = Me.DoShowEncryptedOrCompressedFilesInColor
+            If Not b = _doShowEncryptedOrCompressedFilesInColor Then
+                _doShowEncryptedOrCompressedFilesInColor = b
+                If doNotify Then Me.NotifyOfPropertyChange("DoShowEncryptedOrCompressedFilesInColor")
             End If
         End Using
     End Sub

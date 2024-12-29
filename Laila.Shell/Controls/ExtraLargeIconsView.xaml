@@ -11,7 +11,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ExtraLargeIconsView}">
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True"
-                          Tag="{Binding HasCheckBoxesForItems, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}">
+                          Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   FocusVisualStyle="{x:Null}" ScrollViewer.IsDeferredScrollingEnabled="False" 
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
@@ -228,9 +228,24 @@
                                                         <Style>
                                                             <Setter Property="TextBlock.TextAlignment" Value="Center" />
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsCompressed}" Value="True">
-                                                                    <Setter Property="TextBlock.Foreground" Value="Blue" />
-                                                                </DataTrigger>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                        <Condition Binding="{Binding IsCompressed}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                                    </MultiDataTrigger.Setters>
+                                                                </MultiDataTrigger>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                        <Condition Binding="{Binding IsEncrypted}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="TextBlock.Foreground" Value="#269D27" />
+                                                                    </MultiDataTrigger.Setters>
+                                                                </MultiDataTrigger>
                                                                 <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
                                                                     <Setter Property="TextBlock.TextAlignment" Value="Left" />
                                                                 </DataTrigger>
@@ -245,7 +260,7 @@
                                     <DataTemplate.Triggers>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding Tag, ElementName=PART_Grid}" Value="True" />
+                                                <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
                                                 <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
                                             </MultiDataTrigger.Conditions>
                                             <MultiDataTrigger.Setters>
@@ -254,7 +269,7 @@
                                         </MultiDataTrigger>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding Tag, ElementName=PART_Grid}" Value="True" />
+                                                <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
                                                 <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
                                             </MultiDataTrigger.Conditions>
                                             <MultiDataTrigger.Setters>
@@ -263,7 +278,7 @@
                                         </MultiDataTrigger>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding Tag, ElementName=PART_Grid}" Value="True" />
+                                                <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
                                                 <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="False" />
                                                 <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="False" />
                                             </MultiDataTrigger.Conditions>

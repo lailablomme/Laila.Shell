@@ -259,15 +259,46 @@ Namespace Controls
                     }
             textBlockDataTrigger1.Setters.Add(New Setter(TextBlock.OpacityProperty, Convert.ToDouble(0.5)))
             textBlockStyle.Triggers.Add(textBlockDataTrigger1)
-            Dim textBlockDataTrigger2 As DataTrigger = New DataTrigger() With {
-                        .Binding = New Binding("IsCompressed") With
-                                   {
-                                       .Mode = BindingMode.OneWay
-                                   },
-                        .Value = True
-                    }
+            Dim textBlockDataTrigger2 As MultiDataTrigger = New MultiDataTrigger()
+            Dim textBlockDataTrigger2Condition1 As Condition = New Condition() With {
+                .Binding = New Binding("DoShowEncryptedOrCompressedFilesInColor") With
+                           {
+                               .Mode = BindingMode.OneWay,
+                               .Source = Me
+                           },
+                .Value = True
+            }
+            textBlockDataTrigger2.Conditions.Add(textBlockDataTrigger2Condition1)
+            Dim textBlockDataTrigger2Condition2 As Condition = New Condition() With {
+                .Binding = New Binding("IsCompressed") With
+                           {
+                               .Mode = BindingMode.OneWay
+                           },
+                .Value = True
+            }
+            textBlockDataTrigger2.Conditions.Add(textBlockDataTrigger2Condition2)
             textBlockDataTrigger2.Setters.Add(New Setter(TextBlock.ForegroundProperty, Brushes.Blue))
             textBlockStyle.Triggers.Add(textBlockDataTrigger2)
+            Dim textBlockDataTrigger3 As MultiDataTrigger = New MultiDataTrigger()
+            Dim textBlockDataTrigger3Condition1 As Condition = New Condition() With {
+                .Binding = New Binding("DoShowEncryptedOrCompressedFilesInColor") With
+                           {
+                               .Mode = BindingMode.OneWay,
+                               .Source = Me
+                           },
+                .Value = True
+            }
+            textBlockDataTrigger3.Conditions.Add(textBlockDataTrigger3Condition1)
+            Dim textBlockDataTrigger3Condition2 As Condition = New Condition() With {
+                .Binding = New Binding("IsEncrypted") With
+                           {
+                               .Mode = BindingMode.OneWay
+                           },
+                .Value = True
+            }
+            textBlockDataTrigger3.Conditions.Add(textBlockDataTrigger3Condition2)
+            textBlockDataTrigger3.Setters.Add(New Setter(TextBlock.ForegroundProperty, New SolidColorBrush(ColorConverter.ConvertFromString("#269D27"))))
+            textBlockStyle.Triggers.Add(textBlockDataTrigger3)
             textBlockFactory.SetValue(Image.StyleProperty, textBlockStyle)
             gridFactory.AppendChild(textBlockFactory)
 

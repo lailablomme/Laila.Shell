@@ -688,6 +688,12 @@ Public Class Item
         End Get
     End Property
 
+    Public ReadOnly Property IsEncrypted As Boolean
+        Get
+            Return Me.Attributes.HasFlag(SFGAO.ENCRYPTED)
+        End Get
+    End Property
+
     Public ReadOnly Property Attributes As SFGAO
         Get
             If _attributes = 0 AndAlso Not disposedValue Then
