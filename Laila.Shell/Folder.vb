@@ -453,12 +453,12 @@ Public Class Folder
                                         ' this happens when a folder is refreshed
                                         Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
                                         For Each item In _items
-                                            previousFullPaths.Add(If(item.FullPath, item.DisplayName))
+                                            previousFullPaths.Add(item.FullPath & "_" & item.DisplayName)
                                         Next
-                                        Dim newItems As Item() = result.Values.Where(Function(i) Not previousFullPaths.Contains(If(i.FullPath, i.DisplayName))).ToArray()
-                                        Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(If(i.FullPath, i.DisplayName))).ToArray()
-                                        existingItems = _items.Where(Function(i) newFullPaths.Contains(If(i.FullPath, i.DisplayName))) _
-                                        .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(i.FullPath, i.DisplayName)))).ToArray()
+                                        Dim newItems As Item() = result.Values.Where(Function(i) Not previousFullPaths.Contains(i.FullPath & "_" & i.DisplayName)).ToArray()
+                                        Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(i.FullPath & "_" & i.DisplayName)).ToArray()
+                                        existingItems = _items.Where(Function(i) newFullPaths.Contains(i.FullPath & "_" & i.DisplayName)) _
+                                            .Select(Function(i) New Tuple(Of Item, Item)(i, result(i.FullPath & "_" & i.DisplayName))).ToArray()
 
                                         ' add/remove items
                                         _items.UpdateRange(newItems, removedItems)
@@ -606,7 +606,7 @@ Public Class Folder
                                         End If
 
                                         Try
-                                            result.Add(If(newItem.FullPath, newItem.DisplayName), newItem)
+                                            result.Add(newItem.FullPath & "_" & newItem.DisplayName, newItem)
 
                                             ' preload sort property
                                             If isSortPropertyByText Then
@@ -628,7 +628,7 @@ Public Class Folder
                                             '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
                                             'End If
 
-                                            newFullPaths.Add(If(newItem.FullPath, newItem.DisplayName))
+                                            newFullPaths.Add(newItem.FullPath & "_" & newItem.DisplayName)
                                         Catch ex As Exception
                                             ' there might be double items, we want to skip them without
                                             ' checking for .Contains everytime, to save processing time

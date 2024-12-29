@@ -161,7 +161,7 @@ Namespace Controls
         End Sub
 
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
-            If Not TypeOf e.OriginalSource Is TextBox Then
+            If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
                 If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
                 AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
                     Clipboard.CopyFiles(Me.SelectedItems)
@@ -181,7 +181,7 @@ Namespace Controls
         End Sub
 
         Private Sub OnListViewTextInput(sender As Object, e As TextCompositionEventArgs)
-            If Not TypeOf e.OriginalSource Is TextBox Then
+            If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
                 If Not _typeToSearchTimer Is Nothing Then
                     _typeToSearchTimer.Dispose()
                 End If
@@ -213,12 +213,12 @@ Namespace Controls
                             .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
                 End If
                 If Not foundItem Is Nothing Then
-                        Me.SelectedItems = {foundItem}
-                        e.Handled = True
-                    Else
-                        SystemSounds.Asterisk.Play()
-                    End If
+                    Me.SelectedItems = {foundItem}
+                    e.Handled = True
+                Else
+                    SystemSounds.Asterisk.Play()
                 End If
+            End If
         End Sub
 
         Private Sub invokeDefaultCommand(item As Item)
