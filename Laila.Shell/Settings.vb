@@ -4,6 +4,9 @@ Imports Microsoft.Win32
 Public Class Settings
     Inherits NotifyPropertyChangedBase
 
+    Private Const KEYPATH As String = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+    Private Const SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME As String = "ShowEncryptCompressedColor"
+
     Private _doHideKnownFileExtensions As Boolean
     Private _doShowProtectedOperatingSystemFiles As Boolean
     Private _doShowCheckBoxesToSelect As Boolean
@@ -76,12 +79,10 @@ Public Class Settings
 
     Public Property DoShowEncryptedOrCompressedFilesInColor As Boolean
         Get
-            Dim mask As SSF = SSF.SSF_SHOWCOMPCOLOR
-            Dim val As SHELLSTATE
-            Functions.SHGetSetSettings(val, mask, False)
-            Return val.Data1 = 16
+            Return GetRegistryBoolean(KEYPATH, SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME)
         End Get
         Set(value As Boolean)
+            SetRegistryBoolean(KEYPATH, SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME, value)
             Dim mask As SSF = SSF.SSF_SHOWCOMPCOLOR
             Dim val As SHELLSTATE
             val.Data1 = If(value, 16, 0)
