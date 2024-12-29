@@ -1097,9 +1097,6 @@ Public Class Item
                 Case SHCNE.UPDATEITEM
                     If Me.Pidl?.Equals(e.Item1.Pidl) Then
                         Me.Refresh()
-                        If Not _parent Is Nothing AndAlso Not TypeOf _parent Is SearchFolder Then
-                            _parent.Refresh()
-                        End If
                     End If
                 Case SHCNE.FREESPACE
                     If Me.IsDrive AndAlso Me.Pidl?.Equals(e.Item1.Pidl) Then
