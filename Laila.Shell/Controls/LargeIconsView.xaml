@@ -122,7 +122,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Source="{Binding ImageAsync[96], IsAsync=True}" Width="96" Height="96" 
+                                            <Image Width="96" Height="96" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True" x:Name="PART_Image">
                                                 <Image.Style>
                                                     <Style>
@@ -132,6 +132,12 @@
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsCut}" Value="True">
                                                                 <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="True">
+                                                                <Setter Property="Image.Source" Value="{Binding IconAsync[96], IsAsync=True}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="False">
+                                                                <Setter Property="Image.Source" Value="{Binding ImageAsync[96], IsAsync=True}" />
                                                             </DataTrigger>
                                                             <MultiDataTrigger>
                                                                 <MultiDataTrigger.Conditions>

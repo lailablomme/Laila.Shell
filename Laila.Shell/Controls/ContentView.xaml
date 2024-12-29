@@ -157,7 +157,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Grid.Column="2" Source="{Binding ImageAsync[32], IsAsync=True}" Width="32" Height="32" 
+                                            <Image Grid.Column="2" Width="32" Height="32" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center" x:Name="PART_Image">
                                                 <Image.Style>
                                                     <Style>
@@ -167,6 +167,12 @@
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsCut}" Value="True">
                                                                 <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="True">
+                                                                <Setter Property="Image.Source" Value="{Binding IconAsync[32], IsAsync=True}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="False">
+                                                                <Setter Property="Image.Source" Value="{Binding ImageAsync[32], IsAsync=True}" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>

@@ -11,7 +11,7 @@ Public Enum SSF As UInt32
     SSF_STARTPANELON = &H4000           ' Start panel on
     SSF_SHOWSTARTPAGE = &H8000          ' Show start page
     SSF_AUTOCHECKSELECT = &H800000       ' Auto-check select
-    SSF_ICONSONLY = &H20000             ' Icons only, no thumbnails
+    SSF_ICONSONLY = &H1000000            ' Icons only, no thumbnails
     SSF_SHOWTYPEOVERLAY = &H40000       ' Show type overlay
     SSF_SHOWSTATUSBAR = &H80000         ' Show status bar
     SSF_SHOWCOMPCOLOR = &H8

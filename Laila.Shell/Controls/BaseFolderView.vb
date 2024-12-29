@@ -27,6 +27,8 @@ Namespace Controls
         Public Shared ReadOnly IsDoubleClickToOpenItemOverrideProperty As DependencyProperty = DependencyProperty.Register("IsDoubleClickToOpenItemOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsDoubleClickToOpenItemOverrideChanged))
         Public Shared ReadOnly IsUnderlineItemOnHoverProperty As DependencyProperty = DependencyProperty.Register("IsUnderlineItemOnHover", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsUnderlineItemOnHoverOverrideProperty As DependencyProperty = DependencyProperty.Register("IsUnderlineItemOnHoverOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsUnderlineItemOnHoverOverrideChanged))
+        Public Shared ReadOnly DoShowIconsOnlyProperty As DependencyProperty = DependencyProperty.Register("DoShowIconsOnly", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowIconsOnlyOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowIconsOnlyOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowIconsOnlyOverrideChanged))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -89,12 +91,15 @@ Namespace Controls
                             setIsDoubleClickToOpenItem()
                         Case "IsUnderlineItemOnHover"
                             setIsUnderlineItemOnHover()
+                        Case "DoShowIconsOnly"
+                            setDoShowIconsOnly()
                     End Select
                 End Sub
             setDoShowCheckBoxesToSelect()
             setDoShowEncryptedOrCompressedFilesInColor()
             setIsDoubleClickToOpenItem()
             setIsUnderlineItemOnHover()
+            setDoShowIconsOnly()
 
             AddHandler Shell.ShuttingDown,
                 Sub(s As Object, e As EventArgs)
@@ -552,6 +557,37 @@ Namespace Controls
         Public Shared Sub OnIsUnderlineItemOnHoverOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = d
             bfv.setIsUnderlineItemOnHover()
+        End Sub
+
+        Public Property DoShowIconsOnly As Boolean
+            Get
+                Return GetValue(DoShowIconsOnlyProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowIconsOnlyProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowIconsOnly()
+            If Me.DoShowIconsOnlyOverride.HasValue Then
+                Me.DoShowIconsOnly = Me.DoShowIconsOnlyOverride.Value
+            Else
+                Me.DoShowIconsOnly = Shell.Settings.DoShowIconsOnly
+            End If
+        End Sub
+
+        Public Property DoShowIconsOnlyOverride As Boolean?
+            Get
+                Return GetValue(DoShowIconsOnlyOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowIconsOnlyOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowIconsOnlyOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoShowIconsOnly()
         End Sub
 
         Protected Overridable Sub ClearBinding()
