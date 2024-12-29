@@ -18,7 +18,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type controls:ItemsContextMenu}">
                     <Border Padding="3" x:Name="PART_Menu" Opacity="0" BorderBrush="{StaticResource Menu.BorderBrush}" BorderThickness="1" 
-                            Background="{StaticResource Menu.Background}" Margin="0,0,6,6" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                            Background="{StaticResource Menu.Background}" Margin="0,0,6,6" UseLayoutRounding="True" SnapsToDevicePixels="True"
+                            Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type controls:ItemsContextMenu}}}">
                         <Border.Triggers>
                             <EventTrigger RoutedEvent="Rectangle.Loaded">
                                 <BeginStoryboard>
@@ -122,9 +123,24 @@
                                                 <TextBlock.Style>
                                                     <Style>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCompressed}" Value="True">
-                                                                <Setter Property="TextBlock.Foreground" Value="Blue" />
-                                                            </DataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Menu}" Value="True" />
+                                                                    <Condition Binding="{Binding IsCompressed}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Menu}" Value="True" />
+                                                                    <Condition Binding="{Binding IsEncrypted}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="TextBlock.Foreground" Value="#269D27" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </TextBlock.Style>

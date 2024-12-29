@@ -20,6 +20,8 @@ Namespace Controls
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
 
         Private PART_NavigationButtonsPanel As StackPanel
         Private PART_NavigationButtons As Border
@@ -39,6 +41,15 @@ Namespace Controls
             PART_NavigationButtonsPanel = Template.FindName("PART_NavigationButtonsPanel", Me)
             PART_NavigationButtons = Template.FindName("PART_NavigationButtons", Me)
             PART_ClickToEdit = Template.FindName("PART_ClickToEdit", Me)
+
+            AddHandler Shell.Settings.PropertyChanged,
+                Sub(s As Object, e As PropertyChangedEventArgs)
+                    Select Case e.PropertyName
+                        Case "DoShowEncryptedOrCompressedFilesInColor"
+                            setDoShowEncryptedOrCompressedFilesInColor()
+                    End Select
+                End Sub
+            setDoShowEncryptedOrCompressedFilesInColor()
 
             AddHandler Me.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)
@@ -191,6 +202,7 @@ Namespace Controls
                                     subFoldersContextMenu = New ItemsContextMenu()
                                     subFoldersContextMenu.PlacementTarget = button
                                     subFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
+                                    subFoldersContextMenu.DoShowEncryptedOrCompressedFilesInColorOverride = Me.DoShowEncryptedOrCompressedFilesInColorOverride
                                     Dim view As ListCollectionView = New ListCollectionView(subFolder.Items)
                                     view.Filter = Function(i) TypeOf i Is Folder
                                     view.SortDescriptions.Add(New SortDescription() With {
@@ -354,6 +366,37 @@ Namespace Controls
                 SetCurrentValue(IsLoadingProperty, value)
             End Set
         End Property
+
+        Public Property DoShowEncryptedOrCompressedFilesInColor As Boolean
+            Get
+                Return GetValue(DoShowEncryptedOrCompressedFilesInColorProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowEncryptedOrCompressedFilesInColor()
+            If Me.DoShowEncryptedOrCompressedFilesInColorOverride.HasValue Then
+                Me.DoShowEncryptedOrCompressedFilesInColor = Me.DoShowEncryptedOrCompressedFilesInColorOverride.Value
+            Else
+                Me.DoShowEncryptedOrCompressedFilesInColor = Shell.Settings.DoShowEncryptedOrCompressedFilesInColor
+            End If
+        End Sub
+
+        Public Property DoShowEncryptedOrCompressedFilesInColorOverride As Boolean?
+            Get
+                Return GetValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim ab As AddressBar = d
+            ab.setDoShowEncryptedOrCompressedFilesInColor()
+        End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then

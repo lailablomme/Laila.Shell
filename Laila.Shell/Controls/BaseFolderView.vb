@@ -408,7 +408,7 @@ Namespace Controls
             Get
                 Return GetValue(DoShowCheckBoxesToSelectOverrideProperty)
             End Get
-            Protected Set(ByVal value As Boolean?)
+            Set(ByVal value As Boolean?)
                 SetCurrentValue(DoShowCheckBoxesToSelectOverrideProperty, value)
             End Set
         End Property
@@ -439,7 +439,7 @@ Namespace Controls
             Get
                 Return GetValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty)
             End Get
-            Protected Set(ByVal value As Boolean?)
+            Set(ByVal value As Boolean?)
                 SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty, value)
             End Set
         End Property

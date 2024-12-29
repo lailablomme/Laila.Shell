@@ -20,6 +20,8 @@ Namespace Controls
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -46,6 +48,15 @@ Namespace Controls
             view.Filter = AddressOf filter
             CType(view, ListCollectionView).CustomSort = New TreeViewComparer("TreeSortKey")
             AddHandler Me.Items.CollectionChanged, AddressOf items_CollectionChanged
+
+            AddHandler Shell.Settings.PropertyChanged,
+                Sub(s As Object, e As PropertyChangedEventArgs)
+                    Select Case e.PropertyName
+                        Case "DoShowEncryptedOrCompressedFilesInColor"
+                            setDoShowEncryptedOrCompressedFilesInColor()
+                    End Select
+                End Sub
+            setDoShowEncryptedOrCompressedFilesInColor()
 
             AddHandler Shell.ShuttingDown,
                 Sub(s As Object, e As EventArgs)
@@ -742,6 +753,37 @@ Namespace Controls
                 SetCurrentValue(ItemsProperty, value)
             End Set
         End Property
+
+        Public Property DoShowEncryptedOrCompressedFilesInColor As Boolean
+            Get
+                Return GetValue(DoShowEncryptedOrCompressedFilesInColorProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowEncryptedOrCompressedFilesInColor()
+            If Me.DoShowEncryptedOrCompressedFilesInColorOverride.HasValue Then
+                Me.DoShowEncryptedOrCompressedFilesInColor = Me.DoShowEncryptedOrCompressedFilesInColorOverride.Value
+            Else
+                Me.DoShowEncryptedOrCompressedFilesInColor = Shell.Settings.DoShowEncryptedOrCompressedFilesInColor
+            End If
+        End Sub
+
+        Public Property DoShowEncryptedOrCompressedFilesInColorOverride As Boolean?
+            Get
+                Return GetValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim tv As TreeView = d
+            tv.setDoShowEncryptedOrCompressedFilesInColor()
+        End Sub
 
         Public Enum TreeRootSection As Long
             SYSTEM = 0

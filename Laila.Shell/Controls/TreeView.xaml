@@ -135,7 +135,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:TreeView}">
-                    <Grid x:Name="PART_Grid">
+                    <Grid x:Name="PART_Grid"
+                          Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:TreeView}}}">
                         <ListBox ItemsSource="{TemplateBinding Items}" x:Name="PART_ListBox" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
                              VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
@@ -276,9 +277,24 @@
                                                 <TextBlock.Style>
                                                     <Style>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCompressed}" Value="True">
-                                                                <Setter Property="TextBlock.Foreground" Value="Blue" />
-                                                            </DataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                    <Condition Binding="{Binding IsCompressed}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                    <Condition Binding="{Binding IsEncrypted}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="TextBlock.Foreground" Value="#269D27" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </TextBlock.Style>
