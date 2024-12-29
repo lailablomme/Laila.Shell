@@ -227,6 +227,7 @@ Namespace Controls
                     If Me.SelectedItems Is Nothing OrElse Not Me.SelectedItems.Contains(_mouseItemDown) Then
                         Me.SelectedItems = {_mouseItemDown}
                     End If
+                    _mouseLeftButtonDown = MouseButtonState.Released
                     Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
                 End If
             End If
@@ -235,7 +236,6 @@ Namespace Controls
         Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
             _mousePointDown = e.GetPosition(Me)
             _mouseOriginalSourceDown = e.OriginalSource
-            _mouseLeftButtonDown = If(e.ClickCount = 1, e.LeftButton, MouseButtonState.Released)
 
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then
@@ -262,15 +262,13 @@ Namespace Controls
                         End If
                     End Using
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
-                    If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
-                            AndAlso Me.SelectedItems.Contains(clickedItem) Then
-                        Dim checkBox As CheckBox = UIHelper.GetParentOfType(Of CheckBox)(e.OriginalSource)
-                        If Not checkBox Is Nothing AndAlso checkBox.IsChecked Then
-                            checkBox.IsChecked = False
-                            e.Handled = True
-                        ElseIf Keyboard.Modifiers = ModifierKeys.None Then
-                            e.Handled = True
-                        End If
+                    Dim checkBox As CheckBox = UIHelper.GetParentOfType(Of CheckBox)(e.OriginalSource)
+                    If Not checkBox Is Nothing Then
+                        checkBox.IsChecked = Not checkBox.IsChecked
+                        e.Handled = True
+                    ElseIf Keyboard.Modifiers = ModifierKeys.None Then
+                        e.Handled = True
+                        _mouseLeftButtonDown = e.LeftButton
                     End If
                 ElseIf e.RightButton = MouseButtonState.Pressed AndAlso
                         UIHelper.GetParentOfType(Of Primitives.ScrollBar)(e.OriginalSource) Is Nothing AndAlso
@@ -312,6 +310,7 @@ Namespace Controls
             End If
 
             _mouseItemDown = Nothing
+            _mouseLeftButtonDown = MouseButtonState.Released
         End Sub
 
         Public Sub OnListViewMouseLeave(sender As Object, e As MouseEventArgs)
