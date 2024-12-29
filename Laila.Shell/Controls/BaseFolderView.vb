@@ -38,7 +38,7 @@ Namespace Controls
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
         Private _mouseOriginalSourceDown As Object
-        Private _mouseLeftButtonDown As MouseButtonState
+        Private _canOpenWithSingleClick As Boolean
         Private _timeSpentTimer As Timer
         Protected _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
@@ -60,7 +60,7 @@ Namespace Controls
             Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
             Me.PART_CheckBoxSelectAll = Template.FindName("PART_CheckBoxSelectAll", Me)
-            Dim b As Boolean = Shell.Settings.IsDoubleClickToOpenItem
+
             If Not Me.PART_CheckBoxSelectAll Is Nothing Then
                 AddHandler Me.PART_CheckBoxSelectAll.Checked,
                     Sub(s As Object, e As RoutedEventArgs)
@@ -227,7 +227,6 @@ Namespace Controls
                     If Me.SelectedItems Is Nothing OrElse Not Me.SelectedItems.Contains(_mouseItemDown) Then
                         Me.SelectedItems = {_mouseItemDown}
                     End If
-                    _mouseLeftButtonDown = MouseButtonState.Released
                     Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
                 End If
             End If
@@ -236,6 +235,7 @@ Namespace Controls
         Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
             _mousePointDown = e.GetPosition(Me)
             _mouseOriginalSourceDown = e.OriginalSource
+            _canOpenWithSingleClick = False
 
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then
@@ -267,8 +267,8 @@ Namespace Controls
                         checkBox.IsChecked = Not checkBox.IsChecked
                         e.Handled = True
                     ElseIf Keyboard.Modifiers = ModifierKeys.None Then
-                        e.Handled = True
-                        _mouseLeftButtonDown = e.LeftButton
+                        If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then e.Handled = True
+                        _canOpenWithSingleClick = True
                     End If
                 ElseIf e.RightButton = MouseButtonState.Pressed AndAlso
                         UIHelper.GetParentOfType(Of Primitives.ScrollBar)(e.OriginalSource) Is Nothing AndAlso
@@ -293,7 +293,7 @@ Namespace Controls
         End Sub
 
         Public Sub OnListViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
-            If _mouseLeftButtonDown = MouseButtonState.Pressed _
+            If _canOpenWithSingleClick _
                AndAlso Not _mouseItemDown Is Nothing AndAlso Not Me.IsDoubleClickToOpenItem Then
                 Using Shell.OverrideCursor(Cursors.Wait)
                     Me.SelectedItems = {_mouseItemDown}
@@ -310,7 +310,7 @@ Namespace Controls
             End If
 
             _mouseItemDown = Nothing
-            _mouseLeftButtonDown = MouseButtonState.Released
+            _canOpenWithSingleClick = False
         End Sub
 
         Public Sub OnListViewMouseLeave(sender As Object, e As MouseEventArgs)
