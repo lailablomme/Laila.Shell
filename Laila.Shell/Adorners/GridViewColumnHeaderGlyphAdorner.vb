@@ -73,7 +73,7 @@ Namespace Adorners
                 left = _glyphs.Values.Where(Function(g) g.Alignment = HorizontalAlignment.Left).Count * 12
             End If
             Dim v As Thickness = _columnHeader.Padding
-            _columnHeader.Padding = New Thickness(left, v.Top, right, v.Bottom)
+            _columnHeader.Padding = New Thickness(left + 4, v.Top, right + 4, v.Bottom)
         End Sub
 
         Protected Overrides Sub OnRender(drawingContext As DrawingContext)

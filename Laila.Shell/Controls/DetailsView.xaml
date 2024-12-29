@@ -129,6 +129,10 @@
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.Resources>
+                                <Style TargetType="GridViewColumnHeader">
+                                    <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                    <Setter Property="Padding" Value="4,0,0,0" />
+                                </Style>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.ContainerStyle>
                                         <Style TargetType="{x:Type GroupItem}">
@@ -159,6 +163,19 @@
                                 <behaviors:SelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
                             </i:Interaction.Behaviors>
                         </ListView>
+                        <CheckBox x:Name="PART_CheckBoxSelectAll" Margin="15,3,0,0" Focusable="False"
+                                  VerticalAlignment="Top" HorizontalAlignment="Left">
+                            <CheckBox.Style>
+                                <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+                                    <Setter Property="CheckBox.Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True">
+                                            <Setter Property="CheckBox.Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </CheckBox.Style>
+                        </CheckBox>
                         <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Panel.ZIndex="3">
                             <Grid.Style>
                                 <Style>

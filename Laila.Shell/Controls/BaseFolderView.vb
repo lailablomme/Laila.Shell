@@ -27,6 +27,8 @@ Namespace Controls
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
         Private PART_Grid As Grid
+        Private PART_CheckBoxSelectAll As CheckBox
+        Private _isInternallySettingSelectAll As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
@@ -51,6 +53,24 @@ Namespace Controls
 
             Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
+            Me.PART_CheckBoxSelectAll = Template.FindName("PART_CheckBoxSelectAll", Me)
+
+            If Not Me.PART_CheckBoxSelectAll Is Nothing Then
+                AddHandler Me.PART_CheckBoxSelectAll.Checked,
+                    Sub(s As Object, e As RoutedEventArgs)
+                        If Not _isInternallySettingSelectAll Then
+                            Me.SelectedItems = Me.PART_ListBox.Items.Cast(Of Item)
+                            Me.PART_ListBox.Focus()
+                        End If
+                    End Sub
+                AddHandler Me.PART_CheckBoxSelectAll.Unchecked,
+                    Sub(s As Object, e As RoutedEventArgs)
+                        If Not _isInternallySettingSelectAll Then
+                            Me.SelectedItems = Nothing
+                            Me.PART_ListBox.Focus()
+                        End If
+                    End Sub
+            End If
 
             AddHandler Shell.Settings.PropertyChanged,
                 Sub(s As Object, e As PropertyChangedEventArgs)
@@ -598,6 +618,12 @@ Namespace Controls
 
             If Not dlv._selectionHelper Is Nothing Then
                 dlv._selectionHelper.SetSelectedItems(e.NewValue)
+            End If
+            If Not dlv.PART_CheckBoxSelectAll Is Nothing Then
+                dlv._isInternallySettingSelectAll = True
+                dlv.PART_CheckBoxSelectAll.IsChecked =
+                    dlv.PART_ListBox.Items.Count = If(dlv.SelectedItems Is Nothing, 0, dlv.SelectedItems.Count)
+                dlv._isInternallySettingSelectAll = False
             End If
         End Sub
 
