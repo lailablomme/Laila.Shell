@@ -37,6 +37,7 @@ Namespace Controls
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
+        Private _mouseOriginalSourceDown As Object
         Private _timeSpentTimer As Timer
         Protected _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
@@ -217,10 +218,14 @@ Namespace Controls
                 _mouseItemOver = overItem
             End If
 
-            If Not _mouseItemDown Is Nothing AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
+            If Not _mouseItemDown Is Nothing _
+                AndAlso (Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0) _
                 AndAlso (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(Me)
                 If Math.Abs(currentPointDown.X - _mousePointDown.X) > 10 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 10 Then
+                    If Me.SelectedItems Is Nothing OrElse Not Me.SelectedItems.Contains(_mouseItemDown) Then
+                        Me.SelectedItems = {_mouseItemDown}
+                    End If
                     Drag.Start(Me.SelectedItems, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
                 End If
             End If
@@ -228,6 +233,7 @@ Namespace Controls
 
         Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
             _mousePointDown = e.GetPosition(Me)
+            _mouseOriginalSourceDown = e.OriginalSource
 
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then

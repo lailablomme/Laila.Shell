@@ -241,7 +241,9 @@ Namespace Controls
             textBlockFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center)
             textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis)
             textBlockFactory.SetValue(TextBlock.PaddingProperty, New Thickness(0, 0, 2, 0))
-            textBlockFactory.SetValue(TextBlock.TagProperty, "PART_DisplayName")
+            If column.CanonicalName = "System.ItemNameDisplay" Then
+                textBlockFactory.SetValue(TextBlock.TagProperty, "PART_DisplayName")
+            End If
             textBlockFactory.SetValue(TextBlock.TextProperty, New Binding() With {
                 .Path = New PropertyPath(If(column.CanonicalName = "System.ItemNameDisplay", "DisplayName", String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))),
                 .Mode = BindingMode.OneWay

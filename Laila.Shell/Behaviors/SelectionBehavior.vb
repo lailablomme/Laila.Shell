@@ -18,6 +18,7 @@ Namespace Behaviors
         Private _selectionRectangle As Border
         Private _canStartSelecting As Boolean
         Private _mouseDownPos As Point
+        Private _mouseOriginalSourceDown As Object
         Private _control As Control
         Private _sv As ScrollViewer
         Private _headerHeight As Double
@@ -65,6 +66,11 @@ Namespace Behaviors
                     If e.LeftButton = Input.MouseButtonState.Pressed AndAlso Not e.OriginalSource Is Nothing Then
                         Dim listViewItem As ListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(e.OriginalSource)
                         Dim clickedItem As Item = listViewItem?.DataContext
+                        If TypeOf e.OriginalSource Is TextBlock Then
+                            _mouseOriginalSourceDown = e.OriginalSource
+                        Else
+                            _mouseOriginalSourceDown = UIHelper.GetParentOfType(Of TextBlock)(e.OriginalSource)
+                        End If
 
                         If Not _listBox.SelectedItems.Contains(clickedItem) _
                             AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing _
@@ -105,7 +111,10 @@ Namespace Behaviors
                 Sub(s As Object, e As MouseEventArgs)
                     Dim actualMousePos As Point = e.GetPosition(_listBox)
 
-                    If Not Me.IsSelecting AndAlso _canStartSelecting Then
+                    If Not Me.IsSelecting AndAlso _canStartSelecting _
+                       AndAlso Not (TypeOf _mouseOriginalSourceDown Is TextBlock _
+                                    AndAlso (CType(_mouseOriginalSourceDown, TextBlock).Tag = "PART_DisplayName" _
+                                             OrElse CType(_mouseOriginalSourceDown, TextBlock).Name = "PART_DisplayName")) Then
                         If Math.Abs(actualMousePos.X - _mouseDownPos.X) > 2 OrElse Math.Abs(actualMousePos.Y - _mouseDownPos.Y) > 2 Then
                             Me.IsSelecting = True
                             _listBox.Focus()
