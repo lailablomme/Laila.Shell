@@ -662,7 +662,7 @@ Public Class Item
             If Me.IsDrive Then
                 Return Me.FullPath
             Else
-                Return Me.DisplayName
+                Return If(Me.IsFolder AndAlso Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), "0", "1") & Me.DisplayName
             End If
         End Get
     End Property
@@ -700,7 +700,7 @@ Public Class Item
                 _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
-                                Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED
+                                Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED Or SFGAO.STREAM Or SFGAO.STORAGE Or SFGAO.STORAGEANCESTOR
                 SyncLock _shellItemLock
                     ShellItem2.GetAttributes(_attributes, _attributes)
                 End SyncLock
