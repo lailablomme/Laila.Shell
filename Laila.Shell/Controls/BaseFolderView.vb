@@ -23,6 +23,10 @@ Namespace Controls
         Public Shared ReadOnly DoShowCheckBoxesToSelectOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowCheckBoxesToSelectOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowCheckBoxesToSelectOverrideChanged))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
+        Public Shared ReadOnly IsDoubleClickToOpenItemProperty As DependencyProperty = DependencyProperty.Register("IsDoubleClickToOpenItem", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsDoubleClickToOpenItemOverrideProperty As DependencyProperty = DependencyProperty.Register("IsDoubleClickToOpenItemOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsDoubleClickToOpenItemOverrideChanged))
+        Public Shared ReadOnly IsUnderlineItemOnHoverProperty As DependencyProperty = DependencyProperty.Register("IsUnderlineItemOnHover", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsUnderlineItemOnHoverOverrideProperty As DependencyProperty = DependencyProperty.Register("IsUnderlineItemOnHoverOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsUnderlineItemOnHoverOverrideChanged))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -54,7 +58,7 @@ Namespace Controls
             Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
             Me.PART_CheckBoxSelectAll = Template.FindName("PART_CheckBoxSelectAll", Me)
-
+            Dim b As Boolean = Shell.Settings.IsDoubleClickToOpenItem
             If Not Me.PART_CheckBoxSelectAll Is Nothing Then
                 AddHandler Me.PART_CheckBoxSelectAll.Checked,
                     Sub(s As Object, e As RoutedEventArgs)
@@ -79,8 +83,16 @@ Namespace Controls
                             setDoShowCheckBoxesToSelect()
                         Case "DoShowEncryptedOrCompressedFilesInColor"
                             setDoShowEncryptedOrCompressedFilesInColor()
+                        Case "IsDoubleClickToOpenItem"
+                            setIsDoubleClickToOpenItem()
+                        Case "IsUnderlineItemOnHover"
+                            setIsUnderlineItemOnHover()
                     End Select
                 End Sub
+            setDoShowCheckBoxesToSelect()
+            setDoShowEncryptedOrCompressedFilesInColor()
+            setIsDoubleClickToOpenItem()
+            setIsUnderlineItemOnHover()
 
             AddHandler Shell.ShuttingDown,
                 Sub(s As Object, e As EventArgs)
@@ -449,6 +461,68 @@ Namespace Controls
             bfv.setDoShowEncryptedOrCompressedFilesInColor()
         End Sub
 
+        Public Property IsDoubleClickToOpenItem As Boolean
+            Get
+                Return GetValue(IsDoubleClickToOpenItemProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(IsDoubleClickToOpenItemProperty, value)
+            End Set
+        End Property
+
+        Private Sub setIsDoubleClickToOpenItem()
+            If Me.IsDoubleClickToOpenItemOverride.HasValue Then
+                Me.IsDoubleClickToOpenItem = Me.IsDoubleClickToOpenItemOverride.Value
+            Else
+                Me.IsDoubleClickToOpenItem = Shell.Settings.IsDoubleClickToOpenItem
+            End If
+        End Sub
+
+        Public Property IsDoubleClickToOpenItemOverride As Boolean?
+            Get
+                Return GetValue(IsDoubleClickToOpenItemOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(IsDoubleClickToOpenItemOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnIsDoubleClickToOpenItemOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setIsDoubleClickToOpenItem()
+        End Sub
+
+        Public Property IsUnderlineItemOnHover As Boolean
+            Get
+                Return GetValue(IsUnderlineItemOnHoverProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(IsUnderlineItemOnHoverProperty, value)
+            End Set
+        End Property
+
+        Private Sub setIsUnderlineItemOnHover()
+            If Me.IsUnderlineItemOnHoverOverride.HasValue Then
+                Me.IsUnderlineItemOnHover = Me.IsUnderlineItemOnHoverOverride.Value
+            Else
+                Me.IsUnderlineItemOnHover = Shell.Settings.IsUnderlineItemOnHover
+            End If
+        End Sub
+
+        Public Property IsUnderlineItemOnHoverOverride As Boolean?
+            Get
+                Return GetValue(IsUnderlineItemOnHoverOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(IsUnderlineItemOnHoverOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnIsUnderlineItemOnHoverOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setIsUnderlineItemOnHover()
+        End Sub
+
         Protected Overridable Sub ClearBinding()
             If Not Me.PART_ListBox Is Nothing Then
                 Me.PART_ListBox.ItemsSource = Nothing
@@ -548,9 +622,6 @@ Namespace Controls
                 ' clear view binding
                 bfv.ClearBinding()
             End If
-
-            bfv.setDoShowCheckBoxesToSelect()
-            bfv.setDoShowEncryptedOrCompressedFilesInColor()
 
             If Not e.NewValue Is Nothing Then
                 Dim newValue As Folder = e.NewValue

@@ -50,8 +50,7 @@
                                             <ControlTemplate TargetType="ListViewItem">
                                                 <Grid Height="20">
                                                     <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
-                                                            Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True"
-                                                            Tag="{Binding ., RelativeSource={RelativeSource Mode=TemplatedParent}}">
+                                                            Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="Auto" />
@@ -63,7 +62,7 @@
                                                             <GridViewRowPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                                                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
                                                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}" 
-                                                                                  x:Name="rowPresenter" />
+                                                                                  x:Name="rowPresenter" TextElement.Foreground="Red" />
                                                         </Grid>
                                                     </Border>
                                                 </Grid>
@@ -102,6 +101,7 @@
                                                     <Trigger Property="IsMouseOver" Value="True">
                                                         <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
                                                         <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                                                        <Setter Property="Tag" TargetName="Bd" Value="MouseOver"/>
                                                     </Trigger>
                                                     <MultiTrigger>
                                                         <MultiTrigger.Conditions>

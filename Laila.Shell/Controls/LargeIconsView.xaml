@@ -223,7 +223,7 @@
                                                     </ItemsControl.Style>
                                                 </ItemsControl>
                                                 <TextBlock Grid.Column="1" MaxHeight="75" TextWrapping="Wrap"
-                                                           TextTrimming="CharacterEllipsis">
+                                                           TextTrimming="CharacterEllipsis" x:Name="PART_DisplayName">
                                                     <TextBlock.Style>
                                                         <Style>
                                                             <Setter Property="TextBlock.TextAlignment" Value="Center" />
@@ -284,6 +284,25 @@
                                             </MultiDataTrigger.Conditions>
                                             <MultiDataTrigger.Setters>
                                                 <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Hidden" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Tag.IsDoubleClickToOpenItem, ElementName=PART_Grid}" Value="False" />
+                                                <Condition Binding="{Binding Tag.IsUnderlineItemOnHover, ElementName=PART_Grid}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="TextBlock.TextDecorations" TargetName="PART_DisplayName" Value="Underline" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Tag.IsDoubleClickToOpenItem, ElementName=PART_Grid}" Value="False" />
+                                                <Condition Binding="{Binding Tag.IsUnderlineItemOnHover, ElementName=PART_Grid}" Value="True" />
+                                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="TextBlock.TextDecorations" TargetName="PART_DisplayName" Value="Underline" />
                                             </MultiDataTrigger.Setters>
                                         </MultiDataTrigger>
                                     </DataTemplate.Triggers>

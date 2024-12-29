@@ -4,7 +4,6 @@ Imports Laila.Shell.Helpers
 Imports System.ComponentModel
 Imports System.Windows.Data
 Imports System.Windows.Media
-Imports System.Reflection
 
 Namespace Controls
     Public Class DetailsView
@@ -299,6 +298,57 @@ Namespace Controls
             textBlockDataTrigger3.Conditions.Add(textBlockDataTrigger3Condition2)
             textBlockDataTrigger3.Setters.Add(New Setter(TextBlock.ForegroundProperty, New SolidColorBrush(ColorConverter.ConvertFromString("#269D27"))))
             textBlockStyle.Triggers.Add(textBlockDataTrigger3)
+            Dim textBlockDataTrigger4 As MultiDataTrigger = New MultiDataTrigger()
+            Dim textBlockDataTrigger4Condition1 As Condition = New Condition() With {
+                .Binding = New Binding("IsDoubleClickToOpenItem") With
+                           {
+                               .Mode = BindingMode.OneWay,
+                               .Source = Me
+                           },
+                .Value = False
+            }
+            textBlockDataTrigger4.Conditions.Add(textBlockDataTrigger4Condition1)
+            Dim textBlockDataTrigger4Condition2 As Condition = New Condition() With {
+                .Binding = New Binding("IsUnderlineItemOnHover") With
+                           {
+                               .Mode = BindingMode.OneWay,
+                               .Source = Me
+                           },
+                .Value = False
+            }
+            textBlockDataTrigger4.Conditions.Add(textBlockDataTrigger4Condition2)
+            textBlockDataTrigger4.Setters.Add(New Setter(TextBlock.TextDecorationsProperty, TextDecorations.Underline))
+            textBlockStyle.Triggers.Add(textBlockDataTrigger4)
+            Dim textBlockDataTrigger5 As MultiDataTrigger = New MultiDataTrigger()
+            Dim textBlockDataTrigger5Condition1 As Condition = New Condition() With {
+                .Binding = New Binding("IsDoubleClickToOpenItem") With
+                           {
+                               .Mode = BindingMode.OneWay,
+                               .Source = Me
+                           },
+                .Value = False
+            }
+            textBlockDataTrigger5.Conditions.Add(textBlockDataTrigger5Condition1)
+            Dim textBlockDataTrigger5Condition2 As Condition = New Condition() With {
+                .Binding = New Binding("IsUnderlineItemOnHover") With
+                           {
+                               .Mode = BindingMode.OneWay,
+                               .Source = Me
+                           },
+                .Value = True
+            }
+            textBlockDataTrigger5.Conditions.Add(textBlockDataTrigger5Condition2)
+            Dim textBlockDataTrigger5Condition3 As Condition = New Condition() With {
+                .Binding = New Binding("Tag") With
+                           {
+                               .ElementName = "Bd",
+                               .Mode = BindingMode.TwoWay
+                           },
+                .Value = "MouseOver"
+            }
+            textBlockDataTrigger5.Conditions.Add(textBlockDataTrigger5Condition3)
+            textBlockDataTrigger5.Setters.Add(New Setter(TextBlock.TextDecorationsProperty, TextDecorations.Underline))
+            textBlockStyle.Triggers.Add(textBlockDataTrigger5)
             textBlockFactory.SetValue(Image.StyleProperty, textBlockStyle)
             gridFactory.AppendChild(textBlockFactory)
 
