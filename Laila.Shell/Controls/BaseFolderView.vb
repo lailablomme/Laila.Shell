@@ -38,6 +38,7 @@ Namespace Controls
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
         Private _mouseOriginalSourceDown As Object
+        Private _mouseLeftButtonDown As MouseButtonState
         Private _timeSpentTimer As Timer
         Protected _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
@@ -234,6 +235,7 @@ Namespace Controls
         Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
             _mousePointDown = e.GetPosition(Me)
             _mouseOriginalSourceDown = e.OriginalSource
+            _mouseLeftButtonDown = If(e.ClickCount = 1, e.LeftButton, MouseButtonState.Released)
 
             ' this prevents a multiple selection getting replaced by the single clicked item
             If Not e.OriginalSource Is Nothing Then
@@ -245,7 +247,8 @@ Namespace Controls
                 Else
                     listBoxItem.Focus()
                 End If
-                If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 AndAlso Not clickedItem Is Nothing Then
+                If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 _
+                    AndAlso Not clickedItem Is Nothing AndAlso Me.IsDoubleClickToOpenItem Then
                     Using Shell.OverrideCursor(Cursors.Wait)
                         Me.SelectedItems = {clickedItem}
                         If TypeOf clickedItem Is Folder Then
@@ -292,6 +295,22 @@ Namespace Controls
         End Sub
 
         Public Sub OnListViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+            If _mouseLeftButtonDown = MouseButtonState.Pressed _
+               AndAlso Not _mouseItemDown Is Nothing AndAlso Not Me.IsDoubleClickToOpenItem Then
+                Using Shell.OverrideCursor(Cursors.Wait)
+                    Me.SelectedItems = {_mouseItemDown}
+                    If TypeOf _mouseItemDown Is Folder Then
+                        CType(_mouseItemDown, Folder).LastScrollOffset = New Point()
+                        Me.Host.Folder = _mouseItemDown
+                        UIHelper.OnUIThread(
+                            Sub()
+                            End Sub, Threading.DispatcherPriority.Render)
+                    Else
+                        invokeDefaultCommand(_mouseItemDown)
+                    End If
+                End Using
+            End If
+
             _mouseItemDown = Nothing
         End Sub
 
