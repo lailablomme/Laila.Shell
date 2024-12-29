@@ -20,6 +20,7 @@ Public Class Settings
     Private _isDoubleClickToOpenItem As Boolean
     Private _isUnderlineItemOnHover As Boolean
     Private _doShowIconsOnly As Boolean
+    Private _doShowTypeOverlay As Boolean
 
     Public Sub New()
         Me.OnSettingChange(False)
@@ -162,6 +163,21 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property DoShowTypeOverlay As Boolean
+        Get
+            Dim mask As SSF = SSF.SSF_SHOWTYPEOVERLAY
+            Dim val As SHELLSTATE
+            Functions.SHGetSetSettings(val, mask, False)
+            Return val.Data10 = 32
+        End Get
+        Set(value As Boolean)
+            Dim mask As SSF = SSF.SSF_SHOWTYPEOVERLAY
+            Dim val As SHELLSTATE
+            val.Data10 = If(value, 32, 0)
+            Functions.SHGetSetSettings(val, mask, True)
+        End Set
+    End Property
+
     Public Sub Touch()
         ' cause WM_SETTINGCHANGE to be sent so Windows Explorer picks up the changes
         ' after we've modified the registry directly
@@ -207,6 +223,11 @@ Public Class Settings
             If Not b = _doShowIconsOnly Then
                 _doShowIconsOnly = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowIconsOnly")
+            End If
+            b = Me.DoShowTypeOverlay
+            If Not b = _doShowTypeOverlay Then
+                _doShowTypeOverlay = b
+                If doNotify Then Me.NotifyOfPropertyChange("DoShowTypeOverlay")
             End If
         End Using
     End Sub

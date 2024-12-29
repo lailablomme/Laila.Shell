@@ -156,7 +156,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Source="{Binding IconAsync[16], IsAsync=True}" Width="16" Height="16" 
+                                            <Image Width="16" Height="16" 
                                                    UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                    VerticalAlignment="Bottom" HorizontalAlignment="Right">
                                                 <Image.Style>
@@ -168,9 +168,11 @@
                                                                     <Condition Binding="{Binding IsFolder, IsAsync=True}" Value="False" />
                                                                     <Condition Binding="{Binding IsImage, IsAsync=True}" Value="False" />
                                                                     <Condition Binding="{Binding HasThumbnailAsync, IsAsync=True}" Value="True" />
+                                                                    <Condition Binding="{Binding Tag.DoShowTypeOverlay, ElementName=PART_Grid}" Value="True" />
                                                                 </MultiDataTrigger.Conditions>
                                                                 <MultiDataTrigger.Setters>
                                                                     <Setter Property="Image.Visibility" Value="Visible" />
+                                                                    <Setter Property="Image.Source" Value="{Binding IconAsync[16], IsAsync=True}" />
                                                                 </MultiDataTrigger.Setters>
                                                             </MultiDataTrigger>
                                                         </Style.Triggers>

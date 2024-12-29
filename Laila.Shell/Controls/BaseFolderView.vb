@@ -29,6 +29,8 @@ Namespace Controls
         Public Shared ReadOnly IsUnderlineItemOnHoverOverrideProperty As DependencyProperty = DependencyProperty.Register("IsUnderlineItemOnHoverOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsUnderlineItemOnHoverOverrideChanged))
         Public Shared ReadOnly DoShowIconsOnlyProperty As DependencyProperty = DependencyProperty.Register("DoShowIconsOnly", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowIconsOnlyOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowIconsOnlyOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowIconsOnlyOverrideChanged))
+        Public Shared ReadOnly DoShowTypeOverlayProperty As DependencyProperty = DependencyProperty.Register("DoShowTypeOverlay", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowTypeOverlayOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowTypeOverlayOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowTypeOverlayOverrideChanged))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -62,7 +64,7 @@ Namespace Controls
             Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
             Me.PART_CheckBoxSelectAll = Template.FindName("PART_CheckBoxSelectAll", Me)
-
+            Dim b = Shell.Settings.DoShowTypeOverlay
             If Not Me.PART_CheckBoxSelectAll Is Nothing Then
                 AddHandler Me.PART_CheckBoxSelectAll.Checked,
                     Sub(s As Object, e As RoutedEventArgs)
@@ -93,6 +95,8 @@ Namespace Controls
                             setIsUnderlineItemOnHover()
                         Case "DoShowIconsOnly"
                             setDoShowIconsOnly()
+                        Case "DoShowTypeOverlay"
+                            setDoShowTypeOverlay()
                     End Select
                 End Sub
             setDoShowCheckBoxesToSelect()
@@ -100,6 +104,7 @@ Namespace Controls
             setIsDoubleClickToOpenItem()
             setIsUnderlineItemOnHover()
             setDoShowIconsOnly()
+            setDoShowTypeOverlay()
 
             AddHandler Shell.ShuttingDown,
                 Sub(s As Object, e As EventArgs)
@@ -588,6 +593,37 @@ Namespace Controls
         Public Shared Sub OnDoShowIconsOnlyOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = d
             bfv.setDoShowIconsOnly()
+        End Sub
+
+        Public Property DoShowTypeOverlay As Boolean
+            Get
+                Return GetValue(DoShowTypeOverlayProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowTypeOverlayProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowTypeOverlay()
+            If Me.DoShowTypeOverlayOverride.HasValue Then
+                Me.DoShowTypeOverlay = Me.DoShowTypeOverlayOverride.Value
+            Else
+                Me.DoShowTypeOverlay = Shell.Settings.DoShowTypeOverlay
+            End If
+        End Sub
+
+        Public Property DoShowTypeOverlayOverride As Boolean?
+            Get
+                Return GetValue(DoShowTypeOverlayOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowTypeOverlayOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowTypeOverlayOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoShowTypeOverlay()
         End Sub
 
         Protected Overridable Sub ClearBinding()
