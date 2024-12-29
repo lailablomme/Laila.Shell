@@ -274,11 +274,8 @@ Public Class Item
 
                 If Not Me.ShellItem2 Is Nothing Then
                     _fullPath = Me.FullPath
-                    _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
-                        Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
-                        Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
-                        Or SFGAO.FILESYSTEM Or SFGAO.HASSUBFOLDER Or SFGAO.COMPRESSED
-                    Me.ShellItem2.GetAttributes(_attributes, _attributes)
+                    _attributes = 0
+                    _attributes = Me.Attributes
 
                     ' preload System_StorageProviderUIStatus images
                     'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
@@ -700,7 +697,7 @@ Public Class Item
                 _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
-                                Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED Or SFGAO.STREAM Or SFGAO.STORAGE Or SFGAO.STORAGEANCESTOR
+                                Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED Or SFGAO.STORAGEANCESTOR
                 SyncLock _shellItemLock
                     ShellItem2.GetAttributes(_attributes, _attributes)
                 End SyncLock
