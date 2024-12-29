@@ -265,19 +265,21 @@ Namespace Controls
                     listBoxItem.Focus()
                 End If
                 If e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 _
-                    AndAlso Not clickedItem Is Nothing AndAlso Me.IsDoubleClickToOpenItem Then
-                    Using Shell.OverrideCursor(Cursors.Wait)
-                        Me.SelectedItems = {clickedItem}
-                        If TypeOf clickedItem Is Folder Then
-                            CType(clickedItem, Folder).LastScrollOffset = New Point()
-                            Me.Host.Folder = clickedItem
-                            UIHelper.OnUIThread(
-                                Sub()
-                                End Sub, Threading.DispatcherPriority.Render)
-                        Else
-                            invokeDefaultCommand(clickedItem)
-                        End If
-                    End Using
+                    AndAlso Not clickedItem Is Nothing Then
+                    If Me.IsDoubleClickToOpenItem Then
+                        Using Shell.OverrideCursor(Cursors.Wait)
+                            Me.SelectedItems = {clickedItem}
+                            If TypeOf clickedItem Is Folder Then
+                                CType(clickedItem, Folder).LastScrollOffset = New Point()
+                                Me.Host.Folder = clickedItem
+                                UIHelper.OnUIThread(
+                            Sub()
+                            End Sub, Threading.DispatcherPriority.Render)
+                            Else
+                                invokeDefaultCommand(clickedItem)
+                            End If
+                        End Using
+                    End If
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                     Dim checkBox As CheckBox = UIHelper.GetParentOfType(Of CheckBox)(e.OriginalSource)
                     If Not checkBox Is Nothing Then
