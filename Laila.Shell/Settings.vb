@@ -142,8 +142,17 @@ Public Class Settings
         End Get
         Set(value As Boolean)
             SetRegistryDWord(EXPLORER_KEYPATH, UNDERLINEITEMONHOVER_VALUENAME, If(value, 2, 3))
+            Me.Touch()
         End Set
     End Property
+
+    Public Sub Touch()
+        ' cause WM_SETTINGCHANGE to be sent so Windows Explorer picks up the changes
+        ' after we've modified the registry directly
+        Dim b As Boolean = Me.IsDoubleClickToOpenItem
+        Me.IsDoubleClickToOpenItem = Not b
+        Me.IsDoubleClickToOpenItem = b
+    End Sub
 
     Friend Sub OnSettingChange(Optional doNotify As Boolean = True)
         Using Shell.OverrideCursor(Cursors.Wait)
