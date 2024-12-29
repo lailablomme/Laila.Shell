@@ -187,21 +187,28 @@ Namespace Controls
                     End Sub), Nothing, 650, Timeout.Infinite)
 
                 _typeToSearchString &= e.Text
-                Dim foundItem As Item =
-                Me.Folder.Items.Skip(Me.Folder.Items.IndexOf(Me.SelectedItems(0)) + 1) _
-                        .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
-                If foundItem Is Nothing Then
+                Dim foundItem As Item
+                If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
                     foundItem =
-                    Me.Folder.Items.Take(Me.Folder.Items.IndexOf(Me.SelectedItems(0))) _
+                        Me.Folder.Items.Skip(Me.Folder.Items.IndexOf(Me.SelectedItems(0)) + 1) _
+                            .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+                    If foundItem Is Nothing Then
+                        foundItem =
+                            Me.Folder.Items.Take(Me.Folder.Items.IndexOf(Me.SelectedItems(0))) _
+                                .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+                    End If
+                Else
+                    foundItem =
+                        Me.Folder.Items _
                             .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
                 End If
                 If Not foundItem Is Nothing Then
-                    Me.SelectedItems = {foundItem}
-                    e.Handled = True
-                Else
-                    SystemSounds.Asterisk.Play()
+                        Me.SelectedItems = {foundItem}
+                        e.Handled = True
+                    Else
+                        SystemSounds.Asterisk.Play()
+                    End If
                 End If
-            End If
         End Sub
 
         Private Sub invokeDefaultCommand(item As Item)
