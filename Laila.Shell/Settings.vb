@@ -3,6 +3,7 @@ Imports System.Threading
 Imports System.Windows.Input
 Imports Laila.Shell.Helpers
 Imports Microsoft.Win32
+Imports Microsoft.Win32.SafeHandles
 
 Public Class Settings
     Inherits NotifyPropertyChangedBase
@@ -11,7 +12,9 @@ Public Class Settings
     Private Const EXPLORER_ADVANCED_KEYPATH As String = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
     Private Const SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME As String = "ShowEncryptCompressedColor"
     Private Const UNDERLINEITEMONHOVER_VALUENAME As String = "IconUnderline"
+    Private Const SHOWFOLDERCONTENTSININFOTIP_VALUENAME As String = "FolderContentsInfoTip"
 
+    Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _doHideKnownFileExtensions As Boolean
     Private _doShowProtectedOperatingSystemFiles As Boolean
     Private _doShowCheckBoxesToSelect As Boolean
@@ -21,33 +24,57 @@ Public Class Settings
     Private _isUnderlineItemOnHover As Boolean
     Private _doShowIconsOnly As Boolean
     Private _doShowTypeOverlay As Boolean
+    Private _doShowFolderContentsInInfoTip As Boolean
 
     Public Sub New()
         Me.OnSettingChange(False)
 
-        ' some settings don't produce notifications, so we need to poll
-        Dim doNotify As Boolean
+        ' some settings don't produce notifications, so we need to monitor the registry
+        monitorRegistryKey(EXPLORER_KEYPATH,
+            Sub()
+                Dim b As Boolean = Me.IsUnderlineItemOnHover
+                If Not b = _isUnderlineItemOnHover Then
+                    _isUnderlineItemOnHover = b
+                    Me.NotifyOfPropertyChange("IsUnderlineItemOnHover")
+                End If
+            End Sub)
+        monitorRegistryKey(EXPLORER_ADVANCED_KEYPATH,
+            Sub()
+                Dim b As Boolean = Me.DoShowFolderContentsInInfoTip
+                If Not b = _doShowFolderContentsInInfoTip Then
+                    _doShowFolderContentsInInfoTip = b
+                    Me.NotifyOfPropertyChange("DoShowFolderContentsInInfoTip")
+                End If
+            End Sub)
+    End Sub
+
+    Private Sub monitorRegistryKey(keyPath As String, onChange As Action)
         Dim t As Thread = New Thread(
             Sub()
-                While Not Shell.ShuttingDownToken.IsCancellationRequested
-                    Dim b As Boolean = Me.IsUnderlineItemOnHover
-                    If Not b = _isUnderlineItemOnHover Then
-                        _isUnderlineItemOnHover = b
-                        If doNotify Then
+                Using registryKey = Registry.CurrentUser.OpenSubKey(keyPath, writable:=False)
+                    Dim hKey As IntPtr = registryKey.Handle.DangerousGetHandle()
+                    While Not Shell.ShuttingDownToken.IsCancellationRequested
+                        Dim result As HRESULT = Functions.RegNotifyChangeKeyValue(
+                            hKey,
+                            False,
+                            REG_NOTIFY_CHANGE.LAST_SET,
+                            IntPtr.Zero,
+                            False
+                        )
+
+                        If result = HRESULT.S_OK Then
                             UIHelper.OnUIThread(
                                 Sub()
-                                    Me.NotifyOfPropertyChange("IsUnderlineItemOnHover")
+                                    onChange()
                                 End Sub)
                         End If
-                    End If
-
-                    doNotify = True
-                    Thread.Sleep(1000)
-                End While
+                    End While
+                End Using
             End Sub)
         t.SetApartmentState(ApartmentState.STA)
         t.IsBackground = True
         t.Start()
+        _threads.Add(t)
     End Sub
 
     Public Property DoHideKnownFileExtensions As Boolean
@@ -178,12 +205,23 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property DoShowFolderContentsInInfoTip As Boolean
+        Get
+            Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWFOLDERCONTENTSININFOTIP_VALUENAME, True)
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(EXPLORER_KEYPATH, UNDERLINEITEMONHOVER_VALUENAME, value)
+            Me.Touch()
+        End Set
+    End Property
+
     Public Sub Touch()
-        ' cause WM_SETTINGCHANGE to be sent so Windows Explorer picks up the changes
-        ' after we've modified the registry directly
+        ' cause Windows Explorer to pick up the changes after we've modified the registry directly
         Dim b As Boolean = Me.IsDoubleClickToOpenItem
         Me.IsDoubleClickToOpenItem = Not b
         Me.IsDoubleClickToOpenItem = b
+        'Dim result As IntPtr
+        'Functions.SendMessageTimeout(CType(&HFFFF, IntPtr), WM.SETTINGCHANGE, IntPtr.Zero, IntPtr.Zero, 0, 1000, result)
     End Sub
 
     Friend Sub OnSettingChange(Optional doNotify As Boolean = True)
@@ -229,6 +267,9 @@ Public Class Settings
                 _doShowTypeOverlay = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowTypeOverlay")
             End If
+
+            _isUnderlineItemOnHover = Me.IsUnderlineItemOnHover
+            _doShowFolderContentsInInfoTip = Me.DoShowFolderContentsInInfoTip
         End Using
     End Sub
 

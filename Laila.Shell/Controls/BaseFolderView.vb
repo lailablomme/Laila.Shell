@@ -31,6 +31,8 @@ Namespace Controls
         Public Shared ReadOnly DoShowIconsOnlyOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowIconsOnlyOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowIconsOnlyOverrideChanged))
         Public Shared ReadOnly DoShowTypeOverlayProperty As DependencyProperty = DependencyProperty.Register("DoShowTypeOverlay", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowTypeOverlayOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowTypeOverlayOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowTypeOverlayOverrideChanged))
+        Public Shared ReadOnly DoShowFolderContentsInInfoTipProperty As DependencyProperty = DependencyProperty.Register("DoShowFolderContentsInInfoTip", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowFolderContentsInInfoTipOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowFolderContentsInInfoTipOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowFolderContentsInInfoTipOverrideChanged))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -99,6 +101,8 @@ Namespace Controls
                             setDoShowIconsOnly()
                         Case "DoShowTypeOverlay"
                             setDoShowTypeOverlay()
+                        Case "DoShowFolderContentsInInfoTip"
+                            setDoShowFolderContentsInInfoTip()
                     End Select
                 End Sub
             setDoShowCheckBoxesToSelect()
@@ -107,6 +111,7 @@ Namespace Controls
             setIsUnderlineItemOnHover()
             setDoShowIconsOnly()
             setDoShowTypeOverlay()
+            setDoShowFolderContentsInInfoTip()
 
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -242,22 +247,29 @@ Namespace Controls
 
                 Dim f As Func(Of Task) =
                     Async Function() As Task
+                        Dim startTime As DateTime = DateTime.Now
+
                         Dim startOverItem As Item = overItem
                         Dim text As String = overItem.InfoTip
-                        Dim textFolderSize As String
-                        If TypeOf overItem Is Folder Then
-                            textFolderSize = Await CType(overItem, Folder).GetInfoTipFolderSizeAsync(_toolTipCancellationTokenSource.Token)
-                        End If
-                        If Not String.IsNullOrWhiteSpace(textFolderSize) Then
-                            text &= Environment.NewLine & textFolderSize
+
+                        If Me.DoShowFolderContentsInInfoTip Then
+                            Dim textFolderSize As String
+                            If TypeOf overItem Is Folder Then
+                                textFolderSize = Await CType(overItem, Folder).GetInfoTipFolderSizeAsync(_toolTipCancellationTokenSource.Token)
+                            End If
+                            If Not String.IsNullOrWhiteSpace(textFolderSize) Then
+                                text &= Environment.NewLine & textFolderSize
+                            End If
                         End If
 
-                        If Not _toolTip Is Nothing Then
-                            _toolTip.IsOpen = False
-                            _toolTip = Nothing
-                        End If
+                        Await Task.Delay(Math.Max(0, 1500 - DateTime.Now.Subtract(startTime).TotalMilliseconds))
 
                         If Not String.IsNullOrWhiteSpace(text) AndAlso startOverItem.Equals(_mouseItemOver) Then
+                            If Not _toolTip Is Nothing Then
+                                _toolTip.IsOpen = False
+                                _toolTip = Nothing
+                            End If
+
                             _toolTip = New ToolTip With {
                                 .Content = text,
                                 .Placement = PlacementMode.Mouse
@@ -677,6 +689,37 @@ Namespace Controls
         Public Shared Sub OnDoShowTypeOverlayOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = d
             bfv.setDoShowTypeOverlay()
+        End Sub
+
+        Public Property DoShowFolderContentsInInfoTip As Boolean
+            Get
+                Return GetValue(DoShowFolderContentsInInfoTipProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowFolderContentsInInfoTipProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowFolderContentsInInfoTip()
+            If Me.DoShowFolderContentsInInfoTipOverride.HasValue Then
+                Me.DoShowFolderContentsInInfoTip = Me.DoShowFolderContentsInInfoTipOverride.Value
+            Else
+                Me.DoShowFolderContentsInInfoTip = Shell.Settings.DoShowFolderContentsInInfoTip
+            End If
+        End Sub
+
+        Public Property DoShowFolderContentsInInfoTipOverride As Boolean?
+            Get
+                Return GetValue(DoShowFolderContentsInInfoTipOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowFolderContentsInInfoTipOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowFolderContentsInInfoTipOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoShowFolderContentsInInfoTip()
         End Sub
 
         Protected Overridable Sub ClearBinding()

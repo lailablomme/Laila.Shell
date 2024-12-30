@@ -9,6 +9,14 @@ Imports Laila.Shell.Controls
 
 Public Class Functions
 
+    <DllImport("advapi32.dll", SetLastError:=True)>
+    Public Shared Function RegNotifyChangeKeyValue(
+        hKey As IntPtr,
+        watchSubtree As Boolean,
+        notifyFilter As Integer,
+        hEvent As IntPtr,
+        async As Boolean) As Integer
+    End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
     Public Shared Function SHCreateShellFolderView(
         ByVal pcsfv As SFV_CREATE,
@@ -33,7 +41,7 @@ Public Class Functions
     hWnd As IntPtr,
     Msg As UInteger,
     wParam As IntPtr,
-    lParam As String,
+    lParam As IntPtr,
     flags As UInteger,
     timeout As UInteger,
     ByRef result As IntPtr
