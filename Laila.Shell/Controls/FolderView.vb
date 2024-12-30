@@ -36,11 +36,6 @@ Namespace Controls
         Private disposedValue As Boolean
 
         Public Sub New()
-            AddHandler Shell.ShuttingDown,
-                Sub(s As Object, e As EventArgs)
-                    Me.Dispose()
-                End Sub
-
             AddHandler Me.Loaded,
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then

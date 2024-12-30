@@ -15,7 +15,6 @@ Public Class Shell
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
-    Public Shared Event ShuttingDown As EventHandler
 
     Public Shared STATaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
@@ -23,8 +22,6 @@ Public Class Shell
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
     Private Shared _shutDownTokensSource As CancellationTokenSource = New CancellationTokenSource()
     Public Shared ShuttingDownToken As CancellationToken = _shutDownTokensSource.Token
-    Private Shared _cancellationTokenSources As List(Of CancellationTokenSource) = New List(Of CancellationTokenSource)()
-    Private Shared _cancellationTokenSourcesLock As Object = New Object()
     Private Shared _mainWindow As Window
 
     Friend Shared _w As Window
@@ -219,25 +216,6 @@ Public Class Shell
     ''' </summary>
     Public Shared Sub Shutdown()
         If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-            ' clean up menus and their threads
-            SyncLock _menuCacheLock
-                For Each item In Shell.MenuCache.ToList()
-                    item.Dispose()
-                Next
-            End SyncLock
-
-            ' dispose controls
-            RaiseEvent ShuttingDown(Nothing, New EventArgs())
-
-            ' clean up items
-            Dim items As List(Of Item)
-            SyncLock Shell._itemsCacheLock
-                items = Shell.ItemsCache.Select(Function(i) i.Item1).ToList()
-            End SyncLock
-            For Each item In items
-                item.Dispose()
-            Next
-
             ' cancel threads
             _shutDownTokensSource.Cancel()
 
@@ -247,14 +225,6 @@ Public Class Shell
                     Functions.SHChangeNotifyDeregister(item.Value)
                     _listenerhNotifies.Remove(item.Key)
                     _listenerCount.Remove(item.Key)
-                Next
-            End SyncLock
-
-            ' clean up folder threads
-            SyncLock _cancellationTokenSourcesLock
-                For Each item In _cancellationTokenSources.ToList()
-                    item.Cancel()
-                    _cancellationTokenSources.Remove(item)
                 Next
             End SyncLock
 
@@ -421,18 +391,6 @@ Public Class Shell
         End SyncLock
     End Sub
 
-    Friend Shared Sub AddToCancellationTokenSources(item As CancellationTokenSource)
-        SyncLock _cancellationTokenSourcesLock
-            _cancellationTokenSources.Add(item)
-        End SyncLock
-    End Sub
-
-    Friend Shared Sub RemoveFromCancellationTokenSources(item As CancellationTokenSource)
-        SyncLock _cancellationTokenSourcesLock
-            _cancellationTokenSources.Remove(item)
-        End SyncLock
-    End Sub
-
     Private Shared _listenersLock As Object = New Object()
     Private Shared _listenerhNotifies As Dictionary(Of String, UInt32) = New Dictionary(Of String, UInt32)()
     Private Shared _listenerCount As Dictionary(Of String, Integer) = New Dictionary(Of String, Integer)()
@@ -519,5 +477,4 @@ Public Class Shell
             Return Nothing
         End If
     End Function
-
 End Class

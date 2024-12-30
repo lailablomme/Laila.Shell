@@ -55,15 +55,11 @@ Namespace Controls
                     End Try
                     Functions.OleUninitialize()
                 End Sub)
+            _staThread2.IsBackground = True
             _staThread2.SetApartmentState(ApartmentState.STA)
             _staThread2.Start()
 
             AddHandler Shell.Notification, AddressOf shell_Notification
-
-            AddHandler Shell.ShuttingDown,
-                Sub(s As Object, e As EventArgs)
-                    Me.Dispose()
-                End Sub
         End Sub
 
         Protected MustOverride Sub AddItems()

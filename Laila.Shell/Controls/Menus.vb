@@ -34,13 +34,6 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
         End Sub
 
-        Public Sub New()
-            AddHandler Shell.ShuttingDown,
-                Sub(s As Object, e As EventArgs)
-                    Me.Dispose()
-                End Sub
-        End Sub
-
         Friend Shared Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
             Dim originalName As String, ext As String = "", isDrive As Boolean, isWithExt As Boolean
             Dim doHideKnownFileExtensions As Boolean = Shell.Settings.DoHideKnownFileExtensions

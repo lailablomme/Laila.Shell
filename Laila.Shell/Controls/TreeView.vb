@@ -58,11 +58,6 @@ Namespace Controls
                 End Sub
             setDoShowEncryptedOrCompressedFilesInColor()
 
-            AddHandler Shell.ShuttingDown,
-                Sub(s As Object, e As EventArgs)
-                    Me.Dispose()
-                End Sub
-
             AddHandler Shell.FolderNotification,
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
                      Select Case e.Event

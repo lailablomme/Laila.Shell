@@ -106,11 +106,6 @@ Namespace Controls
             setDoShowIconsOnly()
             setDoShowTypeOverlay()
 
-            AddHandler Shell.ShuttingDown,
-                Sub(s As Object, e As EventArgs)
-                    Me.Dispose()
-                End Sub
-
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
