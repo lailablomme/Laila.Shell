@@ -33,6 +33,8 @@ Namespace Controls
         Public Shared ReadOnly DoShowTypeOverlayOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowTypeOverlayOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowTypeOverlayOverrideChanged))
         Public Shared ReadOnly DoShowFolderContentsInInfoTipProperty As DependencyProperty = DependencyProperty.Register("DoShowFolderContentsInInfoTip", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowFolderContentsInInfoTipOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowFolderContentsInInfoTipOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowFolderContentsInInfoTipOverrideChanged))
+        Public Shared ReadOnly DoShowInfoTipsProperty As DependencyProperty = DependencyProperty.Register("DoShowInfoTips", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowInfoTipsOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowInfoTipsOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowInfoTipsOverrideChanged))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -103,6 +105,8 @@ Namespace Controls
                             setDoShowTypeOverlay()
                         Case "DoShowFolderContentsInInfoTip"
                             setDoShowFolderContentsInInfoTip()
+                        Case "DoShowInfoTips"
+                            setDoShowInfoTips()
                     End Select
                 End Sub
             setDoShowCheckBoxesToSelect()
@@ -112,6 +116,7 @@ Namespace Controls
             setDoShowIconsOnly()
             setDoShowTypeOverlay()
             setDoShowFolderContentsInInfoTip()
+            setDoShowInfoTips()
 
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -232,7 +237,7 @@ Namespace Controls
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
             Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
             Dim overItem As Item = TryCast(listBoxItem?.DataContext, Item)
-            If Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
+            If Me.DoShowInfoTips AndAlso Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
                 _mouseItemOver = overItem
 
                 If Not _toolTip Is Nothing Then
@@ -720,6 +725,37 @@ Namespace Controls
         Public Shared Sub OnDoShowFolderContentsInInfoTipOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = d
             bfv.setDoShowFolderContentsInInfoTip()
+        End Sub
+
+        Public Property DoShowInfoTips As Boolean
+            Get
+                Return GetValue(DoShowInfoTipsProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowInfoTipsProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowInfoTips()
+            If Me.DoShowInfoTipsOverride.HasValue Then
+                Me.DoShowInfoTips = Me.DoShowInfoTipsOverride.Value
+            Else
+                Me.DoShowInfoTips = Shell.Settings.DoShowInfoTips
+            End If
+        End Sub
+
+        Public Property DoShowInfoTipsOverride As Boolean?
+            Get
+                Return GetValue(DoShowInfoTipsOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowInfoTipsOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowInfoTipsOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoShowInfoTips()
         End Sub
 
         Protected Overridable Sub ClearBinding()

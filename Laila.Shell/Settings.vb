@@ -13,6 +13,7 @@ Public Class Settings
     Private Const SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME As String = "ShowEncryptCompressedColor"
     Private Const UNDERLINEITEMONHOVER_VALUENAME As String = "IconUnderline"
     Private Const SHOWFOLDERCONTENTSININFOTIP_VALUENAME As String = "FolderContentsInfoTip"
+    Private Const SHOWINFOTIPS_VALUENAME As String = "ShowInfoTip"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _doHideKnownFileExtensions As Boolean
@@ -25,6 +26,7 @@ Public Class Settings
     Private _doShowIconsOnly As Boolean
     Private _doShowTypeOverlay As Boolean
     Private _doShowFolderContentsInInfoTip As Boolean
+    Private _doShowInfoTips As Boolean
 
     Public Sub New()
         Me.OnSettingChange(False)
@@ -40,10 +42,16 @@ Public Class Settings
             End Sub)
         monitorRegistryKey(EXPLORER_ADVANCED_KEYPATH,
             Sub()
-                Dim b As Boolean = Me.DoShowFolderContentsInInfoTip
+                Dim b As Boolean
+                b = Me.DoShowFolderContentsInInfoTip
                 If Not b = _doShowFolderContentsInInfoTip Then
                     _doShowFolderContentsInInfoTip = b
                     Me.NotifyOfPropertyChange("DoShowFolderContentsInInfoTip")
+                End If
+                b = Me.DoShowInfoTips
+                If Not b = _doShowInfoTips Then
+                    _doShowInfoTips = b
+                    Me.NotifyOfPropertyChange("DoShowInfoTips")
                 End If
             End Sub)
     End Sub
@@ -210,7 +218,17 @@ Public Class Settings
             Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWFOLDERCONTENTSININFOTIP_VALUENAME, True)
         End Get
         Set(value As Boolean)
-            SetRegistryBoolean(EXPLORER_KEYPATH, UNDERLINEITEMONHOVER_VALUENAME, value)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWFOLDERCONTENTSININFOTIP_VALUENAME, value)
+            Me.Touch()
+        End Set
+    End Property
+
+    Public Property DoShowInfoTips As Boolean
+        Get
+            Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWINFOTIPS_VALUENAME, True)
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWINFOTIPS_VALUENAME, value)
             Me.Touch()
         End Set
     End Property
@@ -270,6 +288,7 @@ Public Class Settings
 
             _isUnderlineItemOnHover = Me.IsUnderlineItemOnHover
             _doShowFolderContentsInInfoTip = Me.DoShowFolderContentsInInfoTip
+            _doShowInfoTips = Me.DoShowInfoTips
         End Using
     End Sub
 
