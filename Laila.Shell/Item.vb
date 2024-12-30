@@ -1,6 +1,7 @@
 Imports System.ComponentModel
 Imports System.IO
 Imports System.Runtime.InteropServices
+Imports System.Text
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Media
@@ -365,9 +366,74 @@ Public Class Item
         End Set
     End Property
 
+    Public Function GetAssociatedApplication() As String
+        Dim ext As String = IO.Path.GetExtension(Me.FullPath)
+
+        Dim bufferSize As UInteger = 0
+        ' First call to get the required buffer size
+        Functions.AssocQueryStringW(AssocF.None, AssocStr.Executable, ext, Nothing, Nothing, bufferSize)
+
+        If bufferSize = 0 Then Return Nothing
+
+        Dim output As String = New String(ChrW(0), bufferSize)
+        ' Second call to get the actual executable path
+        If Functions.AssocQueryStringW(AssocF.None, AssocStr.Executable, ext, Nothing, output, bufferSize) = 0 Then
+            Return output
+        End If
+
+        Return Nothing
+    End Function
+
+    Public ReadOnly Property AssociatedApplicationIcon(size As Integer) As ImageSource
+        Get
+            If Not disposedValue AndAlso (IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath)) Then
+                Dim app As String = Me.GetAssociatedApplication()
+                If Not String.IsNullOrWhiteSpace(app) Then
+                    Dim shFileInfo As New SHFILEINFO()
+                    Try
+                        Dim result As IntPtr = Functions.SHGetFileInfo(
+                            app,
+                            0,
+                            shFileInfo,
+                            Marshal.SizeOf(shFileInfo),
+                            SHGFI.SHGFI_ICON Or If(size > 16, SHGFI.SHGFI_LARGEICON, SHGFI.SHGFI_SMALLICON)
+                        )
+                        If Not IntPtr.Zero.Equals(result) Then
+                            Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(shFileInfo.hIcon)
+                                Using bitmap = icon.ToBitmap()
+                                    Dim hBitmap As IntPtr = bitmap.GetHbitmap()
+                                    Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                    image.Freeze()
+                                    Return image
+                                End Using
+                            End Using
+                        End If
+                    Finally
+                        If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
+                            Functions.DestroyIcon(shFileInfo.hIcon)
+                        End If
+                    End Try
+                End If
+            End If
+            Return Nothing
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property AssociatedApplicationIconAsync(size As Integer) As ImageSource
+        Get
+            Return Shell.RunOnSTAThread(
+                Sub(tcs As TaskCompletionSource(Of ImageSource))
+                    Dim result As ImageSource
+                    result = Me.AssociatedApplicationIcon(size)
+                    If Not result Is Nothing Then result.Freeze()
+                    tcs.SetResult(result)
+                End Sub, 3)
+        End Get
+    End Property
+
     Public ReadOnly Property OverlayIconIndex As Byte
         Get
-            If Not disposedValue AndAlso IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath) Then
+            If Not disposedValue AndAlso (IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath)) Then
                 Dim shFileInfo As New SHFILEINFO()
                 Try
                     Dim result As IntPtr = Functions.SHGetFileInfo(

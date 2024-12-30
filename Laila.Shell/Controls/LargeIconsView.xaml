@@ -156,7 +156,7 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Width="32" Height="32" 
+                                            <Image Width="32" Height="32" Margin="0,0,14,0" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                        VerticalAlignment="Bottom" HorizontalAlignment="Right">
                                                 <Image.Style>
@@ -172,7 +172,7 @@
                                                                 </MultiDataTrigger.Conditions>
                                                                 <MultiDataTrigger.Setters>
                                                                     <Setter Property="Image.Visibility" Value="Visible" />
-                                                                    <Setter Property="Image.Source" Value="{Binding IconAsync[32], IsAsync=True}" />
+                                                                    <Setter Property="Image.Source" Value="{Binding AssociatedApplicationIconAsync[32], IsAsync=True}" />
                                                                 </MultiDataTrigger.Setters>
                                                             </MultiDataTrigger>
                                                         </Style.Triggers>
