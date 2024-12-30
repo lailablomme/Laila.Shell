@@ -217,6 +217,262 @@ Public Class Folder
         End Set
     End Property
 
+    Public Async Function GetInfoTipFolderSizeAsync(cancellationToken As CancellationToken) As Task(Of String)
+        Dim folderList As List(Of String)
+        Dim tcs1 As TaskCompletionSource(Of List(Of String)) = New TaskCompletionSource(Of List(Of String))()
+        Shell.STATaskQueue.Add(
+            Sub()
+                Try
+                    Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.ENABLE_ASYNC
+                    If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
+                    If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
+                    tcs1.SetResult(quickEnum(flags, 11))
+                Catch ex As Exception
+                    tcs1.SetException(ex)
+                End Try
+            End Sub)
+        Await tcs1.Task
+        If tcs1.Task.IsCompleted Then
+            folderList = tcs1.Task.Result
+        End If
+
+        Dim fileList As List(Of String)
+        Dim tcs2 As TaskCompletionSource(Of List(Of String)) = New TaskCompletionSource(Of List(Of String))()
+        Shell.STATaskQueue.Add(
+            Sub()
+                Try
+                    Dim flags As UInt32 = SHCONTF.NONFOLDERS Or SHCONTF.ENABLE_ASYNC
+                    If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
+                    If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
+                    tcs2.SetResult(quickEnum(flags, 11))
+                Catch ex As Exception
+                    tcs2.SetException(ex)
+                End Try
+            End Sub)
+        Await tcs2.Task
+        If tcs2.Task.IsCompleted Then
+            fileList = tcs2.Task.Result
+        End If
+
+        Dim result As List(Of String) = New List(Of String)()
+
+        If Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
+            Dim tcs3 As TaskCompletionSource(Of UInt64?) = New TaskCompletionSource(Of UInt64?)()
+            Shell.STATaskQueue.Add(
+            Sub()
+                Try
+                    tcs3.SetResult(getSizeRecursive(2500, cancellationToken))
+                Catch ex As Exception
+                    tcs3.SetException(ex)
+                End Try
+            End Sub)
+            Await Task.WhenAny(tcs3.Task, Task.Delay(3000))
+
+            If tcs3.Task.IsCompleted AndAlso tcs3.Task.Result.HasValue AndAlso Not tcs3.Task.Result.Value = 0 Then
+                Dim prop As [Property] = New [Property]("System.Size")
+                prop._rawValue = New PROPVARIANT()
+                prop._rawValue.SetValue(tcs3.Task.Result.Value)
+                result.Add(prop.DisplayNameWithColon & " " & prop.Text)
+                prop.Dispose()
+            End If
+        End If
+
+        Dim toString As Func(Of List(Of String), String) =
+            Function(list As List(Of String)) As String
+                Dim isMore As Boolean = list.Count = 11
+                Dim text As String = String.Join(", ", list.Take(10))
+                If text.Length > 75 Then
+                    isMore = True
+                    text = text.Substring(0, 75)
+                    text = text.Substring(0, text.LastIndexOf(","))
+                End If
+                If isMore Then
+                    If list(0).Length > 75 Then
+                        text &= "..."
+                    Else
+                        text &= ", ..."
+                    End If
+                End If
+                Return text
+            End Function
+
+        If Not folderList Is Nothing Then
+            result.Add("Folders: " & toString(folderList))
+        End If
+
+        If Not fileList Is Nothing Then
+            result.Add("Files: " & toString(fileList))
+        End If
+
+        If folderList Is Nothing AndAlso fileList Is Nothing Then
+            result.Add("Empty folder")
+        End If
+
+        Return String.Join(Environment.NewLine, result)
+    End Function
+
+    Protected Function getSizeRecursive(timeout As Integer, cancellationToken As CancellationToken,
+        Optional startTime As DateTime? = Nothing, Optional shellItem2 As IShellItem2 = Nothing) As UInt64?
+
+        If Not startTime.HasValue Then startTime = DateTime.Now
+
+        Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS Or SHCONTF.ENABLE_ASYNC
+        If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
+        If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
+
+        Dim result As UInt64? = 0
+        Dim subFolders As List(Of IShellItem2) = New List(Of IShellItem2)()
+
+        Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
+        Functions.CreateBindCtx(0, bindCtxPtr)
+        bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
+        If Not bindCtx Is Nothing AndAlso Not IntPtr.Zero.Equals(bindCtxPtr) Then
+            Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
+            Try
+                Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
+                propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
+            Finally
+                If Not IntPtr.Zero.Equals(propertyBagPtr) Then
+                    Marshal.Release(bindCtxPtr)
+                End If
+            End Try
+            If Not propertyBag Is Nothing Then
+                Dim var As PROPVARIANT, enumShellItems As IEnumShellItems
+                Try
+                    var.vt = VarEnum.VT_UI4
+                    var.union.uintVal = flags
+                    propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
+                    bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
+                    Dim ptr2 As IntPtr
+                    Try
+                        If shellItem2 Is Nothing Then
+                            SyncLock _shellItemLock
+                                Me.ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                            End SyncLock
+                        Else
+                            shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                        End If
+                        If Not IntPtr.Zero.Equals(ptr2) Then
+                            enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+                        End If
+                    Finally
+                        If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
+                    End Try
+                    If Not enumShellItems Is Nothing Then
+                        Dim celt As Integer = 5000
+                        Dim shellItems(celt - 1) As IShellItem, fetched As UInt32 = 1
+                        Dim h As HRESULT = enumShellItems.Next(celt, shellItems, fetched)
+                        While fetched > 0
+                            For x As UInt32 = 0 To fetched - 1
+                                Dim attr As SFGAO = SFGAO.FOLDER
+                                shellItems(x).GetAttributes(attr, attr)
+                                If attr.HasFlag(SFGAO.FOLDER) Then
+                                    subFolders.Add(shellItems(x))
+                                Else
+                                    Dim prop As [Property] = New [Property]("System.Size", CType(shellItems(x), IShellItem2))
+                                    If Not prop.Value Is Nothing AndAlso TypeOf prop.Value Is UInt64 Then
+                                        result += prop.Value
+                                    End If
+                                    prop.Dispose()
+                                    Marshal.ReleaseComObject(shellItems(x))
+                                End If
+                            Next
+                            If DateTime.Now.Subtract(startTime).TotalMilliseconds <= timeout _
+                                AndAlso Not cancellationToken.IsCancellationRequested Then
+                                h = enumShellItems.Next(celt, shellItems, fetched)
+                            Else
+                                result = Nothing
+                                Exit While
+                            End If
+                        End While
+                    End If
+                Finally
+                    If Not enumShellItems Is Nothing Then
+                        Marshal.ReleaseComObject(enumShellItems)
+                    End If
+                    Marshal.ReleaseComObject(bindCtx)
+                    Marshal.ReleaseComObject(propertyBag)
+                    var.Dispose()
+                End Try
+            End If
+        End If
+
+        If subFolders.Count > 0 Then
+            For Each subFolderShellItem2 In subFolders
+                If Not result Is Nothing Then
+                    Dim subFolderSize As UInt64? = getSizeRecursive(timeout, cancellationToken, startTime, subFolderShellItem2)
+                    If Not subFolderSize.HasValue Then
+                        result = Nothing
+                    Else
+                        result += subFolderSize
+                    End If
+                End If
+                Marshal.ReleaseComObject(subFolderShellItem2)
+            Next
+        End If
+
+        Return result
+    End Function
+
+    Protected Function quickEnum(flags As UInt32, celt As Integer) As List(Of String)
+        Dim bindCtx As ComTypes.IBindCtx, bindCtxPtr As IntPtr
+        Functions.CreateBindCtx(0, bindCtxPtr)
+        bindCtx = Marshal.GetTypedObjectForIUnknown(bindCtxPtr, GetType(ComTypes.IBindCtx))
+        If Not bindCtx Is Nothing AndAlso Not IntPtr.Zero.Equals(bindCtxPtr) Then
+            Dim propertyBag As IPropertyBag, propertyBagPtr As IntPtr
+            Try
+                Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBagPtr)
+                propertyBag = Marshal.GetTypedObjectForIUnknown(propertyBagPtr, GetType(IPropertyBag))
+            Finally
+                If Not IntPtr.Zero.Equals(propertyBagPtr) Then
+                    Marshal.Release(bindCtxPtr)
+                End If
+            End Try
+            If Not propertyBag Is Nothing Then
+                Dim var As PROPVARIANT, enumShellItems As IEnumShellItems
+                Try
+                    var.vt = VarEnum.VT_UI4
+                    var.union.uintVal = flags
+                    propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
+                    bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
+                    Dim ptr2 As IntPtr
+                    Try
+                        SyncLock _shellItemLock
+                            Me.ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
+                        End SyncLock
+                        If Not IntPtr.Zero.Equals(ptr2) Then
+                            enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
+                        End If
+                    Finally
+                        If Not IntPtr.Zero.Equals(ptr2) Then Marshal.Release(ptr2)
+                    End Try
+                    If Not enumShellItems Is Nothing Then
+                        Dim shellItems(celt - 1) As IShellItem, fetched As UInt32 = 1
+                        Dim h As HRESULT = enumShellItems.Next(celt, shellItems, fetched)
+                        If fetched > 0 Then
+                            Dim displayName As String
+                            Dim displayNameList As List(Of String) = New List(Of String)()
+                            For x As UInt32 = 0 To fetched - 1
+                                shellItems(x).GetDisplayName(SHGDN.NORMAL, displayName)
+                                displayNameList.Add(displayName)
+                                Marshal.ReleaseComObject(shellItems(x))
+                            Next
+                            Return displayNameList
+                        End If
+                    End If
+                Finally
+                    If Not enumShellItems Is Nothing Then
+                        Marshal.ReleaseComObject(enumShellItems)
+                    End If
+                    Marshal.ReleaseComObject(bindCtx)
+                    Marshal.ReleaseComObject(propertyBag)
+                    var.Dispose()
+                End Try
+            End If
+        End If
+        Return Nothing
+    End Function
+
     Public ReadOnly Property Columns(canonicalName As String) As Column
         Get
             Return Me.Columns.SingleOrDefault(Function(c) canonicalName.Equals(c.CanonicalName))
@@ -570,11 +826,9 @@ Public Class Folder
 
                     Dim ptr2 As IntPtr
                     Try
-                        Dim shellItem2 As IShellItem2
                         SyncLock _shellItemLock
-                            shellItem2 = Me.ShellItem2
+                            Me.ShellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
                         End SyncLock
-                        shellItem2.BindToHandler(bindCtxPtr, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, ptr2)
                         If Not IntPtr.Zero.Equals(ptr2) Then
                             enumShellItems = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IEnumShellItems))
                         End If

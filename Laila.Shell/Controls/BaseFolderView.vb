@@ -52,6 +52,8 @@ Namespace Controls
         Private _typeToSearchString As String = ""
         Private _menu As RightClickMenu
         Private _ignoreSelection As Boolean
+        Private _toolTip As ToolTip
+        Private _toolTipCancellationTokenSource As CancellationTokenSource
         Private disposedValue As Boolean
 
         Shared Sub New()
@@ -226,9 +228,54 @@ Namespace Controls
             Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
             Dim overItem As Item = TryCast(listBoxItem?.DataContext, Item)
             If Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
-                Dim toolTip As String = overItem.InfoTip
-                listBoxItem.ToolTip = If(String.IsNullOrWhiteSpace(toolTip), Nothing, toolTip)
                 _mouseItemOver = overItem
+
+                If Not _toolTip Is Nothing Then
+                    _toolTip.IsOpen = False
+                    _toolTip = Nothing
+                End If
+
+                If Not _toolTipCancellationTokenSource Is Nothing Then
+                    _toolTipCancellationTokenSource.Cancel()
+                End If
+                _toolTipCancellationTokenSource = New CancellationTokenSource()
+
+                Dim f As Func(Of Task) =
+                    Async Function() As Task
+                        Dim startOverItem As Item = overItem
+                        Dim text As String = overItem.InfoTip
+                        Dim textFolderSize As String
+                        If TypeOf overItem Is Folder Then
+                            textFolderSize = Await CType(overItem, Folder).GetInfoTipFolderSizeAsync(_toolTipCancellationTokenSource.Token)
+                        End If
+                        If Not String.IsNullOrWhiteSpace(textFolderSize) Then
+                            text &= Environment.NewLine & textFolderSize
+                        End If
+
+                        If Not _toolTip Is Nothing Then
+                            _toolTip.IsOpen = False
+                            _toolTip = Nothing
+                        End If
+
+                        If Not String.IsNullOrWhiteSpace(text) AndAlso startOverItem.Equals(_mouseItemOver) Then
+                            _toolTip = New ToolTip With {
+                                .Content = text,
+                                .Placement = PlacementMode.Mouse
+                            }
+                            _toolTip.IsOpen = True
+                        End If
+                    End Function
+                f()
+            ElseIf overItem Is Nothing Then
+                _mouseItemOver = Nothing
+                If Not _toolTip Is Nothing Then
+                    _toolTip.IsOpen = False
+                    _toolTip = Nothing
+                End If
+                If Not _toolTipCancellationTokenSource Is Nothing Then
+                    _toolTipCancellationTokenSource.Cancel()
+                    _toolTipCancellationTokenSource = New CancellationTokenSource()
+                End If
             End If
 
             If Not _mouseItemDown Is Nothing _
@@ -329,6 +376,15 @@ Namespace Controls
 
         Public Sub OnListViewMouseLeave(sender As Object, e As MouseEventArgs)
             _mouseItemDown = Nothing
+            _mouseItemOver = Nothing
+            If Not _toolTip Is Nothing Then
+                _toolTip.IsOpen = False
+                _toolTip = Nothing
+            End If
+            If Not _toolTipCancellationTokenSource Is Nothing Then
+                _toolTipCancellationTokenSource.Cancel()
+                _toolTipCancellationTokenSource = New CancellationTokenSource()
+            End If
         End Sub
 
         Private Function getMenu(folder As Folder, selectedItems As IEnumerable(Of Item), isDefaultOnly As Boolean) As RightClickMenu

@@ -11,7 +11,7 @@ Public Interface IShellItem
 
     Sub GetParent(ByRef ppsi As IShellItem)
 
-    Sub GetDisplayName(ByVal sigdnName As SIGDN, ByRef ppszName As IntPtr)
+    Sub GetDisplayName(ByVal sigdnName As SIGDN, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String)
 
     Sub GetAttributes(ByVal sfgaoMask As UInt32, ByRef psfgaoAttribs As UInt32)
 

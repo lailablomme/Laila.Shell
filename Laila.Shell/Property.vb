@@ -26,7 +26,7 @@ Public Class [Property]
     Protected _propertyKey As PROPERTYKEY
     Protected _text As String
     Protected disposedValue As Boolean
-    Private _rawValue As PROPVARIANT
+    Friend _rawValue As PROPVARIANT
     Private _displayType As PropertyDisplayType = -1
     Protected _val As Object
 
