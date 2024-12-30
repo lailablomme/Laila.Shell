@@ -281,7 +281,7 @@ Namespace Controls
                         checkBox.IsChecked = Not checkBox.IsChecked
                         e.Handled = True
                     ElseIf Keyboard.Modifiers = ModifierKeys.None Then
-                        If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then e.Handled = True
+                        If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Contains(clickedItem) Then e.Handled = True
                         _canOpenWithSingleClick = True
                     End If
                 ElseIf e.RightButton = MouseButtonState.Pressed AndAlso
