@@ -172,6 +172,7 @@
     <None Remove="Images\check16.png" />
     <None Remove="Images\chevron16.png" />
     <None Remove="Images\collapseall16.png" />
+    <None Remove="Images\compactmode16.png" />
     <None Remove="Images\content16.png" />
     <None Remove="Images\copy16.png" />
     <None Remove="Images\cut16.png" />
@@ -241,6 +242,7 @@
     <Resource Include="Images\check16.png" />
     <Resource Include="Images\chevron16.png" />
     <Resource Include="Images\collapseall16.png" />
+    <Resource Include="Images\compactmode16.png" />
     <Resource Include="Images\content16.png" />
     <Resource Include="Images\copy16.png" />
     <Resource Include="Images\cut16.png" />

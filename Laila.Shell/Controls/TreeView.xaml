@@ -29,7 +29,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Grid Height="20">
+                    <Grid MinHeight="20">
                         <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
                                 Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
@@ -152,166 +152,177 @@
                             </ListBox.Resources>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="{Binding TreeMargin}">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.Resources>
-                                            <shell:ImageHelper x:Key="imageHelper" />
-                                        </Grid.Resources>
-                                        <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" />
-                                        <Image Grid.Column="1" Source="{Binding DefaultFileIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"
+                                    <Grid>
+                                        <Grid.Style>
+                                            <Style>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False">
+                                                        <Setter Property="Grid.Margin" Value="0,4,0,4" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
+                                        <Grid Margin="{Binding TreeMargin}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.Resources>
+                                                <shell:ImageHelper x:Key="imageHelper" />
+                                            </Grid.Resources>
+                                            <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" />
+                                            <Image Grid.Column="1" Source="{Binding DefaultFileIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True">
-                                            <Image.Style>
-                                                <Style>
-                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <MultiDataTrigger>
-                                                            <MultiDataTrigger.Conditions>
-                                                                <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
-                                                                <Condition Binding="{Binding IsFolder}" Value="False" />
-                                                            </MultiDataTrigger.Conditions>
-                                                            <MultiDataTrigger.Setters>
-                                                                <Setter Property="Image.Visibility" Value="Visible" />
-                                                            </MultiDataTrigger.Setters>
-                                                        </MultiDataTrigger>
-                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Image.Style>
-                                        </Image>
-                                        <Image Grid.Column="1" Source="{Binding DefaultFolderIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"
-                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
-                                            <Image.Style>
-                                                <Style>
-                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <MultiDataTrigger>
-                                                            <MultiDataTrigger.Conditions>
-                                                                <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
-                                                                <Condition Binding="{Binding IsFolder}" Value="True" />
-                                                            </MultiDataTrigger.Conditions>
-                                                            <MultiDataTrigger.Setters>
-                                                                <Setter Property="Image.Visibility" Value="Visible" />
-                                                            </MultiDataTrigger.Setters>
-                                                        </MultiDataTrigger>
-                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Image.Style>
-                                        </Image>
-                                        <Image Grid.Column="1" Source="{Binding IconAsync[16], IsAsync=True}" 
-                                               Margin="5,0,4,0" Width="16" Height="16" x:Name="PART_Image">
-                                            <Image.Style>
-                                                <Style>
-                                                    <Setter Property="Image.Opacity" Value="1" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Image.Style>
-                                        </Image>
-                                        <Image Grid.Column="1" Source="{Binding OverlayImageAsync[16], IsAsync=True}" Margin="5,0,4,0" Width="16" Height="16">
-                                            <Image.Style>
-                                                <Style>
-                                                    <Setter Property="Image.Opacity" Value="1" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Image.Style>
-                                        </Image>
-                                        <Image Grid.Column="1" Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].FirstIcon16}"
-                                                       Width="12" Height="11" Margin="0,7,14,0" VerticalAlignment="Top">
-                                            <Image.Style>
-                                                <Style>
-                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
-                                                            <Setter Property="Image.Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].FirstIcon16}" Value="{x:Null}">
-                                                            <Setter Property="Image.Visibility" Value="Collapsed" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Image.Style>
-                                        </Image>
-                                        <Viewbox Grid.Column="1" StretchDirection="Both" Stretch="Uniform" Width="16" Height="16" Margin="0,0,4,0">
-                                            <Viewbox.Style>
-                                                <Style>
-                                                    <Setter Property="Control.Visibility" Value="Collapsed" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                                            <Setter Property="Control.Visibility" Value="Visible" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Viewbox.Style>
-                                            <local:LoadingSpinner />
-                                        </Viewbox>
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
-                                                <TextBlock.Style>
-                                                    <Style>
-                                                        <Style.Triggers>
-                                                            <MultiDataTrigger>
-                                                                <MultiDataTrigger.Conditions>
-                                                                    <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
-                                                                    <Condition Binding="{Binding IsCompressed}" Value="True" />
-                                                                </MultiDataTrigger.Conditions>
-                                                                <MultiDataTrigger.Setters>
-                                                                    <Setter Property="TextBlock.Foreground" Value="Blue" />
-                                                                </MultiDataTrigger.Setters>
-                                                            </MultiDataTrigger>
-                                                            <MultiDataTrigger>
-                                                                <MultiDataTrigger.Conditions>
-                                                                    <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
-                                                                    <Condition Binding="{Binding IsEncrypted}" Value="True" />
-                                                                </MultiDataTrigger.Conditions>
-                                                                <MultiDataTrigger.Setters>
-                                                                    <Setter Property="TextBlock.Foreground" Value="#269D27" />
-                                                                </MultiDataTrigger.Setters>
-                                                            </MultiDataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <Image Source="../Images/pin16.png" Margin="4,0,0,0" Width="16" Height="16">
                                                 <Image.Style>
                                                     <Style>
                                                         <Setter Property="Image.Visibility" Value="Collapsed" />
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                    <Condition Binding="{Binding IsFolder}" Value="False" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                        </StackPanel>
+                                            <Image Grid.Column="1" Source="{Binding DefaultFolderIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                    <Condition Binding="{Binding IsFolder}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Image Grid.Column="1" Source="{Binding IconAsync[16], IsAsync=True}" 
+                                               Margin="5,0,4,0" Width="16" Height="16" x:Name="PART_Image">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Opacity" Value="1" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Image Grid.Column="1" Source="{Binding OverlayImageAsync[16], IsAsync=True}" Margin="5,0,4,0" Width="16" Height="16">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Opacity" Value="1" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                                <Setter Property="Image.Opacity" Value="0.5" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Image Grid.Column="1" Source="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].FirstIcon16}"
+                                                       Width="12" Height="11" Margin="0,7,14,0" VerticalAlignment="Top">
+                                                <Image.Style>
+                                                    <Style>
+                                                        <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].HasIcon}" Value="True">
+                                                                <Setter Property="Image.Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding PropertiesByKeyAsText[e77e90df-6271-4f5b-834f-2dd1f245dda4:2].FirstIcon16}" Value="{x:Null}">
+                                                                <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Image.Style>
+                                            </Image>
+                                            <Viewbox Grid.Column="1" StretchDirection="Both" Stretch="Uniform" Width="16" Height="16" Margin="0,0,4,0">
+                                                <Viewbox.Style>
+                                                    <Style>
+                                                        <Setter Property="Control.Visibility" Value="Collapsed" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                                                <Setter Property="Control.Visibility" Value="Visible" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Viewbox.Style>
+                                                <local:LoadingSpinner />
+                                            </Viewbox>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style>
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                        <Condition Binding="{Binding IsCompressed}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                                    </MultiDataTrigger.Setters>
+                                                                </MultiDataTrigger>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                        <Condition Binding="{Binding IsEncrypted}" Value="True" />
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="TextBlock.Foreground" Value="#269D27" />
+                                                                    </MultiDataTrigger.Setters>
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <Image Source="../Images/pin16.png" Margin="4,0,0,0" Width="16" Height="16">
+                                                    <Image.Style>
+                                                        <Style>
+                                                            <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                    <Setter Property="Image.Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Image.Style>
+                                                </Image>
+                                            </StackPanel>
+                                        </Grid>
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>

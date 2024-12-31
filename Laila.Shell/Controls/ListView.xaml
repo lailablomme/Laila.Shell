@@ -62,7 +62,6 @@
                                     <vwp:VirtualizingWrapPanel SpacingMode="None" Orientation="Vertical">
                                         <vwp:VirtualizingWrapPanel.Style>
                                             <Style>
-                                                <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,20" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="0">
                                                         <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="20,0,0,0" />
@@ -70,9 +69,42 @@
                                                     <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="1">
                                                         <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="0,0,0,0" />
                                                     </DataTrigger>
-                                                    <DataTrigger Binding="{Binding DoShowCheckBoxesToSelect, RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}" Value="True">
-                                                        <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,20" />
-                                                    </DataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                            <Condition Binding="{Binding IsCompactMode, ElementName=PART_Grid}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,20" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding IsCompactMode, ElementName=PART_Grid}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,20" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                            <Condition Binding="{Binding IsCompactMode, ElementName=PART_Grid}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,28" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding IsCompactMode, ElementName=PART_Grid}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,28" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </vwp:VirtualizingWrapPanel.Style>
@@ -86,6 +118,15 @@
                                 <DataTemplate>
                                     <Border>
                                         <Grid>
+                                            <Grid.Style>
+                                                <Style>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False">
+                                                            <Setter Property="Grid.Margin" Value="0,4,0,4" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
                                             <Grid.ColumnDefinitions >
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="30" />

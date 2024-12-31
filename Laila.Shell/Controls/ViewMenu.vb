@@ -77,6 +77,18 @@ Namespace Controls
                     .Header = "View"
                 }
                 menu.Add(viewSubMenuItem)
+                Dim compactModeMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Compact mode",
+                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/compactmode16.png")},
+                    .IsCheckable = True,
+                    .IsChecked = Shell.Settings.IsCompactMode
+                }
+                AddHandler compactModeMenuItem.Click,
+                    Sub(s As Object, e As EventArgs)
+                        Shell.Settings.IsCompactMode = compactModeMenuItem.IsChecked
+                    End Sub
+                viewSubMenuItem.Items.Add(compactModeMenuItem)
+                viewSubMenuItem.Items.Add(New Separator())
                 Dim checkBoxesForItemsMenuItem As MenuItem = New MenuItem() With {
                     .Header = "Checkboxes for items",
                     .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/filecheck16.png")},

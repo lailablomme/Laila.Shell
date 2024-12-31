@@ -22,6 +22,8 @@ Namespace Controls
         Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
+        Public Shared ReadOnly IsCompactModeProperty As DependencyProperty = DependencyProperty.Register("IsCompactMode", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsCompactModeOverrideProperty As DependencyProperty = DependencyProperty.Register("IsCompactModeOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsCompactModeOverrideChanged))
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -54,9 +56,12 @@ Namespace Controls
                     Select Case e.PropertyName
                         Case "DoShowEncryptedOrCompressedFilesInColor"
                             setDoShowEncryptedOrCompressedFilesInColor()
+                        Case "IsCompactMode"
+                            setIsCompactMode()
                     End Select
                 End Sub
             setDoShowEncryptedOrCompressedFilesInColor()
+            setIsCompactMode()
 
             AddHandler Shell.FolderNotification,
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
@@ -778,6 +783,37 @@ Namespace Controls
         Public Shared Sub OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim tv As TreeView = d
             tv.setDoShowEncryptedOrCompressedFilesInColor()
+        End Sub
+
+        Public Property IsCompactMode As Boolean
+            Get
+                Return GetValue(IsCompactModeProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(IsCompactModeProperty, value)
+            End Set
+        End Property
+
+        Private Sub setIsCompactMode()
+            If Me.IsCompactModeOverride.HasValue Then
+                Me.IsCompactMode = Me.IsCompactModeOverride.Value
+            Else
+                Me.IsCompactMode = Shell.Settings.IsCompactMode
+            End If
+        End Sub
+
+        Public Property IsCompactModeOverride As Boolean?
+            Get
+                Return GetValue(IsCompactModeOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(IsCompactModeOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnIsCompactModeOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As TreeView = d
+            bfv.setIsCompactMode()
         End Sub
 
         Public Enum TreeRootSection As Long

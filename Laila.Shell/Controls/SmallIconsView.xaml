@@ -66,6 +66,15 @@
                                 <DataTemplate>
                                     <Border>
                                         <Grid>
+                                            <Grid.Style>
+                                                <Style>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False">
+                                                            <Setter Property="Grid.Margin" Value="0,4,0,4" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
                                             <Grid.ColumnDefinitions >
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="30" />

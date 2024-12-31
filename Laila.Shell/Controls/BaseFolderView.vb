@@ -35,6 +35,8 @@ Namespace Controls
         Public Shared ReadOnly DoShowFolderContentsInInfoTipOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowFolderContentsInInfoTipOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowFolderContentsInInfoTipOverrideChanged))
         Public Shared ReadOnly DoShowInfoTipsProperty As DependencyProperty = DependencyProperty.Register("DoShowInfoTips", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowInfoTipsOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowInfoTipsOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowInfoTipsOverrideChanged))
+        Public Shared ReadOnly IsCompactModeProperty As DependencyProperty = DependencyProperty.Register("IsCompactMode", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsCompactModeOverrideProperty As DependencyProperty = DependencyProperty.Register("IsCompactModeOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsCompactModeOverrideChanged))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -107,6 +109,8 @@ Namespace Controls
                             setDoShowFolderContentsInInfoTip()
                         Case "DoShowInfoTips"
                             setDoShowInfoTips()
+                        Case "IsCompactMode"
+                            setIsCompactMode()
                     End Select
                 End Sub
             setDoShowCheckBoxesToSelect()
@@ -117,6 +121,7 @@ Namespace Controls
             setDoShowTypeOverlay()
             setDoShowFolderContentsInInfoTip()
             setDoShowInfoTips()
+            setIsCompactMode()
 
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -756,6 +761,37 @@ Namespace Controls
         Public Shared Sub OnDoShowInfoTipsOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = d
             bfv.setDoShowInfoTips()
+        End Sub
+
+        Public Property IsCompactMode As Boolean
+            Get
+                Return GetValue(IsCompactModeProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(IsCompactModeProperty, value)
+            End Set
+        End Property
+
+        Private Sub setIsCompactMode()
+            If Me.IsCompactModeOverride.HasValue Then
+                Me.IsCompactMode = Me.IsCompactModeOverride.Value
+            Else
+                Me.IsCompactMode = Shell.Settings.IsCompactMode
+            End If
+        End Sub
+
+        Public Property IsCompactModeOverride As Boolean?
+            Get
+                Return GetValue(IsCompactModeOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(IsCompactModeOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnIsCompactModeOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setIsCompactMode()
         End Sub
 
         Protected Overridable Sub ClearBinding()

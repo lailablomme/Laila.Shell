@@ -122,6 +122,9 @@
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
                                                     </Trigger>
+                                                    <DataTrigger Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False">
+                                                        <Setter Property="Margin" Value="0,4,0,4" />
+                                                    </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>

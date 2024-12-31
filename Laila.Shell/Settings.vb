@@ -14,6 +14,7 @@ Public Class Settings
     Private Const UNDERLINEITEMONHOVER_VALUENAME As String = "IconUnderline"
     Private Const SHOWFOLDERCONTENTSININFOTIP_VALUENAME As String = "FolderContentsInfoTip"
     Private Const SHOWINFOTIPS_VALUENAME As String = "ShowInfoTip"
+    Private Const COMPACTMODE_VALUENAME As String = "UseCompactMode"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _doHideKnownFileExtensions As Boolean
@@ -27,6 +28,7 @@ Public Class Settings
     Private _doShowTypeOverlay As Boolean
     Private _doShowFolderContentsInInfoTip As Boolean
     Private _doShowInfoTips As Boolean
+    Private _isCompactMode As Boolean
 
     Public Sub New()
         Me.OnSettingChange(False)
@@ -52,6 +54,11 @@ Public Class Settings
                 If Not b = _doShowInfoTips Then
                     _doShowInfoTips = b
                     Me.NotifyOfPropertyChange("DoShowInfoTips")
+                End If
+                b = Me.IsCompactMode
+                If Not b = _isCompactMode Then
+                    _isCompactMode = b
+                    Me.NotifyOfPropertyChange("IsCompactMode")
                 End If
             End Sub)
     End Sub
@@ -233,6 +240,16 @@ Public Class Settings
         End Set
     End Property
 
+    Public Property IsCompactMode As Boolean
+        Get
+            Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, COMPACTMODE_VALUENAME, True)
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, COMPACTMODE_VALUENAME, value)
+            Me.Touch()
+        End Set
+    End Property
+
     Public Sub Touch()
         ' cause Windows Explorer to pick up the changes after we've modified the registry directly
         Dim b As Boolean = Me.IsDoubleClickToOpenItem
@@ -289,6 +306,7 @@ Public Class Settings
             _isUnderlineItemOnHover = Me.IsUnderlineItemOnHover
             _doShowFolderContentsInInfoTip = Me.DoShowFolderContentsInInfoTip
             _doShowInfoTips = Me.DoShowInfoTips
+            _isCompactMode = Me.IsCompactMode
         End Using
     End Sub
 
