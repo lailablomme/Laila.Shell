@@ -28,6 +28,7 @@ Public Class Settings
     Private _doShowInfoTips As Boolean
     Private _isCompactMode As Boolean
     Private _doShowDriveLetters As Boolean
+    Private _doShowStatusBar As Boolean
 
     Public Sub New()
         Me.OnSettingChange(False)
@@ -317,6 +318,25 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowStatusBar() As Boolean
+        Dim mask As SSF = SSF.SSF_SHOWSTATUSBAR
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return val.Data10 = 64
+    End Function
+
+    Public Property DoShowStatusBar As Boolean
+        Get
+            Return _doShowStatusBar
+        End Get
+        Set(value As Boolean)
+            Dim mask As SSF = SSF.SSF_SHOWSTATUSBAR
+            Dim val As SHELLSTATE
+            val.Data10 = If(value, 64, 0)
+            Functions.SHGetSetSettings(val, mask, True)
+        End Set
+    End Property
+
     Public Sub Touch()
         ' cause Windows Explorer to pick up the changes after we've modified the registry directly
         Dim b As Boolean = Me.IsDoubleClickToOpenItem
@@ -373,6 +393,11 @@ Public Class Settings
             If Not b = _doShowInfoTips Then
                 _doShowInfoTips = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowInfoTips")
+            End If
+            b = readDoShowStatusBar()
+            If Not b = _doShowStatusBar Then
+                _doShowStatusBar = b
+                If doNotify Then Me.NotifyOfPropertyChange("DoShowStatusBar")
             End If
 
             _isUnderlineItemOnHover = readIsUnderlineItemOnHover()

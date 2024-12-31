@@ -1,4 +1,5 @@
-﻿Imports System.IO
+﻿Imports System.ComponentModel
+Imports System.IO
 Imports System.Windows.Controls.Primitives
 Imports Laila.MetroWindow.Data
 Imports Laila.Shell.Controls

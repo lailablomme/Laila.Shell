@@ -10,7 +10,7 @@ Public Enum SSF As UInt32
     SSF_AUTOCHECKSELECT = &H800000       ' Auto-check select
     SSF_ICONSONLY = &H1000000            ' Icons only, no thumbnails
     SSF_SHOWTYPEOVERLAY = &H2000000       ' Show type overlay
-    SSF_SHOWSTATUSBAR = &H80000         ' Show status bar
+    SSF_SHOWSTATUSBAR = &H4000000         ' Show status bar
     SSF_SHOWCOMPCOLOR = &H8
     SSF_SHOWINFOTIP = &H2000
 End Enum

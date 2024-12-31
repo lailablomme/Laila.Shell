@@ -165,6 +165,9 @@
                         <ColumnDefinition Width="5" />
                         <ColumnDefinition Width="250" />
                     </Grid.ColumnDefinitions>
+                    <Grid.Resources>
+                        <shell:Shell x:Key="shell" />
+                    </Grid.Resources>
 
                     <controls:Navigation x:Name="navigation" Folder="{Binding Folder, Mode=TwoWay}" />
                     <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Background="#eeeeee" Margin="-1" />
@@ -414,7 +417,17 @@
                     <controls:Previewer Grid.Row="4" Grid.Column="4" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
                                         x:Name="previewer" Tag="{Binding ., ElementName=previewSplitter}" />
                     <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5" Foreground="Gray"
-                               Text="{Binding StatusText, ElementName=folderView}" Margin="15,0,0,0" />
+                               Text="{Binding StatusText, ElementName=folderView}" Margin="15,0,0,0">
+                        <TextBlock.Style>
+                            <Style>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Settings.DoShowStatusBar, Source={StaticResource shell}}" Value="False">
+                                        <Setter Property="TextBlock.Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </Grid>
             </DataTemplate>
         </controls:TabControl.ContentTemplate>
