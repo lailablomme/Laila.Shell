@@ -2,6 +2,7 @@
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Media
+Imports Laila.Shell.Helpers
 
 Public Class SearchFolder
     Inherits Folder
@@ -135,7 +136,10 @@ Public Class SearchFolder
                     End If
                 End SyncLock
             Next
-            _items.Clear()
+            UIHelper.OnUIThread(
+                Sub()
+                    _items.Clear()
+                End Sub)
 
             ' terminate thread
             If Not _threadCompletionSource.Task.IsCompleted Then
