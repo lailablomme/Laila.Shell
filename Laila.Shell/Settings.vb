@@ -1,9 +1,7 @@
-﻿Imports System.Drawing.Text
-Imports System.Threading
+﻿Imports System.Threading
 Imports System.Windows.Input
 Imports Laila.Shell.Helpers
 Imports Microsoft.Win32
-Imports Microsoft.Win32.SafeHandles
 
 Public Class Settings
     Inherits NotifyPropertyChangedBase
@@ -13,8 +11,8 @@ Public Class Settings
     Private Const SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME As String = "ShowEncryptCompressedColor"
     Private Const UNDERLINEITEMONHOVER_VALUENAME As String = "IconUnderline"
     Private Const SHOWFOLDERCONTENTSININFOTIP_VALUENAME As String = "FolderContentsInfoTip"
-    Private Const SHOWINFOTIPS_VALUENAME As String = "ShowInfoTip"
     Private Const COMPACTMODE_VALUENAME As String = "UseCompactMode"
+    Private Const SHOWDRIVELETTERS_VALUENAME As String = "ShowDriveLettersFirst"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _doHideKnownFileExtensions As Boolean
@@ -29,6 +27,7 @@ Public Class Settings
     Private _doShowFolderContentsInInfoTip As Boolean
     Private _doShowInfoTips As Boolean
     Private _isCompactMode As Boolean
+    Private _doShowDriveLetters As Boolean
 
     Public Sub New()
         Me.OnSettingChange(False)
@@ -36,26 +35,27 @@ Public Class Settings
         ' some settings don't produce notifications, so we need to monitor the registry
         monitorRegistryKey(EXPLORER_KEYPATH,
             Sub()
-                Dim b As Boolean = Me.IsUnderlineItemOnHover
+                Dim b As Boolean
+                b = readIsUnderlineItemOnHover()
                 If Not b = _isUnderlineItemOnHover Then
                     _isUnderlineItemOnHover = b
                     Me.NotifyOfPropertyChange("IsUnderlineItemOnHover")
+                End If
+                b = readDoShowDriveLetters()
+                If Not b = _doShowDriveLetters Then
+                    _doShowDriveLetters = b
+                    Me.NotifyOfPropertyChange("DoShowDriveLetters")
                 End If
             End Sub)
         monitorRegistryKey(EXPLORER_ADVANCED_KEYPATH,
             Sub()
                 Dim b As Boolean
-                b = Me.DoShowFolderContentsInInfoTip
+                b = readDoShowFolderContentsInInfoTip()
                 If Not b = _doShowFolderContentsInInfoTip Then
                     _doShowFolderContentsInInfoTip = b
                     Me.NotifyOfPropertyChange("DoShowFolderContentsInInfoTip")
                 End If
-                b = Me.DoShowInfoTips
-                If Not b = _doShowInfoTips Then
-                    _doShowInfoTips = b
-                    Me.NotifyOfPropertyChange("DoShowInfoTips")
-                End If
-                b = Me.IsCompactMode
+                b = readIsCompactMode()
                 If Not b = _isCompactMode Then
                     _isCompactMode = b
                     Me.NotifyOfPropertyChange("IsCompactMode")
@@ -92,12 +92,16 @@ Public Class Settings
         _threads.Add(t)
     End Sub
 
+    Private Function readDoHideKnownFileExtensions() As Boolean
+        Dim mask As SSF = SSF.SSF_SHOWEXTENSIONS
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return Not val.Data1 = SSF.SSF_SHOWEXTENSIONS
+    End Function
+
     Public Property DoHideKnownFileExtensions As Boolean
         Get
-            Dim mask As SSF = SSF.SSF_SHOWEXTENSIONS
-            Dim val As SHELLSTATE
-            Functions.SHGetSetSettings(val, mask, False)
-            Return Not val.Data1 = SSF.SSF_SHOWEXTENSIONS
+            Return _doHideKnownFileExtensions
         End Get
         Set(value As Boolean)
             Dim mask As SSF = SSF.SSF_SHOWEXTENSIONS
@@ -107,12 +111,16 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowProtectedOperatingSystemFiles() As Boolean
+        Dim mask As SSF = SSF.SSF_SHOWSUPERHIDDEN
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return val.Data2 = 128
+    End Function
+
     Public Property DoShowProtectedOperatingSystemFiles As Boolean
         Get
-            Dim mask As SSF = SSF.SSF_SHOWSUPERHIDDEN
-            Dim val As SHELLSTATE
-            Functions.SHGetSetSettings(val, mask, False)
-            Return val.Data2 = 128
+            Return _doShowProtectedOperatingSystemFiles
         End Get
         Set(value As Boolean)
             Dim mask As SSF = SSF.SSF_SHOWSUPERHIDDEN
@@ -122,12 +130,16 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowHiddenFilesAndFolders() As Boolean
+        Dim mask As SSF = SSF.SSF_SHOWALLOBJECTS
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return val.Data1 = 1
+    End Function
+
     Public Property DoShowHiddenFilesAndFolders As Boolean
         Get
-            Dim mask As SSF = SSF.SSF_SHOWALLOBJECTS
-            Dim val As SHELLSTATE
-            Functions.SHGetSetSettings(val, mask, False)
-            Return val.Data1 = 1
+            Return _doShowHiddenFilesAndFolders
         End Get
         Set(value As Boolean)
             Dim mask As SSF = SSF.SSF_SHOWALLOBJECTS
@@ -137,12 +149,16 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowCheckBoxesToSelect() As Boolean
+        Dim mask As SSF = SSF.SSF_AUTOCHECKSELECT
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return val.Data10 = 8
+    End Function
+
     Public Property DoShowCheckBoxesToSelect As Boolean
         Get
-            Dim mask As SSF = SSF.SSF_AUTOCHECKSELECT
-            Dim val As SHELLSTATE
-            Functions.SHGetSetSettings(val, mask, False)
-            Return val.Data10 = 8
+            Return _doShowCheckBoxesToSelect
         End Get
         Set(value As Boolean)
             Dim mask As SSF = SSF.SSF_AUTOCHECKSELECT
@@ -152,9 +168,13 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowEncryptedOrCompressedFilesInColor() As Boolean
+        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME, True)
+    End Function
+
     Public Property DoShowEncryptedOrCompressedFilesInColor As Boolean
         Get
-            Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME, True)
+            Return _doShowEncryptedOrCompressedFilesInColor
         End Get
         Set(value As Boolean)
             SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME, value)
@@ -165,12 +185,16 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readIsDoubleClickToOpenItem() As Boolean
+        Dim mask As SSF = SSF.SSF_DOUBLECLICKINWEBVIEW
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return val.Data1 = 32
+    End Function
+
     Public Property IsDoubleClickToOpenItem As Boolean
         Get
-            Dim mask As SSF = SSF.SSF_DOUBLECLICKINWEBVIEW
-            Dim val As SHELLSTATE
-            Functions.SHGetSetSettings(val, mask, False)
-            Return val.Data1 = 32
+            Return _isDoubleClickToOpenItem
         End Get
         Set(value As Boolean)
             Dim mask As SSF = SSF.SSF_DOUBLECLICKINWEBVIEW
@@ -180,9 +204,13 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readIsUnderlineItemOnHover() As Boolean
+        Return GetRegistryDWord(EXPLORER_KEYPATH, UNDERLINEITEMONHOVER_VALUENAME, 2) = 2
+    End Function
+
     Public Property IsUnderlineItemOnHover As Boolean
         Get
-            Return GetRegistryDWord(EXPLORER_KEYPATH, UNDERLINEITEMONHOVER_VALUENAME, 2) = 2
+            Return _isUnderlineItemOnHover
         End Get
         Set(value As Boolean)
             SetRegistryDWord(EXPLORER_KEYPATH, UNDERLINEITEMONHOVER_VALUENAME, If(value, 2, 3))
@@ -190,12 +218,16 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowIconsOnly() As Boolean
+        Dim mask As SSF = SSF.SSF_ICONSONLY
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return val.Data10 = 16
+    End Function
+
     Public Property DoShowIconsOnly As Boolean
         Get
-            Dim mask As SSF = SSF.SSF_ICONSONLY
-            Dim val As SHELLSTATE
-            Functions.SHGetSetSettings(val, mask, False)
-            Return val.Data10 = 16
+            Return _doShowIconsOnly
         End Get
         Set(value As Boolean)
             Dim mask As SSF = SSF.SSF_ICONSONLY
@@ -205,12 +237,16 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowTypeOverlay() As Boolean
+        Dim mask As SSF = SSF.SSF_SHOWTYPEOVERLAY
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return val.Data10 = 32
+    End Function
+
     Public Property DoShowTypeOverlay As Boolean
         Get
-            Dim mask As SSF = SSF.SSF_SHOWTYPEOVERLAY
-            Dim val As SHELLSTATE
-            Functions.SHGetSetSettings(val, mask, False)
-            Return val.Data10 = 32
+            Return _doShowTypeOverlay
         End Get
         Set(value As Boolean)
             Dim mask As SSF = SSF.SSF_SHOWTYPEOVERLAY
@@ -220,9 +256,13 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowFolderContentsInInfoTip() As Boolean
+        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWFOLDERCONTENTSININFOTIP_VALUENAME, True)
+    End Function
+
     Public Property DoShowFolderContentsInInfoTip As Boolean
         Get
-            Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWFOLDERCONTENTSININFOTIP_VALUENAME, True)
+            Return _doShowFolderContentsInInfoTip
         End Get
         Set(value As Boolean)
             SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWFOLDERCONTENTSININFOTIP_VALUENAME, value)
@@ -230,22 +270,49 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowInfoTips() As Boolean
+        Dim mask As SSF = SSF.SSF_SHOWINFOTIP
+        Dim val As SHELLSTATE
+        Functions.SHGetSetSettings(val, mask, False)
+        Return val.Data2 = 8
+    End Function
+
     Public Property DoShowInfoTips As Boolean
         Get
-            Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWINFOTIPS_VALUENAME, True)
+            Return _doShowInfoTips
         End Get
         Set(value As Boolean)
-            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, SHOWINFOTIPS_VALUENAME, value)
+            Dim mask As SSF = SSF.SSF_SHOWINFOTIP
+            Dim val As SHELLSTATE
+            val.Data2 = If(value, 8, 0)
+            Functions.SHGetSetSettings(val, mask, True)
+        End Set
+    End Property
+
+    Private Function readIsCompactMode() As Boolean
+        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, COMPACTMODE_VALUENAME, True)
+    End Function
+
+    Public Property IsCompactMode As Boolean
+        Get
+            Return _isCompactMode
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, COMPACTMODE_VALUENAME, value)
             Me.Touch()
         End Set
     End Property
 
-    Public Property IsCompactMode As Boolean
+    Private Function readDoShowDriveLetters() As Boolean
+        Return GetRegistryDWord(EXPLORER_KEYPATH, SHOWDRIVELETTERS_VALUENAME, 0) = 0
+    End Function
+
+    Public Property DoShowDriveLetters As Boolean
         Get
-            Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, COMPACTMODE_VALUENAME, True)
+            Return _doShowDriveLetters
         End Get
         Set(value As Boolean)
-            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, COMPACTMODE_VALUENAME, value)
+            SetRegistryDWord(EXPLORER_KEYPATH, SHOWDRIVELETTERS_VALUENAME, If(value, 0, 2))
             Me.Touch()
         End Set
     End Property
@@ -262,51 +329,56 @@ Public Class Settings
     Friend Sub OnSettingChange(Optional doNotify As Boolean = True)
         Using Shell.OverrideCursor(Cursors.Wait)
             Dim b As Boolean
-            b = Me.DoHideKnownFileExtensions
+            b = readDoHideKnownFileExtensions()
             If Not b = _doHideKnownFileExtensions Then
                 _doHideKnownFileExtensions = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoHideKnownFileExtensions")
             End If
-            b = Me.DoShowCheckBoxesToSelect
+            b = readDoShowCheckBoxesToSelect()
             If Not b = _doShowCheckBoxesToSelect Then
                 _doShowCheckBoxesToSelect = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowCheckBoxesToSelect")
             End If
-            b = Me.DoShowProtectedOperatingSystemFiles
+            b = readDoShowProtectedOperatingSystemFiles()
             If Not b = _doShowProtectedOperatingSystemFiles Then
                 _doShowProtectedOperatingSystemFiles = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowProtectedOperatingSystemFiles")
             End If
-            b = Me.DoShowHiddenFilesAndFolders
+            b = readDoShowHiddenFilesAndFolders()
             If Not b = _doShowHiddenFilesAndFolders Then
                 _doShowHiddenFilesAndFolders = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowHiddenFilesAndFolders")
             End If
-            b = Me.DoShowEncryptedOrCompressedFilesInColor
+            b = readDoShowEncryptedOrCompressedFilesInColor()
             If Not b = _doShowEncryptedOrCompressedFilesInColor Then
                 _doShowEncryptedOrCompressedFilesInColor = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowEncryptedOrCompressedFilesInColor")
             End If
-            b = Me.IsDoubleClickToOpenItem
+            b = readIsDoubleClickToOpenItem()
             If Not b = _isDoubleClickToOpenItem Then
                 _isDoubleClickToOpenItem = b
                 If doNotify Then Me.NotifyOfPropertyChange("IsDoubleClickToOpenItem")
             End If
-            b = Me.DoShowIconsOnly
+            b = readDoShowIconsOnly()
             If Not b = _doShowIconsOnly Then
                 _doShowIconsOnly = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowIconsOnly")
             End If
-            b = Me.DoShowTypeOverlay
+            b = readDoShowTypeOverlay()
             If Not b = _doShowTypeOverlay Then
                 _doShowTypeOverlay = b
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowTypeOverlay")
             End If
+            b = readDoShowInfoTips()
+            If Not b = _doShowInfoTips Then
+                _doShowInfoTips = b
+                If doNotify Then Me.NotifyOfPropertyChange("DoShowInfoTips")
+            End If
 
-            _isUnderlineItemOnHover = Me.IsUnderlineItemOnHover
-            _doShowFolderContentsInInfoTip = Me.DoShowFolderContentsInInfoTip
-            _doShowInfoTips = Me.DoShowInfoTips
-            _isCompactMode = Me.IsCompactMode
+            _isUnderlineItemOnHover = readIsUnderlineItemOnHover()
+            _doShowFolderContentsInInfoTip = readDoShowFolderContentsInInfoTip()
+            _isCompactMode = readIsCompactMode()
+            _doShowDriveLetters = readDoShowDriveLetters()
         End Using
     End Sub
 

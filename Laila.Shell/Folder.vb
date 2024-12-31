@@ -1162,6 +1162,11 @@ Public Class Folder
                     _isEnumerated = False
                     Me.GetItemsAsync()
                 End If
+            Case "DoShowDriveLetters"
+                If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
+                    _isEnumerated = False
+                    Me.GetItemsAsync()
+                End If
         End Select
     End Sub
 

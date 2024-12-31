@@ -722,7 +722,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property ItemNameDisplaySortValue As String
         Get
-            If Me.IsDrive Then
+            If Me.IsDrive AndAlso Shell.Settings.DoShowDriveLetters Then
                 Return Me.FullPath
             Else
                 Return If(Me.IsFolder AndAlso Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), "0", "1") & Me.DisplayName
@@ -1188,6 +1188,13 @@ Public Class Item
             Case "DoHideKnownFileExtensions"
                 _displayName = Nothing
                 Me.NotifyOfPropertyChange("DisplayName")
+            Case "DoShowDriveLetters"
+                If Me.IsDrive Then
+                    Shell.STATaskQueue.Add(
+                        Sub()
+                            Me.Refresh()
+                        End Sub)
+                End If
         End Select
     End Sub
 
