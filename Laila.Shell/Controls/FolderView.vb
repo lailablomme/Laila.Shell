@@ -23,6 +23,8 @@ Namespace Controls
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(FolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly StatusTextProperty As DependencyProperty = DependencyProperty.Register("StatusText", GetType(String), GetType(FolderView), New FrameworkPropertyMetadata(String.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly SearchBoxProperty As DependencyProperty = DependencyProperty.Register("SearchBox", GetType(SearchBox), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
@@ -40,16 +42,6 @@ Namespace Controls
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
                         _isLoaded = True
-
-                        _views = New Dictionary(Of String, Control)()
-                        For Each view In Shell.FolderViews
-                            Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(view.Key).Item2)
-                            Me.ActiveView.Host = Me
-                            _views.Add(view.Key, Me.ActiveView)
-                            If Not Me.PART_Grid Is Nothing Then
-                                Me.PART_Grid.Children.Add(Me.ActiveView)
-                            End If
-                        Next
 
                         UIHelper.OnUIThread(
                             Sub()
@@ -70,9 +62,17 @@ Namespace Controls
 
             Me.PART_Grid = Me.Template.FindName("PART_Grid", Me)
 
-            If Not Me.ActiveView Is Nothing Then
-                Me.PART_Grid.Children.Add(Me.ActiveView)
-            End If
+            _views = New Dictionary(Of String, Control)()
+            For Each view In Shell.FolderViews
+                Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(view.Key).Item2)
+                Me.ActiveView.Host = Me
+                Me.ActiveView.SearchBox = Me.SearchBox
+                Me.ActiveView.Navigation = Me.Navigation
+                _views.Add(view.Key, Me.ActiveView)
+                If Not Me.PART_Grid Is Nothing Then
+                    Me.PART_Grid.Children.Add(Me.ActiveView)
+                End If
+            Next
         End Sub
 
         Public Sub DoRename(item As Item)
@@ -125,6 +125,24 @@ Namespace Controls
             End Get
             Set(ByVal value As String)
                 SetCurrentValue(StatusTextProperty, value)
+            End Set
+        End Property
+
+        Public Property SearchBox As SearchBox
+            Get
+                Return GetValue(SearchBoxProperty)
+            End Get
+            Set(ByVal value As SearchBox)
+                SetCurrentValue(SearchBoxProperty, value)
+            End Set
+        End Property
+
+        Public Property Navigation As Navigation
+            Get
+                Return GetValue(NavigationProperty)
+            End Get
+            Set(ByVal value As Navigation)
+                SetCurrentValue(NavigationProperty, value)
             End Set
         End Property
 
@@ -215,9 +233,8 @@ Namespace Controls
         Private Sub changeView(newValue As String, folder As Folder)
             If Not _views Is Nothing Then
                 Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
-                Dim hasFocus As Boolean
+                Dim hasFocus As Boolean = Me.IsKeyboardFocusWithin
                 If Not Me.ActiveView Is Nothing Then
-                    hasFocus = Me.ActiveView.IsKeyboardFocusWithin
                     Me.ActiveView.Folder = Nothing
                     BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
                     BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty)

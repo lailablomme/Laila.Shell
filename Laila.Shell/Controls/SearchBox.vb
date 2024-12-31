@@ -25,6 +25,11 @@ Namespace Controls
             PART_TextBox = Me.Template.FindName("PART_TextBox", Me)
             PART_CancelButton = Me.Template.FindName("PART_CancelButton", Me)
 
+            AddHandler Me.GotFocus,
+                Sub(s As Object, e As RoutedEventArgs)
+                    Me.PART_TextBox.Focus()
+                End Sub
+
             AddHandler Me.PART_TextBox.PreviewKeyUp,
                 Sub(s As Object, e As KeyEventArgs)
                     If Not _timer Is Nothing Then

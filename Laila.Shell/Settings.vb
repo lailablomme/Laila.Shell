@@ -13,6 +13,7 @@ Public Class Settings
     Private Const SHOWFOLDERCONTENTSININFOTIP_VALUENAME As String = "FolderContentsInfoTip"
     Private Const COMPACTMODE_VALUENAME As String = "UseCompactMode"
     Private Const SHOWDRIVELETTERS_VALUENAME As String = "ShowDriveLettersFirst"
+    Private Const TYPETOSELECT_VALUENAME As String = "TypeAhead"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _doHideKnownFileExtensions As Boolean
@@ -29,6 +30,7 @@ Public Class Settings
     Private _isCompactMode As Boolean
     Private _doShowDriveLetters As Boolean
     Private _doShowStatusBar As Boolean
+    Private _doTypeToSelect As Boolean
 
     Public Sub New()
         Me.OnSettingChange(False)
@@ -60,6 +62,11 @@ Public Class Settings
                 If Not b = _isCompactMode Then
                     _isCompactMode = b
                     Me.NotifyOfPropertyChange("IsCompactMode")
+                End If
+                b = readDoTypeToSelect()
+                If Not b = _doTypeToSelect Then
+                    _doTypeToSelect = b
+                    Me.NotifyOfPropertyChange("DoTypeToSelect")
                 End If
             End Sub)
     End Sub
@@ -337,6 +344,20 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoTypeToSelect() As Boolean
+        Return Not GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, TYPETOSELECT_VALUENAME, False)
+    End Function
+
+    Public Property DoTypeToSelect As Boolean
+        Get
+            Return _doTypeToSelect
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, TYPETOSELECT_VALUENAME, Not value)
+            Me.Touch()
+        End Set
+    End Property
+
     Public Sub Touch()
         ' cause Windows Explorer to pick up the changes after we've modified the registry directly
         Dim b As Boolean = Me.IsDoubleClickToOpenItem
@@ -404,6 +425,7 @@ Public Class Settings
             _doShowFolderContentsInInfoTip = readDoShowFolderContentsInInfoTip()
             _isCompactMode = readIsCompactMode()
             _doShowDriveLetters = readDoShowDriveLetters()
+            _doTypeToSelect = readDoTypeToSelect()
         End Using
     End Sub
 

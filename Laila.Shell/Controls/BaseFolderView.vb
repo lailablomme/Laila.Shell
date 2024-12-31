@@ -37,6 +37,10 @@ Namespace Controls
         Public Shared ReadOnly DoShowInfoTipsOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowInfoTipsOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowInfoTipsOverrideChanged))
         Public Shared ReadOnly IsCompactModeProperty As DependencyProperty = DependencyProperty.Register("IsCompactMode", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsCompactModeOverrideProperty As DependencyProperty = DependencyProperty.Register("IsCompactModeOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsCompactModeOverrideChanged))
+        Public Shared ReadOnly DoTypeToSelectProperty As DependencyProperty = DependencyProperty.Register("DoTypeToSelect", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoTypeToSelectOverrideProperty As DependencyProperty = DependencyProperty.Register("DoTypeToSelectOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoTypeToSelectOverrideChanged))
+        Public Shared ReadOnly SearchBoxProperty As DependencyProperty = DependencyProperty.Register("SearchBox", GetType(SearchBox), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
@@ -111,6 +115,8 @@ Namespace Controls
                             setDoShowInfoTips()
                         Case "IsCompactMode"
                             setIsCompactMode()
+                        Case "DoTypeToSelect"
+                            setDoTypeToSelect()
                     End Select
                 End Sub
             setDoShowCheckBoxesToSelect()
@@ -122,6 +128,7 @@ Namespace Controls
             setDoShowFolderContentsInInfoTip()
             setDoShowInfoTips()
             setIsCompactMode()
+            setDoTypeToSelect()
 
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -188,47 +195,57 @@ Namespace Controls
                         invokeDefaultCommand(Me.SelectedItems(0))
                     End If
                     e.Handled = True
+                ElseIf e.Key = Key.Back AndAlso Keyboard.Modifiers = ModifierKeys.None Then
+                    If Not Me.Navigation Is Nothing AndAlso Me.Navigation.CanBack Then
+                        Me.Navigation.Back()
+                        e.Handled = True
+                    End If
                 End If
             End If
         End Sub
 
         Private Sub OnListViewTextInput(sender As Object, e As TextCompositionEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
-                If Not _typeToSearchTimer Is Nothing Then
-                    _typeToSearchTimer.Dispose()
-                End If
+                If Me.DoTypeToSelect Then
+                    If Not _typeToSearchTimer Is Nothing Then
+                        _typeToSearchTimer.Dispose()
+                    End If
 
-                _typeToSearchTimer = New Timer(New TimerCallback(
-                    Sub()
-                        UIHelper.OnUIThread(
+                    _typeToSearchTimer = New Timer(New TimerCallback(
+                        Sub()
+                            UIHelper.OnUIThread(
                             Sub()
                                 _typeToSearchString = ""
                                 _typeToSearchTimer.Dispose()
                                 _typeToSearchTimer = Nothing
                             End Sub)
-                    End Sub), Nothing, 650, Timeout.Infinite)
+                        End Sub), Nothing, 650, Timeout.Infinite)
 
-                _typeToSearchString &= e.Text
-                Dim foundItem As Item
-                If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
-                    foundItem =
-                        Me.Folder.Items.Skip(Me.Folder.Items.IndexOf(Me.SelectedItems(0)) + 1) _
-                            .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
-                    If foundItem Is Nothing Then
+                    _typeToSearchString &= e.Text
+                    Dim foundItem As Item
+                    If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
                         foundItem =
-                            Me.Folder.Items.Take(Me.Folder.Items.IndexOf(Me.SelectedItems(0))) _
+                            Me.Folder.Items.Skip(Me.Folder.Items.IndexOf(Me.SelectedItems(0)) + 1) _
+                                .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+                        If foundItem Is Nothing Then
+                            foundItem =
+                                Me.Folder.Items.Take(Me.Folder.Items.IndexOf(Me.SelectedItems(0))) _
+                                    .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+                        End If
+                    Else
+                        foundItem =
+                            Me.Folder.Items _
                                 .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
                     End If
-                Else
-                    foundItem =
-                        Me.Folder.Items _
-                            .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
-                End If
-                If Not foundItem Is Nothing Then
-                    Me.SelectedItems = {foundItem}
-                    e.Handled = True
-                Else
-                    SystemSounds.Asterisk.Play()
+                    If Not foundItem Is Nothing Then
+                        Me.SelectedItems = {foundItem}
+                        CType(Me.PART_ListBox.ItemContainerGenerator.ContainerFromItem(foundItem), ListViewItem)?.Focus()
+                        e.Handled = True
+                    Else
+                        SystemSounds.Asterisk.Play()
+                    End If
+                ElseIf Not Me.SearchBox Is Nothing Then
+                    Me.SearchBox.Focus()
                 End If
             End If
         End Sub
@@ -793,6 +810,55 @@ Namespace Controls
             Dim bfv As BaseFolderView = d
             bfv.setIsCompactMode()
         End Sub
+
+        Public Property DoTypeToSelect As Boolean
+            Get
+                Return GetValue(DoTypeToSelectProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoTypeToSelectProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoTypeToSelect()
+            If Me.DoTypeToSelectOverride.HasValue Then
+                Me.DoTypeToSelect = Me.DoTypeToSelectOverride.Value
+            Else
+                Me.DoTypeToSelect = Shell.Settings.DoTypeToSelect
+            End If
+        End Sub
+
+        Public Property DoTypeToSelectOverride As Boolean?
+            Get
+                Return GetValue(DoTypeToSelectOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoTypeToSelectOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoTypeToSelectOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoTypeToSelect()
+        End Sub
+
+        Public Property SearchBox As SearchBox
+            Get
+                Return GetValue(SearchBoxProperty)
+            End Get
+            Set(ByVal value As SearchBox)
+                SetCurrentValue(SearchBoxProperty, value)
+            End Set
+        End Property
+
+        Public Property Navigation As Navigation
+            Get
+                Return GetValue(NavigationProperty)
+            End Get
+            Set(ByVal value As Navigation)
+                SetCurrentValue(NavigationProperty, value)
+            End Set
+        End Property
 
         Protected Overridable Sub ClearBinding()
             If Not Me.PART_ListBox Is Nothing Then

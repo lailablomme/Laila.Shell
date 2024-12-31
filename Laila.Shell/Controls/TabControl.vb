@@ -38,6 +38,8 @@ Namespace Controls
 
                         setDesiredTabWidth()
 
+                        focusChildren()
+
                         _dropTarget = New TabControlDropTarget(Me)
                         WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
                     End If
@@ -139,6 +141,25 @@ Namespace Controls
             End Select
         End Sub
 
+        Private Sub focusChildren()
+            Dim item As TabItem = GetSelectedTabItem()
+            If Not item Is Nothing Then
+                Dim cp As ContentPresenter = findChildContentPresenter(item)
+                Dim folderView As FolderView = UIHelper.FindVisualChildren(Of FolderView)(cp)?(0)
+                If Not folderView Is Nothing _
+                    AndAlso Not folderView.ActiveView Is Nothing _
+                    AndAlso Not folderView.ActiveView.PART_ListBox Is Nothing Then
+                    folderView.ActiveView.PART_ListBox.Focus()
+                Else
+                    Dim treeView As TreeView = UIHelper.FindVisualChildren(Of TreeView)(cp)?(0)
+                    If Not treeView Is Nothing _
+                        AndAlso Not treeView.PART_ListBox Is Nothing Then
+                        treeView.PART_ListBox.Focus()
+                    End If
+                End If
+            End If
+        End Sub
+
         Protected Overrides Sub OnSelectionChanged(e As SelectionChangedEventArgs)
             MyBase.OnSelectionChanged(e)
             updateSelectedItem()
@@ -157,6 +178,8 @@ Namespace Controls
             For Each child As ContentPresenter In PART_ItemsHolder.Children
                 child.Visibility = IIf(CType(child.Tag, TabItem).IsSelected, Visibility.Visible, Visibility.Hidden)
             Next
+
+            focusChildren()
         End Sub
 
         Private Function createChildContentPresenter(item As Object) As ContentPresenter
