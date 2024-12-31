@@ -1,4 +1,6 @@
-﻿Imports System.Threading
+﻿Imports System.Runtime.InteropServices
+Imports System.Text
+Imports System.Threading
 Imports System.Windows.Input
 Imports Laila.Shell.Helpers
 Imports Microsoft.Win32
@@ -421,57 +423,63 @@ Public Class Settings
                 If doNotify Then Me.NotifyOfPropertyChange("DoShowStatusBar")
             End If
 
-            _isUnderlineItemOnHover = readIsUnderlineItemOnHover()
-            _doShowFolderContentsInInfoTip = readDoShowFolderContentsInInfoTip()
-            _isCompactMode = readIsCompactMode()
-            _doShowDriveLetters = readDoShowDriveLetters()
-            _doTypeToSelect = readDoTypeToSelect()
-        End Using
-    End Sub
-
-    Private Shared Function GetRegistryBoolean(key As String, valueName As String, defaultValue As Boolean) As Boolean
-        Using registryKey As RegistryKey = Registry.CurrentUser.OpenSubKey(key)
-            If Not key Is Nothing Then
-                Dim val As Object = registryKey.GetValue(valueName)
-                If Not val Is Nothing AndAlso TypeOf val Is Integer Then
-                    Return CType(val, Integer) <> 0
-                Else
-                    Return defaultValue
-                End If
-            Else
-                Return defaultValue
-            End If
-        End Using
-    End Function
-
-    Private Shared Sub SetRegistryBoolean(key As String, valueName As String, value As Boolean)
-        Using registryKey As RegistryKey = Registry.CurrentUser.CreateSubKey(key, True)
-            If Not key Is Nothing Then
-                registryKey.SetValue(valueName, If(value, 1, 0))
+            If Not doNotify Then ' only read this values here on program start
+                _isUnderlineItemOnHover = readIsUnderlineItemOnHover()
+                _doShowFolderContentsInInfoTip = readDoShowFolderContentsInInfoTip()
+                _isCompactMode = readIsCompactMode()
+                _doShowDriveLetters = readDoShowDriveLetters()
+                _doTypeToSelect = readDoTypeToSelect()
             End If
         End Using
     End Sub
 
-    Private Shared Function GetRegistryDWord(key As String, valueName As String, defaultValue As Integer) As Integer
-        Using registryKey As RegistryKey = Registry.CurrentUser.OpenSubKey(key)
-            If Not key Is Nothing Then
-                Dim val As Object = registryKey.GetValue(valueName)
-                If Not val Is Nothing AndAlso TypeOf val Is Integer Then
-                    Return CType(val, Integer)
-                Else
-                    Return defaultValue
-                End If
-            Else
-                Return defaultValue
-            End If
-        End Using
+    Private Shared Function GetRegistryBoolean(keyPath As String, valueName As String, defaultValue As Boolean) As Boolean
+        Return GetRegistryDWord(keyPath, valueName, If(defaultValue, 1, 0)) <> 0
     End Function
 
-    Private Shared Sub SetRegistryDWord(key As String, valueName As String, value As Integer)
-        Using registryKey As RegistryKey = Registry.CurrentUser.CreateSubKey(key, True)
-            If Not key Is Nothing Then
-                registryKey.SetValue(valueName, value)
+    Private Shared Sub SetRegistryBoolean(keyPath As String, valueName As String, value As Boolean)
+        SetRegistryDWord(keyPath, valueName, If(value, 1, 0))
+    End Sub
+
+    Private Shared Function GetRegistryDWord(keyPath As String, valueName As String, defaultValue As Integer) As Int32?
+        Dim handle As IntPtr
+        Try
+            Dim h As HRESULT = Functions.RegOpenKeyEx(HKEY.CURRENT_USER, keyPath, 0, REGKEY.QUERY_VALUE Or REGKEY.WOW64_64KEY, handle)
+            If h = HRESULT.S_OK Then
+                Dim data As Int32
+
+                h = Functions.RegQueryValueEx(handle, valueName, 0, 0, data, Marshal.SizeOf(Of Int32))
+                If h = HRESULT.S_OK Then
+                    Return data
+                Else
+                    return defaultValue
+                End If
             End If
-        End Using
+        Finally
+            If Not IntPtr.Zero.Equals(handle) Then
+                Functions.RegCloseKey(handle)
+            End If
+        End Try
+        Return Nothing
+    End Function
+
+    Private Shared Sub SetRegistryDWord(keyPath As String, valueName As String, value As Integer)
+        Dim handle As IntPtr
+        Try
+            Dim h As HRESULT = Functions.RegOpenKeyEx(HKEY.CURRENT_USER, keyPath, 0, REGKEY.SET_VALUE Or REGKEY.WOW64_64KEY, handle)
+            If h = HRESULT.S_OK Then
+                Dim dataBytes As Byte() = BitConverter.GetBytes(value)
+                Dim dataSize As Integer = dataBytes.Length
+
+                h = Functions.RegSetValueEx(HKEY.CURRENT_USER, valueName, 0, REG.DWORD, dataBytes, dataSize)
+                If Not h = HRESULT.S_OK Then
+                    Throw Marshal.GetExceptionForHR(h)
+                End If
+            End If
+        Finally
+            If Not IntPtr.Zero.Equals(handle) Then
+                Functions.RegCloseKey(handle)
+            End If
+        End Try
     End Sub
 End Class

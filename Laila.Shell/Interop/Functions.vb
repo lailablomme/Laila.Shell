@@ -9,6 +9,36 @@ Imports Laila.Shell.Controls
 
 Public Class Functions
 
+    <DllImport("advapi32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
+    Public Shared Function RegSetValueEx(
+        hKey As IntPtr,
+        lpValueName As String,
+        Reserved As Integer,
+        dwType As Integer,
+        lpData As Byte(),
+        cbData As Integer) As Integer
+    End Function
+    <DllImport("advapi32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
+    Public Shared Function RegOpenKeyEx(
+        hKey As Integer,
+        lpSubKey As String,
+        ulOptions As Integer,
+        samDesired As Integer,
+        ByRef phkResult As IntPtr) As Integer
+    End Function
+    <DllImport("advapi32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
+    Public Shared Function RegQueryValueEx(
+        hKey As IntPtr,
+        lpValueName As String,
+        lpReserved As Integer,
+        ByRef lpType As Integer,
+        ByRef lpData As Int32,
+        ByRef lpcbData As Integer) As Integer
+    End Function
+
+    <DllImport("advapi32.dll", SetLastError:=True)>
+    Public Shared Function RegCloseKey(hKey As IntPtr) As Integer
+    End Function
     <DllImport("advapi32.dll", SetLastError:=True)>
     Public Shared Function RegNotifyChangeKeyValue(
         hKey As IntPtr,
