@@ -522,7 +522,7 @@ Public Class Shell
                         Try
                             action.Invoke(tcs)
                         Catch ex As Exception
-                            Debug.WriteLine("RunOnSTAThread: " & ex.Message)
+                            Debug.WriteLine("RunOnSTAThread STATaskQueue Exception: " & ex.Message)
                             tcs.SetException(ex)
                         End Try
                     End Sub)
@@ -533,6 +533,7 @@ Public Class Shell
                     numTries += 1
                 End If
             Catch ex As Exception
+                Debug.WriteLine("RunOnSTAThread While Exception: " & ex.Message)
                 numTries += 1
             End Try
         End While
