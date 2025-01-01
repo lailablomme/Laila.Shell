@@ -322,17 +322,16 @@ Namespace Controls
             Dim tcs As New TaskCompletionSource()
             _taskQueue.Add(
                 Sub()
-                    Dim ptrContextMenu As IntPtr
                     Dim folderPidl As Pidl
                     Dim itemPidls As Pidl()
                     Dim flags As Integer = CMF.CMF_NORMAL
                     Dim shellFolder As IShellFolder
 
-                    Try
-                        SyncLock folder._shellItemLock
-                            shellFolder = Folder.GetIShellFolderFromIShellItem2(folder.ShellItem2)
-                        End SyncLock
+                    SyncLock folder._shellItemLock
+                        shellFolder = Folder.GetIShellFolderFromIShellItem2(folder.ShellItem2)
+                    End SyncLock
 
+                    Try
                         If Not items Is Nothing AndAlso items.Count > 0 Then
                             ' user clicked on an item
                             flags = flags Or CMF.CMF_ITEMMENU
@@ -340,10 +339,8 @@ Namespace Controls
                             folderPidl = folder.Pidl.Clone()
                             itemPidls = items.Select(Function(i) i.Pidl.Clone()).ToArray()
 
-                            shellFolder.GetUIObjectOf(IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, ptrContextMenu)
-                            If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                                _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
-                            End If
+                            CType(shellFolder, IShellFolderForIContextMenu).GetUIObjectOf _
+                                (IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, _contextMenu)
                         Else
                             ' user clicked on the background
                             If folder.FullPath = Shell.Desktop.FullPath Then
@@ -356,31 +353,13 @@ Namespace Controls
                                 itemPidls = {folder.Pidl.Clone()}
                             End If
 
-                            shellFolder.CreateViewObject(IntPtr.Zero, GetType(IContextMenu).GUID, ptrContextMenu)
-                            If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                                _contextMenu = Marshal.GetTypedObjectForIUnknown(ptrContextMenu, GetType(IContextMenu))
-                            End If
+                            CType(shellFolder, IShellFolderForIContextMenu).CreateViewObject _
+                                (IntPtr.Zero, GetType(IContextMenu).GUID, _contextMenu)
                         End If
 
-                        If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                            Dim ptr2 As IntPtr, ptr3 As IntPtr
-                            Try
-                                Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu2).GUID, ptr2)
-                                If Not IntPtr.Zero.Equals(ptr2) Then
-                                    _contextMenu2 = Marshal.GetObjectForIUnknown(ptr2)
-                                End If
-                                Marshal.QueryInterface(ptrContextMenu, GetType(IContextMenu3).GUID, ptr3)
-                                If Not IntPtr.Zero.Equals(ptr3) Then
-                                    _contextMenu3 = Marshal.GetObjectForIUnknown(ptr3)
-                                End If
-                            Finally
-                                If Not IntPtr.Zero.Equals(ptr2) Then
-                                    Marshal.Release(ptr2)
-                                End If
-                                If Not IntPtr.Zero.Equals(ptr3) Then
-                                    Marshal.Release(ptr3)
-                                End If
-                            End Try
+                        If Not _contextMenu Is Nothing Then
+                            _contextMenu2 = TryCast(_contextMenu, IContextMenu2)
+                            _contextMenu3 = TryCast(_contextMenu, IContextMenu3)
                         End If
 
                         If Not _contextMenu Is Nothing Then
@@ -388,42 +367,27 @@ Namespace Controls
                             flags = flags Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
                             If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
                             _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
-                        End If
 
-                        If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                            Dim shellExtInitPtr As IntPtr, shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
+                            Dim shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
                             Try
-                                Marshal.QueryInterface(ptrContextMenu, GetType(IShellExtInit).GUID, shellExtInitPtr)
-                                If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
-                                    shellExtInit = Marshal.GetObjectForIUnknown(shellExtInitPtr)
+                                shellExtInit = TryCast(_contextMenu, IShellExtInit)
+                                If Not shellExtInit Is Nothing Then
                                     Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
                                                      itemPidls.Select(Function(p) p.RelativePIDL).ToArray(),
                                                      IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
                                     shellExtInit.Initialize(folder.Pidl.AbsolutePIDL, dataObject, IntPtr.Zero)
                                 End If
                             Finally
-                                If Not IntPtr.Zero.Equals(shellExtInitPtr) Then
-                                    Marshal.Release(shellExtInitPtr)
-                                End If
-                                If Not shellExtInit Is Nothing Then
-                                    Marshal.ReleaseComObject(shellExtInit)
-                                End If
                                 If Not dataObject Is Nothing Then
                                     Marshal.ReleaseComObject(dataObject)
                                 End If
                             End Try
                         End If
                     Finally
-                        If Not parentFolderPidl Is Nothing Then
-                            parentFolderPidl.Dispose()
-                        End If
                         folderPidl.Dispose()
                         For Each p In itemPidls
                             p.Dispose()
                         Next
-                        If Not IntPtr.Zero.Equals(ptrContextMenu) Then
-                            Marshal.Release(ptrContextMenu)
-                        End If
                         If Not shellFolder Is Nothing Then
                             Marshal.ReleaseComObject(shellFolder)
                         End If
@@ -431,6 +395,10 @@ Namespace Controls
                     tcs.SetResult()
                 End Sub)
             tcs.Task.Wait()
+
+            If Not parentFolderPidl Is Nothing Then
+                parentFolderPidl.Dispose()
+            End If
         End Sub
 
         Private Sub menuItem_Click(c As Control, e2 As EventArgs)

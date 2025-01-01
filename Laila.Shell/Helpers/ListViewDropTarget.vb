@@ -164,51 +164,40 @@ Public Class ListViewDropTarget
             If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 _lastOverItem = overItem
 
-                Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
-                Try
-                    ' first check if we're not trying to drop on ourselves or our parent
-                    Dim isOurSelvesOrParent As Boolean
-                    If Not _files Is Nothing Then
-                        isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
-                        If Not isOurSelvesOrParent Then
-                            For Each file In _files
-                                isOurSelvesOrParent = Not file.Parent Is Nothing _
+                Dim dropTarget As IDropTarget, shellFolder As IShellFolder
+                ' first check if we're not trying to drop on ourselves or our parent
+                Dim isOurSelvesOrParent As Boolean
+                If Not _files Is Nothing Then
+                    isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
+                    If Not isOurSelvesOrParent Then
+                        For Each file In _files
+                            isOurSelvesOrParent = Not file.Parent Is Nothing _
                                             AndAlso file.Parent.Pidl.Equals(overItem.Pidl)
-                                If isOurSelvesOrParent Then Exit For
-                            Next
-                        End If
+                            If isOurSelvesOrParent Then Exit For
+                        Next
                     End If
-                    If Not _fileNameList Is Nothing AndAlso Not isOurSelvesOrParent Then
-                        isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
-                        If Not isOurSelvesOrParent Then
-                            isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) _
+                End If
+                If Not _fileNameList Is Nothing AndAlso Not isOurSelvesOrParent Then
+                    isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
+                    If Not isOurSelvesOrParent Then
+                        isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) _
                                         Not IO.Path.GetDirectoryName(f) Is Nothing _
                                         AndAlso IO.Path.GetDirectoryName(f).ToLower().TrimEnd(IO.Path.DirectorySeparatorChar) _
                                             = overItem.FullPath.ToLower().TrimEnd(IO.Path.DirectorySeparatorChar))
-                        End If
                     End If
+                End If
 
-                    If Not isOurSelvesOrParent Then
-                        ' try get droptarget
-                        If Not overItem.Parent Is Nothing Then
-                            shellFolder = overItem.Parent.ShellFolder
-                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                        Else
-                            ' desktop
-                            shellFolder = Shell.Desktop.ShellFolder
-                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-                        End If
-                    End If
-                    If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                        dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+                If Not isOurSelvesOrParent Then
+                    ' try get droptarget
+                    If Not overItem.Parent Is Nothing Then
+                        shellFolder = overItem.Parent.ShellFolder
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                     Else
-                        dropTarget = Nothing
+                        ' desktop
+                        shellFolder = Shell.Desktop.ShellFolder
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                     End If
-                Finally
-                    If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                        Marshal.Release(dropTargetPtr)
-                    End If
-                End Try
+                End If
 
                 If Not dropTarget Is Nothing Then
                     Debug.WriteLine("Got dropTarget")

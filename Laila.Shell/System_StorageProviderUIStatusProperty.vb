@@ -46,33 +46,25 @@ Public Class System_StorageProviderUIStatusProperty
         If Not _didReadData Then
             _didReadData = True
 
-            Dim ptr As IntPtr, persistSerializedPropStorage As IPersistSerializedPropStorage
+            Dim persistSerializedPropStorage As IPersistSerializedPropStorage
             If _propertyStore1 Is Nothing AndAlso Me.RawValue.vt > 0 Then
-                Try
-                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
-                    _propertyStore1 = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
-                    persistSerializedPropStorage = _propertyStore1
-                    persistSerializedPropStorage.SetFlags(0)
-                    persistSerializedPropStorage.SetPropertyStorage(
+                Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, _propertyStore1)
+                persistSerializedPropStorage = _propertyStore1
+                persistSerializedPropStorage.SetFlags(0)
+                persistSerializedPropStorage.SetPropertyStorage(
                     MyBase.RawValue.union.bstrblobVal.pData, MyBase.RawValue.union.bstrblobVal.cbSize)
 
-                    If _system_StorageProviderStateProperty Is Nothing Then
-                        _system_StorageProviderStateProperty = New [Property](_system_StorageProviderStateKey, _propertyStore1)
-                    End If
-                    If _system_StorageProviderCustomStatesProperty Is Nothing Then
-                        _system_StorageProviderCustomStatesProperty = New [Property](_system_StorageProviderCustomStatesKey, _propertyStore1)
-                    End If
-                Finally
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        Marshal.Release(ptr)
-                    End If
-                End Try
+                If _system_StorageProviderStateProperty Is Nothing Then
+                    _system_StorageProviderStateProperty = New [Property](_system_StorageProviderStateKey, _propertyStore1)
+                End If
+                If _system_StorageProviderCustomStatesProperty Is Nothing Then
+                    _system_StorageProviderCustomStatesProperty = New [Property](_system_StorageProviderCustomStatesKey, _propertyStore1)
+                End If
             End If
 
             If _propertyStore2 Is Nothing AndAlso Not _propertyStore1 Is Nothing Then
                 Try
-                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, ptr)
-                    _propertyStore2 = Marshal.GetTypedObjectForIUnknown(ptr, GetType(IPropertyStore))
+                    Functions.PSCreateMemoryPropertyStore(GetType(IPropertyStore).GUID, _propertyStore2)
                     persistSerializedPropStorage = _propertyStore2
                     persistSerializedPropStorage.SetFlags(0)
                     persistSerializedPropStorage.SetPropertyStorage(
@@ -86,9 +78,6 @@ Public Class System_StorageProviderUIStatusProperty
                         _system_ItemCustomState_IconReferencesProperty = New [Property](_system_ItemCustomState_IconReferencesKey, _propertyStore2)
                     End If
                 Finally
-                    If Not IntPtr.Zero.Equals(ptr) Then
-                        Marshal.Release(ptr)
-                    End If
                     If Not _propertyStore1 Is Nothing Then
                         Marshal.ReleaseComObject(_propertyStore1)
                         _propertyStore1 = Nothing

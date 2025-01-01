@@ -1,11 +1,9 @@
 ﻿Imports System.Collections.Concurrent
-Imports System.ComponentModel
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Input
 Imports System.Windows.Interop
-Imports System.Windows.Media
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -34,6 +32,8 @@ Public Class Shell
     Private Shared _menuCache As List(Of BaseMenu) = New List(Of BaseMenu)()
     Friend Shared _itemsCacheLock As Object = New Object()
     Private Shared _itemsCache As List(Of Tuple(Of Item, DateTime)) = New List(Of Tuple(Of Item, DateTime))()
+    Private Shared _controlCacheLock As Object = New Object()
+    Private Shared _controlCache As List(Of IDisposable) = New List(Of IDisposable)()
     Private Shared _isDebugVisible As Boolean = False
     Friend Shared _debugWindow As DebugTools.DebugWindow
 
@@ -48,6 +48,14 @@ Public Class Shell
         ' watch for windows being loaded so we can gracefully shutdown when they're closed
         EventManager.RegisterClassHandler(GetType(Window), Window.LoadedEvent, New RoutedEventHandler(AddressOf window_Loaded))
 
+        If Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown Then
+            ' hook application exit
+            AddHandler Application.Current.Exit,
+                Sub(s As Object, e As ExitEventArgs)
+                    Shutdown()
+                End Sub
+        End If
+
         ' initialize com & ole
         Functions.OleInitialize(IntPtr.Zero)
 
@@ -59,13 +67,14 @@ Public Class Shell
                 Sub()
                     Try
                         ' Process tasks from the queue
-                        For Each task In STATaskQueue.GetConsumingEnumerable(ShuttingDownToken)
+                        For Each task In STATaskQueue.GetConsumingEnumerable()
                             task.Invoke()
                         Next
                     Catch ex As OperationCanceledException
                         Debug.WriteLine("STATaskQueue thread was canceled.")
                     End Try
                 End Sub)
+            staThread.IsBackground = True
             staThread.SetApartmentState(ApartmentState.STA)
             staThread.Priority = ThreadPriority.Highest
             staThread.Start()
@@ -102,6 +111,7 @@ Public Class Shell
                     Debug.WriteLine("Disposing thread was canceled.")
                 End Try
             End Sub)
+        disposeThread.IsBackground = True
         disposeThread.SetApartmentState(ApartmentState.MTA)
         disposeThread.Start()
         _threads.Add(disposeThread)
@@ -216,10 +226,11 @@ Public Class Shell
     ''' </summary>
     Public Shared Sub Shutdown()
         If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-            ' cancel threads
+            ' notify we're shutting down to quit all ongoing processes 
+            ' and prevent this function from getting called twice
             _shutDownTokensSource.Cancel()
 
-            ' stop receiving notifications
+            ' stop receiving and handling notifications
             SyncLock _listenersLock
                 For Each item In _listenerhNotifies.ToList()
                     Functions.SHChangeNotifyDeregister(item.Value)
@@ -228,11 +239,51 @@ Public Class Shell
                 Next
             End SyncLock
 
+            ' stop monitoring changes to settings so we can properly close the registry keys
+            Shell.Settings.StopMonitoring()
+
+            ' we need to clean up the menus because there is a hMenu which would block proper application 
+            ' shutdown if it wasn't disposed of
+            SyncLock _menuCacheLock
+                For Each item In Shell.MenuCache.ToList()
+                    item.Dispose()
+                Next
+            End SyncLock
+
+            ' we clean up the controls, especially to revoke the drag and drop
+            Dim clist As List(Of IDisposable)
+            SyncLock _controlCache
+                clist = _controlCache.ToList()
+            End SyncLock
+            While Not clist.Count = 0
+                For Each item In clist
+                    item.Dispose()
+                Next
+                SyncLock _controlCache
+                    clist = _controlCache.ToList()
+                End SyncLock
+            End While
+
+            ' items need not really be disposed of, because they have no managed resources,
+            ' but we do it anyway, in case that changes in the future
+            Dim ilist As List(Of Item)
+            SyncLock _itemsCache
+                ilist = _itemsCache.Select(Function(i) i.Item1).ToList()
+            End SyncLock
+            While Not ilist.Count = 0
+                For Each item In ilist
+                    item.Dispose()
+                Next
+                SyncLock _itemsCache
+                    ilist = _itemsCache.Select(Function(i) i.Item1).ToList()
+                End SyncLock
+            End While
+
             ' uninitialize ole
             Functions.OleUninitialize()
 
-            ' close messaging window
-            _w.Close()
+            ' close messaging window to allow the application to close when using ShutdownMode.OnLastWindowClose
+            If Not _w Is Nothing Then _w.Close()
         End If
     End Sub
 
@@ -370,6 +421,18 @@ Public Class Shell
     Friend Shared Sub RemoveFromItemsCache(item As Item)
         SyncLock _itemsCacheLock
             _itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
+        End SyncLock
+    End Sub
+
+    Friend Shared Sub AddToControlCache(item As IDisposable)
+        SyncLock _controlCacheLock
+            _controlCache.Add(item)
+        End SyncLock
+    End Sub
+
+    Friend Shared Sub RemoveFromControlCache(item As IDisposable)
+        SyncLock _itemsCacheLock
+            _controlCache.Remove(item)
         End SyncLock
     End Sub
 

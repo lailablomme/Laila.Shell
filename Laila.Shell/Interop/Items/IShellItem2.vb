@@ -6,10 +6,7 @@ Imports System.Runtime.InteropServices.ComTypes
 <Guid("7E9FB0D3-919F-4307-AB2E-9B1860310C93")>
 Public Interface IShellItem2
     <PreserveSig>
-    Function BindToHandler(<[In]> pbc As IntPtr, <[In]> ByRef rbhid As Guid, <[In]> ByRef riid As Guid, ByRef ppvOut As IntPtr) As Integer
-
-    '<PreserveSig>
-    'Function BindToHandler(<[In], MarshalAs(UnmanagedType.Interface)> ByRef pbc As ComTypes.IBindCtx, <[In]> ByRef rbhid As Guid, <[In]> ByRef riid As Guid, ByRef ppvOut As IntPtr) As Integer
+    Function BindToHandler(<[In], MarshalAs(UnmanagedType.Interface)> pbc As IBindCtx, <[In]> ByRef rbhid As Guid, <[In]> ByRef riid As Guid, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppvOut As IShellFolder) As Integer
 
     <PreserveSig>
     Function GetParent(<MarshalAs(UnmanagedType.Interface)> ByRef ppsi As IShellItem) As Integer
@@ -59,6 +56,119 @@ Public Interface IShellItem2
     <PreserveSig>
     Sub GetBool(<[In]> ByRef key As PROPERTYKEY, ByRef pf As Integer)
 End Interface
+
+<ComImport>
+<InterfaceType(ComInterfaceType.InterfaceIsIUnknown)>
+<Guid("7E9FB0D3-919F-4307-AB2E-9B1860310C93")>
+Public Interface IShellItem2ForIEnumShellItems
+    <PreserveSig>
+    Function BindToHandler(<[In], MarshalAs(UnmanagedType.Interface)> pbc As IBindCtx, <[In]> ByRef rbhid As Guid, <[In]> ByRef riid As Guid, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppvOut As IEnumShellItems) As Integer
+
+    <PreserveSig>
+    Function GetParent(<MarshalAs(UnmanagedType.Interface)> ByRef ppsi As IShellItem) As Integer
+
+    <PreserveSig>
+    Function GetDisplayName(<[In]> sigdnName As UInteger, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String) As Integer
+
+    <PreserveSig>
+    Sub GetAttributes(<[In]> sfgaoMask As Integer, ByRef psfgaoAttribs As Integer)
+
+    <PreserveSig>
+    Sub Compare(<[In], MarshalAs(UnmanagedType.Interface)> psi As IShellItem, <[In]> hint As UInt32, ByRef piOrder As Integer)
+
+    <PreserveSig>
+    Function GetPropertyStore(<[In]> flags As Integer, <[In]> ByRef riid As Guid, ByRef ppv As IntPtr) As Integer
+
+    <PreserveSig>
+    Sub GetPropertyStoreWithCreateObject(<[In]> flags As Integer, <[In], MarshalAs(UnmanagedType.IUnknown)> punkCreateObject As Object, <[In]> ByRef riid As Guid, ByRef ppv As IntPtr)
+
+    <PreserveSig>
+    Sub GetPropertyStoreForKeys(<[In]> ByRef rgKeys As PROPERTYKEY, <[In]> cKeys As UInt32, <[In]> flags As Integer, <[In]> ByRef riid As Guid, <MarshalAs(UnmanagedType.IUnknown)> ByRef ppv As Object)
+
+    <PreserveSig>
+    Sub GetPropertyDescriptionList(<[In]> ByRef keyType As PROPERTYKEY, <[In]> ByRef riid As Guid, <Out> ByRef ppv As IntPtr)
+
+    <PreserveSig>
+    Function Update(<[In]> pbc As IntPtr) As Integer
+
+    <PreserveSig>
+    Sub GetProperty(<[In]> ByRef key As PROPERTYKEY, ByRef ppropvar As PROPVARIANT)
+
+    <PreserveSig>
+    Sub GetCLSID(<[In]> ByRef key As PROPERTYKEY, ByRef pclsid As Guid)
+
+    <PreserveSig>
+    Sub GetFileTime(<[In]> ByRef key As PROPERTYKEY, ByRef pft As FILETIME)
+
+    <PreserveSig>
+    Sub GetInt32(<[In]> ByRef key As PROPERTYKEY, ByRef pi As Integer)
+
+    <PreserveSig>
+    Function GetString(<[In]> ByRef key As PROPERTYKEY, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppsz As String) As Integer
+
+    <PreserveSig>
+    Sub GetUInt64(<[In]> ByRef key As PROPERTYKEY, ByRef pull As ULong)
+
+    <PreserveSig>
+    Sub GetBool(<[In]> ByRef key As PROPERTYKEY, ByRef pf As Integer)
+End Interface
+
+<ComImport>
+<InterfaceType(ComInterfaceType.InterfaceIsIUnknown)>
+<Guid("7E9FB0D3-919F-4307-AB2E-9B1860310C93")>
+Public Interface IShellItem2ForIStream
+    <PreserveSig>
+    Function BindToHandler(<[In], MarshalAs(UnmanagedType.Interface)> pbc As IBindCtx, <[In]> ByRef rbhid As Guid, <[In]> ByRef riid As Guid, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppvOut As IStream) As Integer
+
+    <PreserveSig>
+    Function GetParent(<MarshalAs(UnmanagedType.Interface)> ByRef ppsi As IShellItem) As Integer
+
+    <PreserveSig>
+    Function GetDisplayName(<[In]> sigdnName As UInteger, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String) As Integer
+
+    <PreserveSig>
+    Sub GetAttributes(<[In]> sfgaoMask As Integer, ByRef psfgaoAttribs As Integer)
+
+    <PreserveSig>
+    Sub Compare(<[In], MarshalAs(UnmanagedType.Interface)> psi As IShellItem, <[In]> hint As UInt32, ByRef piOrder As Integer)
+
+    <PreserveSig>
+    Function GetPropertyStore(<[In]> flags As Integer, <[In]> ByRef riid As Guid, ByRef ppv As IntPtr) As Integer
+
+    <PreserveSig>
+    Sub GetPropertyStoreWithCreateObject(<[In]> flags As Integer, <[In], MarshalAs(UnmanagedType.IUnknown)> punkCreateObject As Object, <[In]> ByRef riid As Guid, ByRef ppv As IntPtr)
+
+    <PreserveSig>
+    Sub GetPropertyStoreForKeys(<[In]> ByRef rgKeys As PROPERTYKEY, <[In]> cKeys As UInt32, <[In]> flags As Integer, <[In]> ByRef riid As Guid, <MarshalAs(UnmanagedType.IUnknown)> ByRef ppv As Object)
+
+    <PreserveSig>
+    Sub GetPropertyDescriptionList(<[In]> ByRef keyType As PROPERTYKEY, <[In]> ByRef riid As Guid, <Out> ByRef ppv As IntPtr)
+
+    <PreserveSig>
+    Function Update(<[In]> pbc As IntPtr) As Integer
+
+    <PreserveSig>
+    Sub GetProperty(<[In]> ByRef key As PROPERTYKEY, ByRef ppropvar As PROPVARIANT)
+
+    <PreserveSig>
+    Sub GetCLSID(<[In]> ByRef key As PROPERTYKEY, ByRef pclsid As Guid)
+
+    <PreserveSig>
+    Sub GetFileTime(<[In]> ByRef key As PROPERTYKEY, ByRef pft As FILETIME)
+
+    <PreserveSig>
+    Sub GetInt32(<[In]> ByRef key As PROPERTYKEY, ByRef pi As Integer)
+
+    <PreserveSig>
+    Function GetString(<[In]> ByRef key As PROPERTYKEY, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppsz As String) As Integer
+
+    <PreserveSig>
+    Sub GetUInt64(<[In]> ByRef key As PROPERTYKEY, ByRef pull As ULong)
+
+    <PreserveSig>
+    Sub GetBool(<[In]> ByRef key As PROPERTYKEY, ByRef pf As Integer)
+End Interface
+
 'NAME:BHID_AssociationArray VALUE : bea9ef17-82.0F1-4f60-9284-4f8db75c3be9
 'NAME:BHID_CollectionFactory VALUE : 9b9eb7fa-cbf0-4db3-ac58-d3a522991b2a
 'NAME:BHID_DataObject VALUE : b8c0bd9f-ed24 - 455c-83e6-d5390c4fe8c4

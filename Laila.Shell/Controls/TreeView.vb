@@ -44,6 +44,8 @@ Namespace Controls
         End Sub
 
         Public Sub New()
+            Shell.AddToControlCache(Me)
+
             Me.Items = New ObservableCollection(Of Item)()
 
             Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
@@ -79,20 +81,20 @@ Namespace Controls
                     Select Case e.Event
                         Case SHCNE.RMDIR, SHCNE.DELETE
                             UIHelper.OnUIThread(
-                                Sub()
+                                Async Sub()
                                     If Not Me.Items.FirstOrDefault(Function(i) _
                                     Not i.disposedValue _
                                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
                                     AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                                     AndAlso Not i.FullPath Is Nothing _
                                     AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing Then
-                                        updatePinnedItems()
-                                        updateFrequentFolders()
+                                        Await updatePinnedItems()
+                                        Await updateFrequentFolders()
                                     End If
                                 End Sub)
                         Case SHCNE.UPDATEDIR
                             UIHelper.OnUIThread(
-                                Sub()
+                                Async Sub()
                                     If Not Me.Items.FirstOrDefault(
                                         Function(i)
                                             If Not i.disposedValue Then
@@ -106,8 +108,8 @@ Namespace Controls
                                             End If
                                         End Function) Is Nothing _
                                     OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath) Then
-                                        updatePinnedItems()
-                                        updateFrequentFolders()
+                                        Await updatePinnedItems()
+                                        Await updateFrequentFolders()
                                     End If
                                 End Sub)
                     End Select
@@ -117,7 +119,7 @@ Namespace Controls
             Dim homeFolder As Folder, galleryFolder As Folder, thisComputer As Folder, network As Folder
 
             Shell.STATaskQueue.Add(
-                Sub()
+                Async Sub()
                     ' home and galery
                     If Shell.GetSpecialFolders().ContainsKey("Home") Then
                         homeFolder = Shell.GetSpecialFolder("Home").Clone()
@@ -148,8 +150,11 @@ Namespace Controls
             Me.Items.Add(thisComputer)
             Me.Items.Add(network)
 
-            updatePinnedItems()
-            updateFrequentFolders()
+            UIHelper.OnUIThread(
+                Async Sub()
+                    Await updatePinnedItems()
+                    Await updateFrequentFolders()
+                End Sub)
 
             ' frequent folders
             _frequentUpdateTimer = New Timer(New TimerCallback(
@@ -161,15 +166,15 @@ Namespace Controls
                 End Sub), Nothing, 1000 * 60, 1000 * 60)
 
             AddHandler PinnedItems.ItemPinned,
-                Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                    Await updatePinnedItems()
-                    Await updateFrequentFolders()
-                End Sub
+                 Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
+                     Await updatePinnedItems()
+                     Await updateFrequentFolders()
+                 End Sub
             AddHandler PinnedItems.ItemUnpinned,
-                Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                    Await updatePinnedItems()
-                    Await updateFrequentFolders()
-                End Sub
+                 Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
+                     Await updatePinnedItems()
+                     Await updateFrequentFolders()
+                 End Sub
 
             CollectionViewSource.GetDefaultView(Me.Items).Refresh()
         End Sub
@@ -846,6 +851,8 @@ Namespace Controls
                     Next
 
                     WpfDragTargetProxy.RevokeDragDrop(PART_ListBox)
+
+                    Shell.RemoveFromControlCache(Me)
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

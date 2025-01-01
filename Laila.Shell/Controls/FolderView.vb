@@ -38,6 +38,8 @@ Namespace Controls
         Private disposedValue As Boolean
 
         Public Sub New()
+            Shell.AddToControlCache(Me)
+
             AddHandler Me.Loaded,
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
@@ -269,6 +271,8 @@ Namespace Controls
                     End If
 
                     WpfDragTargetProxy.RevokeDragDrop(Me)
+
+                    Shell.RemoveFromControlCache(Me)
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer
@@ -282,6 +286,5 @@ Namespace Controls
             Dispose(disposing:=True)
             GC.SuppressFinalize(Me)
         End Sub
-
     End Class
 End Namespace

@@ -66,7 +66,7 @@ Public Class SearchFolder
                             = _enumerationCancellationTokenSource
 
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
-                        enumerateItems(_items, True, _enumerationCancellationTokenSource.Token)
+                        enumerateItems(True, _enumerationCancellationTokenSource.Token)
 
                         ' terminate previous enumeration thread
                         If Not prevEnumerationCancellationTokenSource Is Nothing Then

@@ -19,18 +19,8 @@ Public Class Column
         _index = index
         _isVisible = Me.State.HasFlag(CM_STATE.VISIBLE)
 
-        Dim ptr2 As IntPtr
-        Try
-            Functions.PSGetPropertyDescription(propertyKey, GetType(IPropertyDescription).GUID, ptr2)
-            If Not IntPtr.Zero.Equals(ptr2) Then
-                _propertyDescription = Marshal.GetTypedObjectForIUnknown(ptr2, GetType(IPropertyDescription))
-                _propertyDescription.GetViewFlags(_viewFlags)
-            End If
-        Finally
-            If Not IntPtr.Zero.Equals(ptr2) Then
-                Marshal.Release(ptr2)
-            End If
-        End Try
+        Functions.PSGetPropertyDescription(propertyKey, GetType(IPropertyDescription).GUID, _propertyDescription)
+        _propertyDescription.GetViewFlags(_viewFlags)
     End Sub
 
     Public ReadOnly Property CanonicalName As String

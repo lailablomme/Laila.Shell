@@ -38,6 +38,8 @@ Namespace Controls
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
+            Shell.AddToControlCache(Me)
+
             PART_NavigationButtonsPanel = Template.FindName("PART_NavigationButtonsPanel", Me)
             PART_NavigationButtons = Template.FindName("PART_NavigationButtons", Me)
             PART_ClickToEdit = Template.FindName("PART_ClickToEdit", Me)
@@ -406,6 +408,8 @@ Namespace Controls
                         f.IsVisibleInAddressBar = False
                     Next
                     _visibleFolders.Clear()
+
+                    Shell.RemoveFromControlCache(Me)
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

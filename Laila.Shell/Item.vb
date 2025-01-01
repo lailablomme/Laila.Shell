@@ -69,59 +69,20 @@ Public Class Item
     End Function
 
     Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, parentShellFolder As IShellFolder) As IShellItem2
-        Dim ptr As IntPtr
-        Try
-            If parentShellFolder Is Nothing Then
-                Functions.SHCreateItemFromIDList(pidl, Guids.IID_IShellItem2, ptr)
-            Else
-                Functions.SHCreateItemWithParent(IntPtr.Zero, parentShellFolder, pidl, Guids.IID_IShellItem2, ptr)
-            End If
-            Return Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2))
-        Finally
-            If Not IntPtr.Zero.Equals(ptr) Then
-                Marshal.Release(ptr)
-            End If
-        End Try
+        Dim result As IShellItem2
+        If parentShellFolder Is Nothing Then
+            Functions.SHCreateItemFromIDList(pidl, Guids.IID_IShellItem2, result)
+        Else
+            Functions.SHCreateItemWithParent(IntPtr.Zero, parentShellFolder, pidl, Guids.IID_IShellItem2, result)
+        End If
+        Return result
     End Function
 
     Friend Shared Function GetIShellItem2FromParsingName(parsingName As String) As IShellItem2
-        Dim ptr As IntPtr
-        Try
-            Functions.SHCreateItemFromParsingName(parsingName, IntPtr.Zero, Guids.IID_IShellItem2, ptr)
-            Return If(Not IntPtr.Zero.Equals(ptr), Marshal.GetTypedObjectForIUnknown(ptr, GetType(IShellItem2)), Nothing)
-        Finally
-            If Not IntPtr.Zero.Equals(ptr) Then
-                Marshal.Release(ptr)
-            End If
-        End Try
+        Dim result As IShellItem2
+        Functions.SHCreateItemFromParsingName(parsingName, IntPtr.Zero, Guids.IID_IShellItem2, result)
+        Return result
     End Function
-
-    'Friend Shared Function GetFullPathFromShellItem2(shellItem2 As IShellItem2) As String
-    '    Dim fullPath As String
-    '    shellItem2.GetDisplayName(SHGDN.FORPARSING, fullPath)
-    '    If Not fullPath Is Nothing AndAlso fullPath.StartsWith("::{") AndAlso fullPath.EndsWith("}") Then
-    '        fullPath = "shell:" & fullPath
-    '    End If
-    '    Return fullPath
-    'End Function
-
-    'Friend Shared Function GetFullPathFromShellItem2(shellItem2 As IShellItem2) As String
-    '    Dim ptr As IntPtr, pidl As IntPtr
-    '    Dim fullPath As String
-    '    Try
-    '        ptr = Marshal.GetIUnknownForObject(shellItem2)
-    '        Functions.SHGetIDListFromObject(ptr, pidl)
-    '        Functions.SHGetNameFromIDList(pidl, SIGDN.DESKTOPABSOLUTEPARSING, fullPath)
-    '    Finally
-    '        If Not IntPtr.Zero.Equals(ptr) Then
-    '            Marshal.Release(ptr)
-    '        End If
-    '        If Not IntPtr.Zero.Equals(pidl) Then
-    '            Marshal.FreeCoTaskMem(pidl)
-    '        End If
-    '    End Try
-    '    Return fullPath
-    'End Function
 
     Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean)
         _objectCount += 1
@@ -220,22 +181,15 @@ Public Class Item
     End Property
 
     Protected Overridable Function GetNewShellItem() As IShellItem2
-        Dim ptr As IntPtr, result As IShellItem2
-        Try
-            Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, ptr)
-            If IntPtr.Zero.Equals(ptr) Then
-                Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, ptr)
-            End If
-            If Not IntPtr.Zero.Equals(ptr) Then
-                result = Marshal.GetObjectForIUnknown(ptr)
-                result.Update(IntPtr.Zero)
-                Return result
-            End If
-        Finally
-            If Not IntPtr.Zero.Equals(ptr) Then
-                Marshal.Release(ptr)
-            End If
-        End Try
+        Dim result As IShellItem2
+        Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, result)
+        If result Is Nothing Then
+            Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, result)
+        End If
+        If Not result Is Nothing Then
+            result.Update(IntPtr.Zero)
+            Return result
+        End If
         Return Nothing
     End Function
 
@@ -905,23 +859,6 @@ Public Class Item
             End If
         End Get
     End Property
-
-    'Public ReadOnly Property PropertyStore As IPropertyStore
-    '    Get
-    '        Dim ptr As IntPtr
-    '        Try
-    '            Me.ShellItem2.GetPropertyStore(0, GetType(IPropertyStore).GUID, ptr)
-    '            If Not IntPtr.Zero.Equals(ptr) Then
-    '                Return Marshal.GetObjectForIUnknown(ptr)
-    '            End If
-    '        Finally
-    '            If Not IntPtr.Zero.Equals(ptr) Then
-    '                Marshal.Release(ptr)
-    '            End If
-    '        End Try
-    '        Return Nothing
-    '    End Get
-    'End Property
 
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get

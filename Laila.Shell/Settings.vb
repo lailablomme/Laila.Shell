@@ -1,4 +1,5 @@
-﻿Imports System.Runtime.InteropServices
+﻿Imports System.Reflection.Metadata
+Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows.Input
@@ -18,88 +19,147 @@ Public Class Settings
     Private Const TYPETOSELECT_VALUENAME As String = "TypeAhead"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
-    Private _doHideKnownFileExtensions As Boolean
-    Private _doShowProtectedOperatingSystemFiles As Boolean
-    Private _doShowCheckBoxesToSelect As Boolean
-    Private _doShowHiddenFilesAndFolders As Boolean
-    Private _doShowEncryptedOrCompressedFilesInColor As Boolean
-    Private _isDoubleClickToOpenItem As Boolean
-    Private _isUnderlineItemOnHover As Boolean
-    Private _doShowIconsOnly As Boolean
-    Private _doShowTypeOverlay As Boolean
-    Private _doShowFolderContentsInInfoTip As Boolean
-    Private _doShowInfoTips As Boolean
-    Private _isCompactMode As Boolean
-    Private _doShowDriveLetters As Boolean
-    Private _doShowStatusBar As Boolean
-    Private _doTypeToSelect As Boolean
+    Private _isMonitoring As Boolean
+    Private _stopped1 As TaskCompletionSource
+    Private _stopped2 As TaskCompletionSource
+    Private _cancel As CancellationTokenSource
+    Private _doHideKnownFileExtensions As Boolean = False
+    Private _doShowProtectedOperatingSystemFiles As Boolean = True
+    Private _doShowCheckBoxesToSelect As Boolean = True
+    Private _doShowHiddenFilesAndFolders As Boolean = True
+    Private _doShowEncryptedOrCompressedFilesInColor As Boolean = True
+    Private _isDoubleClickToOpenItem As Boolean = True
+    Private _isUnderlineItemOnHover As Boolean = True
+    Private _doShowIconsOnly As Boolean = False
+    Private _doShowTypeOverlay As Boolean = True
+    Private _doShowFolderContentsInInfoTip As Boolean = True
+    Private _doShowInfoTips As Boolean = True
+    Private _isCompactMode As Boolean = True
+    Private _doShowDriveLetters As Boolean = True
+    Private _doShowStatusBar As Boolean = True
+    Private _doTypeToSelect As Boolean = True
 
     Public Sub New()
-        Me.OnSettingChange(False)
-
-        ' some settings don't produce notifications, so we need to monitor the registry
-        monitorRegistryKey(EXPLORER_KEYPATH,
-            Sub()
-                Dim b As Boolean
-                b = readIsUnderlineItemOnHover()
-                If Not b = _isUnderlineItemOnHover Then
-                    _isUnderlineItemOnHover = b
-                    Me.NotifyOfPropertyChange("IsUnderlineItemOnHover")
-                End If
-                b = readDoShowDriveLetters()
-                If Not b = _doShowDriveLetters Then
-                    _doShowDriveLetters = b
-                    Me.NotifyOfPropertyChange("DoShowDriveLetters")
-                End If
-            End Sub)
-        monitorRegistryKey(EXPLORER_ADVANCED_KEYPATH,
-            Sub()
-                Dim b As Boolean
-                b = readDoShowFolderContentsInInfoTip()
-                If Not b = _doShowFolderContentsInInfoTip Then
-                    _doShowFolderContentsInInfoTip = b
-                    Me.NotifyOfPropertyChange("DoShowFolderContentsInInfoTip")
-                End If
-                b = readIsCompactMode()
-                If Not b = _isCompactMode Then
-                    _isCompactMode = b
-                    Me.NotifyOfPropertyChange("IsCompactMode")
-                End If
-                b = readDoTypeToSelect()
-                If Not b = _doTypeToSelect Then
-                    _doTypeToSelect = b
-                    Me.NotifyOfPropertyChange("DoTypeToSelect")
-                End If
-            End Sub)
+        Me.StartMonitoring()
     End Sub
 
-    Private Sub monitorRegistryKey(keyPath As String, onChange As Action)
+    ''' <summary>
+    ''' Some settings don't produce notifications, so we need to monitor the registry
+    ''' </summary>
+    Public Sub StartMonitoring()
+        If Not _isMonitoring Then
+            ' read current settings
+            Me.OnSettingChange(False)
+
+            ' prepare tokens
+            _stopped1 = New TaskCompletionSource()
+            _stopped2 = New TaskCompletionSource()
+            _cancel = New CancellationTokenSource()
+
+            ' start monitoring
+            monitorRegistryKey(EXPLORER_KEYPATH,
+                Sub()
+                    Dim b As Boolean
+                    b = readIsUnderlineItemOnHover()
+                    If Not b = _isUnderlineItemOnHover Then
+                        _isUnderlineItemOnHover = b
+                        Me.NotifyOfPropertyChange("IsUnderlineItemOnHover")
+                    End If
+                    b = readDoShowDriveLetters()
+                    If Not b = _doShowDriveLetters Then
+                        _doShowDriveLetters = b
+                        Me.NotifyOfPropertyChange("DoShowDriveLetters")
+                    End If
+                End Sub, _cancel.Token, _stopped1)
+            monitorRegistryKey(EXPLORER_ADVANCED_KEYPATH,
+                Sub()
+                    Dim b As Boolean
+                    b = readDoShowFolderContentsInInfoTip()
+                    If Not b = _doShowFolderContentsInInfoTip Then
+                        _doShowFolderContentsInInfoTip = b
+                        Me.NotifyOfPropertyChange("DoShowFolderContentsInInfoTip")
+                    End If
+                    b = readIsCompactMode()
+                    If Not b = _isCompactMode Then
+                        _isCompactMode = b
+                        Me.NotifyOfPropertyChange("IsCompactMode")
+                    End If
+                    b = readDoTypeToSelect()
+                    If Not b = _doTypeToSelect Then
+                        _doTypeToSelect = b
+                        Me.NotifyOfPropertyChange("DoTypeToSelect")
+                    End If
+                End Sub, _cancel.Token, _stopped2)
+
+            ' mark
+            _isMonitoring = True
+        Else
+            Throw New Exception("We're already monitoring.")
+        End If
+    End Sub
+
+    Public Sub StopMonitoring()
+        If _isMonitoring Then
+            ' make loops end
+            _cancel.Cancel()
+
+            ' make us drop out of RegNotifyChangeKeyValue
+            Dim b As Boolean
+            b = GetRegistryBoolean(EXPLORER_KEYPATH, "Laila_Shell_Monitor", False)
+            SetRegistryBoolean(EXPLORER_KEYPATH, "Laila_Shell_Monitor", Not b)
+            b = GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, "Laila_Shell_Monitor", False)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, "Laila_Shell_Monitor", Not b)
+
+            ' wait for threads to end
+            _stopped1.Task.Wait()
+            _stopped2.Task.Wait()
+
+            ' mark
+            _isMonitoring = False
+        Else
+            Throw New Exception("We're not monitoring now.")
+        End If
+    End Sub
+
+    Private Sub monitorRegistryKey(keyPath As String, onChange As Action,
+                                   cancellationToken As CancellationToken, stopped As TaskCompletionSource)
+        Dim tcs As TaskCompletionSource = New TaskCompletionSource()
         Dim t As Thread = New Thread(
             Sub()
-                Using registryKey = Registry.CurrentUser.OpenSubKey(keyPath, writable:=False)
-                    Dim hKey As IntPtr = registryKey.Handle.DangerousGetHandle()
-                    While Not Shell.ShuttingDownToken.IsCancellationRequested
-                        Dim result As HRESULT = Functions.RegNotifyChangeKeyValue(
-                            hKey,
-                            False,
-                            REG_NOTIFY_CHANGE.LAST_SET,
-                            IntPtr.Zero,
-                            False
-                        )
+                Dim handle As IntPtr
+                Try
+                    Dim h As HRESULT = Functions.RegOpenKeyEx(HKEY.CURRENT_USER, keyPath, 0, REGKEY.NOTIFY Or REGKEY.WOW64_64KEY, handle)
+                    If h = HRESULT.S_OK Then
+                        tcs.SetResult()
+                        While Not cancellationToken.IsCancellationRequested
+                            Dim result As HRESULT = Functions.RegNotifyChangeKeyValue(
+                                handle,
+                                False,
+                                REG_NOTIFY_CHANGE.LAST_SET,
+                                IntPtr.Zero,
+                                False
+                            )
 
-                        If result = HRESULT.S_OK Then
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    onChange()
-                                End Sub)
-                        End If
-                    End While
-                End Using
+                            If result = HRESULT.S_OK AndAlso Not cancellationToken.IsCancellationRequested Then
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        onChange()
+                                    End Sub)
+                            End If
+                        End While
+                    End If
+                Finally
+                    If Not IntPtr.Zero.Equals(handle) Then
+                        Functions.RegCloseKey(handle)
+                    End If
+                    stopped.SetResult()
+                End Try
             End Sub)
         t.SetApartmentState(ApartmentState.STA)
         t.IsBackground = True
         t.Start()
         _threads.Add(t)
+        tcs.Task.Wait()
     End Sub
 
     Private Function readDoHideKnownFileExtensions() As Boolean
@@ -471,7 +531,7 @@ Public Class Settings
                 Dim dataBytes As Byte() = BitConverter.GetBytes(value)
                 Dim dataSize As Integer = dataBytes.Length
 
-                h = Functions.RegSetValueEx(HKEY.CURRENT_USER, valueName, 0, REG.DWORD, dataBytes, dataSize)
+                h = Functions.RegSetValueEx(handle, valueName, 0, REG.DWORD, dataBytes, dataSize)
                 If Not h = HRESULT.S_OK Then
                     Throw Marshal.GetExceptionForHR(h)
                 End If

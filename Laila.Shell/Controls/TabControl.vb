@@ -8,6 +8,7 @@ Namespace Controls
     <TemplatePart(Name:="PART_ItemsHolder", Type:=GetType(Panel))>
     Public Class TabControl
         Inherits System.Windows.Controls.TabControl
+        Implements IDisposable
 
         Private PART_ItemsHolder As Panel
         Private PART_LeftButton As RepeatButton
@@ -20,12 +21,15 @@ Namespace Controls
         Private _items As ObservableCollection(Of TabData) = New ObservableCollection(Of TabData)()
         Private _dropTarget As IDropTarget
         Private _isLoaded As Boolean
+        Private disposedValue As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(TabControl), New FrameworkPropertyMetadata(GetType(TabControl)))
         End Sub
 
         Public Sub New()
+            Shell.AddToControlCache(Me)
+
             AddHandler ItemContainerGenerator.StatusChanged, AddressOf ItemContainerGeneratorStatusChanged
 
             _items.Add(New TabData())
@@ -355,5 +359,25 @@ Namespace Controls
                 End Set
             End Property
         End Class
+
+        Protected Overridable Sub Dispose(disposing As Boolean)
+            If Not disposedValue Then
+                If disposing Then
+                    ' dispose managed state (managed objects)
+                    WpfDragTargetProxy.RevokeDragDrop(Me)
+                    Shell.RemoveFromControlCache(Me)
+                End If
+
+                ' free unmanaged resources (unmanaged objects) and override finalizer
+                ' set large fields to null
+                disposedValue = True
+            End If
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+            Dispose(disposing:=True)
+            GC.SuppressFinalize(Me)
+        End Sub
     End Class
 End Namespace

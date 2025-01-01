@@ -15,20 +15,15 @@ Public Class Clipboard
         Dim dataObject As IDataObject
         Functions.OleGetClipboard(dataObject)
 
-        Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
+        Dim dropTarget As IDropTarget, shellFolder As IShellFolder
         Try
             If Not folder.Parent Is Nothing Then
                 shellFolder = folder.Parent.ShellFolder
-                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
             Else
                 ' desktop
                 shellFolder = Shell.Desktop.ShellFolder
-                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-            End If
-            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
-            Else
-                dropTarget = Nothing
+                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
             End If
 
             If Not dropTarget Is Nothing Then
@@ -39,9 +34,6 @@ Public Class Clipboard
                 Return hr = HRESULT.S_OK AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
             End If
         Finally
-            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                Marshal.Release(dropTargetPtr)
-            End If
             If Not dropTarget Is Nothing Then
                 Marshal.ReleaseComObject(dropTarget)
             End If
@@ -77,20 +69,15 @@ Public Class Clipboard
         Dim dataObject As IDataObject
         Functions.OleGetClipboard(dataObject)
 
-        Dim dropTarget As IDropTarget, dropTargetPtr As IntPtr, shellFolder As IShellFolder
+        Dim dropTarget As IDropTarget, shellFolder As IShellFolder
         Try
             If Not folder.Parent Is Nothing Then
                 shellFolder = folder.Parent.ShellFolder
-                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
+                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
             Else
                 ' desktop
                 shellFolder = Shell.Desktop.ShellFolder
-                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-            End If
-            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                dropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
-            Else
-                dropTarget = Nothing
+                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
             End If
 
             If Not dropTarget Is Nothing Then
@@ -101,9 +88,6 @@ Public Class Clipboard
                 dropTarget.Drop(dataObject, grfKeyState, New WIN32POINT(), effect)
             End If
         Finally
-            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                Marshal.Release(dropTargetPtr)
-            End If
             If Not dropTarget Is Nothing Then
                 Marshal.ReleaseComObject(dropTarget)
             End If
@@ -158,18 +142,14 @@ Public Class Clipboard
 
         ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
         ' and I don't know what it's doing 
-        Dim initDropTarget As IDropTarget, pidl As IntPtr, dropTargetPtr As IntPtr
+        Dim initDropTarget As IDropTarget, pidl As IntPtr
         Dim shellFolder As IShellFolder
         Try
             Functions.SHGetDesktopFolder(shellFolder)
-            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTargetPtr)
-            initDropTarget = Marshal.GetTypedObjectForIUnknown(dropTargetPtr, GetType(IDropTarget))
+            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, initDropTarget)
             initDropTarget.DragEnter(result, 0, New WIN32POINT() With {.x = 0, .y = 0}, 0)
             initDropTarget.DragLeave()
         Finally
-            If Not IntPtr.Zero.Equals(dropTargetPtr) Then
-                Marshal.Release(dropTargetPtr)
-            End If
             If Not IntPtr.Zero.Equals(pidl) Then
                 Marshal.FreeCoTaskMem(pidl)
             End If

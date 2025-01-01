@@ -53,7 +53,6 @@ Namespace Controls
         Private _mouseItemOver As Item
         Private _mouseOriginalSourceDown As Object
         Private _canOpenWithSingleClick As Boolean
-        Private _timeSpentTimer As Timer
         Protected _scrollViewer As ScrollViewer
         Private _lastScrollOffset As Point
         Private _lastScrollSize As Size
@@ -72,6 +71,8 @@ Namespace Controls
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
+
+            Shell.AddToControlCache(Me)
 
             Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
@@ -932,11 +933,6 @@ Namespace Controls
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = TryCast(d, BaseFolderView)
 
-            'bfv.IsLoading = True
-
-            ' stop recording time spent
-            If Not bfv._timeSpentTimer Is Nothing Then bfv._timeSpentTimer.Dispose()
-
             ' hide listview so no-one sees us binding to the new folder and restoring the scroll position
             If Not bfv.PART_ListBox Is Nothing Then
                 bfv.PART_ListBox.Visibility = Visibility.Hidden
@@ -969,15 +965,6 @@ Namespace Controls
                         FrequentFolders.Track(newValue)
                     End Function
                 Task.Run(func)
-
-                ' track time spent to find frequent folders
-                bfv._timeSpentTimer = New Timer(New TimerCallback(
-                    Sub()
-                        UIHelper.OnUIThread(
-                            Sub()
-                                FrequentFolders.RecordTimeSpent(newValue, 2)
-                            End Sub)
-                    End Sub), Nothing, 1000 * 60 * 2, 1000 * 60 * 2)
 
                 ' set sorting and grouping
                 If Not TypeOf newValue Is SearchFolder Then
@@ -1016,9 +1003,7 @@ Namespace Controls
                         ' show listview
                         bfv.PART_ListBox.Visibility = Visibility.Visible
                     End Sub, Threading.DispatcherPriority.ContextIdle)
-                End If
-
-            'bfv.IsLoading = False
+            End If
         End Sub
 
         Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
@@ -1038,16 +1023,15 @@ Namespace Controls
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then
                 If disposing Then
-                    ' dispose managed state (managed objects)
-                    If Not _timeSpentTimer Is Nothing Then
-                        _timeSpentTimer.Dispose()
-                        _timeSpentTimer = Nothing
-                    End If
-
                     If Not _typeToSearchTimer Is Nothing Then
                         _typeToSearchTimer.Dispose()
                         _typeToSearchTimer = Nothing
                     End If
+                    If Not Me.Folder Is Nothing Then
+                        Me.Folder.IsActiveInFolderView = False
+                    End If
+
+                    Shell.RemoveFromControlCache(Me)
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

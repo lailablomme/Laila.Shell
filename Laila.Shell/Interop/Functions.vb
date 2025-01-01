@@ -464,10 +464,10 @@ Public Class Functions
     End Function
 
     <DllImport("shell32.dll")>
-    Public Shared Function SHCreateItemWithParent(pidlParent As IntPtr, psfParent As IShellFolder, pidl As IntPtr, ByRef riid As Guid, ByRef ppv As IntPtr) As Integer
+    Public Shared Function SHCreateItemWithParent(pidlParent As IntPtr, psfParent As IShellFolder, pidl As IntPtr, ByRef riid As Guid, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppv As IShellItem2) As Integer
     End Function
     <DllImport("ole32.dll")>
-    Public Shared Function CreateBindCtx(reserved As UInt32, ByRef ppbc As IntPtr) As Integer
+    Public Shared Function CreateBindCtx(reserved As UInt32, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppbc As IBindCtx) As Integer
     End Function
 
     <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
@@ -486,12 +486,16 @@ Public Class Functions
 
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode)>
-    Public Shared Function SHCreateItemFromParsingName(pszPath As String, pbc As IntPtr, riid As Guid, ByRef ppv As IntPtr) As HRESULT
+    Public Shared Function SHCreateItemFromParsingName(pszPath As String, pbc As IntPtr, riid As Guid, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppv As IShellItem2) As HRESULT
     End Function
 
     <DllImport("shell32.dll")>
     Public Shared Sub SHParseDisplayName(<MarshalAs(UnmanagedType.LPWStr)> name As String, bindingContext As IntPtr, <Out()> ByRef pidl As IntPtr, sfgaoIn As UInt32, <Out()> ByRef sfgaoOut As UInt32)
     End Sub
+
+    <DllImport("shell32.dll")>
+    Public Shared Function SHCreateItemFromIDList(<[In]> pidl As IntPtr, <[In]> riid As Guid, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppv As IShellItem) As HRESULT
+    End Function
 
     <DllImport("shell32.dll")>
     Public Shared Function SHCreateItemFromIDList(<[In]> pidl As IntPtr, <[In]> riid As Guid, <Out> ByRef ppv As IntPtr) As HRESULT
@@ -506,7 +510,11 @@ Public Class Functions
     End Function
 
     <DllImport("propsys.dll")>
-    Public Shared Function PSCreateMemoryPropertyStore(<[In]> riid As Guid, <Out> ByRef ppv As IntPtr) As HRESULT
+    Public Shared Function PSCreateMemoryPropertyStore(<[In]> riid As Guid, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppv As IPropertyStore) As HRESULT
+    End Function
+
+    <DllImport("propsys.dll")>
+    Public Shared Function PSCreateMemoryPropertyStore(<[In]> riid As Guid, <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppv As IPropertyBag) As HRESULT
     End Function
 
     <DllImport("propsys.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
@@ -571,6 +579,9 @@ Public Class Functions
 
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function GetMessage(ByRef lpMsg As MSG, ByVal hWnd As IntPtr, ByVal wMsgFilterMin As UInteger, ByVal wMsgFilterMax As UInteger) As Boolean
+    End Function
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
+    Public Shared Function SHGetIDListFromObject(<MarshalAs(UnmanagedType.Interface)> ByVal punk As IShellFolder, ByRef ppidl As IntPtr) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, ExactSpelling:=True)>
     Public Shared Function SHGetIDListFromObject(ByVal punk As IntPtr, ByRef ppidl As IntPtr) As Integer
