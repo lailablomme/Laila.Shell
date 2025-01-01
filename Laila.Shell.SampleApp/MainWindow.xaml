@@ -34,53 +34,55 @@
                             <localConverters:RectConverter x:Key="rectConverter" />
                         </ControlTemplate.Resources>
                         <Border x:Name="PART_RootBorder" Padding="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource glowMarginConverter}}">
-                            <Border Grid.Row="1" Grid.Column="1" x:Name="PART_MainBorder" CornerRadius="10"  
+                            <Border Grid.Row="1" Grid.Column="1" x:Name="PART_GlowBorder" CornerRadius="10">
+                                <Border x:Name="PART_MainBorder" CornerRadius="10"  
                                     Background="{TemplateBinding Background}" BorderBrush="DarkViolet" BorderThickness="1">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="{Binding Path=GlowSize, 
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="{Binding Path=GlowSize, 
                                             RelativeSource={RelativeSource Mode=TemplatedParent}, FallbackValue=15}" 
                                                           ShadowDepth="0" Color="{Binding Path=GlowColor, 
                                             RelativeSource={RelativeSource Mode=TemplatedParent}, FallbackValue=Gray}" />
-                                </Border.Effect>
-                                <Border CornerRadius="10" ClipToBounds="True" x:Name="PART_ClippingBorder">
-                                    <Grid x:Name="PART_MainGrid" Margin="0">
-                                        <Grid.Background>
-                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                <LinearGradientBrush.GradientStops>
-                                                    <GradientStopCollection>
-                                                        <GradientStop Color="MediumOrchid" Offset="0.0" />
-                                                        <GradientStop Color="Violet" Offset="1.0" />
-                                                    </GradientStopCollection>
-                                                </LinearGradientBrush.GradientStops>
-                                            </LinearGradientBrush>
-                                        </Grid.Background>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="*" />
-                                        </Grid.RowDefinitions>
+                                    </Border.Effect>
+                                    <Border CornerRadius="10" ClipToBounds="True" x:Name="PART_ClippingBorder">
+                                        <Grid x:Name="PART_MainGrid" Margin="0">
+                                            <Grid.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <LinearGradientBrush.GradientStops>
+                                                        <GradientStopCollection>
+                                                            <GradientStop Color="MediumOrchid" Offset="0.0" />
+                                                            <GradientStop Color="Violet" Offset="1.0" />
+                                                        </GradientStopCollection>
+                                                    </LinearGradientBrush.GradientStops>
+                                                </LinearGradientBrush>
+                                            </Grid.Background>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
 
-                                        <ContentPresenter Grid.Row="0" Grid.RowSpan="2" WindowChrome.IsHitTestVisibleInChrome="True" Margin="0,7,0,0"
+                                            <ContentPresenter Grid.Row="0" Grid.RowSpan="2" WindowChrome.IsHitTestVisibleInChrome="True" Margin="0,7,0,0"
                                           Content="{Binding Content, RelativeSource={RelativeSource Mode=TemplatedParent}}" />
 
-                                        <ContentControl x:Name="PART_TitleBar" HorizontalAlignment="Right">
-                                            <Grid Grid.Row="0" x:Name="PART_TitleBarGrid" VerticalAlignment="Center"
+                                            <ContentControl x:Name="PART_TitleBar" HorizontalAlignment="Right">
+                                                <Grid Grid.Row="0" x:Name="PART_TitleBarGrid" VerticalAlignment="Center"
                                               Background="{x:Null}">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
 
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
-                                                    <Button Style="{DynamicResource metroWindowButtonStyle}" 
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
+                                                        <Button Style="{DynamicResource metroWindowButtonStyle}" 
                                                         x:Name="PART_MinimizeButton"></Button>
-                                                    <Button Style="{DynamicResource metroWindowButtonStyle}" 
+                                                        <Button Style="{DynamicResource metroWindowButtonStyle}" 
                                                         x:Name="PART_MaximizeRestoreButton"></Button>
-                                                    <Button Style="{DynamicResource metroWindowCloseButtonStyle}" 
+                                                        <Button Style="{DynamicResource metroWindowCloseButtonStyle}" 
                                                         x:Name="PART_CloseButton"></Button>
-                                                </StackPanel>
-                                            </Grid>
-                                        </ContentControl>
-                                    </Grid>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </ContentControl>
+                                        </Grid>
+                                    </Border>
                                 </Border>
                             </Border>
                         </Border>
