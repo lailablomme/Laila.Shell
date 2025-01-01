@@ -41,7 +41,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Laila.MetroWindow-Core" Version="2.4.0-alpha5" />
+    <PackageReference Include="Laila.MetroWindow-Core" Version="2.4.0-alpha6" />
   </ItemGroup>
 
   <ItemGroup>

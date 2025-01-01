@@ -18,7 +18,7 @@
             <Setter Property="OverridesDefaultStyle" Value="True" />
             <Setter Property="UseLayoutRounding" Value="True" />
             <Setter Property="WindowStyle" Value="None" />
-            <Setter Property="Background" Value="#44000000" />
+            <Setter Property="Background" Value="White" />
             <Setter Property="AllowsTransparency" Value="True" />
             <Setter Property="GlowColor" Value="Gray" />
             <Setter Property="GlowSize" Value="15" />
