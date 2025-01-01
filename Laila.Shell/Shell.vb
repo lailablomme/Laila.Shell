@@ -512,8 +512,9 @@ Public Class Shell
 
     Public Shared Function RunOnSTAThread(Of TResult)(action As Action(Of TaskCompletionSource(Of TResult)), maxRetries As Integer)
         Dim tcs As TaskCompletionSource(Of TResult)
-        Dim didComplete As Boolean = False, numTries = 1
-        While Not didComplete AndAlso numTries <= 3
+        Dim numTries = 1
+        While (tcs Is Nothing OrElse Not (tcs.Task.IsCompleted OrElse tcs.Task.IsCanceled)) _
+            AndAlso numTries <= 3 AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested
             Try
                 tcs = New TaskCompletionSource(Of TResult)()
                 Shell.STATaskQueue.Add(
@@ -526,15 +527,17 @@ Public Class Shell
                         End Try
                     End Sub)
                 tcs.Task.Wait(Shell.ShuttingDownToken)
-                didComplete = True
-                If numTries > 1 Then
+                If numTries > 1 AndAlso tcs.Task.IsCompleted Then
                     Debug.WriteLine("RunOnSTAThread succeeded after " & numTries & " tries")
+                ElseIf tcs.Task.IsFaulted Then
+                    numTries += 1
                 End If
             Catch ex As Exception
                 numTries += 1
             End Try
         End While
-        If didComplete AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
+        If Not tcs Is Nothing AndAlso tcs.Task.IsCompleted _
+            AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
             Return tcs.Task.Result
         Else
             Return Nothing

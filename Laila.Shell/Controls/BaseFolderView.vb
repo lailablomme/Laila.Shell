@@ -1,4 +1,5 @@
-﻿Imports System.ComponentModel
+﻿Imports System.Collections.Specialized
+Imports System.ComponentModel
 Imports System.Media
 Imports System.Threading
 Imports System.Windows
@@ -918,6 +919,19 @@ Namespace Controls
             Next
         End Sub
 
+        Private Sub folder_Items_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)
+            updateCheckBoxSelectAll()
+        End Sub
+
+        Private Sub updateCheckBoxSelectAll()
+            If Not Me.PART_CheckBoxSelectAll Is Nothing Then
+                _isInternallySettingSelectAll = True
+                Me.PART_CheckBoxSelectAll.IsChecked =
+                    Me.PART_ListBox.Items.Count = If(Me.SelectedItems Is Nothing, 0, Me.SelectedItems.Count)
+                _isInternallySettingSelectAll = False
+            End If
+        End Sub
+
         Private Sub setGrouping(folder As Folder)
             If Not Me.PART_ListBox.Resources("groupStyle") Is Nothing Then
                 If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then
@@ -945,6 +959,7 @@ Namespace Controls
                 RemoveHandler oldValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
                 RemoveHandler oldValue.ExpandAllGroups, AddressOf bfv.Folder_ExpandAllGroups
                 RemoveHandler oldValue.CollapseAllGroups, AddressOf bfv.Folder_CollapseAllGroups
+                RemoveHandler oldValue.Items.CollectionChanged, AddressOf bfv.folder_Items_CollectionChanged
 
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = bfv._lastScrollOffset
@@ -960,11 +975,13 @@ Namespace Controls
                 Dim newValue As Folder = e.NewValue
 
                 ' track recent/frequent folders (in a task because for some folders this might take a while)
-                Dim func As Func(Of Task) =
-                    Async Function() As Task
-                        FrequentFolders.Track(newValue)
-                    End Function
-                Task.Run(func)
+                If Not TypeOf newValue Is SearchFolder Then
+                    Dim func As Func(Of Task) =
+                        Async Function() As Task
+                            FrequentFolders.Track(newValue)
+                        End Function
+                    Task.Run(func)
+                End If
 
                 ' set sorting and grouping
                 If Not TypeOf newValue Is SearchFolder Then
@@ -978,6 +995,7 @@ Namespace Controls
                 AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
                 AddHandler newValue.ExpandAllGroups, AddressOf bfv.Folder_ExpandAllGroups
                 AddHandler newValue.CollapseAllGroups, AddressOf bfv.Folder_CollapseAllGroups
+                AddHandler newValue.Items.CollectionChanged, AddressOf bfv.folder_Items_CollectionChanged
 
                 ' bind view
                 bfv.MakeBinding(e.NewValue)
@@ -1012,12 +1030,7 @@ Namespace Controls
             If Not dlv._selectionHelper Is Nothing Then
                 dlv._selectionHelper.SetSelectedItems(e.NewValue)
             End If
-            If Not dlv.PART_CheckBoxSelectAll Is Nothing Then
-                dlv._isInternallySettingSelectAll = True
-                dlv.PART_CheckBoxSelectAll.IsChecked =
-                    dlv.PART_ListBox.Items.Count = If(dlv.SelectedItems Is Nothing, 0, dlv.SelectedItems.Count)
-                dlv._isInternallySettingSelectAll = False
-            End If
+            dlv.updateCheckBoxSelectAll()
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)
@@ -1029,6 +1042,7 @@ Namespace Controls
                     End If
                     If Not Me.Folder Is Nothing Then
                         Me.Folder.IsActiveInFolderView = False
+                        Me.Folder = Nothing
                     End If
 
                     Shell.RemoveFromControlCache(Me)
