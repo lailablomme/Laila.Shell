@@ -167,14 +167,20 @@
                             </i:Interaction.Behaviors>
                         </ListView>
                         <CheckBox x:Name="PART_CheckBoxSelectAll" Margin="15,3,0,0" Focusable="False"
-                                  VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="{Binding Visibility, ElementName=PART_ListView}">
+                                  VerticalAlignment="Top" HorizontalAlignment="Left">
                             <CheckBox.Style>
                                 <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
                                     <Setter Property="CheckBox.Visibility" Value="Collapsed" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True">
-                                            <Setter Property="CheckBox.Visibility" Value="Visible" />
-                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                <Condition Binding="{Binding Visibility, ElementName=PART_ListView}" Value="Visible" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="CheckBox.Visibility" Value="Visible" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </CheckBox.Style>

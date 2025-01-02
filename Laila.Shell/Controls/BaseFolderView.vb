@@ -549,10 +549,6 @@ Namespace Controls
             Else
                 Me.DoShowCheckBoxesToSelect = Shell.Settings.DoShowCheckBoxesToSelect
             End If
-
-            If Not Me.PART_CheckBoxSelectAll Is Nothing Then
-                Me.PART_CheckBoxSelectAll.Visibility = If(Me.DoShowCheckBoxesToSelect, Visibility.Visible, Visibility.Collapsed)
-            End If
         End Sub
 
         Public Property DoShowCheckBoxesToSelectOverride As Boolean?
