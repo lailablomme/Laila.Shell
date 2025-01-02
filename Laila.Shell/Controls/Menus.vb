@@ -257,14 +257,16 @@ Namespace Controls
                 Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
-                If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 _
-                    AndAlso (Shell.GetSpecialFolders().ContainsKey("OneDrive") _
-                    AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive").FullPath & IO.Path.DirectorySeparatorChar)) _
-                    OrElse (Shell.GetSpecialFolders().ContainsKey("OneDrive Business") _
-                            AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive Business").FullPath & IO.Path.DirectorySeparatorChar)) Then
-                    Me.CanShare = True
+                If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
+                    If Shell.GetSpecialFolders().ContainsKey("OneDrive") Then
+                        Me.CanShare = Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive").FullPath & IO.Path.DirectorySeparatorChar)
+                    ElseIf Shell.GetSpecialFolders().ContainsKey("OneDrive Business") Then
+                        Me.CanShare = Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive Business").FullPath & IO.Path.DirectorySeparatorChar)
+                    Else
+                        Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
+                    End If
                 Else
-                    Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
+                    Me.CanShare = False
                 End If
             End If
         End Sub
