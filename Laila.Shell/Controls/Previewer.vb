@@ -159,9 +159,8 @@ Namespace Controls
                             h = HRESULT.S_FALSE
                             If Not previewer._handler Is Nothing Then
                                 If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
-                                    Dim ptr As IntPtr
                                     If IO.File.Exists(previewItem.FullPath) Then
-                                        h = Functions.SHCreateStreamOnFileEx(previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, ptr)
+                                        h = Functions.SHCreateStreamOnFileEx(previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
                                         Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
                                     Else
                                         SyncLock previewItem._shellItemLock

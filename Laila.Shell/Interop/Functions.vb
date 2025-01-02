@@ -287,7 +287,7 @@ Public Class Functions
         <[In]> ByVal dwAttributes As UInteger,
         <[In]> ByVal fCreate As UInteger,
         <[In]> ByVal pstmTemplate As IntPtr,
-        <Out> ByRef ppstm As IntPtr
+        <Out, MarshalAs(UnmanagedType.Interface)> ByRef ppstm As IStream
     ) As HRESULT
     End Function
     <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
