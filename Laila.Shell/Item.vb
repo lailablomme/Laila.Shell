@@ -113,11 +113,13 @@ Public Class Item
 
     Public ReadOnly Property Pidl As Pidl
         Get
-            If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
-                Dim pidlptr As IntPtr
-                Functions.SHGetIDListFromObject(_shellItem2, pidlptr)
-                _pidl = New Pidl(pidlptr)
-            End If
+            SyncLock _shellItemLock
+                If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
+                    Dim pidlptr As IntPtr
+                    Functions.SHGetIDListFromObject(_shellItem2, pidlptr)
+                    _pidl = New Pidl(pidlptr)
+                End If
+            End SyncLock
             Return _pidl
         End Get
     End Property

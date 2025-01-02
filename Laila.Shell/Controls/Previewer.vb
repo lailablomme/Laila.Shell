@@ -1,4 +1,5 @@
-﻿Imports System.Runtime.InteropServices
+﻿Imports System.ComponentModel
+Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Threading
 Imports System.Windows
@@ -35,7 +36,7 @@ Namespace Controls
             AddHandler Me.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)
                     If Not _window Is Nothing Then
-                        updateWindowCoords(Me)
+                        'updateWindowCoords(Me)
                         UIHelper.OnUIThreadAsync(
                             Sub()
                                 updateWindowCoords(Me)
@@ -141,7 +142,7 @@ Namespace Controls
         Private Shared Sub showPreview(previewer As Previewer)
             previewer._errorText = Nothing
 
-            If Not previewer.SelectedItems Is Nothing AndAlso previewer.SelectedItems.Count > 0 Then
+            If Not previewer.SelectedItems Is Nothing AndAlso previewer.SelectedItems.Count > 0 AndAlso Not previewer._isMade Then
                 Dim previewItem As Item = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
                 Debug.WriteLine("PreviewItem=" & previewItem.FullPath)
 
@@ -261,10 +262,29 @@ Namespace Controls
             previewer._window.ShowInTaskbar = False
             previewer._window.Owner = Window.GetWindow(previewer)
             AddHandler previewer._window.Owner.SizeChanged, AddressOf previewer.owner_SizeChanged
+            AddHandler previewer._window.Owner.IsVisibleChanged, AddressOf previewer.owner_VisibilityChanged
+            Dim descriptor As DependencyPropertyDescriptor = DependencyPropertyDescriptor.FromProperty(Window.OpacityProperty, GetType(Window))
+            descriptor.AddValueChanged(previewer._window.Owner, AddressOf previewer.owner_OpacityChanged)
             previewer._window.ShowActivated = False
             updateWindowCoords(previewer)
             previewer._window.Show()
         End Function
+
+        Private Sub owner_OpacityChanged(s As Object, e As EventArgs)
+            If CType(s, Window).Opacity > 0 Then
+                showPreview(Me)
+            Else
+                hidePreview(Me)
+            End If
+        End Sub
+
+        Private Sub owner_VisibilityChanged(s As Object, e As DependencyPropertyChangedEventArgs)
+            If CType(s, Window).IsVisible Then
+                showPreview(Me)
+            Else
+                hidePreview(Me)
+            End If
+        End Sub
 
         Private Sub owner_SizeChanged(s As Object, e As SizeChangedEventArgs)
             If Not _window Is Nothing Then

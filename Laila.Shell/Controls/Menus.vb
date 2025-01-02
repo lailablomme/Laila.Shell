@@ -258,10 +258,12 @@ Namespace Controls
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
                 If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
-                    If Shell.GetSpecialFolders().ContainsKey("OneDrive") Then
-                        Me.CanShare = Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive").FullPath & IO.Path.DirectorySeparatorChar)
-                    ElseIf Shell.GetSpecialFolders().ContainsKey("OneDrive Business") Then
-                        Me.CanShare = Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive Business").FullPath & IO.Path.DirectorySeparatorChar)
+                    If Shell.GetSpecialFolders().ContainsKey("OneDrive") _
+                        AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive").FullPath & IO.Path.DirectorySeparatorChar) Then
+                        Me.CanShare = True
+                    ElseIf Shell.GetSpecialFolders().ContainsKey("OneDrive Business") _
+                        AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive Business").FullPath & IO.Path.DirectorySeparatorChar) Then
+                        Me.CanShare = True
                     Else
                         Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
                     End If
