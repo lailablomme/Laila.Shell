@@ -301,10 +301,12 @@ Namespace Controls
         Private Shared Sub updateWindowCoords(previewer As Previewer)
             Dim leftTop As Point = previewer.PointToScreen(New Point(0, 0))
             Dim dpi As DpiScale = VisualTreeHelper.GetDpi(previewer)
-            previewer._window.Left = leftTop.X / (dpi.PixelsPerInchX / 96.0)
-            previewer._window.Top = leftTop.Y / (dpi.PixelsPerInchY / 96.0)
-            previewer._window.Width = previewer.ActualWidth
-            previewer._window.Height = previewer.ActualHeight
+            If Not previewer._window Is Nothing Then
+                previewer._window.Left = leftTop.X / (dpi.PixelsPerInchX / 96.0)
+                previewer._window.Top = leftTop.Y / (dpi.PixelsPerInchY / 96.0)
+                previewer._window.Width = previewer.ActualWidth
+                previewer._window.Height = previewer.ActualHeight
+            End If
             If Not previewer._handler Is Nothing Then
                 previewer._handler.SetRect(getRect(previewer))
             End If
