@@ -649,17 +649,34 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property AddressBarDisplayName As String
+    Public Property AddressBarRoot As String
+
+    Public Property AddressBarDisplayName As String
+
+    Public ReadOnly Property AddressBarDisplayPath As String
         Get
-            If Not Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.FullPath = Me.FullPath) Is Nothing Then
-                Return Me.DisplayName
-            Else
-                Dim specialFolderAsRoot As Folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) Me.FullPath?.StartsWith(f.FullPath))
-                If Not specialFolderAsRoot Is Nothing Then
-                    Return specialFolderAsRoot.DisplayName & Me.FullPath.Substring(specialFolderAsRoot.FullPath.Length)
+            If String.IsNullOrWhiteSpace(Me.AddressBarRoot) Then
+                If Me.Pidl.Equals(Shell.Desktop.Pidl) Then
+                    Return Me.DisplayName
+                ElseIf Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                    Dim parent As Item = Me
+                    Dim path As String = parent.DisplayName
+                    parent = parent.Parent
+                    While Not parent Is Nothing _
+                    AndAlso Not Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl))
+                        path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
+                                              parent.DisplayName, parent.AddressBarDisplayName), path)
+                        parent = parent.Parent
+                    End While
+                    Return path
+                ElseIf Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(Me.Pidl)) Then
+                    Return Me.DisplayName
                 Else
-                    Return Me.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar)
+                    Return Me.FullPath
                 End If
+            Else
+                Return IO.Path.Combine(Me.AddressBarRoot, If(String.IsNullOrWhiteSpace(Me.AddressBarDisplayName),
+                                                              Me.DisplayName, Me.AddressBarDisplayName))
             End If
         End Get
     End Property
@@ -955,7 +972,7 @@ Public Class Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
 
         Dim specialFolder As Folder =
-            Shell.GetSpecialFolders().Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)?.Clone()
+            Shell.GetSpecialFolders().Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)
         If Not specialFolder Is Nothing Then
             Return specialFolder
         End If
@@ -992,14 +1009,14 @@ Public Class Item
 
             If isNetworkPath Then
                 ' network path
-                folder = Shell.GetSpecialFolder("Network").Clone()
+                folder = Shell.GetSpecialFolder("Network")
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.GetSpecialFolder("This computer").Clone()
+                folder = Shell.GetSpecialFolder("This computer")
             Else
                 ' root must be some special folder
                 folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
-                                                                         OrElse f.FullPath.ToLower() = parts(0).ToLower())?.Clone()
+                                                                         OrElse f.FullPath.ToLower() = parts(0).ToLower())
                 start = 1
             End If
 
@@ -1011,6 +1028,9 @@ Public Class Item
                         subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
                     Else
                         subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
+                    End If
+                    If subFolder Is Nothing Then
+                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(j).ToLower())
                     End If
                     folder = subFolder
                     If folder Is Nothing Then Exit For
@@ -1028,7 +1048,7 @@ Public Class Item
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
 
         Dim specialFolder As Folder =
-            Shell.GetSpecialFolders().Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)?.Clone()
+            Shell.GetSpecialFolders().Values.ToList().FirstOrDefault(Function(f) f.FullPath = parsingName)
         If Not specialFolder Is Nothing Then
             Return specialFolder
         End If
@@ -1065,14 +1085,14 @@ Public Class Item
 
             If isNetworkPath Then
                 ' network path
-                folder = Shell.GetSpecialFolder("Network").Clone()
+                folder = Shell.GetSpecialFolder("Network")
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.GetSpecialFolder("This computer").Clone()
+                folder = Shell.GetSpecialFolder("This computer")
             Else
                 ' root must be some special folder
                 folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
-                                                                         OrElse f.FullPath.ToLower() = parts(0).ToLower())?.Clone()
+                                                                         OrElse f.FullPath.ToLower() = parts(0).ToLower())
                 start = 1
             End If
 
@@ -1084,6 +1104,9 @@ Public Class Item
                         subFolder = (folder.GetItems()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
                     Else
                         subFolder = (folder.GetItems()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
+                    End If
+                    If subFolder Is Nothing Then
+                        subFolder = (folder.GetItems()).FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(j).ToLower())
                     End If
                     folder = subFolder
                     If folder Is Nothing Then Exit For

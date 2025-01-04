@@ -69,11 +69,12 @@ Namespace Controls
             AddHandler Me.PART_ClickToEdit.MouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
                     _isSettingTextInternally = True
-                    Me.Text = Me.Folder.AddressBarDisplayName
+                    Me.Text = Me.Folder.AddressBarDisplayPath
                     _isSettingTextInternally = False
                     PART_NavigationButtons.Visibility = Visibility.Hidden
                     Me.PART_TextBox.IsEnabled = True
-                    Me.PART_TextBox.SelectionStart = Me.Text.Length
+                    Me.PART_TextBox.SelectionStart = 0
+                    Me.PART_TextBox.SelectionLength = Me.Text.Length
                     Me.PART_TextBox.Focus()
                 End Sub
             AddHandler Me.PART_TextBox.PreviewKeyDown,
@@ -364,9 +365,12 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim ab As AddressBar = TryCast(d, AddressBar)
-            ab.SelectedItem = e.NewValue
+            Dim f As Folder = e.NewValue
+            ab.SelectedItem = f
+            f.AddressBarRoot = Nothing
+            f.AddressBarDisplayName = Nothing
             ab.IsLoading = True
-            ab.ShowNavigationButtons(e.NewValue, True)
+            ab.ShowNavigationButtons(f, True)
         End Sub
 
         Public Property IsLoading As Boolean
