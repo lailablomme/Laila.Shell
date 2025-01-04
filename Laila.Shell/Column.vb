@@ -20,7 +20,7 @@ Public Class Column
         _isVisible = Me.State.HasFlag(CM_STATE.VISIBLE)
 
         Functions.PSGetPropertyDescription(propertyKey, GetType(IPropertyDescription).GUID, _propertyDescription)
-        _propertyDescription.GetViewFlags(_viewFlags)
+        If Not _propertyDescription Is Nothing Then _propertyDescription.GetViewFlags(_viewFlags)
     End Sub
 
     Public ReadOnly Property CanonicalName As String

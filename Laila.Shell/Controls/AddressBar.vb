@@ -44,6 +44,15 @@ Namespace Controls
             PART_NavigationButtons = Template.FindName("PART_NavigationButtons", Me)
             PART_ClickToEdit = Template.FindName("PART_ClickToEdit", Me)
 
+            AddHandler Window.GetWindow(Me).PreviewMouseDown,
+                Sub(s As Object, e As MouseButtonEventArgs)
+                    Dim parent As AddressBar = UIHelper.GetParentOfType(Of AddressBar)(e.OriginalSource)
+                    If (parent Is Nothing OrElse Not parent.Equals(Me)) _
+                        AndAlso Me.PART_TextBox.IsKeyboardFocusWithin Then
+                        Me.Cancel()
+                    End If
+                End Sub
+
             AddHandler Shell.Settings.PropertyChanged,
                 Sub(s As Object, e As PropertyChangedEventArgs)
                     Select Case e.PropertyName
