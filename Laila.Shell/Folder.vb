@@ -28,7 +28,6 @@ Public Class Folder
     Private _enumerationException As Exception
     Friend _isEnumerated As Boolean
     Private _isActiveInFolderView As Boolean
-    Private _isVisibleInAddressBar As Boolean
     Private _isInHistory As Boolean
     Private _view As String
     Private _hasSubFolders As Boolean?
@@ -133,15 +132,6 @@ Public Class Folder
             If Not value AndAlso TypeOf Me Is SearchFolder AndAlso Me.IsLoading Then
                 Me.CancelEnumeration()
             End If
-        End Set
-    End Property
-
-    Public Property IsVisibleInAddressBar As Boolean
-        Get
-            Return _isVisibleInAddressBar
-        End Get
-        Set(value As Boolean)
-            SetValue(_isVisibleInAddressBar, value)
         End Set
     End Property
 

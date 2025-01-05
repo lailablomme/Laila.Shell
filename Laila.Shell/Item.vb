@@ -33,6 +33,7 @@ Public Class Item
     Friend _shellItemLock As Object = New Object()
     Protected _doKeepAlive As Boolean
     Private _contentViewModeProperties() As [Property]
+    Private _isVisibleInAddressBar As Boolean
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
@@ -124,6 +125,15 @@ Public Class Item
         End Get
     End Property
 
+    Public Property IsVisibleInAddressBar As Boolean
+        Get
+            Return _isVisibleInAddressBar
+        End Get
+        Set(value As Boolean)
+            SetValue(_isVisibleInAddressBar, value)
+        End Set
+    End Property
+
     Public ReadOnly Property IsVisibleInTree As Boolean
         Get
             Return Me.TreeRootIndex <> -1 OrElse (Not _parent Is Nothing AndAlso _parent.IsExpanded)
@@ -134,7 +144,7 @@ Public Class Item
         Get
             Return Not _doKeepAlive _
                 AndAlso (_parent Is Nothing OrElse (Not _parent.IsActiveInFolderView)) _
-                AndAlso Not Me.IsVisibleInTree
+                AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar
         End Get
     End Property
 

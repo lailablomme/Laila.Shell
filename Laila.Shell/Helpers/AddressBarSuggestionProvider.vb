@@ -6,7 +6,7 @@ Namespace Helpers
         Implements ISuggestionProviderAsync
 
         Friend _folder As Folder
-        Friend _items As List(Of Folder)
+        Friend _items As List(Of Item)
         Friend _lock As Object = New Object()
 
         Public Async Function GetSuggestions(filter As String) As Task(Of IEnumerable) Implements ISuggestionProviderAsync.GetSuggestions
@@ -61,7 +61,7 @@ Namespace Helpers
                         End If
                         items = items.Union((Await folder.GetItemsAsync()).OrderBy(Function(f) f.AddressBarDisplayPath)).ToList()
                     ElseIf String.IsNullOrWhiteSpace(folderName) Then
-                        items = AddressBarHistory.GetHistory().Union(
+                        items = AddressBarHistory.GetHistory(fileName).Union(
                             Shell.GetSpecialFolders().Values.ToList().OrderBy(Function(f) f.AddressBarDisplayPath)) _
                                 .Cast(Of Item).ToList()
                     Else
@@ -71,16 +71,16 @@ Namespace Helpers
                     ' filter items
                     Dim byPath As List(Of Item) =
                         items.Where(Function(f) _
-                            If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
-                                f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
-                                f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar)) _
-                                    .ToLower().StartsWith(fileName.ToLower())).ToList()
+                            If(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
+                               f.FullPath.Trim(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
+                               f.FullPath.Trim(IO.Path.DirectorySeparatorChar)) _
+                                   .ToLower().StartsWith(fileName.ToLower())).ToList()
                     If Not folder Is Nothing Then
                         For Each f In byPath
                             f.AddressBarDisplayName =
-                                If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
-                                    f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
-                                    f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar))
+                                If(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
+                                   f.FullPath.Trim(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
+                                   f.FullPath.Trim(IO.Path.DirectorySeparatorChar))
                         Next
                     End If
                     Dim byDisplayName As List(Of Item) =
@@ -114,7 +114,7 @@ Namespace Helpers
 
                     SyncLock _lock
                         ' release previous folder
-                        If Not _folder Is Nothing Then
+                        If Not _folder Is Nothing AndAlso Not items.Contains(_folder) AndAlso Not _folder.Equals(folder) Then
                             _folder.IsVisibleInAddressBar = False
                         End If
 
@@ -126,13 +126,13 @@ Namespace Helpers
 
                         ' release previous items
                         If Not _items Is Nothing Then
-                            For Each item In _items
+                            For Each item In _items.Where(Function(i) Not items.Contains(i) AndAlso Not i.Equals(_folder))
                                 item.IsVisibleInAddressBar = False
                             Next
                         End If
 
                         ' remember current items and prevent them from getting disposed
-                        _items = items.Where(Function(i) TypeOf i Is Folder).Cast(Of Folder).ToList()
+                        _items = items.ToList()
                         For Each item In _items
                             item.IsVisibleInAddressBar = True
                         Next

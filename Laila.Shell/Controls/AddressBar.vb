@@ -82,6 +82,7 @@ Namespace Controls
             AddHandler Me.PART_ClickToEdit.MouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
                     _isSettingTextInternally = True
+                    Me.SelectedItem = Me.Folder
                     Me.Text = Me.Folder.AddressBarDisplayPath
                     _isSettingTextInternally = False
                     PART_NavigationButtons.Visibility = Visibility.Hidden
@@ -138,10 +139,9 @@ Namespace Controls
                 End If
             ElseIf Not Me.SelectedItem Is Nothing Then
                 If TypeOf Me.SelectedItem Is Folder Then
-                    Dim doShow As Boolean = CType(Me.SelectedItem, Folder).Pidl.Equals(Me.Folder.Pidl)
-                    CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
-                    Me.Folder = Me.SelectedItem
-                    If Not doShow Then
+                    If Not CType(Me.SelectedItem, Folder).Pidl.Equals(Me.Folder.Pidl) Then
+                        CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
+                        Me.Folder = Me.SelectedItem
                         Me.IsLoading = True
                         Me.ShowNavigationButtons(Me.Folder, False)
                         AddressBarHistory.Track(Me.Folder)
@@ -149,6 +149,7 @@ Namespace Controls
                         Me.Cancel()
                     End If
                 Else
+                    AddressBarHistory.Track(Me.SelectedItem)
                     Menus.InvokeDefaultCommand(Me.SelectedItem)
                     Me.Cancel()
                 End If
@@ -180,7 +181,7 @@ Namespace Controls
 
                 ' release items
                 If Not provider._items Is Nothing Then
-                    For Each item In provider._items.Where(Function(f2) Not _visibleFolders.Contains(f2))
+                    For Each item In provider._items.Where(Function(i) Not TypeOf i Is Folder OrElse Not _visibleFolders.Contains(i))
                         item.IsVisibleInAddressBar = False
                     Next
                     provider._items = Nothing
