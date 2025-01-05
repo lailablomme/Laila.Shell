@@ -9,6 +9,7 @@ Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Data
 Imports System.Windows.Input
+Imports System.Windows.Interop
 Imports System.Windows.Media
 
 Namespace Controls
@@ -30,6 +31,7 @@ Namespace Controls
         Private disposedValue As Boolean
         Private ReadOnly _lock As New SemaphoreSlim(1, 1)
         Private _menu As RightClickMenu
+        Private _source As HwndSource
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(AddressBar), New FrameworkPropertyMetadata(GetType(AddressBar)))
@@ -52,6 +54,17 @@ Namespace Controls
                         Me.Cancel()
                     End If
                 End Sub
+
+            AddHandler Window.GetWindow(Me).Deactivated,
+                Sub(s As Object, e As EventArgs)
+                    If Me.PART_TextBox.IsKeyboardFocusWithin Then
+                        Me.Cancel()
+                    End If
+                End Sub
+
+            Dim hWnd As IntPtr = New WindowInteropHelper(Window.GetWindow(Me)).Handle
+            _source = HwndSource.FromHwnd(hWnd)
+            _source.AddHook(AddressOf HwndHook)
 
             AddHandler Shell.Settings.PropertyChanged,
                 Sub(s As Object, e As PropertyChangedEventArgs)
@@ -93,6 +106,17 @@ Namespace Controls
                     End If
                 End Sub
         End Sub
+
+        Private Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
+            Select Case CType(msg, WM)
+                Case WM.NCLBUTTONDOWN, WM.NCMBUTTONDOWN, WM.NCRBUTTONDOWN
+                    If Me.PART_TextBox.IsKeyboardFocusWithin Then
+                        Me.Cancel()
+                    End If
+            End Select
+
+            Return IntPtr.Zero
+        End Function
 
         Protected Overrides Sub OnItemSelected()
             Me.PART_TextBox.IsEnabled = False
@@ -421,6 +445,8 @@ Namespace Controls
                         f.IsVisibleInAddressBar = False
                     Next
                     _visibleFolders.Clear()
+
+                    _source.RemoveHook(AddressOf HwndHook)
 
                     Shell.RemoveFromControlCache(Me)
                 End If
