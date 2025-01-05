@@ -34,6 +34,20 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
         End Sub
 
+        Public Shared Sub InvokeDefaultCommand(item As Item)
+            If Not _rightClickMenu Is Nothing Then
+                _rightClickMenu.Dispose()
+            End If
+
+            _rightClickMenu = New RightClickMenu()
+            _rightClickMenu.Folder = If(item.Parent Is Nothing, item, item.Parent)
+            _rightClickMenu.SelectedItems = {item}
+            _rightClickMenu.IsDefaultOnly = True
+
+            _rightClickMenu.Make()
+            _rightClickMenu.InvokeCommand(_rightClickMenu.DefaultId)
+        End Sub
+
         Friend Shared Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
             Dim originalName As String, ext As String = "", isDrive As Boolean, isWithExt As Boolean
             Dim doHideKnownFileExtensions As Boolean = Shell.Settings.DoHideKnownFileExtensions

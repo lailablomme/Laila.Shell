@@ -42,41 +42,60 @@ Namespace Helpers
                     Dim items As List(Of Item)
                     If Not folder Is Nothing Then
                         folder.IsVisibleInAddressBar = True
-                        Dim byPath As List(Of Item) =
-                            (Await folder.GetItemsAsync()).Where(Function(f) _
-                                If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
-                                   f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
-                                   f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar)) _
-                                       .ToLower().StartsWith(fileName.ToLower())).ToList()
+                        If String.IsNullOrWhiteSpace(fileName) Then
+                            items = {folder}.Cast(Of Item).ToList()
+                        Else
+                            items = New List(Of Item)()
+                        End If
+                        items = items.Union((Await folder.GetItemsAsync()).OrderBy(Function(f) f.AddressBarDisplayPath)).ToList()
+                    ElseIf String.IsNullOrWhiteSpace(folderName) Then
+                        items = AddressBarHistory.GetHistory().Union(
+                            Shell.GetSpecialFolders().Values.ToList().OrderBy(Function(f) f.AddressBarDisplayPath)) _
+                                .Cast(Of Item).ToList()
+                    Else
+                        items = New List(Of Item)()
+                    End If
+
+                    Dim byPath As List(Of Item) =
+                        items.Where(Function(f) _
+                            If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
+                                f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
+                                f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar)) _
+                                    .ToLower().StartsWith(fileName.ToLower())).ToList()
+                    If Not folder Is Nothing Then
                         For Each f In byPath
                             f.AddressBarDisplayName =
                                 If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
-                                   f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
-                                   f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar))
+                                    f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
+                                    f.FullPath.TrimEnd(IO.Path.DirectorySeparatorChar))
                         Next
-                        Dim byDisplayName As List(Of Item) =
-                            (Await folder.GetItemsAsync()).Where(Function(f) _
-                                Not f.DisplayName Is Nothing AndAlso f.DisplayName.ToLower().StartsWith(fileName.ToLower())).ToList()
+                    End If
+                    Dim byDisplayName As List(Of Item) =
+                        items.Where(Function(f) _
+                            Not f.DisplayName Is Nothing AndAlso f.DisplayName.ToLower().StartsWith(fileName.ToLower())).ToList()
+                    If Not folder Is Nothing Then
                         For Each f In byDisplayName
                             f.AddressBarDisplayName = f.DisplayName
                         Next
-                        items = byDisplayName.Union(byPath).Distinct().OrderBy(Function(f) f.AddressBarDisplayPath).ToList()
+                    End If
+                    items = byDisplayName.Union(byPath).Distinct().ToList()
+                    If Not folder Is Nothing Then
                         For Each f In items
-                            f.AddressBarRoot = folderName
+                            If Not f.Equals(folder) Then
+                                f.AddressBarRoot = folderName
+                            Else
+                                f.AddressBarRoot = Nothing
+                                f.AddressBarDisplayName = folderName
+                            End If
                         Next
-                    ElseIf String.IsNullOrWhiteSpace(folderName) Then
-                        items = Shell.GetSpecialFolders().Values.Where(Function(f) f.DisplayName.ToLower().StartsWith(fileName.ToLower()) _
-                                                                       OrElse f.FullPath.ToLower().StartsWith(fileName.ToLower())) _
-                                                                .OrderBy(Function(f) f.DisplayName).Cast(Of Item).ToList()
-                    Else
-                        items = New List(Of Item)()
                     End If
 
                     If Not _folder Is Nothing Then
                         _folder.IsVisibleInAddressBar = False
                     End If
                     _folder = folder
-                    Return items
+
+                    Return items.Take(15)
                 End Function
 
             Return Await Task.Run(func)

@@ -15,6 +15,13 @@ Public Class Pidl
         _lastId = Functions.ILFindLastID(_pidl)
     End Sub
 
+    Public Sub New(pidl As String)
+        Dim bytes As Byte() = pidl.Split("-"c).Select(Function(hex) Convert.ToByte(hex, 16)).ToArray()
+        _pidl = Marshal.AllocCoTaskMem(bytes.Length)
+        Marshal.Copy(bytes, 0, _pidl, bytes.Length)
+        _lastId = Functions.ILFindLastID(_pidl)
+    End Sub
+
     Public Shared Function CreateShellIDListArray(items As IEnumerable(Of Item)) As IntPtr
         Dim pidls As List(Of Pidl) = New List(Of Pidl)()
         For Each item In items
@@ -161,6 +168,10 @@ Public Class Pidl
 
     Public Shadows Function Equals(pidl As Pidl) As Boolean
         Return Functions.ILIsEqual(Me.AbsolutePIDL, pidl.AbsolutePIDL)
+    End Function
+
+    Public Overrides Function ToString() As String
+        Return BitConverter.ToString(Me.Bytes)
     End Function
 
     Public Function Clone() As Pidl

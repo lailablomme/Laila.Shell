@@ -670,9 +670,11 @@ Public Class Item
                     End While
                     Return path
                 ElseIf Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(Me.Pidl)) Then
-                    Return Me.DisplayName
+                    Return If(String.IsNullOrWhiteSpace(Me.AddressBarDisplayName),
+                              Me.DisplayName, Me.AddressBarDisplayName)
                 Else
-                    Return Me.FullPath
+                    Return If(String.IsNullOrWhiteSpace(Me.AddressBarDisplayName),
+                              Me.FullPath, Me.AddressBarDisplayName)
                 End If
             Else
                 Return IO.Path.Combine(Me.AddressBarRoot, If(String.IsNullOrWhiteSpace(Me.AddressBarDisplayName),

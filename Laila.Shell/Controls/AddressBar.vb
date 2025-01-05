@@ -89,6 +89,7 @@ Namespace Controls
                     Me.PART_TextBox.SelectionStart = 0
                     Me.PART_TextBox.SelectionLength = Me.Text.Length
                     Me.PART_TextBox.Focus()
+                    Me.PART_DropDownButton.IsChecked = True
                 End Sub
             AddHandler Me.PART_TextBox.PreviewKeyDown,
                 Sub(s As Object, e As KeyEventArgs)
@@ -96,7 +97,7 @@ Namespace Controls
                         Select Case e.Key
                             Case Key.Enter
                                 If Not Me.IsDirty Then
-                                    Me.OnItemSelected()
+                                    Me.Cancel()
                                 End If
                             Case Key.Escape
                                 If Not Me.IsDirty Then
@@ -127,7 +128,8 @@ Namespace Controls
                     CType(item, Folder).LastScrollOffset = New Point()
                     Me.Folder = item
                     Me.SelectedItem = item
-                    CType(item, Folder).IsVisibleInAddressBar = True
+                    Me.Folder.IsVisibleInAddressBar = True
+                    AddressBarHistory.Track(Me.Folder)
                 Else
                     System.Media.SystemSounds.Asterisk.Play()
                     Me.Cancel()
@@ -135,12 +137,20 @@ Namespace Controls
                     Me.ShowNavigationButtons(Me.Folder, False)
                 End If
             ElseIf Not Me.SelectedItem Is Nothing Then
-                Dim doShow As Boolean = Me.SelectedItem.Equals(Me.Folder)
-                CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
-                Me.Folder = Me.SelectedItem
-                If doShow Then
-                    Me.IsLoading = True
-                    Me.ShowNavigationButtons(Me.Folder, False)
+                If TypeOf Me.SelectedItem Is Folder Then
+                    Dim doShow As Boolean = CType(Me.SelectedItem, Folder).Pidl.Equals(Me.Folder.Pidl)
+                    CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
+                    Me.Folder = Me.SelectedItem
+                    If Not doShow Then
+                        Me.IsLoading = True
+                        Me.ShowNavigationButtons(Me.Folder, False)
+                        AddressBarHistory.Track(Me.Folder)
+                    Else
+                        Me.Cancel()
+                    End If
+                Else
+                    Menus.InvokeDefaultCommand(Me.SelectedItem)
+                    Me.Cancel()
                 End If
             Else
                 Me.Cancel()

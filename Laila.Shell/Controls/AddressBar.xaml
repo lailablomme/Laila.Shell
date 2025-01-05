@@ -152,7 +152,7 @@
 
                                         <Popup x:Name="PART_Popup" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=OneWay}"
                                        MinWidth="{TemplateBinding ActualWidth}" Focusable="False" AllowsTransparency="True" Placement="Bottom" 
-                                       PlacementTarget="{Binding ElementName=PART_Grid}" PopupAnimation="Fade" StaysOpen="False">
+                                       PlacementTarget="{Binding ElementName=PART_Grid}" PopupAnimation="Fade" StaysOpen="True">
                                             <Border Background="White" BorderThickness="1" BorderBrush="Gray" CornerRadius="5" Padding="2">
                                                 <Grid>
                                                     <ListBox x:Name="PART_ListBox" VirtualizingPanel.IsVirtualizing="True"
