@@ -155,6 +155,8 @@ Namespace Controls
             Else
                 Me.Cancel()
             End If
+
+            releaseItems()
         End Sub
 
         Protected Overrides Sub Cancel()
@@ -163,6 +165,27 @@ Namespace Controls
             Me.PART_TextBox.IsEnabled = False
             Me.IsLoading = True
             Me.ShowNavigationButtons(Me.Folder, False)
+
+            releaseItems()
+        End Sub
+
+        Private Sub releaseItems()
+            Dim provider As AddressBarSuggestionProvider = Me.Provider
+            SyncLock provider._lock
+                ' release folder
+                If Not provider._folder Is Nothing AndAlso Not _visibleFolders.Contains(provider._folder) Then
+                    provider._folder.IsVisibleInAddressBar = False
+                    provider._folder = Nothing
+                End If
+
+                ' release items
+                If Not provider._items Is Nothing Then
+                    For Each item In provider._items.Where(Function(f2) Not _visibleFolders.Contains(f2))
+                        item.IsVisibleInAddressBar = False
+                    Next
+                    provider._items = Nothing
+                End If
+            End SyncLock
         End Sub
 
         Protected Overrides Sub TextBox_LostFocus(s As Object, e As RoutedEventArgs)

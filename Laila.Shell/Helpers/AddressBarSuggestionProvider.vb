@@ -1,21 +1,24 @@
 ﻿Imports System.IO
-Imports System.Threading
-Imports System.Windows.Media
 Imports Laila.AutoCompleteTextBox
 
 Namespace Helpers
     Public Class AddressBarSuggestionProvider
         Implements ISuggestionProviderAsync
 
-        Friend _lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
         Friend _folder As Folder
+        Friend _items As List(Of Folder)
+        Friend _lock As Object = New Object()
 
         Public Async Function GetSuggestions(filter As String) As Task(Of IEnumerable) Implements ISuggestionProviderAsync.GetSuggestions
             Dim func As Func(Of Task(Of IEnumerable)) =
                 Async Function() As Task(Of IEnumerable)
+                    ' expand enviroment variables
                     filter = Environment.ExpandEnvironmentVariables(filter).Trim()
-                    Dim folderName As String
-                    Dim fileName As String
+
+                    ' parse foldername and filename
+                    Dim folderName As String = String.Empty
+                    Dim fileName As String = String.Empty
+                    Dim folder As Folder
                     If filter.StartsWith("\\") Then
                         If filter.Substring(2).LastIndexOf(IO.Path.DirectorySeparatorChar) = -1 Then
                             folderName = "\\"
@@ -28,20 +31,29 @@ Namespace Helpers
                         folderName = IO.Path.GetDirectoryName(filter)
                         fileName = IO.Path.GetFileName(filter)
                     End If
-                    Dim folder As Folder
                     If String.IsNullOrWhiteSpace(folderName) Then
                         If filter.Equals(Path.GetPathRoot(filter)) Then
                             folderName = filter
-                            fileName = ""
                         End If
                     End If
+
+                    ' get folder
                     If Not String.IsNullOrWhiteSpace(folderName) Then
-                        If folder Is Nothing Then folder = Item.FromParsingName(folderName, Nothing, False)
+                        If folder Is Nothing Then
+                            If folderName.StartsWith(IO.Path.DirectorySeparatorChar) Then
+                                folder = Item.FromParsingName(IO.Path.Combine(
+                                        (Await Shell.GetSpecialFolder("This computer").GetItemsAsync()).FirstOrDefault()?.FullPath,
+                                        folderName.TrimStart(IO.Path.DirectorySeparatorChar)), Nothing, False)
+                            Else
+                                folder = Item.FromParsingName(folderName, Nothing, False)
+                            End If
+                        End If
                         If folder Is Nothing Then folder = Await Item.FromParsingNameDeepGetAsync(folderName)
                     End If
+
+                    ' get items
                     Dim items As List(Of Item)
                     If Not folder Is Nothing Then
-                        folder.IsVisibleInAddressBar = True
                         If String.IsNullOrWhiteSpace(fileName) Then
                             items = {folder}.Cast(Of Item).ToList()
                         Else
@@ -56,6 +68,7 @@ Namespace Helpers
                         items = New List(Of Item)()
                     End If
 
+                    ' filter items
                     Dim byPath As List(Of Item) =
                         items.Where(Function(f) _
                             If(If(f.FullPath.StartsWith("\\"), f.FullPath.Substring(2), f.FullPath).TrimEnd(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
@@ -78,7 +91,9 @@ Namespace Helpers
                             f.AddressBarDisplayName = f.DisplayName
                         Next
                     End If
-                    items = byDisplayName.Union(byPath).Distinct().ToList()
+                    items = byDisplayName.Union(byPath).ToList()
+
+                    ' set root
                     If Not folder Is Nothing Then
                         For Each f In items
                             If Not f.Equals(folder) Then
@@ -90,12 +105,41 @@ Namespace Helpers
                         Next
                     End If
 
-                    If Not _folder Is Nothing Then
-                        _folder.IsVisibleInAddressBar = False
-                    End If
-                    _folder = folder
+                    ' get distinct
+                    Dim pidls As List(Of String) = New List(Of String)()
+                    For Each item In items
+                        pidls.Add(item.Pidl.ToString())
+                    Next
+                    items = pidls.Distinct().Select(Function(p) items.FirstOrDefault(Function(i) i.Pidl.ToString().Equals(p))).ToList()
 
-                    Return items.Take(15)
+                    SyncLock _lock
+                        ' release previous folder
+                        If Not _folder Is Nothing Then
+                            _folder.IsVisibleInAddressBar = False
+                        End If
+
+                        ' remember current folder and prevent it from getting disposed
+                        _folder = folder
+                        If Not _folder Is Nothing Then
+                            _folder.IsVisibleInAddressBar = True
+                        End If
+
+                        ' release previous items
+                        If Not _items Is Nothing Then
+                            For Each item In _items
+                                item.IsVisibleInAddressBar = False
+                            Next
+                        End If
+
+                        ' remember current items and prevent them from getting disposed
+                        _items = items.Where(Function(i) TypeOf i Is Folder).Cast(Of Folder).ToList()
+                        For Each item In _items
+                            item.IsVisibleInAddressBar = True
+                        Next
+
+                        ' take 15
+                        Return items.Take(15)
+                    End SyncLock
                 End Function
 
             Return Await Task.Run(func)
