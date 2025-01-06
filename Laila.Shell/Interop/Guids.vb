@@ -23,5 +23,6 @@
     Public Shared Property CLSID_SearchFolderItemFactory As Guid = New Guid("14010e02-bbbd-41f0-88e3-eda371216584")
     Public Shared Property CLSID_QueryParserManager As Guid = New Guid("5088B39A-29B4-4d9d-8245-4EE289222F66")
     Public Shared Property CLSID_ExplorerBrowser As Guid = New Guid("71f96385-ddd6-48d3-a0c1-ae06e8b055fb")
+    Public Shared Property FOLDERTYPEID_GenericSearchResults As Guid = New Guid("7FDE1A1E-8B31-49A5-93B8-6BE14CFA4943")
     'https://gist.githubusercontent.com/stevemk14ebr/af8053c506ef895cd520f8017a81f913/raw/98944bc6ae995229d5231568a8ae73dd287e8b4f/guids
 End Class

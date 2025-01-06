@@ -1177,6 +1177,8 @@ Public Class Item
                     If Me.FullPath?.Equals(e.Item1?.FullPath) Then
                         Dim oldPidl As Pidl = Me.Pidl
                         _pidl = e.Item2.Pidl.Clone()
+                        PinnedItems.RenameItem(oldPidl, _pidl)
+                        FrequentFolders.RenameItem(oldPidl, _pidl)
                         oldPidl.Dispose()
                         Me.Refresh()
                     End If

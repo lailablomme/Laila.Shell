@@ -21,14 +21,20 @@ Namespace Helpers
                             Dim history2 As List(Of Item) = New List(Of Item)()
                             Dim count As Integer = 0
                             For Each historyItem In history1
-                                Dim pidl As Pidl = New Pidl(historyItem.Pidl)
-                                Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
-                                If Not i Is Nothing Then
-                                    history2.Add(i)
-                                    count += 1
-                                    If count = 15 Then Exit For
-                                End If
-                                pidl.Dispose()
+                                Dim pidl As Pidl
+                                Try
+                                    pidl = New Pidl(historyItem.Pidl)
+                                    Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
+                                    If Not i Is Nothing Then
+                                        history2.Add(i)
+                                        count += 1
+                                        If count = 15 Then Exit For
+                                    End If
+                                Finally
+                                    If Not pidl Is Nothing Then
+                                        pidl.Dispose()
+                                    End If
+                                End Try
                             Next
 
                             tcs.SetResult(history2)

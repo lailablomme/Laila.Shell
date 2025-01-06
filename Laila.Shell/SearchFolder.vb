@@ -39,6 +39,7 @@ Public Class SearchFolder
         qs.Resolve(cond, &H40, st, resolvedCond)
         factory.SetCondition(resolvedCond)
         factory.SetDisplayName("Search results for " & parent.DisplayName)
+        factory.SetFolderTypeID(Guids.FOLDERTYPEID_GenericSearchResults)
         Dim shellItem As IShellItem2
         factory.GetShellItem(GetType(IShellItem2).GUID, shellItem)
         Return shellItem

@@ -488,9 +488,9 @@ Namespace Controls
                             e2.IsHandled = True
                         Case "laila.shell.(un)pin"
                             If e2.IsChecked Then
-                                PinnedItems.PinItem(Me.SelectedItems(0).FullPath)
+                                PinnedItems.PinItem(Me.SelectedItems(0))
                             Else
-                                PinnedItems.UnpinItem(Me.SelectedItems(0).FullPath)
+                                PinnedItems.UnpinItem(Me.SelectedItems(0).Pidl)
                             End If
                             e2.IsHandled = True
                     End Select

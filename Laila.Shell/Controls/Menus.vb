@@ -104,12 +104,6 @@ Namespace Controls
                             h = fileOperation.PerformOperations()
                             Debug.WriteLine("PerformOperations returned " & h)
                             Marshal.ReleaseComObject(fileOperation)
-
-                            ' notify pinned items & frequent folders
-                            Dim newFullPath As String =
-                                item.FullPath.Substring(0, item.FullPath.LastIndexOf(IO.Path.DirectorySeparatorChar) + 1) + composedFullName
-                            PinnedItems.RenameItem(item.FullPath, newFullPath)
-                            FrequentFolders.RenameItem(item.FullPath, newFullPath)
                         End If
                     End If
                 End Sub

@@ -56,7 +56,7 @@ Namespace Controls
                 Dim test As Item = Item.FromParsingName(Me.SelectedItems(0).FullPath, Nothing, True)
                 If Not test Is Nothing Then ' this won't work for all items 
                     test.Dispose()
-                    Dim isPinned As Boolean = PinnedItems.GetIsPinned(Me.SelectedItems(0).FullPath)
+                    Dim isPinned As Boolean = PinnedItems.GetIsPinned(Me.SelectedItems(0))
                     Me.Buttons.Add(MakeToggleButton(New Tuple(Of Integer, String)(-1, "laila.shell.(un)pin"),
                                                         If(isPinned, "Unpin item", "Pin item"), isPinned))
                 End If

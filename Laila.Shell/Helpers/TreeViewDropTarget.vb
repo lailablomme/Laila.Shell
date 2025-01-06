@@ -88,14 +88,14 @@ Public Class TreeViewDropTarget
             _scrollDirection = Nothing
         End If
         If _newPinnedIndex <> -2 Then
-            For Each fileName In _fileNameList
-                Dim unpinnedIndex As Integer = PinnedItems.UnpinItem(fileName)
+            For Each file In _files
+                Dim unpinnedIndex As Integer = PinnedItems.UnpinItem(file.Pidl)
                 If unpinnedIndex <> -1 AndAlso unpinnedIndex < _newPinnedIndex Then
                     If _newPinnedIndex <> -1 Then _newPinnedIndex -= 1
                 End If
             Next
-            For Each fileName In _fileNameList
-                PinnedItems.PinItem(fileName, _newPinnedIndex)
+            For Each file In _files
+                PinnedItems.PinItem(file, _newPinnedIndex)
                 If _newPinnedIndex <> -1 Then _newPinnedIndex += 1
             Next
             _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
