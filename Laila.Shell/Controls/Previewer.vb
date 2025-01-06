@@ -25,6 +25,7 @@ Namespace Controls
         Private _errorText As String
         Private _timer As Timer
         Private _isMade As Boolean
+        Private _previewItem As Item
         Private PART_Message As TextBlock
         Private PART_Thumbnail As Image
 
@@ -33,6 +34,8 @@ Namespace Controls
         End Sub
 
         Public Sub New()
+            AddHandler Shell.Notification, AddressOf shell_Notification
+
             AddHandler Me.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)
                     If Not _window Is Nothing Then
@@ -143,14 +146,14 @@ Namespace Controls
             previewer._errorText = Nothing
 
             If Not previewer.SelectedItems Is Nothing AndAlso previewer.SelectedItems.Count > 0 AndAlso Not previewer._isMade Then
-                Dim previewItem As Item = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
-                Debug.WriteLine("PreviewItem=" & previewItem.FullPath)
+                previewer._previewItem = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
+                Debug.WriteLine("PreviewItem=" & previewer._previewItem.FullPath)
 
-                previewer._isThumbnail = ImageHelper.IsImage(previewItem.FullPath)
+                previewer._isThumbnail = ImageHelper.IsImage(previewer._previewItem.FullPath)
                 If previewer._isThumbnail Then
                     previewer.setThumbnail()
                 Else
-                    Dim clsid As Guid = getHandlerCLSID(IO.Path.GetExtension(previewItem.FullPath))
+                    Dim clsid As Guid = getHandlerCLSID(IO.Path.GetExtension(previewer._previewItem.FullPath))
                     If Not Guid.Empty.Equals(clsid) Then
                         Debug.WriteLine("IPreviewHandler=" & clsid.ToString())
                         Dim cc As ClassContext = ClassContext.LocalServer
@@ -160,12 +163,12 @@ Namespace Controls
                             h = HRESULT.S_FALSE
                             If Not previewer._handler Is Nothing Then
                                 If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
-                                    If IO.File.Exists(previewItem.FullPath) Then
-                                        h = Functions.SHCreateStreamOnFileEx(previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
+                                    If IO.File.Exists(previewer._previewItem.FullPath) Then
+                                        h = Functions.SHCreateStreamOnFileEx(previewer._previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
                                         Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
                                     Else
-                                        SyncLock previewItem._shellItemLock
-                                            h = previewItem.ShellItem2.BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
+                                        SyncLock previewer._previewItem._shellItemLock
+                                            h = previewer._previewItem.ShellItem2.BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
                                         End SyncLock
                                         Debug.WriteLine("BHID_Stream=" & h.ToString())
                                     End If
@@ -175,11 +178,11 @@ Namespace Controls
                                     End If
                                 End If
                                 If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithFile Then
-                                    h = CType(previewer._handler, IInitializeWithFile).Initialize(previewItem.FullPath, STGM.STGM_READ)
+                                    h = CType(previewer._handler, IInitializeWithFile).Initialize(previewer._previewItem.FullPath, STGM.STGM_READ)
                                     Debug.WriteLine("IPreviewHandler.IInitializeWithFile=" & h.ToString())
                                 End If
                                 If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithItem Then
-                                    h = CType(previewer._handler, IInitializeWithItem).Initialize(previewItem, STGM.STGM_READ)
+                                    h = CType(previewer._handler, IInitializeWithItem).Initialize(previewer._previewItem, STGM.STGM_READ)
                                     Debug.WriteLine("IPreviewHandler.IInitializeWithItem=" & h.ToString())
                                 End If
                                 If h <> HRESULT.S_OK Then
@@ -242,6 +245,7 @@ Namespace Controls
                 previewer.PART_Thumbnail.Visibility = Visibility.Collapsed
             End If
 
+            previewer._previewItem = Nothing
             previewer._isMade = False
 
             previewer.setMessage()
@@ -343,5 +347,29 @@ Namespace Controls
                 End If
             End If
         End Function
+
+        Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+            Dim previewItem As Item = _previewItem
+
+            Select Case e.Event
+                Case SHCNE.UPDATEDIR
+                    If Not previewItem Is Nothing AndAlso previewItem.Parent.FullPath = e.Item1.FullPath Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                hidePreview(Me)
+                                showPreview(Me)
+                            End Sub)
+                    End If
+                Case SHCNE.UPDATEITEM
+                    If Not previewItem Is Nothing _
+                        AndAlso (previewItem.Parent.FullPath = e.Item1.FullPath OrElse previewItem.FullPath = e.Item1.FullPath) Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                hidePreview(Me)
+                                showPreview(Me)
+                            End Sub)
+                    End If
+            End Select
+        End Sub
     End Class
 End Namespace
