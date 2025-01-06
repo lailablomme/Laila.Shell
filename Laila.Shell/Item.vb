@@ -281,6 +281,7 @@ Public Class Item
                     Me.NotifyOfPropertyChange("IsImage")
                     Me.NotifyOfPropertyChange("IsHidden")
                     Me.NotifyOfPropertyChange("IsCompressed")
+                    Me.NotifyOfPropertyChange("IsEncrypted")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIcon")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")

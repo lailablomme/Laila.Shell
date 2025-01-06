@@ -104,6 +104,11 @@ Public Class SearchFolder
             Me.CancelEnumeration()
         End If
 
+        UIHelper.OnUIThread(
+            Sub()
+                _items.Clear()
+            End Sub)
+
         ' set new terms
         Me.Terms = terms
 
@@ -137,10 +142,6 @@ Public Class SearchFolder
                     End If
                 End SyncLock
             Next
-            UIHelper.OnUIThread(
-                Sub()
-                    _items.Clear()
-                End Sub)
 
             ' terminate thread
             If Not _threadCompletionSource.Task.IsCompleted Then
