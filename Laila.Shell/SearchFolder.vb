@@ -144,6 +144,7 @@ Public Class SearchFolder
             ' terminate thread
             If Not _threadCompletionSource.Task.IsCompleted Then
                 _threadCompletionSource.SetResult()
+                _threadCompletionSource = New TaskCompletionSource()
             End If
         End If
     End Sub
