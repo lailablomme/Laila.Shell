@@ -282,7 +282,7 @@ Namespace Controls
             formattedText.TextAlignment = textBlock.TextAlignment
             formattedText.Trimming = TextTrimming.None
 
-            Return formattedText.Height > textBlock.DesiredSize.Height
+            Return Math.Abs(formattedText.Height - textBlock.DesiredSize.Height) > 0.5
         End Function
 
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
