@@ -1,4 +1,6 @@
 Imports System.ComponentModel
+Imports System.Drawing
+Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Text
@@ -468,13 +470,14 @@ Public Class Item
                 Try
                     SyncLock _shellItemLock
                         Dim h As HRESULT, result As ImageSource
-                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
+                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                         If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                             result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                         End If
                         If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
-                        OrElse (Not result Is Nothing AndAlso result.Width < size AndAlso result.Height < size) Then
-                            h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_ICONONLY, hbitmap)
+                        OrElse (Not result Is Nothing AndAlso result.Width < size * Settings.DpiScaleX AndAlso result.Height < size * Settings.DpiScaleY) Then
+                            If Not IntPtr.Zero.Equals(hbitmap) Then Functions.DeleteObject(hbitmap)
+                            h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY, hbitmap)
                             If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                                 result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             Else
@@ -510,13 +513,14 @@ Public Class Item
                 Try
                     SyncLock _shellItemLock
                         Dim h As HRESULT, result As ImageSource
-                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
+                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                         If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                             result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                         End If
                         If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
-                        OrElse (Not result Is Nothing AndAlso result.Width < size AndAlso result.Height < size) Then
-                            h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size, size), 0, hbitmap)
+                        OrElse (Not result Is Nothing AndAlso result.Width < size * Settings.DpiScaleX AndAlso result.Height < size * Settings.DpiScaleY) Then
+                            If Not IntPtr.Zero.Equals(hbitmap) Then Functions.DeleteObject(hbitmap)
+                            h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), 0, hbitmap)
                             If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                                 result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             Else

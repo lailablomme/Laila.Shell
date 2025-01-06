@@ -9,6 +9,13 @@ Imports Laila.Shell.Controls
 
 Public Class Functions
 
+    <DllImport("Shcore.dll", CharSet:=CharSet.Auto)>
+    Public Shared Function GetDpiForMonitor(hmonitor As IntPtr, dpiType As MonitorDpiType, ByRef dpiX As UInteger, ByRef dpiY As UInteger) As Integer
+    End Function
+
+    <DllImport("User32.dll")>
+    Public Shared Function MonitorFromPoint(pt As WIN32POINT, dwFlags As UInteger) As IntPtr
+    End Function
     <DllImport("advapi32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
     Public Shared Function RegSetValueEx(
         hKey As IntPtr,
