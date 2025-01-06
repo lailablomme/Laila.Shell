@@ -445,7 +445,7 @@ Public Class Settings
     End Property
 
     Private Function readDoTypeToSelect() As Boolean
-        Return Not GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, TYPETOSELECT_VALUENAME, False)
+        Return Not GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, TYPETOSELECT_VALUENAME, True)
     End Function
 
     Public Property DoTypeToSelect As Boolean
@@ -473,7 +473,7 @@ Public Class Settings
     End Property
 
     Private Function readDoShowAvailabilityStatusInTreeView() As Boolean
-        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANESHOWALLCLOUDSTATES_VALUENAME, False)
+        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANESHOWALLCLOUDSTATES_VALUENAME, True)
     End Function
 
     Public Property DoShowAvailabilityStatusInTreeView As Boolean
@@ -487,7 +487,7 @@ Public Class Settings
     End Property
 
     Private Function readDoExpandTreeViewToCurrentFolder() As Boolean
-        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANEEXPANDTOCURRENTFOLDER_VALUENAME, False)
+        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANEEXPANDTOCURRENTFOLDER_VALUENAME, True)
     End Function
 
     Public Property DoExpandTreeViewToCurrentFolder As Boolean
