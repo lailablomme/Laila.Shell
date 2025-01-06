@@ -327,14 +327,18 @@ Public Class Item
                 AndAlso (_parent Is Nothing OrElse _parent.disposedValue) _
                 AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
                 Dim parentShellItem2 As IShellItem2
-                SyncLock _shellItemLock
-                    If Not Me.ShellItem2 Is Nothing Then
-                        Me.ShellItem2.GetParent(parentShellItem2)
-                    End If
-                End SyncLock
-                If Not parentShellItem2 Is Nothing Then
-                    _parent = New Folder(parentShellItem2, Nothing, False, True)
-                End If
+                _parent = Shell.RunOnSTAThread(
+                    Sub(tcs As TaskCompletionSource(Of Folder))
+                        SyncLock _shellItemLock
+                            If Not Me.ShellItem2 Is Nothing Then
+                                Me.ShellItem2.GetParent(parentShellItem2)
+                            End If
+                        End SyncLock
+                        If Not parentShellItem2 Is Nothing Then
+                            _parent = New Folder(parentShellItem2, Nothing, False, True)
+                        End If
+                        tcs.SetResult(_parent)
+                    End Sub, 1)
             End If
             Return _parent
         End Get
