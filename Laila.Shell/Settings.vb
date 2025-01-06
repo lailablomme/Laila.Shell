@@ -19,6 +19,7 @@ Public Class Settings
     Private Const TYPETOSELECT_VALUENAME As String = "TypeAhead"
     Private Const NAVPANESHOWALLFOLDERS_VALUENAME As String = "NavPaneShowAllFolders"
     Private Const NAVPANESHOWALLCLOUDSTATES_VALUENAME As String = "NavPaneShowAllCloudStates"
+    Private Const NAVPANEEXPANDTOCURRENTFOLDER_VALUENAME As String = "NavPaneExpandToCurrentFolder"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _isMonitoring As Boolean
@@ -42,6 +43,7 @@ Public Class Settings
     Private _doTypeToSelect As Boolean = True
     Private _doShowAllFoldersInTreeView As Boolean = False
     Private _doShowAvailabilityStatusInTreeView As Boolean = True
+    Private _doExpandTreeViewToCurrentFolder As Boolean = True
 
     Public Sub New()
         Me.StartMonitoring()
@@ -102,6 +104,11 @@ Public Class Settings
                     If Not b = _doShowAvailabilityStatusInTreeView Then
                         _doShowAvailabilityStatusInTreeView = b
                         Me.NotifyOfPropertyChange("DoShowAvailabilityStatusInTreeView")
+                    End If
+                    b = readDoExpandTreeViewToCurrentFolder()
+                    If Not b = _doExpandTreeViewToCurrentFolder Then
+                        _doExpandTreeViewToCurrentFolder = b
+                        Me.NotifyOfPropertyChange("DoExpandTreeViewToCurrentFolder")
                     End If
                 End Sub, _cancel.Token, _stopped2)
 
@@ -462,6 +469,20 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoExpandTreeViewToCurrentFolder() As Boolean
+        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANEEXPANDTOCURRENTFOLDER_VALUENAME, False)
+    End Function
+
+    Public Property DoExpandTreeViewToCurrentFolder As Boolean
+        Get
+            Return _doExpandTreeViewToCurrentFolder
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANEEXPANDTOCURRENTFOLDER_VALUENAME, value)
+            Me.Touch()
+        End Set
+    End Property
+
     Public Sub Touch()
         ' cause Windows Explorer to pick up the changes after we've modified the registry directly
         Dim b As Boolean = Me.IsDoubleClickToOpenItem
@@ -533,6 +554,7 @@ Public Class Settings
                 _doTypeToSelect = readDoTypeToSelect()
                 _doShowAllFoldersInTreeView = readDoShowAllFoldersInTreeView()
                 _doShowAvailabilityStatusInTreeView = readDoShowAvailabilityStatusInTreeView()
+                _doExpandTreeViewToCurrentFolder = readDoExpandTreeViewToCurrentFolder()
             End If
         End Using
     End Sub

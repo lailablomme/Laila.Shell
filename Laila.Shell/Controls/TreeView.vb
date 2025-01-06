@@ -29,6 +29,8 @@ Namespace Controls
         Public Shared ReadOnly DoShowAllFoldersInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFoldersInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAllFoldersInTreeViewOverrideChanged))
         Public Shared ReadOnly DoShowAvailabilityStatusInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowAvailabilityStatusInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowAvailabilityStatusInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAvailabilityStatusInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAvailabilityStatusInTreeViewOverrideChanged))
+        Public Shared ReadOnly DoExpandTreeViewToCurrentFolderProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolder", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoExpandTreeViewToCurrentFolderOverrideProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolderOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoExpandTreeViewToCurrentFolderOverrideChanged))
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -72,12 +74,15 @@ Namespace Controls
                             setDoShowAllFoldersInTreeView()
                         Case "DoShowAvailabilityStatusInTreeView"
                             setDoShowAvailabilityStatusInTreeView()
+                        Case "DoExpandTreeViewToCurrentFolder"
+                            setDoExpandTreeViewToCurrentFolder()
                     End Select
                 End Sub
             setDoShowEncryptedOrCompressedFilesInColor()
             setIsCompactMode()
             setDoShowAllFoldersInTreeView()
             setDoShowAvailabilityStatusInTreeView()
+            setDoExpandTreeViewToCurrentFolder()
 
             AddHandler Shell.FolderNotification,
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
@@ -419,39 +424,40 @@ Namespace Controls
             If Not _isSettingSelectedFolder Then
                 _isSettingSelectedFolder = True
 
-                Await Task.Delay(100)
+                If Me.DoExpandTreeViewToCurrentFolder Then
+                    Await Task.Delay(100)
 
-                Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
-                Dim list As List(Of Folder) = New List(Of Folder)()
-                Dim currentFolder As Folder = folder
-                Dim noRecursive As List(Of String) = New List(Of String)()
-                If Not currentFolder Is Nothing Then
-                    While Not currentFolder Is Nothing _
+                    Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
+                    Dim list As List(Of Folder) = New List(Of Folder)()
+                    Dim currentFolder As Folder = folder
+                    Dim noRecursive As List(Of String) = New List(Of String)()
+                    If Not currentFolder Is Nothing Then
+                        While Not currentFolder Is Nothing _
                         AndAlso Not noRecursive.Contains(currentFolder.Pidl.ToString())
-                        noRecursive.Add(currentFolder.Pidl.ToString())
-                        list.Add(currentFolder)
-                        Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
-                        If currentFolder.TreeRootIndex <> -1 Then Exit While
-                        currentFolder = currentFolder.Parent
-                    End While
+                            noRecursive.Add(currentFolder.Pidl.ToString())
+                            list.Add(currentFolder)
+                            Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
+                            If currentFolder.TreeRootIndex <> -1 Then Exit While
+                            currentFolder = currentFolder.Parent
+                        End While
 
-                    list.Reverse()
+                        list.Reverse()
 
-                    Dim tf As Folder
-                    Dim en As IEnumerator(Of Folder)
-                    Dim en2 As IEnumerator(Of Folder) = list.GetEnumerator()
-                    Dim en3 As IEnumerator(Of Item)
-                    Dim func As Func(Of Folder, Func(Of Task), Task)
-                    Dim cb As System.Func(Of Task)
+                        Dim tf As Folder
+                        Dim en As IEnumerator(Of Folder)
+                        Dim en2 As IEnumerator(Of Folder) = list.GetEnumerator()
+                        Dim en3 As IEnumerator(Of Item)
+                        Dim func As Func(Of Folder, Func(Of Task), Task)
+                        Dim cb As System.Func(Of Task)
 
-                    Dim finish As Action(Of Folder) =
+                        Dim finish As Action(Of Folder) =
                         Sub(finishFolder As Folder)
                             If Not callback Is Nothing Then
                                 callback(finishFolder)
                             End If
                         End Sub
 
-                    Dim findNextRoot2 As Action =
+                        Dim findNextRoot2 As Action =
                         Async Sub()
                             While Not en3 Is Nothing AndAlso tf Is Nothing AndAlso en3.MoveNext()
                                 If en3.Current.FullPath = en2.Current.FullPath Then
@@ -459,7 +465,7 @@ Namespace Controls
                                 End If
                             End While
                         End Sub
-                    Dim findNextRoot As Func(Of Task) =
+                        Dim findNextRoot As Func(Of Task) =
                         Async Function() As Task
                             findNextRoot2()
                             While tf Is Nothing AndAlso en2.MoveNext()
@@ -488,7 +494,7 @@ Namespace Controls
                             finish(Nothing)
                             _isSettingSelectedFolder = False
                         End Function
-                    func =
+                        func =
                         Async Function(item As Folder, callback2 As Func(Of Task)) As Task
                             Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
                             If Not tf2 Is Nothing Then
@@ -502,19 +508,24 @@ Namespace Controls
                                 Await findNextRoot()
                             End If
                         End Function
-                    cb =
+                        cb =
                         Async Function() As Task
                             If Not en Is Nothing AndAlso en.MoveNext() Then
                                 Await func(en.Current, cb)
                             Else
                                 _selectionHelper.SetSelectedItems({tf})
-                                If Not Me.Folder.FullPath = tf?.FullPath Then Me.Folder = tf
+                                If Not Me.Folder?.FullPath = tf?.FullPath Then Me.Folder = tf
                                 finish(tf)
                                 _isSettingSelectedFolder = False
                             End If
                         End Function
 
-                    Await findNextRoot()
+                        Await findNextRoot()
+                    Else
+                        _selectionHelper.SetSelectedItems({folder})
+                        If Not Me.Folder?.FullPath = folder?.FullPath Then Me.Folder = folder
+                        _isSettingSelectedFolder = False
+                    End If
                 Else
                     _isSettingSelectedFolder = False
                 End If
@@ -1000,6 +1011,37 @@ Namespace Controls
         Public Shared Sub OnDoShowAvailabilityStatusInTreeViewOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As TreeView = d
             bfv.setDoShowAvailabilityStatusInTreeView()
+        End Sub
+
+        Public Property DoExpandTreeViewToCurrentFolder As Boolean
+            Get
+                Return GetValue(DoExpandTreeViewToCurrentFolderProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoExpandTreeViewToCurrentFolderProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoExpandTreeViewToCurrentFolder()
+            If Me.DoExpandTreeViewToCurrentFolderOverride.HasValue Then
+                Me.DoExpandTreeViewToCurrentFolder = Me.DoExpandTreeViewToCurrentFolderOverride.Value
+            Else
+                Me.DoExpandTreeViewToCurrentFolder = Shell.Settings.DoExpandTreeViewToCurrentFolder
+            End If
+        End Sub
+
+        Public Property DoExpandTreeViewToCurrentFolderOverride As Boolean?
+            Get
+                Return GetValue(DoExpandTreeViewToCurrentFolderOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoExpandTreeViewToCurrentFolderOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoExpandTreeViewToCurrentFolderOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As TreeView = d
+            bfv.setDoExpandTreeViewToCurrentFolder()
         End Sub
 
         Public Enum TreeRootSection As Long
