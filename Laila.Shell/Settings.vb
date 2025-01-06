@@ -1,10 +1,7 @@
-﻿Imports System.Reflection.Metadata
-Imports System.Runtime.InteropServices
-Imports System.Text
+﻿Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Input
 Imports Laila.Shell.Helpers
-Imports Microsoft.Win32
 
 Public Class Settings
     Inherits NotifyPropertyChangedBase
