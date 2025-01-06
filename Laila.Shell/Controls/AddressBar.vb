@@ -121,43 +121,55 @@ Namespace Controls
         End Function
 
         Protected Overrides Sub OnItemSelected()
-            Me.PART_TextBox.IsEnabled = False
+            Using Shell.OverrideCursor(Cursors.Wait)
+                Me.PART_TextBox.IsEnabled = False
 
-            If INVALID_VALUE.Equals(Me.SelectedValue) Then
-                Dim item As Item = Item.FromParsingName(Me.PART_TextBox.Text, Nothing, False)
-                If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                    CType(item, Folder).LastScrollOffset = New Point()
-                    Me.Folder = item
-                    Me.SelectedItem = item
-                    Me.Folder.IsVisibleInAddressBar = True
-                    AddressBarHistory.Track(Me.Folder)
-                Else
-                    System.Media.SystemSounds.Asterisk.Play()
-                    Me.Cancel()
-                    Me.IsLoading = True
-                    Me.ShowNavigationButtons(Me.Folder, False)
-                End If
-            ElseIf Not Me.SelectedItem Is Nothing Then
-                If TypeOf Me.SelectedItem Is Folder Then
-                    If Not CType(Me.SelectedItem, Folder).Pidl.Equals(Me.Folder.Pidl) Then
-                        CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
-                        Me.Folder = Me.SelectedItem
-                        Me.IsLoading = True
-                        Me.ShowNavigationButtons(Me.Folder, False)
+                If INVALID_VALUE.Equals(Me.SelectedValue) Then
+                    Dim text As String = Me.PART_TextBox.Text
+                    Dim item As Item = Shell.RunOnSTAThread(
+                        Sub(tcs As TaskCompletionSource(Of Item))
+                            tcs.SetResult(Item.FromParsingName(text, Nothing, False))
+                        End Sub, 1)
+                    If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                        CType(item, Folder).LastScrollOffset = New Point()
+                        Me.Folder = item
+                        Me.SelectedItem = item
+                        Me.Folder.IsVisibleInAddressBar = True
                         AddressBarHistory.Track(Me.Folder)
+                    ElseIf Not item Is Nothing AndAlso TypeOf item Is Item Then
+                        AddressBarHistory.Track(item)
+                        Menus.InvokeDefaultCommand(item)
+                        Me.Cancel()
                     Else
+                        System.Media.SystemSounds.Asterisk.Play()
+                        Me.Cancel()
+                    End If
+                ElseIf Not Me.SelectedItem Is Nothing Then
+                    If TypeOf Me.SelectedItem Is Folder Then
+                        Dim selectedItem As Folder = Me.SelectedItem
+                        If Not selectedItem.Pidl.Equals(Me.Folder.Pidl) Then
+                            Dim folder As Folder = Shell.RunOnSTAThread(
+                                Sub(tcs As TaskCompletionSource(Of Folder))
+                                    tcs.SetResult(selectedItem.Clone())
+                                End Sub, 1)
+                            Me.Folder = folder
+                            Me.IsLoading = True
+                            Me.ShowNavigationButtons(folder, False)
+                            AddressBarHistory.Track(folder)
+                        Else
+                            Me.Cancel()
+                        End If
+                    ElseIf TypeOf Me.SelectedItem Is Item Then
+                        AddressBarHistory.Track(Me.SelectedItem)
+                        Menus.InvokeDefaultCommand(Me.SelectedItem)
                         Me.Cancel()
                     End If
                 Else
-                    AddressBarHistory.Track(Me.SelectedItem)
-                    Menus.InvokeDefaultCommand(Me.SelectedItem)
                     Me.Cancel()
                 End If
-            Else
-                Me.Cancel()
-            End If
 
-            releaseItems()
+                releaseItems()
+            End Using
         End Sub
 
         Protected Overrides Sub Cancel()
