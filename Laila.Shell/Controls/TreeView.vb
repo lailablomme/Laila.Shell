@@ -25,8 +25,10 @@ Namespace Controls
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
         Public Shared ReadOnly IsCompactModeProperty As DependencyProperty = DependencyProperty.Register("IsCompactMode", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsCompactModeOverrideProperty As DependencyProperty = DependencyProperty.Register("IsCompactModeOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsCompactModeOverrideChanged))
-        Public Shared ReadOnly DoShowAllFoldersProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFolders", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowAllFoldersOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFoldersOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAllFoldersOverrideChanged))
+        Public Shared ReadOnly DoShowAllFoldersInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFoldersInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowAllFoldersInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFoldersInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAllFoldersInTreeViewOverrideChanged))
+        Public Shared ReadOnly DoShowAvailabilityStatusInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowAvailabilityStatusInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowAvailabilityStatusInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAvailabilityStatusInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAvailabilityStatusInTreeViewOverrideChanged))
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -66,13 +68,16 @@ Namespace Controls
                             setDoShowEncryptedOrCompressedFilesInColor()
                         Case "IsCompactMode"
                             setIsCompactMode()
-                        Case "DoShowAllFolders"
-                            setDoShowAllFolders()
+                        Case "DoShowAllFoldersInTreeView"
+                            setDoShowAllFoldersInTreeView()
+                        Case "DoShowAvailabilityStatusInTreeView"
+                            setDoShowAvailabilityStatusInTreeView()
                     End Select
                 End Sub
             setDoShowEncryptedOrCompressedFilesInColor()
             setIsCompactMode()
-            setDoShowAllFolders()
+            setDoShowAllFoldersInTreeView()
+            setDoShowAvailabilityStatusInTreeView()
 
             AddHandler Shell.FolderNotification,
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
@@ -91,7 +96,7 @@ Namespace Controls
                         Case SHCNE.RMDIR, SHCNE.DELETE
                             UIHelper.OnUIThread(
                                 Async Sub()
-                                    If Not Me.DoShowAllFolders AndAlso Not Me.Items.FirstOrDefault(Function(i) _
+                                    If Not Me.DoShowAllFoldersInTreeView AndAlso Not Me.Items.FirstOrDefault(Function(i) _
                                         Not i.disposedValue _
                                         AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
                                         AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
@@ -104,7 +109,7 @@ Namespace Controls
                         Case SHCNE.UPDATEDIR
                             UIHelper.OnUIThread(
                                 Async Sub()
-                                    If Not Me.DoShowAllFolders AndAlso (Not Me.Items.FirstOrDefault(
+                                    If Not Me.DoShowAllFoldersInTreeView AndAlso (Not Me.Items.FirstOrDefault(
                                         Function(i)
                                             If Not i.disposedValue Then
                                                 Return i.TreeRootIndex >= TreeRootSection.PINNED _
@@ -126,14 +131,14 @@ Namespace Controls
 
             AddHandler PinnedItems.ItemPinned,
                  Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                     If Not Me.DoShowAllFolders Then
+                     If Not Me.DoShowAllFoldersInTreeView Then
                          Await updatePinnedItems()
                          Await updateFrequentFolders()
                      End If
                  End Sub
             AddHandler PinnedItems.ItemUnpinned,
                  Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                     If Not Me.DoShowAllFolders Then
+                     If Not Me.DoShowAllFoldersInTreeView Then
                          Await updatePinnedItems()
                          Await updateFrequentFolders()
                      End If
@@ -155,7 +160,7 @@ Namespace Controls
 
             Dim currentFolder As Folder = Me.Folder
 
-            If Not Me.DoShowAllFolders Then
+            If Not Me.DoShowAllFoldersInTreeView Then
                 Dim tcs As New TaskCompletionSource()
                 Dim homeFolder As Folder, galleryFolder As Folder, thisComputer As Folder, network As Folder
 
@@ -934,36 +939,67 @@ Namespace Controls
             bfv.setIsCompactMode()
         End Sub
 
-        Public Property DoShowAllFolders As Boolean
+        Public Property DoShowAllFoldersInTreeView As Boolean
             Get
-                Return GetValue(DoShowAllFoldersProperty)
+                Return GetValue(DoShowAllFoldersInTreeViewProperty)
             End Get
             Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowAllFoldersProperty, value)
+                SetCurrentValue(DoShowAllFoldersInTreeViewProperty, value)
             End Set
         End Property
 
-        Private Sub setDoShowAllFolders()
-            If Me.DoShowAllFoldersOverride.HasValue Then
-                Me.DoShowAllFolders = Me.DoShowAllFoldersOverride.Value
+        Private Sub setDoShowAllFoldersInTreeView()
+            If Me.DoShowAllFoldersInTreeViewOverride.HasValue Then
+                Me.DoShowAllFoldersInTreeView = Me.DoShowAllFoldersInTreeViewOverride.Value
             Else
-                Me.DoShowAllFolders = Shell.Settings.DoShowAllFolders
+                Me.DoShowAllFoldersInTreeView = Shell.Settings.DoShowAllFoldersInTreeView
             End If
             loadRoots()
         End Sub
 
-        Public Property DoShowAllFoldersOverride As Boolean?
+        Public Property DoShowAllFoldersInTreeViewOverride As Boolean?
             Get
-                Return GetValue(DoShowAllFoldersOverrideProperty)
+                Return GetValue(DoShowAllFoldersInTreeViewOverrideProperty)
             End Get
             Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowAllFoldersOverrideProperty, value)
+                SetCurrentValue(DoShowAllFoldersInTreeViewOverrideProperty, value)
             End Set
         End Property
 
-        Public Shared Sub OnDoShowAllFoldersOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Public Shared Sub OnDoShowAllFoldersInTreeViewOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As TreeView = d
-            bfv.setDoShowAllFolders()
+            bfv.setDoShowAllFoldersInTreeView()
+        End Sub
+
+        Public Property DoShowAvailabilityStatusInTreeView As Boolean
+            Get
+                Return GetValue(DoShowAvailabilityStatusInTreeViewProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowAvailabilityStatusInTreeViewProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowAvailabilityStatusInTreeView()
+            If Me.DoShowAvailabilityStatusInTreeViewOverride.HasValue Then
+                Me.DoShowAvailabilityStatusInTreeView = Me.DoShowAvailabilityStatusInTreeViewOverride.Value
+            Else
+                Me.DoShowAvailabilityStatusInTreeView = Shell.Settings.DoShowAvailabilityStatusInTreeView
+            End If
+        End Sub
+
+        Public Property DoShowAvailabilityStatusInTreeViewOverride As Boolean?
+            Get
+                Return GetValue(DoShowAvailabilityStatusInTreeViewOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowAvailabilityStatusInTreeViewOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowAvailabilityStatusInTreeViewOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As TreeView = d
+            bfv.setDoShowAvailabilityStatusInTreeView()
         End Sub
 
         Public Enum TreeRootSection As Long

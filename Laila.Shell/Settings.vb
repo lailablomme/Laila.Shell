@@ -18,6 +18,7 @@ Public Class Settings
     Private Const SHOWDRIVELETTERS_VALUENAME As String = "ShowDriveLettersFirst"
     Private Const TYPETOSELECT_VALUENAME As String = "TypeAhead"
     Private Const NAVPANESHOWALLFOLDERS_VALUENAME As String = "NavPaneShowAllFolders"
+    Private Const NAVPANESHOWALLCLOUDSTATES_VALUENAME As String = "NavPaneShowAllCloudStates"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _isMonitoring As Boolean
@@ -39,7 +40,8 @@ Public Class Settings
     Private _doShowDriveLetters As Boolean = True
     Private _doShowStatusBar As Boolean = True
     Private _doTypeToSelect As Boolean = True
-    Private _doShowAllFolders As Boolean = False
+    Private _doShowAllFoldersInTreeView As Boolean = False
+    Private _doShowAvailabilityStatusInTreeView As Boolean = True
 
     Public Sub New()
         Me.StartMonitoring()
@@ -91,10 +93,15 @@ Public Class Settings
                         _doTypeToSelect = b
                         Me.NotifyOfPropertyChange("DoTypeToSelect")
                     End If
-                    b = readDoShowAllFolders()
-                    If Not b = _doShowAllFolders Then
-                        _doShowAllFolders = b
-                        Me.NotifyOfPropertyChange("DoShowAllFolders")
+                    b = readDoShowAllFoldersInTreeView()
+                    If Not b = _doShowAllFoldersInTreeView Then
+                        _doShowAllFoldersInTreeView = b
+                        Me.NotifyOfPropertyChange("DoShowAllFoldersInTreeView")
+                    End If
+                    b = readDoShowAvailabilityStatusInTreeView()
+                    If Not b = _doShowAvailabilityStatusInTreeView Then
+                        _doShowAvailabilityStatusInTreeView = b
+                        Me.NotifyOfPropertyChange("DoShowAvailabilityStatusInTreeView")
                     End If
                 End Sub, _cancel.Token, _stopped2)
 
@@ -427,16 +434,30 @@ Public Class Settings
         End Set
     End Property
 
-    Private Function readDoShowAllFolders() As Boolean
+    Private Function readDoShowAllFoldersInTreeView() As Boolean
         Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANESHOWALLFOLDERS_VALUENAME, False)
     End Function
 
-    Public Property DoShowAllFolders As Boolean
+    Public Property DoShowAllFoldersInTreeView As Boolean
         Get
-            Return _doShowAllFolders
+            Return _doShowAllFoldersInTreeView
         End Get
         Set(value As Boolean)
             SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANESHOWALLFOLDERS_VALUENAME, value)
+            Me.Touch()
+        End Set
+    End Property
+
+    Private Function readDoShowAvailabilityStatusInTreeView() As Boolean
+        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANESHOWALLCLOUDSTATES_VALUENAME, False)
+    End Function
+
+    Public Property DoShowAvailabilityStatusInTreeView As Boolean
+        Get
+            Return _doShowAvailabilityStatusInTreeView
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANESHOWALLCLOUDSTATES_VALUENAME, value)
             Me.Touch()
         End Set
     End Property
@@ -510,7 +531,8 @@ Public Class Settings
                 _isCompactMode = readIsCompactMode()
                 _doShowDriveLetters = readDoShowDriveLetters()
                 _doTypeToSelect = readDoTypeToSelect()
-                _doShowAllFolders = readDoShowAllFolders()
+                _doShowAllFoldersInTreeView = readDoShowAllFoldersInTreeView()
+                _doShowAvailabilityStatusInTreeView = readDoShowAvailabilityStatusInTreeView()
             End If
         End Using
     End Sub
