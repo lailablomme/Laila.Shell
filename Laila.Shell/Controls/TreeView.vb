@@ -31,6 +31,8 @@ Namespace Controls
         Public Shared ReadOnly DoShowAvailabilityStatusInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAvailabilityStatusInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAvailabilityStatusInTreeViewOverrideChanged))
         Public Shared ReadOnly DoExpandTreeViewToCurrentFolderProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolder", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoExpandTreeViewToCurrentFolderOverrideProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolderOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoExpandTreeViewToCurrentFolderOverrideChanged))
+        Public Shared ReadOnly DoShowLibrariesInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowLibrariesInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowLibrariesInTreeViewOverrideChanged))
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -76,6 +78,8 @@ Namespace Controls
                             setDoShowAvailabilityStatusInTreeView()
                         Case "DoExpandTreeViewToCurrentFolder"
                             setDoExpandTreeViewToCurrentFolder()
+                        Case "DoShowLibrariesInTreeView"
+                            setDoShowLibrariesInTreeView()
                     End Select
                 End Sub
             setDoShowEncryptedOrCompressedFilesInColor()
@@ -83,6 +87,7 @@ Namespace Controls
             setDoShowAllFoldersInTreeView()
             setDoShowAvailabilityStatusInTreeView()
             setDoExpandTreeViewToCurrentFolder()
+            setDoShowLibrariesInTreeView()
 
             AddHandler Shell.FolderNotification,
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
@@ -164,10 +169,12 @@ Namespace Controls
             Next
 
             Dim currentFolder As Folder = Me.Folder
+            Dim doShowLibrariesInTreeView As Boolean = Me.DoShowLibrariesInTreeView
 
             If Not Me.DoShowAllFoldersInTreeView Then
                 Dim tcs As New TaskCompletionSource()
-                Dim homeFolder As Folder, galleryFolder As Folder, thisComputer As Folder, network As Folder
+                Dim homeFolder As Folder, galleryFolder As Folder, librariesFolder As Folder
+                Dim thisComputer As Folder, network As Folder
 
                 Shell.STATaskQueue.Add(
                     Async Sub()
@@ -185,7 +192,13 @@ Namespace Controls
                         thisComputer = Shell.GetSpecialFolder("This pc").Clone()
                         thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
                         network = Shell.GetSpecialFolder("Network").Clone()
-                        network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
+                        network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 2
+
+                        ' libraries
+                        If doShowLibrariesInTreeView Then
+                            librariesFolder = Shell.GetSpecialFolder("Libraries").Clone()
+                            librariesFolder.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
+                        End If
 
                         ' current
                         If Not currentFolder Is Nothing Then currentFolder = currentFolder.Clone()
@@ -202,6 +215,7 @@ Namespace Controls
                 Me.Roots.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
                 ' environment
                 Me.Roots.Add(thisComputer)
+                If doShowLibrariesInTreeView Then Me.Roots.Add(librariesFolder)
                 Me.Roots.Add(network)
 
                 UIHelper.OnUIThread(
@@ -1042,6 +1056,38 @@ Namespace Controls
         Public Shared Sub OnDoExpandTreeViewToCurrentFolderOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As TreeView = d
             bfv.setDoExpandTreeViewToCurrentFolder()
+        End Sub
+
+        Public Property DoShowLibrariesInTreeView As Boolean
+            Get
+                Return GetValue(DoShowLibrariesInTreeViewProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowLibrariesInTreeViewProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowLibrariesInTreeView()
+            If Me.DoShowLibrariesInTreeViewOverride.HasValue Then
+                Me.DoShowLibrariesInTreeView = Me.DoShowLibrariesInTreeViewOverride.Value
+            Else
+                Me.DoShowLibrariesInTreeView = Shell.Settings.DoShowLibrariesInTreeView
+            End If
+            loadRoots()
+        End Sub
+
+        Public Property DoShowLibrariesInTreeViewOverride As Boolean?
+            Get
+                Return GetValue(DoShowLibrariesInTreeViewOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowLibrariesInTreeViewOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowLibrariesInTreeViewOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As TreeView = d
+            bfv.setDoShowLibrariesInTreeView()
         End Sub
 
         Public Enum TreeRootSection As Long

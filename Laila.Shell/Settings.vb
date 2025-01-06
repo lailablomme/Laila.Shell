@@ -11,6 +11,7 @@ Public Class Settings
 
     Private Const EXPLORER_KEYPATH As String = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer"
     Private Const EXPLORER_ADVANCED_KEYPATH As String = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+    Private Const LIBRARIES_KEYPATH As String = "Software\Classes\CLSID\{031E4825-7B94-4dc3-B131-E946B44C8DD5}"
     Private Const SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME As String = "ShowEncryptCompressedColor"
     Private Const UNDERLINEITEMONHOVER_VALUENAME As String = "IconUnderline"
     Private Const SHOWFOLDERCONTENTSININFOTIP_VALUENAME As String = "FolderContentsInfoTip"
@@ -20,11 +21,13 @@ Public Class Settings
     Private Const NAVPANESHOWALLFOLDERS_VALUENAME As String = "NavPaneShowAllFolders"
     Private Const NAVPANESHOWALLCLOUDSTATES_VALUENAME As String = "NavPaneShowAllCloudStates"
     Private Const NAVPANEEXPANDTOCURRENTFOLDER_VALUENAME As String = "NavPaneExpandToCurrentFolder"
+    Private Const SHOWLIBRARIES_VALUENAME As String = "System.IsPinnedToNameSpaceTree"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _isMonitoring As Boolean
     Private _stopped1 As TaskCompletionSource
     Private _stopped2 As TaskCompletionSource
+    Private _stopped3 As TaskCompletionSource
     Private _cancel As CancellationTokenSource
     Private _doHideKnownFileExtensions As Boolean = False
     Private _doShowProtectedOperatingSystemFiles As Boolean = True
@@ -44,6 +47,7 @@ Public Class Settings
     Private _doShowAllFoldersInTreeView As Boolean = False
     Private _doShowAvailabilityStatusInTreeView As Boolean = True
     Private _doExpandTreeViewToCurrentFolder As Boolean = True
+    Private _doShowLibrariesInTreeView As Boolean = False
 
     Public Sub New()
         Me.StartMonitoring()
@@ -60,6 +64,7 @@ Public Class Settings
             ' prepare tokens
             _stopped1 = New TaskCompletionSource()
             _stopped2 = New TaskCompletionSource()
+            _stopped3 = New TaskCompletionSource()
             _cancel = New CancellationTokenSource()
 
             ' start monitoring
@@ -111,6 +116,15 @@ Public Class Settings
                         Me.NotifyOfPropertyChange("DoExpandTreeViewToCurrentFolder")
                     End If
                 End Sub, _cancel.Token, _stopped2)
+            monitorRegistryKey(LIBRARIES_KEYPATH,
+                Sub()
+                    Dim b As Boolean
+                    b = readDoShowLibrariesInTreeView()
+                    If Not b = _doShowLibrariesInTreeView Then
+                        _doShowLibrariesInTreeView = b
+                        Me.NotifyOfPropertyChange("DoShowLibrariesInTreeView")
+                    End If
+                End Sub, _cancel.Token, _stopped3)
 
             ' mark
             _isMonitoring = True
@@ -130,10 +144,13 @@ Public Class Settings
             SetRegistryBoolean(EXPLORER_KEYPATH, "Laila_Shell_Monitor", Not b)
             b = GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, "Laila_Shell_Monitor", False)
             SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, "Laila_Shell_Monitor", Not b)
+            b = GetRegistryBoolean(LIBRARIES_KEYPATH, "Laila_Shell_Monitor", False)
+            SetRegistryBoolean(LIBRARIES_KEYPATH, "Laila_Shell_Monitor", Not b)
 
             ' wait for threads to end
             _stopped1.Task.Wait()
             _stopped2.Task.Wait()
+            _stopped3.Task.Wait()
 
             ' mark
             _isMonitoring = False
@@ -483,6 +500,20 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowLibrariesInTreeView() As Boolean
+        Return GetRegistryBoolean(LIBRARIES_KEYPATH, SHOWLIBRARIES_VALUENAME, False)
+    End Function
+
+    Public Property DoShowLibrariesInTreeView As Boolean
+        Get
+            Return _doShowLibrariesInTreeView
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(LIBRARIES_KEYPATH, SHOWLIBRARIES_VALUENAME, value)
+            Me.Touch()
+        End Set
+    End Property
+
     Public Sub Touch()
         ' cause Windows Explorer to pick up the changes after we've modified the registry directly
         Dim b As Boolean = Me.IsDoubleClickToOpenItem
@@ -555,6 +586,7 @@ Public Class Settings
                 _doShowAllFoldersInTreeView = readDoShowAllFoldersInTreeView()
                 _doShowAvailabilityStatusInTreeView = readDoShowAvailabilityStatusInTreeView()
                 _doExpandTreeViewToCurrentFolder = readDoExpandTreeViewToCurrentFolder()
+                _doShowLibrariesInTreeView = readDoShowLibrariesInTreeView()
             End If
         End Using
     End Sub
