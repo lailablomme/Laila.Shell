@@ -336,7 +336,7 @@ Namespace Controls
             Public Sub New()
                 Shell.STATaskQueue.Add(
                     Sub()
-                        Dim folder As Folder = Shell.GetSpecialFolder("This computer").Clone()
+                        Dim folder As Folder = Shell.GetSpecialFolder("This pc").Clone()
                         Me.Folder = folder
                     End Sub)
             End Sub

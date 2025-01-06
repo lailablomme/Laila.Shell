@@ -19,7 +19,7 @@ Public Class SearchFolder
         Dim factory As ISearchFolderItemFactory = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_SearchFolderItemFactory))
         Dim arr As IShellItemArray
         Dim pidls As List(Of Pidl)
-        If parent.Pidl.Equals(Shell.GetSpecialFolder("This computer").Pidl) Then
+        If parent.Pidl.Equals(Shell.GetSpecialFolder("This pc").Pidl) Then
             pidls = parent.GetItems().Where(Function(i) TypeOf i Is Folder).Select(Function(i) i.Pidl).ToList()
         Else
             pidls = New List(Of Pidl)() From {parent.Pidl}

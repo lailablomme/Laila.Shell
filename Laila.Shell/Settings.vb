@@ -17,6 +17,7 @@ Public Class Settings
     Private Const COMPACTMODE_VALUENAME As String = "UseCompactMode"
     Private Const SHOWDRIVELETTERS_VALUENAME As String = "ShowDriveLettersFirst"
     Private Const TYPETOSELECT_VALUENAME As String = "TypeAhead"
+    Private Const NAVPANESHOWALLFOLDERS_VALUENAME As String = "NavPaneShowAllFolders"
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _isMonitoring As Boolean
@@ -38,6 +39,7 @@ Public Class Settings
     Private _doShowDriveLetters As Boolean = True
     Private _doShowStatusBar As Boolean = True
     Private _doTypeToSelect As Boolean = True
+    Private _doShowAllFolders As Boolean = False
 
     Public Sub New()
         Me.StartMonitoring()
@@ -88,6 +90,11 @@ Public Class Settings
                     If Not b = _doTypeToSelect Then
                         _doTypeToSelect = b
                         Me.NotifyOfPropertyChange("DoTypeToSelect")
+                    End If
+                    b = readDoShowAllFolders()
+                    If Not b = _doShowAllFolders Then
+                        _doShowAllFolders = b
+                        Me.NotifyOfPropertyChange("DoShowAllFolders")
                     End If
                 End Sub, _cancel.Token, _stopped2)
 
@@ -420,6 +427,20 @@ Public Class Settings
         End Set
     End Property
 
+    Private Function readDoShowAllFolders() As Boolean
+        Return GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANESHOWALLFOLDERS_VALUENAME, False)
+    End Function
+
+    Public Property DoShowAllFolders As Boolean
+        Get
+            Return _doShowAllFolders
+        End Get
+        Set(value As Boolean)
+            SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, NAVPANESHOWALLFOLDERS_VALUENAME, value)
+            Me.Touch()
+        End Set
+    End Property
+
     Public Sub Touch()
         ' cause Windows Explorer to pick up the changes after we've modified the registry directly
         Dim b As Boolean = Me.IsDoubleClickToOpenItem
@@ -489,6 +510,7 @@ Public Class Settings
                 _isCompactMode = readIsCompactMode()
                 _doShowDriveLetters = readDoShowDriveLetters()
                 _doTypeToSelect = readDoTypeToSelect()
+                _doShowAllFolders = readDoShowAllFolders()
             End If
         End Using
     End Sub

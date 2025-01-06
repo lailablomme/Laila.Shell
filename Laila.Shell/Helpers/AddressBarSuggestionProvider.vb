@@ -42,7 +42,7 @@ Namespace Helpers
                         If folder Is Nothing Then
                             If folderName.StartsWith(IO.Path.DirectorySeparatorChar) Then
                                 folder = Item.FromParsingName(IO.Path.Combine(
-                                        (Await Shell.GetSpecialFolder("This computer").GetItemsAsync()).FirstOrDefault()?.FullPath,
+                                        (Await Shell.GetSpecialFolder("This pc").GetItemsAsync()).FirstOrDefault()?.FullPath,
                                         folderName.TrimStart(IO.Path.DirectorySeparatorChar)), Nothing, False)
                             Else
                                 folder = Item.FromParsingName(folderName, Nothing, False)
@@ -106,11 +106,11 @@ Namespace Helpers
                     End If
 
                     ' get distinct
-                    Dim pidls As List(Of String) = New List(Of String)()
+                    Dim dist As List(Of String) = New List(Of String)()
                     For Each item In items
-                        pidls.Add(item.Pidl.ToString())
+                        dist.Add(item.FullPath)
                     Next
-                    items = pidls.Distinct().Select(Function(p) items.FirstOrDefault(Function(i) i.Pidl.ToString().Equals(p))).ToList()
+                    items = dist.Distinct().Select(Function(d) items.FirstOrDefault(Function(i) i.FullPath.Equals(d))).ToList()
 
                     SyncLock _lock
                         ' release previous folder

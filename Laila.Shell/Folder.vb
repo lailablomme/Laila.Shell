@@ -602,7 +602,8 @@ Public Class Folder
 
         Dim result As Dictionary(Of String, Item) = New Dictionary(Of String, Item)
         Dim newFullPaths As HashSet(Of String) = New HashSet(Of String)()
-        Dim doRefreshAfter As Boolean
+        Dim isRootDesktop As Boolean = Me.Pidl.Equals(Shell.Desktop.Pidl)
+        Dim isDebuggerAttached As Boolean = Debugger.IsAttached
 
         ' pre-parse sort property 
         Dim isSortPropertyByText As Boolean, sortPropertyKey As String, isSortPropertyDisplaySortValue As Boolean
@@ -764,33 +765,68 @@ Public Class Folder
                                     newItem = New Item(shellItems(x), Me, False, False)
                                 End If
 
+                                Dim isAdded As Boolean = False
                                 Try
-                                    result.Add(newItem.FullPath & "_" & newItem.DisplayName, newItem)
-
-                                    ' preload sort property
-                                    If isSortPropertyByText Then
-                                        Dim sortValue As Object = newItem.PropertiesByKeyAsText(sortPropertyKey)?.Value
-                                    ElseIf isSortPropertyDisplaySortValue Then
-                                        Dim sortValue As Object = newItem.ItemNameDisplaySortValue
+                                    Dim isAlreadyAdded As Boolean = False
+                                    If isDebuggerAttached Then
+                                        ' only check if debugger is attached, to avoid exception,
+                                        ' otherwise, rely on exception being thrown, for speed
+                                        isAlreadyAdded = result.ContainsKey(newItem.FullPath & "_" & newItem.DisplayName)
                                     End If
+                                    If Not isAlreadyAdded Then
+                                        result.Add(newItem.FullPath & "_" & newItem.DisplayName, newItem)
+                                        isAdded = True
 
-                                    ' preload Content view mode properties because searchfolder is slow
-                                    If TypeOf Me Is SearchFolder Then
-                                        Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
+                                        ' preload sort property
+                                        If isSortPropertyByText Then
+                                            Dim sortValue As Object = newItem.PropertiesByKeyAsText(sortPropertyKey)?.Value
+                                        ElseIf isSortPropertyDisplaySortValue Then
+                                            Dim sortValue As Object = newItem.ItemNameDisplaySortValue
+                                        End If
+
+                                        ' preload Content view mode properties because searchfolder is slow
+                                        If TypeOf Me Is SearchFolder Then
+                                            Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
+                                        End If
+
+                                        ' preload System_StorageProviderUIStatus images
+                                        'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                                        '    = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                                        'If Not System_StorageProviderUIStatus Is Nothing _
+                                        '    AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                                        '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                                        'End If
+
+                                        newFullPaths.Add(newItem.FullPath & "_" & newItem.DisplayName)
+
+                                        If isRootDesktop Then
+                                            If Not Shell.GetSpecialFolder("Home") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Home").Pidl) Then newItem.TreeSortPrefix = "_001" _
+                                            Else If Not Shell.GetSpecialFolder("Gallery") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Gallery").Pidl) Then newItem.TreeSortPrefix = "_002" _
+                                            Else If Not Shell.GetSpecialFolder("Pictures") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Pictures").FullPath) Then newItem.TreeSortPrefix = "_003" _
+                                            Else If newItem.FullPath.Equals(Shell.Desktop.FullPath) Then newItem.TreeSortPrefix = "_004" _
+                                            Else If Not Shell.GetSpecialFolder("Documents") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Documents").FullPath) Then newItem.TreeSortPrefix = "_005" _
+                                            Else If Not Shell.GetSpecialFolder("OneDrive") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("OneDrive").Pidl) Then newItem.TreeSortPrefix = "_006" _
+                                            Else If Not Shell.GetSpecialFolder("OneDrive Business") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("OneDrive Business").Pidl) Then newItem.TreeSortPrefix = "_007" _
+                                            Else If Not Shell.GetSpecialFolder("Downloads") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Downloads").FullPath) Then newItem.TreeSortPrefix = "_008" _
+                                            Else If Not Shell.GetSpecialFolder("Music") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Music").FullPath) Then newItem.TreeSortPrefix = "_009" _
+                                            Else If Not Shell.GetSpecialFolder("Videos") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Videos").FullPath) Then newItem.TreeSortPrefix = "_010" _
+                                            Else If Not Shell.GetSpecialFolder("User Profile") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("User Profile").Pidl) Then newItem.TreeSortPrefix = "_011" _
+                                            Else If Not Shell.GetSpecialFolder("This pc") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("This pc").Pidl) Then newItem.TreeSortPrefix = "_012" _
+                                            Else If Not Shell.GetSpecialFolder("Libraries") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Libraries").Pidl) Then newItem.TreeSortPrefix = "_013" _
+                                            Else If Not Shell.GetSpecialFolder("Network") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Network").Pidl) Then newItem.TreeSortPrefix = "_014" _
+                                            Else If Not Shell.GetSpecialFolder("Control Panel") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Control Panel").Pidl) Then newItem.TreeSortPrefix = "_015" _
+                                            Else If Not Shell.GetSpecialFolder("Recycle Bin") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Recycle Bin").Pidl) Then newItem.TreeSortPrefix = "_016" _
+                                            Else newItem.TreeSortPrefix = "_100"
+                                        End If
+                                    Else
+                                        newItem.Dispose()
                                     End If
-
-                                    ' preload System_StorageProviderUIStatus images
-                                    'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                                    '    = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
-                                    'If Not System_StorageProviderUIStatus Is Nothing _
-                                    '    AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                                    '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
-                                    'End If
-
-                                    newFullPaths.Add(newItem.FullPath & "_" & newItem.DisplayName)
                                 Catch ex As Exception
                                     ' there might be double items, we want to skip them without
                                     ' checking for .Contains everytime, to save processing time
+                                    If Not isAdded Then
+                                        newItem.Dispose()
+                                    End If
                                 End Try
 
                                 If (DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _

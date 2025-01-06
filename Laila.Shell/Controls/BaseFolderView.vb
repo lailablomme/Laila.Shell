@@ -964,8 +964,10 @@ Namespace Controls
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = bfv._lastScrollOffset
                 oldValue.LastScrollSize = bfv._lastScrollSize
-                bfv._scrollViewer.ScrollToHorizontalOffset(0)
-                bfv._scrollViewer.ScrollToVerticalOffset(0)
+                If Not bfv._scrollViewer Is Nothing Then
+                    bfv._scrollViewer.ScrollToHorizontalOffset(0)
+                    bfv._scrollViewer.ScrollToVerticalOffset(0)
+                End If
 
                 ' clear view binding
                 bfv.ClearBinding()
@@ -1011,11 +1013,13 @@ Namespace Controls
                         If Not TypeOf newValue Is SearchFolder Then
                             Await Task.Delay(50)
 
-                            ' restore folder scroll position
-                            bfv._lastScrollOffset = newValue.LastScrollOffset
-                            bfv._lastScrollSize = newValue.LastScrollSize
-                            bfv._scrollViewer.ScrollToHorizontalOffset(If(bfv._lastScrollSize.Width = 0, 0, bfv._lastScrollOffset.X * bfv._scrollViewer.ScrollableWidth / bfv._lastScrollSize.Width))
-                            bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv._lastScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
+                            If Not bfv._scrollViewer Is Nothing Then
+                                ' restore folder scroll position
+                                bfv._lastScrollOffset = newValue.LastScrollOffset
+                                bfv._lastScrollSize = newValue.LastScrollSize
+                                bfv._scrollViewer.ScrollToHorizontalOffset(If(bfv._lastScrollSize.Width = 0, 0, bfv._lastScrollOffset.X * bfv._scrollViewer.ScrollableWidth / bfv._lastScrollSize.Width))
+                                bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv._lastScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
+                            End If
                         End If
 
                         ' show listview

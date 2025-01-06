@@ -34,6 +34,7 @@ Public Class Item
     Protected _doKeepAlive As Boolean
     Private _contentViewModeProperties() As [Property]
     Private _isVisibleInAddressBar As Boolean
+    Private _treeSortPrefix As String = String.Empty
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
@@ -98,9 +99,13 @@ Public Class Item
         End If
         If Not logicalParent Is Nothing Then
             _parent = logicalParent
+        Else
+            Me.IsLogicalOrphan = True
         End If
         AddHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
     End Sub
+
+    Friend Property IsLogicalOrphan As Boolean
 
     Public Sub HookUpdates()
         AddHandler Shell.Notification, AddressOf shell_Notification
@@ -164,6 +169,16 @@ Public Class Item
         End Set
     End Property
 
+    Friend Property TreeSortPrefix As String
+        Get
+            Return _treeSortPrefix
+        End Get
+        Set(value As String)
+            SetValue(_treeSortPrefix, value)
+            Me.NotifyOfPropertyChange("TreeSortKey")
+        End Set
+    End Property
+
     Public ReadOnly Property TreeSortKey As String
         Get
             If _treeRootIndex <> -1 Then
@@ -171,7 +186,7 @@ Public Class Item
             Else
                 Dim itemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
                 If itemNameDisplaySortValue Is Nothing Then itemNameDisplaySortValue = ""
-                Return Me.Parent.TreeSortKey & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
+                Return Me.Parent?.TreeSortKey & Me.TreeSortPrefix & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
             End If
         End Get
     End Property
@@ -464,7 +479,6 @@ Public Class Item
                                 result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             Else
                                 Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
-                                Throw Marshal.GetExceptionForHR(h)
                             End If
                         End If
                         Return result
@@ -507,7 +521,6 @@ Public Class Item
                                 result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             Else
                                 Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
-                                Throw Marshal.GetExceptionForHR(h)
                             End If
                         End If
                         Return result
@@ -666,26 +679,32 @@ Public Class Item
     Public ReadOnly Property AddressBarDisplayPath As String
         Get
             If String.IsNullOrWhiteSpace(Me.AddressBarRoot) Then
-                If Me.Pidl.Equals(Shell.Desktop.Pidl) Then
-                    Return Me.DisplayName
-                ElseIf Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
-                    Dim parent As Item = Me
-                    Dim path As String = parent.DisplayName
+                Dim parent As Item = Me
+                Dim path As String
+                If parent.IsDrive Then
+                    path = If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
+                                  parent.FullPath, parent.AddressBarDisplayName)
+                Else
+                    path = If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
+                                  parent.DisplayName, parent.AddressBarDisplayName)
+                End If
+                If Not Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl)) Then
                     parent = parent.Parent
-                    While Not parent Is Nothing _
-                    AndAlso Not Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl))
-                        path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
-                                              parent.DisplayName, parent.AddressBarDisplayName), path)
+                    While Not parent Is Nothing
+                        If parent.IsDrive Then
+                            path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
+                                                          parent.FullPath, parent.AddressBarDisplayName), path)
+                        Else
+                            path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
+                                                          parent.DisplayName, parent.AddressBarDisplayName), path)
+                        End If
+                        If Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl)) Then
+                            Exit While
+                        End If
                         parent = parent.Parent
                     End While
-                    Return path
-                ElseIf Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(Me.Pidl)) Then
-                    Return If(String.IsNullOrWhiteSpace(Me.AddressBarDisplayName),
-                              Me.DisplayName, Me.AddressBarDisplayName)
-                Else
-                    Return If(String.IsNullOrWhiteSpace(Me.AddressBarDisplayName),
-                              Me.FullPath, Me.AddressBarDisplayName)
                 End If
+                Return path
             Else
                 Return IO.Path.Combine(Me.AddressBarRoot, If(String.IsNullOrWhiteSpace(Me.AddressBarDisplayName),
                                                               Me.DisplayName, Me.AddressBarDisplayName))
@@ -1024,7 +1043,7 @@ Public Class Item
                 folder = Shell.GetSpecialFolder("Network")
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.GetSpecialFolder("This computer")
+                folder = Shell.GetSpecialFolder("This pc")
             Else
                 ' root must be some special folder
                 folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
@@ -1100,7 +1119,7 @@ Public Class Item
                 folder = Shell.GetSpecialFolder("Network")
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.GetSpecialFolder("This computer")
+                folder = Shell.GetSpecialFolder("This pc")
             Else
                 ' root must be some special folder
                 folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
@@ -1238,7 +1257,7 @@ Public Class Item
     End Sub
 
     Public Function Clone() As Item
-        Return Item.FromPidl(Me.Pidl.AbsolutePIDL, _parent, _doKeepAlive)
+        Return Item.FromPidl(Me.Pidl.AbsolutePIDL, Nothing, _doKeepAlive)
     End Function
 
     Protected Overrides Sub Finalize()

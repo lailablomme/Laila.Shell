@@ -411,6 +411,8 @@ Namespace Controls
         End Sub
 
         Public Sub InvokeCommand(id As Tuple(Of Integer, String))
+            If id Is Nothing Then Return
+
             Make()
 
             Dim folder As Folder

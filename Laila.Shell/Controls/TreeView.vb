@@ -20,10 +20,13 @@ Namespace Controls
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly RootsProperty As DependencyProperty = DependencyProperty.Register("Roots", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
         Public Shared ReadOnly IsCompactModeProperty As DependencyProperty = DependencyProperty.Register("IsCompactMode", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsCompactModeOverrideProperty As DependencyProperty = DependencyProperty.Register("IsCompactModeOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsCompactModeOverrideChanged))
+        Public Shared ReadOnly DoShowAllFoldersProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFolders", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoShowAllFoldersOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFoldersOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAllFoldersOverrideChanged))
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -53,6 +56,9 @@ Namespace Controls
             CType(view, ListCollectionView).CustomSort = New TreeViewComparer("TreeSortKey")
             AddHandler Me.Items.CollectionChanged, AddressOf items_CollectionChanged
 
+            Me.Roots = New ObservableCollection(Of Item)()
+            AddHandler Me.Roots.CollectionChanged, AddressOf roots_CollectionChanged
+
             AddHandler Shell.Settings.PropertyChanged,
                 Sub(s As Object, e As PropertyChangedEventArgs)
                     Select Case e.PropertyName
@@ -60,10 +66,13 @@ Namespace Controls
                             setDoShowEncryptedOrCompressedFilesInColor()
                         Case "IsCompactMode"
                             setIsCompactMode()
+                        Case "DoShowAllFolders"
+                            setDoShowAllFolders()
                     End Select
                 End Sub
             setDoShowEncryptedOrCompressedFilesInColor()
             setIsCompactMode()
+            setDoShowAllFolders()
 
             AddHandler Shell.FolderNotification,
                  Async Sub(s As Object, e As FolderNotificationEventArgs)
@@ -82,12 +91,12 @@ Namespace Controls
                         Case SHCNE.RMDIR, SHCNE.DELETE
                             UIHelper.OnUIThread(
                                 Async Sub()
-                                    If Not Me.Items.FirstOrDefault(Function(i) _
-                                    Not i.disposedValue _
-                                    AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
-                                    AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                                    AndAlso Not i.FullPath Is Nothing _
-                                    AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing Then
+                                    If Not Me.DoShowAllFolders AndAlso Not Me.Items.FirstOrDefault(Function(i) _
+                                        Not i.disposedValue _
+                                        AndAlso i.TreeRootIndex >= TreeRootSection.PINNED _
+                                        AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
+                                        AndAlso Not i.FullPath Is Nothing _
+                                        AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing Then
                                         Await updatePinnedItems()
                                         Await updateFrequentFolders()
                                     End If
@@ -95,7 +104,7 @@ Namespace Controls
                         Case SHCNE.UPDATEDIR
                             UIHelper.OnUIThread(
                                 Async Sub()
-                                    If Not Me.Items.FirstOrDefault(
+                                    If Not Me.DoShowAllFolders AndAlso (Not Me.Items.FirstOrDefault(
                                         Function(i)
                                             If Not i.disposedValue Then
                                                 Return i.TreeRootIndex >= TreeRootSection.PINNED _
@@ -107,7 +116,7 @@ Namespace Controls
                                                 Return False
                                             End If
                                         End Function) Is Nothing _
-                                    OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath) Then
+                                    OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath)) Then
                                         Await updatePinnedItems()
                                         Await updateFrequentFolders()
                                     End If
@@ -115,68 +124,143 @@ Namespace Controls
                     End Select
                 End Sub
 
-            Dim tcs As New TaskCompletionSource()
-            Dim homeFolder As Folder, galleryFolder As Folder, thisComputer As Folder, network As Folder
-
-            Shell.STATaskQueue.Add(
-                Async Sub()
-                    ' home and galery
-                    If Shell.GetSpecialFolders().ContainsKey("Home") Then
-                        homeFolder = Shell.GetSpecialFolder("Home").Clone()
-                        homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
-                    End If
-                    If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
-                        galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
-                        galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
-                    End If
-
-                    ' this computer & network
-                    thisComputer = Shell.GetSpecialFolder("This computer").Clone()
-                    thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
-                    network = Shell.GetSpecialFolder("Network").Clone()
-                    network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
-
-                    tcs.SetResult()
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            ' system
-            Me.Items.Add(homeFolder)
-            Me.Items.Add(galleryFolder)
-            ' separators
-            Me.Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
-            Me.Items.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
-            ' environment
-            Me.Items.Add(thisComputer)
-            Me.Items.Add(network)
-
-            UIHelper.OnUIThread(
-                Async Sub()
-                    Await updatePinnedItems()
-                    Await updateFrequentFolders()
-                End Sub)
-
-            ' frequent folders
-            _frequentUpdateTimer = New Timer(New TimerCallback(
-                Sub()
-                    UIHelper.OnUIThread(
-                        Async Sub()
-                            Await updateFrequentFolders()
-                        End Sub)
-                End Sub), Nothing, 1000 * 60, 1000 * 60)
-
             AddHandler PinnedItems.ItemPinned,
                  Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                     Await updatePinnedItems()
-                     Await updateFrequentFolders()
+                     If Not Me.DoShowAllFolders Then
+                         Await updatePinnedItems()
+                         Await updateFrequentFolders()
+                     End If
                  End Sub
             AddHandler PinnedItems.ItemUnpinned,
                  Async Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                     Await updatePinnedItems()
-                     Await updateFrequentFolders()
+                     If Not Me.DoShowAllFolders Then
+                         Await updatePinnedItems()
+                         Await updateFrequentFolders()
+                     End If
                  End Sub
 
             CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+        End Sub
+
+        Private Sub loadRoots()
+            If Not _frequentUpdateTimer Is Nothing Then
+                _frequentUpdateTimer.Dispose()
+                _frequentUpdateTimer = Nothing
+            End If
+
+            For Each item In Me.Roots.ToList()
+                item.TreeRootIndex = -1
+                Me.Roots.Remove(item)
+            Next
+
+            Dim currentFolder As Folder = Me.Folder
+
+            If Not Me.DoShowAllFolders Then
+                Dim tcs As New TaskCompletionSource()
+                Dim homeFolder As Folder, galleryFolder As Folder, thisComputer As Folder, network As Folder
+
+                Shell.STATaskQueue.Add(
+                    Async Sub()
+                        ' home and galery
+                        If Shell.GetSpecialFolders().ContainsKey("Home") Then
+                            homeFolder = Shell.GetSpecialFolder("Home").Clone()
+                            homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
+                        End If
+                        If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
+                            galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
+                            galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
+                        End If
+
+                        ' this computer & network
+                        thisComputer = Shell.GetSpecialFolder("This pc").Clone()
+                        thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
+                        network = Shell.GetSpecialFolder("Network").Clone()
+                        network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
+
+                        ' current
+                        If Not currentFolder Is Nothing Then currentFolder = currentFolder.Clone()
+
+                        tcs.SetResult()
+                    End Sub)
+
+                tcs.Task.Wait(Shell.ShuttingDownToken)
+                ' system
+                Me.Roots.Add(homeFolder)
+                Me.Roots.Add(galleryFolder)
+                ' separators
+                Me.Roots.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
+                Me.Roots.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
+                ' environment
+                Me.Roots.Add(thisComputer)
+                Me.Roots.Add(network)
+
+                UIHelper.OnUIThread(
+                    Async Sub()
+                        Await updatePinnedItems()
+                        Await updateFrequentFolders()
+                    End Sub)
+
+                ' frequent folders
+                _frequentUpdateTimer = New Timer(New TimerCallback(
+                    Sub()
+                        UIHelper.OnUIThread(
+                            Async Sub()
+                                Await updateFrequentFolders()
+                            End Sub)
+                    End Sub), Nothing, 1000 * 60, 1000 * 60)
+            Else
+                Dim tcs As New TaskCompletionSource()
+                Dim desktopFolder As Folder
+
+                Shell.STATaskQueue.Add(
+                     Sub()
+                         desktopFolder = Shell.Desktop.Clone()
+                         desktopFolder.IsExpanded = True
+
+                         ' current
+                         If Not currentFolder Is Nothing Then currentFolder = currentFolder.Clone()
+
+                         tcs.SetResult()
+                     End Sub)
+
+                tcs.Task.Wait(Shell.ShuttingDownToken)
+
+                Me.Roots.Add(desktopFolder)
+            End If
+
+            Me.Folder = currentFolder
+        End Sub
+
+        Private Sub roots_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)
+            Select Case e.Action
+                Case NotifyCollectionChangedAction.Add
+                    Dim currentRootIndex As Long = If(e.NewStartingIndex > 0, Me.Roots(e.NewStartingIndex - 1).TreeRootIndex + 1, 0)
+                    For Each item In e.NewItems
+                        Dim i As Item = item
+                        If i.TreeRootIndex < 0 Then
+                            maybeMoveRootOneUp(currentRootIndex)
+                            i.TreeRootIndex = currentRootIndex
+                            currentRootIndex += 1
+                        Else
+                            currentRootIndex = i.TreeRootIndex + 1
+                        End If
+                        Me.Items.Add(item)
+                    Next
+                Case NotifyCollectionChangedAction.Remove
+                    For Each item In e.OldItems
+                        Me.Items.Remove(item)
+                    Next
+                Case Else
+                    Throw New NotSupportedException()
+            End Select
+        End Sub
+
+        Private Sub maybeMoveRootOneUp(rootIndex As Long)
+            Dim itemToMove As Item = Me.Items.FirstOrDefault(Function(i) i.TreeRootIndex = rootIndex)
+            If Not itemToMove Is Nothing Then
+                maybeMoveRootOneUp(rootIndex + 1)
+                itemToMove.TreeRootIndex = rootIndex + 1
+            End If
         End Sub
 
         Private Function GetIsSelectionDownFolder(folder As Folder) As Boolean
@@ -218,45 +302,45 @@ Namespace Controls
             Dim pinnedItemsList As IEnumerable(Of Item) = PinnedItems.GetPinnedItems()
             Dim count As Integer = 0
             For Each pinnedItem In pinnedItemsList
-                Dim existingPinnedItem As Item = Me.Items.FirstOrDefault(Function(i) _
+                Dim existingPinnedItem As Item = Me.Roots.FirstOrDefault(Function(i) _
                     i.FullPath = pinnedItem.FullPath _
                         AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT)
                 If existingPinnedItem Is Nothing Then
                     ' insert new pinned item
                     pinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
                     pinnedItem.IsPinned = True
-                    Me.Items.Add(pinnedItem)
+                    Me.Roots.Add(pinnedItem)
                 Else
                     ' update existing pinned item
                     pinnedItem.Dispose()
                     If existingPinnedItem.TreeRootIndex <> TreeRootSection.PINNED + count Then
                         existingPinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
-                        Me.Items.Remove(existingPinnedItem)
-                        Me.Items.Add(existingPinnedItem)
+                        Me.Roots.Remove(existingPinnedItem)
+                        Me.Roots.Add(existingPinnedItem)
                     End If
                 End If
                 count += 1
             Next
             ' remove pinned items no longer in the list
-            For Each pinnedItem As Item In Me.Items.Where(Function(i) _
+            For Each pinnedItem As Item In Me.Roots.Where(Function(i) _
                 Not TypeOf i Is SeparatorFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT _
                         AndAlso Not pinnedItemsList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
                 If (TypeOf pinnedItem Is Folder AndAlso GetIsSelectionDownFolder(pinnedItem)) OrElse pinnedItem.Equals(Me.SelectedItem) Then
                     _selectionHelper.SetSelectedItems({})
                 End If
-                Me.Items.Remove(pinnedItem)
+                Me.Roots.Remove(pinnedItem)
             Next
             ' add/remove placeholder
             Dim placeholderFolder As PinnedAndFrequentPlaceholderFolder =
-                    Me.Items.FirstOrDefault(Function(i) TypeOf i Is PinnedAndFrequentPlaceholderFolder)
-            If Me.Items.Where(Function(i) _
+                    Me.Roots.FirstOrDefault(Function(i) TypeOf i Is PinnedAndFrequentPlaceholderFolder)
+            If Me.Roots.Where(Function(i) _
                 Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT).Count > 0 Then
-                If Not placeholderFolder Is Nothing Then Me.Items.Remove(placeholderFolder)
+                If Not placeholderFolder Is Nothing Then Me.Roots.Remove(placeholderFolder)
             Else
                 If placeholderFolder Is Nothing Then
-                    Me.Items.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
+                    Me.Roots.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
                 End If
             End If
         End Function
@@ -266,44 +350,44 @@ Namespace Controls
             Dim frequentFoldersList As IEnumerable(Of Folder) = FrequentFolders.GetMostFrequent()
             Dim count As Integer = 0
             For Each frequentFolder In frequentFoldersList
-                Dim existingFrequentFolder As Folder = Me.Items.FirstOrDefault(Function(i) _
+                Dim existingFrequentFolder As Folder = Me.Roots.FirstOrDefault(Function(i) _
                     i.FullPath = frequentFolder.FullPath _
                         AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT)
                 If existingFrequentFolder Is Nothing Then
                     ' insert new frequent folder
                     frequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
-                    Me.Items.Add(frequentFolder)
+                    Me.Roots.Add(frequentFolder)
                 Else
                     ' update existing frequent folder
                     frequentFolder.Dispose()
                     If existingFrequentFolder.TreeRootIndex <> TreeRootSection.FREQUENT + count Then
                         existingFrequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
-                        Me.Items.Remove(existingFrequentFolder)
-                        Me.Items.Add(existingFrequentFolder)
+                        Me.Roots.Remove(existingFrequentFolder)
+                        Me.Roots.Add(existingFrequentFolder)
                     End If
                 End If
                 count += 1
             Next
             ' remove frequent folders no longer in the list
-            For Each frequentFolder As Folder In Me.Items.Where(Function(i) _
+            For Each frequentFolder As Folder In Me.Roots.Where(Function(i) _
                 Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                         AndAlso Not frequentFoldersList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
                 If GetIsSelectionDownFolder(frequentFolder) Then
                     _selectionHelper.SetSelectedItems({})
                 End If
-                Me.Items.Remove(frequentFolder)
+                Me.Roots.Remove(frequentFolder)
             Next
             ' add/remove placeholder
             Dim placeholderFolder As PinnedAndFrequentPlaceholderFolder =
-                    Me.Items.FirstOrDefault(Function(i) TypeOf i Is PinnedAndFrequentPlaceholderFolder)
-            If Me.Items.Where(Function(i) _
+                    Me.Roots.FirstOrDefault(Function(i) TypeOf i Is PinnedAndFrequentPlaceholderFolder)
+            If Me.Roots.Where(Function(i) _
                 Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT).Count > 0 Then
-                If Not placeholderFolder Is Nothing Then Me.Items.Remove(placeholderFolder)
+                If Not placeholderFolder Is Nothing Then Me.Roots.Remove(placeholderFolder)
             Else
                 If placeholderFolder Is Nothing Then
-                    Me.Items.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
+                    Me.Roots.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
                 End If
             End If
         End Function
@@ -337,22 +421,23 @@ Namespace Controls
                 Dim currentFolder As Folder = folder
                 Dim noRecursive As List(Of String) = New List(Of String)()
                 If Not currentFolder Is Nothing Then
-                    While Not currentFolder.Parent Is Nothing _
-                        AndAlso currentFolder.Parent.FullPath <> Shell.Desktop.FullPath _
-                        AndAlso currentFolder.TreeRootIndex = -1 _
-                        AndAlso Not noRecursive.Contains(currentFolder.FullPath)
-                        noRecursive.Add(currentFolder.FullPath)
+                    While Not currentFolder Is Nothing _
+                        AndAlso Not noRecursive.Contains(currentFolder.Pidl.ToString())
+                        noRecursive.Add(currentFolder.Pidl.ToString())
                         list.Add(currentFolder)
                         Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
+                        If currentFolder.TreeRootIndex <> -1 Then Exit While
                         currentFolder = currentFolder.Parent
                     End While
 
+                    list.Reverse()
+
                     Dim tf As Folder
-                    If Me.Items.ToList().Exists(Function(f1) f1.FullPath = currentFolder.FullPath AndAlso f1.TreeRootIndex <> -1) Then
-                        tf = Me.Items.First(Function(f1) f1.FullPath = currentFolder.FullPath AndAlso f1.TreeRootIndex <> -1)
-                    Else
-                        tf = Nothing
-                    End If
+                    Dim en As IEnumerator(Of Folder)
+                    Dim en2 As IEnumerator(Of Folder) = list.GetEnumerator()
+                    Dim en3 As IEnumerator(Of Item)
+                    Dim func As Func(Of Folder, Func(Of Task), Task)
+                    Dim cb As System.Func(Of Task)
 
                     Dim finish As Action(Of Folder) =
                         Sub(finishFolder As Folder)
@@ -361,51 +446,70 @@ Namespace Controls
                             End If
                         End Sub
 
-                    If Not tf Is Nothing Then
-                        list.Reverse()
-
-                        Dim func As Func(Of Folder, Func(Of Boolean, Task), Task) =
-                            Async Function(item As Folder, callback2 As Func(Of Boolean, Task)) As Task
-                                Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
-                                If Not tf2 Is Nothing Then
-                                    tf.IsExpanded = True
-                                    Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
-                                    tf = tf2
-                                    Await callback2(False)
-                                Else
-                                    Debug.WriteLine("SetSelectedFolder didn't find " & item.FullPath)
-                                    Await callback2(True)
+                    Dim findNextRoot2 As Action =
+                        Async Sub()
+                            While Not en3 Is Nothing AndAlso tf Is Nothing AndAlso en3.MoveNext()
+                                If en3.Current.FullPath = en2.Current.FullPath Then
+                                    tf = en3.Current
                                 End If
-                            End Function
-                        Dim en As IEnumerator(Of Folder) = list.GetEnumerator()
-                        Dim cb As System.Func(Of Boolean, Task) =
-                            Async Function(cancel As Boolean) As Task
-                                If Not cancel Then
+                            End While
+                        End Sub
+                    Dim findNextRoot As Func(Of Task) =
+                        Async Function() As Task
+                            findNextRoot2()
+                            While tf Is Nothing AndAlso en2.MoveNext()
+                                en3 = Me.Roots.GetEnumerator()
+                                findNextRoot2()
+                            End While
+
+                            If Not tf Is Nothing Then
+                                If tf.FullPath = folder.FullPath Then
+                                    Await cb()
+                                    Return
+                                Else
+                                    en = list.GetEnumerator()
+                                    While Not en2.Current.Equals(en.Current) AndAlso en.MoveNext
+                                    End While
                                     If en.MoveNext() Then
                                         Await func(en.Current, cb)
-                                    Else
-                                        _selectionHelper.SetSelectedItems({tf})
-                                        If Not Me.Folder.FullPath = tf?.FullPath Then Me.Folder = tf
-                                        finish(tf)
-                                        _isSettingSelectedFolder = False
+                                        Return
                                     End If
-                                Else
-                                    _selectionHelper.SetSelectedItems({})
-                                    finish(Nothing)
-                                    _isSettingSelectedFolder = False
                                 End If
-                            End Function
-                        If en.MoveNext() Then
-                            Await func(en.Current, cb)
-                        Else
-                            If Not tf Is Nothing Then Await cb(False)
+                            End If
+
+                            Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- giving up")
+                            If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
+                            _selectionHelper.SetSelectedItems({})
+                            finish(Nothing)
                             _isSettingSelectedFolder = False
-                        End If
-                    Else
-                        If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
-                        finish(folder)
-                        _isSettingSelectedFolder = False
-                    End If
+                        End Function
+                    func =
+                        Async Function(item As Folder, callback2 As Func(Of Task)) As Task
+                            Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
+                            If Not tf2 Is Nothing Then
+                                tf.IsExpanded = True
+                                Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
+                                tf = tf2
+                                Await callback2()
+                            Else
+                                Debug.WriteLine("SetSelectedFolder didn't find " & item.FullPath & " -- keeping trying")
+                                tf = Nothing
+                                Await findNextRoot()
+                            End If
+                        End Function
+                    cb =
+                        Async Function() As Task
+                            If Not en Is Nothing AndAlso en.MoveNext() Then
+                                Await func(en.Current, cb)
+                            Else
+                                _selectionHelper.SetSelectedItems({tf})
+                                If Not Me.Folder.FullPath = tf?.FullPath Then Me.Folder = tf
+                                finish(tf)
+                                _isSettingSelectedFolder = False
+                            End If
+                        End Function
+
+                    Await findNextRoot()
                 Else
                     _isSettingSelectedFolder = False
                 End If
@@ -754,8 +858,17 @@ Namespace Controls
             Get
                 Return GetValue(ItemsProperty)
             End Get
-            Set(ByVal value As ObservableCollection(Of Item))
+            Protected Set(ByVal value As ObservableCollection(Of Item))
                 SetCurrentValue(ItemsProperty, value)
+            End Set
+        End Property
+
+        Public Property Roots As ObservableCollection(Of Item)
+            Get
+                Return GetValue(RootsProperty)
+            End Get
+            Protected Set(ByVal value As ObservableCollection(Of Item))
+                SetCurrentValue(RootsProperty, value)
             End Set
         End Property
 
@@ -821,11 +934,43 @@ Namespace Controls
             bfv.setIsCompactMode()
         End Sub
 
+        Public Property DoShowAllFolders As Boolean
+            Get
+                Return GetValue(DoShowAllFoldersProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowAllFoldersProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoShowAllFolders()
+            If Me.DoShowAllFoldersOverride.HasValue Then
+                Me.DoShowAllFolders = Me.DoShowAllFoldersOverride.Value
+            Else
+                Me.DoShowAllFolders = Shell.Settings.DoShowAllFolders
+            End If
+            loadRoots()
+        End Sub
+
+        Public Property DoShowAllFoldersOverride As Boolean?
+            Get
+                Return GetValue(DoShowAllFoldersOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoShowAllFoldersOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoShowAllFoldersOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As TreeView = d
+            bfv.setDoShowAllFolders()
+        End Sub
+
         Public Enum TreeRootSection As Long
             SYSTEM = 0
             PINNED = 100
             FREQUENT = Long.MaxValue - 100
-            ENVIRONMENT = Long.MaxValue - 5
+            ENVIRONMENT = Long.MaxValue - 10
         End Enum
 
         Protected Overridable Sub Dispose(disposing As Boolean)
