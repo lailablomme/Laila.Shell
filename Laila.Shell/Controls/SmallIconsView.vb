@@ -1,7 +1,5 @@
-﻿Imports System.ComponentModel
-Imports System.Windows
+﻿Imports System.Windows
 Imports System.Windows.Controls
-Imports System.Windows.Data
 Imports Laila.Shell.Helpers
 
 Namespace Controls

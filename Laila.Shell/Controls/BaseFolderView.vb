@@ -6,7 +6,9 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Data
+Imports System.Windows.Documents
 Imports System.Windows.Input
+Imports System.Windows.Media
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 
@@ -258,6 +260,31 @@ Namespace Controls
             _menu.InvokeCommand(_menu.DefaultId)
         End Sub
 
+        Protected Function GetIsDisplayNameTextBlockTooSmall(textBlock As TextBlock) As Boolean
+            textBlock.Measure(New Size(textBlock.ActualWidth,
+                If(textBlock.MaxHeight.Equals(Double.NaN), Double.PositiveInfinity, textBlock.MaxHeight)))
+
+            Dim typeface As Typeface = New Typeface(
+                textBlock.FontFamily,
+                textBlock.FontStyle,
+                textBlock.FontWeight,
+                textBlock.FontStretch)
+
+            Dim formattedText As FormattedText = New FormattedText(
+                textBlock.Inlines.OfType(Of Run)().FirstOrDefault().Text,
+                System.Threading.Thread.CurrentThread.CurrentCulture,
+                textBlock.FlowDirection,
+                typeface,
+                textBlock.FontSize,
+                textBlock.Foreground,
+                VisualTreeHelper.GetDpi(textBlock).PixelsPerDip)
+            formattedText.MaxTextWidth = textBlock.ActualWidth
+            formattedText.TextAlignment = textBlock.TextAlignment
+            formattedText.Trimming = TextTrimming.None
+
+            Return formattedText.Height > textBlock.DesiredSize.Height
+        End Function
+
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
             Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
             Dim overItem As Item = TryCast(listBoxItem?.DataContext, Item)
@@ -280,6 +307,14 @@ Namespace Controls
 
                         Dim startOverItem As Item = overItem
                         Dim text As String = overItem.InfoTip
+
+                        Dim textBlock As TextBlock = UIHelper.FindVisualChildren(Of TextBlock)(listBoxItem) _
+                            .FirstOrDefault(Function(b) b.Name = "PART_DisplayName" OrElse b.Tag = "PART_DisplayName")
+                        If Not textBlock Is Nothing Then
+                            If Me.GetIsDisplayNameTextBlockTooSmall(textBlock) Then
+                                text = overItem.DisplayName & Environment.NewLine & text
+                            End If
+                        End If
 
                         If Me.DoShowFolderContentsInInfoTip Then
                             Dim textFolderSize As String
