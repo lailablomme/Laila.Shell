@@ -25,6 +25,7 @@
     E_UNAUTHORIZED_ACCESS = &H80070005 ' Unauthorized access
 
     ' Windows Specific Errors
+    ERROR_FILE_NOT_FOUND2 = &H2
     ERROR_FILE_NOT_FOUND = &H80070002  ' File not found
     ERROR_PATH_NOT_FOUND = &H80070003  ' Path not found
     ERROR_ACCESS_DENIED = &H80070005   ' Access denied

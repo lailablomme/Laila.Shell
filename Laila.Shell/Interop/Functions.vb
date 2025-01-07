@@ -9,6 +9,19 @@ Imports Laila.Shell.Controls
 
 Public Class Functions
 
+    <DllImport("advapi32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
+    Public Shared Function RegCreateKeyEx(
+        hKey As IntPtr,
+        lpSubKey As String,
+        Reserved As Integer,
+        lpClass As String,
+        dwOptions As UInteger,
+        samDesired As Integer,
+        lpSecurityAttributes As IntPtr,
+        ByRef phkResult As IntPtr,
+        ByRef lpdwDisposition As Integer
+    ) As Integer
+    End Function
     <DllImport("Shcore.dll", CharSet:=CharSet.Auto)>
     Public Shared Function GetDpiForMonitor(hmonitor As IntPtr, dpiType As MonitorDpiType, ByRef dpiX As UInteger, ByRef dpiY As UInteger) As Integer
     End Function

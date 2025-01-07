@@ -55,7 +55,7 @@ Public Class Settings
         Dim maxDpiX As UInteger = 96
         Dim maxDpiY As UInteger = 96
         For Each s In System.Windows.Forms.Screen.AllScreens
-            Dim hMonitor = Functions.MonitorFromPoint(New WIN32POINT() With {.x = s.Bounds.X, .y = s.Bounds.Y}, 2)
+            Dim hMonitor As IntPtr = Functions.MonitorFromPoint(New WIN32POINT() With {.x = s.Bounds.X, .y = s.Bounds.Y}, 2)
             Dim dpiX As UInteger = 0
             Dim dpiY As UInteger = 0
 
@@ -182,7 +182,7 @@ Public Class Settings
             Sub()
                 Dim handle As IntPtr
                 Try
-                    Dim h As HRESULT = Functions.RegOpenKeyEx(HKEY.CURRENT_USER, keyPath, 0, REGKEY.NOTIFY Or REGKEY.WOW64_64KEY, handle)
+                    Dim h As HRESULT = Functions.RegCreateKeyEx(HKEY.CURRENT_USER, keyPath, 0, Nothing, 0, REGKEY.NOTIFY Or REGKEY.WRITE Or REGKEY.WOW64_64KEY, IntPtr.Zero, handle, IntPtr.Zero)
                     If h = HRESULT.S_OK Then
                         tcs.SetResult()
                         While Not cancellationToken.IsCancellationRequested
@@ -201,6 +201,8 @@ Public Class Settings
                                     End Sub)
                             End If
                         End While
+                    Else
+                        tcs.SetException(If(Marshal.GetExceptionForHR(h), New Exception("HRESULT " & h.ToString())))
                     End If
                 Finally
                     If Not IntPtr.Zero.Equals(handle) Then
@@ -626,8 +628,10 @@ Public Class Settings
                 If h = HRESULT.S_OK Then
                     Return data
                 Else
-                    return defaultValue
+                    Return defaultValue
                 End If
+            Else
+                Return defaultValue
             End If
         Finally
             If Not IntPtr.Zero.Equals(handle) Then
@@ -640,7 +644,7 @@ Public Class Settings
     Private Shared Sub SetRegistryDWord(keyPath As String, valueName As String, value As Integer)
         Dim handle As IntPtr
         Try
-            Dim h As HRESULT = Functions.RegOpenKeyEx(HKEY.CURRENT_USER, keyPath, 0, REGKEY.SET_VALUE Or REGKEY.WOW64_64KEY, handle)
+            Dim h As HRESULT = Functions.RegCreateKeyEx(HKEY.CURRENT_USER, keyPath, 0, Nothing, 0, REGKEY.WRITE Or REGKEY.WOW64_64KEY, IntPtr.Zero, handle, IntPtr.Zero)
             If h = HRESULT.S_OK Then
                 Dim dataBytes As Byte() = BitConverter.GetBytes(value)
                 Dim dataSize As Integer = dataBytes.Length
@@ -649,6 +653,8 @@ Public Class Settings
                 If Not h = HRESULT.S_OK Then
                     Throw Marshal.GetExceptionForHR(h)
                 End If
+            Else
+                Throw Marshal.GetExceptionForHR(h)
             End If
         Finally
             If Not IntPtr.Zero.Equals(handle) Then
