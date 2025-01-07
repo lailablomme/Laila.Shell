@@ -203,6 +203,7 @@ Public Class Settings
                         End While
                     Else
                         tcs.SetException(If(Marshal.GetExceptionForHR(h), New Exception("HRESULT " & h.ToString())))
+                        stopped.SetResult()
                     End If
                 Finally
                     If Not IntPtr.Zero.Equals(handle) Then
