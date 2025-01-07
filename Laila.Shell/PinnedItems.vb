@@ -63,7 +63,7 @@ Public Class PinnedItems
                 ' register in db
                 Dim collection As ILiteCollection(Of PinnedItem) = db.GetCollection(Of PinnedItem)("PinnedItems")
                 Dim pinnedItems As IEnumerable(Of PinnedItem) = collection.Find(Function(f) f.Pidl.Equals(item.Pidl.ToString()))
-                Return pinnedItems.Count = 1
+                Return pinnedItems.Count > 0
             End Using
         End SyncLock
     End Function
@@ -108,7 +108,7 @@ Public Class PinnedItems
                 ' register in db
                 Dim collection As ILiteCollection(Of PinnedItem) = db.GetCollection(Of PinnedItem)("PinnedItems")
                 Dim pinnedItems As IEnumerable(Of PinnedItem) = collection.Find(Function(f) f.Pidl.Equals(pidl.ToString()))
-                If pinnedItems.Count = 1 Then
+                If pinnedItems.Count > 0 Then
                     e = New PinnedItemEventArgs() With {.Pidl = pidl, .Index = pinnedItems(0).Index}
                     collection.Delete(pinnedItems(0).Id)
 

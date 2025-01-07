@@ -79,27 +79,31 @@ Public Class Pidl
         Dim parentShellFolder As IShellFolder
         Dim parentFolder As Folder
 
-        If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) <> 0 Then
-            parentFolder = CType(Item.FromPidl(IntPtr.Add(start, offset), Nothing, True), Folder)
-            parentShellFolder = parentFolder.ShellFolder
-        End If
-
         ' read items
-        For i = 0 To count - 1
-            offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
-            Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
-            Dim attr As SFGAO = SFGAO.FOLDER
-            shellItem2.GetAttributes(attr, attr)
-            If attr.HasFlag(SFGAO.FOLDER) Then
-                result.Add(New Folder(shellItem2, Nothing, True, True))
-            Else
-                result.Add(New Item(shellItem2, Nothing, True, True))
-            End If
-        Next
+        Shell.RunOnSTAThread(
+            Sub()
+                If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) <> 0 Then
+                    parentFolder = CType(Item.FromPidl(IntPtr.Add(start, offset), Nothing, True), Folder)
+                    parentShellFolder = parentFolder.ShellFolder
+                End If
 
-        If Not parentFolder Is Nothing Then
-            parentFolder.Dispose()
-        End If
+                For i = 0 To count - 1
+                    offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
+                    Dim shellItem2 As IShellItem2 = Item.GetIShellItem2FromPidl(IntPtr.Add(start, offset), parentShellFolder)
+                    Dim attr As SFGAO = SFGAO.FOLDER
+                    shellItem2.GetAttributes(attr, attr)
+                    If attr.HasFlag(SFGAO.FOLDER) Then
+                        result.Add(New Folder(shellItem2, Nothing, True, True))
+                    Else
+                        result.Add(New Item(shellItem2, Nothing, True, True))
+                    End If
+                    Dim p As Pidl = result(result.Count - 1).Pidl
+                Next
+
+                If Not parentFolder Is Nothing Then
+                    parentFolder.Dispose()
+                End If
+            End Sub, 1)
 
         Return result
     End Function
