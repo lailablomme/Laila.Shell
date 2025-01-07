@@ -22,13 +22,18 @@ Namespace Helpers
             Dim dbPath As String = GetStateDBPath()
             Dim viewId As String = getMD5Hash(viewName)
 
-            If Not File.Exists(Path.Combine(dbPath, viewId)) Then
-                result = New FolderViewState()
-            Else
+            If File.Exists(Path.Combine(dbPath, viewId)) Then
                 Using stream As FileStream = New FileStream(Path.Combine(dbPath, viewId), FileMode.Open, FileAccess.Read)
                     Dim s As XmlSerializer = New XmlSerializer(GetType(FolderViewState))
-                    result = s.Deserialize(stream)
+                    Try
+                        result = s.Deserialize(stream)
+                    Catch ex As Exception
+                    End Try
                 End Using
+            End If
+
+            If result Is Nothing Then
+                result = New FolderViewState()
             End If
 
             result.ViewName = viewName

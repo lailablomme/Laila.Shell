@@ -86,7 +86,6 @@ Public Class FrequentFolders
                         .LastAccessedDateTime = DateTime.Now
                     }
                     collection.Insert(frequentFolder)
-                    collection.EnsureIndex(Of String)(Function(f) f.Pidl)
                 End If
             End Using
         End SyncLock
@@ -110,7 +109,7 @@ Public Class FrequentFolders
     Private Shared Function getDBFileName() As String
         Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
         If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
-        Return IO.Path.Combine(path, "FrequentFolders2.db")
+        Return IO.Path.Combine(path, "FrequentFolders3.db")
     End Function
 
     Public Class FrequentFolder

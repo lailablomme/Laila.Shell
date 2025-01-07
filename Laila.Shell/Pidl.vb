@@ -22,6 +22,12 @@ Public Class Pidl
         _lastId = Functions.ILFindLastID(_pidl)
     End Sub
 
+    Public Sub New(bytes As Byte())
+        _pidl = Marshal.AllocCoTaskMem(bytes.Length)
+        Marshal.Copy(bytes, 0, _pidl, bytes.Length)
+        _lastId = Functions.ILFindLastID(_pidl)
+    End Sub
+
     Public Shared Function CreateShellIDListArray(items As IEnumerable(Of Item)) As IntPtr
         Dim pidls As List(Of Pidl) = New List(Of Pidl)()
         For Each item In items

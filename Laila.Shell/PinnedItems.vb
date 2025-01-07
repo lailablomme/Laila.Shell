@@ -92,7 +92,6 @@ Public Class PinnedItems
                             collection.Query().OrderByDescending(Function(i) i.Index).First().Index + 1, 0))
                     }
                     collection.Insert(pinnedItem)
-                    collection.EnsureIndex(Of String)(Function(f) f.Pidl)
                     e = New PinnedItemEventArgs() With {.Pidl = item.Pidl, .Index = pinnedItem.Index}
                 End If
             End Using
@@ -148,7 +147,7 @@ Public Class PinnedItems
     Private Shared Function getDBFileName() As String
         Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
         If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
-        Return IO.Path.Combine(path, "PinnedItems3.db")
+        Return IO.Path.Combine(path, "PinnedItems4.db")
     End Function
 
     Public Class PinnedItem
