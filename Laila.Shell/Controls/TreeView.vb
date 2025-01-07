@@ -447,7 +447,8 @@ Namespace Controls
                     Dim noRecursive As List(Of String) = New List(Of String)()
                     If Not currentFolder Is Nothing Then
                         While Not currentFolder Is Nothing _
-                        AndAlso Not noRecursive.Contains(currentFolder.Pidl.ToString())
+                        AndAlso Not noRecursive.Contains(currentFolder.Pidl.ToString()) _
+                        AndAlso (Me.DoShowAllFoldersInTreeView OrElse Not currentFolder.Parent Is Nothing)
                             noRecursive.Add(currentFolder.Pidl.ToString())
                             list.Add(currentFolder)
                             Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
@@ -463,6 +464,7 @@ Namespace Controls
                         Dim en3 As IEnumerator(Of Item)
                         Dim func As Func(Of Folder, Func(Of Task), Task)
                         Dim cb As System.Func(Of Task)
+                        Dim triedDesktop As Boolean = False
 
                         Dim finish As Action(Of Folder) =
                         Sub(finishFolder As Folder)
@@ -502,11 +504,19 @@ Namespace Controls
                                 End If
                             End If
 
-                            Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- giving up")
-                            If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
-                            _selectionHelper.SetSelectedItems({})
-                            finish(Nothing)
-                            _isSettingSelectedFolder = False
+                            If Not Me.DoShowAllFoldersInTreeView AndAlso Not triedDesktop AndAlso list(0).FullPath <> Shell.Desktop.FullPath Then
+                                Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- trying Desktop")
+                                list.Insert(0, Shell.Desktop)
+                                en2 = list.GetEnumerator()
+                                triedDesktop = True
+                                findNextRoot()
+                            Else
+                                Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- giving up")
+                                If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
+                                _selectionHelper.SetSelectedItems({})
+                                finish(Nothing)
+                                _isSettingSelectedFolder = False
+                            End If
                         End Function
                         func =
                         Async Function(item As Folder, callback2 As Func(Of Task)) As Task

@@ -800,22 +800,22 @@ Public Class Folder
                                         newFullPaths.Add(newItem.FullPath & "_" & newItem.DisplayName)
 
                                         If isRootDesktop Then
-                                            If Not Shell.GetSpecialFolder("Home") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Home").Pidl) Then newItem.TreeSortPrefix = "_001" _
-                                            Else If Not Shell.GetSpecialFolder("Gallery") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Gallery").Pidl) Then newItem.TreeSortPrefix = "_002" _
-                                            Else If Not Shell.GetSpecialFolder("Pictures") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Pictures").FullPath) Then newItem.TreeSortPrefix = "_003" _
-                                            Else If newItem.FullPath.Equals(Shell.Desktop.FullPath) Then newItem.TreeSortPrefix = "_004" _
-                                            Else If Not Shell.GetSpecialFolder("Documents") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Documents").FullPath) Then newItem.TreeSortPrefix = "_005" _
-                                            Else If Not Shell.GetSpecialFolder("OneDrive") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("OneDrive").Pidl) Then newItem.TreeSortPrefix = "_006" _
-                                            Else If Not Shell.GetSpecialFolder("OneDrive Business") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("OneDrive Business").Pidl) Then newItem.TreeSortPrefix = "_007" _
-                                            Else If Not Shell.GetSpecialFolder("Downloads") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Downloads").FullPath) Then newItem.TreeSortPrefix = "_008" _
-                                            Else If Not Shell.GetSpecialFolder("Music") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Music").FullPath) Then newItem.TreeSortPrefix = "_009" _
-                                            Else If Not Shell.GetSpecialFolder("Videos") Is Nothing AndAlso newItem.FullPath.Equals(Shell.GetSpecialFolder("Videos").FullPath) Then newItem.TreeSortPrefix = "_010" _
-                                            Else If Not Shell.GetSpecialFolder("User Profile") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("User Profile").Pidl) Then newItem.TreeSortPrefix = "_011" _
-                                            Else If Not Shell.GetSpecialFolder("This pc") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("This pc").Pidl) Then newItem.TreeSortPrefix = "_012" _
-                                            Else If Not Shell.GetSpecialFolder("Libraries") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Libraries").Pidl) Then newItem.TreeSortPrefix = "_013" _
-                                            Else If Not Shell.GetSpecialFolder("Network") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Network").Pidl) Then newItem.TreeSortPrefix = "_014" _
-                                            Else If Not Shell.GetSpecialFolder("Control Panel") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Control Panel").Pidl) Then newItem.TreeSortPrefix = "_015" _
-                                            Else If Not Shell.GetSpecialFolder("Recycle Bin") Is Nothing AndAlso newItem.Pidl.Equals(Shell.GetSpecialFolder("Recycle Bin").Pidl) Then newItem.TreeSortPrefix = "_016" _
+                                            If Not Shell.GetSpecialFolder("Home") Is Nothing AndAlso (newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Home").FullPath) OrElse newItem.FullPath.Equals("::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}")) Then newItem.TreeSortPrefix = "_001" _
+                                            Else If Not Shell.GetSpecialFolder("Gallery") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Gallery").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_002" _
+                                            Else If Not Shell.GetSpecialFolder("Pictures") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Pictures").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_003" _
+                                            Else If newItem.FullPath.ToUpper().Equals(Shell.Desktop.FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_004" _
+                                            Else If Not Shell.GetSpecialFolder("Documents") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Documents").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_005" _
+                                            Else If Not Shell.GetSpecialFolder("OneDrive") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("OneDrive").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_006" _
+                                            Else If Not Shell.GetSpecialFolder("OneDrive Business") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("OneDrive Business").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_007" _
+                                            Else If Not Shell.GetSpecialFolder("Downloads") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Downloads").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_008" _
+                                            Else If Not Shell.GetSpecialFolder("Music") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Music").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_009" _
+                                            Else If Not Shell.GetSpecialFolder("Videos") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Videos").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_010" _
+                                            Else If Not Shell.GetSpecialFolder("User Profile") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("User Profile").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_011" _
+                                            Else If Not Shell.GetSpecialFolder("This pc") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("This pc").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_012" _
+                                            Else If Not Shell.GetSpecialFolder("Libraries") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Libraries").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_013" _
+                                            Else If Not Shell.GetSpecialFolder("Network") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Network").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_014" _
+                                            Else If Not Shell.GetSpecialFolder("Control Panel") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Control Panel").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_015" _
+                                            Else If Not Shell.GetSpecialFolder("Recycle Bin") Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Recycle Bin").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_016" _
                                             Else newItem.TreeSortPrefix = "_100"
                                         End If
                                     Else
@@ -1120,25 +1120,27 @@ Public Class Folder
     End Function
 
     Protected Overrides Sub Dispose(disposing As Boolean)
-        If Not disposedValue Then
-            MyBase.Dispose(disposing)
+        SyncLock _shellItemLock
+            If Not disposedValue Then
+                MyBase.Dispose(disposing)
 
-            SyncLock _listeningLock
-                If _isListening Then
-                    Shell.StopListening(Me)
+                SyncLock _listeningLock
+                    If _isListening Then
+                        Shell.StopListening(Me)
+                    End If
+                End SyncLock
+
+                Me.CancelEnumeration()
+
+                For Each item In _items
+                    item.Dispose()
+                Next
+
+                If Not _shellFolder Is Nothing Then
+                    Marshal.ReleaseComObject(_shellFolder)
+                    _shellFolder = Nothing
                 End If
-            End SyncLock
-
-            Me.CancelEnumeration()
-
-            For Each item In _items
-                item.Dispose()
-            Next
-
-            If Not _shellFolder Is Nothing Then
-                Marshal.ReleaseComObject(_shellFolder)
-                _shellFolder = Nothing
             End If
-        End If
+        End SyncLock
     End Sub
 End Class
