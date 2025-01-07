@@ -504,7 +504,8 @@ Namespace Controls
                                 End If
                             End If
 
-                            If Not Me.DoShowAllFoldersInTreeView AndAlso Not triedDesktop AndAlso list(0).FullPath <> Shell.Desktop.FullPath Then
+                            If Not Me.DoShowAllFoldersInTreeView AndAlso Not triedDesktop _
+                            AndAlso (list.Count = 0 OrElse list(0).FullPath <> Shell.Desktop.FullPath) Then
                                 Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- trying Desktop")
                                 list.Insert(0, Shell.Desktop)
                                 en2 = list.GetEnumerator()
