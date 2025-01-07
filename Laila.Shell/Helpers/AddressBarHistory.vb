@@ -71,7 +71,6 @@ Namespace Helpers
                         .LastAccessedDateTime = DateTime.Now
                     }
                     collection.Insert(historyItem)
-                    collection.EnsureIndex(Of String)(Function(f) f.Pidl)
                 End If
             End Using
         End Sub
@@ -79,7 +78,7 @@ Namespace Helpers
         Private Shared Function getDBFileName() As String
             Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
             If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
-            Return IO.Path.Combine(path, "AddressBarHistory2.db")
+            Return IO.Path.Combine(path, "AddressBarHistory3.db")
         End Function
 
         Public Class AddressBarHistoryItem
