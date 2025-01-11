@@ -63,9 +63,9 @@ Public Class Item
             Dim attr As SFGAO = SFGAO.FOLDER
             shellItem2.GetAttributes(attr, attr)
             If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates)
+                Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
             Else
-                Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates)
+                Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
             End If
         Else
             Return Nothing
@@ -88,11 +88,14 @@ Public Class Item
         Return result
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As IntPtr? = Nothing)
         _objectCount += 1
         _objectId = _objectCount
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
+        If pidl.HasValue AndAlso Not IntPtr.Zero.Equals(pidl.Value) Then
+            _pidl = New Pidl(pidl.Value).Clone()
+        End If
         If Not shellItem2 Is Nothing Then
             If doHookUpdates Then Me.HookUpdates()
             Shell.AddToItemsCache(Me)
@@ -240,6 +243,8 @@ Public Class Item
                     _shellItem2 = Me.GetNewShellItem()
                 End If
                 Marshal.ReleaseComObject(oldShellItem)
+                _pidl.Dispose()
+                _pidl = Nothing
 
                 Dim oldPropertiesByKey As Dictionary(Of String, [Property])
                 Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])

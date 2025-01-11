@@ -74,8 +74,8 @@ Public Class Folder
         _isListening = True
     End Sub
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean)
-        MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As IntPtr? = Nothing)
+        MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
     End Sub
 
     Public ReadOnly Property ShellFolder As IShellFolder
@@ -1121,7 +1121,7 @@ Public Class Folder
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
-                        If Me.Pidl?.Equals(e.Item1.Pidl) Then
+                        If Me.Pidl?.Equals(e.Item1.Pidl) OrElse Shell.Desktop.Pidl?.Equals(e.Item1.Pidl) Then
                             If _isLoaded _
                                 AndAlso (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso (Not _doSkipUPDATEDIR.HasValue _
@@ -1131,7 +1131,7 @@ Public Class Folder
                                 Me.GetItemsAsync()
                             End If
                             _doSkipUPDATEDIR = Nothing
-                        ElseIf e.Event = SHCNE.UPDATEITEM AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.pidl?.Equals(Me.pidl) Then
+                        ElseIf e.Event = SHCNE.UPDATEITEM AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
                             If Not _items Is Nothing Then
                                 Dim existing As Item
                                 UIHelper.OnUIThread(
