@@ -239,6 +239,7 @@ Namespace Controls
             textBlockFactory.SetValue(Grid.ColumnSpanProperty, 2)
             textBlockFactory.SetValue(TextBlock.TextAlignmentProperty, column.Alignment)
             textBlockFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center)
+            textBlockFactory.SetValue(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Left)
             textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis)
             textBlockFactory.SetValue(TextBlock.PaddingProperty, New Thickness(0, 0, 2, 0))
             If column.CanonicalName = "System.ItemNameDisplay" Then

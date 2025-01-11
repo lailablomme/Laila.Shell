@@ -1171,11 +1171,11 @@ Public Class Item
                         Me.Refresh()
                     End If
                 Case SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
-                    If Me.IsDrive AndAlso Me.FullPath?.Equals(e.Item1?.FullPath) Then
+                    If Me.IsDrive AndAlso Me.Pidl?.Equals(e.Item1?.Pidl) Then
                         Me.Refresh()
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
-                    If Me.FullPath?.Equals(e.Item1?.FullPath) Then
+                    If Me.Pidl?.Equals(e.Item1?.Pidl) Then
                         Dim oldPidl As Pidl = Me.Pidl
                         _pidl = e.Item2.Pidl.Clone()
                         PinnedItems.RenameItem(oldPidl, _pidl)

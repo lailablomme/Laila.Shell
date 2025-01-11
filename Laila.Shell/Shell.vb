@@ -14,6 +14,7 @@ Public Class Shell
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
 
+    Public Shared NotificationTaskQueue As New BlockingCollection(Of Action)
     Public Shared STATaskQueue As New BlockingCollection(Of Action)
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
 
@@ -60,6 +61,23 @@ Public Class Shell
         Functions.OleInitialize(IntPtr.Zero)
 
         ImageHelper.Load()
+
+        Dim notificationThread As Thread = New Thread(
+                Sub()
+                    Try
+                        ' Process tasks from the queue
+                        For Each task In NotificationTaskQueue.GetConsumingEnumerable()
+                            task.Invoke()
+                        Next
+                    Catch ex As OperationCanceledException
+                        Debug.WriteLine("NotificationTaskQueue thread was canceled.")
+                    End Try
+                End Sub)
+        notificationThread.IsBackground = True
+        notificationThread.SetApartmentState(ApartmentState.STA)
+        notificationThread.Priority = ThreadPriority.Highest
+        notificationThread.Start()
+        _threads.Add(notificationThread)
 
         ' all sta threads, because not every shell item supports mta
         For i = 1 To 75
@@ -301,7 +319,7 @@ Public Class Shell
                 pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                 Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
-                Shell.STATaskQueue.Add(
+                Shell.NotificationTaskQueue.Add(
                     Sub()
                         ' make eventargs
                         Dim e As NotificationEventArgs = New NotificationEventArgs() With {

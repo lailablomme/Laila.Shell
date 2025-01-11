@@ -991,24 +991,55 @@ Public Class Folder
 
         If Not disposedValue Then
             Select Case e.Event
-                Case SHCNE.CREATE
+                Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If _isLoaded Then
-                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.FullPath?.Equals(Me.FullPath) Then
+                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
                             If Not _items Is Nothing Then
                                 Dim existing As Item
                                 UIHelper.OnUIThread(
                                     Sub()
-                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(e.Item1.FullPath))
+                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                        If existing Is Nothing Then
+                                            existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item2.Pidl))
+                                        End If
+                                        If existing Is Nothing Then
+                                            e.Item2._parent = Me
+                                            e.Item2.HookUpdates()
+                                            e.IsHandled2 = True
+                                        End If
+                                    End Sub)
+                                If existing Is Nothing Then
+                                    e.Item2.Refresh()
+                                    UIHelper.OnUIThread(
+                                    Sub()
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(e.Item2, c)
+                                    End Sub)
+                                End If
+                            End If
+                        End If
+                    End If
+                Case SHCNE.CREATE
+                    If _isLoaded Then
+                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                            If Not _items Is Nothing Then
+                                Dim existing As Item
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                         If existing Is Nothing Then
                                             e.Item1._parent = Me
                                             e.Item1.HookUpdates()
                                             e.IsHandled1 = True
-                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                            _items.InsertSorted(e.Item1, c)
                                         End If
                                     End Sub)
                                 If existing Is Nothing Then
                                     e.Item1.Refresh()
+                                    UIHelper.OnUIThread(
+                                    Sub()
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(e.Item1, c)
+                                    End Sub)
                                 Else
                                     existing.Refresh()
                                 End If
@@ -1017,22 +1048,25 @@ Public Class Folder
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
-                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.FullPath?.Equals(Me.FullPath) Then
+                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
                             If Not _items Is Nothing Then
                                 Dim existing As Item
                                 UIHelper.OnUIThread(
                                     Sub()
-                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(e.Item1.FullPath))
+                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                         If existing Is Nothing Then
                                             e.Item1._parent = Me
                                             e.Item1.HookUpdates()
                                             e.IsHandled1 = True
-                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                            _items.InsertSorted(e.Item1, c)
                                         End If
                                     End Sub)
                                 If existing Is Nothing Then
                                     e.Item1.Refresh()
+                                    UIHelper.OnUIThread(
+                                    Sub()
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(e.Item1, c)
+                                    End Sub)
                                 Else
                                     existing.Refresh()
                                 End If
@@ -1044,7 +1078,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item2 As Item
-                                item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(e.Item1.FullPath))
+                                item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                 If Not item2 Is Nothing Then
                                     If TypeOf item2 Is Folder Then
                                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -1060,7 +1094,7 @@ Public Class Folder
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         UIHelper.OnUIThread(
                             Sub()
-                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(e.Item1.FullPath)) Is Nothing Then
+                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
                                     e.Item1._parent = Me
                                     e.Item1.HookUpdates()
                                     e.IsHandled1 = True
@@ -1075,7 +1109,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item As Item
-                                item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(e.Item1.FullPath))
+                                item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                                     Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                         .Folder = item,
@@ -1086,17 +1120,40 @@ Public Class Folder
                             End Sub)
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
-                    If Me.FullPath?.Equals(e.Item1.FullPath) Then
-                        If _isLoaded _
-                            AndAlso (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
-                            AndAlso (Not _doSkipUPDATEDIR.HasValue _
-                                     OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) _
-                            AndAlso Not TypeOf Me Is SearchFolder Then
-                            _isEnumerated = False
-                            Me.GetItemsAsync()
+                    If _isLoaded Then
+                        If Me.Pidl?.Equals(e.Item1.Pidl) Then
+                            If _isLoaded _
+                                AndAlso (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
+                                AndAlso (Not _doSkipUPDATEDIR.HasValue _
+                                         OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) _
+                                AndAlso Not TypeOf Me Is SearchFolder Then
+                                _isEnumerated = False
+                                Me.GetItemsAsync()
+                            End If
+                            _doSkipUPDATEDIR = Nothing
+                        ElseIf e.Event = SHCNE.UPDATEITEM AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.pidl?.Equals(Me.pidl) Then
+                            If Not _items Is Nothing Then
+                                Dim existing As Item
+                                UIHelper.OnUIThread(
+                                     Sub()
+                                         existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                         If existing Is Nothing Then
+                                             e.Item1._parent = Me
+                                             e.Item1.HookUpdates()
+                                             e.IsHandled1 = True
+                                         End If
+                                     End Sub)
+                                If existing Is Nothing Then
+                                    e.Item1.Refresh()
+                                    UIHelper.OnUIThread(
+                                     Sub()
+                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                         _items.InsertSorted(e.Item1, c)
+                                     End Sub)
+                                End If
+                            End If
                         End If
                     End If
-                    _doSkipUPDATEDIR = Nothing
             End Select
         End If
     End Sub
