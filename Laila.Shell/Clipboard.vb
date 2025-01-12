@@ -1,5 +1,6 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
+Imports System.Threading
 
 Public Class Clipboard
     Public Shared Function CanCopy(items As IEnumerable(Of Item)) As Boolean
@@ -13,9 +14,9 @@ Public Class Clipboard
     Public Shared Function CanPaste(folder As Folder) As Boolean
         ' check for paste by checking if it would accept a drop
         Dim dataObject As IDataObject
-        Functions.OleGetClipboard(dataObject)
+           Functions.OleGetClipboard(dataObject)
 
-        Dim dropTarget As IDropTarget, shellFolder As IShellFolder
+           Dim dropTarget As IDropTarget, shellFolder As IShellFolder
         Try
             If Not folder.Parent Is Nothing Then
                 shellFolder = folder.Parent.ShellFolder
@@ -66,35 +67,41 @@ Public Class Clipboard
     End Sub
 
     Public Shared Sub PasteFiles(folder As Folder)
-        Dim dataObject As IDataObject
-        Functions.OleGetClipboard(dataObject)
+        Dim thread As Thread = New Thread(New ThreadStart(
+            Sub()
+                Dim dataObject As IDataObject
+                Functions.OleGetClipboard(dataObject)
 
-        Dim dropTarget As IDropTarget, shellFolder As IShellFolder
-        Try
-            If Not folder.Parent Is Nothing Then
-                shellFolder = folder.Parent.ShellFolder
-                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-            Else
-                ' desktop
-                shellFolder = Shell.Desktop.ShellFolder
-                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-            End If
+                Dim dropTarget As IDropTarget, shellFolder As IShellFolder
+                Try
+                    If Not folder.Parent Is Nothing Then
+                        shellFolder = folder.Parent.ShellFolder
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                    Else
+                        ' desktop
+                        shellFolder = Shell.Desktop.ShellFolder
+                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                    End If
 
-            If Not dropTarget Is Nothing Then
-                Dim effect As DROPEFFECT = ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.GetClipboard()
-                Dim grfKeyState As MK = MK.MK_LBUTTON
-                If effect = DROPEFFECT.DROPEFFECT_COPY Then grfKeyState = grfKeyState Or MK.MK_CONTROL
-                Dim hr As HRESULT = dropTarget.DragEnter(dataObject, grfKeyState, New WIN32POINT(), effect)
-                dropTarget.Drop(dataObject, grfKeyState, New WIN32POINT(), effect)
-            End If
-        Finally
-            If Not dropTarget Is Nothing Then
-                Marshal.ReleaseComObject(dropTarget)
-            End If
-            If Not dataObject Is Nothing Then
-                Marshal.ReleaseComObject(dataObject)
-            End If
-        End Try
+                    If Not dropTarget Is Nothing Then
+                        Dim effect As DROPEFFECT = ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.GetClipboard()
+                        Dim grfKeyState As MK = MK.MK_LBUTTON
+                        If effect = DROPEFFECT.DROPEFFECT_COPY Then grfKeyState = grfKeyState Or MK.MK_CONTROL
+                        Dim hr As HRESULT = dropTarget.DragEnter(dataObject, grfKeyState, New WIN32POINT(), effect)
+                        dropTarget.Drop(dataObject, grfKeyState, New WIN32POINT(), effect)
+                    End If
+                Finally
+                    If Not dropTarget Is Nothing Then
+                        Marshal.ReleaseComObject(dropTarget)
+                    End If
+                    If Not dataObject Is Nothing Then
+                        Marshal.ReleaseComObject(dataObject)
+                    End If
+                End Try
+            End Sub))
+
+        thread.SetApartmentState(ApartmentState.STA)
+        thread.Start()
     End Sub
 
     Public Shared Function GetFileNameList(dataObj As IDataObject) As String()

@@ -1,6 +1,7 @@
 ﻿Imports System.ComponentModel
 Imports System.Reflection
 Imports System.Runtime.InteropServices
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
@@ -193,21 +194,27 @@ Namespace Controls
         End Sub
 
         Public Shared Sub DoDelete(items As IEnumerable(Of Item))
-            Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-            Dim dataObject As IDataObject
-            Try
-                dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
-                If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                fo.DeleteItems(dataObject)
-                fo.PerformOperations()
-            Finally
-                If Not fo Is Nothing Then
-                    Marshal.ReleaseComObject(fo)
-                End If
-                If Not dataObject Is Nothing Then
-                    Marshal.ReleaseComObject(dataObject)
-                End If
-            End Try
+            Dim thread As Thread = New Thread(New ThreadStart(
+                Sub()
+                    Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                    Dim dataObject As IDataObject
+                    Try
+                        dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+                        If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                        fo.DeleteItems(dataObject)
+                        fo.PerformOperations()
+                    Finally
+                        If Not fo Is Nothing Then
+                            Marshal.ReleaseComObject(fo)
+                        End If
+                        If Not dataObject Is Nothing Then
+                            Marshal.ReleaseComObject(dataObject)
+                        End If
+                    End Try
+                End Sub))
+
+            thread.SetApartmentState(ApartmentState.STA)
+            thread.Start()
         End Sub
 
         Public Shared Sub DoShare(items As IEnumerable(Of Item))
