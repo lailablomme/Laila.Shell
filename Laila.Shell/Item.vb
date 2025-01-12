@@ -243,8 +243,10 @@ Public Class Item
                     _shellItem2 = Me.GetNewShellItem()
                 End If
                 Marshal.ReleaseComObject(oldShellItem)
-                _pidl.Dispose()
-                _pidl = Nothing
+                If Not _pidl Is Nothing Then
+                    _pidl.Dispose()
+                    _pidl = Nothing
+                End If
 
                 Dim oldPropertiesByKey As Dictionary(Of String, [Property])
                 Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])
