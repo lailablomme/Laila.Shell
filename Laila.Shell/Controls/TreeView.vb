@@ -443,8 +443,10 @@ Namespace Controls
 
                     Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
                     Dim list As List(Of Folder) = New List(Of Folder)()
+                    Dim tf As Folder
                     Dim currentFolder As Folder = folder
                     Dim noRecursive As List(Of String) = New List(Of String)()
+
                     If Not currentFolder Is Nothing Then
                         While Not currentFolder Is Nothing _
                         AndAlso Not noRecursive.Contains(currentFolder.Pidl.ToString()) _
@@ -452,13 +454,15 @@ Namespace Controls
                             noRecursive.Add(currentFolder.Pidl.ToString())
                             list.Add(currentFolder)
                             Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
-                            If currentFolder.TreeRootIndex <> -1 Then Exit While
+                            If currentFolder.TreeRootIndex <> -1 Then
+                                tf = currentFolder
+                                Exit While
+                            End If
                             currentFolder = currentFolder.Parent
                         End While
 
                         list.Reverse()
 
-                        Dim tf As Folder
                         Dim en As IEnumerator(Of Folder)
                         Dim en2 As IEnumerator(Of Folder) = list.GetEnumerator()
                         Dim en3 As IEnumerator(Of Item)
@@ -466,59 +470,61 @@ Namespace Controls
                         Dim cb As System.Func(Of Task)
                         Dim triedDesktop As Boolean = False
 
+                        If Not tf Is Nothing Then en2.MoveNext()
+
                         Dim finish As Action(Of Folder) =
-                        Sub(finishFolder As Folder)
-                            If Not callback Is Nothing Then
-                                callback(finishFolder)
-                            End If
-                        End Sub
+                            Sub(finishFolder As Folder)
+                                If Not callback Is Nothing Then
+                                    callback(finishFolder)
+                                End If
+                            End Sub
 
                         Dim findNextRoot2 As Action =
-                        Async Sub()
-                            While Not en3 Is Nothing AndAlso tf Is Nothing AndAlso en3.MoveNext()
-                                If en3.Current.FullPath = en2.Current.FullPath Then
-                                    tf = en3.Current
-                                End If
-                            End While
-                        End Sub
+                            Async Sub()
+                                While Not en3 Is Nothing AndAlso tf Is Nothing AndAlso en3.MoveNext()
+                                    If en3.Current.FullPath = en2.Current.FullPath Then
+                                        tf = en3.Current
+                                    End If
+                                End While
+                            End Sub
                         Dim findNextRoot As Func(Of Task) =
-                        Async Function() As Task
-                            findNextRoot2()
-                            While tf Is Nothing AndAlso en2.MoveNext()
-                                en3 = Me.Roots.GetEnumerator()
+                            Async Function() As Task
                                 findNextRoot2()
-                            End While
+                                While tf Is Nothing AndAlso en2.MoveNext()
+                                    en3 = Me.Roots.GetEnumerator()
+                                    findNextRoot2()
+                                End While
 
-                            If Not tf Is Nothing Then
-                                If tf.FullPath = folder.FullPath Then
-                                    Await cb()
-                                    Return
-                                Else
-                                    en = list.GetEnumerator()
-                                    While Not en2.Current.Equals(en.Current) AndAlso en.MoveNext
-                                    End While
-                                    If en.MoveNext() Then
-                                        Await func(en.Current, cb)
+                                If Not tf Is Nothing Then
+                                    If tf.FullPath = folder.FullPath Then
+                                        Await cb()
                                         Return
+                                    Else
+                                        en = list.GetEnumerator()
+                                        While Not en2.Current.Equals(en.Current) AndAlso en.MoveNext
+                                        End While
+                                        If en.MoveNext() Then
+                                            Await func(en.Current, cb)
+                                            Return
+                                        End If
                                     End If
                                 End If
-                            End If
 
-                            If Not Me.DoShowAllFoldersInTreeView AndAlso Not triedDesktop _
+                                If Not Me.DoShowAllFoldersInTreeView AndAlso Not triedDesktop _
                             AndAlso (list.Count = 0 OrElse list(0).FullPath <> Shell.Desktop.FullPath) Then
-                                Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- trying Desktop")
-                                list.Insert(0, Shell.Desktop)
-                                en2 = list.GetEnumerator()
-                                triedDesktop = True
-                                findNextRoot()
-                            Else
-                                Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- giving up")
-                                If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
-                                _selectionHelper.SetSelectedItems({})
-                                finish(Nothing)
-                                _isSettingSelectedFolder = False
-                            End If
-                        End Function
+                                    Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- trying Desktop")
+                                    list.Insert(0, Shell.Desktop)
+                                    en2 = list.GetEnumerator()
+                                    triedDesktop = True
+                                    findNextRoot()
+                                Else
+                                    Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- giving up")
+                                    If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
+                                    _selectionHelper.SetSelectedItems({})
+                                    finish(Nothing)
+                                    _isSettingSelectedFolder = False
+                                End If
+                            End Function
                         func =
                         Async Function(item As Folder, callback2 As Func(Of Task)) As Task
                             Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
