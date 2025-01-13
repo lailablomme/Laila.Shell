@@ -450,7 +450,9 @@ Namespace Controls
                     If Not currentFolder Is Nothing Then
                         While Not currentFolder Is Nothing _
                         AndAlso Not noRecursive.Contains(currentFolder.Pidl.ToString()) _
-                        AndAlso (Me.DoShowAllFoldersInTreeView OrElse Not currentFolder.Parent Is Nothing)
+                        AndAlso (Me.DoShowAllFoldersInTreeView _
+                                 OrElse currentFolder.TreeRootIndex <> -1 _
+                                 OrElse Not currentFolder.Parent Is Nothing)
                             noRecursive.Add(currentFolder.Pidl.ToString())
                             list.Add(currentFolder)
                             Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
