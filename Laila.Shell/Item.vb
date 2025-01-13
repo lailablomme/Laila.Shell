@@ -477,10 +477,10 @@ Public Class Item
 
     Public Overridable ReadOnly Property Icon(size As Integer) As ImageSource
         Get
-            If Not disposedValue Then
-                Dim hbitmap As IntPtr
-                Try
-                    SyncLock _shellItemLock
+            Dim hbitmap As IntPtr
+            Try
+                SyncLock _shellItemLock
+                    If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                         Dim h As HRESULT, result As ImageSource
                         h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                         If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
@@ -497,11 +497,11 @@ Public Class Item
                             End If
                         End If
                         Return result
-                    End SyncLock
-                Finally
-                    Functions.DeleteObject(hbitmap)
-                End Try
-            End If
+                    End If
+                End SyncLock
+            Finally
+                Functions.DeleteObject(hbitmap)
+            End Try
             Return Nothing
         End Get
     End Property
@@ -520,9 +520,9 @@ Public Class Item
 
     Public Overridable ReadOnly Property Image(size As Integer) As ImageSource
         Get
-            If Not disposedValue Then
-                Dim hbitmap As IntPtr
-                Try
+            Dim hbitmap As IntPtr
+            Try
+                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                     SyncLock _shellItemLock
                         Dim h As HRESULT, result As ImageSource
                         h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
@@ -541,10 +541,10 @@ Public Class Item
                         End If
                         Return result
                     End SyncLock
-                Finally
-                    Functions.DeleteObject(hbitmap)
-                End Try
-            End If
+                End If
+            Finally
+                Functions.DeleteObject(hbitmap)
+            End Try
             Return Nothing
         End Get
     End Property
@@ -633,21 +633,21 @@ Public Class Item
 
     Public Overridable ReadOnly Property HasThumbnail As Boolean
         Get
-            If Not disposedValue Then
-                Dim hbitmap As IntPtr
-                Try
+            Dim hbitmap As IntPtr
+            Try
+                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                     Dim h As HRESULT
                     SyncLock _shellItemLock
                         h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(1, 1), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
                     End SyncLock
-                    If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                    If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                         Return True
                     End If
-                Catch ex As Exception
-                Finally
-                    Functions.DeleteObject(hbitmap)
-                End Try
-            End If
+                End If
+            Catch ex As Exception
+            Finally
+                Functions.DeleteObject(hbitmap)
+            End Try
             Return False
         End Get
     End Property
