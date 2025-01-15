@@ -1121,7 +1121,7 @@ Public Class Folder
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
-                        If Me.Pidl?.Equals(e.Item1.Pidl) OrElse Shell.Desktop.Pidl?.Equals(e.Item1.Pidl) Then
+                        If Me.Pidl?.Equals(e.Item1.Pidl) Then
                             If _isLoaded _
                                 AndAlso (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso (Not _doSkipUPDATEDIR.HasValue _
