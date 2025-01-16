@@ -1165,13 +1165,13 @@ Public Class Folder
                             For Each tuple In _doubleCheckList.ToList()
                                 Shell.RunOnSTAThread(
                                     Sub()
-                                        Dim item1 As Item = Item.FromParsingName(fullPath, Nothing, False, False)
+                                        Dim item1 As Item = Item.FromParsingName(tuple.Item2, Nothing, False, False)
                                         Dim existing As Item
                                         Dim isOutOfSync As Boolean
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                existing = tuple.Item3.Items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(item1.Pidl))
-                                                Select Case what
+                                                existing = tuple.Item3.Items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(tuple.Item2))
+                                                Select Case tuple.Item1
                                                     Case "EXISTS"
                                                         If item1 Is Nothing AndAlso Not existing Is Nothing Then
                                                             ' the file doesn't exist anymore while we think it still does
