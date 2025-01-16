@@ -1184,7 +1184,9 @@ Public Class Folder
                                                         End If
                                                 End Select
                                             End Sub)
-                                        item1.Dispose()
+                                        If Not item1 Is Nothing Then
+                                            item1.Dispose()
+                                        End If
                                         If isOutOfSync Then
                                             _isEnumerated = False
                                             Me.GetItemsAsync()
