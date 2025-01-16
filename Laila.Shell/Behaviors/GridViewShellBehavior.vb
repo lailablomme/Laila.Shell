@@ -87,10 +87,6 @@ Namespace Behaviors
             End If
         End Sub
 
-        Protected Overrides Sub WriteState(viewName As String, state As GridViewStateData)
-            ' we're already writing our state in the FolderView
-        End Sub
-
         Public Property Folder As Folder
             Get
                 Return GetValue(FolderProperty)
