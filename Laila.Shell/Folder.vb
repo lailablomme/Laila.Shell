@@ -1184,8 +1184,8 @@ Public Class Folder
                                             item1.Dispose()
                                         End If
                                         If isOutOfSync Then
-                                            _isEnumerated = False
-                                            Me.GetItemsAsync()
+                                            tuple.Item3._isEnumerated = False
+                                            tuple.Item3.GetItemsAsync()
                                         End If
                                     End Sub, 1)
                                 _doubleCheckList.Remove(tuple)
