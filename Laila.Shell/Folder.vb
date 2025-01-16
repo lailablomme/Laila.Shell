@@ -997,24 +997,22 @@ Public Class Folder
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            If Not _items Is Nothing Then
-                                Dim existing As Item
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                    End Sub)
-                                If existing Is Nothing AndAlso _isEnumerated Then
-                                    ' we're out of sync
-                                    _isEnumerated = False
-                                    Me.GetItemsAsync()
-                                End If
+                            Dim existing As Item
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                End Sub)
+                            If existing Is Nothing AndAlso _isEnumerated Then
+                                ' we're out of sync
+                                _isEnumerated = False
+                                Me.GetItemsAsync()
                             End If
                         End If
                     End If
                 Case SHCNE.CREATE
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            If Not _items Is Nothing Then
+                            SyncLock _enumerationLock
                                 Dim existing As Item
                                 UIHelper.OnUIThread(
                                     Sub()
@@ -1035,15 +1033,15 @@ Public Class Folder
                                 Else
                                     existing.Refresh()
                                 End If
-                            End If
-                            ' the notifications can't always be trusted -- doublecheck
-                            doubleCheck("EXISTS", e.Item1.FullPath, Me)
+                            End SyncLock
                         End If
+                        ' the notifications can't always be trusted -- doublecheck
+                        doubleCheck("EXISTS", e.Item1.FullPath, Me)
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            If Not _items Is Nothing Then
+                            SyncLock _enumerationLock
                                 Dim existing As Item
                                 UIHelper.OnUIThread(
                                     Sub()
@@ -1057,51 +1055,51 @@ Public Class Folder
                                 If existing Is Nothing Then
                                     e.Item1.Refresh()
                                     UIHelper.OnUIThread(
-                                    Sub()
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                        _items.InsertSorted(e.Item1, c)
-                                    End Sub)
+                                        Sub()
+                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                            _items.InsertSorted(e.Item1, c)
+                                        End Sub)
                                 Else
                                     existing.Refresh()
                                 End If
-                            End If
+                            End SyncLock
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            If Not _items Is Nothing Then
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                        Dim existing As Item
-                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                        If Not existing Is Nothing Then
-                                            If TypeOf existing Is Folder Then
-                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                                .Folder = existing,
-                                                .[Event] = e.Event
-                                            })
-                                            End If
-                                            existing.Dispose()
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    Dim existing As Item
+                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                    If Not existing Is Nothing Then
+                                        If TypeOf existing Is Folder Then
+                                            Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                            .Folder = existing,
+                                            .[Event] = e.Event
+                                        })
                                         End If
-                                    End Sub)
-                                ' the notifications can't always be trusted -- doublecheck
-                                doubleCheck("NOTEXISTS", e.Item1.FullPath, Me)
-                            End If
+                                        existing.Dispose()
+                                    End If
+                                End Sub)
+                            ' the notifications can't always be trusted -- doublecheck
+                            doubleCheck("NOTEXISTS", e.Item1.FullPath, Me)
                         End If
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
-                        UIHelper.OnUIThread(
-                            Sub()
-                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
-                                    e.Item1._parent = Me
-                                    e.Item1.HookUpdates()
-                                    e.IsHandled1 = True
-                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                    _items.InsertSorted(e.Item1, c)
-                                End If
-                            End Sub)
+                        SyncLock _enumerationLock
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                                        e.Item1._parent = Me
+                                        e.Item1.HookUpdates()
+                                        e.IsHandled1 = True
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(e.Item1, c)
+                                    End If
+                                End Sub)
+                        End SyncLock
                         e.Item1.Refresh()
                     End If
                 Case SHCNE.DRIVEREMOVED
@@ -1132,17 +1130,15 @@ Public Class Folder
                             End If
                             _doSkipUPDATEDIR = Nothing
                         ElseIf e.Event = SHCNE.UPDATEITEM AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            If Not _items Is Nothing Then
-                                Dim existing As Item
-                                UIHelper.OnUIThread(
-                                     Sub()
-                                         existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                     End Sub)
-                                If existing Is Nothing AndAlso _isEnumerated Then
-                                    ' we're out of sync
-                                    _isEnumerated = False
-                                    Me.GetItemsAsync()
-                                End If
+                            Dim existing As Item
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                End Sub)
+                            If existing Is Nothing AndAlso _isEnumerated Then
+                                ' we're out of sync
+                                _isEnumerated = False
+                                Me.GetItemsAsync()
                             End If
                         End If
                     End If
