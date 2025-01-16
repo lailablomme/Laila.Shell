@@ -60,7 +60,7 @@ Public Class SearchFolder
             Sub()
                 Dim threadCompletionSource As TaskCompletionSource = _threadCompletionSource
 
-                _lock.Wait()
+                _enumerationLock.Wait()
                 Try
                     If Not _isEnumerated Then
                         Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
@@ -78,8 +78,8 @@ Public Class SearchFolder
                 Catch ex As Exception
                     tcs.SetException(ex)
                 Finally
-                    If _lock.CurrentCount = 0 Then
-                        _lock.Release()
+                    If _enumerationLock.CurrentCount = 0 Then
+                        _enumerationLock.Release()
                     End If
                 End Try
 
@@ -127,8 +127,8 @@ Public Class SearchFolder
     Friend Overrides Sub CancelEnumeration()
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
-            If _lock.CurrentCount = 0 Then
-                _lock.Release()
+            If _enumerationLock.CurrentCount = 0 Then
+                _enumerationLock.Release()
             End If
 
             ' clear collection

@@ -23,7 +23,7 @@ Public Class Folder
     Private _isExpanded As Boolean
     Private _isLoading As Boolean
     Private _isRefreshingItems As Boolean
-    Friend _lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+    Friend _enumerationLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private _isLoaded As Boolean
     Private _enumerationException As Exception
     Friend _isEnumerated As Boolean
@@ -40,6 +40,9 @@ Public Class Folder
     Private _isEmpty As Boolean
     Private _isListening As Boolean
     Private _listeningLock As Object = New Object()
+    Private _doubleCheckLock As Object = New Object()
+    Private _doubleCheckTimer As Timer
+    Private _doubleCheckList As List(Of Tuple(Of String, String, Folder)) = New List(Of Tuple(Of String, String, Folder))
 
     Public Shared Function FromDesktop() As Folder
         Dim pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -515,7 +518,7 @@ Public Class Folder
     End Function
 
     Public Overridable Function GetItems() As List(Of Item)
-        _lock.Wait()
+        _enumerationLock.Wait()
         Try
             If Not _isEnumerated Then
                 Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
@@ -533,8 +536,8 @@ Public Class Folder
             End If
             Return _items.ToList()
         Finally
-            If _lock.CurrentCount = 0 Then
-                _lock.Release()
+            If _enumerationLock.CurrentCount = 0 Then
+                _enumerationLock.Release()
             End If
         End Try
     End Function
@@ -544,7 +547,7 @@ Public Class Folder
 
         Shell.STATaskQueue.Add(
             Sub()
-                _lock.Wait()
+                _enumerationLock.Wait()
                 Try
                     If Not _isEnumerated Then
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
@@ -554,8 +557,8 @@ Public Class Folder
                 Catch ex As Exception
                     tcs.SetException(ex)
                 Finally
-                    If _lock.CurrentCount = 0 Then
-                        _lock.Release()
+                    If _enumerationLock.CurrentCount = 0 Then
+                        _enumerationLock.Release()
                     End If
                 End Try
             End Sub)
@@ -570,8 +573,8 @@ Public Class Folder
     Friend Overridable Sub CancelEnumeration()
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
-            If _lock.CurrentCount = 0 Then
-                _lock.Release()
+            If _enumerationLock.CurrentCount = 0 Then
+                _enumerationLock.Release()
             End If
         End If
     End Sub
@@ -999,22 +1002,11 @@ Public Class Folder
                                 UIHelper.OnUIThread(
                                     Sub()
                                         existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                        If existing Is Nothing Then
-                                            existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item2.Pidl))
-                                        End If
-                                        If existing Is Nothing Then
-                                            e.Item2._parent = Me
-                                            e.Item2.HookUpdates()
-                                            e.IsHandled2 = True
-                                        End If
                                     End Sub)
-                                If existing Is Nothing Then
-                                    e.Item2.Refresh()
-                                    UIHelper.OnUIThread(
-                                    Sub()
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                        _items.InsertSorted(e.Item2, c)
-                                    End Sub)
+                                If existing Is Nothing AndAlso _isEnumerated Then
+                                    ' we're out of sync
+                                    _isEnumerated = False
+                                    Me.GetItemsAsync()
                                 End If
                             End If
                         End If
@@ -1036,14 +1028,16 @@ Public Class Folder
                                 If existing Is Nothing Then
                                     e.Item1.Refresh()
                                     UIHelper.OnUIThread(
-                                    Sub()
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                        _items.InsertSorted(e.Item1, c)
-                                    End Sub)
+                                        Sub()
+                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                            _items.InsertSorted(e.Item1, c)
+                                        End Sub)
                                 Else
                                     existing.Refresh()
                                 End If
                             End If
+                            ' the notifications can't always be trusted -- doublecheck
+                            doubleCheck("EXISTS", e.Item1.FullPath, Me)
                         End If
                     End If
                 Case SHCNE.MKDIR
@@ -1074,21 +1068,27 @@ Public Class Folder
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
-                    If Not _items Is Nothing AndAlso _isLoaded Then
-                        UIHelper.OnUIThread(
-                            Sub()
-                                Dim item2 As Item
-                                item2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                If Not item2 Is Nothing Then
-                                    If TypeOf item2 Is Folder Then
-                                        Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                            .Folder = item2,
-                                            .[Event] = e.Event
-                                        })
-                                    End If
-                                    item2.Dispose()
-                                End If
-                            End Sub)
+                    If _isLoaded Then
+                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                            If Not _items Is Nothing Then
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        Dim existing As Item
+                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                        If Not existing Is Nothing Then
+                                            If TypeOf existing Is Folder Then
+                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                                .Folder = existing,
+                                                .[Event] = e.Event
+                                            })
+                                            End If
+                                            existing.Dispose()
+                                        End If
+                                    End Sub)
+                                ' the notifications can't always be trusted -- doublecheck
+                                doubleCheck("NOTEXISTS", e.Item1.FullPath, Me)
+                            End If
+                        End If
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
@@ -1137,25 +1137,70 @@ Public Class Folder
                                 UIHelper.OnUIThread(
                                      Sub()
                                          existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                         If existing Is Nothing Then
-                                             e.Item1._parent = Me
-                                             e.Item1.HookUpdates()
-                                             e.IsHandled1 = True
-                                         End If
                                      End Sub)
-                                If existing Is Nothing Then
-                                    e.Item1.Refresh()
-                                    UIHelper.OnUIThread(
-                                     Sub()
-                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                         _items.InsertSorted(e.Item1, c)
-                                     End Sub)
+                                If existing Is Nothing AndAlso _isEnumerated Then
+                                    ' we're out of sync
+                                    _isEnumerated = False
+                                    Me.GetItemsAsync()
                                 End If
                             End If
                         End If
                     End If
             End Select
         End If
+    End Sub
+
+    Private Sub doubleCheck(what As String, fullPath As String, parent As Folder)
+        SyncLock _doubleCheckLock
+            If Not disposedValue Then
+                _doubleCheckList.Add(New Tuple(Of String, String, Folder)(what, fullPath, parent))
+                If Not _doubleCheckTimer Is Nothing Then
+                    _doubleCheckTimer.Dispose()
+                    _doubleCheckTimer = Nothing
+                End If
+
+                _doubleCheckTimer = New Timer(New TimerCallback(
+                    Sub()
+                        SyncLock _doubleCheckLock
+                            For Each tuple In _doubleCheckList.ToList()
+                                Shell.RunOnSTAThread(
+                                    Sub()
+                                        Dim item1 As Item = Item.FromParsingName(fullPath, Nothing, False, False)
+                                        Dim existing As Item
+                                        Dim isOutOfSync As Boolean
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                existing = tuple.Item3.Items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(item1.Pidl))
+                                                Select Case what
+                                                    Case "EXISTS"
+                                                        If item1 Is Nothing AndAlso Not existing Is Nothing Then
+                                                            ' the file doesn't exist anymore while we think it still does
+                                                            isOutOfSync = True
+                                                        End If
+                                                    Case "NOTEXISTS"
+                                                        If Not item1 Is Nothing AndAlso existing Is Nothing Then
+                                                            ' the file does exist while we think it doesn't
+                                                            isOutOfSync = True
+                                                        End If
+                                                End Select
+                                            End Sub)
+                                        item1.Dispose()
+                                        If isOutOfSync Then
+                                            _isEnumerated = False
+                                            Me.GetItemsAsync()
+                                        End If
+                                    End Sub, 1)
+                                _doubleCheckList.Remove(tuple)
+                            Next
+
+                            If Not _doubleCheckTimer Is Nothing Then
+                                _doubleCheckTimer.Dispose()
+                                _doubleCheckTimer = Nothing
+                            End If
+                        End SyncLock
+                    End Sub), Nothing, 500, 0)
+            End If
+        End SyncLock
     End Sub
 
     Protected Overrides Sub Settings_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
@@ -1190,6 +1235,13 @@ Public Class Folder
                 SyncLock _listeningLock
                     If _isListening Then
                         Shell.StopListening(Me)
+                    End If
+                End SyncLock
+
+                SyncLock _doubleCheckLock
+                    If Not _doubleCheckTimer Is Nothing Then
+                        _doubleCheckTimer.Dispose()
+                        _doubleCheckTimer = Nothing
                     End If
                 End SyncLock
 
