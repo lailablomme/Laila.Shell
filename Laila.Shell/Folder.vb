@@ -1183,7 +1183,7 @@ Public Class Folder
                                         If Not item1 Is Nothing Then
                                             item1.Dispose()
                                         End If
-                                        If isOutOfSync Then
+                                        If isOutOfSync AndAlso tuple.Item3._isEnumerated Then
                                             tuple.Item3._isEnumerated = False
                                             tuple.Item3.GetItemsAsync()
                                         End If
