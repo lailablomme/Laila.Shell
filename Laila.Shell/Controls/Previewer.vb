@@ -163,27 +163,43 @@ Namespace Controls
                             h = HRESULT.S_FALSE
                             If Not previewer._handler Is Nothing Then
                                 If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
-                                    If IO.File.Exists(previewer._previewItem.FullPath) Then
-                                        h = Functions.SHCreateStreamOnFileEx(previewer._previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
-                                        Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
-                                    Else
-                                        SyncLock previewer._previewItem._shellItemLock
-                                            h = previewer._previewItem.ShellItem2.BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
-                                        End SyncLock
-                                        Debug.WriteLine("BHID_Stream=" & h.ToString())
-                                    End If
+                                    Try
+                                        If IO.File.Exists(previewer._previewItem.FullPath) Then
+                                            h = Functions.SHCreateStreamOnFileEx(previewer._previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
+                                            Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
+                                        Else
+                                            SyncLock previewer._previewItem._shellItemLock
+                                                h = previewer._previewItem.ShellItem2.BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
+                                            End SyncLock
+                                            Debug.WriteLine("BHID_Stream=" & h.ToString())
+                                        End If
+                                    Catch ex As Exception
+                                        h = HRESULT.E_FAIL
+                                    End Try
                                     If h = HRESULT.S_OK Then
-                                        h = CType(previewer._handler, IInitializeWithStream).Initialize(previewer._stream, STGM.STGM_READ)
-                                        Debug.WriteLine("IPreviewHandler.IInitializeWithStream=" & h.ToString())
+                                        Try
+                                            h = CType(previewer._handler, IInitializeWithStream).Initialize(previewer._stream, STGM.STGM_READ)
+                                            Debug.WriteLine("IPreviewHandler.IInitializeWithStream=" & h.ToString())
+                                        Catch ex As Exception
+                                            h = HRESULT.E_FAIL
+                                        End Try
                                     End If
                                 End If
                                 If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithFile Then
-                                    h = CType(previewer._handler, IInitializeWithFile).Initialize(previewer._previewItem.FullPath, STGM.STGM_READ)
-                                    Debug.WriteLine("IPreviewHandler.IInitializeWithFile=" & h.ToString())
+                                    Try
+                                        h = CType(previewer._handler, IInitializeWithFile).Initialize(previewer._previewItem.FullPath, STGM.STGM_READ)
+                                        Debug.WriteLine("IPreviewHandler.IInitializeWithFile=" & h.ToString())
+                                    Catch ex As Exception
+                                        h = HRESULT.E_FAIL
+                                    End Try
                                 End If
                                 If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithItem Then
-                                    h = CType(previewer._handler, IInitializeWithItem).Initialize(previewer._previewItem, STGM.STGM_READ)
-                                    Debug.WriteLine("IPreviewHandler.IInitializeWithItem=" & h.ToString())
+                                    Try
+                                        h = CType(previewer._handler, IInitializeWithItem).Initialize(previewer._previewItem, STGM.STGM_READ)
+                                        Debug.WriteLine("IPreviewHandler.IInitializeWithItem=" & h.ToString())
+                                    Catch ex As Exception
+                                        h = HRESULT.E_FAIL
+                                    End Try
                                 End If
                                 If h <> HRESULT.S_OK Then
                                     previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)

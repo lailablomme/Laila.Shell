@@ -396,10 +396,23 @@ Namespace Controls
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
             Dim textBlock As TextBlock = UIHelper.FindVisualChildren(Of TextBlock)(listBoxItem) _
                 .FirstOrDefault(Function(b) Not b.Tag Is Nothing AndAlso b.Tag = "PART_DisplayName")
+            Dim width As Double = 250
+            Dim listView As System.Windows.Controls.ListView = UIHelper.GetParentOfType(Of System.Windows.Controls.ListView)(listBoxItem)
+            If Not listView Is Nothing Then
+                Dim itemNameColumn As Column = Me.Folder.Columns.FirstOrDefault(Function(c) c.CanonicalName = "System.ItemNameDisplay")
+                If Not itemNameColumn Is Nothing Then
+                    Dim itemNameGridViewColumn As GridViewColumn = CType(listView.View, GridView).Columns _
+                        .FirstOrDefault(Function(c) c.GetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty) _
+                            .Equals(String.Format("PropertiesByKeyAsText[{0}].Value", itemNameColumn.PROPERTYKEY.ToString())))
+                    If Not itemNameGridViewColumn Is Nothing Then
+                        width = itemNameGridViewColumn.ActualWidth
+                    End If
+                End If
+            End If
             point = Me.PointFromScreen(textBlock.PointToScreen(New Point(0, 0)))
             point.X += -2
             point.Y += -1
-            size.Width = textBlock.ActualWidth + 4
+            size.Width = width - 24
             size.Height = textBlock.ActualHeight + 2
             textAlignment = TextAlignment.Left
             fontSize = textBlock.FontSize
