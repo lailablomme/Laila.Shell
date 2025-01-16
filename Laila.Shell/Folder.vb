@@ -1129,17 +1129,19 @@ Public Class Folder
                                 Me.GetItemsAsync()
                             End If
                             _doSkipUPDATEDIR = Nothing
-                        ElseIf e.Event = SHCNE.UPDATEITEM AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            Dim existing As Item
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                End Sub)
-                            If existing Is Nothing AndAlso _isEnumerated Then
-                                ' we're out of sync
-                                _isEnumerated = False
-                                Me.GetItemsAsync()
-                            End If
+                        End If
+                    End If
+                Case SHCNE.UPDATEITEM
+                    If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                        Dim existing As Item
+                        UIHelper.OnUIThread(
+                            Sub()
+                                existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                            End Sub)
+                        If existing Is Nothing AndAlso _isEnumerated Then
+                            ' we're out of sync
+                            _isEnumerated = False
+                            Me.GetItemsAsync()
                         End If
                     End If
             End Select

@@ -1169,7 +1169,7 @@ Public Class Item
     Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         If Not disposedValue Then
             Select Case e.Event
-                Case SHCNE.UPDATEITEM
+                Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR
                     If Me.Pidl?.Equals(e.Item1.Pidl) Then
                         Me.Refresh()
                     End If
