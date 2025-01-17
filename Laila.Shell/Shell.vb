@@ -532,7 +532,7 @@ Public Class Shell
         End SyncLock
     End Sub
 
-    Public Shared Sub RunOnSTAThread(action As Action, maxRetries As Integer)
+    Public Shared Sub RunOnSTAThread(action As Action, Optional maxRetries As Integer = 1)
         RunOnSTAThread(
             Sub(tcs As TaskCompletionSource(Of Integer))
                 action()

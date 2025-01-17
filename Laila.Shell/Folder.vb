@@ -60,9 +60,12 @@ Public Class Folder
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
-        Dim result As IShellFolder
-        shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, result)
-        Return result
+        Return Shell.RunOnSTAThread(
+            Sub(tcs As TaskCompletionSource(Of IShellFolder))
+                Dim result As IShellFolder
+                shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, result)
+                tcs.SetResult(result)
+            End Sub, 1)
     End Function
 
     ''' <summary>
@@ -1012,57 +1015,44 @@ Public Class Folder
                 Case SHCNE.CREATE
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            SyncLock _enumerationLock
-                                Dim existing As Item
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                        If existing Is Nothing Then
-                                            e.Item1._parent = Me
-                                            e.Item1.HookUpdates()
-                                            e.IsHandled1 = True
-                                        End If
-                                    End Sub)
-                                If existing Is Nothing Then
-                                    e.Item1.Refresh()
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                            _items.InsertSorted(e.Item1, c)
-                                        End Sub)
-                                Else
-                                    existing.Refresh()
-                                End If
-                            End SyncLock
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                    If existing Is Nothing Then
+                                        e.Item1._parent = Me
+                                        e.Item1.HookUpdates()
+                                        e.IsHandled1 = True
+                                        Shell.RunOnSTAThread(
+                                            Sub()
+                                                e.Item1.Refresh()
+                                            End Sub, 1)
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(e.Item1, c)
+                                    End If
+                                End Sub)
+                            ' the notifications can't always be trusted -- doublecheck
+                            doubleCheck("EXISTS", e.Item1.FullPath, Me)
                         End If
-                        ' the notifications can't always be trusted -- doublecheck
-                        doubleCheck("EXISTS", e.Item1.FullPath, Me)
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            SyncLock _enumerationLock
-                                Dim existing As Item
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                        existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                        If existing Is Nothing Then
-                                            e.Item1._parent = Me
-                                            e.Item1.HookUpdates()
-                                            e.IsHandled1 = True
-                                        End If
-                                    End Sub)
-                                If existing Is Nothing Then
-                                    e.Item1.Refresh()
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                            _items.InsertSorted(e.Item1, c)
-                                        End Sub)
-                                Else
-                                    existing.Refresh()
-                                End If
-                            End SyncLock
+                            Dim existing As Item
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                    If existing Is Nothing Then
+                                        e.Item1._parent = Me
+                                        e.Item1.HookUpdates()
+                                        e.IsHandled1 = True
+                                        Shell.RunOnSTAThread(
+                                            Sub()
+                                                e.Item1.Refresh()
+                                            End Sub, 1)
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(e.Item1, c)
+                                    End If
+                                End Sub)
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
@@ -1088,18 +1078,16 @@ Public Class Folder
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
-                        SyncLock _enumerationLock
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
-                                        e.Item1._parent = Me
-                                        e.Item1.HookUpdates()
-                                        e.IsHandled1 = True
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                        _items.InsertSorted(e.Item1, c)
-                                    End If
-                                End Sub)
-                        End SyncLock
+                        UIHelper.OnUIThread(
+                            Sub()
+                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                                    e.Item1._parent = Me
+                                    e.Item1.HookUpdates()
+                                    e.IsHandled1 = True
+                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                    _items.InsertSorted(e.Item1, c)
+                                End If
+                            End Sub)
                         e.Item1.Refresh()
                     End If
                 Case SHCNE.DRIVEREMOVED
@@ -1117,7 +1105,7 @@ Public Class Folder
                                 End If
                             End Sub)
                     End If
-                Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
+                Case SHCNE.UPDATEDIR
                     If _isLoaded Then
                         If Me.Pidl?.Equals(e.Item1.Pidl) Then
                             If _isLoaded _
@@ -1132,7 +1120,7 @@ Public Class Folder
                         End If
                     End If
                 Case SHCNE.UPDATEITEM
-                    If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                    If Not Me.Pidl.Equals(e.Item1.Pidl) AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
                         Dim existing As Item
                         UIHelper.OnUIThread(
                             Sub()
