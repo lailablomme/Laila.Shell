@@ -60,12 +60,9 @@ Public Class Folder
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
-        Return Shell.RunOnSTAThread(
-            Sub(tcs As TaskCompletionSource(Of IShellFolder))
-                Dim result As IShellFolder
-                shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, result)
-                tcs.SetResult(result)
-            End Sub, 1)
+        Dim result As IShellFolder
+        shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, result)
+        Return result
     End Function
 
     ''' <summary>
@@ -86,11 +83,21 @@ Public Class Folder
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            SyncLock _shellItemLock
+            If Not disposedValue AndAlso _shellFolder Is Nothing Then
+                Dim result2 As IShellFolder = Shell.RunOnSTAThread(
+                    Sub(tcs As TaskCompletionSource(Of IShellFolder))
+                        Dim result As IShellFolder
+                        SyncLock _shellItemLock
+                            If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                                result = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+                            End If
+                        End SyncLock
+                        tcs.SetResult(result)
+                    End Sub, 1)
                 If Not disposedValue AndAlso _shellFolder Is Nothing Then
-                    _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+                    _shellFolder = result2
                 End If
-            End SyncLock
+            End If
 
             Return _shellFolder
         End Get

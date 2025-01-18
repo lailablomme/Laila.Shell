@@ -328,7 +328,9 @@ Namespace Controls
                     Dim shellFolder As IShellFolder
 
                     SyncLock folder._shellItemLock
-                        shellFolder = Folder.GetIShellFolderFromIShellItem2(folder.ShellItem2)
+                        If Not folder.disposedValue AndAlso Not folder.ShellItem2 Is Nothing Then
+                            shellFolder = Folder.GetIShellFolderFromIShellItem2(folder.ShellItem2)
+                        End If
                     End SyncLock
 
                     Try
