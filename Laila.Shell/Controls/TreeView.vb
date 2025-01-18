@@ -96,10 +96,11 @@ Namespace Controls
                             UIHelper.OnUIThread(
                                 Async Sub()
                                     If Not Me.SelectedItem Is Nothing Then
-                                        If Not e.Item1._parent Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
-                                            Await Me.SetSelectedFolder(e.Item1.Parent)
-                                        ElseIf Not Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) AndAlso Me.GetIsSelectionDownFolder(e.Item1) Then
-                                            Await Me.SetSelectedFolder(e.Item1)
+                                        If Not Me.SelectedItem._parent Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
+                                            Await Me.SetSelectedFolder(Me.SelectedItem.Parent)
+                                        ElseIf Not Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
+                                            Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
+                                            If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
                                         End If
                                     End If
                                 End Sub)
@@ -289,16 +290,14 @@ Namespace Controls
             End If
         End Sub
 
-        Private Function GetIsSelectionDownFolder(folder As Folder) As Boolean
-            If Not Me.SelectedItem Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(folder.Pidl) Then
-                Return True
+        Private Function GetParentOfSelectionBefore(folder As Folder, Optional selectedItem As Folder = Nothing) As Folder
+            If selectedItem Is Nothing Then selectedItem = Me.SelectedItem
+            If Not selectedItem Is Nothing AndAlso selectedItem.Pidl.Equals(folder.Pidl) Then
+                Return selectedItem.Parent
+            ElseIf Not selectedItem.Parent Is Nothing Then
+                Return Me.GetParentOfSelectionBefore(folder, selectedItem.Parent)
             Else
-                For Each f In folder.Items
-                    If TypeOf f Is Folder AndAlso Me.GetIsSelectionDownFolder(f) Then
-                        Return True
-                    End If
-                Next
-                Return False
+                Return Nothing
             End If
         End Function
 
@@ -352,8 +351,9 @@ Namespace Controls
                 Not TypeOf i Is SeparatorFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT _
                         AndAlso Not pinnedItemsList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
-                If (TypeOf pinnedItem Is Folder AndAlso GetIsSelectionDownFolder(pinnedItem)) OrElse pinnedItem.Equals(Me.SelectedItem) Then
-                    _selectionHelper.SetSelectedItems({})
+                If TypeOf pinnedItem Is Folder Then
+                    Dim f As Folder = Me.GetParentOfSelectionBefore(pinnedItem)
+                    If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
                 End If
                 Me.Roots.Remove(pinnedItem)
             Next
@@ -399,9 +399,8 @@ Namespace Controls
                 Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
                     AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
                         AndAlso Not frequentFoldersList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
-                If GetIsSelectionDownFolder(frequentFolder) Then
-                    _selectionHelper.SetSelectedItems({})
-                End If
+                Dim f As Folder = Me.GetParentOfSelectionBefore(frequentFolder)
+                If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
                 Me.Roots.Remove(frequentFolder)
             Next
             ' add/remove placeholder
