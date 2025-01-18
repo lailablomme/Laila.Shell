@@ -612,11 +612,17 @@ Namespace Controls
                                                 e2.IsHandled = True
                                             End If
                                         Case "rename"
-                                            Dim pt As Point = Me.PointFromScreen(treeViewItem.PointToScreen(New Point(0, 0)))
-                                            pt.X += clickedItem.TreeMargin.Left + 41
-                                            pt.Y -= 0
-                                            Menus.DoRename(pt, New Size(Me.ActualWidth - pt.X - 2, treeViewItem.ActualHeight),
-                                                        TextAlignment.Left, Me.FontSize, clickedItem, Me.PART_Grid)
+                                            Dim getCoords As Menus.GetItemNameCoordinatesDelegate =
+                                                Sub(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
+                                                    ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
+                                                    point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
+                                                    point.X += clickedItem.TreeMargin.Left + 41
+                                                    point.Y -= 0
+                                                    size = New Size(Me.ActualWidth - point.X - 2, listBoxItem.ActualHeight)
+                                                    textAlignment = TextAlignment.Left
+                                                    fontSize = Me.FontSize
+                                                End Sub
+                                            Menus.DoRename(getCoords, Me.PART_Grid, treeViewItem, Me.PART_ListBox)
                                             e2.IsHandled = True
                                         Case "laila.shell.(un)pin"
                                             If e2.IsChecked Then

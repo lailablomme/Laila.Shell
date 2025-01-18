@@ -6,6 +6,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
+Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.BalloonTip
 Imports Laila.Shell.Events
@@ -49,10 +50,17 @@ Namespace Controls
             _rightClickMenu.InvokeCommand(_rightClickMenu.DefaultId)
         End Sub
 
-        Friend Shared Sub DoRename(point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, item As Item, grid As Grid)
+        Delegate Sub GetItemNameCoordinatesDelegate(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
+                         ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
+
+        Friend Shared Sub DoRename(getCoords As GetItemNameCoordinatesDelegate,
+                                   grid As Grid, listBoxItem As ListBoxItem, listBox As ListBox)
+            Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
+            Dim item As Item = listBoxItem.DataContext
             Dim originalName As String, ext As String = "", isDrive As Boolean, isWithExt As Boolean
             Dim doHideKnownFileExtensions As Boolean = Shell.Settings.DoHideKnownFileExtensions
             Dim balloonTip As BalloonTip.BalloonTip
+            Dim scrollViewer As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(listBox)(0)
 
             ' make sure we get the latest values according to the DoHideKnownFileExtensions setting
             item._fullPath = Nothing
@@ -117,6 +125,9 @@ Namespace Controls
                 End Select
             End If
 
+            ' get coords
+            getCoords(listBoxItem, textAlignment, point, size, fontSize)
+
             ' make textbox
             Dim textBox As System.Windows.Controls.TextBox
             textBox = New System.Windows.Controls.TextBox() With {
@@ -137,6 +148,36 @@ Namespace Controls
             grid.Children.Add(textBox)
             textBox.Focus()
 
+            Dim doCancel As Action =
+                Sub()
+                    ' cancel
+                    textBox.Tag = "cancel"
+                    grid.Children.Remove(textBox)
+                    If Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
+                        balloonTip.IsOpen = False
+                    End If
+                End Sub
+
+            ' take scrolling into account
+            Dim onScrollChanged As ScrollChangedEventHandler =
+                Sub(s As Object, e As ScrollChangedEventArgs)
+                    If Not PresentationSource.FromVisual(listBoxItem) Is Nothing Then
+                        ' get coords
+                        getCoords(listBoxItem, textAlignment, point, size, fontSize)
+
+                        If point.X >= 0 AndAlso point.X + size.Width < listBox.ActualWidth _
+                            AndAlso point.Y >= 0 AndAlso point.Y + size.Height < listBox.ActualHeight Then
+                            ' we're still visibile, update position
+                            textBox.Margin = New Thickness(point.X, point.Y, 0, 0)
+                        Else
+                            doCancel()
+                        End If
+                    Else
+                        doCancel()
+                    End If
+                End Sub
+            AddHandler scrollViewer.ScrollChanged, onScrollChanged
+
             ' select filename without extension
             textBox.SelectionStart = 0
             If isWithExt Then
@@ -147,50 +188,49 @@ Namespace Controls
 
             ' hook textbox
             AddHandler textBox.LostFocus,
-            Sub(s2 As Object, e2 As RoutedEventArgs)
-                grid.Children.Remove(textBox)
-                If Not textBox.Tag = "cancel" AndAlso Not String.IsNullOrWhiteSpace(textBox.Text) Then
-                    doRename(textBox.Text)
-                End If
-            End Sub
+                Sub(s2 As Object, e2 As RoutedEventArgs)
+                    RemoveHandler scrollViewer.ScrollChanged, onScrollChanged
+                    grid.Children.Remove(textBox)
+                    If Not textBox.Tag = "cancel" AndAlso Not String.IsNullOrWhiteSpace(textBox.Text) Then
+                        doRename(textBox.Text)
+                    End If
+                End Sub
             AddHandler textBox.PreviewKeyDown,
-            Sub(s2 As Object, e2 As KeyEventArgs)
-                Select Case e2.Key
-                    Case Key.Enter
-                        grid.Children.Remove(textBox)
-                        If Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
-                            balloonTip.IsOpen = False
-                        End If
-                    Case Key.Escape
-                        textBox.Tag = "cancel"
-                        grid.Children.Remove(textBox)
-                        If Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
-                            balloonTip.IsOpen = False
-                        End If
-                    Case Key.Back
-                    Case Else
-                        Dim c As Char? = KeyboardHelper.KeyToChar(e2.Key)
-                        If Not isDrive AndAlso c.HasValue _
-                            AndAlso IO.Path.GetInvalidFileNameChars().Contains(c.Value) Then
-                            If balloonTip Is Nothing Then
-                                balloonTip = New BalloonTip.BalloonTip() With {
-                                    .PlacementTarget = textBox,
-                                    .Placement = BalloonPlacementMode.Bottom,
-                                    .Text = "The following characters can not appear in filenames:" & vbCrLf _
-                                          & "     \  /  :  *  ?  ""  <  >  |",
-                                    .Timeout = 9000
-                                }
-                                grid.Children.Add(balloonTip)
-                            Else
+                Sub(s2 As Object, e2 As KeyEventArgs)
+                    Select Case e2.Key
+                        Case Key.Enter
+                            grid.Children.Remove(textBox)
+                            If Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
                                 balloonTip.IsOpen = False
                             End If
-                            balloonTip.IsOpen = True
-                            e2.Handled = True
-                        ElseIf Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
-                            balloonTip.IsOpen = False
-                        End If
-                End Select
-            End Sub
+                        Case Key.Escape
+                            doCancel()
+                        Case Key.Back
+                        Case Else
+                            If Keyboard.Modifiers = ModifierKeys.None Then
+                                Dim c As Char? = KeyboardHelper.KeyToChar(e2.Key)
+                                If Not isDrive AndAlso c.HasValue _
+                                AndAlso IO.Path.GetInvalidFileNameChars().Contains(c.Value) Then
+                                    If balloonTip Is Nothing Then
+                                        balloonTip = New BalloonTip.BalloonTip() With {
+                                        .PlacementTarget = textBox,
+                                        .Placement = BalloonPlacementMode.Bottom,
+                                        .Text = "The following characters can not appear in filenames:" & vbCrLf _
+                                              & "     \  /  :  *  ?  ""  <  >  |",
+                                        .Timeout = 9000
+                                    }
+                                        grid.Children.Add(balloonTip)
+                                    Else
+                                        balloonTip.IsOpen = False
+                                    End If
+                                    balloonTip.IsOpen = True
+                                    e2.Handled = True
+                                ElseIf Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
+                                    balloonTip.IsOpen = False
+                                End If
+                            End If
+                    End Select
+                End Sub
         End Sub
 
         Public Shared Sub DoDelete(items As IEnumerable(Of Item))

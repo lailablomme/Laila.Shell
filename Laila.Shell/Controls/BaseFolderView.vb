@@ -528,9 +528,7 @@ Namespace Controls
         End Sub
 
         Public Sub DoRename(listBoxItem As ListBoxItem)
-            Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
-            Me.GetItemNameCoordinates(listBoxItem, textAlignment, point, size, fontSize)
-            Menus.DoRename(point, size, textAlignment, fontSize, listBoxItem.DataContext, Me.PART_Grid)
+            Menus.DoRename(AddressOf Me.GetItemNameCoordinates, Me.PART_Grid, listBoxItem, Me.PART_ListBox)
         End Sub
 
         Public Overridable Property SelectedItems As IEnumerable(Of Item)
