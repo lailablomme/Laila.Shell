@@ -364,6 +364,16 @@ Public Class Functions
     'Public Shared Function RegisterClipboardFormat(lpString As String) As UInteger
     'End Function
     <DllImport("ole32.dll")>
+    Public Shared Sub CoInitializeEx(ByVal pvReserved As IntPtr, ByVal dwCoInit As Integer)
+    End Sub
+    <DllImport("ole32.dll")>
+    Public Shared Function CoMarshalInterThreadInterfaceInStream(ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByVal pUnk As Object, ByRef ppStm As IStream) As Integer
+    End Function
+
+    <DllImport("ole32.dll")>
+    Public Shared Function CoGetInterfaceAndReleaseStream(ByVal pStm As IStream, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As Object) As Integer
+    End Function
+    <DllImport("ole32.dll")>
     Public Shared Function DoDragDrop(pDataObj As IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
     End Function
     <DllImport("ole32.dll")>
@@ -390,6 +400,14 @@ Public Class Functions
         ByVal dwClsContext As UInteger,
         ByRef riid As Guid,
         <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IShellFolder) As Integer
+    End Function
+    <DllImport("ole32.dll")>
+    Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
+        ByRef riid As Guid,
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IGlobalInterfaceTable) As Integer
     End Function
     <DllImport("ole32.dll")>
     Public Shared Function CoCreateInstance(

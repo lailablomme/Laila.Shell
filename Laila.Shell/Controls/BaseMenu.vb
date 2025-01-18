@@ -1,5 +1,8 @@
 ﻿Imports System.Collections.Concurrent
+Imports System.IO
+Imports System.Net
 Imports System.Runtime.InteropServices
+Imports System.Runtime.InteropServices.ComTypes
 Imports System.Text
 Imports System.Threading
 Imports System.Windows
@@ -46,14 +49,15 @@ Namespace Controls
                 Sub()
                     Try
                         ' Process tasks from the queue
-                        Functions.OleInitialize(IntPtr.Zero)
+                        'Functions.OleInitialize(IntPtr.Zero)
+                        Functions.CoInitializeEx(IntPtr.Zero, &H2)
                         For Each task In _taskQueue.GetConsumingEnumerable(_disposeToken)
                             task.Invoke()
                         Next
                     Catch ex As OperationCanceledException
                         Debug.WriteLine("Menu TaskQueue was canceled.")
                     End Try
-                    Functions.OleUninitialize()
+                    'Functions.OleUninitialize()
                 End Sub)
             _staThread2.IsBackground = True
             _staThread2.SetApartmentState(ApartmentState.STA)
@@ -445,7 +449,7 @@ Namespace Controls
                 End Sub)
 
             If Not e.IsHandled Then
-                Dim thread As Thread = New Thread(New ThreadStart(
+                _taskQueue.Add(
                     Sub()
                         Select Case id.Item2
                             Case "Windows.ModernShare"
@@ -484,10 +488,7 @@ Namespace Controls
                                 Dim h As HRESULT = _contextMenu.InvokeCommand(cmi)
                                 Debug.WriteLine("InvokeCommand returned " & h.ToString())
                         End Select
-                    End Sub))
-
-                thread.SetApartmentState(ApartmentState.STA)
-                thread.Start()
+                    End Sub)
             End If
         End Sub
 

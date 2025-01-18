@@ -212,7 +212,7 @@ Namespace Controls
                 tcs.Task.Wait(Shell.ShuttingDownToken)
                 ' system
                 Me.Roots.Add(homeFolder)
-                Me.Roots.Add(galleryFolder)
+                If Not galleryFolder Is Nothing Then Me.Roots.Add(galleryFolder)
                 ' separators
                 Me.Roots.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
                 Me.Roots.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
