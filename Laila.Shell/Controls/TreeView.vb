@@ -89,19 +89,21 @@ Namespace Controls
             setDoExpandTreeViewToCurrentFolder()
             setDoShowLibrariesInTreeView()
 
-            AddHandler Shell.FolderNotification,
-                 Async Sub(s As Object, e As FolderNotificationEventArgs)
-                     Select Case e.Event
-                         Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                             If Not Me.SelectedItem Is Nothing AndAlso Not e.Folder.Parent Is Nothing _
-                                AndAlso Me.GetIsSelectionDownFolder(e.Folder) Then
-                                 Await Me.SetSelectedFolder(e.Folder.Parent)
-                             End If
-                     End Select
-                 End Sub
-
             AddHandler Shell.Notification,
                 Sub(s As Object, e As NotificationEventArgs)
+                    Select Case e.Event
+                        Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
+                            UIHelper.OnUIThread(
+                                Async Sub()
+                                    If Not Me.SelectedItem Is Nothing Then
+                                        If Not e.Item1._parent Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
+                                            Await Me.SetSelectedFolder(e.Item1.Parent)
+                                        ElseIf Not Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) AndAlso Me.GetIsSelectionDownFolder(e.Item1) Then
+                                            Await Me.SetSelectedFolder(e.Item1)
+                                        End If
+                                    End If
+                                End Sub)
+                    End Select
                     Select Case e.Event
                         Case SHCNE.RMDIR, SHCNE.DELETE
                             UIHelper.OnUIThread(
@@ -288,7 +290,7 @@ Namespace Controls
         End Sub
 
         Private Function GetIsSelectionDownFolder(folder As Folder) As Boolean
-            If Not Me.SelectedItem Is Nothing AndAlso Me.SelectedItem.Equals(folder) Then
+            If Not Me.SelectedItem Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(folder.Pidl) Then
                 Return True
             Else
                 For Each f In folder.Items
