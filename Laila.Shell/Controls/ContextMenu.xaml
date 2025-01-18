@@ -11,15 +11,6 @@
                 <ControlTemplate TargetType="{x:Type controls:ContextMenu}">
                     <Border Padding="3" x:Name="PART_Menu" Opacity="0" BorderBrush="#999999" BorderThickness="1" 
                             Background="#F0F0F0" Margin="0,0,6,6" UseLayoutRounding="True" SnapsToDevicePixels="True">
-                        <Border.Triggers>
-                            <EventTrigger RoutedEvent="Rectangle.Loaded">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Border.Triggers>
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="3" Color="Black" ShadowDepth="3" Opacity="0.5" />
                         </Border.Effect>
@@ -43,6 +34,42 @@
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="Top">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                        </Trigger>
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="Bottom">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                        </Trigger>
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="Both">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                        </Trigger>
+                        <Trigger Property="ShowButtonsTopOrBottom" Value="None">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                        </Trigger>
                         <Trigger Property="ShowButtonsTopOrBottom" Value="Bottom">
                             <Setter Property="Visibility" TargetName="borderTop" Value="Collapsed" />
                         </Trigger>

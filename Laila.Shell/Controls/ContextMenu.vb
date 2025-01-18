@@ -9,7 +9,7 @@ Namespace Controls
         Inherits System.Windows.Controls.ContextMenu
 
         Public Shared ReadOnly ShowButtonsTopOrBottomProperty As DependencyProperty = DependencyProperty.Register("ShowButtonsTopOrBottom", GetType(TopOrBottom),
-            GetType(ContextMenu), New FrameworkPropertyMetadata(TopOrBottom.Both, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+            GetType(ContextMenu), New FrameworkPropertyMetadata(TopOrBottom.Unset, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private _buttonsTop As StackPanel
         Private _buttonsBottom As StackPanel
@@ -83,6 +83,7 @@ Namespace Controls
         End Property
 
         Public Enum TopOrBottom
+            Unset
             Both
             Top
             Bottom
