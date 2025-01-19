@@ -1,5 +1,6 @@
 ﻿Imports System.Collections.Concurrent
 Imports System.Runtime.InteropServices
+Imports System.Security.AccessControl
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Input
@@ -13,6 +14,7 @@ Public Class Shell
 
     Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
+    Public Shared Event ClipboardChanged As EventHandler
 
     Public Shared NotificationTaskQueue As New BlockingCollection(Of Action)
     Public Shared STATaskQueue As New BlockingCollection(Of Action)
@@ -37,6 +39,8 @@ Public Class Shell
     Private Shared _controlCache As List(Of IDisposable) = New List(Of IDisposable)()
     Private Shared _isDebugVisible As Boolean = False
     Friend Shared _debugWindow As DebugTools.DebugWindow
+
+    Private Shared _nextClipboardViewer As IntPtr
 
     Private Shared _overrideCursorFunc As Func(Of Cursor, IDisposable) =
         Function(cursor As Cursor) As IDisposable
@@ -152,6 +156,9 @@ Public Class Shell
         source.AddHook(AddressOf hwndHook)
         _hwnd = hwnd
 
+        ' start listening for clipboard changes
+        _nextClipboardViewer = Functions.SetClipboardViewer(hwnd)
+
         Dim addSpecialFolder As Action(Of String, Item) =
             Sub(name As String, item As Item)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder Then
@@ -248,6 +255,9 @@ Public Class Shell
             ' and prevent this function from getting called twice
             _shutDownTokensSource.Cancel()
 
+            ' stop listening for clipboard changes
+            Functions.ChangeClipboardChain(_hwnd, _nextClipboardViewer)
+
             ' stop receiving and handling notifications
             SyncLock _listenersLock
                 For Each item In _listenerhNotifies.ToList()
@@ -307,51 +317,60 @@ Public Class Shell
 
     Private Shared Function hwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
         'Debug.WriteLine(CType(msg, WM).ToString())
-        If msg = WM.USER + 1 Then
-            ' we received an SHChangeNotify message - go get the data
-            Dim pppidl As IntPtr = IntPtr.Zero
-            Dim lEvent As SHCNE = 0
-            Dim hLock As IntPtr = Functions.SHChangeNotification_Lock(wParam, lParam, pppidl, lEvent)
+        Select Case msg
+            Case WM.USER + 1
+                ' we received an SHChangeNotify message - go get the data
+                Dim pppidl As IntPtr = IntPtr.Zero
+                Dim lEvent As SHCNE = 0
+                Dim hLock As IntPtr = Functions.SHChangeNotification_Lock(wParam, lParam, pppidl, lEvent)
 
-            If hLock <> IntPtr.Zero Then
-                ' read pidls
-                Dim pidl1 As IntPtr = Marshal.ReadIntPtr(pppidl)
-                pppidl = IntPtr.Add(pppidl, IntPtr.Size)
-                Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
+                If hLock <> IntPtr.Zero Then
+                    ' read pidls
+                    Dim pidl1 As IntPtr = Marshal.ReadIntPtr(pppidl)
+                    pppidl = IntPtr.Add(pppidl, IntPtr.Size)
+                    Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
-                Shell.NotificationTaskQueue.Add(
-                    Sub()
-                        ' make eventargs
-                        Dim e As NotificationEventArgs = New NotificationEventArgs() With {
-                            .[Event] = lEvent
-                        }
+                    Shell.NotificationTaskQueue.Add(
+                        Sub()
+                            ' make eventargs
+                            Dim e As NotificationEventArgs = New NotificationEventArgs() With {
+                                .[Event] = lEvent
+                            }
 
-                        Dim text As String = lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString() & Environment.NewLine
+                            Dim text As String = lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString() & Environment.NewLine
 
-                        If Not IntPtr.Zero.Equals(pidl1) Then
-                            e.Item1 = Item.FromPidl(pidl1, Nothing, False, False)
-                            text &= BitConverter.ToString(e.Item1.Pidl.Bytes) & vbCrLf & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")" & Environment.NewLine
-                        End If
-                        If Not IntPtr.Zero.Equals(pidl2) Then
-                            e.Item2 = Item.FromPidl(pidl2, Nothing, False, False)
-                            text &= BitConverter.ToString(e.Item2.Pidl.Bytes) & vbCrLf & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")" & Environment.NewLine
-                        End If
+                            If Not IntPtr.Zero.Equals(pidl1) Then
+                                e.Item1 = Item.FromPidl(pidl1, Nothing, False, False)
+                                text &= BitConverter.ToString(e.Item1.Pidl.Bytes) & vbCrLf & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")" & Environment.NewLine
+                            End If
+                            If Not IntPtr.Zero.Equals(pidl2) Then
+                                e.Item2 = Item.FromPidl(pidl2, Nothing, False, False)
+                                text &= BitConverter.ToString(e.Item2.Pidl.Bytes) & vbCrLf & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")" & Environment.NewLine
+                            End If
 
-                        Debug.Write(text)
+                            Debug.Write(text)
 
-                        ' notify components
-                        RaiseEvent Notification(Nothing, e)
+                            ' notify components
+                            RaiseEvent Notification(Nothing, e)
 
-                        If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
-                        If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
+                            If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
+                            If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
 
-                        ' unlock
-                        Functions.SHChangeNotification_Unlock(hLock)
-                    End Sub)
-            End If
-        ElseIf msg = WM.SETTINGCHANGE Then
-            Shell.Settings.OnSettingChange()
-        End If
+                            ' unlock
+                            Functions.SHChangeNotification_Unlock(hLock)
+                        End Sub)
+                End If
+            Case WM.SETTINGCHANGE
+                Shell.Settings.OnSettingChange()
+            Case WM.DRAWCLIPBOARD
+                RaiseEvent ClipboardChanged(Nothing, New EventArgs())
+            Case WM.CHANGECBCHAIN
+                If wParam = _nextClipboardViewer Then
+                    _nextClipboardViewer = lParam
+                ElseIf _nextClipboardViewer <> IntPtr.Zero Then
+                    Functions.SendMessage(_nextClipboardViewer, msg, wParam, lParam)
+                End If
+        End Select
     End Function
 
     ''' <summary>

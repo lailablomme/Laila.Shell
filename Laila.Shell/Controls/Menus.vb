@@ -1,6 +1,7 @@
 ﻿Imports System.ComponentModel
 Imports System.Reflection
 Imports System.Runtime.InteropServices
+Imports System.Runtime.Serialization
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
@@ -34,6 +35,13 @@ Namespace Controls
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Menus), New FrameworkPropertyMetadata(GetType(Menus)))
+        End Sub
+
+        Public Sub New()
+            AddHandler Shell.ClipboardChanged,
+                Sub(s As Object, e As EventArgs)
+                    Me.UpdateButtons()
+                End Sub
         End Sub
 
         Public Shared Sub InvokeDefaultCommand(item As Item)

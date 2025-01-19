@@ -9,6 +9,13 @@ Imports Laila.Shell.Controls
 
 Public Class Functions
 
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function SetClipboardViewer(hWndNewViewer As IntPtr) As IntPtr
+    End Function
+
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Shared Function ChangeClipboardChain(hWndRemove As IntPtr, hWndNext As IntPtr) As Boolean
+    End Function
     <DllImport("advapi32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
     Public Shared Function RegCreateKeyEx(
         hKey As IntPtr,
