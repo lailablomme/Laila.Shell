@@ -7,7 +7,6 @@
         xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" 
         xmlns:shell="clr-namespace:Laila.Shell;assembly=Laila.Shell" 
         xmlns:metroWindow="clr-namespace:Laila.MetroWindow.Controls;assembly=Laila.MetroWindow"
-        xmlns:metroWindowConverters="clr-namespace:Laila.MetroWindow.Converters;assembly=Laila.MetroWindow"
         xmlns:localConverters="clr-namespace:Laila.Shell.SampleApp.Converters"
         x:Name="view" 
         mc:Ignorable="d" Icon="{Binding SelectedItem.Folder.Icon[48], ElementName=tabControl}" 
@@ -20,7 +19,7 @@
             <Setter Property="WindowStyle" Value="None" />
             <Setter Property="Background" Value="White" />
             <Setter Property="AllowsTransparency" Value="True" />
-            <Setter Property="GlowColor" Value="Gray" />
+            <Setter Property="GlowColor" Value="DarkViolet" />
             <Setter Property="GlowSize" Value="15" />
             <Setter Property="GlowStyle" Value="Glowing" />
             <Setter Property="WindowChrome.CaptionHeight"  Value="30" />
@@ -28,12 +27,9 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type local:MainWindow}">
                         <ControlTemplate.Resources>
-                            <metroWindowConverters:ShadowMarginConverter x:Key="shadowMarginConverter" />
-                            <metroWindowConverters:GlowMarginConverter x:Key="glowMarginConverter" />
-                            <metroWindowConverters:BorderSizeConverter x:Key="borderSizeConverter" />
                             <localConverters:RectConverter x:Key="rectConverter" />
                         </ControlTemplate.Resources>
-                        <Border x:Name="PART_RootBorder" Padding="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource glowMarginConverter}}">
+                        <Border x:Name="PART_RootBorder" Padding="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}}">
                             <Border Grid.Row="1" Grid.Column="1" x:Name="PART_GlowBorder" CornerRadius="10">
                                 <Border x:Name="PART_MainBorder" CornerRadius="10"  
                                     Background="{TemplateBinding Background}" BorderBrush="DarkViolet" BorderThickness="1">
@@ -73,11 +69,20 @@
 
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
                                                         <Button Style="{DynamicResource metroWindowButtonStyle}" 
-                                                        x:Name="PART_MinimizeButton"></Button>
+                                                                x:Name="PART_MinimizeButton">
+                                                            <Path Data="M0.5,0.5 L10.5,0.5" Stroke="Black" StrokeThickness="1"
+                                                                Width="10.9" Height="0.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True" />
+                                                        </Button>
                                                         <Button Style="{DynamicResource metroWindowButtonStyle}" 
-                                                        x:Name="PART_MaximizeRestoreButton"></Button>
+                                                                x:Name="PART_MaximizeRestoreButton">
+                                                            <Path Data="M0.5,0.5 L10.5,0.5 L10.5,10.5 L0.5,10.5 Z" Stroke="Black" StrokeThickness="1"
+                                                                Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+                                                        </Button>
                                                         <Button Style="{DynamicResource metroWindowCloseButtonStyle}" 
-                                                        x:Name="PART_CloseButton"></Button>
+                                                                x:Name="PART_CloseButton">
+                                                            <Path Data="M0.5,0.5 L10.5,10.5 M10.5,0.5 L0.5,10.5" Stroke="Black" StrokeThickness="1"
+                                                                Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+                                                        </Button>
                                                     </StackPanel>
                                                 </Grid>
                                             </ContentControl>
@@ -107,7 +112,12 @@
                                 </Setter>
                             </Trigger>
                             <Trigger Property="ActualWindowState" Value="Maximized">
-                                <Setter Property="Content" TargetName="PART_MaximizeRestoreButton" Value="" />
+                                <Setter Property="Content" TargetName="PART_MaximizeRestoreButton">
+                                    <Setter.Value>
+                                        <Path Data="M0.5,2.5 L8.5,2.5 L8.5,10.5 L0.5,10.5 L0.5,3.5 M3.5,2.5 L3.5,0.5 L10.5,0.5 L10.5,8.5 L8.5,8.5" Stroke="Black" StrokeThickness="1"
+                                            Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource Mode=Self}}" Value="False">
                                 <Setter Property="BorderBrush" TargetName="PART_MainBorder" Value="Gray" />
