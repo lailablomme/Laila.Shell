@@ -16,33 +16,67 @@ Public Class SearchFolder
     End Function
 
     Private Shared Function getShellItem(terms As String, parent As Folder) As IShellItem2
-        Dim factory As ISearchFolderItemFactory = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_SearchFolderItemFactory))
-        Dim arr As IShellItemArray
-        Dim pidls As List(Of Pidl)
-        If parent.Pidl.Equals(Shell.GetSpecialFolder("This pc").Pidl) Then
-            pidls = parent.GetItems().Where(Function(i) TypeOf i Is Folder).Select(Function(i) i.Pidl).ToList()
-        Else
-            pidls = New List(Of Pidl)() From {parent.Pidl}
-        End If
-        Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), arr)
-        factory.SetScope(arr)
-        Dim qpm As IQueryParserManager = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_QueryParserManager))
-        Dim qp As IQueryParser
-        qpm.CreateLoadedParser("SystemIndex", &H800, GetType(IQueryParser).GUID, qp)
-        Dim qs As IQuerySolution
-        qp.Parse(terms, Nothing, qs)
-        Dim cond As ICondition
-        qs.GetQuery(cond, Nothing)
-        Dim st As SYSTEMTIME
-        Functions.GetLocalTime(st)
-        Dim resolvedCond As ICondition
-        qs.Resolve(cond, &H40, st, resolvedCond)
-        factory.SetCondition(resolvedCond)
-        factory.SetDisplayName("Search results for " & parent.DisplayName)
-        factory.SetFolderTypeID(Guids.FOLDERTYPEID_GenericSearchResults)
-        Dim shellItem As IShellItem2
-        factory.GetShellItem(GetType(IShellItem2).GUID, shellItem)
-        Return shellItem
+        Dim factory As ISearchFolderItemFactory, array As IShellItemArray
+        Dim queryParserManager As IQueryParserManager, queryParser As IQueryParser, querySolution As IQuerySolution
+        Dim condition As ICondition, resolvedCondition As ICondition
+        Try
+            ' make factory
+            factory = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_SearchFolderItemFactory))
+
+            ' set scope
+            Dim pidls As List(Of Pidl)
+            If parent.Pidl.Equals(Shell.GetSpecialFolder("This pc").Pidl) Then
+                pidls = parent.GetItems().Where(Function(i) TypeOf i Is Folder).Select(Function(i) i.Pidl).ToList()
+            Else
+                pidls = New List(Of Pidl)() From {parent.Pidl}
+            End If
+            Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), array)
+            factory.SetScope(array)
+
+            ' make query
+            queryParserManager = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_QueryParserManager))
+            queryParserManager.CreateLoadedParser("SystemIndex", &H800, GetType(IQueryParser).GUID, queryParser)
+            queryParser.Parse(terms, Nothing, querySolution)
+            querySolution.GetQuery(condition, Nothing)
+
+            ' resolve query and set condition
+            Dim systemTime As SYSTEMTIME
+            Functions.GetLocalTime(systemTime)
+            querySolution.Resolve(condition, &H40, systemTime, resolvedCondition)
+            factory.SetCondition(resolvedCondition)
+
+            ' set folder properties
+            factory.SetDisplayName("Search results for " & parent.DisplayName)
+            factory.SetFolderTypeID(Guids.FOLDERTYPEID_GenericSearchResults)
+
+            ' get and return shellitem
+            Dim shellItem As IShellItem2
+            factory.GetShellItem(GetType(IShellItem2).GUID, shellItem)
+            Return shellItem
+        Finally
+            If Not factory Is Nothing Then
+                Marshal.ReleaseComObject(factory)
+            End If
+            If Not array Is Nothing Then
+                Marshal.ReleaseComObject(array)
+            End If
+            If Not queryParserManager Is Nothing Then
+                Marshal.ReleaseComObject(queryParserManager)
+            End If
+            If Not queryParser Is Nothing Then
+                Marshal.ReleaseComObject(queryParser)
+            End If
+            If Not querySolution Is Nothing Then
+                Marshal.ReleaseComObject(querySolution)
+            End If
+            If Not condition Is Nothing Then
+                Marshal.ReleaseComObject(condition)
+            End If
+            If Not resolvedCondition Is Nothing Then
+                Marshal.ReleaseComObject(resolvedCondition)
+            End If
+        End Try
+        Return Nothing
     End Function
 
     Public Sub New(shellItem2 As IShellItem2, parent As Folder)
