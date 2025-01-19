@@ -95,7 +95,7 @@ Namespace Controls
                         Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
                             UIHelper.OnUIThread(
                                 Async Sub()
-                                    If Not Me.SelectedItem Is Nothing Then
+                                    If Not Me.SelectedItem Is Nothing AndAlso TypeOf e.Item1 Is Folder Then
                                         If Not Me.SelectedItem._parent Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
                                             Await Me.SetSelectedFolder(Me.SelectedItem.Parent)
                                         ElseIf Not Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then

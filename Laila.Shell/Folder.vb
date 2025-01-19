@@ -43,6 +43,7 @@ Public Class Folder
     Private _doubleCheckLock As Object = New Object()
     Private _doubleCheckTimer As Timer
     Private _doubleCheckList As List(Of Tuple(Of String, String, Folder)) = New List(Of Tuple(Of String, String, Folder))
+    Private _wasActivity As Boolean
 
     Public Shared Function FromDesktop() As Folder
         Dim pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -602,6 +603,7 @@ Public Class Folder
         enumerateItems(flags, cancellationToken)
 
         If Not cancellationToken.IsCancellationRequested Then
+            _wasActivity = False
             Me.IsLoading = False
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName)
@@ -1007,6 +1009,7 @@ Public Class Folder
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                            _wasActivity = True
                             Dim existing As Item
                             UIHelper.OnUIThread(
                                 Sub()
@@ -1022,6 +1025,7 @@ Public Class Folder
                 Case SHCNE.CREATE
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                            _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
                                     Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
@@ -1037,13 +1041,12 @@ Public Class Folder
                                         _items.InsertSorted(e.Item1, c)
                                     End If
                                 End Sub)
-                            ' the notifications can't always be trusted -- doublecheck
-                            doubleCheck("EXISTS", e.Item1.FullPath, Me)
                         End If
                     End If
                 Case SHCNE.MKDIR
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                            _wasActivity = True
                             Dim existing As Item
                             UIHelper.OnUIThread(
                                 Sub()
@@ -1065,6 +1068,7 @@ Public Class Folder
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                            _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
                                     Dim existing As Item
@@ -1079,12 +1083,11 @@ Public Class Folder
                                         existing.Dispose()
                                     End If
                                 End Sub)
-                            ' the notifications can't always be trusted -- doublecheck
-                            doubleCheck("NOTEXISTS", e.Item1.FullPath, Me)
                         End If
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
+                        _wasActivity = True
                         UIHelper.OnUIThread(
                             Sub()
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
@@ -1099,6 +1102,7 @@ Public Class Folder
                     End If
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
+                        _wasActivity = True
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item As Item
@@ -1125,6 +1129,14 @@ Public Class Folder
                             End If
                             _doSkipUPDATEDIR = Nothing
                         End If
+                        If Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity Then
+                            UIHelper.OnUIThreadAsync(
+                                Async Sub()
+                                    Await Task.Delay(500)
+                                    _isEnumerated = False
+                                    Me.GetItemsAsync()
+                                End Sub)
+                        End If
                     End If
                 Case SHCNE.UPDATEITEM
                     If Not Me.Pidl.Equals(e.Item1.Pidl) AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
@@ -1141,61 +1153,6 @@ Public Class Folder
                     End If
             End Select
         End If
-    End Sub
-
-    Private Sub doubleCheck(what As String, fullPath As String, parent As Folder)
-        SyncLock _doubleCheckLock
-            If Not disposedValue Then
-                _doubleCheckList.Add(New Tuple(Of String, String, Folder)(what, fullPath, parent))
-                If Not _doubleCheckTimer Is Nothing Then
-                    _doubleCheckTimer.Dispose()
-                    _doubleCheckTimer = Nothing
-                End If
-
-                _doubleCheckTimer = New Timer(New TimerCallback(
-                    Sub()
-                        SyncLock _doubleCheckLock
-                            For Each tuple In _doubleCheckList.ToList()
-                                Shell.RunOnSTAThread(
-                                    Sub()
-                                        Dim item1 As Item = Item.FromParsingName(tuple.Item2, Nothing, False, False)
-                                        Dim existing As Item
-                                        Dim isOutOfSync As Boolean
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                existing = tuple.Item3.Items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.FullPath?.Equals(tuple.Item2))
-                                                Select Case tuple.Item1
-                                                    Case "EXISTS"
-                                                        If item1 Is Nothing AndAlso Not existing Is Nothing Then
-                                                            ' the file doesn't exist anymore while we think it still does
-                                                            isOutOfSync = True
-                                                        End If
-                                                    Case "NOTEXISTS"
-                                                        If Not item1 Is Nothing AndAlso existing Is Nothing Then
-                                                            ' the file does exist while we think it doesn't
-                                                            isOutOfSync = True
-                                                        End If
-                                                End Select
-                                            End Sub)
-                                        If Not item1 Is Nothing Then
-                                            item1.Dispose()
-                                        End If
-                                        If isOutOfSync AndAlso tuple.Item3._isEnumerated Then
-                                            tuple.Item3._isEnumerated = False
-                                            tuple.Item3.GetItemsAsync()
-                                        End If
-                                    End Sub, 1)
-                                _doubleCheckList.Remove(tuple)
-                            Next
-
-                            If Not _doubleCheckTimer Is Nothing Then
-                                _doubleCheckTimer.Dispose()
-                                _doubleCheckTimer = Nothing
-                            End If
-                        End SyncLock
-                    End Sub), Nothing, 500, 0)
-            End If
-        End SyncLock
     End Sub
 
     Protected Overrides Sub Settings_PropertyChanged(s As Object, e As PropertyChangedEventArgs)

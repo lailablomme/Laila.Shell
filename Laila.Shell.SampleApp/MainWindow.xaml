@@ -22,7 +22,7 @@
             <Setter Property="GlowColor" Value="DarkViolet" />
             <Setter Property="GlowSize" Value="15" />
             <Setter Property="GlowStyle" Value="Glowing" />
-            <Setter Property="WindowChrome.CaptionHeight"  Value="30" />
+            <Setter Property="CaptionHeight"  Value="33" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type local:MainWindow}">
@@ -45,7 +45,7 @@
                                                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
                                                     <LinearGradientBrush.GradientStops>
                                                         <GradientStopCollection>
-                                                            <GradientStop Color="MediumOrchid" Offset="0.0" />
+                                                            <GradientStop Color="BlueViolet" Offset="0.0" />
                                                             <GradientStop Color="Violet" Offset="1.0" />
                                                         </GradientStopCollection>
                                                     </LinearGradientBrush.GradientStops>
@@ -59,33 +59,31 @@
                                             <ContentPresenter Grid.Row="0" Grid.RowSpan="2" WindowChrome.IsHitTestVisibleInChrome="True" Margin="0,7,0,0"
                                           Content="{Binding Content, RelativeSource={RelativeSource Mode=TemplatedParent}}" />
 
-                                            <ContentControl x:Name="PART_TitleBar" HorizontalAlignment="Right">
-                                                <Grid Grid.Row="0" x:Name="PART_TitleBarGrid" VerticalAlignment="Center"
+                                            <Grid Grid.Row="0" x:Name="PART_TitleBarGrid" VerticalAlignment="Center"
                                               Background="{x:Null}">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
 
-                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
-                                                        <Button Style="{DynamicResource metroWindowButtonStyle}" 
-                                                                x:Name="PART_MinimizeButton">
-                                                            <Path Data="M0.5,0.5 L10.5,0.5" Stroke="Black" StrokeThickness="1"
-                                                                Width="10.9" Height="0.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True" />
-                                                        </Button>
-                                                        <Button Style="{DynamicResource metroWindowButtonStyle}" 
-                                                                x:Name="PART_MaximizeRestoreButton">
-                                                            <Path Data="M0.5,0.5 L10.5,0.5 L10.5,10.5 L0.5,10.5 Z" Stroke="Black" StrokeThickness="1"
-                                                                Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True"/>
-                                                        </Button>
-                                                        <Button Style="{DynamicResource metroWindowCloseButtonStyle}" 
-                                                                x:Name="PART_CloseButton">
-                                                            <Path Data="M0.5,0.5 L10.5,10.5 M10.5,0.5 L0.5,10.5" Stroke="Black" StrokeThickness="1"
-                                                                Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True"/>
-                                                        </Button>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </ContentControl>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
+                                                    <Button Style="{DynamicResource metroWindowButtonStyle}" 
+                                                            x:Name="PART_MinimizeButton">
+                                                        <Path Data="M0.5,0.5 L10.5,0.5" Stroke="Black" StrokeThickness="1"
+                                                            Width="10.9" Height="0.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True" />
+                                                    </Button>
+                                                    <Button Style="{DynamicResource metroWindowButtonStyle}" 
+                                                            x:Name="PART_MaximizeRestoreButton">
+                                                        <Path Data="M0.5,0.5 L10.5,0.5 L10.5,10.5 L0.5,10.5 Z" Stroke="Black" StrokeThickness="1"
+                                                            Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+                                                    </Button>
+                                                    <Button Style="{DynamicResource metroWindowCloseButtonStyle}" 
+                                                            x:Name="PART_CloseButton">
+                                                        <Path Data="M0.5,0.5 L10.5,10.5 M10.5,0.5 L0.5,10.5" Stroke="Black" StrokeThickness="1"
+                                                            Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
                                         </Grid>
                                     </Border>
                                 </Border>
