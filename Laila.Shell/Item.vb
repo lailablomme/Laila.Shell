@@ -264,6 +264,7 @@ Public Class Item
                 _displayName = Nothing
 
                 If Not Me.ShellItem2 Is Nothing Then
+                    _fullPath = Nothing
                     _fullPath = Me.FullPath
                     _attributes = 0
                     _attributes = Me.Attributes
@@ -1188,7 +1189,8 @@ Public Class Item
                         PinnedItems.RenameItem(oldPidl, _pidl)
                         FrequentFolders.RenameItem(oldPidl, _pidl)
                         oldPidl.Dispose()
-                        Me.Refresh()
+                        Me.Refresh(e.Item2.ShellItem2)
+                        e.Item2._shellItem2 = Nothing
                     End If
             End Select
         End If
