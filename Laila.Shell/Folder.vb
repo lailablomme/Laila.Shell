@@ -1139,7 +1139,7 @@ Public Class Folder
                         End If
                     End If
                 Case SHCNE.UPDATEITEM
-                    If Not Me.Pidl.Equals(e.Item1.Pidl) AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                    If Not Me.Pidl?.Equals(e.Item1.Pidl) AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
                         Dim existing As Item
                         UIHelper.OnUIThread(
                             Sub()
