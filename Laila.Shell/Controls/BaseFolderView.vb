@@ -1038,6 +1038,8 @@ Namespace Controls
                 ' load items
                 If Not TypeOf newValue Is SearchFolder Then
                     Await newValue.GetItemsAsync()
+                Else
+                    newValue.GetItemsAsync()
                 End If
 
                 ' async because otherwise we're a tad too early

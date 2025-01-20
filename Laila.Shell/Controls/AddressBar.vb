@@ -328,8 +328,8 @@ Namespace Controls
                                     subFoldersContextMenu.IsOpen = True
                                 End Sub
 
-                            If subFolder.Equals(folder) _
-                            AndAlso (Await subFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count = 0 Then
+                            If subFolder.Equals(folder) AndAlso (TypeOf subFolder Is SearchFolder OrElse
+                                (Await subFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count = 0) Then
                                 UIHelper.OnUIThread(
                                     Sub()
                                         button.Visibility = Visibility.Collapsed
