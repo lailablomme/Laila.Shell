@@ -1015,11 +1015,11 @@ Public Class Folder
                                 Sub()
                                     existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                 End Sub)
-                            If existing Is Nothing AndAlso _isEnumerated Then
+                            If existing Is Nothing Then
                                 ' we're out of sync
                                 _isEnumerated = False
-                                Me.GetItemsAsync()
                             End If
+                            Me.GetItemsAsync()
                         End If
                     End If
                 Case SHCNE.CREATE
@@ -1145,11 +1145,11 @@ Public Class Folder
                             Sub()
                                 existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                             End Sub)
-                        If existing Is Nothing AndAlso _isEnumerated Then
+                        If existing Is Nothing Then
                             ' we're out of sync
                             _isEnumerated = False
-                            Me.GetItemsAsync()
                         End If
+                        Me.GetItemsAsync()
                     End If
             End Select
         End If
@@ -1160,16 +1160,16 @@ Public Class Folder
 
         Select Case e.PropertyName
             Case "DoShowProtectedOperatingSystemFiles", "DoShowHiddenFilesAndFolders"
-                If _isLoaded AndAlso _isEnumerated AndAlso Not disposedValue Then
+                If _isLoaded AndAlso Not disposedValue Then
                     Me.CancelEnumeration()
                     _isEnumerated = False
-                    Me.GetItemsAsync()
                 End If
+                Me.GetItemsAsync()
             Case "DoShowDriveLetters"
                 If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                     _isEnumerated = False
-                    Me.GetItemsAsync()
                 End If
+                Me.GetItemsAsync()
         End Select
     End Sub
 
