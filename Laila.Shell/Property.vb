@@ -30,6 +30,7 @@ Public Class [Property]
     Friend _rawValue As PROPVARIANT
     Private _displayType As PropertyDisplayType = -1
     Protected _val As Object
+    Private _dataType As VarEnum
 
     Private Shared Function getDescription(canonicalName As String) As IPropertyDescription
         _descriptionsLock.Wait()
@@ -209,9 +210,18 @@ Public Class [Property]
         End Get
     End Property
 
+    Public ReadOnly Property DataType As VarEnum
+        Get
+            If _dataType = 0 Then
+                Me.Description.GetPropertyType(_dataType)
+            End If
+            Return _dataType
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property GroupByText As String
         Get
-            If Me.RawValue.vt = VarEnum.VT_FILETIME Then
+            If Me.DataType = VarEnum.VT_FILETIME Then
                 Dim dt As DateTime = Me.Value
 
                 Dim thisWeek As Integer, thisYear As Integer
@@ -226,16 +236,32 @@ Public Class [Property]
                     Return "Today"
                 ElseIf dt.Date = DateTime.Now.Date.AddDays(-1) Then
                     Return "Yesterday"
-                ElseIf thisWeek = fileWeek AndAlso thisYear = fileyear Then
+                ElseIf thisWeek = fileWeek AndAlso thisYear = fileYear Then
                     Return "Earlier this week"
                 ElseIf lastWeek = fileWeek And lastYear = fileYear Then
                     Return "Last week"
                 ElseIf dt.Month = DateTime.Now.Month AndAlso dt.Year = DateTime.Now.Year Then
                     Return "Earlier this month"
-                ElseIf dt.Month = lastmonth.Month AndAlso dt.Year = lastmonth.Year Then
+                ElseIf dt.Month = lastMonth.Month AndAlso dt.Year = lastMonth.Year Then
                     Return "Last month"
                 Else
                     Return "Long ago"
+                End If
+            ElseIf Me.DataType = VarEnum.VT_UI8 Then
+                If Me.RawValue.vt = 0 Then
+                    Return "Unknown"
+                ElseIf Me.Value <= 16 * 1024 Then
+                    Return "Very small (0 - 16 KB)"
+                ElseIf Me.Value <= 1024 * 1024 Then
+                    Return "Small (16 KB - 1 MB)"
+                ElseIf Me.Value <= 128 * 1024 * 1024 Then
+                    Return "Normal (1 - 128 MB)"
+                ElseIf Me.Value <= 1024 * 1024 * 1024 Then
+                    Return "Large (128 MB - 1 GB)"
+                ElseIf Me.Value <= 4L * 1024 * 1024 * 1024 Then
+                    Return "Very large (1 - 4 GB)"
+                Else
+                    Return "Gigantic (> 4 GB)"
                 End If
             Else
                 Return Me.Text
