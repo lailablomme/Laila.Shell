@@ -265,6 +265,7 @@ Public Class Item
                 oldPropertiesByCanonicalName = _propertiesByCanonicalName
                 _propertiesByKey = New Dictionary(Of String, [Property])()
                 _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
+                _contentViewModeProperties = Nothing
                 For Each [property] In oldPropertiesByKey.Values
                     [property].Dispose()
                 Next
@@ -306,6 +307,8 @@ Public Class Item
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
                     Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
+                    Me.NotifyOfPropertyChange("ContentViewModeProperties")
+                    Me.NotifyOfPropertyChange("TileViewProperties")
                     For Each prop In oldPropertiesByKey
                         Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
                         Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
@@ -912,9 +915,9 @@ Public Class Item
         Get
             If Not disposedValue Then
                 Dim PKEY_System_PropList_TileInfo As New PROPERTYKEY() With {
-                .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
-                .pid = 3
-            }
+                    .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
+                    .pid = 3
+                }
                 Dim system_PropList_TileInfo As String = Me.PropertiesByKey(PKEY_System_PropList_TileInfo).Text
                 Dim properties() As String
                 If Not String.IsNullOrWhiteSpace(system_PropList_TileInfo) Then
