@@ -108,7 +108,7 @@ Public Class Folder
         Get
             Return _isEmpty
         End Get
-        Protected Set(value As Boolean)
+        Friend Set(value As Boolean)
             SetValue(_isEmpty, value)
         End Set
     End Property
@@ -1008,18 +1008,24 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If _isLoaded Then
-                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                        If (Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl)) _
+                            OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath).ToLower().Equals(Me.FullPath.ToLower())) Then
                             _wasActivity = True
-                            Dim existing As Item
+                            Dim existing As Item, existing2 As Item
                             UIHelper.OnUIThread(
                                 Sub()
-                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                        AndAlso ((Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
+                                                  OrElse i.FullPath?.ToLower().Equals(e.Item1.FullPath.ToLower())))
+                                    existing2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item2.Pidl))
                                 End Sub)
-                            If existing Is Nothing Then
+                            If existing Is Nothing AndAlso existing2 Is Nothing Then
                                 ' we're out of sync
                                 _isEnumerated = False
                             End If
-                            Me.GetItemsAsync()
+                            If Me.IsActiveInFolderView OrElse (Me.IsVisibleInTree AndAlso Me.IsExpanded) Then
+                                Me.GetItemsAsync()
+                            End If
                         End If
                     End If
                 Case SHCNE.CREATE
@@ -1039,6 +1045,7 @@ Public Class Folder
                                             End Sub, 1)
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(e.Item1, c)
+                                        Me.IsEmpty = _items.Count = 0
                                     End If
                                 End Sub)
                         End If
@@ -1061,18 +1068,22 @@ Public Class Folder
                                             End Sub, 1)
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(e.Item1, c)
+                                        Me.IsEmpty = _items.Count = 0
                                     End If
                                 End Sub)
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
-                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                        If (Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl)) _
+                            OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath).ToLower().Equals(Me.FullPath.ToLower())) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
                                     Dim existing As Item
-                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                        AndAlso ((Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
+                                                 OrElse i.FullPath?.ToLower().Equals(e.Item1.FullPath.ToLower())))
                                     If Not existing Is Nothing Then
                                         If TypeOf existing Is Folder Then
                                             Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
@@ -1096,6 +1107,7 @@ Public Class Folder
                                     e.IsHandled1 = True
                                     Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                     _items.InsertSorted(e.Item1, c)
+                                    Me.IsEmpty = _items.Count = 0
                                 End If
                             End Sub)
                         e.Item1.Refresh()
@@ -1125,7 +1137,9 @@ Public Class Folder
                                          OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False
-                                Me.GetItemsAsync()
+                                If Me.IsActiveInFolderView OrElse (Me.IsVisibleInTree AndAlso Me.IsExpanded) Then
+                                    Me.GetItemsAsync()
+                                End If
                             End If
                             _doSkipUPDATEDIR = Nothing
                         End If
@@ -1134,7 +1148,9 @@ Public Class Folder
                                 Async Sub()
                                     Await Task.Delay(500)
                                     _isEnumerated = False
-                                    Me.GetItemsAsync()
+                                    If Me.IsActiveInFolderView OrElse (Me.IsVisibleInTree AndAlso Me.IsExpanded) Then
+                                        Me.GetItemsAsync()
+                                    End If
                                 End Sub)
                         End If
                     End If
@@ -1149,7 +1165,9 @@ Public Class Folder
                             ' we're out of sync
                             _isEnumerated = False
                         End If
-                        Me.GetItemsAsync()
+                        If Me.IsActiveInFolderView OrElse (Me.IsVisibleInTree AndAlso Me.IsExpanded) Then
+                            Me.GetItemsAsync()
+                        End If
                     End If
             End Select
         End If

@@ -110,6 +110,17 @@ Public Class Item
         AddHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
     End Sub
 
+    ''' <summary>
+    ''' This constructor is to support referencing deleted or renamed files through the FileSystemWatcher only.
+    ''' </summary>
+    ''' <param name="fullPath"></param>
+    Friend Sub New(fullPath As String)
+        _objectCount += 1
+        _objectId = _objectCount
+        _fullPath = fullPath
+        _displayName = IO.Path.GetFileName(_fullPath)
+    End Sub
+
     Friend Property IsLogicalOrphan As Boolean
 
     Public Sub HookUpdates()
@@ -1183,7 +1194,8 @@ Public Class Item
                         Me.Refresh()
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
-                    If Me.Pidl?.Equals(e.Item1?.Pidl) Then
+                    If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _
+                        OrElse (Me.FullPath?.ToLower().Equals(e.Item1.FullPath.ToLower())) Then
                         Dim oldPidl As Pidl = Me.Pidl
                         _pidl = e.Item2.Pidl.Clone()
                         PinnedItems.RenameItem(oldPidl, _pidl)
@@ -1230,6 +1242,7 @@ Public Class Item
                             If Not _parent Is Nothing Then
                                 _parent._items.Remove(Me)
                                 _parent._isEnumerated = False
+                                _parent.IsEmpty = _parent._items.Count = 0
                             End If
                         End Sub)
 
