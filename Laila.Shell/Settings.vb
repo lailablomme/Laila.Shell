@@ -464,7 +464,7 @@ Public Class Settings
     End Property
 
     Private Function readDoTypeToSelect() As Boolean
-        Return Not GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, TYPETOSELECT_VALUENAME, True)
+        Return Not GetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, TYPETOSELECT_VALUENAME, False)
     End Function
 
     Public Property DoTypeToSelect As Boolean
