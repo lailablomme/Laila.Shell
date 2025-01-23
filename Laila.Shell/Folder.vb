@@ -1009,7 +1009,7 @@ Public Class Folder
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If _isLoaded Then
                         If (Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath).ToLower().Equals(Me.FullPath.ToLower())) Then
+                            OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath)?.ToLower().Equals(Me.FullPath.ToLower())) Then
                             _wasActivity = True
                             Dim existing As Item, existing2 As Item
                             UIHelper.OnUIThread(
@@ -1076,7 +1076,7 @@ Public Class Folder
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
                         If (Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath).ToLower().Equals(Me.FullPath.ToLower())) Then
+                            OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath)?.ToLower().Equals(Me.FullPath.ToLower())) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
