@@ -1,4 +1,5 @@
 ﻿Imports System.ComponentModel
+Imports System.Globalization
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
@@ -208,6 +209,40 @@ Public Class [Property]
         End Get
     End Property
 
+    Public Overridable ReadOnly Property GroupByText As String
+        Get
+            If Me.RawValue.vt = VarEnum.VT_FILETIME Then
+                Dim dt As DateTime = Me.Value
+
+                Dim thisWeek As Integer, thisYear As Integer
+                Dim lastWeek As Integer, lastYear As Integer
+                Dim fileWeek As Integer, fileYear As Integer
+                getISO8601WeekOfYear(DateTime.Now.Date, thisWeek, thisYear)
+                getISO8601WeekOfYear(DateTime.Now.Date.AddDays(-7), lastWeek, lastYear)
+                getISO8601WeekOfYear(dt, fileWeek, fileYear)
+                Dim lastMonth As DateTime = DateTime.Now.Date.AddMonths(-1)
+
+                If dt.Date = DateTime.Now.Date Then
+                    Return "Today"
+                ElseIf dt.Date = DateTime.Now.Date.AddDays(-1) Then
+                    Return "Yesterday"
+                ElseIf thisWeek = fileWeek AndAlso thisYear = fileyear Then
+                    Return "Earlier this week"
+                ElseIf lastWeek = fileWeek And lastYear = fileYear Then
+                    Return "Last week"
+                ElseIf dt.Month = DateTime.Now.Month AndAlso dt.Year = DateTime.Now.Year Then
+                    Return "Earlier this month"
+                ElseIf dt.Month = lastmonth.Month AndAlso dt.Year = lastmonth.Year Then
+                    Return "Last month"
+                Else
+                    Return "Long ago"
+                End If
+            Else
+                Return Me.Text
+            End If
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property DisplayType As PropertyDisplayType
         Get
             If _displayType = -1 Then
@@ -387,6 +422,28 @@ Public Class [Property]
 
         Return Nothing
     End Function
+
+    ' This presumes that weeks start with Monday.
+    ' Week 1 Is the 1st week of the year with a Thursday in it.
+    Private Sub getISO8601WeekOfYear(dt As DateTime, ByRef weekNumber As Integer, ByRef year As Integer)
+        ' Seriously cheat.  If its Monday, Tuesday Or Wednesday, then it'll 
+        ' be the same week# as whatever Thursday, Friday Or Saturday are,
+        ' And we always get those right
+        Dim day As DayOfWeek = CultureInfo.InvariantCulture.Calendar.GetDayOfWeek(dt)
+        If (day >= DayOfWeek.Monday AndAlso day <= DayOfWeek.Wednesday) Then
+            dt = dt.AddDays(3)
+        End If
+
+        ' Return the week of our adjusted day
+        weekNumber = CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(dt, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday)
+        If weekNumber = 1 AndAlso dt.Month = 12 Then
+            year = dt.Year + 1
+        ElseIf weekNumber > 45 AndAlso dt.Month = 1 Then
+            year = dt.Year - 1
+        Else
+            year = dt.Year
+        End If
+    End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
         If Not disposedValue Then

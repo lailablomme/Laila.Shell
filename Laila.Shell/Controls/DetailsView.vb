@@ -42,7 +42,7 @@ Namespace Controls
                 'If [property].HasIcon Then
                 '    gvc.SetValue(Behaviors.GridViewExtBehavior.ExtraAutoSizeMarginProperty, Convert.ToDouble(15))
                 'End If
-                gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))
+                gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].GroupByText", column.PROPERTYKEY.ToString()))
 
                 Dim isVisibleDescriptor As DependencyPropertyDescriptor =
                     DependencyPropertyDescriptor.FromProperty(Behaviors.GridViewExtBehavior.IsVisibleProperty, gvc.GetType())

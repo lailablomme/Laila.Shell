@@ -142,7 +142,7 @@ Namespace Controls
                     If Not _isCheckingInternally Then
                         Using Shell.OverrideCursor(Cursors.Wait)
                             Me.Folder.ItemsGroupByPropertyName =
-                                String.Format("PropertiesByKeyAsText[{0}].Text",
+                                String.Format("PropertiesByKeyAsText[{0}].GroupByText",
                                                 CType(s2, MenuItem).Tag.ToString().Substring(6))
                         End Using
                     End If
