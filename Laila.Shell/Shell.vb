@@ -577,7 +577,7 @@ Public Class Shell
                                 If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
                                 Dim text As String = "FSW: " & e2.Event.ToString() & Environment.NewLine
                                 text &= "PIDL not available/renamed item" & vbCrLf & e2.Item1.DisplayName & " (" & e2.Item1.FullPath & ")" & Environment.NewLine
-                                If Not e2.Item1 Is Nothing Then
+                                If Not e2.Item2 Is Nothing Then
                                     text &= BitConverter.ToString(e2.Item2.Pidl.Bytes) & vbCrLf & e2.Item2.DisplayName & " (" & e2.Item2.FullPath & ")" & Environment.NewLine
                                 Else
                                     text &= "Item2 could not be found -- skipping notification" & Environment.NewLine
@@ -585,7 +585,7 @@ Public Class Shell
                                 Debug.Write(text)
 
                                 ' notify components
-                                If Not e2.Item1 Is Nothing Then
+                                If Not e2.Item2 Is Nothing Then
                                     RaiseEvent Notification(Nothing, e2)
                                 End If
 
