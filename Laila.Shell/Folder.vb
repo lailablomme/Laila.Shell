@@ -1017,7 +1017,9 @@ Public Class Folder
                                     existing = _items.FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso ((Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
                                                   OrElse i.FullPath?.ToLower().Equals(e.Item1.FullPath.ToLower())))
-                                    existing2 = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item2.Pidl))
+                                    existing2 = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                        AndAlso ((Not e.Item2.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item2.Pidl)) _
+                                                  OrElse i.FullPath?.ToLower().Equals(e.Item2.FullPath.ToLower())))
                                 End Sub)
                             If existing Is Nothing AndAlso existing2 Is Nothing Then
                                 ' we're out of sync

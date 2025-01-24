@@ -16,7 +16,9 @@ Public Class DummyFolder
         Me.IsLoading = True
     End Sub
 
-    Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
+    Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing,
+                                 Optional newPidl As Pidl = Nothing,
+                                 Optional newFullPath As String = Nothing)
     End Sub
 
     Public Overrides ReadOnly Property DisplayName As String

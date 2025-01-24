@@ -225,7 +225,9 @@ Public Class Item
 
     Protected Overridable Function GetNewShellItem() As IShellItem2
         Dim result As IShellItem2
-        Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, result)
+        If Not Me.Pidl Is Nothing Then
+            Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, result)
+        End If
         If result Is Nothing Then
             Functions.SHCreateItemFromParsingName(Me.FullPath, IntPtr.Zero, GetType(IShellItem2).GUID, result)
         End If
@@ -242,21 +244,34 @@ Public Class Item
         End Get
     End Property
 
-    Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing)
+    Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing,
+                                   Optional newPidl As Pidl = Nothing,
+                                   Optional newFullPath As String = Nothing)
         SyncLock _shellItemLock
             If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                 Dim oldItemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
 
-                Dim oldShellItem As IShellItem2 = _shellItem2
-                If Not newShellItem Is Nothing Then
-                    _shellItem2 = newShellItem
-                ElseIf Not _shellItem2 Is Nothing Then
-                    _shellItem2 = Me.GetNewShellItem()
-                End If
-                Marshal.ReleaseComObject(oldShellItem)
                 If Not _pidl Is Nothing Then
                     _pidl.Dispose()
                     _pidl = Nothing
+                End If
+                If Not newPidl Is Nothing Then
+                    _pidl = newPidl
+                End If
+                If Not newFullPath Is Nothing Then
+                    _fullPath = newFullPath
+                Else
+                    _fullPath = Nothing
+                End If
+
+                Dim oldShellItem As IShellItem2 = _shellItem2
+                If Not newShellItem Is Nothing Then
+                    _shellItem2 = newShellItem
+                Else
+                    _shellItem2 = Me.GetNewShellItem()
+                End If
+                If Not oldShellItem Is Nothing Then
+                    Marshal.ReleaseComObject(oldShellItem)
                 End If
 
                 Dim oldPropertiesByKey As Dictionary(Of String, [Property])
@@ -276,7 +291,6 @@ Public Class Item
                 _displayName = Nothing
 
                 If Not Me.ShellItem2 Is Nothing Then
-                    _fullPath = Nothing
                     _fullPath = Me.FullPath
                     _attributes = 0
                     _attributes = Me.Attributes
@@ -1201,12 +1215,15 @@ Public Class Item
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _
                         OrElse (Me.FullPath?.ToLower().Equals(e.Item1.FullPath.ToLower())) Then
-                        Dim oldPidl As Pidl = Me.Pidl
-                        _pidl = e.Item2.Pidl.Clone()
-                        PinnedItems.RenameItem(oldPidl, _pidl)
-                        FrequentFolders.RenameItem(oldPidl, _pidl)
-                        oldPidl.Dispose()
-                        Me.Refresh(e.Item2.ShellItem2)
+                        Dim oldPidl As Pidl = Me.Pidl?.Clone()
+                        Me.Refresh(e.Item2.ShellItem2, e.Item2.Pidl?.Clone(), e.Item2.FullPath)
+                        If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                            PinnedItems.RenameItem(oldPidl, Me.Pidl)
+                            FrequentFolders.RenameItem(oldPidl, Me.Pidl)
+                        End If
+                        If Not oldPidl Is Nothing Then
+                            oldPidl.Dispose()
+                        End If
                         e.Item2._shellItem2 = Nothing
                     End If
             End Select

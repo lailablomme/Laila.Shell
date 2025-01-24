@@ -580,7 +580,9 @@ Public Class Shell
                                 If Not e2.Item2 Is Nothing Then
                                     text &= BitConverter.ToString(e2.Item2.Pidl.Bytes) & vbCrLf & e2.Item2.DisplayName & " (" & e2.Item2.FullPath & ")" & Environment.NewLine
                                 Else
-                                    text &= "Item2 could not be found -- skipping notification" & Environment.NewLine
+                                    text &= "Item2 could not be found -- using FullPath" & Environment.NewLine
+                                    e2.Item2 = New Item(e.FullPath)
+                                    text &= "PIDL not available/renamed item" & vbCrLf & e2.Item2.DisplayName & " (" & e2.Item2.FullPath & ")" & Environment.NewLine
                                 End If
                                 Debug.Write(text)
 
