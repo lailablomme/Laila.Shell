@@ -40,10 +40,6 @@ Public Class Folder
     Private _isEmpty As Boolean
     Private _isListening As Boolean
     Private _listeningLock As Object = New Object()
-    Private _doubleCheckLock As Object = New Object()
-    Private _doubleCheckTimer As Timer
-    Private _doubleCheckList As List(Of Tuple(Of String, String, Folder)) = New List(Of Tuple(Of String, String, Folder))
-    Private _wasActivity As Boolean
 
     Public Shared Function FromDesktop() As Folder
         Dim pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
@@ -603,7 +599,6 @@ Public Class Folder
         enumerateItems(flags, cancellationToken)
 
         If Not cancellationToken.IsCancellationRequested Then
-            _wasActivity = False
             Me.IsLoading = False
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName)
@@ -1006,34 +1001,9 @@ Public Class Folder
 
         If Not disposedValue Then
             Select Case e.Event
-                Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
-                    If _isLoaded Then
-                        If (Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath)?.ToLower().Equals(Me.FullPath.ToLower())) Then
-                            _wasActivity = True
-                            Dim existing As Item, existing2 As Item
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue _
-                                        AndAlso ((Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
-                                                  OrElse i.FullPath?.ToLower().Equals(e.Item1.FullPath.ToLower())))
-                                    existing2 = _items.FirstOrDefault(Function(i) Not i.disposedValue _
-                                        AndAlso ((Not e.Item2.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item2.Pidl)) _
-                                                  OrElse i.FullPath?.ToLower().Equals(e.Item2.FullPath.ToLower())))
-                                End Sub)
-                            If existing Is Nothing AndAlso existing2 Is Nothing Then
-                                ' we're out of sync
-                                _isEnumerated = False
-                            End If
-                            If Me.IsActiveInFolderView OrElse (Me.IsVisibleInTree AndAlso Me.IsExpanded) Then
-                                Me.GetItemsAsync()
-                            End If
-                        End If
-                    End If
                 Case SHCNE.CREATE
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
                                     Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
@@ -1055,7 +1025,6 @@ Public Class Folder
                 Case SHCNE.MKDIR
                     If _isLoaded Then
                         If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            _wasActivity = True
                             Dim existing As Item
                             UIHelper.OnUIThread(
                                 Sub()
@@ -1079,7 +1048,6 @@ Public Class Folder
                     If _isLoaded Then
                         If (Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl)) _
                             OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath)?.ToLower().Equals(Me.FullPath.ToLower())) Then
-                            _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
                                     Dim existing As Item
@@ -1100,7 +1068,6 @@ Public Class Folder
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
-                        _wasActivity = True
                         UIHelper.OnUIThread(
                             Sub()
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
@@ -1116,7 +1083,6 @@ Public Class Folder
                     End If
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
-                        _wasActivity = True
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim item As Item
@@ -1144,31 +1110,6 @@ Public Class Folder
                                 End If
                             End If
                             _doSkipUPDATEDIR = Nothing
-                        End If
-                        If Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity Then
-                            UIHelper.OnUIThreadAsync(
-                                Async Sub()
-                                    Await Task.Delay(500)
-                                    _isEnumerated = False
-                                    If Me.IsActiveInFolderView OrElse (Me.IsVisibleInTree AndAlso Me.IsExpanded) Then
-                                        Me.GetItemsAsync()
-                                    End If
-                                End Sub)
-                        End If
-                    End If
-                Case SHCNE.UPDATEITEM
-                    If Not Me.Pidl?.Equals(e.Item1.Pidl) AndAlso Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                        Dim existing As Item
-                        UIHelper.OnUIThread(
-                            Sub()
-                                existing = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                            End Sub)
-                        If existing Is Nothing Then
-                            ' we're out of sync
-                            _isEnumerated = False
-                        End If
-                        If Me.IsActiveInFolderView OrElse (Me.IsVisibleInTree AndAlso Me.IsExpanded) Then
-                            Me.GetItemsAsync()
                         End If
                     End If
             End Select
@@ -1207,13 +1148,6 @@ Public Class Folder
                 SyncLock _listeningLock
                     If _isListening Then
                         Shell.StopListening(Me)
-                    End If
-                End SyncLock
-
-                SyncLock _doubleCheckLock
-                    If Not _doubleCheckTimer Is Nothing Then
-                        _doubleCheckTimer.Dispose()
-                        _doubleCheckTimer = Nothing
                     End If
                 End SyncLock
 
