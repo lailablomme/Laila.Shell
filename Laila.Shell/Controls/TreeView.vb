@@ -176,12 +176,12 @@ Namespace Controls
 
             If Not Me.DoShowAllFoldersInTreeView Then
                 Dim tcs As New TaskCompletionSource()
-                Dim homeFolder As Folder, galleryFolder As Folder, librariesFolder As Folder
+                Dim homeFolder As Folder, galleryFolder As Folder, librariesFolder As Folder, favoritesFolder As Folder
                 Dim thisComputer As Folder, network As Folder
 
                 Shell.STATaskQueue.Add(
                     Async Sub()
-                        ' home and galery
+                        ' home, galery and favorites
                         If Shell.GetSpecialFolders().ContainsKey("Home") Then
                             homeFolder = Shell.GetSpecialFolder("Home").Clone()
                             homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
@@ -189,6 +189,10 @@ Namespace Controls
                         If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
                             galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
                             galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
+                        End If
+                        If Shell.GetSpecialFolders().ContainsKey("Favorites") Then
+                            favoritesFolder = Shell.GetSpecialFolder("Favorites").Clone()
+                            favoritesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 2
                         End If
 
                         ' this computer & network
@@ -211,8 +215,13 @@ Namespace Controls
 
                 tcs.Task.Wait(Shell.ShuttingDownToken)
                 ' system
-                Me.Roots.Add(homeFolder)
-                If Not galleryFolder Is Nothing Then Me.Roots.Add(galleryFolder)
+                If Not Settings.IsWindows7OrLower Then
+                    If Not homeFolder Is Nothing Then Me.Roots.Add(homeFolder)
+                    If Not galleryFolder Is Nothing Then Me.Roots.Add(galleryFolder)
+                Else
+                    If Not favoritesFolder Is Nothing Then Me.Roots.Add(favoritesFolder)
+                    If Not librariesFolder Is Nothing Then Me.Roots.Add(librariesFolder)
+                End If
                 ' separators
                 Me.Roots.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.PINNED - 1})
                 Me.Roots.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
@@ -292,9 +301,9 @@ Namespace Controls
 
         Private Function GetParentOfSelectionBefore(folder As Folder, Optional selectedItem As Folder = Nothing) As Folder
             If selectedItem Is Nothing Then selectedItem = Me.SelectedItem
-            If Not selectedItem Is Nothing AndAlso selectedItem.Pidl.Equals(folder.Pidl) Then
+            If selectedItem?.Pidl.Equals(folder.Pidl) Then
                 Return selectedItem.Parent
-            ElseIf Not selectedItem.Parent Is Nothing Then
+            ElseIf Not selectedItem?.Parent Is Nothing Then
                 Return Me.GetParentOfSelectionBefore(folder, selectedItem.Parent)
             Else
                 Return Nothing

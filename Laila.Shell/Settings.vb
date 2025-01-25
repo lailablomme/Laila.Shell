@@ -20,8 +20,8 @@ Public Class Settings
     Private Const NAVPANEEXPANDTOCURRENTFOLDER_VALUENAME As String = "NavPaneExpandToCurrentFolder"
     Private Const SHOWLIBRARIES_VALUENAME As String = "System.IsPinnedToNameSpaceTree"
 
-    Public Shared Property DpiScaleX As Double
-    Public Shared Property DpiScaleY As Double
+    Public Shared Property DpiScaleX As Double = 1
+    Public Shared Property DpiScaleY As Double = 1
 
     Private _threads As List(Of Thread) = New List(Of Thread)()
     Private _isMonitoring As Boolean
@@ -52,21 +52,23 @@ Public Class Settings
     Public Sub New()
         Me.StartMonitoring()
 
-        Dim maxDpiX As UInteger = 96
-        Dim maxDpiY As UInteger = 96
-        For Each s In System.Windows.Forms.Screen.AllScreens
-            Dim hMonitor As IntPtr = Functions.MonitorFromPoint(New WIN32POINT() With {.x = s.Bounds.X, .y = s.Bounds.Y}, 2)
-            Dim dpiX As UInteger = 0
-            Dim dpiY As UInteger = 0
+        If Not Settings.IsWindows7OrLower Then
+            Dim maxDpiX As UInteger = 96
+            Dim maxDpiY As UInteger = 96
+            For Each s In System.Windows.Forms.Screen.AllScreens
+                Dim hMonitor As IntPtr = Functions.MonitorFromPoint(New WIN32POINT() With {.x = s.Bounds.X, .y = s.Bounds.Y}, 2)
+                Dim dpiX As UInteger = 0
+                Dim dpiY As UInteger = 0
 
-            Dim result = Functions.GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_EFFECTIVE_DPI, dpiX, dpiY)
-            If result = HRESULT.S_OK Then ' S_OK
-                maxDpiX = Math.Max(maxDpiX, dpiX)
-                maxDpiY = Math.Max(maxDpiY, dpiY)
-            End If
-        Next
-        Settings.DpiScaleX = maxDpiX / 96
-        Settings.DpiScaleY = maxDpiY / 96
+                Dim result = Functions.GetDpiForMonitor(hMonitor, MonitorDpiType.MDT_EFFECTIVE_DPI, dpiX, dpiY)
+                If result = HRESULT.S_OK Then ' S_OK
+                    maxDpiX = Math.Max(maxDpiX, dpiX)
+                    maxDpiY = Math.Max(maxDpiY, dpiY)
+                End If
+            Next
+            Settings.DpiScaleX = maxDpiX / 96
+            Settings.DpiScaleY = maxDpiY / 96
+        End If
     End Sub
 
     ''' <summary>
@@ -663,4 +665,13 @@ Public Class Settings
             End If
         End Try
     End Sub
+
+
+    Public Shared ReadOnly Property IsWindows7OrLower() As Boolean
+        Get
+            ' Windows 7 has version number 6.1
+            Dim osVersion As Version = Environment.OSVersion.Version
+            Return osVersion.Major < 6 OrElse (osVersion.Major = 6 AndAlso osVersion.Minor <= 1)
+        End Get
+    End Property
 End Class

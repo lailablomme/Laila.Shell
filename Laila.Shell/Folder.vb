@@ -1190,12 +1190,6 @@ Public Class Folder
         End Select
     End Sub
 
-    Protected Function isWindows7OrLower() As Boolean
-        Dim osVersion As Version = Environment.OSVersion.Version
-        ' Windows 7 has version number 6.1
-        Return osVersion.Major < 6 OrElse (osVersion.Major = 6 AndAlso osVersion.Minor <= 1)
-    End Function
-
     Protected Overrides Sub Dispose(disposing As Boolean)
         SyncLock _shellItemLock
             If Not disposedValue Then
