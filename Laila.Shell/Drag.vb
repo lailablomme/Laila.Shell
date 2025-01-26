@@ -64,12 +64,14 @@ Public Class Drag
                 Functions.DoDragDrop(_dataObject,
                                      New Drag(Sub() If Not _dataObject Is Nothing Then InitializeDragImage(), button),
                                      availableDropEffects, effect)
-
-                Shell._w.Content = Nothing
+            Finally
                 Mouse.OverrideCursor = Nothing
+                Shell._w.Content = Nothing
                 Marshal.ReleaseComObject(_dataObject)
                 _dataObject = Nothing
-            Finally
+                If Not IntPtr.Zero.Equals(_dragImage.hbmpDragImage) Then
+                    Functions.DeleteObject(_dragImage.hbmpDragImage)
+                End If
                 _isDragging = False
             End Try
         End If
@@ -139,6 +141,9 @@ Public Class Drag
             Debug.WriteLine("InitializeDragImage")
             Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
                     &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
+            If Not IntPtr.Zero.Equals(_dragImage.hbmpDragImage) Then
+                Functions.DeleteObject(_dragImage.hbmpDragImage)
+            End If
             _dragImage.sizeDragImage.Width = _bitmap.Width
             _dragImage.sizeDragImage.Height = _bitmap.Height
             _dragImage.ptOffset.x = (ICON_SIZE + 20) / 2

@@ -149,7 +149,7 @@ Public Class Clipboard
 
         ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
         ' and I don't know what it's doing 
-        Dim initDropTarget As IDropTarget, pidl As IntPtr
+        Dim initDropTarget As IDropTarget
         Dim shellFolder As IShellFolder
         Try
             Functions.SHGetDesktopFolder(shellFolder)
@@ -157,9 +157,6 @@ Public Class Clipboard
             initDropTarget.DragEnter(result, 0, New WIN32POINT() With {.x = 0, .y = 0}, 0)
             initDropTarget.DragLeave()
         Finally
-            If Not IntPtr.Zero.Equals(pidl) Then
-                Marshal.FreeCoTaskMem(pidl)
-            End If
             If Not initDropTarget Is Nothing Then
                 Marshal.ReleaseComObject(initDropTarget)
             End If
