@@ -29,7 +29,19 @@
                         <ControlTemplate.Resources>
                             <localConverters:RectConverter x:Key="rectConverter" />
                         </ControlTemplate.Resources>
-                        <Border x:Name="PART_RootBorder" Padding="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}}">
+                        <Border x:Name="PART_RootBorder" Opacity="0" Padding="{Binding Path=GlowSize, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Border.Triggers>
+                                <EventTrigger RoutedEvent="Window.Loaded">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                             From="0"
+                                             To="1"
+                                             Duration="0:0:0.35" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Border.Triggers>
                             <Border Grid.Row="1" Grid.Column="1" x:Name="PART_GlowBorder" CornerRadius="10">
                                 <Border x:Name="PART_MainBorder" CornerRadius="10"  
                                     Background="{TemplateBinding Background}" BorderBrush="DarkViolet" BorderThickness="1">

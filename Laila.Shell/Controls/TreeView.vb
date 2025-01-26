@@ -8,7 +8,6 @@ Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Data
 Imports System.Windows.Input
-Imports System.Windows.Media
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.PinnedItems
@@ -600,14 +599,6 @@ Namespace Controls
                     Me.PART_ListBox.Focus()
                     If e.RightButton = MouseButtonState.Pressed Then
                         If Not clickedItem Is Nothing Then
-                            If Me.SelectedItem Is Nothing Then
-                                _selectionHelper.SetSelectedItems({clickedItem})
-                                If TypeOf clickedItem Is Folder Then
-                                    CType(clickedItem, Folder).LastScrollOffset = New Point()
-                                    Me.Folder = clickedItem
-                                End If
-                            End If
-
                             If Not _menu Is Nothing Then
                                 _menu.Dispose()
                             End If
@@ -672,7 +663,7 @@ Namespace Controls
                                     ' this allows for better reponse to double-clicking an unselected item
                                     UIHelper.OnUIThread(
                                         Sub()
-                                            If TypeOf clickedItem Is Folder Then
+                                            If TypeOf clickedItem Is Folder AndAlso Not Me.Folder?.Pidl?.Equals(clickedItem.Pidl) Then
                                                 CType(clickedItem, Folder).LastScrollOffset = New Point()
                                                 Me.Folder = clickedItem
                                             End If
