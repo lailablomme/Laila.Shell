@@ -117,10 +117,15 @@ Public Class ImageHelper
                             End If
                             Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
                                 Using bitmap = icon.ToBitmap()
-                                    Dim hBitmap As IntPtr = bitmap.GetHbitmap()
-                                    Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                    image.Freeze()
-                                    _icons2.Add(String.Format("{0}_{1}", index, size), image)
+                                    Dim hBitmap As IntPtr
+                                    Try
+                                        hBitmap = bitmap.GetHbitmap()
+                                        Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                        image.Freeze()
+                                        _icons2.Add(String.Format("{0}_{1}", index, size), image)
+                                    Finally
+                                        Functions.DeleteObject(hBitmap)
+                                    End Try
                                 End Using
                             End Using
                         Finally

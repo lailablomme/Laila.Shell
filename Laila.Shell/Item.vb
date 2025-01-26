@@ -427,10 +427,15 @@ Public Class Item
                         If Not IntPtr.Zero.Equals(result) Then
                             Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(shFileInfo.hIcon)
                                 Using bitmap = icon.ToBitmap()
-                                    Dim hBitmap As IntPtr = bitmap.GetHbitmap()
-                                    Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                    image.Freeze()
-                                    Return image
+                                    Dim hBitmap As IntPtr
+                                    Try
+                                        hBitmap = bitmap.GetHbitmap()
+                                        Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                        image.Freeze()
+                                        Return image
+                                    Finally
+                                        Functions.DeleteObject(hBitmap)
+                                    End Try
                                 End Using
                             End Using
                         End If
@@ -531,7 +536,9 @@ Public Class Item
                     End If
                 End SyncLock
             Finally
-                Functions.DeleteObject(hbitmap)
+                If Not IntPtr.Zero.Equals(hbitmap) Then
+                    Functions.DeleteObject(hbitmap)
+                End If
             End Try
             Return Nothing
         End Get
@@ -574,7 +581,9 @@ Public Class Item
                     End SyncLock
                 End If
             Finally
-                Functions.DeleteObject(hbitmap)
+                If Not IntPtr.Zero.Equals(hbitmap) Then
+                    Functions.DeleteObject(hbitmap)
+                End If
             End Try
             Return Nothing
         End Get
@@ -677,7 +686,9 @@ Public Class Item
                 End If
             Catch ex As Exception
             Finally
-                Functions.DeleteObject(hbitmap)
+                If Not IntPtr.Zero.Equals(hbitmap) Then
+                    Functions.DeleteObject(hbitmap)
+                End If
             End Try
             Return False
         End Get

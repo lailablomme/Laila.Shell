@@ -11,6 +11,7 @@ Public Structure MENUITEMINFO
     Public hbmpChecked As IntPtr
     Public hbmpUnchecked As IntPtr
     Public dwItemData As IntPtr
+    <MarshalAs(UnmanagedType.LPStr)>
     Public dwTypeData As String
     Public cch As UInteger
     Public hbmpItem As IntPtr
