@@ -10,7 +10,10 @@ Namespace Controls
             Dim newMenuItem As MenuItem = menuItems _
                 .FirstOrDefault(Function(c) TypeOf c Is MenuItem _
                     AndAlso Not c.Tag Is Nothing _
-                    AndAlso CType(c.Tag, Tuple(Of Integer, String)).Item2 = "New")
+                    AndAlso (CType(c.Tag, Tuple(Of Integer, String)).Item2 = "New" _
+                             OrElse CType(c, MenuItem).Items.Cast(Of Control).ToList() _
+                                .Exists(Function(sc) TypeOf sc Is MenuItem _
+                                    AndAlso CType(sc.Tag, Tuple(Of Integer, String)).Item2 = "NewFolder")))
 
             If Not newMenuItem Is Nothing Then
                 For Each item In newMenuItem.Items.Cast(Of Control).ToList()

@@ -1,6 +1,7 @@
 ﻿Imports System.Collections.Concurrent
 Imports System.IO
 Imports System.Net
+Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Text
@@ -13,6 +14,7 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Microsoft.VisualBasic.Logging
 
 Namespace Controls
     Public MustInherit Class BaseMenu
@@ -173,39 +175,74 @@ Namespace Controls
         End Function
 
         Protected Function getMenuItems() As List(Of Control)
-            Return getMenuItems(_hMenu, -1)
+            Dim tcs4 As New TaskCompletionSource(Of List(Of MenuItemData))
+            _taskQueue.Add(
+                Sub()
+                    tcs4.SetResult(getMenuItemData(_hMenu, -1))
+                End Sub)
+            Return getMenuItems(tcs4.Task.Result)
         End Function
 
-        Private Function getMenuItems(hMenu2 As IntPtr, parentIndex As Integer) As List(Of Control)
+        Private Function getMenuItems(data As List(Of MenuItemData)) As List(Of Control)
             Dim result As List(Of Control) = New List(Of Control)()
 
+            For Each item In data
+                If item.Header = "-----" Then
+                    result.Add(New Separator())
+                Else
+                    Dim menuItem As MenuItem = New MenuItem() With {
+                        .Header = item.Header,
+                        .Icon = New Image() With {.Source = item.Icon},
+                        .Tag = item.Tag,
+                        .IsEnabled = item.IsEnabled,
+                        .FontWeight = item.FontWeight
+                    }
+                    If Not item.Items Is Nothing Then
+                        For Each subItem In getMenuItems(item.Items)
+                            menuItem.Items.Add(subItem)
+                        Next
+                    End If
+                    result.Add(menuItem)
+                End If
+            Next
+
+            Return result
+        End Function
+
+        Private Function getMenuItemData(hMenu2 As IntPtr, parentIndex As Integer) As List(Of MenuItemData)
+            Dim result As List(Of MenuItemData) = New List(Of MenuItemData)()
+
             If Not _contextMenu Is Nothing AndAlso Not IntPtr.Zero.Equals(_hMenu) Then
-                Dim tcs2 As New TaskCompletionSource()
-                _taskQueue.Add(
-                    Sub()
+                If parentIndex >= 0 Then
+                    Dim lParam As Integer = (&H0) Or (parentIndex And &HFFFF)
+                    If Not _contextMenu3 Is Nothing Then
+                        Dim ptr3 As IntPtr, ptr4 As IntPtr
                         Try
-                            If parentIndex >= 0 Then
-                                Dim lParam As Integer = (&HFFFF0000) Or (parentIndex And &HFFFF)
-                                If Not _contextMenu3 Is Nothing Then
-                                    Dim ptr3 As IntPtr
-                                    Try
-                                        Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
-                                        Debug.WriteLine("contextMenu3 returned" & h.ToString())
-                                    Finally
-                                        If Not IntPtr.Zero.Equals(ptr3) Then
-                                            Marshal.Release(ptr3)
-                                        End If
-                                    End Try
-                                ElseIf Not _contextMenu2 Is Nothing Then
-                                    _contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
-                                End If
+                            Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
+                            h = _contextMenu3.HandleMenuMsg2(WM.MENUSELECT, hMenu2, lParam, ptr4)
+                        Finally
+                            If Not IntPtr.Zero.Equals(ptr3) Then
+                                Marshal.Release(ptr3)
                             End If
-                            tcs2.SetResult()
-                        Catch ex As Exception
-                            tcs2.SetException(ex)
+                            If Not IntPtr.Zero.Equals(ptr4) Then
+                                Marshal.Release(ptr3)
+                            End If
                         End Try
-                    End Sub)
-                tcs2.Task.Wait()
+                    ElseIf Not _contextMenu2 Is Nothing Then
+                        _contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
+                        _contextMenu2.HandleMenuMsg(WM.MENUSELECT, hMenu2, lParam)
+                    End If
+
+                    ' wait for menu to populate
+                    Shell.RunOnSTAThread(
+                        Sub()
+                            Dim initialCount As Integer
+                            Do
+                                initialCount = Functions.GetMenuItemCount(hMenu2)
+                                Thread.Sleep(50)
+                            Loop While Functions.GetMenuItemCount(hMenu2) <> initialCount
+                        End Sub)
+                End If
 
                 For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
                     Dim mii As MENUITEMINFO
@@ -219,35 +256,25 @@ Namespace Controls
                     Dim tcs3 As New TaskCompletionSource
                     Dim bitmapSource As BitmapSource
 
-                    _taskQueue.Add(
-                        Sub()
-                            Try
-                                mii = New MENUITEMINFO()
-                                mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                                mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE Or MIIM.MIIM_CHECKMARKS
-                                Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+                    mii = New MENUITEMINFO()
+                    mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                    mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE Or MIIM.MIIM_CHECKMARKS
+                    Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                                If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                                    bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                    bitmapSource.Freeze()
-                                ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
-                                    bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                    bitmapSource.Freeze()
-                                Else
-                                    bitmapSource = Nothing
-                                End If
-                                tcs3.SetResult()
-                            Catch ex As Exception
-                                tcs3.SetException(ex)
-                            End Try
-                        End Sub)
-
-                    tcs3.Task.Wait()
+                    If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
+                        bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        bitmapSource.Freeze()
+                    ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
+                        bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        bitmapSource.Freeze()
+                    Else
+                        bitmapSource = Nothing
+                    End If
 
                     If mii.fType = MFT.SEPARATOR Then
                         ' refuse initial and double separators
-                        If Not result.Count = 0 AndAlso Not TypeOf result(result.Count - 1) Is Separator Then
-                            result.Add(New Separator())
+                        If Not result.Count = 0 AndAlso Not result(result.Count - 1).Header = "-----" Then
+                            result.Add(New MenuItemData() With {.Header = "-----"})
                         End If
                     Else
                         mii = New MENUITEMINFO()
@@ -255,26 +282,17 @@ Namespace Controls
                         mii.fMask = MIIM.MIIM_ID
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        Dim tcs As New TaskCompletionSource, verb As String, id As Integer
-                        _taskQueue.Add(
-                            Sub()
-                                Try
-                                    Dim cmd As StringBuilder = New StringBuilder()
-                                    cmd.Append(New String(" ", 2050))
-                                    If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
-                                        id = mii.wID - 1
-                                        _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 2048)
-                                        If cmd.Length = 0 Then
-                                            _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 2048)
-                                        End If
-                                        verb = cmd.ToString()
-                                    End If
-                                    tcs.SetResult()
-                                Catch ex As Exception
-                                    tcs.SetException(ex)
-                                End Try
-                            End Sub)
-                        tcs.Task.Wait()
+                        Dim verb As String, id As Integer
+                        Dim cmd As StringBuilder = New StringBuilder()
+                        cmd.Append(New String(" ", 2050))
+                        If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
+                            id = mii.wID - 1
+                            _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 2048)
+                            If cmd.Length = 0 Then
+                                _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 2048)
+                            End If
+                            verb = cmd.ToString()
+                        End If
 
                         Debug.WriteLine(header & "  " & id & vbTab & verb.ToString())
 
@@ -283,9 +301,9 @@ Namespace Controls
                         mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        Dim menuItem As MenuItem = New MenuItem() With {
+                        Dim menuItem As MenuItemData = New MenuItemData() With {
                             .Header = header.Replace("&", "_"),
-                            .Icon = New Image() With {.Source = bitmapSource},
+                            .Icon = bitmapSource,
                             .Tag = New Tuple(Of Integer, String)(id, verb),
                             .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
                             .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
@@ -296,10 +314,7 @@ Namespace Controls
                         End If
 
                         If Not IntPtr.Zero.Equals(mii.hSubMenu) Then
-                            Dim subMenu As List(Of Control) = getMenuItems(mii.hSubMenu, i)
-                            For Each subMenuItem In subMenu
-                                menuItem.Items.Add(subMenuItem)
-                            Next
+                            menuItem.Items = getMenuItemData(mii.hSubMenu, i)
                         End If
 
                         result.Add(menuItem)
@@ -307,13 +322,22 @@ Namespace Controls
                 Next
 
                 ' remove trailing separators
-                While result.Count > 0 AndAlso TypeOf result(result.Count - 1) Is Separator
+                While result.Count > 0 AndAlso result(result.Count - 1).Header = "-----"
                     result.RemoveAt(result.Count - 1)
                 End While
             End If
 
             Return result
         End Function
+
+        Private Class MenuItemData
+            Public Property Header As String
+            Public Property Icon As BitmapSource
+            Public Property Tag As Object
+            Public Property IsEnabled As Boolean
+            Public Property FontWeight As FontWeight
+            Public Property Items As List(Of MenuItemData)
+        End Class
 
         Private Sub makeContextMenu(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             Dim parentFolderPidl As Pidl

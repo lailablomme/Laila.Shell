@@ -202,9 +202,13 @@ Namespace Controls
                         network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 2
 
                         ' libraries
-                        If doShowLibrariesInTreeView Then
+                        If Settings.IsWindows7OrLower OrElse doShowLibrariesInTreeView Then
                             librariesFolder = Shell.GetSpecialFolder("Libraries").Clone()
-                            librariesFolder.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
+                            If Settings.IsWindows7OrLower Then
+                                librariesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 3
+                            Else
+                                librariesFolder.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
+                            End If
                         End If
 
                         ' current
@@ -227,7 +231,7 @@ Namespace Controls
                 Me.Roots.Add(New SeparatorFolder() With {.TreeRootIndex = TreeRootSection.ENVIRONMENT - 1})
                 ' environment
                 Me.Roots.Add(thisComputer)
-                If doShowLibrariesInTreeView Then Me.Roots.Add(librariesFolder)
+                If Not Settings.IsWindows7OrLower AndAlso doShowLibrariesInTreeView Then Me.Roots.Add(librariesFolder)
                 Me.Roots.Add(network)
 
                 UIHelper.OnUIThread(

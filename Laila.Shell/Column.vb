@@ -1,5 +1,6 @@
 ﻿Imports System.ComponentModel
 Imports System.Runtime.InteropServices
+Imports System.Text
 Imports System.Windows
 
 Public Class Column
@@ -12,6 +13,7 @@ Public Class Column
     Private _viewFlags As PROPDESC_VIEW_FLAGS
     Private _canonicalName As String
     Private _isVisible As Boolean
+    Private _displayName As String
 
     Friend Sub New(propertyKey As PROPERTYKEY, columnInfo As CM_COLUMNINFO, index As Integer)
         _propertyKey = propertyKey
@@ -20,7 +22,9 @@ Public Class Column
         _isVisible = Me.State.HasFlag(CM_STATE.VISIBLE)
 
         Functions.PSGetPropertyDescription(propertyKey, GetType(IPropertyDescription).GUID, _propertyDescription)
-        If Not _propertyDescription Is Nothing Then _propertyDescription.GetViewFlags(_viewFlags)
+        If Not _propertyDescription Is Nothing Then
+            _propertyDescription.GetViewFlags(_viewFlags)
+        End If
     End Sub
 
     Public ReadOnly Property CanonicalName As String
@@ -85,7 +89,16 @@ Public Class Column
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
-            Return Me.CM_COLUMNINFO.wszName
+            If String.IsNullOrWhiteSpace(_displayName) Then
+                If String.IsNullOrWhiteSpace(Me.CM_COLUMNINFO.wszName.Replace(Chr(0), "")) Then
+                    Dim dn As StringBuilder = New StringBuilder()
+                    _propertyDescription.GetDisplayName(dn)
+                    _displayName = dn.ToString()
+                Else
+                    _displayName = Me.CM_COLUMNINFO.wszName
+                End If
+            End If
+            Return _displayName
         End Get
     End Property
 

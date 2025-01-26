@@ -9,7 +9,7 @@
         xmlns:metroWindow="clr-namespace:Laila.MetroWindow.Controls;assembly=Laila.MetroWindow"
         xmlns:localConverters="clr-namespace:Laila.Shell.SampleApp.Converters"
         x:Name="view" 
-        mc:Ignorable="d" Icon="{Binding SelectedItem.Folder.Icon[48], ElementName=tabControl}" 
+        mc:Ignorable="d" Icon="{Binding SelectedItem.Folder.Icon[32], ElementName=tabControl}" 
         Title="{Binding SelectedItem.Folder.DisplayName, ElementName=tabControl}"
         Height="450" Width="800" MinWidth="550">
     <metroWindow:MetroWindow.Style>

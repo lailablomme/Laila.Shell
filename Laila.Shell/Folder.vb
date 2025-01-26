@@ -1,5 +1,6 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.ComponentModel
+Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
@@ -455,6 +456,11 @@ Public Class Folder
                             index += 1
                         End If
                     Next
+                    If Not _columns.Any(Function(c) c.IsVisible) Then
+                        For Each col In _columns.Take(5)
+                            col.IsVisible = True
+                        Next
+                    End If
                 Finally
                     If Not columnManager Is Nothing Then
                         Marshal.ReleaseComObject(columnManager)

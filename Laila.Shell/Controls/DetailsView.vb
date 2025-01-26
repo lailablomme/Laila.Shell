@@ -241,7 +241,7 @@ Namespace Controls
             textBlockFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center)
             textBlockFactory.SetValue(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Left)
             textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis)
-            textBlockFactory.SetValue(TextBlock.PaddingProperty, New Thickness(0, 0, 2, 0))
+            textBlockFactory.SetValue(TextBlock.MarginProperty, New Thickness(0, 0, -3, 0))
             If column.CanonicalName = "System.ItemNameDisplay" Then
                 textBlockFactory.SetValue(TextBlock.TagProperty, "PART_DisplayName")
             End If
