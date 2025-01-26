@@ -315,12 +315,12 @@ Namespace Controls
                             Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
                             Dim menuItem As MenuItemData = New MenuItemData() With {
-                            .Header = header.Replace("&", "_"),
-                            .Icon = bitmapSource,
-                            .Tag = New Tuple(Of Integer, String)(id, verb),
-                            .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
-                            .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
-                        }
+                                .Header = header.Replace("&", "_"),
+                                .Icon = bitmapSource,
+                                .Tag = New Tuple(Of Integer, String)(id, verb),
+                                .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
+                                .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
+                            }
 
                             If CBool(mii.fState And MFS.MFS_DEFAULT) Then
                                 Me.DefaultId = menuItem.Tag
@@ -328,7 +328,6 @@ Namespace Controls
 
                             If Not IntPtr.Zero.Equals(mii.hSubMenu) Then
                                 menuItem.Items = getMenuItemData(mii.hSubMenu, i)
-                                Functions.DestroyMenu(mii.hSubMenu)
                             End If
 
                             result.Add(menuItem)
