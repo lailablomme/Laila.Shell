@@ -202,9 +202,9 @@ Namespace Controls
                         network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 2
 
                         ' libraries
-                        If Settings.IsWindows7OrLower OrElse doShowLibrariesInTreeView Then
+                        If Settings.IsWindows8_1OrLower OrElse doShowLibrariesInTreeView Then
                             librariesFolder = Shell.GetSpecialFolder("Libraries").Clone()
-                            If Settings.IsWindows7OrLower Then
+                            If Settings.IsWindows8_1OrLower Then
                                 librariesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 3
                             Else
                                 librariesFolder.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
@@ -219,7 +219,7 @@ Namespace Controls
 
                 tcs.Task.Wait(Shell.ShuttingDownToken)
                 ' system
-                If Not Settings.IsWindows7OrLower Then
+                If Not Settings.IsWindows8_1OrLower Then
                     If Not homeFolder Is Nothing Then Me.Roots.Add(homeFolder)
                     If Not galleryFolder Is Nothing Then Me.Roots.Add(galleryFolder)
                 Else

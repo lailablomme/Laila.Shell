@@ -667,6 +667,14 @@ Public Class Settings
     End Sub
 
 
+    Public Shared ReadOnly Property IsWindows8_1OrLower() As Boolean
+        Get
+            ' Windows 7 has version number 6.1
+            Dim osVersion As Version = Environment.OSVersion.Version
+            Return osVersion.Major < 6 OrElse (osVersion.Major = 6 AndAlso osVersion.Minor <= 3)
+        End Get
+    End Property
+
     Public Shared ReadOnly Property IsWindows7OrLower() As Boolean
         Get
             ' Windows 7 has version number 6.1
