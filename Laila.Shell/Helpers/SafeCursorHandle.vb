@@ -10,6 +10,10 @@ Public Class SafeCursorHandle
     End Sub
 
     Protected Overrides Function ReleaseHandle() As Boolean
-        Return Functions.DestroyCursor(handle)
+        If Not IntPtr.Zero.Equals(handle) Then
+            Functions.DestroyCursor(handle)
+            handle = IntPtr.Zero
+        End If
+        Return True
     End Function
 End Class

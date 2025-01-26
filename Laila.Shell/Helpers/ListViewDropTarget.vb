@@ -56,7 +56,10 @@ Public Class ListViewDropTarget
             Try
                 Return _lastDropTarget.DragLeave()
             Finally
-                Marshal.ReleaseComObject(_lastDropTarget)
+                If Not _lastDropTarget Is Nothing Then
+                    Marshal.ReleaseComObject(_lastDropTarget)
+                    _lastDropTarget = Nothing
+                End If
                 _lastDropTarget = Nothing
             End Try
         End If
@@ -79,20 +82,29 @@ Public Class ListViewDropTarget
             Try
                 Dim overItem As Item = getOverItem(ptWIN32)
                 If Not overItem Is Nothing AndAlso overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" Then
-                    Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                    If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                    fo.DeleteItems(_dataObject)
-                    fo.PerformOperations()
-                    Marshal.ReleaseComObject(fo)
-                    Return HRESULT.S_OK
+                    Dim fo As IFileOperation
+                    Try
+                        fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                        If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                        fo.DeleteItems(_dataObject)
+                        fo.PerformOperations()
+                        Return HRESULT.S_OK
+                    Finally
+                        If Not fo Is Nothing Then
+                            Marshal.ReleaseComObject(fo)
+                            fo = Nothing
+                        End If
+                    End Try
                 Else
                     Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
                     Debug.WriteLine("drop=" & h.ToString())
                     Return h
                 End If
             Finally
-                Marshal.ReleaseComObject(_lastDropTarget)
-                _lastDropTarget = Nothing
+                If Not _lastDropTarget Is Nothing Then
+                    Marshal.ReleaseComObject(_lastDropTarget)
+                    _lastDropTarget = Nothing
+                End If
             End Try
         End If
         Return 0
@@ -223,8 +235,10 @@ Public Class ListViewDropTarget
                             Debug.WriteLine("   Got _lastDropTarget")
                             _lastDropTarget.DragLeave()
                         Finally
-                            Marshal.ReleaseComObject(_lastDropTarget)
-                            _lastDropTarget = Nothing
+                            If Not _lastDropTarget Is Nothing Then
+                                Marshal.ReleaseComObject(_lastDropTarget)
+                                _lastDropTarget = Nothing
+                            End If
                         End Try
                     End If
                 End If
@@ -248,8 +262,10 @@ Public Class ListViewDropTarget
                 Try
                     _lastDropTarget.DragLeave()
                 Finally
-                    Marshal.ReleaseComObject(_lastDropTarget)
-                    _lastDropTarget = Nothing
+                    If Not _lastDropTarget Is Nothing Then
+                        Marshal.ReleaseComObject(_lastDropTarget)
+                        _lastDropTarget = Nothing
+                    End If
                 End Try
             End If
             pdwEffect = DROPEFFECT.DROPEFFECT_NONE

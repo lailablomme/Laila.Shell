@@ -215,7 +215,10 @@ Public Class Pidl
             End If
 
             ' free unmanaged resources (unmanaged objects) and override finalizer
-            Marshal.FreeCoTaskMem(_pidl)
+            If Not IntPtr.Zero.Equals(_pidl) Then
+                Marshal.FreeCoTaskMem(_pidl)
+                _pidl = IntPtr.Zero
+            End If
         End If
     End Sub
 

@@ -320,6 +320,7 @@ Public Class [Property]
                         Finally
                             If Not propertyEnumTypeList Is Nothing Then
                                 Marshal.ReleaseComObject(propertyEnumTypeList)
+                                propertyEnumTypeList = Nothing
                             End If
                         End Try
                     End If
@@ -373,6 +374,7 @@ Public Class [Property]
                         Finally
                             If Not propertyEnumType2 Is Nothing Then
                                 Marshal.ReleaseComObject(propertyEnumType2)
+                                propertyEnumType2 = Nothing
                             End If
                         End Try
                         _imageReferences16.Add(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), i16)
@@ -442,6 +444,7 @@ Public Class [Property]
             Finally
                 If Not propertyEnumTypeList Is Nothing Then
                     Marshal.ReleaseComObject(propertyEnumTypeList)
+                    propertyEnumTypeList = Nothing
                 End If
             End Try
         End If

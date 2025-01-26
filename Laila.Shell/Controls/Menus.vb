@@ -111,16 +111,21 @@ Namespace Controls
                             End Try
                         Else
                             Dim composedFullName As String = If(isWithExt, newName, newName & ext)
-
                             Dim fileOperation As IFileOperation
-                            Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                            SyncLock item._shellItemLock
-                                h = fileOperation.RenameItem(item.ShellItem2, composedFullName, Nothing)
-                            End SyncLock
-                            Debug.WriteLine("RenameItem returned " & h)
-                            h = fileOperation.PerformOperations()
-                            Debug.WriteLine("PerformOperations returned " & h)
-                            Marshal.ReleaseComObject(fileOperation)
+                            Try
+                                Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
+                                SyncLock item._shellItemLock
+                                    h = fileOperation.RenameItem(item.ShellItem2, composedFullName, Nothing)
+                                End SyncLock
+                                Debug.WriteLine("RenameItem returned " & h)
+                                h = fileOperation.PerformOperations()
+                                Debug.WriteLine("PerformOperations returned " & h)
+                            Finally
+                                If Not fileOperation Is Nothing Then
+                                    Marshal.ReleaseComObject(fileOperation)
+                                    fileOperation = Nothing
+                                End If
+                            End Try
                         End If
                     End If
                 End Sub
@@ -244,9 +249,10 @@ Namespace Controls
         Public Shared Sub DoDelete(items As IEnumerable(Of Item))
             Dim thread As Thread = New Thread(New ThreadStart(
                 Sub()
-                    Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                    Dim fo As IFileOperation
                     Dim dataObject As IDataObject
                     Try
+                        fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
                         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
                         If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
                         fo.DeleteItems(dataObject)
@@ -254,9 +260,11 @@ Namespace Controls
                     Finally
                         If Not fo Is Nothing Then
                             Marshal.ReleaseComObject(fo)
+                            fo = Nothing
                         End If
                         If Not dataObject Is Nothing Then
                             Marshal.ReleaseComObject(dataObject)
+                            dataObject = Nothing
                         End If
                     End Try
                 End Sub))

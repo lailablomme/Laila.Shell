@@ -37,9 +37,11 @@ Public Class Clipboard
         Finally
             If Not dropTarget Is Nothing Then
                 Marshal.ReleaseComObject(dropTarget)
+                dropTarget = Nothing
             End If
             If Not dataObject Is Nothing Then
                 Marshal.ReleaseComObject(dataObject)
+                dataObject = Nothing
             End If
         End Try
 
@@ -93,9 +95,11 @@ Public Class Clipboard
                 Finally
                     If Not dropTarget Is Nothing Then
                         Marshal.ReleaseComObject(dropTarget)
+                        dropTarget = Nothing
                     End If
                     If Not dataObject Is Nothing Then
                         Marshal.ReleaseComObject(dataObject)
+                        dataObject = Nothing
                     End If
                 End Try
             End Sub))
@@ -121,6 +125,7 @@ Public Class Clipboard
         Finally
             If Not dataObject Is Nothing Then
                 Marshal.ReleaseComObject(dataObject)
+                dataObject = Nothing
             End If
         End Try
     End Function
@@ -159,6 +164,7 @@ Public Class Clipboard
         Finally
             If Not initDropTarget Is Nothing Then
                 Marshal.ReleaseComObject(initDropTarget)
+                initDropTarget = Nothing
             End If
         End Try
 

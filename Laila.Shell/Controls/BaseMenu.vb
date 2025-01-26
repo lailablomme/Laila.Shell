@@ -216,17 +216,8 @@ Namespace Controls
                     Dim lParam As Integer = (&H0) Or (parentIndex And &HFFFF)
                     If Not _contextMenu3 Is Nothing Then
                         Dim ptr3 As IntPtr, ptr4 As IntPtr
-                        Try
-                            Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
-                            h = _contextMenu3.HandleMenuMsg2(WM.MENUSELECT, hMenu2, lParam, ptr4)
-                        Finally
-                            If Not IntPtr.Zero.Equals(ptr3) Then
-                                Marshal.Release(ptr3)
-                            End If
-                            If Not IntPtr.Zero.Equals(ptr4) Then
-                                Marshal.Release(ptr3)
-                            End If
-                        End Try
+                        Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
+                        h = _contextMenu3.HandleMenuMsg2(WM.MENUSELECT, hMenu2, lParam, ptr4)
                     ElseIf Not _contextMenu2 Is Nothing Then
                         _contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
                         _contextMenu2.HandleMenuMsg(WM.MENUSELECT, hMenu2, lParam)
@@ -337,6 +328,7 @@ Namespace Controls
                     For Each hbitmap In hbitmapToDispose
                         Functions.DeleteObject(hbitmap)
                     Next
+                    hbitmapToDispose.Clear()
                 End Try
 
                 ' remove trailing separators
@@ -428,6 +420,7 @@ Namespace Controls
                             Finally
                                 If Not dataObject Is Nothing Then
                                     Marshal.ReleaseComObject(dataObject)
+                                    dataObject = Nothing
                                 End If
                             End Try
                         End If
@@ -438,6 +431,7 @@ Namespace Controls
                         Next
                         If Not shellFolder Is Nothing Then
                             Marshal.ReleaseComObject(shellFolder)
+                            shellFolder = Nothing
                         End If
                     End Try
                     tcs.SetResult()
@@ -500,14 +494,23 @@ Namespace Controls
                             Case "paste"
                                 Clipboard.PasteFiles(folder)
                             Case "delete"
-                                Dim dataObject As IDataObject
-                                dataObject = Clipboard.GetDataObjectFor(folder, selectedItems.ToList())
-                                Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                                If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                                fo.DeleteItems(dataObject)
-                                fo.PerformOperations()
-                                Marshal.ReleaseComObject(fo)
-                                Marshal.ReleaseComObject(dataObject)
+                                Dim dataObject As IDataObject, fo As IFileOperation
+                                Try
+                                    dataObject = Clipboard.GetDataObjectFor(folder, selectedItems.ToList())
+                                    fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                                    If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                                    fo.DeleteItems(dataObject)
+                                    fo.PerformOperations()
+                                Finally
+                                    If Not fo Is Nothing Then
+                                        Marshal.ReleaseComObject(fo)
+                                        fo = Nothing
+                                    End If
+                                    If Not dataObject Is Nothing Then
+                                        Marshal.ReleaseComObject(dataObject)
+                                        dataObject = Nothing
+                                    End If
+                                End Try
                             Case Else
                                 Dim cmi As New CMInvokeCommandInfoEx
                                 Debug.WriteLine("InvokeCommand " & id.Item1 & ", " & id.Item2)
@@ -623,15 +626,19 @@ Namespace Controls
                 ' set large fields to null
                 If Not _contextMenu Is Nothing Then
                     Marshal.ReleaseComObject(_contextMenu)
+                    _contextMenu = Nothing
                 End If
                 If Not _contextMenu2 Is Nothing Then
                     Marshal.ReleaseComObject(_contextMenu2)
+                    _contextMenu2 = Nothing
                 End If
                 If Not _contextMenu3 Is Nothing Then
                     Marshal.ReleaseComObject(_contextMenu3)
+                    _contextMenu3 = Nothing
                 End If
                 If Not IntPtr.Zero.Equals(_hMenu) Then
                     Functions.DestroyMenu(_hMenu)
+                    _hMenu = IntPtr.Zero
                 End If
 
                 _disposeTokensSource.Cancel()

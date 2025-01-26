@@ -52,6 +52,7 @@ Public Class Folder
         Finally
             If Not IntPtr.Zero.Equals(pidl) Then
                 Marshal.FreeCoTaskMem(pidl)
+                pidl = IntPtr.Zero
             End If
         End Try
 
@@ -331,7 +332,10 @@ Public Class Folder
                                 result += prop.Value
                             End If
                             prop.Dispose()
-                            Marshal.ReleaseComObject(shellItems(x))
+                            If Not shellItems(x) Is Nothing Then
+                                Marshal.ReleaseComObject(shellItems(x))
+                                shellItems(x) = Nothing
+                            End If
                         End If
                     Next
                     If DateTime.Now.Subtract(startTime).TotalMilliseconds <= timeout _
@@ -346,12 +350,15 @@ Public Class Folder
         Finally
             If Not enumShellItems Is Nothing Then
                 Marshal.ReleaseComObject(enumShellItems)
+                enumShellItems = Nothing
             End If
             If Not propertyBag Is Nothing Then
                 Marshal.ReleaseComObject(propertyBag)
+                propertyBag = Nothing
             End If
             If Not bindCtx Is Nothing Then
                 Marshal.ReleaseComObject(bindCtx)
+                bindCtx = Nothing
             End If
             var.Dispose()
         End Try
@@ -366,7 +373,10 @@ Public Class Folder
                         result += subFolderSize
                     End If
                 End If
-                Marshal.ReleaseComObject(subFolderShellItem2)
+                If Not subFolderShellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(subFolderShellItem2)
+                    subFolderShellItem2 = Nothing
+                End If
             Next
         End If
 
@@ -396,7 +406,10 @@ Public Class Folder
                     For x As UInt32 = 0 To fetched - 1
                         shellItems(x).GetDisplayName(SHGDN.NORMAL, displayName)
                         displayNameList.Add(displayName)
-                        Marshal.ReleaseComObject(shellItems(x))
+                        If Not shellItems(x) Is Nothing Then
+                            Marshal.ReleaseComObject(shellItems(x))
+                            shellItems(x) = Nothing
+                        End If
                     Next
                     Return displayNameList
                 End If
@@ -404,12 +417,15 @@ Public Class Folder
         Finally
             If Not enumShellItems Is Nothing Then
                 Marshal.ReleaseComObject(enumShellItems)
+                enumShellItems = Nothing
             End If
             If Not propertyBag Is Nothing Then
                 Marshal.ReleaseComObject(propertyBag)
+                propertyBag = Nothing
             End If
             If Not bindCtx Is Nothing Then
                 Marshal.ReleaseComObject(bindCtx)
+                bindCtx = Nothing
             End If
             var.Dispose()
         End Try
@@ -464,6 +480,7 @@ Public Class Folder
                 Finally
                     If Not columnManager Is Nothing Then
                         Marshal.ReleaseComObject(columnManager)
+                        columnManager = Nothing
                     End If
                 End Try
             End If
@@ -854,7 +871,10 @@ Public Class Folder
                                     lastUpdate = DateTime.Now
                                 End If
                             Else
-                                Marshal.ReleaseComObject(shellItems(x))
+                                If Not shellItems(x) Is Nothing Then
+                                    Marshal.ReleaseComObject(shellItems(x))
+                                    shellItems(x) = Nothing
+                                End If
                             End If
                         Next
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
@@ -872,12 +892,15 @@ Public Class Folder
         Finally
             If Not enumShellItems Is Nothing Then
                 Marshal.ReleaseComObject(enumShellItems)
+                enumShellItems = Nothing
             End If
             If Not propertyBag Is Nothing Then
                 Marshal.ReleaseComObject(propertyBag)
+                propertyBag = Nothing
             End If
             If Not bindCtx Is Nothing Then
                 Marshal.ReleaseComObject(bindCtx)
+                bindCtx = Nothing
             End If
             var.Dispose()
         End Try

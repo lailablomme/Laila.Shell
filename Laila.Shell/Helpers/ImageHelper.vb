@@ -51,6 +51,7 @@ Public Class ImageHelper
         Finally
             If Not IntPtr.Zero.Equals(shfi.hIcon) Then
                 Functions.DestroyIcon(shfi.hIcon)
+                shfi.hIcon = IntPtr.Zero
             End If
         End Try
         Return result
@@ -124,13 +125,17 @@ Public Class ImageHelper
                                         image.Freeze()
                                         _icons2.Add(String.Format("{0}_{1}", index, size), image)
                                     Finally
-                                        Functions.DeleteObject(hBitmap)
+                                        If Not IntPtr.Zero.Equals(hBitmap) Then
+                                            Functions.DeleteObject(hBitmap)
+                                            hBitmap = IntPtr.Zero
+                                        End If
                                     End Try
                                 End Using
                             End Using
                         Finally
                             If Not IntPtr.Zero.Equals(hIcon) Then
                                 Functions.DestroyIcon(hIcon)
+                                hIcon = IntPtr.Zero
                             End If
                         End Try
                     End If
@@ -169,9 +174,11 @@ Public Class ImageHelper
             Finally
                 If Not IntPtr.Zero.Equals(icon) Then
                     Functions.DestroyIcon(icon)
+                    icon = IntPtr.Zero
                 End If
                 If Not IntPtr.Zero.Equals(iconl) Then
                     Functions.DestroyIcon(iconl)
+                    iconl = IntPtr.Zero
                 End If
             End Try
         End If

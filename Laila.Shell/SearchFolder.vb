@@ -56,24 +56,31 @@ Public Class SearchFolder
         Finally
             If Not factory Is Nothing Then
                 Marshal.ReleaseComObject(factory)
+                factory = Nothing
             End If
             If Not array Is Nothing Then
                 Marshal.ReleaseComObject(array)
+                array = Nothing
             End If
             If Not queryParserManager Is Nothing Then
                 Marshal.ReleaseComObject(queryParserManager)
+                queryParserManager = Nothing
             End If
             If Not queryParser Is Nothing Then
                 Marshal.ReleaseComObject(queryParser)
+                queryParser = Nothing
             End If
             If Not querySolution Is Nothing Then
                 Marshal.ReleaseComObject(querySolution)
+                querySolution = Nothing
             End If
             If Not condition Is Nothing Then
                 Marshal.ReleaseComObject(condition)
+                condition = Nothing
             End If
             If Not resolvedCondition Is Nothing Then
                 Marshal.ReleaseComObject(resolvedCondition)
+                resolvedCondition = Nothing
             End If
         End Try
         Return Nothing
@@ -151,6 +158,7 @@ Public Class SearchFolder
         _shellItem2 = getShellItem(terms, Me.Parent)
         If Not oldShellItem2 Is Nothing Then
             Marshal.ReleaseComObject(oldShellItem2)
+            oldShellItem2 = Nothing
         End If
 
         ' re-enumerate
@@ -173,6 +181,7 @@ Public Class SearchFolder
                     If Not si2 Is Nothing Then
                         item._shellItem2 = Nothing
                         Marshal.ReleaseComObject(si2)
+                        si2 = Nothing
                     End If
                 End SyncLock
             Next

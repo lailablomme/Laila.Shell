@@ -67,10 +67,13 @@ Public Class Drag
             Finally
                 Mouse.OverrideCursor = Nothing
                 Shell._w.Content = Nothing
-                Marshal.ReleaseComObject(_dataObject)
-                _dataObject = Nothing
+                If Not _dataObject Is Nothing Then
+                    Marshal.ReleaseComObject(_dataObject)
+                    _dataObject = Nothing
+                End If
                 If Not IntPtr.Zero.Equals(_dragImage.hbmpDragImage) Then
                     Functions.DeleteObject(_dragImage.hbmpDragImage)
+                    _dragImage.hbmpDragImage = IntPtr.Zero
                 End If
                 _isDragging = False
             End Try
@@ -143,6 +146,7 @@ Public Class Drag
                     &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
             If Not IntPtr.Zero.Equals(_dragImage.hbmpDragImage) Then
                 Functions.DeleteObject(_dragImage.hbmpDragImage)
+                _dragImage.hbmpDragImage = IntPtr.Zero
             End If
             _dragImage.sizeDragImage.Width = _bitmap.Width
             _dragImage.sizeDragImage.Height = _bitmap.Height

@@ -64,8 +64,10 @@ Public Class TreeViewDropTarget
             Try
                 Return _lastDropTarget.DragLeave()
             Finally
-                Marshal.ReleaseComObject(_lastDropTarget)
-                _lastDropTarget = Nothing
+                If Not _lastDropTarget Is Nothing Then
+                    Marshal.ReleaseComObject(_lastDropTarget)
+                    _lastDropTarget = Nothing
+                End If
                 _treeView.SetSelectedItem(_prevSelectedItem)
             End Try
         Else
@@ -111,20 +113,29 @@ Public Class TreeViewDropTarget
                 Dim overListBoxItem As ListBoxItem = getOverListBoxItem(ptWIN32)
                 Dim overItem As Item = overListBoxItem?.DataContext
                 If Not overItem Is Nothing AndAlso overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" Then
-                    Dim fo As IFileOperation = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                    If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                    fo.DeleteItems(_dataObject)
-                    fo.PerformOperations()
-                    Marshal.ReleaseComObject(fo)
-                    Return HRESULT.S_OK
+                    Dim fo As IFileOperation
+                    Try
+                        fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                        If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                        fo.DeleteItems(_dataObject)
+                        fo.PerformOperations()
+                        Return HRESULT.S_OK
+                    Finally
+                        If Not fo Is Nothing Then
+                            Marshal.ReleaseComObject(fo)
+                            fo = Nothing
+                        End If
+                    End Try
                 Else
                     Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
                     Debug.WriteLine("drop=" & h.ToString())
                     Return h
                 End If
             Finally
-                Marshal.ReleaseComObject(_lastDropTarget)
-                _lastDropTarget = Nothing
+                If Not _lastDropTarget Is Nothing Then
+                    Marshal.ReleaseComObject(_lastDropTarget)
+                    _lastDropTarget = Nothing
+                End If
                 _treeView.SetSelectedItem(_prevSelectedItem)
                 If TypeOf _prevSelectedItem Is Folder Then _treeView.SetSelectedFolder(_prevSelectedItem)
             End Try
@@ -347,8 +358,10 @@ Public Class TreeViewDropTarget
                                 'Debug.WriteLine("_lastDropTarget.DragLeave2()   newPinndedIndex=" & newPinnedIndex)
                                 _lastDropTarget.DragLeave()
                             Finally
-                                Marshal.ReleaseComObject(_lastDropTarget)
-                                _lastDropTarget = Nothing
+                                If Not _lastDropTarget Is Nothing Then
+                                    Marshal.ReleaseComObject(_lastDropTarget)
+                                    _lastDropTarget = Nothing
+                                End If
                             End Try
                         End If
                         _newPinnedIndex = newPinnedIndex
@@ -380,8 +393,10 @@ Public Class TreeViewDropTarget
                         'Debug.WriteLine("_lastDropTarget.DragLeave()   newPinndedIndex=" & newPinnedIndex)
                         _lastDropTarget.DragLeave()
                     Finally
-                        Marshal.ReleaseComObject(_lastDropTarget)
-                        _lastDropTarget = Nothing
+                        If Not _lastDropTarget Is Nothing Then
+                            Marshal.ReleaseComObject(_lastDropTarget)
+                            _lastDropTarget = Nothing
+                        End If
                     End Try
                 End If
                 WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
@@ -401,8 +416,10 @@ Public Class TreeViewDropTarget
                 'Debug.WriteLine("_lastDropTarget.DragLeave()   newPinndedIndex=" & newPinnedIndex)
                 _lastDropTarget.DragLeave()
             Finally
-                Marshal.ReleaseComObject(_lastDropTarget)
-                _lastDropTarget = Nothing
+                If Not _lastDropTarget Is Nothing Then
+                    Marshal.ReleaseComObject(_lastDropTarget)
+                    _lastDropTarget = Nothing
+                End If
             End Try
         End If
         pdwEffect = DROPEFFECT.DROPEFFECT_NONE

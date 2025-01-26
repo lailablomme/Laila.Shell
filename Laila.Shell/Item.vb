@@ -272,6 +272,7 @@ Public Class Item
                 End If
                 If Not oldShellItem Is Nothing Then
                     Marshal.ReleaseComObject(oldShellItem)
+                    oldShellItem = Nothing
                 End If
 
                 Dim oldPropertiesByKey As Dictionary(Of String, [Property])
@@ -434,7 +435,10 @@ Public Class Item
                                         image.Freeze()
                                         Return image
                                     Finally
-                                        Functions.DeleteObject(hBitmap)
+                                        If Not IntPtr.Zero.Equals(hBitmap) Then
+                                            Functions.DeleteObject(hBitmap)
+                                            hBitmap = IntPtr.Zero
+                                        End If
                                     End Try
                                 End Using
                             End Using
@@ -442,6 +446,7 @@ Public Class Item
                     Finally
                         If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
                             Functions.DestroyIcon(shFileInfo.hIcon)
+                            shFileInfo.hIcon = IntPtr.Zero
                         End If
                     End Try
                 End If
@@ -480,6 +485,7 @@ Public Class Item
                 Finally
                     If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
                         Functions.DestroyIcon(shFileInfo.hIcon)
+                        shFileInfo.hIcon = IntPtr.Zero
                     End If
                 End Try
             End If
@@ -524,7 +530,10 @@ Public Class Item
                         End If
                         If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
                         OrElse (Not result Is Nothing AndAlso result.Width < size * Settings.DpiScaleX AndAlso result.Height < size * Settings.DpiScaleY) Then
-                            If Not IntPtr.Zero.Equals(hbitmap) Then Functions.DeleteObject(hbitmap)
+                            If Not IntPtr.Zero.Equals(hbitmap) Then
+                                Functions.DeleteObject(hbitmap)
+                                hbitmap = IntPtr.Zero
+                            End If
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY, hbitmap)
                             If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                                 result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
@@ -538,6 +547,7 @@ Public Class Item
             Finally
                 If Not IntPtr.Zero.Equals(hbitmap) Then
                     Functions.DeleteObject(hbitmap)
+                    hbitmap = IntPtr.Zero
                 End If
             End Try
             Return Nothing
@@ -569,7 +579,10 @@ Public Class Item
                         End If
                         If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
                         OrElse (Not result Is Nothing AndAlso result.Width < size * Settings.DpiScaleX AndAlso result.Height < size * Settings.DpiScaleY) Then
-                            If Not IntPtr.Zero.Equals(hbitmap) Then Functions.DeleteObject(hbitmap)
+                            If Not IntPtr.Zero.Equals(hbitmap) Then
+                                Functions.DeleteObject(hbitmap)
+                                hbitmap = IntPtr.Zero
+                            End If
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), 0, hbitmap)
                             If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                                 result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
@@ -583,6 +596,7 @@ Public Class Item
             Finally
                 If Not IntPtr.Zero.Equals(hbitmap) Then
                     Functions.DeleteObject(hbitmap)
+                    hbitmap = IntPtr.Zero
                 End If
             End Try
             Return Nothing
@@ -688,6 +702,7 @@ Public Class Item
             Finally
                 If Not IntPtr.Zero.Equals(hbitmap) Then
                     Functions.DeleteObject(hbitmap)
+                    hbitmap = IntPtr.Zero
                 End If
             End Try
             Return False

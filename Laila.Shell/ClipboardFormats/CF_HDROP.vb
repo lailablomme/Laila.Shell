@@ -60,7 +60,10 @@ Namespace ClipboardFormats
             Marshal.StructureToPtr(dropfiles, pGlobal, False)
             Functions.RtlMoveMemory(IntPtr.Add(pGlobal, dropfiles.pFiles), strPtr, strSize)
 
-            Marshal.FreeHGlobal(strPtr)
+            If Not IntPtr.Zero.Equals(strPtr) Then
+                Marshal.FreeHGlobal(strPtr)
+                strPtr = IntPtr.Zero
+            End If
             Functions.GlobalUnlock(pGlobal)
 
             Dim format As FORMATETC = New FORMATETC With {

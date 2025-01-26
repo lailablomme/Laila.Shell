@@ -170,6 +170,7 @@ Namespace Controls
                                 Finally
                                     If Not propertyDescription Is Nothing Then
                                         Marshal.ReleaseComObject(propertyDescription)
+                                        propertyDescription = Nothing
                                     End If
                                 End Try
                                 Dim buffer As StringBuilder = New StringBuilder()
