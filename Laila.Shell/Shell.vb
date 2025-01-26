@@ -647,7 +647,7 @@ Public Class Shell
             End Sub, maxRetries)
     End Sub
 
-    Public Shared Function RunOnSTAThread(Of TResult)(action As Action(Of TaskCompletionSource(Of TResult)), maxRetries As Integer) As TResult
+    Public Shared Function RunOnSTAThread(Of TResult)(action As Action(Of TaskCompletionSource(Of TResult)), Optional maxRetries As Integer = 1) As TResult
         Dim tcs As TaskCompletionSource(Of TResult)
         Dim numTries = 1
         While (tcs Is Nothing OrElse Not (tcs.Task.IsCompleted OrElse tcs.Task.IsCanceled)) _

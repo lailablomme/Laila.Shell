@@ -176,7 +176,7 @@ Public Class ListViewDropTarget
             If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 _lastOverItem = overItem
 
-                Dim dropTarget As IDropTarget, shellFolder As IShellFolder
+                Dim dropTarget As IDropTarget
                 ' first check if we're not trying to drop on ourselves or our parent
                 Dim isOurSelvesOrParent As Boolean
                 If Not _files Is Nothing Then
@@ -202,12 +202,10 @@ Public Class ListViewDropTarget
                 If Not isOurSelvesOrParent Then
                     ' try get droptarget
                     If Not overItem.Parent Is Nothing Then
-                        shellFolder = overItem.Parent.ShellFolder
-                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        overItem.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                     Else
                         ' desktop
-                        shellFolder = Shell.Desktop.ShellFolder
-                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                     End If
                 End If
 

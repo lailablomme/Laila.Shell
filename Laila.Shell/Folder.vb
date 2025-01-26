@@ -440,7 +440,7 @@ Public Class Folder
 
     Public ReadOnly Property ColumnManager As IColumnManager
         Get
-            Dim shellFolder As IShellFolder, shellView As IShellView
+            Dim shellView As IShellView
             Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
             Return shellView
         End Get

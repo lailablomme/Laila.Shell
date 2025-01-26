@@ -57,7 +57,7 @@ Public Class Item
 
     Public Shared Function FromPidl(pidl As IntPtr, parent As Folder,
                                     Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
-        Dim shellItem2 As IShellItem2, shellFolder As IShellFolder
+        Dim shellItem2 As IShellItem2
         shellItem2 = GetIShellItem2FromPidl(pidl, parent?.ShellFolder)
         If Not shellItem2 Is Nothing Then
             Dim attr As SFGAO = SFGAO.FOLDER

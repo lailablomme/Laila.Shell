@@ -674,7 +674,7 @@ Public Class Functions
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function GetMenuString(hMenu As IntPtr, uIDItem As UInteger, lpString As StringBuilder, nMaxCount As Integer, uFlag As UInteger) As Integer
     End Function
-    <DllImport("user32.dll", SetLastError:=True)>
+    <DllImport("user32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
     Public Shared Function GetMenuItemInfo(hMenu As IntPtr, uItem As UInteger, fByPosition As Boolean, ByRef lpmii As MENUITEMINFO) As Boolean
     End Function
     <DllImport("user32.dll", SetLastError:=True)>

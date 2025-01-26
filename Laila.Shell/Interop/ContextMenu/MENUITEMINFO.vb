@@ -1,6 +1,6 @@
 ﻿Imports System.Runtime.InteropServices
 
-<StructLayout(LayoutKind.Sequential)>
+<StructLayout(LayoutKind.Sequential, CharSet:=CharSet.Auto)>
 Public Structure MENUITEMINFO
     Public cbSize As UInteger
     Public fMask As UInteger
@@ -11,8 +11,7 @@ Public Structure MENUITEMINFO
     Public hbmpChecked As IntPtr
     Public hbmpUnchecked As IntPtr
     Public dwItemData As IntPtr
-    <MarshalAs(UnmanagedType.LPStr)>
-    Public dwTypeData As String
+    Public dwTypeData As IntPtr
     Public cch As UInteger
     Public hbmpItem As IntPtr
 End Structure

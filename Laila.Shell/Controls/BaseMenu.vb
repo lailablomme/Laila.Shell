@@ -1,9 +1,5 @@
 ﻿Imports System.Collections.Concurrent
-Imports System.IO
-Imports System.Net
-Imports System.Reflection
 Imports System.Runtime.InteropServices
-Imports System.Runtime.InteropServices.ComTypes
 Imports System.Text
 Imports System.Threading
 Imports System.Windows
@@ -14,7 +10,6 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
-Imports Microsoft.VisualBasic.Logging
 
 Namespace Controls
     Public MustInherit Class BaseMenu
@@ -91,9 +86,6 @@ Namespace Controls
             If _wasMade Then Return
 
             makeContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
-
-            Dim osver As Version = Environment.OSVersion.Version
-            Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
 
             ' make our menu
             Me.Items.Clear()
@@ -234,18 +226,24 @@ Namespace Controls
                         End Sub)
                 End If
 
-                Dim hbitmapToDispose As HashSet(Of IntPtr) = New HashSet(Of IntPtr)()
+                Dim hbitmapsToDispose As HashSet(Of IntPtr) = New HashSet(Of IntPtr)()
                 Try
                     For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
                         Dim mii As MENUITEMINFO
                         mii.cbSize = CUInt(Marshal.SizeOf(mii))
                         mii.fMask = MIIM.MIIM_STRING
-                        mii.dwTypeData = New String(" "c, 2050)
-                        mii.cch = mii.dwTypeData.Length - 2
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-                        Dim header As String = mii.dwTypeData '.Substring(0, mii.cch)
 
-                        Dim tcs3 As New TaskCompletionSource
+                        Dim header As String
+                        mii.cch += 1
+                        Try
+                            mii.dwTypeData = Marshal.AllocHGlobal(CType(mii.cch * 2, Integer))
+                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+                            header = Marshal.PtrToStringUni(mii.dwTypeData)
+                        Finally
+                            Marshal.FreeHGlobal(mii.dwTypeData)
+                        End Try
+
                         Dim bitmapSource As BitmapSource
 
                         Try
@@ -265,13 +263,13 @@ Namespace Controls
                             End If
                         Finally
                             If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                                If Not hbitmapToDispose.Contains(mii.hbmpItem) Then hbitmapToDispose.Add(mii.hbmpItem)
+                                If Not hbitmapsToDispose.Contains(mii.hbmpItem) Then hbitmapsToDispose.Add(mii.hbmpItem)
                             End If
                             If Not IntPtr.Zero.Equals(mii.hbmpChecked) Then
-                                If Not hbitmapToDispose.Contains(mii.hbmpChecked) Then hbitmapToDispose.Add(mii.hbmpChecked)
+                                If Not hbitmapsToDispose.Contains(mii.hbmpChecked) Then hbitmapsToDispose.Add(mii.hbmpChecked)
                             End If
                             If Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
-                                If Not hbitmapToDispose.Contains(mii.hbmpUnchecked) Then hbitmapToDispose.Add(mii.hbmpUnchecked)
+                                If Not hbitmapsToDispose.Contains(mii.hbmpUnchecked) Then hbitmapsToDispose.Add(mii.hbmpUnchecked)
                             End If
                         End Try
 
@@ -288,12 +286,12 @@ Namespace Controls
 
                             Dim verb As String, id As Integer
                             Dim cmd As StringBuilder = New StringBuilder()
-                            cmd.Append(New String(" ", 2050))
+                            cmd.Append(New String(" ", 512))
                             If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
                                 id = mii.wID - 1
-                                _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 2048)
+                                _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 512)
                                 If cmd.Length = 0 Then
-                                    _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 2048)
+                                    _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 512)
                                 End If
                                 verb = cmd.ToString()
                             End If
@@ -325,10 +323,10 @@ Namespace Controls
                         End If
                     Next
                 Finally
-                    For Each hbitmap In hbitmapToDispose
+                    For Each hbitmap In hbitmapsToDispose
                         Functions.DeleteObject(hbitmap)
                     Next
-                    hbitmapToDispose.Clear()
+                    hbitmapsToDispose.Clear()
                 End Try
 
                 ' remove trailing separators
@@ -350,18 +348,35 @@ Namespace Controls
         End Class
 
         Private Sub makeContextMenu(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
-            Dim parentFolderPidl As Pidl
-            If TypeOf folder Is SearchFolder Then
-                parentFolderPidl = Shell.Desktop.Pidl.Clone()
-            ElseIf Not folder.Parent Is Nothing Then
-                parentFolderPidl = folder.Parent.Pidl.Clone()
-            End If
+            Dim folderPidl As Pidl, itemPidls As Pidl()
+
+            Shell.RunOnSTAThread(
+                Sub()
+                    If Not items Is Nothing AndAlso items.Count > 0 Then
+                        ' user clicked on an item
+                        folderPidl = folder.Pidl.Clone()
+                        itemPidls = items.Select(Function(i) i.Pidl.Clone()).ToArray()
+                    Else
+                        ' user clicked on the background
+                        If folder.FullPath = Shell.Desktop.FullPath Then
+                            ' this is the desktop
+                            folderPidl = Shell.Desktop.Pidl.Clone()
+                            itemPidls = {Shell.Desktop.Pidl.Clone()}
+                        Else
+                            ' this is any other folder
+                            If TypeOf folder Is SearchFolder Then
+                                folderPidl = Shell.Desktop.Pidl.Clone()
+                            Else
+                                folderPidl = folder.Parent.Pidl.Clone()
+                            End If
+                            itemPidls = {folder.Pidl.Clone()}
+                        End If
+                    End If
+                End Sub)
 
             Dim tcs As New TaskCompletionSource()
             _taskQueue.Add(
                 Sub()
-                    Dim folderPidl As Pidl
-                    Dim itemPidls As Pidl()
                     Dim flags As Integer = CMF.CMF_NORMAL
                     Dim shellFolder As IShellFolder
 
@@ -376,23 +391,10 @@ Namespace Controls
                             ' user clicked on an item
                             flags = flags Or CMF.CMF_ITEMMENU
 
-                            folderPidl = folder.Pidl.Clone()
-                            itemPidls = items.Select(Function(i) i.Pidl.Clone()).ToArray()
-
                             CType(shellFolder, IShellFolderForIContextMenu).GetUIObjectOf _
                                 (IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, _contextMenu)
                         Else
                             ' user clicked on the background
-                            If folder.FullPath = Shell.Desktop.FullPath Then
-                                ' this is the desktop
-                                folderPidl = Shell.Desktop.Pidl.Clone()
-                                itemPidls = {Shell.Desktop.Pidl.Clone()}
-                            Else
-                                ' this is any other folder
-                                folderPidl = parentFolderPidl
-                                itemPidls = {folder.Pidl.Clone()}
-                            End If
-
                             CType(shellFolder, IShellFolderForIContextMenu).CreateViewObject _
                                 (IntPtr.Zero, GetType(IContextMenu).GUID, _contextMenu)
                         End If
@@ -425,10 +427,13 @@ Namespace Controls
                             End Try
                         End If
                     Finally
-                        folderPidl.Dispose()
-                        For Each p In itemPidls
-                            p.Dispose()
-                        Next
+                        Shell.RunOnSTAThread(
+                            Sub()
+                                folderPidl.Dispose()
+                                For Each p In itemPidls
+                                    p.Dispose()
+                                Next
+                            End Sub)
                         If Not shellFolder Is Nothing Then
                             Marshal.ReleaseComObject(shellFolder)
                             shellFolder = Nothing
@@ -437,10 +442,6 @@ Namespace Controls
                     tcs.SetResult()
                 End Sub)
             tcs.Task.Wait()
-
-            If Not parentFolderPidl Is Nothing Then
-                parentFolderPidl.Dispose()
-            End If
         End Sub
 
         Private Sub menuItem_Click(c As Control, e2 As EventArgs)
@@ -627,14 +628,6 @@ Namespace Controls
                 If Not _contextMenu Is Nothing Then
                     Marshal.ReleaseComObject(_contextMenu)
                     _contextMenu = Nothing
-                End If
-                If Not _contextMenu2 Is Nothing Then
-                    Marshal.ReleaseComObject(_contextMenu2)
-                    _contextMenu2 = Nothing
-                End If
-                If Not _contextMenu3 Is Nothing Then
-                    Marshal.ReleaseComObject(_contextMenu3)
-                    _contextMenu3 = Nothing
                 End If
                 If Not IntPtr.Zero.Equals(_hMenu) Then
                     Functions.DestroyMenu(_hMenu)

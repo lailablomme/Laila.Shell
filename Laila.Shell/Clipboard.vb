@@ -12,40 +12,42 @@ Public Class Clipboard
     End Function
 
     Public Shared Function CanPaste(folder As Folder) As Boolean
-        ' check for paste by checking if it would accept a drop
-        Dim dataObject As IDataObject
-           Functions.OleGetClipboard(dataObject)
+        Return Shell.RunOnSTAThread(
+            Sub(tcs As TaskCompletionSource(Of Boolean))
+                ' check for paste by checking if it would accept a drop
+                Dim dataObject As IDataObject
+                Functions.OleGetClipboard(dataObject)
 
-           Dim dropTarget As IDropTarget, shellFolder As IShellFolder
-        Try
-            If Not folder.Parent Is Nothing Then
-                shellFolder = folder.Parent.ShellFolder
-                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-            Else
-                ' desktop
-                shellFolder = Shell.Desktop.ShellFolder
-                shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-            End If
+                Dim dropTarget As IDropTarget
+                Try
+                    If Not folder.Parent Is Nothing Then
+                        folder.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                    Else
+                        ' desktop
+                        Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                    End If
 
-            If Not dropTarget Is Nothing Then
-                Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
-                Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
-                dropTarget.DragLeave()
+                    If Not dropTarget Is Nothing Then
+                        Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
+                        Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
+                        dropTarget.DragLeave()
 
-                Return hr = HRESULT.S_OK AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
-            End If
-        Finally
-            If Not dropTarget Is Nothing Then
-                Marshal.ReleaseComObject(dropTarget)
-                dropTarget = Nothing
-            End If
-            If Not dataObject Is Nothing Then
-                Marshal.ReleaseComObject(dataObject)
-                dataObject = Nothing
-            End If
-        End Try
+                        tcs.SetResult(hr = HRESULT.S_OK AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE)
+                        Return
+                    End If
+                Finally
+                    If Not dropTarget Is Nothing Then
+                        Marshal.ReleaseComObject(dropTarget)
+                        dropTarget = Nothing
+                    End If
+                    If Not dataObject Is Nothing Then
+                        Marshal.ReleaseComObject(dataObject)
+                        dataObject = Nothing
+                    End If
+                End Try
 
-        Return False
+                tcs.SetResult(False)
+            End Sub)
     End Function
 
     Public Shared Sub CopyFiles(items As IEnumerable(Of Item))
@@ -155,10 +157,8 @@ Public Class Clipboard
         ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
         ' and I don't know what it's doing 
         Dim initDropTarget As IDropTarget
-        Dim shellFolder As IShellFolder
         Try
-            Functions.SHGetDesktopFolder(shellFolder)
-            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, initDropTarget)
+            Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, initDropTarget)
             initDropTarget.DragEnter(result, 0, New WIN32POINT() With {.x = 0, .y = 0}, 0)
             initDropTarget.DragLeave()
         Finally

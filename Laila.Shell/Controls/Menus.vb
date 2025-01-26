@@ -303,6 +303,7 @@ Namespace Controls
 
             If Not Me.NewItemMenu Is Nothing Then
                 Me.NewItemMenu.Dispose()
+                Me.NewItemMenu = Nothing
             End If
 
             Dim newItemMenu As NewItemMenu = New NewItemMenu() With {.Folder = Me.Folder}
