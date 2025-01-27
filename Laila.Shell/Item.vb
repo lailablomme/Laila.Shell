@@ -739,11 +739,22 @@ Public Class Item
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
+            Dim isNew As Boolean
             SyncLock _shellItemLock
                 If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                    isNew = True
                 End If
             End SyncLock
+            If isNew AndAlso Me.FullPath.StartsWith("\\") Then
+                Dim idx As Integer = Me.FullPath.IndexOf("\", 2)
+                If idx >= 0 Then
+                    Dim rootDisplayName As String = Me.FullPath.Substring(2, idx - 2)
+                    If _displayName.ToLower().EndsWith(String.Format("(\\{0})", rootDisplayName.ToLower())) Then
+                        _displayName = _displayName.Substring(0, _displayName.Length - rootDisplayName.Length - 5)
+                    End If
+                End If
+            End If
 
             Return _displayName
         End Get

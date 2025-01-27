@@ -57,7 +57,7 @@
                                                                 <ColumnDefinition Width="Auto" />
                                                             </Grid.ColumnDefinitions>
                                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
-                                                                      VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                                      VerticalAlignment="Center" Margin="2,0,2,0" x:Name="SelectionCheckBox"
                                                                       Visibility="Collapsed"/>
                                                             <GridViewRowPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                                                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 

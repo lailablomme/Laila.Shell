@@ -794,14 +794,15 @@ Public Class Folder
                 Dim lastRefresh As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
                 If Not cancellationToken.IsCancellationRequested _
-                            AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                    Dim h As HRESULT = enumShellItems.Next(celt, shellItems, fetched)
-                    While fetched > 0
+                    AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                    Dim h As HRESULT
+                    Do
+                        h = enumShellItems.Next(celt, shellItems, fetched)
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetched " & fetched & " items", DateTime.Now)
                         For x = 0 To fetched - 1
                             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
                             If Not cancellationToken.IsCancellationRequested _
-                                        AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                                AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
                                 Dim attr2 As Integer = SFGAO.FOLDER
                                 shellItems(x).GetAttributes(attr2, attr2)
                                 Dim newItem As Item
@@ -889,10 +890,9 @@ Public Class Folder
                             End If
                         Next
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
-                        If cancellationToken.IsCancellationRequested Then Exit While
-                        h = enumShellItems.Next(celt, shellItems, fetched)
-                    End While
-                    If fetched = 0 AndAlso Not (h = HRESULT.S_OK OrElse h = HRESULT.S_FALSE OrElse h = HRESULT.ERROR_INVALID_PARAMETER) Then
+                    Loop While celt = fetched AndAlso Not cancellationToken.IsCancellationRequested _
+                        AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested
+                    If Not (h = HRESULT.S_OK OrElse h = HRESULT.S_FALSE OrElse h = HRESULT.ERROR_INVALID_PARAMETER) Then
                         Throw Marshal.GetExceptionForHR(h)
                     End If
                 End If

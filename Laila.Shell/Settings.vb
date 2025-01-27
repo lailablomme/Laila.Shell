@@ -447,10 +447,14 @@ Public Class Settings
     End Property
 
     Private Function readDoShowStatusBar() As Boolean
-        Dim mask As SSF = SSF.SSF_SHOWSTATUSBAR
-        Dim val As SHELLSTATE
-        Functions.SHGetSetSettings(val, mask, False)
-        Return val.Data10 = 64
+        If Not Settings.IsWindows7OrLower Then
+            Dim mask As SSF = SSF.SSF_SHOWSTATUSBAR
+            Dim val As SHELLSTATE
+            Functions.SHGetSetSettings(val, mask, False)
+            Return val.Data10 = 64
+        Else
+            Return True
+        End If
     End Function
 
     Public Property DoShowStatusBar As Boolean
@@ -458,10 +462,12 @@ Public Class Settings
             Return _doShowStatusBar
         End Get
         Set(value As Boolean)
-            Dim mask As SSF = SSF.SSF_SHOWSTATUSBAR
-            Dim val As SHELLSTATE
-            val.Data10 = If(value, 64, 0)
-            Functions.SHGetSetSettings(val, mask, True)
+            If Not Settings.IsWindows7OrLower Then
+                Dim mask As SSF = SSF.SSF_SHOWSTATUSBAR
+                Dim val As SHELLSTATE
+                val.Data10 = If(value, 64, 0)
+                Functions.SHGetSetSettings(val, mask, True)
+            End If
         End Set
     End Property
 

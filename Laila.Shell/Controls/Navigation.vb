@@ -105,19 +105,13 @@ Namespace Controls
 
         Public Sub Up()
             Using Shell.OverrideCursor(Cursors.Wait)
-                Dim folder As Folder = Me.Folder
-                Dim parent As Folder = Shell.RunOnSTAThread(
-                    Sub(tcs As TaskCompletionSource(Of Folder))
-                        tcs.SetResult(folder.Parent)
-                    End Sub)
-
-                Dim existing As Folder = _list.FirstOrDefault(Function(i) parent?.Pidl?.Equals(i.Pidl))
+                Dim existing As Folder = _list.FirstOrDefault(Function(i) Me.Folder.Parent?.Pidl?.Equals(i.Pidl))
                 If Me.CanBack AndAlso Not existing Is Nothing Then
                     Me.Folder = existing
                 Else
-                    parent.LastScrollOffset = New Point()
-                    parent.IsInHistory = True
-                    Me.Folder = parent
+                    Me.Folder.Parent.LastScrollOffset = New Point()
+                    Me.Folder.Parent.IsInHistory = True
+                    Me.Folder = Me.Folder.Parent
                 End If
             End Using
         End Sub
