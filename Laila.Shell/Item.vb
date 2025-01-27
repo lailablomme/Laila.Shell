@@ -523,10 +523,12 @@ Public Class Item
             Try
                 SyncLock _shellItemLock
                     If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                        Dim h As HRESULT, result As ImageSource
-                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
-                        If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                            result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource
+                        If Not Settings.IsWindows8_1OrLower Then
+                            h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
+                            If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                                result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            End If
                         End If
                         If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
                         OrElse (Not result Is Nothing AndAlso result.Width < size * Settings.DpiScaleX AndAlso result.Height < size * Settings.DpiScaleY) Then
@@ -572,10 +574,12 @@ Public Class Item
             Try
                 If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                     SyncLock _shellItemLock
-                        Dim h As HRESULT, result As ImageSource
-                        h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
-                        If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                            result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource
+                        If Not Settings.IsWindows8_1OrLower Then
+                            h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
+                            If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                                result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            End If
                         End If
                         If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
                         OrElse (Not result Is Nothing AndAlso result.Width < size * Settings.DpiScaleX AndAlso result.Height < size * Settings.DpiScaleY) Then

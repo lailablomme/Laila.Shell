@@ -142,7 +142,7 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True" Style="{DynamicResource lailaShell_GroupByExpanderStyle}">
+                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
                                                             <Expander.Header>
                                                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
                                                                     <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />

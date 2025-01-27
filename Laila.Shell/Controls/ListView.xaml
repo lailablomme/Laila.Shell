@@ -36,7 +36,7 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True" Style="{DynamicResource lailaShell_GroupByExpanderStyle}">
+                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
                                                             <Expander.Resources>
                                                                 <converters:ListViewGroupingHeightConverter x:Key="listViewGroupingHeightConverter" />
                                                             </Expander.Resources>

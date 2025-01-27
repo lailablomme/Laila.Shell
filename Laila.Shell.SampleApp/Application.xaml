@@ -275,68 +275,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style TargetType="ToggleButton" x:Key="lailaShell_GroupByExpanderToggleButtonStyle">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="Transparent" />
-            <Setter Property="Height" Value="20" />
-            <Setter Property="Padding" Value="4,0,4,0" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="0,0,4,0"
-                                BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" 
-                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
-                            <StackPanel Orientation="Horizontal">
-                                <Image Width="9" Height="5" x:Name="Arrow" VerticalAlignment="Center"
-                                       Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
-                                <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="False">
-                                <Setter TargetName="Arrow" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <RotateTransform Angle="-90"/>
-                                    </Setter.Value>
-                                </Setter>
-                                <Setter TargetName="Arrow" Property="Margin" Value="2,13,-2,0" />
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
-                                <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style TargetType="Expander" x:Key="lailaShell_GroupByExpanderStyle">
-            <Setter Property="Margin" Value="0,0,-5,0" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Expander">
-                        <Border BorderBrush="{TemplateBinding BorderBrush}"  
-                            BorderThickness="{TemplateBinding BorderThickness}">
-                            <StackPanel>
-                                <DockPanel>
-                                    <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0" 
-                                              Style="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}" 
-                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
-                                        <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
-                                    </ToggleButton>
-                                </DockPanel>
-                                <ContentPresenter x:Name="ExpanderContent" Visibility="Collapsed" ContentSource="Content" />
-                            </StackPanel>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsExpanded" Value="True">
-                                <Setter TargetName="ExpanderContent" Property="Visibility" Value="Visible"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
         <Style TargetType="{x:Type TabItem}">
             <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
             <Setter Property="Template">
