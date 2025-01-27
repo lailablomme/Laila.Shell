@@ -12,7 +12,10 @@ Public Class SearchFolder
     Private _threadCompletionSource As TaskCompletionSource = New TaskCompletionSource()
 
     Public Shared Function FromTerms(terms As String, parent As Folder) As SearchFolder
-        Return New SearchFolder(getShellItem(terms, parent), parent) With {.View = "Content", .Terms = terms}
+        Shell.RunOnSTAThread(
+            Function() As SearchFolder
+                Return New SearchFolder(getShellItem(terms, parent), parent) With {.View = "Content", .Terms = terms}
+            End Function)
     End Function
 
     Private Shared Function getShellItem(terms As String, parent As Folder) As IShellItem2
@@ -154,12 +157,15 @@ Public Class SearchFolder
         Me.Terms = terms
 
         ' get new shellitem
-        Dim oldShellItem2 As IShellItem2 = _shellItem2
-        _shellItem2 = getShellItem(terms, Me.Parent)
-        If Not oldShellItem2 Is Nothing Then
-            Marshal.ReleaseComObject(oldShellItem2)
-            oldShellItem2 = Nothing
-        End If
+        Shell.RunOnSTAThread(
+            Sub()
+                Dim oldShellItem2 As IShellItem2 = _shellItem2
+                _shellItem2 = getShellItem(terms, Me.Parent)
+                If Not oldShellItem2 Is Nothing Then
+                    Marshal.ReleaseComObject(oldShellItem2)
+                    oldShellItem2 = Nothing
+                End If
+            End Sub)
 
         ' re-enumerate
         _isEnumerated = False

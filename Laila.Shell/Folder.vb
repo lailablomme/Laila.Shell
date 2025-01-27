@@ -44,19 +44,22 @@ Public Class Folder
     Private _wasActivity As Boolean
 
     Public Shared Function FromDesktop() As Folder
-        Dim pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
-        Try
-            Functions.SHGetDesktopFolder(shellFolder)
-            Functions.SHGetIDListFromObject(shellFolder, pidl)
-            Functions.SHCreateItemFromIDList(pidl, GetType(IShellItem2).GUID, shellItem2)
-        Finally
-            If Not IntPtr.Zero.Equals(pidl) Then
-                Marshal.FreeCoTaskMem(pidl)
-                pidl = IntPtr.Zero
-            End If
-        End Try
+        Return Shell.RunOnSTAThread(
+            Function() As Folder
+                Dim pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
+                Try
+                    Functions.SHGetDesktopFolder(shellFolder)
+                    Functions.SHGetIDListFromObject(shellFolder, pidl)
+                    Functions.SHCreateItemFromIDList(pidl, GetType(IShellItem2).GUID, shellItem2)
+                Finally
+                    If Not IntPtr.Zero.Equals(pidl) Then
+                        Marshal.FreeCoTaskMem(pidl)
+                        pidl = IntPtr.Zero
+                    End If
+                End Try
 
-        Return New Folder(shellFolder, shellItem2, Nothing)
+                Return New Folder(shellFolder, shellItem2, Nothing)
+            End Function)
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
@@ -83,21 +86,16 @@ Public Class Folder
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            If Not disposedValue AndAlso _shellFolder Is Nothing Then
-                Dim result2 As IShellFolder = Shell.RunOnSTAThread(
-                    Sub(tcs As TaskCompletionSource(Of IShellFolder))
-                        Dim result As IShellFolder
-                        SyncLock _shellItemLock
-                            If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                                result = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
-                            End If
-                        End SyncLock
-                        tcs.SetResult(result)
-                    End Sub, 1)
-                If Not disposedValue AndAlso _shellFolder Is Nothing Then
-                    _shellFolder = result2
-                End If
-            End If
+            _shellFolder = Shell.RunOnSTAThread(
+                Function() As IShellFolder
+                    Dim result As IShellFolder
+                    SyncLock _shellItemLock
+                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                            result = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+                        End If
+                    End SyncLock
+                    Return result
+                End Function, 1)
 
             Return _shellFolder
         End Get
@@ -193,60 +191,34 @@ Public Class Folder
     End Property
 
     Public Async Function GetInfoTipFolderSizeAsync(cancellationToken As CancellationToken) As Task(Of String)
-        Dim folderList As List(Of String)
-        Dim tcs1 As TaskCompletionSource(Of List(Of String)) = New TaskCompletionSource(Of List(Of String))()
-        Shell.STATaskQueue.Add(
-            Sub()
-                Try
-                    Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.ENABLE_ASYNC
-                    If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
-                    If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
-                    tcs1.SetResult(quickEnum(flags, 11))
-                Catch ex As Exception
-                    tcs1.SetException(ex)
-                End Try
-            End Sub)
-        Await tcs1.Task
-        If tcs1.Task.IsCompleted Then
-            folderList = tcs1.Task.Result
-        End If
+        Dim folderList As List(Of String) = Shell.RunOnSTAThread(
+            Function() As List(Of String)
+                Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.ENABLE_ASYNC
+                If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
+                If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
+                Return quickEnum(flags, 11)
+            End Function)
 
-        Dim fileList As List(Of String)
-        Dim tcs2 As TaskCompletionSource(Of List(Of String)) = New TaskCompletionSource(Of List(Of String))()
-        Shell.STATaskQueue.Add(
-            Sub()
-                Try
-                    Dim flags As UInt32 = SHCONTF.NONFOLDERS Or SHCONTF.ENABLE_ASYNC
-                    If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
-                    If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
-                    tcs2.SetResult(quickEnum(flags, 11))
-                Catch ex As Exception
-                    tcs2.SetException(ex)
-                End Try
-            End Sub)
-        Await tcs2.Task
-        If tcs2.Task.IsCompleted Then
-            fileList = tcs2.Task.Result
-        End If
+        Dim fileList As List(Of String) = Shell.RunOnSTAThread(
+            Function() As List(Of String)
+                Dim flags As UInt32 = SHCONTF.NONFOLDERS Or SHCONTF.ENABLE_ASYNC
+                If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
+                If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
+                Return quickEnum(flags, 11)
+            End Function)
 
         Dim result As List(Of String) = New List(Of String)()
 
         If Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
-            Dim tcs3 As TaskCompletionSource(Of UInt64?) = New TaskCompletionSource(Of UInt64?)()
-            Shell.STATaskQueue.Add(
-            Sub()
-                Try
-                    tcs3.SetResult(getSizeRecursive(2500, cancellationToken))
-                Catch ex As Exception
-                    tcs3.SetException(ex)
-                End Try
-            End Sub)
-            Await Task.WhenAny(tcs3.Task, Task.Delay(3000))
+            Dim size As UInt64? = Shell.RunOnSTAThread(
+                Function() As UInt64?
+                    Return getSizeRecursive(2500, cancellationToken)
+                End Function)
 
-            If tcs3.Task.IsCompleted AndAlso tcs3.Task.Result.HasValue AndAlso Not tcs3.Task.Result.Value = 0 Then
+            If size.HasValue AndAlso Not size.Value = 0 Then
                 Dim prop As [Property] = New [Property]("System.Size")
                 prop._rawValue = New PROPVARIANT()
-                prop._rawValue.SetValue(tcs3.Task.Result.Value)
+                prop._rawValue.SetValue(size.Value)
                 result.Add(prop.DisplayNameWithColon & " " & prop.Text)
                 prop.Dispose()
             End If
@@ -451,9 +423,12 @@ Public Class Folder
 
     Public ReadOnly Property ColumnManager As IColumnManager
         Get
-            Dim shellView As IShellView
-            Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
-            Return shellView
+            Return Shell.RunOnSTAThread(
+                Function() As IShellView
+                    Dim shellView As IShellView
+                    Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
+                    Return shellView
+                End Function)
         End Get
     End Property
 
@@ -502,33 +477,20 @@ Public Class Folder
 
     Public Overrides ReadOnly Property HasSubFolders As Boolean
         Get
-            Dim tcs As New TaskCompletionSource(Of Boolean)
-
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        If _hasSubFolders.HasValue Then
-                            tcs.SetResult(_hasSubFolders.Value)
-                        ElseIf Not disposedValue Then
-                            Dim attr As SFGAO = SFGAO.HASSUBFOLDER
-                            SyncLock _shellItemLock
-                                Me.ShellItem2.GetAttributes(attr, attr)
-                            End SyncLock
-                            tcs.SetResult(attr.HasFlag(SFGAO.HASSUBFOLDER))
-                        Else
-                            tcs.SetResult(False)
-                        End If
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Return tcs.Task.Result
-            Else
-                Return False
-            End If
+            Return Shell.RunOnSTAThread(
+                Function() As Boolean
+                    If _hasSubFolders.HasValue Then
+                        Return _hasSubFolders.Value
+                    ElseIf Not disposedValue Then
+                        Dim attr As SFGAO = SFGAO.HASSUBFOLDER
+                        SyncLock _shellItemLock
+                            Me.ShellItem2.GetAttributes(attr, attr)
+                        End SyncLock
+                        Return attr.HasFlag(SFGAO.HASSUBFOLDER)
+                    Else
+                        Return False
+                    End If
+                End Function)
         End Get
     End Property
 

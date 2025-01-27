@@ -20,41 +20,28 @@ Public Class PinnedItems
         End SyncLock
 
         ' return existing pinned items, delete others
-        Dim tcs As New TaskCompletionSource(Of IEnumerable(Of Item))
+        Return Shell.RunOnSTAThread(
+            Function() As IEnumerable(Of Item)
+                Dim existingPinnedItems As List(Of Item) = New List(Of Item)()
+                For Each pinnedItem In pinnedItems
+                    Dim pidl As Pidl
+                    Try
+                        pidl = New Pidl(pinnedItem.Pidl)
+                        Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
+                        If Not i Is Nothing Then
+                            existingPinnedItems.Add(i)
+                        Else
+                            UnpinItem(pidl)
+                        End If
+                    Finally
+                        If Not pidl Is Nothing Then
+                            pidl.Dispose()
+                        End If
+                    End Try
+                Next
 
-        Shell.STATaskQueue.Add(
-            Sub()
-                Try
-                    Dim existingPinnedItems As List(Of Item) = New List(Of Item)()
-                    For Each pinnedItem In pinnedItems
-                        Dim pidl As Pidl
-                        Try
-                            pidl = New Pidl(pinnedItem.Pidl)
-                            Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
-                            If Not i Is Nothing Then
-                                existingPinnedItems.Add(i)
-                            Else
-                                UnpinItem(pidl)
-                            End If
-                        Finally
-                            If Not pidl Is Nothing Then
-                                pidl.Dispose()
-                            End If
-                        End Try
-                    Next
-
-                    tcs.SetResult(existingPinnedItems)
-                Catch ex As Exception
-                    tcs.SetException(ex)
-                End Try
-            End Sub)
-
-        tcs.Task.Wait(Shell.ShuttingDownToken)
-        If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-            Return tcs.Task.Result
-        Else
-            Return {}
-        End If
+                Return existingPinnedItems
+            End Function)
     End Function
 
     Public Shared Function GetIsPinned(item As Item) As Boolean

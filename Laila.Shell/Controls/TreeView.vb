@@ -178,45 +178,39 @@ Namespace Controls
                 Dim homeFolder As Folder, galleryFolder As Folder, librariesFolder As Folder, favoritesFolder As Folder
                 Dim thisComputer As Folder, network As Folder
 
-                Shell.STATaskQueue.Add(
-                    Async Sub()
-                        ' home, galery and favorites
-                        If Shell.GetSpecialFolders().ContainsKey("Home") Then
-                            homeFolder = Shell.GetSpecialFolder("Home").Clone()
-                            homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
-                        End If
-                        If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
-                            galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
-                            galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
-                        End If
-                        If Shell.GetSpecialFolders().ContainsKey("Favorites") Then
-                            favoritesFolder = Shell.GetSpecialFolder("Favorites").Clone()
-                            favoritesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 2
-                        End If
+                ' home, galery and favorites
+                If Shell.GetSpecialFolders().ContainsKey("Home") Then
+                    homeFolder = Shell.GetSpecialFolder("Home").Clone()
+                    homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
+                End If
+                If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
+                    galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
+                    galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
+                End If
+                If Shell.GetSpecialFolders().ContainsKey("Favorites") Then
+                    favoritesFolder = Shell.GetSpecialFolder("Favorites").Clone()
+                    favoritesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 2
+                End If
 
-                        ' this computer & network
-                        thisComputer = Shell.GetSpecialFolder("This pc").Clone()
-                        thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
-                        network = Shell.GetSpecialFolder("Network").Clone()
-                        network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 2
+                ' this computer & network
+                thisComputer = Shell.GetSpecialFolder("This pc").Clone()
+                thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
+                network = Shell.GetSpecialFolder("Network").Clone()
+                network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 2
 
-                        ' libraries
-                        If Settings.IsWindows8_1OrLower OrElse doShowLibrariesInTreeView Then
-                            librariesFolder = Shell.GetSpecialFolder("Libraries").Clone()
-                            If Settings.IsWindows8_1OrLower Then
-                                librariesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 3
-                            Else
-                                librariesFolder.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
-                            End If
-                        End If
+                ' libraries
+                If Settings.IsWindows8_1OrLower OrElse doShowLibrariesInTreeView Then
+                    librariesFolder = Shell.GetSpecialFolder("Libraries").Clone()
+                    If Settings.IsWindows8_1OrLower Then
+                        librariesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 3
+                    Else
+                        librariesFolder.TreeRootIndex = TreeRootSection.ENVIRONMENT + 1
+                    End If
+                End If
 
-                        ' current
-                        If Not currentFolder Is Nothing Then currentFolder = currentFolder.Clone()
+                ' current
+                If Not currentFolder Is Nothing Then currentFolder = currentFolder.Clone()
 
-                        tcs.SetResult()
-                    End Sub)
-
-                tcs.Task.Wait(Shell.ShuttingDownToken)
                 ' system
                 If Not Settings.IsWindows8_1OrLower Then
                     If Not homeFolder Is Nothing Then Me.Roots.Add(homeFolder)
@@ -248,21 +242,11 @@ Namespace Controls
                             End Sub)
                     End Sub), Nothing, 1000 * 60, 1000 * 60)
             Else
-                Dim tcs As New TaskCompletionSource()
-                Dim desktopFolder As Folder
+                Dim desktopFolder As Folder = Shell.Desktop.Clone()
+                desktopFolder.IsExpanded = True
 
-                Shell.STATaskQueue.Add(
-                     Sub()
-                         desktopFolder = Shell.Desktop.Clone()
-                         desktopFolder.IsExpanded = True
-
-                         ' current
-                         If Not currentFolder Is Nothing Then currentFolder = currentFolder.Clone()
-
-                         tcs.SetResult()
-                     End Sub)
-
-                tcs.Task.Wait(Shell.ShuttingDownToken)
+                ' current
+                If Not currentFolder Is Nothing Then currentFolder = currentFolder.Clone()
 
                 Me.Roots.Add(desktopFolder)
             End If

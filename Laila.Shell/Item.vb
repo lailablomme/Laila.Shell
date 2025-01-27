@@ -40,36 +40,42 @@ Public Class Item
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
-        parsingName = Environment.ExpandEnvironmentVariables(parsingName)
-        Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
-        If Not shellItem2 Is Nothing Then
-            Dim attr As SFGAO = SFGAO.FOLDER
-            shellItem2.GetAttributes(attr, attr)
-            If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates)
-            Else
-                Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates)
-            End If
-        Else
-            Return Nothing
-        End If
+        Return Shell.RunOnSTAThread(
+            Function() As Item
+                parsingName = Environment.ExpandEnvironmentVariables(parsingName)
+                Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
+                If Not shellItem2 Is Nothing Then
+                    Dim attr As SFGAO = SFGAO.FOLDER
+                    shellItem2.GetAttributes(attr, attr)
+                    If attr.HasFlag(SFGAO.FOLDER) Then
+                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates)
+                    Else
+                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates)
+                    End If
+                Else
+                    Return Nothing
+                End If
+            End Function)
     End Function
 
     Public Shared Function FromPidl(pidl As IntPtr, parent As Folder,
                                     Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
-        Dim shellItem2 As IShellItem2
-        shellItem2 = GetIShellItem2FromPidl(pidl, parent?.ShellFolder)
-        If Not shellItem2 Is Nothing Then
-            Dim attr As SFGAO = SFGAO.FOLDER
-            shellItem2.GetAttributes(attr, attr)
-            If attr.HasFlag(SFGAO.FOLDER) Then
-                Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
-            Else
-                Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
-            End If
-        Else
-            Return Nothing
-        End If
+        Return Shell.RunOnSTAThread(
+            Function() As Item
+                Dim shellItem2 As IShellItem2
+                shellItem2 = GetIShellItem2FromPidl(pidl, parent?.ShellFolder)
+                If Not shellItem2 Is Nothing Then
+                    Dim attr As SFGAO = SFGAO.FOLDER
+                    shellItem2.GetAttributes(attr, attr)
+                    If attr.HasFlag(SFGAO.FOLDER) Then
+                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
+                    Else
+                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
+                    End If
+                Else
+                    Return Nothing
+                End If
+            End Function)
     End Function
 
     Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, parentShellFolder As IShellFolder) As IShellItem2
@@ -376,21 +382,22 @@ Public Class Item
                         End If
                     End SyncLock
                 End If
+
+                ' if we don't have any yet/anymore...
                 If _parent Is Nothing Then
                     Dim parentShellItem2 As IShellItem2
                     _parent = Shell.RunOnSTAThread(
-                    Sub(tcs As TaskCompletionSource(Of Folder))
-                        SyncLock _shellItemLock
-                            If Not Me.ShellItem2 Is Nothing Then
-                                Me.ShellItem2.GetParent(parentShellItem2)
+                        Function() As Folder
+                            SyncLock _shellItemLock
+                                If Not Me.ShellItem2 Is Nothing Then
+                                    Me.ShellItem2.GetParent(parentShellItem2)
+                                End If
+                            End SyncLock
+                            If Not parentShellItem2 Is Nothing Then
+                                Return New Folder(parentShellItem2, Nothing, False, True)
                             End If
-                        End SyncLock
-                        If Not parentShellItem2 Is Nothing Then
-                            tcs.SetResult(New Folder(parentShellItem2, Nothing, False, True))
-                        Else
-                            tcs.SetResult(Nothing)
-                        End If
-                    End Sub, 1)
+                            Return Nothing
+                        End Function, 1)
                 End If
             End If
             Return _parent
@@ -471,12 +478,12 @@ Public Class Item
     Public Overridable ReadOnly Property AssociatedApplicationIconAsync(size As Integer) As ImageSource
         Get
             Return Shell.RunOnSTAThread(
-                Sub(tcs As TaskCompletionSource(Of ImageSource))
+                Function() As ImageSource
                     Dim result As ImageSource
                     result = Me.AssociatedApplicationIcon(size)
                     If Not result Is Nothing Then result.Freeze()
-                    tcs.SetResult(result)
-                End Sub, 3)
+                    Return result
+                End Function, 3)
         End Get
     End Property
 
@@ -519,9 +526,9 @@ Public Class Item
     Public Overridable ReadOnly Property OverlayImageAsync(size As Integer) As ImageSource
         Get
             Dim overlayIconIndex As Byte? = Shell.RunOnSTAThread(
-                Sub(tcs As TaskCompletionSource(Of Byte?))
-                    tcs.SetResult(Me.OverlayIconIndex)
-                End Sub, 3)
+                Function() As Byte?
+                    Return Me.OverlayIconIndex
+                End Function, 3)
 
             If overlayIconIndex.HasValue AndAlso overlayIconIndex > 0 Then
                 Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
@@ -572,12 +579,12 @@ Public Class Item
     Public Overridable ReadOnly Property IconAsync(size As Integer) As ImageSource
         Get
             Return Shell.RunOnSTAThread(
-                Sub(tcs As TaskCompletionSource(Of ImageSource))
+                Function() As ImageSource
                     Dim result As ImageSource
                     result = Me.Icon(size)
                     If Not result Is Nothing Then result.Freeze()
-                    tcs.SetResult(result)
-                End Sub, 3)
+                    Return result
+                End Function, 3)
         End Get
     End Property
 
@@ -623,64 +630,38 @@ Public Class Item
     Public Overridable ReadOnly Property ImageAsync(size As Integer) As ImageSource
         Get
             Return Shell.RunOnSTAThread(
-                Sub(tcs As TaskCompletionSource(Of ImageSource))
+                Function() As ImageSource
                     Dim result As ImageSource
                     result = Me.Image(size)
                     If Not result Is Nothing Then result.Freeze()
-                    tcs.SetResult(result)
-                End Sub, 3)
+                    Return result
+                End Function, 3)
         End Get
     End Property
 
     Public Overridable ReadOnly Property StorageProviderUIStatusIcons16Async As ImageSource()
         Get
-            Dim tcs As New TaskCompletionSource(Of ImageSource())
-
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        Dim result As ImageSource()
-                        If Not Me.disposedValue Then
-                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16
-                        End If
-                        tcs.SetResult(result)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Return tcs.Task.Result
-            Else
-                Return Nothing
-            End If
+            Return Shell.RunOnSTAThread(
+                Function() As ImageSource()
+                    Dim result As ImageSource()
+                    If Not Me.disposedValue Then
+                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16
+                    End If
+                    Return result
+                End Function)
         End Get
     End Property
 
     Public Overridable ReadOnly Property StorageProviderUIStatusFirstIcon16Async As ImageSource
         Get
-            Dim tcs As New TaskCompletionSource(Of ImageSource)
-
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        Dim result As ImageSource
-                        If Not Me.disposedValue Then
-                            result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.FirstIcon16
-                        End If
-                        tcs.SetResult(result)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Return tcs.Task.Result
-            Else
-                Return Nothing
-            End If
+            Return Shell.RunOnSTAThread(
+                Function() As ImageSource
+                    Dim result As ImageSource
+                    If Not Me.disposedValue Then
+                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.FirstIcon16
+                    End If
+                    Return result
+                End Function)
         End Get
     End Property
 
@@ -729,9 +710,9 @@ Public Class Item
     Public Overridable ReadOnly Property HasThumbnailAsync As Boolean
         Get
             Dim result As Boolean? = Shell.RunOnSTAThread(
-                Sub(tcs As TaskCompletionSource(Of Boolean?))
-                    tcs.SetResult(Me.HasThumbnail)
-                End Sub, 3)
+                Function() As Boolean?
+                    Return Me.HasThumbnail
+                End Function, 3)
 
             If result.HasValue Then
                 Return result.Value
@@ -744,7 +725,7 @@ Public Class Item
     Public Overridable ReadOnly Property IsImage As Boolean
         Get
             If Not _isImage.HasValue Then
-                _isImage = IO.File.Exists(Me.FullPath) AndAlso ImageHelper.IsImage(Me.FullPath)
+                _isImage = ImageHelper.IsImage(Me.FullPath)
             End If
             Return _isImage.Value
         End Get
@@ -753,12 +734,16 @@ Public Class Item
     Public Overridable ReadOnly Property DisplayName As String
         Get
             Dim isNew As Boolean
+
+            ' get displayname?
             SyncLock _shellItemLock
                 If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                     Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                     isNew = True
                 End If
             End SyncLock
+
+            ' strip root name from displayname
             If isNew AndAlso Me.FullPath?.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then
                 Dim idx As Integer = Me.FullPath.IndexOf(IO.Path.DirectorySeparatorChar, 2)
                 If idx >= 0 Then
@@ -1294,7 +1279,7 @@ Public Class Item
                 Me.NotifyOfPropertyChange("DisplayName")
             Case "DoShowDriveLetters"
                 If Me.IsDrive Then
-                    Shell.STATaskQueue.Add(
+                    Shell.RunOnSTAThread(
                         Sub()
                             Me.Refresh()
                         End Sub)

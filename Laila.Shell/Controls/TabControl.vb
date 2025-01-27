@@ -334,11 +334,7 @@ Namespace Controls
             Private _selectedItems As IEnumerable(Of Item)
 
             Public Sub New()
-                Shell.STATaskQueue.Add(
-                    Sub()
-                        Dim folder As Folder = Shell.GetSpecialFolder("This pc").Clone()
-                        Me.Folder = folder
-                    End Sub)
+                Me.Folder = Shell.GetSpecialFolder("This pc").Clone()
             End Sub
 
             Public Property Folder As Folder

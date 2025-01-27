@@ -126,10 +126,7 @@ Namespace Controls
 
                 If INVALID_VALUE.Equals(Me.SelectedValue) Then
                     Dim text As String = Me.PART_TextBox.Text
-                    Dim item As Item = Shell.RunOnSTAThread(
-                        Sub(tcs As TaskCompletionSource(Of Item))
-                            tcs.SetResult(Item.FromParsingName(text, Nothing, False))
-                        End Sub, 1)
+                    Dim item As Item = Item.FromParsingName(text, Nothing, False)
                     If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                         CType(item, Folder).LastScrollOffset = New Point()
                         Me.Folder = item
@@ -148,10 +145,7 @@ Namespace Controls
                     If TypeOf Me.SelectedItem Is Folder Then
                         Dim selectedItem As Folder = Me.SelectedItem
                         If Not selectedItem.Pidl.Equals(Me.Folder.Pidl) Then
-                            Dim folder As Folder = Shell.RunOnSTAThread(
-                                Sub(tcs As TaskCompletionSource(Of Folder))
-                                    tcs.SetResult(selectedItem.Clone())
-                                End Sub, 1)
+                            Dim folder As Folder = selectedItem.Clone()
                             Me.Folder = folder
                             Me.IsLoading = True
                             Me.ShowNavigationButtons(folder, False)

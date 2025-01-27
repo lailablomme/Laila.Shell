@@ -23,44 +23,31 @@ Public Class FrequentFolders
                 Dim mostFrequent1 As List(Of FrequentFolder) = collection.Query() _
                     .OrderByDescending(Function(f) f.AccessCount).ToList()
 
-                Dim tcs As New TaskCompletionSource(Of IEnumerable(Of Item))
+                Return Shell.RunOnSTAThread(
+                    Function() As IEnumerable(Of Item)
+                        Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
+                        Dim count As Integer = 0
+                        For Each folder In mostFrequent1
+                            Dim pidl As Pidl
+                            Try
+                                pidl = New Pidl(folder.Pidl)
+                                Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
+                                If Not i Is Nothing AndAlso Not PinnedItems.GetIsPinned(i) Then
+                                    mostFrequent2.Add(i)
+                                    count += 1
+                                    If count = 5 Then Exit For
+                                ElseIf Not i Is Nothing Then
+                                    i.Dispose()
+                                End If
+                            Finally
+                                If Not pidl Is Nothing Then
+                                    pidl.Dispose()
+                                End If
+                            End Try
+                        Next
 
-                Shell.STATaskQueue.Add(
-                    Sub()
-                        Try
-                            Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
-                            Dim count As Integer = 0
-                            For Each folder In mostFrequent1
-                                Dim pidl As Pidl
-                                Try
-                                    pidl = New Pidl(folder.Pidl)
-                                    Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
-                                    If Not i Is Nothing AndAlso Not PinnedItems.GetIsPinned(i) Then
-                                        mostFrequent2.Add(i)
-                                        count += 1
-                                        If count = 5 Then Exit For
-                                    ElseIf Not i Is Nothing Then
-                                        i.Dispose()
-                                    End If
-                                Finally
-                                    If Not pidl Is Nothing Then
-                                        pidl.Dispose()
-                                    End If
-                                End Try
-                            Next
-
-                            tcs.SetResult(mostFrequent2)
-                        Catch ex As Exception
-                            tcs.SetException(ex)
-                        End Try
-                    End Sub)
-
-                tcs.Task.Wait(Shell.ShuttingDownToken)
-                If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                    Return tcs.Task.Result
-                Else
-                    Return {}
-                End If
+                        Return mostFrequent2
+                    End Function)
             End Using
         End SyncLock
     End Function

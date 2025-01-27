@@ -13,7 +13,7 @@ Public Class Clipboard
 
     Public Shared Function CanPaste(folder As Folder) As Boolean
         Return Shell.RunOnSTAThread(
-            Sub(tcs As TaskCompletionSource(Of Boolean))
+            Function() As Boolean
                 ' check for paste by checking if it would accept a drop
                 Dim dataObject As IDataObject
                 Functions.OleGetClipboard(dataObject)
@@ -32,8 +32,7 @@ Public Class Clipboard
                         Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
                         dropTarget.DragLeave()
 
-                        tcs.SetResult(hr = HRESULT.S_OK AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE)
-                        Return
+                        Return hr = HRESULT.S_OK AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
                     End If
                 Finally
                     If Not dropTarget Is Nothing Then
@@ -46,8 +45,8 @@ Public Class Clipboard
                     End If
                 End Try
 
-                tcs.SetResult(False)
-            End Sub)
+                Return False
+            End Function)
     End Function
 
     Public Shared Sub CopyFiles(items As IEnumerable(Of Item))

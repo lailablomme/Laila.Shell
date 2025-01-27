@@ -336,23 +336,10 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property HasIconAsync As Boolean
         Get
-            Dim tcs As New TaskCompletionSource(Of Boolean)
-
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        tcs.SetResult(Me.HasIcon)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Return tcs.Task.Result
-            Else
-                Return False
-            End If
+            Shell.RunOnSTAThread(
+                Function() As Boolean
+                    Return Me.HasIcon
+                End Function)
         End Get
     End Property
 
@@ -397,23 +384,13 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property Icons16Async As ImageSource()
         Get
-            Dim tcs As New TaskCompletionSource(Of String())
+            Dim imageReferences16 As String() = Shell.RunOnSTAThread(
+                Function() As String()
+                    Return Me.ImageReferences16
+                End Function)
 
-            Shell.STATaskQueue.Add(
-                Sub()
-                    Try
-                        tcs.SetResult(Me.ImageReferences16)
-                    Catch ex As Exception
-                        tcs.SetException(ex)
-                    End Try
-                End Sub)
-
-            tcs.Task.Wait(Shell.ShuttingDownToken)
-            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                Dim imageReferences16 As String() = tcs.Task.Result
-                If Not imageReferences16 Is Nothing Then
-                    Return imageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
-                End If
+            If Not imageReferences16 Is Nothing Then
+                Return imageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
             End If
             Return Nothing
         End Get

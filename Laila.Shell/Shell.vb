@@ -177,9 +177,9 @@ Public Class Shell
                 End If
             End Sub
 
-        ' add special folders
         Shell.STATaskQueue.Add(
             Sub()
+                ' add special folders
                 addSpecialFolder("Desktop", Folder.FromDesktop())
                 addSpecialFolder("Home", Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, False))
                 addSpecialFolder("Documents", Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing, False))
@@ -652,13 +652,13 @@ Public Class Shell
 
     Public Shared Sub RunOnSTAThread(action As Action, Optional maxRetries As Integer = 1)
         RunOnSTAThread(
-            Sub(tcs As TaskCompletionSource(Of Integer))
+            Function() As Boolean
                 action()
-                tcs.SetResult(-1)
-            End Sub, maxRetries)
+                Return True
+            End Function, maxRetries)
     End Sub
 
-    Public Shared Function RunOnSTAThread(Of TResult)(action As Action(Of TaskCompletionSource(Of TResult)), Optional maxRetries As Integer = 1) As TResult
+    Public Shared Function RunOnSTAThread(Of TResult)(func As Func(Of TResult), Optional maxRetries As Integer = 1) As TResult
         Dim tcs As TaskCompletionSource(Of TResult)
         Dim numTries = 1
         While (tcs Is Nothing OrElse Not (tcs.Task.IsCompleted OrElse tcs.Task.IsCanceled)) _
@@ -668,7 +668,7 @@ Public Class Shell
                 Shell.STATaskQueue.Add(
                     Sub()
                         Try
-                            action.Invoke(tcs)
+                            tcs.SetResult(func())
                         Catch ex As Exception
                             Debug.WriteLine("RunOnSTAThread STATaskQueue Exception: " & ex.Message)
                             tcs.SetException(ex)
