@@ -85,15 +85,19 @@ Namespace Controls
                 AddHandler Me.PART_CheckBoxSelectAll.Checked,
                     Sub(s As Object, e As RoutedEventArgs)
                         If Not _isInternallySettingSelectAll Then
-                            Me.SelectedItems = Me.PART_ListBox.Items.Cast(Of Item)
-                            Me.PART_ListBox.Focus()
+                            Using Shell.OverrideCursor(Cursors.Wait)
+                                Me.SelectedItems = Me.PART_ListBox.Items.Cast(Of Item)
+                                Me.PART_ListBox.Focus()
+                            End Using
                         End If
                     End Sub
                 AddHandler Me.PART_CheckBoxSelectAll.Unchecked,
                     Sub(s As Object, e As RoutedEventArgs)
                         If Not _isInternallySettingSelectAll Then
-                            Me.SelectedItems = Nothing
-                            Me.PART_ListBox.Focus()
+                            Using Shell.OverrideCursor(Cursors.Wait)
+                                Me.SelectedItems = Nothing
+                                Me.PART_ListBox.Focus()
+                            End Using
                         End If
                     End Sub
             End If
@@ -959,8 +963,8 @@ Namespace Controls
         Private Sub updateCheckBoxSelectAll()
             If Not Me.PART_CheckBoxSelectAll Is Nothing Then
                 _isInternallySettingSelectAll = True
-                Me.PART_CheckBoxSelectAll.IsChecked =
-                    Me.PART_ListBox.Items.Count = If(Me.SelectedItems Is Nothing, 0, Me.SelectedItems.Count)
+                Me.PART_CheckBoxSelectAll.IsChecked = Not Me.SelectedItems Is Nothing AndAlso Not Me.SelectedItems.Count = 0 _
+                    AndAlso Me.PART_ListBox.Items.Count = Me.SelectedItems.Count
                 _isInternallySettingSelectAll = False
             End If
         End Sub
