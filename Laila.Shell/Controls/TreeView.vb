@@ -725,11 +725,12 @@ Namespace Controls
         End Sub
 
         Private Sub OnTreeViewTextInput(sender As Object, e As TextCompositionEventArgs)
-            If Not _typeToSearchTimer Is Nothing Then
-                _typeToSearchTimer.Dispose()
-            End If
+            If Not TypeOf e.OriginalSource Is TextBox Then
+                If Not _typeToSearchTimer Is Nothing Then
+                    _typeToSearchTimer.Dispose()
+                End If
 
-            _typeToSearchTimer = New Timer(New TimerCallback(
+                _typeToSearchTimer = New Timer(New TimerCallback(
                 Sub()
                     UIHelper.OnUIThread(
                         Sub()
@@ -739,20 +740,21 @@ Namespace Controls
                         End Sub)
                 End Sub), Nothing, 650, Timeout.Infinite)
 
-            _typeToSearchString &= e.Text
-            Dim foundItem As Item =
-                Me.Items.Skip(Me.Items.IndexOf(Me.SelectedItem) + 1).Where(Function(i) i.IsVisibleInTree) _
-                        .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
-            If foundItem Is Nothing Then
-                foundItem =
-                    Me.Items.Take(Me.Items.IndexOf(Me.SelectedItem)).Where(Function(i) i.IsVisibleInTree) _
+                _typeToSearchString &= e.Text
+                Dim foundItem As Item =
+                    Me.Items.Skip(Me.Items.IndexOf(Me.SelectedItem) + 1).Where(Function(i) i.IsVisibleInTree) _
                             .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
-            End If
-            If Not foundItem Is Nothing Then
-                Me.SetSelectedItem(foundItem)
-                e.Handled = True
-            Else
-                SystemSounds.Asterisk.Play()
+                If foundItem Is Nothing Then
+                    foundItem =
+                        Me.Items.Take(Me.Items.IndexOf(Me.SelectedItem)).Where(Function(i) i.IsVisibleInTree) _
+                                .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
+                End If
+                If Not foundItem Is Nothing Then
+                    Me.SetSelectedItem(foundItem)
+                    e.Handled = True
+                Else
+                    SystemSounds.Asterisk.Play()
+                End If
             End If
         End Sub
 

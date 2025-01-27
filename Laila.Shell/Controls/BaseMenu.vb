@@ -38,6 +38,7 @@ Namespace Controls
         Private _taskQueue As New BlockingCollection(Of Action)
         Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
         Private _disposeToken As CancellationToken = _disposeTokensSource.Token
+        Private _hbitmapsToDispose As HashSet(Of IntPtr) = New HashSet(Of IntPtr)()
 
         Public Sub New()
             Shell.AddToMenuCache(Me)
@@ -226,108 +227,100 @@ Namespace Controls
                         End Sub)
                 End If
 
-                Dim hbitmapsToDispose As HashSet(Of IntPtr) = New HashSet(Of IntPtr)()
-                Try
-                    For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
-                        Dim mii As MENUITEMINFO
+                For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
+                    Dim mii As MENUITEMINFO
+                    mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                    mii.fMask = MIIM.MIIM_STRING
+                    Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+
+                    Dim header As String
+                    mii.cch += 1
+                    Try
+                        mii.dwTypeData = Marshal.AllocHGlobal(CType(mii.cch * 2, Integer))
+                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+                        header = Marshal.PtrToStringUni(mii.dwTypeData)
+                    Finally
+                        Marshal.FreeHGlobal(mii.dwTypeData)
+                    End Try
+
+                    Dim bitmapSource As BitmapSource
+
+                    Try
+                        mii = New MENUITEMINFO()
                         mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                        mii.fMask = MIIM.MIIM_STRING
+                        mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE Or MIIM.MIIM_CHECKMARKS
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        Dim header As String
-                        mii.cch += 1
-                        Try
-                            mii.dwTypeData = Marshal.AllocHGlobal(CType(mii.cch * 2, Integer))
-                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-                            header = Marshal.PtrToStringUni(mii.dwTypeData)
-                        Finally
-                            Marshal.FreeHGlobal(mii.dwTypeData)
-                        End Try
-
-                        Dim bitmapSource As BitmapSource
-
-                        Try
-                            mii = New MENUITEMINFO()
-                            mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                            mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE Or MIIM.MIIM_CHECKMARKS
-                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-
-                            If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                                bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                bitmapSource.Freeze()
-                            ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
-                                bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                bitmapSource.Freeze()
-                            Else
-                                bitmapSource = Nothing
-                            End If
-                        Finally
-                            If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                                If Not hbitmapsToDispose.Contains(mii.hbmpItem) Then hbitmapsToDispose.Add(mii.hbmpItem)
-                            End If
-                            If Not IntPtr.Zero.Equals(mii.hbmpChecked) Then
-                                If Not hbitmapsToDispose.Contains(mii.hbmpChecked) Then hbitmapsToDispose.Add(mii.hbmpChecked)
-                            End If
-                            If Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
-                                If Not hbitmapsToDispose.Contains(mii.hbmpUnchecked) Then hbitmapsToDispose.Add(mii.hbmpUnchecked)
-                            End If
-                        End Try
-
-                        If mii.fType = MFT.SEPARATOR Then
-                            ' refuse initial and double separators
-                            If Not result.Count = 0 AndAlso Not result(result.Count - 1).Header = "-----" Then
-                                result.Add(New MenuItemData() With {.Header = "-----"})
-                            End If
+                        If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
+                            bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            bitmapSource.Freeze()
+                        ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
+                            bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            bitmapSource.Freeze()
                         Else
-                            mii = New MENUITEMINFO()
-                            mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                            mii.fMask = MIIM.MIIM_ID
-                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-
-                            Dim verb As String, id As Integer
-                            Dim cmd As StringBuilder = New StringBuilder()
-                            cmd.Append(New String(" ", 512))
-                            If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
-                                id = mii.wID - 1
-                                _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 512)
-                                If cmd.Length = 0 Then
-                                    _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 512)
-                                End If
-                                verb = cmd.ToString()
-                            End If
-
-                            Debug.WriteLine(header & "  " & id & vbTab & verb.ToString())
-
-                            mii = New MENUITEMINFO()
-                            mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                            mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
-                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-
-                            Dim menuItem As MenuItemData = New MenuItemData() With {
-                                .Header = header.Replace("&", "_"),
-                                .Icon = bitmapSource,
-                                .Tag = New Tuple(Of Integer, String)(id, verb),
-                                .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
-                                .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
-                            }
-
-                            If CBool(mii.fState And MFS.MFS_DEFAULT) Then
-                                Me.DefaultId = menuItem.Tag
-                            End If
-
-                            If Not IntPtr.Zero.Equals(mii.hSubMenu) Then
-                                menuItem.Items = getMenuItemData(mii.hSubMenu, i)
-                            End If
-
-                            result.Add(menuItem)
+                            bitmapSource = Nothing
                         End If
-                    Next
-                Finally
-                    For Each hbitmap In hbitmapsToDispose
-                        Functions.DeleteObject(hbitmap)
-                    Next
-                    hbitmapsToDispose.Clear()
-                End Try
+                    Finally
+                        If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
+                            If Not _hbitmapsToDispose.Contains(mii.hbmpItem) Then _hbitmapsToDispose.Add(mii.hbmpItem)
+                        End If
+                        If Not IntPtr.Zero.Equals(mii.hbmpChecked) Then
+                            If Not _hbitmapsToDispose.Contains(mii.hbmpChecked) Then _hbitmapsToDispose.Add(mii.hbmpChecked)
+                        End If
+                        If Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
+                            If Not _hbitmapsToDispose.Contains(mii.hbmpUnchecked) Then _hbitmapsToDispose.Add(mii.hbmpUnchecked)
+                        End If
+                    End Try
+
+                    If mii.fType = MFT.SEPARATOR Then
+                        ' refuse initial and double separators
+                        If Not result.Count = 0 AndAlso Not result(result.Count - 1).Header = "-----" Then
+                            result.Add(New MenuItemData() With {.Header = "-----"})
+                        End If
+                    Else
+                        mii = New MENUITEMINFO()
+                        mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                        mii.fMask = MIIM.MIIM_ID
+                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+
+                        Dim verb As String, id As Integer
+                        Dim cmd As StringBuilder = New StringBuilder()
+                        cmd.Append(New String(" ", 512))
+                        If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
+                            id = mii.wID - 1
+                            _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 512)
+                            If cmd.Length = 0 Then
+                                _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 512)
+                            End If
+                            verb = cmd.ToString()
+                        End If
+
+                        Debug.WriteLine(header & "  " & id & vbTab & verb.ToString())
+
+                        mii = New MENUITEMINFO()
+                        mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                        mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
+                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+
+                        Dim menuItem As MenuItemData = New MenuItemData() With {
+                            .Header = header.Replace("&", "_"),
+                            .Icon = bitmapSource,
+                            .Tag = New Tuple(Of Integer, String)(id, verb),
+                            .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
+                            .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
+                        }
+
+                        If CBool(mii.fState And MFS.MFS_DEFAULT) Then
+                            Me.DefaultId = menuItem.Tag
+                        End If
+
+                        If Not IntPtr.Zero.Equals(mii.hSubMenu) Then
+                            menuItem.Items = getMenuItemData(mii.hSubMenu, i)
+                        End If
+
+                        result.Add(menuItem)
+                    End If
+                Next
 
                 ' remove trailing separators
                 While result.Count > 0 AndAlso result(result.Count - 1).Header = "-----"
@@ -629,6 +622,10 @@ Namespace Controls
                     Marshal.ReleaseComObject(_contextMenu)
                     _contextMenu = Nothing
                 End If
+                For Each hbitmap In _hbitmapsToDispose
+                    Functions.DeleteObject(hbitmap)
+                Next
+                _hbitmapsToDispose.Clear()
                 If Not IntPtr.Zero.Equals(_hMenu) Then
                     Functions.DestroyMenu(_hMenu)
                     _hMenu = IntPtr.Zero
