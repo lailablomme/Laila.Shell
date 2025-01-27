@@ -364,10 +364,21 @@ Public Class Item
     Public ReadOnly Property Parent As Folder
         Get
             If Not disposedValue _
-                AndAlso (_parent Is Nothing OrElse _parent.disposedValue) _
                 AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
-                Dim parentShellItem2 As IShellItem2
-                _parent = Shell.RunOnSTAThread(
+                If Not _parent Is Nothing Then
+                    SyncLock _parent._shellItemLock
+                        ' if still alive...
+                        If Not _parent.disposedValue Then
+                            ' extend lifetime
+                            Shell.AddToItemsCache(_parent)
+                        Else
+                            _parent = Nothing
+                        End If
+                    End SyncLock
+                End If
+                If _parent Is Nothing Then
+                    Dim parentShellItem2 As IShellItem2
+                    _parent = Shell.RunOnSTAThread(
                     Sub(tcs As TaskCompletionSource(Of Folder))
                         SyncLock _shellItemLock
                             If Not Me.ShellItem2 Is Nothing Then
@@ -375,10 +386,12 @@ Public Class Item
                             End If
                         End SyncLock
                         If Not parentShellItem2 Is Nothing Then
-                            _parent = New Folder(parentShellItem2, Nothing, False, True)
+                            tcs.SetResult(New Folder(parentShellItem2, Nothing, False, True))
+                        Else
+                            tcs.SetResult(Nothing)
                         End If
-                        tcs.SetResult(_parent)
                     End Sub, 1)
+                End If
             End If
             Return _parent
         End Get
@@ -746,11 +759,11 @@ Public Class Item
                     isNew = True
                 End If
             End SyncLock
-            If isNew AndAlso Me.FullPath.StartsWith("\\") Then
-                Dim idx As Integer = Me.FullPath.IndexOf("\", 2)
+            If isNew AndAlso Me.FullPath?.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then
+                Dim idx As Integer = Me.FullPath.IndexOf(IO.Path.DirectorySeparatorChar, 2)
                 If idx >= 0 Then
                     Dim rootDisplayName As String = Me.FullPath.Substring(2, idx - 2)
-                    If _displayName.ToLower().EndsWith(String.Format("(\\{0})", rootDisplayName.ToLower())) Then
+                    If _displayName.ToLower().EndsWith(String.Format("({0}{0}{1})", IO.Path.DirectorySeparatorChar, rootDisplayName.ToLower())) Then
                         _displayName = _displayName.Substring(0, _displayName.Length - rootDisplayName.Length - 5)
                     End If
                 End If
@@ -778,6 +791,9 @@ Public Class Item
                 End If
                 If Not Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl)) Then
                     parent = parent.Parent
+                    If parent Is Nothing Then
+                        Dim i As Int16 = 9
+                    End If
                     While Not parent Is Nothing
                         If parent.IsDrive Then
                             path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
@@ -1144,12 +1160,12 @@ Public Class Item
                 For j = start To parts.Count - 1
                     Dim subFolder As Folder
                     If j = 0 Then
-                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
+                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) TypeOf f Is Folder AndAlso IO.Path.TrimEndingDirectorySeparator(f.FullPath).ToLower() = parts(j).ToLower())
                     Else
-                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
+                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) TypeOf f Is Folder AndAlso IO.Path.GetFileName(IO.Path.TrimEndingDirectorySeparator(f.FullPath)).ToLower() = parts(j).ToLower())
                     End If
                     If subFolder Is Nothing Then
-                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(j).ToLower())
+                        subFolder = (Await folder.GetItemsAsync()).FirstOrDefault(Function(f) TypeOf f Is Folder AndAlso f.DisplayName.ToLower() = parts(j).ToLower())
                     End If
                     folder = subFolder
                     If folder Is Nothing Then Exit For

@@ -1,5 +1,6 @@
 ﻿Imports System.Collections.Concurrent
 Imports System.IO
+Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
 Imports System.Security.AccessControl
 Imports System.Threading
@@ -121,12 +122,21 @@ Public Class Shell
                             If ShuttingDownToken.IsCancellationRequested Then Exit For
 
                             ' try to dispose the item
-                            If Not item Is Nothing AndAlso Not item.Item1 Is Nothing AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
-                                item.Item1.MaybeDispose()
+                            If Not item Is Nothing AndAlso Not item.Item1 Is Nothing _
+                                AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
+                                SyncLock item.Item1._shellItemLock
+                                    SyncLock _itemsCacheLock
+                                        If Not _itemsCache.FirstOrDefault(Function(i) _
+                                            item.Item1.Equals(i.Item1) _
+                                            AndAlso DateTime.Now.Subtract(i.Item2).TotalMilliseconds > 10000) Is Nothing Then
+                                            item.Item1.MaybeDispose()
+                                        End If
+                                    End SyncLock
+                                End SyncLock
                             End If
 
                             ' don't hog the process
-                            Thread.Sleep(1)
+                            Thread.Sleep(2)
                         Next
                         Thread.Sleep(5000)
                     End While
@@ -462,6 +472,7 @@ Public Class Shell
 
     Friend Shared Sub AddToItemsCache(item As Item)
         SyncLock _itemsCacheLock
+            _itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
             _itemsCache.Add(New Tuple(Of Item, Date)(item, DateTime.Now))
         End SyncLock
     End Sub

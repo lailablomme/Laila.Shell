@@ -18,10 +18,9 @@ Namespace Helpers
                     ' parse foldername and filename
                     Dim folderName As String = String.Empty
                     Dim fileName As String = String.Empty
-                    Dim folder As Folder
-                    If filter.StartsWith("\\") Then
+                    If filter.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then
                         If filter.Substring(2).LastIndexOf(IO.Path.DirectorySeparatorChar) = -1 Then
-                            folderName = "\\"
+                            folderName = IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar
                             fileName = filter
                         Else
                             folderName = filter.Substring(0, filter.LastIndexOf(IO.Path.DirectorySeparatorChar))
@@ -38,17 +37,13 @@ Namespace Helpers
                     End If
 
                     ' get folder
+                    Dim folder As Folder
                     If Not String.IsNullOrWhiteSpace(folderName) Then
-                        If folder Is Nothing Then
-                            If folderName.StartsWith(IO.Path.DirectorySeparatorChar) Then
-                                folder = Item.FromParsingName(IO.Path.Combine(
-                                        (Await Shell.GetSpecialFolder("This pc").GetItemsAsync()).FirstOrDefault()?.FullPath,
-                                        folderName.TrimStart(IO.Path.DirectorySeparatorChar)), Nothing, False)
-                            Else
-                                folder = Item.FromParsingName(folderName, Nothing, False)
-                            End If
+                        If folderName.StartsWith(IO.Path.DirectorySeparatorChar) _
+                            AndAlso Not folderName.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then
+                            folderName = IO.Path.Combine((Await Shell.GetSpecialFolder("This pc").GetItemsAsync()).FirstOrDefault()?.FullPath, folderName)
                         End If
-                        If folder Is Nothing Then folder = Await Item.FromParsingNameDeepGetAsync(folderName)
+                        folder = TryCast(Await Item.FromParsingNameDeepGetAsync(folderName), Folder)
                     End If
 
                     ' get items
@@ -100,7 +95,7 @@ Namespace Helpers
                                 f.AddressBarRoot = folderName
                             Else
                                 f.AddressBarRoot = Nothing
-                                f.AddressBarDisplayName = folderName
+                                f.AddressBarDisplayName = f.DisplayName
                             End If
                         Next
                     End If
