@@ -311,16 +311,21 @@ Namespace Controls
 
                         Dim startOverItem As Item = overItem
                         Dim text As String = overItem.InfoTip
+                        Dim doShow As Boolean
 
-                        Dim textBlock As TextBlock = UIHelper.FindVisualChildren(Of TextBlock)(listBoxItem) _
-                            .FirstOrDefault(Function(b) b.Name = "PART_DisplayName" OrElse b.Tag = "PART_DisplayName")
-                        If Not textBlock Is Nothing Then
-                            If Me.GetIsDisplayNameTextBlockTooSmall(textBlock) Then
-                                text = overItem.DisplayName & Environment.NewLine & text
-                            End If
-                        End If
+                        UIHelper.OnUIThread(
+                            Sub()
+                                doShow = Me.DoShowFolderContentsInInfoTip
+                                Dim textBlock As TextBlock = UIHelper.FindVisualChildren(Of TextBlock)(listBoxItem) _
+                                    .FirstOrDefault(Function(b) b.Name = "PART_DisplayName" OrElse b.Tag = "PART_DisplayName")
+                                If Not textBlock Is Nothing Then
+                                    If Me.GetIsDisplayNameTextBlockTooSmall(textBlock) Then
+                                        text = overItem.DisplayName & Environment.NewLine & text
+                                    End If
+                                End If
+                            End Sub)
 
-                        If Me.DoShowFolderContentsInInfoTip Then
+                        If doShow Then
                             Dim textFolderSize As String
                             If TypeOf overItem Is Folder Then
                                 textFolderSize = Await CType(overItem, Folder).GetInfoTipFolderSizeAsync(_toolTipCancellationTokenSource.Token)
@@ -332,20 +337,23 @@ Namespace Controls
 
                         Await Task.Delay(Math.Max(0, 1500 - DateTime.Now.Subtract(startTime).TotalMilliseconds))
 
-                        If Not String.IsNullOrWhiteSpace(text) AndAlso startOverItem.Equals(_mouseItemOver) Then
-                            If Not _toolTip Is Nothing Then
-                                _toolTip.IsOpen = False
-                                _toolTip = Nothing
-                            End If
+                        UIHelper.OnUIThread(
+                            Sub()
+                                If Not String.IsNullOrWhiteSpace(text) AndAlso startOverItem.Equals(_mouseItemOver) Then
+                                    If Not _toolTip Is Nothing Then
+                                        _toolTip.IsOpen = False
+                                        _toolTip = Nothing
+                                    End If
 
-                            _toolTip = New ToolTip With {
-                                .Content = text,
-                                .Placement = PlacementMode.Mouse
-                            }
-                            _toolTip.IsOpen = True
-                        End If
+                                    _toolTip = New ToolTip With {
+                                        .Content = text,
+                                        .Placement = PlacementMode.Mouse
+                                    }
+                                    _toolTip.IsOpen = True
+                                End If
+                            End Sub)
                     End Function
-                f()
+                Task.Run(f)
             ElseIf overItem Is Nothing Then
                 _mouseItemOver = Nothing
                 If Not _toolTip Is Nothing Then

@@ -7,6 +7,10 @@
                     xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
     <Style TargetType="{x:Type local:ContentView}">
         <Setter Property="Template">
             <Setter.Value>
@@ -64,7 +68,7 @@
                                 <behaviors:SelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
                             </i:Interaction.Behaviors>
                             <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                                     <Setter Property="VerticalContentAlignment" Value="Top" />
                                     <Setter Property="Margin" Value="0,0,0,3" />
                                     <Setter Property="UseLayoutRounding" Value="True" />

@@ -6,6 +6,10 @@
                     xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
     <Style TargetType="{x:Type local:ExtraLargeIconsView}">
         <Setter Property="Template">
             <Setter.Value>
@@ -63,7 +67,7 @@
                                 <behaviors:SelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
                             </i:Interaction.Behaviors>
                             <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                                     <Setter Property="Margin" Value="5,1" />
                                 </Style>
                             </ListView.ItemContainerStyle>
@@ -199,7 +203,7 @@
                                             </Border>
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                       VerticalAlignment="Top" HorizontalAlignment="Left" x:Name="SelectionCheckBox"
-                                                      Visibility="Collapsed" Margin="-3,0,0,0"/>
+                                                      Visibility="Collapsed" />
                                             <Grid Grid.Row="1" HorizontalAlignment="Center" MaxWidth="216">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />

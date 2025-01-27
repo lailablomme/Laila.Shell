@@ -6,6 +6,10 @@
                     xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
     <Style TargetType="{x:Type local:SmallIconsView}">
         <Setter Property="Template">
             <Setter.Value>
@@ -62,6 +66,10 @@
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
                             </i:Interaction.Behaviors>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border>

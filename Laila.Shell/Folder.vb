@@ -322,21 +322,29 @@ Public Class Folder
                 Dim h As HRESULT = enumShellItems.Next(celt, shellItems, fetched)
                 While fetched > 0
                     For x As UInt32 = 0 To fetched - 1
-                        Dim attr As SFGAO = SFGAO.FOLDER
-                        shellItems(x).GetAttributes(attr, attr)
-                        If attr.HasFlag(SFGAO.FOLDER) Then
-                            subFolders.Add(shellItems(x))
-                        Else
-                            Dim prop As [Property] = New [Property]("System.Size", CType(shellItems(x), IShellItem2))
-                            If Not prop.Value Is Nothing AndAlso TypeOf prop.Value Is UInt64 Then
-                                result += prop.Value
+                        If Not cancellationToken.IsCancellationRequested Then
+                            Dim attr As SFGAO = SFGAO.FOLDER
+                            shellItems(x).GetAttributes(attr, attr)
+                            If attr.HasFlag(SFGAO.FOLDER) Then
+                                subFolders.Add(shellItems(x))
+                            Else
+                                Dim prop As [Property] = New [Property]("System.Size", CType(shellItems(x), IShellItem2))
+                                If Not prop.Value Is Nothing AndAlso TypeOf prop.Value Is UInt64 Then
+                                    result += prop.Value
+                                End If
+                                prop.Dispose()
+                                If Not shellItems(x) Is Nothing Then
+                                    Marshal.ReleaseComObject(shellItems(x))
+                                    shellItems(x) = Nothing
+                                End If
                             End If
-                            prop.Dispose()
+                        Else
                             If Not shellItems(x) Is Nothing Then
                                 Marshal.ReleaseComObject(shellItems(x))
                                 shellItems(x) = Nothing
                             End If
                         End If
+                        Thread.Sleep(2)
                     Next
                     If DateTime.Now.Subtract(startTime).TotalMilliseconds <= timeout _
                                 AndAlso Not cancellationToken.IsCancellationRequested Then
@@ -363,20 +371,23 @@ Public Class Folder
             var.Dispose()
         End Try
 
-        If subFolders.Count > 0 Then
+        If subFolders.Count > 0  Then
             For Each subFolderShellItem2 In subFolders
-                If Not result Is Nothing Then
-                    Dim subFolderSize As UInt64? = getSizeRecursive(timeout, cancellationToken, startTime, subFolderShellItem2)
-                    If Not subFolderSize.HasValue Then
-                        result = Nothing
-                    Else
-                        result += subFolderSize
+                If Not cancellationToken.IsCancellationRequested Then
+                    If Not result Is Nothing Then
+                        Dim subFolderSize As UInt64? = getSizeRecursive(timeout, cancellationToken, startTime, subFolderShellItem2)
+                        If Not subFolderSize.HasValue Then
+                            result = Nothing
+                        Else
+                            result += subFolderSize
+                        End If
                     End If
                 End If
                 If Not subFolderShellItem2 Is Nothing Then
                     Marshal.ReleaseComObject(subFolderShellItem2)
                     subFolderShellItem2 = Nothing
                 End If
+                Thread.Sleep(2)
             Next
         End If
 
