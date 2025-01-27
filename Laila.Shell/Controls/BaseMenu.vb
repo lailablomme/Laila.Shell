@@ -486,7 +486,11 @@ Namespace Controls
                             Case "copy"
                             Case "cut"
                             Case "paste"
-                                Clipboard.PasteFiles(folder)
+                                If selectedItems Is Nothing OrElse selectedItems.Count = 0 Then
+                                    Clipboard.PasteFiles(folder)
+                                ElseIf selectedItems?.Count = 1 AndAlso TypeOf selectedItems(0) Is folder Then
+                                    Clipboard.PasteFiles(selectedItems(0))
+                                End If
                             Case "delete"
                                 Dim dataObject As IDataObject, fo As IFileOperation
                                 Try

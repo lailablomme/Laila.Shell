@@ -77,11 +77,6 @@ Public Class TreeViewDropTarget
     End Function
 
     Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
-        If Not _files Is Nothing Then
-            For Each f In _files
-                f.Dispose()
-            Next
-        End If
         If Not _dragOpenTimer Is Nothing Then
             _dragOpenTimer.Dispose()
         End If
@@ -105,7 +100,7 @@ Public Class TreeViewDropTarget
             _prevSelectedItem = _treeView.Items.FirstOrDefault(Function(i) _
                 i.TreeRootIndex >= Controls.TreeView.TreeRootSection.PINNED _
                 AndAlso i.TreeRootIndex < Controls.TreeView.TreeRootSection.FREQUENT _
-                AndAlso i.FullPath = _fileNameList(0))
+                AndAlso i.Pidl.Equals(_files(0).Pidl))
         End If
         _lastOverItem = Nothing
         If Not _lastDropTarget Is Nothing Then
@@ -142,6 +137,11 @@ Public Class TreeViewDropTarget
         Else
             _treeView.SetSelectedItem(_prevSelectedItem)
             If TypeOf _prevSelectedItem Is Folder Then _treeView.SetSelectedFolder(_prevSelectedItem)
+        End If
+        If Not _files Is Nothing Then
+            For Each f In _files
+                f.Dispose()
+            Next
         End If
         Return 0
     End Function
