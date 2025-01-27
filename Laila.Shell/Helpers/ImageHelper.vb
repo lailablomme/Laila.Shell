@@ -1,19 +1,13 @@
 ﻿Imports System.Drawing
 Imports System.Drawing.Imaging
-Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
-Imports System.Windows.Forms
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
-Imports FileSignatures
-Imports FileSignatures.Formats
 Imports Laila.Shell.Helpers
 
 Public Class ImageHelper
-    Private Shared _recognised As IEnumerable(Of FileSignatures.Formats.Image)
-    Private Shared _inspector As FileFormatInspector
     Private Shared _iconsLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _icons As Dictionary(Of String, BitmapSource) = New Dictionary(Of String, BitmapSource)()
     Private Shared _icons2 As Dictionary(Of String, BitmapSource) = New Dictionary(Of String, BitmapSource)()
@@ -32,10 +26,19 @@ Public Class ImageHelper
     Public Shared Property DefaultFolderIconExtraLarge As ImageSource
     Public Shared Property DefaultFolderIconJumbo As ImageSource
 
+    Private Shared _imageFileExtensions As String() = {
+        ".bmp", ".dib",    ' Bitmap formats
+        ".jpg", ".jpeg", ".jpe", ".jfif", ".jfi",    ' JPEG formats
+        ".png",            ' Portable Network Graphics
+        ".gif",            ' Graphics Interchange Format
+        ".tif", ".tiff",   ' Tagged Image File Format
+        ".ico",            ' Icon files
+        ".webp",           ' WebP format (Windows 10+)
+        ".heif", ".heic"   ' High-Efficiency Image Format (Windows 10+ with extensions)
+    }
+
 
     Shared Sub New()
-        _recognised = FileFormatLocator.GetFormats().OfType(Of FileSignatures.Formats.Image)()
-        _inspector = New FileFormatInspector(_recognised)
     End Sub
 
     Private Shared Function getFileIcon(attributes As Integer, size As Integer) As ImageSource
@@ -74,15 +77,7 @@ Public Class ImageHelper
     End Sub
 
     Public Shared Function IsImage(fullPath As String) As Boolean
-        If IO.File.Exists(fullPath) Then
-            Try
-                Using fs = New FileStream(fullPath, FileMode.Open, FileAccess.Read)
-                    Return TypeOf _inspector.DetermineFileFormat(fs) Is Formats.Image
-                End Using
-            Catch ex As Exception
-            End Try
-        End If
-        Return False
+        Return _imageFileExtensions.Contains(IO.Path.GetExtension(fullPath).ToLower())
     End Function
 
     Public Shared Function GetOverlayIcon(overlayIconIndex As Byte, size As Integer) As BitmapSource
