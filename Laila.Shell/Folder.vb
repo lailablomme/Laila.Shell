@@ -793,18 +793,21 @@ Public Class Folder
                                             Dim sortValue As Object = newItem.ItemNameDisplaySortValue
                                         End If
 
-                                        ' preload Content view mode properties because searchfolder is slow
                                         If TypeOf Me Is SearchFolder Then
+                                            ' preload Content view mode properties because searchfolder is slow
                                             Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
-                                        End If
 
-                                        ' preload System_StorageProviderUIStatus images
-                                        'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                                        '    = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
-                                        'If Not System_StorageProviderUIStatus Is Nothing _
-                                        '    AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                                        '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
-                                        'End If
+                                            ' preload System_StorageProviderUIStatus images
+                                            Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                                                = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                                            If Not System_StorageProviderUIStatus Is Nothing _
+                                                AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                                                Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                                            End If
+
+                                            ' preload attributes
+                                            Dim attributes As SFGAO = newItem.Attributes
+                                        End If
 
                                         newFullPaths.Add(newItem.FullPath & "_" & newItem.DisplayName)
 

@@ -12,10 +12,15 @@ Public Class SearchFolder
     Private _threadCompletionSource As TaskCompletionSource = New TaskCompletionSource()
 
     Public Shared Function FromTerms(terms As String, parent As Folder) As SearchFolder
-        Shell.RunOnSTAThread(
+        Dim folder As SearchFolder = Shell.RunOnSTAThread(
             Function() As SearchFolder
                 Return New SearchFolder(getShellItem(terms, parent), parent) With {.View = "Content", .Terms = terms}
             End Function)
+
+        folder.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Value"
+        folder.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
+
+        Return folder
     End Function
 
     Private Shared Function getShellItem(terms As String, parent As Folder) As IShellItem2
@@ -91,10 +96,6 @@ Public Class SearchFolder
 
     Public Sub New(shellItem2 As IShellItem2, parent As Folder)
         MyBase.New(shellItem2, parent, False, True)
-
-        Me.View = "Content"
-        Me.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Value"
-        Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
     End Sub
 
     Public Overrides Async Function GetItemsAsync() As Task(Of List(Of Item))

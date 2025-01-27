@@ -275,7 +275,7 @@ Namespace Controls
                 textBlock.FontStretch)
 
             Dim formattedText As FormattedText = New FormattedText(
-                textBlock.Inlines.OfType(Of Run)().FirstOrDefault().Text,
+                textBlock.Inlines.OfType(Of Run)().FirstOrDefault()?.Text,
                 System.Threading.Thread.CurrentThread.CurrentCulture,
                 textBlock.FlowDirection,
                 typeface,

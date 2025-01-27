@@ -145,7 +145,9 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim h As Navigation = TryCast(d, Navigation)
-            h.OnFolderChangedInternal()
+            If Not e.NewValue Is Nothing Then
+                h.OnFolderChangedInternal()
+            End If
         End Sub
 
         Shared Sub OnCanUpChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
