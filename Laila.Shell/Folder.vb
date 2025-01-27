@@ -1129,7 +1129,7 @@ Public Class Folder
                                 End If
                             End Sub)
                     End If
-                Case SHCNE.UPDATEDIR
+                Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
                         If Me.Pidl?.Equals(e.Item1.Pidl) Then
                             If _isLoaded _
