@@ -349,10 +349,6 @@ Public Class Shell
                             }
 
                             Dim text As String = lEvent.ToString() & "  w=" & wParam.ToString() & "  l=" & lParam.ToString() & Environment.NewLine
-                            Dim p1 As Pidl
-                            Dim p2 As Pidl
-                            If Not IntPtr.Zero.Equals(pidl1) Then p1 = New Pidl(pidl1)
-                            If Not IntPtr.Zero.Equals(pidl2) Then p2 = New Pidl(pidl2)
 
                             Select Case lEvent
                                 Case SHCNE.ATTRIBUTES, SHCNE.CREATE, SHCNE.DELETE, SHCNE.DRIVEADD,
@@ -360,11 +356,15 @@ Public Class Shell
                                      SHCNE.MKDIR, SHCNE.NETSHARE, SHCNE.NETUNSHARE, SHCNE.RENAMEFOLDER, SHCNE.RENAMEITEM,
                                      SHCNE.RMDIR, SHCNE.SERVERDISCONNECT, SHCNE.UPDATEDIR, SHCNE.UPDATEIMAGE, SHCNE.UPDATEITEM
                                     If Not IntPtr.Zero.Equals(pidl1) Then
-                                        e.Item1 = Item.FromPidl(p1.Clone().AbsolutePIDL, Nothing, False, False)
+                                        Using p As Pidl = New Pidl(pidl1).Clone()
+                                            e.Item1 = Item.FromPidl(p.AbsolutePIDL, Nothing, False, False)
+                                        End Using
                                         text &= BitConverter.ToString(e.Item1.Pidl.Bytes) & vbCrLf & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")" & Environment.NewLine
                                     End If
                                     If Not IntPtr.Zero.Equals(pidl2) Then
-                                        e.Item2 = Item.FromPidl(p2.Clone().AbsolutePIDL, Nothing, False, False)
+                                        Using p As Pidl = New Pidl(pidl2).Clone()
+                                            e.Item2 = Item.FromPidl(p.AbsolutePIDL, Nothing, False, False)
+                                        End Using
                                         text &= BitConverter.ToString(e.Item2.Pidl.Bytes) & vbCrLf & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")" & Environment.NewLine
                                     End If
                             End Select

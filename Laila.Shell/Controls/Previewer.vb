@@ -34,8 +34,6 @@ Namespace Controls
         End Sub
 
         Public Sub New()
-            AddHandler Shell.Notification, AddressOf shell_Notification
-
             AddHandler Me.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)
                     If Not _window Is Nothing Then
@@ -146,7 +144,11 @@ Namespace Controls
             previewer._errorText = Nothing
 
             If Not previewer.SelectedItems Is Nothing AndAlso previewer.SelectedItems.Count > 0 AndAlso Not previewer._isMade Then
+                If Not previewer._previewItem Is Nothing Then
+                    RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+                End If
                 previewer._previewItem = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
+                AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
                 Debug.WriteLine("PreviewItem=" & previewer._previewItem.FullPath)
 
                 previewer._isThumbnail = ImageHelper.IsImage(previewer._previewItem.FullPath)
@@ -261,6 +263,9 @@ Namespace Controls
                 previewer.PART_Thumbnail.Visibility = Visibility.Collapsed
             End If
 
+            If Not previewer._previewItem Is Nothing Then
+                RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+            End If
             previewer._previewItem = Nothing
             previewer._isMade = False
 
@@ -364,28 +369,12 @@ Namespace Controls
             End If
         End Function
 
-        Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
-            Dim previewItem As Item = _previewItem
-
-            Select Case e.Event
-                Case SHCNE.UPDATEDIR
-                    If Not previewItem Is Nothing AndAlso previewItem.Parent.FullPath = e.Item1.FullPath Then
-                        UIHelper.OnUIThread(
-                            Sub()
-                                hidePreview(Me)
-                                showPreview(Me)
-                            End Sub)
-                    End If
-                Case SHCNE.UPDATEITEM
-                    If Not previewItem Is Nothing _
-                        AndAlso (previewItem.Parent.FullPath = e.Item1.FullPath OrElse previewItem.FullPath = e.Item1.FullPath) Then
-                        UIHelper.OnUIThread(
-                            Sub()
-                                hidePreview(Me)
-                                showPreview(Me)
-                            End Sub)
-                    End If
-            End Select
+        Protected Overridable Sub OnItemRefreshed(sender As Object, e As EventArgs)
+            UIHelper.OnUIThread(
+                Sub()
+                    hidePreview(Me)
+                    showPreview(Me)
+                End Sub)
         End Sub
     End Class
 End Namespace

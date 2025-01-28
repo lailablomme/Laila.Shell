@@ -14,6 +14,8 @@ Public Class Item
     Inherits NotifyPropertyChangedBase
     Implements IDisposable
 
+    Public Event Refreshed As EventHandler
+
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
     Protected _propertiesByKey As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
@@ -353,6 +355,8 @@ Public Class Item
                 Debug.WriteLine(Me.FullPath & "  " & disposedValue)
             End If
         End SyncLock
+
+        RaiseEvent Refreshed(Me, New EventArgs())
     End Sub
 
     Public ReadOnly Property FullPath As String

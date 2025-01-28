@@ -51,7 +51,7 @@ Public Class DummyFolder
         End Get
     End Property
 
-    Public Overrides Async Function GetItemsAsync() As Task(Of List(Of Item))
+    Public Overrides Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True) As Task(Of List(Of Item))
         Return New List(Of Item)
     End Function
 

@@ -177,6 +177,7 @@ Public Class Pidl
     End Property
 
     Public Shadows Function Equals(pidl As Pidl) As Boolean
+        If pidl Is Nothing Then Return False
         Return Functions.ILIsEqual(Me.AbsolutePIDL, pidl.AbsolutePIDL)
     End Function
 

@@ -98,7 +98,7 @@ Public Class SearchFolder
         MyBase.New(shellItem2, parent, False, True)
     End Sub
 
-    Public Overrides Async Function GetItemsAsync() As Task(Of List(Of Item))
+    Public Overrides Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True) As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
         Dim staThread As Thread = New Thread(New ThreadStart(
@@ -112,7 +112,7 @@ Public Class SearchFolder
                             = _enumerationCancellationTokenSource
 
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
-                        enumerateItems(True, _enumerationCancellationTokenSource.Token)
+                        enumerateItems(True, _enumerationCancellationTokenSource.Token, doRefreshAllExistingItems)
 
                         ' terminate previous enumeration thread
                         If Not prevEnumerationCancellationTokenSource Is Nothing Then
