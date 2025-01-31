@@ -358,14 +358,22 @@ Public Class Shell
                                     If Not IntPtr.Zero.Equals(pidl1) Then
                                         Using p As Pidl = New Pidl(pidl1).Clone()
                                             e.Item1 = Item.FromPidl(p.AbsolutePIDL, Nothing, False, False)
+                                            If Not e.Item1 Is Nothing Then
+                                                text &= BitConverter.ToString(e.Item1.Pidl.Bytes) & Environment.NewLine & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")" & Environment.NewLine
+                                            Else
+                                                text &= BitConverter.ToString(p.Bytes) & Environment.NewLine & "(item not found)" & Environment.NewLine
+                                            End If
                                         End Using
-                                        text &= BitConverter.ToString(e.Item1.Pidl.Bytes) & vbCrLf & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")" & Environment.NewLine
                                     End If
                                     If Not IntPtr.Zero.Equals(pidl2) Then
                                         Using p As Pidl = New Pidl(pidl2).Clone()
                                             e.Item2 = Item.FromPidl(p.AbsolutePIDL, Nothing, False, False)
+                                            If Not e.Item2 Is Nothing Then
+                                                text &= BitConverter.ToString(e.Item2.Pidl.Bytes) & Environment.NewLine & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")" & Environment.NewLine
+                                            Else
+                                                text &= BitConverter.ToString(p.Bytes) & Environment.NewLine & "(item not found)" & Environment.NewLine
+                                            End If
                                         End Using
-                                        text &= BitConverter.ToString(e.Item2.Pidl.Bytes) & vbCrLf & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")" & Environment.NewLine
                                     End If
                             End Select
 
@@ -538,54 +546,55 @@ Public Class Shell
             entry(0).pIdl = folder.Pidl.AbsolutePIDL
             entry(0).Recursively = False
 
-            Dim hNotify As UInt32 =
-                Functions.SHChangeNotifyRegister(
-                    _hwnd,
-                    SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
-                    SHCNE.ALLEVENTS,
-                    WM.USER + 1,
-                    1,
-                    entry)
+            Dim fswNotify As Action(Of NotificationEventArgs) =
+                Sub(e As NotificationEventArgs)
+                    Dim text As String = "FSW: " & e.Event.ToString() & Environment.NewLine
+                    If Not e.Item1 Is Nothing Then
+                        text &= If(Not e.Item1.Pidl Is Nothing, BitConverter.ToString(e.Item1.Pidl.Bytes), "PIDL not available") & Environment.NewLine & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")" & Environment.NewLine
+                    Else
+                        text &= "Item1 not found -- cancelling notification"
+                    End If
+                    If Not e.Item2 Is Nothing Then
+                        text &= If(Not e.Item2.Pidl Is Nothing, BitConverter.ToString(e.Item2.Pidl.Bytes), "PIDL not available") & Environment.NewLine & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")" & Environment.NewLine
+                    ElseIf e.Event = SHCNE.RENAMEITEM OrElse e.Event = SHCNE.RENAMEFOLDER Then
+                        text &= "Item2 not found -- cancelling notification"
+                    End If
+                    Debug.Write(text)
+                    If Not e.Item1 Is Nothing AndAlso
+                        (Not e.Item2 Is Nothing OrElse (e.Event <> SHCNE.RENAMEITEM AndAlso e.Event <> SHCNE.RENAMEFOLDER)) Then
+                        ' notify components
+                        RaiseEvent Notification(Nothing, e)
+                        ' dispose of items
+                        If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
+                        If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
+                    End If
+                End Sub
 
-            Dim fsw As FileSystemWatcher
+            Dim fsw As FileSystemWatcher, hNotify As UInt32?
             If folder.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) AndAlso folder.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
                 fsw = New FileSystemWatcher(folder.FullPath)
-                'AddHandler fsw.Created,
-                '    Sub(s As Object, e As FileSystemEventArgs)
-                '        Shell.NotificationTaskQueue.Add(
-                '            Sub()
-                '                ' make eventargs
-                '                Dim e2 As NotificationEventArgs = New NotificationEventArgs()
-                '                e2.Event = SHCNE.CREATE
-                '                e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
-                '                Dim text As String = "FSW: " & e2.Event.ToString() & Environment.NewLine
-                '                text &= BitConverter.ToString(e2.Item1.Pidl.Bytes) & vbCrLf & e2.Item1.DisplayName & " (" & e2.Item1.FullPath & ")" & Environment.NewLine
-                '                Debug.Write(text)
-
-                '                ' notify components
-                '                RaiseEvent Notification(Nothing, e2)
-
-                '                If Not e2.IsHandled1 AndAlso Not e2.Item1 Is Nothing Then e2.Item1.Dispose()
-                '            End Sub)
-                '    End Sub
-                'AddHandler fsw.Deleted,
-                '    Sub(s As Object, e As FileSystemEventArgs)
-                '        Shell.NotificationTaskQueue.Add(
-                '            Sub()
-                '                ' make eventargs
-                '                Dim e2 As NotificationEventArgs = New NotificationEventArgs()
-                '                e2.Event = SHCNE.DELETE
-                '                e2.Item1 = New Item(e.FullPath)
-                '                Dim text As String = "FSW: " & e2.Event.ToString() & Environment.NewLine
-                '                text &= "PIDL not available/deleted item" & vbCrLf & e2.Item1.DisplayName & " (" & e2.Item1.FullPath & ")" & Environment.NewLine
-                '                Debug.Write(text)
-
-                '                ' notify components
-                '                RaiseEvent Notification(Nothing, e2)
-
-                '                If Not e2.IsHandled1 AndAlso Not e2.Item1 Is Nothing Then e2.Item1.Dispose()
-                '            End Sub)
-                '    End Sub
+                AddHandler fsw.Created,
+                    Sub(s As Object, e As FileSystemEventArgs)
+                        Shell.NotificationTaskQueue.Add(
+                            Sub()
+                                ' make eventargs
+                                Dim e2 As NotificationEventArgs = New NotificationEventArgs()
+                                e2.Event = SHCNE.CREATE
+                                e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
+                                fswNotify(e2)
+                            End Sub)
+                    End Sub
+                AddHandler fsw.Deleted,
+                    Sub(s As Object, e As FileSystemEventArgs)
+                        Shell.NotificationTaskQueue.Add(
+                            Sub()
+                                ' make eventargs
+                                Dim e2 As NotificationEventArgs = New NotificationEventArgs()
+                                e2.Event = SHCNE.DELETE
+                                e2.Item1 = New Item(e.FullPath)
+                                fswNotify(e2)
+                            End Sub)
+                    End Sub
                 AddHandler fsw.Renamed,
                     Sub(s As Object, e As RenamedEventArgs)
                         Shell.NotificationTaskQueue.Add(
@@ -596,36 +605,37 @@ Public Class Shell
                                 e2.Item1 = New Item(e.OldFullPath)
                                 e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                                 If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
-                                Dim text As String = "FSW: " & e2.Event.ToString() & Environment.NewLine
-                                text &= "PIDL not available/renamed item" & vbCrLf & e2.Item1.DisplayName & " (" & e2.Item1.FullPath & ")" & Environment.NewLine
-                                If Not e2.Item2 Is Nothing Then
-                                    text &= BitConverter.ToString(e2.Item2.Pidl.Bytes) & vbCrLf & e2.Item2.DisplayName & " (" & e2.Item2.FullPath & ")" & Environment.NewLine
-                                Else
-                                    text &= "Item2 could not be found -- using FullPath" & Environment.NewLine
+                                If e2.Item2 Is Nothing Then
                                     e2.Item2 = New Item(e.FullPath)
-                                    text &= "PIDL not available/renamed item" & vbCrLf & e2.Item2.DisplayName & " (" & e2.Item2.FullPath & ")" & Environment.NewLine
                                 End If
-                                Debug.Write(text)
-
-                                ' notify components
-                                If Not e2.Item2 Is Nothing Then
-                                    RaiseEvent Notification(Nothing, e2)
-                                End If
-
-                                If Not e2.IsHandled1 AndAlso Not e2.Item1 Is Nothing Then e2.Item1.Dispose()
-                                If Not e2.IsHandled2 AndAlso Not e2.Item2 Is Nothing Then e2.Item2.Dispose()
+                                fswNotify(e2)
                             End Sub)
+                    End Sub
+                AddHandler fsw.Changed,
+                    Sub(s As Object, e As FileSystemEventArgs)
+                        ' make eventargs
+                        Dim e2 As NotificationEventArgs = New NotificationEventArgs()
+                        e2.Event = SHCNE.UPDATEITEM
+                        e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
+                        fswNotify(e2)
                     End Sub
 
                 fsw.EnableRaisingEvents = True
+            Else
+                hNotify =
+                    Functions.SHChangeNotifyRegister(
+                        _hwnd,
+                        SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
+                        SHCNE.ALLEVENTS,
+                        WM.USER + 1,
+                        1,
+                        entry)
             End If
 
             SyncLock _listenersLock
-                _listenerhNotifies.Add(folder.FullPath, hNotify)
+                If hNotify.HasValue Then _listenerhNotifies.Add(folder.FullPath, hNotify)
                 _listenerCount.Add(folder.FullPath, 1)
-                If Not fsw Is Nothing Then
-                    _listenerFileSystemWatchers.Add(folder.FullPath, fsw)
-                End If
+                If Not fsw Is Nothing Then _listenerFileSystemWatchers.Add(folder.FullPath, fsw)
             End SyncLock
         Else
             SyncLock _listenersLock
@@ -640,13 +650,15 @@ Public Class Shell
             If _listenerCount.TryGetValue(folder.FullPath, count) Then
                 If count = 1 Then
                     ' stop receiving notifications
-                    Functions.SHChangeNotifyDeregister(_listenerhNotifies(folder.FullPath))
-                    _listenerhNotifies.Remove(folder.FullPath)
-                    _listenerCount.Remove(folder.FullPath)
+                    If _listenerhNotifies.ContainsKey(folder.FullPath) Then
+                        Functions.SHChangeNotifyDeregister(_listenerhNotifies(folder.FullPath))
+                        _listenerhNotifies.Remove(folder.FullPath)
+                    End If
                     If _listenerFileSystemWatchers.ContainsKey(folder.FullPath) Then
                         _listenerFileSystemWatchers(folder.FullPath).Dispose()
                         _listenerFileSystemWatchers.Remove(folder.FullPath)
                     End If
+                    _listenerCount.Remove(folder.FullPath)
                 Else
                     _listenerCount(folder.FullPath) -= 1
                 End If
