@@ -5,7 +5,6 @@ Imports System.Windows.Input
 Namespace Helpers
     Public Class SelectionHelper(Of TData)
         Private _control As ListBox
-        Private _control2 As TreeView
         Private _isWorking As Boolean = False
         Private _selectedItem As Object
 
@@ -21,8 +20,6 @@ Namespace Helpers
         Public Sub Unhook()
             If Not _control Is Nothing Then
                 RemoveHandler _control.SelectionChanged, AddressOf listBox_SelectionChanged
-            ElseIf Not _control2 Is Nothing Then
-                RemoveHandler _control2.SelectedItemChanged, AddressOf treeView_SelectionChanged
             End If
         End Sub
 
@@ -32,20 +29,8 @@ Namespace Helpers
 
                 ' hook
                 AddHandler _control.SelectionChanged, AddressOf listBox_SelectionChanged
-            ElseIf TypeOf control Is TreeView Then
-                _control2 = control
-
-                ' hook
-                AddHandler _control2.SelectedItemChanged, AddressOf treeView_SelectionChanged
             Else
                 Throw New InvalidCastException()
-            End If
-        End Sub
-
-        Private Sub treeView_SelectionChanged(sender As Object, e As RoutedPropertyChangedEventArgs(Of Object))
-            If Not _isWorking Then
-                ' notify changed
-                SelectionChanged()
             End If
         End Sub
 
@@ -96,21 +81,13 @@ Namespace Helpers
                         result = _control.SelectedItems.Cast(Of TData)()
                     End If
                     Return result
-                ElseIf Not _control2 Is Nothing Then
-                    Dim result As IEnumerable(Of TData) = Nothing
-                    If _control2.SelectedItem Is Nothing Then
-                        result = {}
-                    Else
-                        result = {_control2.SelectedItem}
-                    End If
-                    Return result
                 Else
                     Throw New InvalidOperationException()
                 End If
             End Get
         End Property
 
-        Public Sub SetSelectedItems(value As IEnumerable(Of TData))
+        Public Sub SetSelectedItems(value As IEnumerable(Of TData), Optional doScrollIntoView As Boolean = True)
             If Not _control Is Nothing Then
                 ' Wait for any databinding to finish
                 If Not Application.Current.Dispatcher.CheckAccess() Then
@@ -152,7 +129,6 @@ Namespace Helpers
                                 Exit For
                             End If
                         Next
-
                         If isSame Then
                             For Each i In selectedItems
                                 If Not _control.SelectedItems.Contains(i) Then
@@ -169,47 +145,14 @@ Namespace Helpers
                         For Each item In selectedItems
                             _control.SelectedItems.Add(_control.Items.Cast(Of TData).FirstOrDefault(Function(i) i.Equals(item)))
                         Next
-                        If selectedItems.Count > 0 Then
-                            '_control.ScrollIntoView(selectedItems(0))
+                        ' scroll into view?
+                        If doScrollIntoView AndAlso selectedItems.Count > 0 Then
                             scrollIntoView(_control, selectedItems(0))
                         End If
 
                         ' notify change
                         SelectionChanged()
                     End If
-                End If
-
-                ' turn back on notifications  
-                _isWorking = False
-            ElseIf Not _control2 Is Nothing Then
-                ' clean
-                Dim selectedItems As IEnumerable(Of TData) = value.Where(Function(v) Not v Is Nothing)
-
-                ' turn off notifications  
-                _isWorking = True
-
-                If selectedItems.Count = 0 Then
-                    _selectedItem = Nothing
-                    If Not _control2.SelectedItem Is Nothing Then
-                        Dim tvi As TreeViewItem = findTVI(_control2, _control2.SelectedItem)
-                        If Not tvi Is Nothing Then
-                            tvi.IsSelected = False
-                            ' notify change
-                            SelectionChanged()
-                        End If
-                    End If
-                ElseIf selectedItems.Count = 1 Then
-                    _selectedItem = selectedItems(0)
-                    Dim tvi As TreeViewItem = findTVI(_control2, selectedItems(0))
-                    If Not tvi Is Nothing Then
-                        Dim areEqual As Boolean = selectedItems(0).Equals(_control2.SelectedItem)
-                        If Not areEqual Then tvi.IsSelected = True
-                        tvi.BringIntoView()
-                        ' notify change
-                        If Not areEqual Then SelectionChanged()
-                    End If
-                Else
-                    Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
                 End If
 
                 ' turn back on notifications  

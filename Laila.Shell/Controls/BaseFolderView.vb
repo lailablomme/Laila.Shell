@@ -183,7 +183,7 @@ Namespace Controls
 
         Public Sub SetSelectedItemsSoft(items As IEnumerable(Of Item))
             _ignoreSelection = True
-            _selectionHelper.SetSelectedItems(items)
+            _selectionHelper.SetSelectedItems(items, False)
             _ignoreSelection = False
         End Sub
 

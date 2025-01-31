@@ -537,7 +537,7 @@ Public Class Shell
 
         Dim mustStart As Boolean
         SyncLock _listenersLock
-            mustStart = Not _listenerhNotifies.ContainsKey(folder.FullPath)
+            mustStart = Not _listenerCount.ContainsKey(folder.FullPath)
         End SyncLock
 
         If mustStart Then
