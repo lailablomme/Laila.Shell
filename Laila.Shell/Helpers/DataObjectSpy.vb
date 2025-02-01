@@ -1,16 +1,17 @@
 ﻿Imports System.Runtime.InteropServices
+Imports System.Runtime.InteropServices.ComTypes
 Imports System.Runtime.Serialization
 
 Public Class DataObjectSpy
-    Implements Laila.Shell.IDataObject
+    Implements ComTypes.IDataObject
 
-    Private _dataObject As IDataObject
+    Private _dataObject As ComTypes.IDataObject
 
-    Public Sub New(dataObject As IDataObject)
+    Public Sub New(dataObject As ComTypes.IDataObject)
         _dataObject = dataObject
     End Sub
 
-    Public Function GetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) As Integer Implements IDataObject.GetData
+    Public Sub GetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) Implements ComTypes.IDataObject.GetData
         Select Case format.cfFormat
             Case ClipboardFormat.CF_HDROP
                 Debug.WriteLine("GetData CF_HDROP")
@@ -95,16 +96,16 @@ Public Class DataObjectSpy
         End Select
         Debug.WriteLine("GetData " & format.tymed.ToString() & "," & format.lindex)
 
-        Return _dataObject.GetData(format, medium)
-    End Function
+        _dataObject.GetData(format, medium)
+    End Sub
 
-    Public Function GetDataHere(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) As Integer Implements IDataObject.GetDataHere
+    Public Sub GetDataHere(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) Implements ComTypes.IDataObject.GetDataHere
         Debug.WriteLine("GetDataHere")
 
-        Return _dataObject.GetDataHere(format, medium)
-    End Function
+        _dataObject.GetDataHere(format, medium)
+    End Sub
 
-    Public Function QueryGetData(ByRef format As ComTypes.FORMATETC) As Integer Implements IDataObject.QueryGetData
+    Public Function QueryGetData(ByRef format As ComTypes.FORMATETC) As Integer Implements ComTypes.IDataObject.QueryGetData
         Select Case format.cfFormat
             Case ClipboardFormat.CF_HDROP
                 Debug.WriteLine("QueryGetData CF_HDROP")
@@ -192,12 +193,12 @@ Public Class DataObjectSpy
 
         Return _dataObject.QueryGetData(format)
     End Function
-    Public Function GetCanonicalFormatEtc(ByRef formatIn As ComTypes.FORMATETC, ByRef formatOut As ComTypes.FORMATETC) As Integer Implements IDataObject.GetCanonicalFormatEtc
+    Public Function GetCanonicalFormatEtc(ByRef formatIn As ComTypes.FORMATETC, ByRef formatOut As ComTypes.FORMATETC) As Integer Implements ComTypes.IDataObject.GetCanonicalFormatEtc
         Debug.WriteLine("GetCanonicalFormatEtc")
         Return _dataObject.GetCanonicalFormatEtc(formatIn, formatOut)
     End Function
 
-    Public Function SetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM, ByVal release As Boolean) As Integer Implements IDataObject.SetData
+    Public Sub SetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM, ByVal release As Boolean) Implements ComTypes.IDataObject.SetData
         Select Case format.cfFormat
             Case ClipboardFormat.CF_HDROP
                 Debug.WriteLine("SetData CF_HDROP")
@@ -281,25 +282,25 @@ Public Class DataObjectSpy
                 Debug.WriteLine("SetData " & format.cfFormat)
         End Select
 
-        Return _dataObject.SetData(format, medium, release)
-    End Function
+        _dataObject.SetData(format, medium, release)
+    End Sub
 
-    Public Function EnumFormatEtc(ByVal direction As ComTypes.DATADIR, ByRef ppenumFormatEtc As ComTypes.IEnumFORMATETC) As Integer Implements IDataObject.EnumFormatEtc
+    Public Function EnumFormatEtc(ByVal direction As ComTypes.DATADIR) As ComTypes.IEnumFORMATETC Implements ComTypes.IDataObject.EnumFormatEtc
         Debug.WriteLine("EnumFormatEtc")
-        Return _dataObject.EnumFormatEtc(direction, ppenumFormatEtc)
+        Return _dataObject.EnumFormatEtc(direction)
     End Function
 
-    Public Function DAdvise(ByRef pFormatetc As ComTypes.FORMATETC, advf As Integer, adviseSink As IAdviseSink, ByRef connection As Integer) As Integer Implements IDataObject.DAdvise
+    Public Function DAdvise(ByRef pFormatetc As ComTypes.FORMATETC, advf As ADVF, adviseSink As ComTypes.IAdviseSink, ByRef connection As Integer) As Integer Implements ComTypes.IDataObject.DAdvise
         Debug.WriteLine("DAdvise")
         Return &H80004001 ' E_NOTIMPL
     End Function
 
-    Public Function DUnadvise(ByVal connection As Integer) As Integer Implements IDataObject.DUnadvise
+    Public Sub DUnadvise(ByVal connection As Integer) Implements ComTypes.IDataObject.DUnadvise
         Debug.WriteLine("DUnadvise")
-        Return &H80004001 ' E_NOTIMPL
-    End Function
+        ' Return &H80004001 ' E_NOTIMPL
+    End Sub
 
-    Public Function EnumDAdvise(ByRef enumAdvise As IEnumSTATDATA) As Integer Implements IDataObject.EnumDAdvise
+    Public Function EnumDAdvise(ByRef enumAdvise As ComTypes.IEnumSTATDATA) As Integer Implements ComTypes.IDataObject.EnumDAdvise
         Debug.WriteLine("EnumDAdvise")
         Return &H80004001 ' E_NOTIMPL
     End Function

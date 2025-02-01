@@ -53,20 +53,18 @@ Public Class Clipboard
         Dim dataObject As IDataObject
 
         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_COPY)
 
         Functions.OleSetClipboard(dataObject)
-
-        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_COPY)
     End Sub
 
     Public Shared Sub CutFiles(items As IEnumerable(Of Item))
         Dim dataObject As IDataObject
 
         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_MOVE)
 
         Functions.OleSetClipboard(dataObject)
-
-        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_MOVE)
     End Sub
 
     Public Shared Sub PasteFiles(folder As Folder)
@@ -150,8 +148,10 @@ Public Class Clipboard
         Dim result As IDataObject
 
         ' make a DataObject for our list of items
+        Dim inner As InnerDataObjectSpy = New InnerDataObjectSpy()
         Functions.SHCreateDataObject(folder.Pidl.Clone().AbsolutePIDL, items.Count,
-            items.Select(Function(i) i.Pidl.Clone().RelativePIDL).ToArray(), IntPtr.Zero, GetType(IDataObject).GUID, result)
+            items.Select(Function(i) i.Pidl.Clone().RelativePIDL).ToArray(),
+            Nothing, GetType(IDataObject).GUID, result)
 
         ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
         ' and I don't know what it's doing 

@@ -471,7 +471,7 @@ Public Class Functions
     Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
-    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject) As Integer
+    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, <[In], MarshalAs(UnmanagedType.Interface)> pdtInner As ComTypes.IDataObject, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject) As Integer
     End Function
     <DllImport("ole32.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function CoCreateBindCtx(dwFlags As UInt32, reserved As UInt32, pMalloc As IntPtr, ByRef ppbc As IBindCtx) As Integer

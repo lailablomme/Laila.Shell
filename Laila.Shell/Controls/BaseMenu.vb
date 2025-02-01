@@ -409,7 +409,7 @@ Namespace Controls
                                 If Not shellExtInit Is Nothing Then
                                     Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
                                                      itemPidls.Select(Function(p) p.RelativePIDL).ToArray(),
-                                                     IntPtr.Zero, GetType(ComTypes.IDataObject).GUID, dataObject)
+                                                     Nothing, GetType(ComTypes.IDataObject).GUID, dataObject)
                                     shellExtInit.Initialize(folder.Pidl.AbsolutePIDL, dataObject, IntPtr.Zero)
                                 End If
                             Finally
