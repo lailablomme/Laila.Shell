@@ -48,7 +48,7 @@ Namespace ClipboardFormats
                 .unionmember = ptr,
                 .pUnkForRelease = IntPtr.Zero
             }
-            dataObject.SetData(format, medium, True)
+            dataObject.SetData(format, medium, False)
         End Sub
     End Class
 End Namespace

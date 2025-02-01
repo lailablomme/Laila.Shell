@@ -49,7 +49,7 @@ Namespace ClipboardFormats
             Dim strPtr As IntPtr = Marshal.StringToHGlobalUni(sb.ToString())
             Dim strSize As Integer = Functions.GlobalSize(strPtr)
 
-            Dim hGlobal As IntPtr = Functions.GlobalAlloc(GMEM_MOVEABLE, Marshal.SizeOf(Of DROPFILES) + strSize)
+            Dim hGlobal As IntPtr = Functions.GlobalAlloc(GMEM_MOVEABLE Or &H2000, Marshal.SizeOf(Of DROPFILES) + strSize)
             Dim pGlobal As IntPtr = Functions.GlobalLock(hGlobal)
 
             ' Write the DROPFILES structure
@@ -58,13 +58,13 @@ Namespace ClipboardFormats
             dropfiles.fWide = True ' Using Unicode (WCHAR)
 
             Marshal.StructureToPtr(dropfiles, pGlobal, False)
-            Functions.RtlMoveMemory(IntPtr.Add(pGlobal, dropfiles.pFiles), strPtr, strSize)
+            Functions.CopyMemory(IntPtr.Add(pGlobal, dropfiles.pFiles), strPtr, strSize)
 
             If Not IntPtr.Zero.Equals(strPtr) Then
                 Marshal.FreeHGlobal(strPtr)
                 strPtr = IntPtr.Zero
             End If
-            Functions.GlobalUnlock(pGlobal)
+            Functions.GlobalUnlock(hGlobal)
 
             Dim format As FORMATETC = New FORMATETC With {
                 .cfFormat = ClipboardFormat.CF_HDROP,
@@ -78,7 +78,7 @@ Namespace ClipboardFormats
                 .unionmember = hGlobal,
                 .pUnkForRelease = IntPtr.Zero
             }
-            dataObject.SetData(format, medium, True)
+            dataObject.SetData(format, medium, False)
         End Sub
     End Class
 End Namespace

@@ -225,7 +225,7 @@ Public Class TreeViewDropTarget
         Dim newPinnedIndex As Long = -2
 
         If Not overItem Is Nothing Then
-            If _fileNameList.Count > 0 _
+            If _fileNameList?.Count > 0 _
                 AndAlso overItem.TreeRootIndex >= Controls.TreeView.TreeRootSection.PINNED - 1 _
                 AndAlso overItem.TreeRootIndex <= Controls.TreeView.TreeRootSection.FREQUENT Then
                 Dim ptItem As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, overListBoxItem)
