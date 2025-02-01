@@ -492,7 +492,7 @@ Namespace Controls
                                     Clipboard.PasteFiles(selectedItems(0))
                                 End If
                             Case "delete"
-                                Dim dataObject As IDataObject, fo As IFileOperation
+                                Dim dataObject As Windows.IDataObject, fo As IFileOperation
                                 Try
                                     dataObject = Clipboard.GetDataObjectFor(folder, selectedItems.ToList())
                                     fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
