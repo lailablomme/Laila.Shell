@@ -6,6 +6,6 @@ Imports System.Runtime.InteropServices.ComTypes
 Public Interface IShellExtInit
     <PreserveSig()>
     Function Initialize(ByVal pidlFolder As IntPtr,
-                        ByVal lpdobj As IDataObject,
+                        ByVal lpdobj As ComTypes.IDataObject,
                         ByVal hKeyProgID As IntPtr) As Integer    'Treat all HANDLEs as IntPtr
 End Interface

@@ -70,22 +70,24 @@ Namespace Controls
                     .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/view16.png", UriKind.Absolute))}
                 }
                 viewMenu.AddItems(viewMenuItem.Items)
-
-                Dim sortMenu As SortMenu = New SortMenu() With {.Folder = Me.Folder}
-                Dim sortMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Sort",
-                    .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/sort16.png", UriKind.Absolute))}
-                }
-                sortMenu.AddSortItems(sortMenuItem.Items)
-
-                Dim groupByMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Group by"
-                }
-                sortMenu.AddGroupByItems(groupByMenuItem.Items)
-
                 Me.Items.Insert(0, viewMenuItem)
-                Me.Items.Insert(1, sortMenuItem)
-                Me.Items.Insert(2, groupByMenuItem)
+
+                If Not Me.Folder.ShellItem2 Is Nothing Then
+                    Dim sortMenu As SortMenu = New SortMenu() With {.Folder = Me.Folder}
+                    Dim sortMenuItem As MenuItem = New MenuItem() With {
+                        .Header = "Sort",
+                        .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/sort16.png", UriKind.Absolute))}
+                    }
+                    sortMenu.AddSortItems(sortMenuItem.Items)
+                    Me.Items.Insert(1, sortMenuItem)
+
+                    Dim groupByMenuItem As MenuItem = New MenuItem() With {
+                        .Header = "Group by"
+                    }
+                    sortMenu.AddGroupByItems(groupByMenuItem.Items)
+                    Me.Items.Insert(2, groupByMenuItem)
+                End If
+
                 If Me.Items.Count > 3 Then
                     Me.Items.Insert(3, New Separator())
                 End If

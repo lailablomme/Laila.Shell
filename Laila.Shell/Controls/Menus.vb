@@ -50,7 +50,7 @@ Namespace Controls
             End If
 
             _rightClickMenu = New RightClickMenu()
-            _rightClickMenu.Folder = If(item.Parent Is Nothing, item, item.Parent)
+            _rightClickMenu.Folder = If(item.LogicalParent Is Nothing, item, item.LogicalParent)
             _rightClickMenu.SelectedItems = {item}
             _rightClickMenu.IsDefaultOnly = True
 
@@ -250,7 +250,7 @@ Namespace Controls
             Dim thread As Thread = New Thread(New ThreadStart(
                 Sub()
                     Dim fo As IFileOperation
-                    Dim dataObject As IDataObject
+                    Dim dataObject As ComTypes.IDataObject
                     Try
                         fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
                         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)

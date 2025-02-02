@@ -18,7 +18,7 @@ Namespace Helpers
         Private Shared _instance As WpfDragTargetProxy = New WpfDragTargetProxy()
         Public Shared _isDropDescriptionSet As Boolean = False
 
-        Private _dataObject As IDataObject
+        Private _dataObject As ComTypes.IDataObject
         Private _dropTargetHelper As IDropTargetHelper
 
         Public Sub New()
@@ -83,7 +83,7 @@ Namespace Helpers
                          kvps.Select(Function(kvp2) kvp2.Key).Contains(child)) Is Nothing).Value
         End Function
 
-        Public Shared Sub SetDropDescription(dataObject As IDataObject, type As DROPIMAGETYPE, message As String, insert As String)
+        Public Shared Sub SetDropDescription(dataObject As ComTypes.IDataObject, type As DROPIMAGETYPE, message As String, insert As String)
             Dim dropDescription As DROPDESCRIPTION
             Dim format As FORMATETC = New FORMATETC() With {
                 .cfFormat = Functions.RegisterClipboardFormat("DropDescription"),
@@ -132,13 +132,13 @@ Namespace Helpers
                     .tymed = TYMED.TYMED_HGLOBAL,
                     .unionmember = ptr
                 }
-                Dim h As HRESULT = dataObject.SetData(format2, medium, True)
-                Debug.WriteLine("Drop description set to " & type.ToString() & "   h=" & h.ToString())
+                dataObject.SetData(format2, medium, True)
+                Debug.WriteLine("Drop description set to " & type.ToString()) '& "   h=" & h.ToString())
             End If
             _isDropDescriptionSet = True
         End Sub
 
-        Public Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragEnter
+        Public Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.DragEnter
             Debug.WriteLine("WpfDragTargetProxy.DragEnter")
             'Drag.InitializeDragImage()
             _dataObject = pDataObj
@@ -229,7 +229,7 @@ Namespace Helpers
             End If
         End Function
 
-        Public Function Drop(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.Drop
+        Public Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer Implements IDropTarget.Drop
             Debug.WriteLine("WpfDragTargetProxy.Drop")
             Dim dropTarget As IDropTarget = GetDropTargetFromWIN32POINT(ptWIN32)
             If Not dropTarget Is Nothing Then

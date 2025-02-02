@@ -9,6 +9,7 @@ Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
+Imports Shell32
 
 Public Class Item
     Inherits NotifyPropertyChangedBase
@@ -31,7 +32,7 @@ Public Class Item
     Friend _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
-    Private _pidl As Pidl
+    Protected _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Friend _shellItemLock As Object = New Object()
@@ -39,23 +40,29 @@ Public Class Item
     Private _contentViewModeProperties() As [Property]
     Private _isVisibleInAddressBar As Boolean
     Private _treeSortPrefix As String = String.Empty
+    Protected _logicalParent As Folder
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
         Return Shell.RunOnSTAThread(
             Function() As Item
-                parsingName = Environment.ExpandEnvironmentVariables(parsingName)
-                Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
-                If Not shellItem2 Is Nothing Then
-                    Dim attr As SFGAO = SFGAO.FOLDER
-                    shellItem2.GetAttributes(attr, attr)
-                    If attr.HasFlag(SFGAO.FOLDER) Then
-                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates)
+                Dim customFolderType As Type = Shell.GetCustomFolderType(parsingName)
+                If customFolderType Is Nothing Then
+                    parsingName = Environment.ExpandEnvironmentVariables(parsingName)
+                    Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
+                    If Not shellItem2 Is Nothing Then
+                        Dim attr As SFGAO = SFGAO.FOLDER
+                        shellItem2.GetAttributes(attr, attr)
+                        If attr.HasFlag(SFGAO.FOLDER) Then
+                            Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates)
+                        Else
+                            Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates)
+                        End If
                     Else
-                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates)
+                        Return Nothing
                     End If
                 Else
-                    Return Nothing
+                    Return CType(Activator.CreateInstance(customFolderType, {doKeepAlive}), Folder)
                 End If
             End Function)
     End Function
@@ -101,6 +108,7 @@ Public Class Item
         _objectId = _objectCount
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
+        _logicalParent = logicalParent
         If pidl.HasValue AndAlso Not IntPtr.Zero.Equals(pidl.Value) Then
             _pidl = New Pidl(pidl.Value).Clone()
         End If
@@ -109,11 +117,6 @@ Public Class Item
             Shell.AddToItemsCache(Me)
         Else
             _fullPath = String.Empty
-        End If
-        If Not logicalParent Is Nothing Then
-            _parent = logicalParent
-        Else
-            Me.IsLogicalOrphan = True
         End If
         AddHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
     End Sub
@@ -128,8 +131,6 @@ Public Class Item
         _fullPath = fullPath
         _displayName = IO.Path.GetFileName(_fullPath)
     End Sub
-
-    Friend Property IsLogicalOrphan As Boolean
 
     Public Sub HookUpdates()
         AddHandler Shell.Notification, AddressOf shell_Notification
@@ -165,14 +166,14 @@ Public Class Item
 
     Public ReadOnly Property IsVisibleInTree As Boolean
         Get
-            Return Me.TreeRootIndex <> -1 OrElse (Not _parent Is Nothing AndAlso _parent.IsExpanded)
+            Return Me.TreeRootIndex <> -1 OrElse (Not If(_logicalParent, _parent) Is Nothing AndAlso If(_logicalParent, _parent).IsExpanded)
         End Get
     End Property
 
     Public Overridable ReadOnly Property IsReadyForDispose As Boolean
         Get
             Return Not _doKeepAlive _
-                AndAlso (_parent Is Nothing OrElse (Not _parent.IsActiveInFolderView)) _
+                AndAlso (If(_logicalParent, _parent) Is Nothing OrElse (Not If(_logicalParent, _parent).IsActiveInFolderView)) _
                 AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar
         End Get
     End Property
@@ -210,7 +211,7 @@ Public Class Item
             Else
                 Dim itemNameDisplaySortValue As String = Me.ItemNameDisplaySortValue
                 If itemNameDisplaySortValue Is Nothing Then itemNameDisplaySortValue = ""
-                Return Me.Parent?.TreeSortKey & Me.TreeSortPrefix & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
+                Return Me.LogicalParent?.TreeSortKey & Me.TreeSortPrefix & itemNameDisplaySortValue & New String(" ", 260 - itemNameDisplaySortValue.Length)
             End If
         End Get
     End Property
@@ -219,11 +220,11 @@ Public Class Item
         Get
             Dim level As Integer = 0
             If Me.TreeRootIndex = -1 Then
-                Dim lp As Folder = Me.Parent
+                Dim lp As Folder = Me.LogicalParent
                 While Not lp Is Nothing
                     level += 1
                     If lp.TreeRootIndex <> -1 Then Exit While
-                    lp = lp.Parent
+                    lp = lp.LogicalParent
                 End While
             End If
 
@@ -359,7 +360,7 @@ Public Class Item
         RaiseEvent Refreshed(Me, New EventArgs())
     End Sub
 
-    Public ReadOnly Property FullPath As String
+    Public Overridable ReadOnly Property FullPath As String
         Get
             SyncLock _shellItemLock
                 If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue Then
@@ -371,7 +372,16 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property Parent As Folder
+    Public Property LogicalParent As Folder
+        Get
+            Return If(_logicalParent, Me.Parent)
+        End Get
+        Set(value As Folder)
+            SetValue(_logicalParent, value)
+        End Set
+    End Property
+
+    Public Overridable ReadOnly Property Parent As Folder
         Get
             If Not disposedValue _
                 AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
@@ -440,37 +450,20 @@ Public Class Item
             If Not disposedValue AndAlso (IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath)) Then
                 Dim app As String = Me.GetAssociatedApplication()
                 If Not String.IsNullOrWhiteSpace(app) Then
-                    Dim shFileInfo As New SHFILEINFO()
+                    Dim hBitmap As IntPtr
                     Try
-                        Dim result As IntPtr = Functions.SHGetFileInfo(
-                            app,
-                            0,
-                            shFileInfo,
-                            Marshal.SizeOf(shFileInfo),
-                            SHGFI.SHGFI_ICON Or If(size > 16, SHGFI.SHGFI_LARGEICON, SHGFI.SHGFI_SMALLICON)
-                        )
-                        If Not IntPtr.Zero.Equals(result) Then
-                            Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(shFileInfo.hIcon)
-                                Using bitmap = icon.ToBitmap()
-                                    Dim hBitmap As IntPtr
-                                    Try
-                                        hBitmap = bitmap.GetHbitmap()
-                                        Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                        image.Freeze()
-                                        Return image
-                                    Finally
-                                        If Not IntPtr.Zero.Equals(hBitmap) Then
-                                            Functions.DeleteObject(hBitmap)
-                                            hBitmap = IntPtr.Zero
-                                        End If
-                                    End Try
-                                End Using
+                        Using icon As System.Drawing.Icon = Icon.ExtractAssociatedIcon(app.Trim(vbNullChar))
+                            Using bitmap = icon.ToBitmap()
+                                hBitmap = bitmap.GetHbitmap()
+                                Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                image.Freeze()
+                                Return image
                             End Using
-                        End If
+                        End Using
                     Finally
-                        If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
-                            Functions.DestroyIcon(shFileInfo.hIcon)
-                            shFileInfo.hIcon = IntPtr.Zero
+                        If Not IntPtr.Zero.Equals(hBitmap) Then
+                            Functions.DeleteObject(hBitmap)
+                            hBitmap = IntPtr.Zero
                         End If
                     End Try
                 End If
@@ -495,23 +488,20 @@ Public Class Item
         Get
             If Not disposedValue AndAlso (IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath)) Then
                 Dim shFileInfo As New SHFILEINFO()
-                Try
-                    Dim result As IntPtr = Functions.SHGetFileInfo(
-                        Me.FullPath,
-                        0,
-                        shFileInfo,
-                        Marshal.SizeOf(shFileInfo),
-                        SHGFI.SHGFI_ICON Or SHGFI.SHGFI_OVERLAYINDEX
-                    )
-                    If Not IntPtr.Zero.Equals(result) Then
-                        Return CByte((shFileInfo.iIcon >> 24) And &HFF)
-                    End If
-                Finally
-                    If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
-                        Functions.DestroyIcon(shFileInfo.hIcon)
-                        shFileInfo.hIcon = IntPtr.Zero
-                    End If
-                End Try
+                Dim result As IntPtr = Functions.SHGetFileInfo(
+                    Me.FullPath,
+                    0,
+                    shFileInfo,
+                    Marshal.SizeOf(shFileInfo),
+                    SHGFI.SHGFI_ICON Or SHGFI.SHGFI_OVERLAYINDEX
+                )
+                If Not IntPtr.Zero.Equals(shFileInfo.hIcon) Then
+                    Functions.DestroyIcon(shFileInfo.hIcon)
+                    shFileInfo.hIcon = IntPtr.Zero
+                End If
+                If Not IntPtr.Zero.Equals(result) Then
+                    Return CByte((shFileInfo.iIcon >> 24) And &HFF)
+                End If
             End If
             Return 0
         End Get
@@ -779,7 +769,7 @@ Public Class Item
                                   parent.DisplayName, parent.AddressBarDisplayName)
                 End If
                 If Not Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl)) Then
-                    parent = parent.Parent
+                    parent = parent.LogicalParent
                     If parent Is Nothing Then
                         Dim i As Int16 = 9
                     End If
@@ -794,7 +784,7 @@ Public Class Item
                         If Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl)) Then
                             Exit While
                         End If
-                        parent = parent.Parent
+                        parent = parent.LogicalParent
                     End While
                 End If
                 Return path
@@ -854,7 +844,7 @@ Public Class Item
         End Get
     End Property
 
-    Public ReadOnly Property Attributes As SFGAO
+    Public Overridable ReadOnly Property Attributes As SFGAO
         Get
             If _attributes = 0 AndAlso Not disposedValue Then
                 _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
@@ -1307,10 +1297,17 @@ Public Class Item
                     ' remove from parent collection
                     UIHelper.OnUIThreadAsync(
                         Sub()
+                            If Not _logicalParent Is Nothing Then
+                                _logicalParent._items.Remove(Me)
+                                _logicalParent._isEnumerated = False
+                                _logicalParent.IsEmpty = _logicalParent._items.Count = 0
+                                _logicalParent = Nothing
+                            End If
                             If Not _parent Is Nothing Then
                                 _parent._items.Remove(Me)
                                 _parent._isEnumerated = False
                                 _parent.IsEmpty = _parent._items.Count = 0
+                                _parent = Nothing
                             End If
                         End Sub)
 
@@ -1357,7 +1354,7 @@ Public Class Item
         GC.SuppressFinalize(Me)
     End Sub
 
-    Public Function Clone() As Item
+    Public Overridable Function Clone() As Item
         Return Item.FromPidl(Me.Pidl.AbsolutePIDL, Nothing, _doKeepAlive)
     End Function
 

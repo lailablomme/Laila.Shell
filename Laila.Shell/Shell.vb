@@ -32,6 +32,7 @@ Public Class Shell
 
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
+    Private Shared _customFolders As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
 
     Private Shared _menuCacheLock As Object = New Object()
     Private Shared _menuCache As List(Of BaseMenu) = New List(Of BaseMenu)()
@@ -176,6 +177,10 @@ Public Class Shell
                     _specialFolders.Add(name, item)
                 End If
             End Sub
+
+        _customFolders = New Dictionary(Of String, Type) From {
+            {"shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", GetType(HomeFolder)}
+        }
 
         Shell.STATaskQueue.Add(
             Sub()
@@ -423,6 +428,15 @@ Public Class Shell
     Public Shared Function GetSpecialFolders() As Dictionary(Of String, Folder)
         Shell.IsSpecialFoldersReady.WaitOne()
         Return _specialFolders
+    End Function
+
+    Public Shared Function GetCustomFolderType(fullPath As String) As Type
+        Dim t As Type
+        If _customFolders.TryGetValue(fullPath.ToLower(), t) Then
+            Return t
+        Else
+            Return Nothing
+        End If
     End Function
 
     ''' <summary>

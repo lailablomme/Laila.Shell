@@ -19,7 +19,7 @@ Public Class Folder
     Public Property LastScrollOffset As Point
     Public Property LastScrollSize As Size
 
-    Private _columns As List(Of Column)
+    Protected _columns As List(Of Column)
     Friend _items As ItemsCollection(Of Item) = New ItemsCollection(Of Item)()
     Private _isExpanded As Boolean
     Private _isLoading As Boolean
@@ -31,7 +31,7 @@ Public Class Folder
     Private _isActiveInFolderView As Boolean
     Private _isInHistory As Boolean
     Private _view As String
-    Private _hasSubFolders As Boolean?
+    Protected _hasSubFolders As Boolean?
     Private _itemsSortPropertyName As String
     Private _itemsSortDirection As ListSortDirection
     Private _itemsGroupByPropertyName As String
@@ -84,6 +84,10 @@ Public Class Folder
         MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
     End Sub
 
+    Friend Overridable Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
+        Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+    End Function
+
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
             _shellFolder = Shell.RunOnSTAThread(
@@ -118,7 +122,7 @@ Public Class Folder
 
     Public Overrides Property IsExpanded As Boolean
         Get
-            Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse Me._parent Is Nothing OrElse Me._parent.IsExpanded)
+            Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse If(_logicalParent, _parent) Is Nothing OrElse If(_logicalParent, _parent).IsExpanded)
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)
@@ -159,9 +163,9 @@ Public Class Folder
         Get
             Return Not _doKeepAlive AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
                 AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
-                AndAlso (Me._parent Is Nothing _
-                         OrElse (Not Me._parent.IsActiveInFolderView _
-                                 AndAlso Not _parent.IsVisibleInAddressBar)) _
+                AndAlso (If(_logicalParent, _parent) Is Nothing _
+                         OrElse (Not If(_logicalParent, _parent).IsActiveInFolderView _
+                                 AndAlso Not If(_logicalParent, _parent).IsVisibleInAddressBar)) _
                 AndAlso Not Me.IsInHistory AndAlso _items.Count = 0
         End Get
     End Property
@@ -280,8 +284,10 @@ Public Class Folder
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
             If shellItem2 Is Nothing Then
                 SyncLock _shellItemLock
-                    CType(Me.ShellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
-                        (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
+                    If Not Me.ShellItem2 Is Nothing Then
+                        CType(Me.ShellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
+                            (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
+                    End If
                 End SyncLock
             Else
                 CType(shellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
@@ -376,8 +382,10 @@ Public Class Folder
             propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
             SyncLock _shellItemLock
-                CType(Me.ShellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
-                    (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
+                If Not Me.ShellItem2 Is Nothing Then
+                    CType(Me.ShellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
+                        (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
+                End If
             End SyncLock
 
             If Not enumShellItems Is Nothing Then
@@ -612,8 +620,6 @@ Public Class Folder
 
         Dim result As Dictionary(Of String, Item) = New Dictionary(Of String, Item)
         Dim newFullPaths As HashSet(Of String) = New HashSet(Of String)()
-        Dim isRootDesktop As Boolean = Me.Pidl.Equals(Shell.Desktop.Pidl)
-        Dim isDebuggerAttached As Boolean = Debugger.IsAttached
 
         ' pre-parse sort property 
         Dim isSortPropertyByText As Boolean, sortPropertyKey As String, isSortPropertyDisplaySortValue As Boolean
@@ -702,6 +708,8 @@ Public Class Folder
                                          End If
 
                                          Try
+                                             item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
+
                                              If Not item.Item2 Is Nothing Then
                                                  SyncLock item.Item2._shellItemLock
                                                      item.Item1.Refresh(item.Item2.ShellItem2)
@@ -739,6 +747,33 @@ Public Class Folder
                 _isListening = True
             End If
         End SyncLock
+
+        Me.EnumerateItems(flags, cancellationToken,
+            isSortPropertyByText, isSortPropertyDisplaySortValue, sortPropertyKey,
+            result, newFullPaths, addItems)
+
+        If Not cancellationToken.IsCancellationRequested Then
+            ' add new items
+            addItems()
+
+            _isEnumerated = True
+            _isLoaded = True
+
+            UIHelper.OnUIThread(
+                Sub()
+                    ' set and update HasSubFolders property
+                    _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
+                    Me.NotifyOfPropertyChange("HasSubFolders")
+                End Sub)
+        End If
+    End Sub
+
+    Protected Overridable Sub EnumerateItems(flags As UInt32, cancellationToken As CancellationToken,
+        isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
+        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action)
+
+        Dim isDebuggerAttached As Boolean = Debugger.IsAttached
+        Dim isRootDesktop As Boolean = Me.Pidl.Equals(Shell.Desktop.Pidl)
 
         Dim bindCtx As ComTypes.IBindCtx, propertyBag As IPropertyBag, var As PROPVARIANT, enumShellItems As IEnumShellItems
         Try
@@ -883,22 +918,8 @@ Public Class Folder
             End If
             var.Dispose()
         End Try
-
-        If Not cancellationToken.IsCancellationRequested Then
-            ' add new items
-            addItems()
-
-            _isEnumerated = True
-            _isLoaded = True
-
-            UIHelper.OnUIThread(
-                Sub()
-                    ' set and update HasSubFolders property
-                    _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
-                    Me.NotifyOfPropertyChange("HasSubFolders")
-                End Sub)
-        End If
     End Sub
+
 
     Public Property ItemsSortPropertyName As String
         Get
@@ -1011,35 +1032,15 @@ Public Class Folder
 
         If Not disposedValue Then
             Select Case e.Event
-                Case SHCNE.CREATE
+                Case SHCNE.CREATE, SHCNE.MKDIR
                     If _isLoaded Then
-                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
+                        If e.Item1.Parent?.Pidl?.Equals(Me.Pidl) _
+                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
-                                    Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                    If existing Is Nothing Then
-                                        e.Item1._parent = Me
-                                        e.Item1.HookUpdates()
-                                        e.IsHandled1 = True
-                                        Shell.RunOnSTAThread(
-                                            Sub()
-                                                e.Item1.Refresh()
-                                            End Sub)
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                        _items.InsertSorted(e.Item1, c)
-                                        Me.IsEmpty = _items.Count = 0
-                                    End If
-                                End Sub)
-                        End If
-                    End If
-                Case SHCNE.MKDIR
-                    If _isLoaded Then
-                        If Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl) Then
-                            _wasActivity = True
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                    Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                        AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                                     If existing Is Nothing Then
                                         e.Item1._parent = Me
                                         e.Item1.HookUpdates()
@@ -1057,14 +1058,13 @@ Public Class Folder
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
-                        If (Not e.Item1.Parent Is Nothing AndAlso e.Item1.Parent.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (IO.Path.GetDirectoryName(e.Item1.FullPath)?.ToLower().Equals(Me.FullPath.ToLower())) Then
+                        If e.Item1.Parent?.Pidl?.Equals(Me.Pidl) _
+                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
                                     Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
-                                        AndAlso ((Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
-                                                 OrElse i.FullPath?.ToLower().Equals(e.Item1.FullPath.ToLower())))
+                                        AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                                     If Not existing Is Nothing Then
                                         If TypeOf existing Is Folder Then
                                             Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {

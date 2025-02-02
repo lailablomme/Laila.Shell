@@ -161,7 +161,7 @@ Public Class SearchFolder
         Shell.RunOnSTAThread(
             Sub()
                 Dim oldShellItem2 As IShellItem2 = _shellItem2
-                _shellItem2 = getShellItem(terms, Me.Parent)
+                _shellItem2 = getShellItem(terms, Me.LogicalParent)
                 If Not oldShellItem2 Is Nothing Then
                     Marshal.ReleaseComObject(oldShellItem2)
                     oldShellItem2 = Nothing
@@ -202,6 +202,6 @@ Public Class SearchFolder
     End Sub
 
     Protected Overrides Function GetNewShellItem() As IShellItem2
-        Return getShellItem(Me.Terms, Me.Parent)
+        Return getShellItem(Me.Terms, Me.LogicalParent)
     End Function
 End Class

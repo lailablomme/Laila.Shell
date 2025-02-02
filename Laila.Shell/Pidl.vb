@@ -10,6 +10,26 @@ Public Class Pidl
     Private _lastId As IntPtr
     Private disposedValue As Boolean
 
+    Public Shared Function FromCustomBytes(bytes As Byte()) As Pidl
+        Dim cb As Integer = 2 + bytes.Length ' 2 bytes for cb + data length
+
+        ' Allocate memory for PIDL using CoTaskMemAlloc
+        Dim pidlPtr As IntPtr = Marshal.AllocCoTaskMem(cb + 2) ' +2 for the NULL terminator
+
+        If pidlPtr = IntPtr.Zero Then
+            Throw New OutOfMemoryException("Failed to allocate memory for PIDL")
+        End If
+
+        ' Create a structure at the allocated memory
+        Marshal.WriteInt16(pidlPtr, CType(cb, Short)) ' Write cb (size)
+        Marshal.Copy(bytes, 0, IntPtr.Add(pidlPtr, 2), bytes.Length) ' Copy data
+
+        ' Null terminator at the end
+        Marshal.WriteInt16(IntPtr.Add(pidlPtr, cb), 0)
+
+        Return New Pidl(pidlPtr)
+    End Function
+
     Public Sub New(pidl As IntPtr)
         _pidl = pidl
         _lastId = Functions.ILFindLastID(_pidl)

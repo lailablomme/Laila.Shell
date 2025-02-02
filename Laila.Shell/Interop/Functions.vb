@@ -8,7 +8,26 @@ Imports Shell32
 Imports Laila.Shell.Controls
 
 Public Class Functions
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode, SetLastError:=False)>
+    Public Shared Function CDefFolderMenu_Create2(
+    ByVal pidlFolder As IntPtr, _                   ' Absolute PIDL of the parent folder (optional)
+    ByVal hwnd As IntPtr, _                         ' Owner window handle (optional)
+    ByVal cidl As UInteger, _                       ' Number of items in the selection
+    ByVal apidl As IntPtr(), _                      ' Array of child PIDLs (optional)
+    ByVal psf As IntPtr, _                          ' Parent IShellFolder (optional)
+    ByVal pfn As IntPtr, _                          ' LPFNDFMCALLBACK function pointer (optional)
+    ByVal nKeys As UInteger, _                      ' Number of registry keys (optional)
+    ByVal ahkeys As IntPtr(), _                     ' Array of registry keys (optional)
+    <Out> ByRef ppcm As IntPtr _                    ' Output: IContextMenu
+) As Integer                                        ' Returns HRESULT
+    End Function
 
+    <DllImport("shell32.dll", CharSet:=CharSet.Unicode, SetLastError:=False)>
+    Public Shared Function SHGetIconOverlayIndex(
+        ByVal pszPath As String,
+        ByVal iOverlayIndex As IntPtr
+    ) As Integer
+    End Function
     <DllImport("user32.dll", SetLastError:=True)>
     Public Shared Function SetClipboardViewer(hWndNewViewer As IntPtr) As IntPtr
     End Function
@@ -47,7 +66,7 @@ Public Class Functions
     End Function
     <DllImport("advapi32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
     Public Shared Function RegOpenKeyEx(
-        hKey As Integer,
+        hKey As IntPtr,
         lpSubKey As String,
         ulOptions As Integer,
         samDesired As Integer,
@@ -193,7 +212,7 @@ Public Class Functions
 ) As Boolean
     End Function
     <DllImport("ole32.dll", SetLastError:=True)>
-    Public Shared Function OleSetClipboard(ByVal pDataObj As IDataObject) As Integer
+    Public Shared Function OleSetClipboard(ByVal pDataObj As ComTypes.IDataObject) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
     Public Shared Function ILCreateFromPath(ByVal pszPath As String) As IntPtr
@@ -381,7 +400,7 @@ Public Class Functions
     Public Shared Function CoGetInterfaceAndReleaseStream(ByVal pStm As IStream, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As Object) As Integer
     End Function
     <DllImport("ole32.dll")>
-    Public Shared Function DoDragDrop(pDataObj As IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
+    Public Shared Function DoDragDrop(pDataObj As ComTypes.IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
     End Function
     <DllImport("ole32.dll")>
     Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
@@ -468,10 +487,10 @@ Public Class Functions
     Public Shared Function ReleaseDC(hWnd As IntPtr, hDC As IntPtr) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
-    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject) As Integer
+    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As ComTypes.IDataObject) As Integer
     End Function
     <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
-    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, <[In], MarshalAs(UnmanagedType.Interface)> pdtInner As ComTypes.IDataObject, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject) As Integer
+    Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, <[In], MarshalAs(UnmanagedType.Interface)> pdtInner As ComTypes.IDataObject, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As ComTypes.IDataObject) As Integer
     End Function
     <DllImport("ole32.dll", CharSet:=CharSet.Unicode)>
     Public Shared Function CoCreateBindCtx(dwFlags As UInt32, reserved As UInt32, pMalloc As IntPtr, ByRef ppbc As IBindCtx) As Integer

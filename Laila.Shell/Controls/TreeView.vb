@@ -95,8 +95,8 @@ Namespace Controls
                             UIHelper.OnUIThread(
                                 Async Sub()
                                     If Not Me.SelectedItem Is Nothing AndAlso TypeOf e.Item1 Is Folder Then
-                                        If Not Me.SelectedItem._parent Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
-                                            Await Me.SetSelectedFolder(Me.SelectedItem.Parent)
+                                        If Not Me.SelectedItem.LogicalParent Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
+                                            Await Me.SetSelectedFolder(Me.SelectedItem.LogicalParent)
                                         ElseIf Not Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
                                             Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
                                             If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
@@ -289,9 +289,9 @@ Namespace Controls
         Private Function GetParentOfSelectionBefore(folder As Folder, Optional selectedItem As Folder = Nothing) As Folder
             If selectedItem Is Nothing Then selectedItem = Me.SelectedItem
             If selectedItem?.Pidl.Equals(folder.Pidl) Then
-                Return selectedItem.Parent
-            ElseIf Not selectedItem?.Parent Is Nothing Then
-                Return Me.GetParentOfSelectionBefore(folder, selectedItem.Parent)
+                Return selectedItem.LogicalParent
+            ElseIf Not selectedItem?.LogicalParent Is Nothing Then
+                Return Me.GetParentOfSelectionBefore(folder, selectedItem.LogicalParent)
             Else
                 Return Nothing
             End If
@@ -448,7 +448,7 @@ Namespace Controls
                         While Not currentFolder Is Nothing _
                         AndAlso Not noRecursive.Contains(currentFolder.Pidl.ToString()) _
                         AndAlso (currentFolder.TreeRootIndex <> -1 _
-                                 OrElse Not currentFolder.Parent Is Nothing)
+                                 OrElse Not currentFolder.LogicalParent Is Nothing)
                             noRecursive.Add(currentFolder.Pidl.ToString())
                             list.Add(currentFolder)
                             Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
@@ -456,7 +456,7 @@ Namespace Controls
                                 tf = currentFolder
                                 Exit While
                             End If
-                            currentFolder = currentFolder.Parent
+                            currentFolder = currentFolder.LogicalParent
                         End While
 
                         list.Reverse()
@@ -826,7 +826,7 @@ Namespace Controls
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
                     If Not folder Is Nothing Then
                         For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
+                                AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
                             Me.Items.Remove(item)
                         Next
                         For Each item In collection.Where(Function(i) _
@@ -858,7 +858,7 @@ Namespace Controls
                                 Next
                             Else
                                 For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                    AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
+                                    AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
                                     Me.Items.Remove(item)
                                 Next
                             End If

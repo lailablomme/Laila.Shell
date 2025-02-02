@@ -10,7 +10,7 @@ Imports Laila.Shell.Helpers
 Public Class ListViewDropTarget
     Inherits BaseDropTarget
 
-    Private _dataObject As IDataObject
+    Private _dataObject As ComTypes.IDataObject
     Private _folderView As FolderView
     Private _lastOverItem As Item
     Private _lastDropTarget As IDropTarget
@@ -24,7 +24,7 @@ Public Class ListViewDropTarget
         _folderView = folderView
     End Sub
 
-    Public Overrides Function DragEnter(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         Debug.WriteLine("DragEnter")
         _dataObject = pDataObj
         _fileNameList = Clipboard.GetFileNameList(pDataObj)
@@ -66,7 +66,7 @@ Public Class ListViewDropTarget
         Return 0
     End Function
 
-    Public Overrides Function Drop(pDataObj As IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+    Public Overrides Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
         If Not _files Is Nothing Then
             For Each f In _files
                 f.Dispose()
@@ -183,8 +183,8 @@ Public Class ListViewDropTarget
                     isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
                     If Not isOurSelvesOrParent Then
                         For Each file In _files
-                            isOurSelvesOrParent = Not file.Parent Is Nothing _
-                                            AndAlso file.Parent.Pidl.Equals(overItem.Pidl)
+                            isOurSelvesOrParent = Not file.LogicalParent Is Nothing _
+                                            AndAlso file.LogicalParent.Pidl.Equals(overItem.Pidl)
                             If isOurSelvesOrParent Then Exit For
                         Next
                     End If

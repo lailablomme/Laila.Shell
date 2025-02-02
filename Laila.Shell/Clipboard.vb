@@ -15,7 +15,7 @@ Public Class Clipboard
         Return Shell.RunOnSTAThread(
             Function() As Boolean
                 ' check for paste by checking if it would accept a drop
-                Dim dataObject As IDataObject
+                Dim dataObject As ComTypes.IDataObject
                 Functions.OleGetClipboard(dataObject)
 
                 Dim dropTarget As IDropTarget
@@ -50,7 +50,7 @@ Public Class Clipboard
     End Function
 
     Public Shared Sub CopyFiles(items As IEnumerable(Of Item))
-        Dim dataObject As IDataObject
+        Dim dataObject As ComTypes.IDataObject
 
         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
         ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_COPY)
@@ -59,7 +59,7 @@ Public Class Clipboard
     End Sub
 
     Public Shared Sub CutFiles(items As IEnumerable(Of Item))
-        Dim dataObject As IDataObject
+        Dim dataObject As ComTypes.IDataObject
 
         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
         ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_MOVE)
@@ -70,7 +70,7 @@ Public Class Clipboard
     Public Shared Sub PasteFiles(folder As Folder)
         Dim thread As Thread = New Thread(New ThreadStart(
             Sub()
-                Dim dataObject As IDataObject
+                Dim dataObject As ComTypes.IDataObject
                 Functions.OleGetClipboard(dataObject)
 
                 Dim dropTarget As IDropTarget, shellFolder As IShellFolder
@@ -107,7 +107,7 @@ Public Class Clipboard
         thread.Start()
     End Sub
 
-    Public Shared Function GetFileNameList(dataObj As IDataObject) As String()
+    Public Shared Function GetFileNameList(dataObj As ComTypes.IDataObject) As String()
         Dim files() As String
         files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(dataObj)?.Select(Function(i) i.FullPath).ToArray()
         If files Is Nothing OrElse files.Count = 0 Then
@@ -117,7 +117,7 @@ Public Class Clipboard
     End Function
 
     Public Shared Function GetHasGlobalData(clipboardFormat As String)
-        Dim dataObject As IDataObject
+        Dim dataObject As ComTypes.IDataObject
         Try
             Functions.OleGetClipboard(dataObject)
             Return GetHasGlobalData(dataObject, clipboardFormat)
@@ -129,11 +129,11 @@ Public Class Clipboard
         End Try
     End Function
 
-    Public Shared Function GetHasGlobalData(dataObject As IDataObject, clipboardFormat As String)
+    Public Shared Function GetHasGlobalData(dataObject As ComTypes.IDataObject, clipboardFormat As String)
         Return GetHasGlobalData(dataObject, Functions.RegisterClipboardFormat(clipboardFormat))
     End Function
 
-    Public Shared Function GetHasGlobalData(dataObject As IDataObject, clipboardFormat As Short)
+    Public Shared Function GetHasGlobalData(dataObject As ComTypes.IDataObject, clipboardFormat As Short)
         Dim format As FORMATETC = New FORMATETC() With {
             .cfFormat = clipboardFormat,
             .dwAspect = DVASPECT.DVASPECT_CONTENT,
@@ -144,14 +144,19 @@ Public Class Clipboard
         Return dataObject.QueryGetData(format) = 0
     End Function
 
-    Public Shared Function GetDataObjectFor(folder As Folder, items As IEnumerable(Of Item)) As IDataObject
-        Dim result As IDataObject
+    Public Shared Function GetDataObjectFor(folder As Folder, items As IEnumerable(Of Item)) As ComTypes.IDataObject
+        Dim result As ComTypes.IDataObject
 
         ' make a DataObject for our list of items
-        Dim inner As InnerDataObjectSpy = New InnerDataObjectSpy()
+        Dim inner As DataObject = New DataObject()
         Functions.SHCreateDataObject(folder.Pidl.Clone().AbsolutePIDL, items.Count,
             items.Select(Function(i) i.Pidl.Clone().RelativePIDL).ToArray(),
             Nothing, GetType(IDataObject).GUID, result)
+        'result = inner
+        'ClipboardFormats.CF_HDROP.SetData(result, items)
+        'ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(result, items)
+        'ClipboardFormats.CFSTR_SHELLIDLIST.SetData(result, items)
+        'ClipboardFormats.CFSTR_FILECONTENTS.SetData(result, items)
 
         ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
         ' and I don't know what it's doing 
@@ -169,4 +174,40 @@ Public Class Clipboard
 
         Return result
     End Function
+
+    Public Shared Function GetGlobalDataDWord(dataObject As ComTypes.IDataObject, clipboardFormat As String) As Integer?
+        Dim format As FORMATETC = New FORMATETC() With {
+            .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
+            .dwAspect = DVASPECT.DVASPECT_CONTENT,
+            .lindex = -1,
+            .ptd = IntPtr.Zero,
+            .tymed = TYMED.TYMED_HGLOBAL
+        }
+        Dim medium As STGMEDIUM
+        Dim result As Integer = dataObject.QueryGetData(format)
+        If result = 0 Then
+            dataObject.GetData(format, medium)
+            Return Marshal.ReadInt32(medium.unionmember)
+        Else
+            Return Nothing
+        End If
+    End Function
+
+    Public Shared Sub SetGlobalDataDWord(dataObject As ComTypes.IDataObject, clipboardFormat As String, val As Integer)
+        Dim ptr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of Integer))
+        Marshal.WriteInt32(ptr, val)
+        Dim format As FORMATETC = New FORMATETC() With {
+            .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
+            .dwAspect = DVASPECT.DVASPECT_CONTENT,
+            .lindex = -1,
+            .ptd = IntPtr.Zero,
+            .tymed = TYMED.TYMED_HGLOBAL
+        }
+        Dim medium As STGMEDIUM = New STGMEDIUM() With {
+            .pUnkForRelease = IntPtr.Zero,
+            .tymed = TYMED.TYMED_HGLOBAL,
+            .unionmember = ptr
+        }
+        dataObject.SetData(format, medium, True)
+    End Sub
 End Class

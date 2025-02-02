@@ -3,7 +3,7 @@ Imports System.Runtime.InteropServices.ComTypes
 Imports System.Runtime.Serialization
 
 <ComVisible(True), Guid("a3b5f678-9cde-4f12-85a6-3f7b2e9d1c45")>
-Public Class InnerDataObjectSpy
+Public Class DataObject
     Implements ComTypes.IDataObject
 
     Private _data As Dictionary(Of FORMATETC, Tuple(Of STGMEDIUM, Boolean)) = New Dictionary(Of FORMATETC, Tuple(Of STGMEDIUM, Boolean))()
@@ -345,7 +345,7 @@ Public Class InnerDataObjectSpy
                 _data.Remove(_data.Keys.ToList().FirstOrDefault(Function(f) f.cfFormat = fmt2.cfFormat AndAlso f.dwAspect = fmt2.dwAspect _
                                           AndAlso f.lindex = fmt2.lindex AndAlso (f.tymed And fmt2.tymed)))
             End If
-        _data.Add(fmt2, New Tuple(Of STGMEDIUM, Boolean)(medium, release))
+            _data.Add(fmt2, New Tuple(Of STGMEDIUM, Boolean)(medium, release))
         End If
     End Sub
 

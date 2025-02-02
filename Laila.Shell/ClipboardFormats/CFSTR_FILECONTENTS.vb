@@ -6,14 +6,14 @@ Imports Laila.Shell.Helpers
 
 Namespace ClipboardFormats
     Public Class CFSTR_FILECONTENTS
-        Public Shared Sub SetData(dataObject As IDataObject, items As IEnumerable(Of Item))
+        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, items As IEnumerable(Of Item))
             Dim index As Integer = -1
             For Each item In items
                 setData(dataObject, item, index)
             Next
         End Sub
 
-        Private Shared Sub setData(dataObject As IDataObject, item As Item, ByRef index As Integer)
+        Private Shared Sub setData(dataObject As ComTypes.IDataObject, item As Item, ByRef index As Integer)
             index += 1
 
             Dim attr As FILE_ATTRIBUTE = Functions.GetFileAttributesW(item.FullPath)

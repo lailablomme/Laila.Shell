@@ -90,7 +90,7 @@ Public Class Column
     Public Overridable ReadOnly Property DisplayName As String
         Get
             If String.IsNullOrWhiteSpace(_displayName) Then
-                If String.IsNullOrWhiteSpace(Me.CM_COLUMNINFO.wszName.Replace(Chr(0), "")) Then
+                If String.IsNullOrWhiteSpace(Me.CM_COLUMNINFO.wszName?.Replace(Chr(0), "")) Then
                     Dim dn As StringBuilder = New StringBuilder()
                     _propertyDescription.GetDisplayName(dn)
                     _displayName = dn.ToString()

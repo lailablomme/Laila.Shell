@@ -6,7 +6,7 @@ Namespace ClipboardFormats
     Public Class CFSTR_SHELLIDLIST
         Private Const CFSTR_SHELLIDLIST As String = "Shell IDList Array"
 
-        Public Shared Function GetData(dataObject As IDataObject) As List(Of Item)
+        Public Shared Function GetData(dataObject As ComTypes.IDataObject) As List(Of Item)
             Try
                 Dim format As New FORMATETC With {
                     .cfFormat = Functions.RegisterClipboardFormat(CFSTR_SHELLIDLIST),
@@ -34,7 +34,7 @@ Namespace ClipboardFormats
             End Try
         End Function
 
-        Public Shared Sub SetData(dataObject As IDataObject, items As IEnumerable(Of Item))
+        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, items As IEnumerable(Of Item))
             Dim ptr As IntPtr = Pidl.CreateShellIDListArray(items)
             Dim format As FORMATETC = New FORMATETC With {
                 .cfFormat = Functions.RegisterClipboardFormat(CFSTR_SHELLIDLIST),
@@ -48,7 +48,7 @@ Namespace ClipboardFormats
                 .unionmember = ptr,
                 .pUnkForRelease = IntPtr.Zero
             }
-            dataObject.SetData(format, medium, False)
+            dataObject.SetData(format, medium, True)
         End Sub
     End Class
 End Namespace

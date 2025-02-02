@@ -15,7 +15,7 @@ Public Class Drag
     Private Shared _grid As Grid
     Private Shared _dragSourceHelper As IDragSourceHelper
     Public Shared _bitmap As System.Drawing.Bitmap
-    Private Shared _dataObject As IDataObject
+    Private Shared _dataObject As ComTypes.IDataObject
     Public Shared _isDragging As Boolean
     Private Shared _dragImage As SHDRAGIMAGE
 
@@ -179,7 +179,7 @@ Public Class Drag
     End Function
 
     Public Function GiveFeedback(<[In]> dwEffect As DROPEFFECT) As Integer Implements IDropSource.GiveFeedback
-        Dim isShowingLayered As Integer? = getGlobalDataDWord("IsShowingLayered")
+        Dim isShowingLayered As Integer? = Clipboard.GetGlobalDataDWord(_dataObject, "IsShowingLayered")
         If isShowingLayered.HasValue AndAlso isShowingLayered.Value = 1 Then
             Mouse.OverrideCursor = Nothing
 
@@ -194,7 +194,7 @@ Public Class Drag
                 wParam = 1
             End If
 
-            Dim hwnd As IntPtr? = getGlobalDataDWord("DragWindow")
+            Dim hwnd As IntPtr? = Clipboard.GetGlobalDataDWord(_dataObject, "DragWindow")
             If hwnd.HasValue Then
                 Functions.SendMessage(hwnd.Value, WM.USER + 2, wParam, 0)
             End If
@@ -212,39 +212,4 @@ Public Class Drag
 
         Return DragDropResult.S_OK
     End Function
-
-    Private Function getGlobalDataDWord(clipboardFormat As String) As Integer?
-        Dim format As FORMATETC = New FORMATETC() With {
-            .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
-            .dwAspect = DVASPECT.DVASPECT_CONTENT,
-            .lindex = -1,
-            .ptd = IntPtr.Zero,
-            .tymed = TYMED.TYMED_HGLOBAL
-        }
-        Dim medium As STGMEDIUM
-        Dim result As Integer = _dataObject.GetData(format, medium)
-        If result = 0 Then
-            Return Marshal.ReadInt32(medium.unionmember)
-        Else
-            Return Nothing
-        End If
-    End Function
-
-    Private Shared Sub setGlobalDataDWord(dataObject As IDataObject, clipboardFormat As String, val As Integer)
-        Dim ptr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of Integer))
-        Marshal.WriteInt32(ptr, val)
-        Dim format As FORMATETC = New FORMATETC() With {
-            .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
-            .dwAspect = DVASPECT.DVASPECT_CONTENT,
-            .lindex = -1,
-            .ptd = IntPtr.Zero,
-            .tymed = TYMED.TYMED_HGLOBAL
-        }
-        Dim medium As STGMEDIUM = New STGMEDIUM() With {
-            .pUnkForRelease = IntPtr.Zero,
-            .tymed = TYMED.TYMED_HGLOBAL,
-            .unionmember = ptr
-        }
-        dataObject.SetData(format, medium, True)
-    End Sub
 End Class

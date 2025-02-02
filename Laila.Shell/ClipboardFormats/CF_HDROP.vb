@@ -7,7 +7,7 @@ Namespace ClipboardFormats
     Public Class CF_HDROP
         Private Shared ReadOnly GMEM_MOVEABLE As Integer = &H2
 
-        Public Shared Function GetData(dataObject As IDataObject) As String()
+        Public Shared Function GetData(dataObject As ComTypes.IDataObject) As String()
             Try
                 Dim format As New FORMATETC With {
                     .cfFormat = ClipboardFormat.CF_HDROP,
@@ -39,7 +39,7 @@ Namespace ClipboardFormats
             End Try
         End Function
 
-        Public Shared Sub SetData(dataObject As IDataObject, items As IEnumerable(Of Item))
+        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, items As IEnumerable(Of Item))
             Dim sb As StringBuilder = New StringBuilder()
             For Each filePath As String In items.Select(Function(i) i.FullPath).ToArray()
                 sb.Append(filePath & Chr(0))
@@ -49,7 +49,7 @@ Namespace ClipboardFormats
             Dim strPtr As IntPtr = Marshal.StringToHGlobalUni(sb.ToString())
             Dim strSize As Integer = Functions.GlobalSize(strPtr)
 
-            Dim hGlobal As IntPtr = Functions.GlobalAlloc(GMEM_MOVEABLE Or &H2000, Marshal.SizeOf(Of DROPFILES) + strSize)
+            Dim hGlobal As IntPtr = Functions.GlobalAlloc(&H2000, Marshal.SizeOf(Of DROPFILES) + strSize)
             Dim pGlobal As IntPtr = Functions.GlobalLock(hGlobal)
 
             ' Write the DROPFILES structure
@@ -78,7 +78,7 @@ Namespace ClipboardFormats
                 .unionmember = hGlobal,
                 .pUnkForRelease = IntPtr.Zero
             }
-            dataObject.SetData(format, medium, False)
+            dataObject.SetData(format, medium, True)
         End Sub
     End Class
 End Namespace

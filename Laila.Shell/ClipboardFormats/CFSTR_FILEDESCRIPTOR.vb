@@ -5,7 +5,7 @@ Imports System.Runtime.InteropServices.ComTypes
 
 Namespace ClipboardFormats
     Public Class CFSTR_FILEDESCRIPTOR
-        Public Shared Sub SetData(dataObject As IDataObject, items As IEnumerable(Of Item))
+        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, items As IEnumerable(Of Item))
             Dim filePaths() As String = items.Select(Function(i) i.FullPath).ToArray()
 
             ' Create the file group descriptor for the number of files being dragged
