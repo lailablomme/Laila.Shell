@@ -9,7 +9,8 @@ Imports Laila.Shell.Helpers
 Public Class System_StorageProviderUIStatusProperty
     Inherits [Property]
 
-    Public Shared Property System_StorageProviderUIStatusKey As PROPERTYKEY = New PROPERTYKEY("e77e90df-6271-4f5b-834f-2dd1f245dda4", 2)
+    Public Overloads Shared Property Key As PROPERTYKEY = New PROPERTYKEY("e77e90df-6271-4f5b-834f-2dd1f245dda4", 2)
+    Public Shared Shadows Property CanonicalName As String = "System.StorageProviderUIStatus"
 
     Private _system_StorageProviderStateKey As PROPERTYKEY = New PROPERTYKEY("e77e90df-6271-4f5b-834f-2dd1f245dda4", 3)
     Private _system_StorageProviderCustomStatesKey As PROPERTYKEY = New PROPERTYKEY("fceff153-e839-4cf3-a9e7-ea22832094b8", 120)
@@ -29,16 +30,16 @@ Public Class System_StorageProviderUIStatusProperty
     Private _imageReference16 As String()
 
     Public Sub New()
-        MyBase.New(System_StorageProviderUIStatusKey, CType(Nothing, IPropertyStore))
+        MyBase.New(Key, CType(Nothing, IPropertyStore))
     End Sub
 
     Public Sub New(propertyStore As IPropertyStore)
-        MyBase.New(System_StorageProviderUIStatusKey, propertyStore)
+        MyBase.New(Key, propertyStore)
         If Not propertyStore Is Nothing Then _hasData = True
     End Sub
 
     Public Sub New(shellItem2 As IShellItem2)
-        MyBase.New(System_StorageProviderUIStatusKey, shellItem2)
+        MyBase.New(Key, shellItem2)
         If Not shellItem2 Is Nothing Then _hasData = True
     End Sub
 

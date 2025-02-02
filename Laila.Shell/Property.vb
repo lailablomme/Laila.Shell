@@ -28,9 +28,11 @@ Public Class [Property]
     Protected _text As String
     Protected disposedValue As Boolean
     Friend _rawValue As PROPVARIANT
-    Private _displayType As PropertyDisplayType = -1
+    Protected _displayType As PropertyDisplayType = -1
     Protected _val As Object
-    Private _dataType As VarEnum
+    Protected _dataType As VarEnum
+    Protected _displayName As String
+    Protected _isCustom As Boolean
 
     Private Shared Function getDescription(canonicalName As String) As IPropertyDescription
         _descriptionsLock.Wait()
@@ -65,8 +67,9 @@ Public Class [Property]
     End Function
 
     Public Shared Function FromCanonicalName(canonicalName As String) As [Property]
-        If canonicalName = "System.StorageProviderUIStatus" Then
-            Return New System_StorageProviderUIStatusProperty()
+        Dim t As Type = Shell.GetCustomProperty(canonicalName)
+        If Not t Is Nothing Then
+            Return Activator.CreateInstance(t)
         Else
             Dim desc As IPropertyDescription = [Property].getDescription(canonicalName)
             If Not desc Is Nothing Then
@@ -78,32 +81,36 @@ Public Class [Property]
     End Function
 
     Public Shared Function FromCanonicalName(canonicalName As String, propertyStore As IPropertyStore) As [Property]
-        If canonicalName = "System.StorageProviderUIStatus" Then
-            Return New System_StorageProviderUIStatusProperty(propertyStore)
+        Dim t As Type = Shell.GetCustomProperty(canonicalName)
+        If Not t Is Nothing Then
+            Return Activator.CreateInstance(t, {propertyStore})
         Else
             Return New [Property](canonicalName, propertyStore)
         End If
     End Function
 
     Public Shared Function FromCanonicalName(canonicalName As String, shellItem2 As IShellItem2) As [Property]
-        If canonicalName = "System.StorageProviderUIStatus" Then
-            Return New System_StorageProviderUIStatusProperty(shellItem2)
+        Dim t As Type = Shell.GetCustomProperty(canonicalName)
+        If Not t Is Nothing Then
+            Return Activator.CreateInstance(t, {shellItem2})
         Else
             Return New [Property](canonicalName, shellItem2)
         End If
     End Function
 
     Public Shared Function FromKey(propertyKey As PROPERTYKEY, Optional propertyStore As IPropertyStore = Nothing) As [Property]
-        If propertyKey.Equals(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey) Then
-            Return New System_StorageProviderUIStatusProperty(propertyStore)
+        Dim t As Type = Shell.GetCustomProperty(propertyKey)
+        If Not t Is Nothing Then
+            Return Activator.CreateInstance(t, {propertyStore})
         Else
             Return New [Property](propertyKey, propertyStore)
         End If
     End Function
 
     Public Shared Function FromKey(propertyKey As PROPERTYKEY, Optional shellItem2 As IShellItem2 = Nothing) As [Property]
-        If propertyKey.Equals(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey) Then
-            Return New System_StorageProviderUIStatusProperty(shellItem2)
+        Dim t As Type = Shell.GetCustomProperty(propertyKey)
+        If Not t Is Nothing Then
+            Return Activator.CreateInstance(t, {shellItem2})
         Else
             Return New [Property](propertyKey, shellItem2)
         End If
@@ -162,9 +169,12 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
-            Dim name As StringBuilder = New StringBuilder()
-            Me.Description.GetDisplayName(name)
-            Return name.ToString()
+            If String.IsNullOrWhiteSpace(_displayName) Then
+                Dim name As StringBuilder = New StringBuilder()
+                Me.Description.GetDisplayName(name)
+                _displayName = name.ToString()
+            End If
+            Return _displayName
         End Get
     End Property
 
@@ -213,7 +223,7 @@ Public Class [Property]
     Public ReadOnly Property DataType As VarEnum
         Get
             If _dataType = 0 Then
-                Me.Description.GetPropertyType(_dataType)
+                Me.Description?.GetPropertyType(_dataType)
             End If
             Return _dataType
         End Get
@@ -407,6 +417,12 @@ Public Class [Property]
         Get
             Dim icons16() As ImageSource = Me.Icons16Async
             Return If(Not icons16 Is Nothing AndAlso icons16.Count > 0, icons16(0), Nothing)
+        End Get
+    End Property
+
+    Public ReadOnly Property IsCustom As Boolean
+        Get
+            Return _isCustom
         End Get
     End Property
 

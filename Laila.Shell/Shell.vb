@@ -33,6 +33,8 @@ Public Class Shell
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
     Private Shared _customFolders As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
+    Private Shared _customPropertiesByCanonicalName As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
+    Private Shared _customPropertiesByKey As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
 
     Private Shared _menuCacheLock As Object = New Object()
     Private Shared _menuCache As List(Of BaseMenu) = New List(Of BaseMenu)()
@@ -180,6 +182,14 @@ Public Class Shell
 
         _customFolders = New Dictionary(Of String, Type) From {
             {"shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", GetType(HomeFolder)}
+        }
+        _customPropertiesByCanonicalName = New Dictionary(Of String, Type) From {
+            {System_StorageProviderUIStatusProperty.CanonicalName, GetType(System_StorageProviderUIStatusProperty)},
+            {Home_CategoryProperty.CanonicalName, GetType(Home_CategoryProperty)}
+        }
+        _customPropertiesByKey = New Dictionary(Of String, Type) From {
+            {System_StorageProviderUIStatusProperty.Key.ToString(), GetType(System_StorageProviderUIStatusProperty)},
+            {Home_CategoryProperty.Key.ToString(), GetType(Home_CategoryProperty)}
         }
 
         Shell.STATaskQueue.Add(
@@ -433,6 +443,24 @@ Public Class Shell
     Public Shared Function GetCustomFolderType(fullPath As String) As Type
         Dim t As Type
         If _customFolders.TryGetValue(fullPath.ToLower(), t) Then
+            Return t
+        Else
+            Return Nothing
+        End If
+    End Function
+
+    Public Shared Function GetCustomProperty(key As PROPERTYKEY) As Type
+        Dim t As Type
+        If _customPropertiesByKey.TryGetValue(key.ToString(), t) Then
+            Return t
+        Else
+            Return Nothing
+        End If
+    End Function
+
+    Public Shared Function GetCustomProperty(canonicalName As String) As Type
+        Dim t As Type
+        If _customPropertiesByCanonicalName.TryGetValue(canonicalName, t) Then
             Return t
         Else
             Return Nothing

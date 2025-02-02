@@ -1032,7 +1032,7 @@ Namespace Controls
 
                 ' set sorting and grouping
                 If Not TypeOf newValue Is SearchFolder Then
-                    Dim folderViewState As FolderViewState = FolderViewState.FromViewName(newValue.FullPath)
+                    Dim folderViewState As FolderViewState = FolderViewState.FromFolder(newValue)
                     newValue.ItemsSortPropertyName = folderViewState.SortPropertyName
                     newValue.ItemsSortDirection = folderViewState.SortDirection
                     newValue.ItemsGroupByPropertyName = folderViewState.GroupByPropertyName

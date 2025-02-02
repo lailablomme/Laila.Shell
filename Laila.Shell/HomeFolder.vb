@@ -16,8 +16,10 @@ Public Class HomeFolder
         _columns = New List(Of Column)() From {
             New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:10"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
             New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:16"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
-            New Column(New PROPERTYKEY("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6"), New CM_COLUMNINFO(), 0) With {.IsVisible = True}
+            New Column(New PROPERTYKEY("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
+            New Home_CategoryColumn() With {.IsVisible = False}
         }
+        Me.ItemsGroupByPropertyName = "PropertiesByKeyAsText[" & Home_CategoryProperty.Key.ToString() & "].GroupByText"
     End Sub
 
     Public Overrides ReadOnly Property DisplayName As String
@@ -28,7 +30,7 @@ Public Class HomeFolder
 
     Public Overrides ReadOnly Property FullPath As String
         Get
-            Return "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}"
+            Return "::{D5309982-C24E-4337-8D50-766A25596297}"
         End Get
     End Property
 
@@ -52,7 +54,7 @@ Public Class HomeFolder
         Get
             Dim hbitmap As IntPtr, result As ImageSource, shellItem As IShellItem2
             Try
-                shellItem = Item.GetIShellItem2FromParsingName("shell:" & Me.FullPath)
+                shellItem = Item.GetIShellItem2FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}")
                 Dim h As HRESULT = CType(shellItem, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY, hbitmap)
                 If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                     result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
@@ -77,7 +79,7 @@ Public Class HomeFolder
         Get
             Dim hbitmap As IntPtr, result As ImageSource, shellItem As IShellItem2
             Try
-                shellItem = Item.GetIShellItem2FromParsingName("shell:" & Me.FullPath)
+                shellItem = Item.GetIShellItem2FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}")
                 Dim h As HRESULT = CType(shellItem, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), 0, hbitmap)
                 If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                     result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
@@ -114,6 +116,26 @@ Public Class HomeFolder
             Dim clone As Item = item.Clone()
             clone.LogicalParent = Me
             clone.TreeSortPrefix = String.Format("{0:00000000}", count)
+            clone.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000}", count)
+
+            Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
+            clone._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
+
+            result.Add(clone.FullPath & "_" & clone.DisplayName, clone)
+            newFullPaths.Add(clone.FullPath & "_" & clone.DisplayName)
+            If TypeOf item Is Folder Then Me.HasSubFolders = True
+
+            count += 1
+        Next
+
+        For Each item In FrequentFolders.GetMostFrequent()
+            Dim clone As Item = item.Clone()
+            clone.LogicalParent = Me
+            clone.TreeSortPrefix = String.Format("{0:00000000}", count)
+            clone.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000}", count)
+
+            Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.FREQUENT_FOLDER)
+            clone._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
 
             result.Add(clone.FullPath & "_" & clone.DisplayName, clone)
             newFullPaths.Add(clone.FullPath & "_" & clone.DisplayName)

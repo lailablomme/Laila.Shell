@@ -208,7 +208,7 @@ Namespace Controls
             End If
             If Not e.NewValue Is Nothing Then
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
-                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(CType(e.NewValue, Folder).FullPath)
+                Dim folderViewState As FolderViewState = FolderViewState.FromFolder(CType(e.NewValue, Folder))
                 If String.IsNullOrWhiteSpace(CType(e.NewValue, Folder).View) Then
                     CType(e.NewValue, Folder).View = folderViewState.View
                 End If

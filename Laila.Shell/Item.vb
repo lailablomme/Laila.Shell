@@ -19,7 +19,7 @@ Public Class Item
 
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
-    Protected _propertiesByKey As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
+    Friend _propertiesByKey As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Protected _propertiesByCanonicalName As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Friend _fullPath As String
     Friend disposedValue As Boolean
@@ -41,6 +41,7 @@ Public Class Item
     Private _isVisibleInAddressBar As Boolean
     Private _treeSortPrefix As String = String.Empty
     Protected _logicalParent As Folder
+    Private _itemNameDisplaySortValuePrefix As String
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
@@ -286,17 +287,26 @@ Public Class Item
 
                 Dim oldPropertiesByKey As Dictionary(Of String, [Property])
                 Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])
-                oldPropertiesByKey = _propertiesByKey
-                oldPropertiesByCanonicalName = _propertiesByCanonicalName
-                _propertiesByKey = New Dictionary(Of String, [Property])()
-                _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
-                _contentViewModeProperties = Nothing
-                For Each [property] In oldPropertiesByKey.Values
-                    [property].Dispose()
-                Next
-                For Each [property] In oldPropertiesByCanonicalName.Values
-                    [property].Dispose()
-                Next
+                _propertiesLock.Wait()
+                Try
+                    oldPropertiesByKey = _propertiesByKey
+                    oldPropertiesByCanonicalName = _propertiesByCanonicalName
+                    _propertiesByKey = New Dictionary(Of String, [Property])()
+                    _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
+                    _contentViewModeProperties = Nothing
+                    For Each [property] In oldPropertiesByKey.Values
+                        If Not [property].IsCustom Then
+                            [property].Dispose()
+                        Else
+                            _propertiesByKey.Add([property].Key.ToString(), [property])
+                        End If
+                    Next
+                    For Each [property] In oldPropertiesByCanonicalName.Values
+                        [property].Dispose()
+                    Next
+                Finally
+                    _propertiesLock.Release()
+                End Try
 
                 _displayName = Nothing
 
@@ -807,12 +817,21 @@ Public Class Item
         End Get
     End Property
 
+    Public Property ItemNameDisplaySortValuePrefix As String
+        Get
+            Return _itemNameDisplaySortValuePrefix
+        End Get
+        Set(value As String)
+            SetValue(_itemNameDisplaySortValuePrefix, value)
+        End Set
+    End Property
+
     Public Overridable ReadOnly Property ItemNameDisplaySortValue As String
         Get
             If Me.IsDrive AndAlso Shell.Settings.DoShowDriveLetters Then
-                Return Me.FullPath
+                Return String.Format("{0}{1}", Me.ItemNameDisplaySortValuePrefix, Me.FullPath)
             Else
-                Return If(Me.IsFolder AndAlso Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), "0", "1") & Me.DisplayName
+                Return String.Format("{0}{1}{2}", Me.ItemNameDisplaySortValuePrefix, If(Me.IsFolder AndAlso Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), "0", "1"), Me.DisplayName)
             End If
         End Get
     End Property
@@ -948,7 +967,7 @@ Public Class Item
                     i += 1
                 Next
                 Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.Key)
                 If System_StorageProviderUIStatus.RawValue.vt <> 0 Then
                     If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.Text) Then
                         text.Add(System_StorageProviderUIStatus.DisplayName & ": " & System_StorageProviderUIStatus.Text)
@@ -1002,7 +1021,7 @@ Public Class Item
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
             _propertiesLock.Wait()
             Try
-                If Not _propertiesByKey.TryGetValue(propertyKey, [property]) AndAlso Not disposedValue Then
+                If Not _propertiesByKey.TryGetValue(key.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
                     SyncLock _shellItemLock
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
@@ -1012,10 +1031,10 @@ Public Class Item
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByKey.ContainsKey(propertyKey) Then
-                            _propertiesByKey.Add(propertyKey, [property])
+                            _propertiesByKey.Add(key.ToString(), [property])
                         Else
                             [property].Dispose()
-                            [property] = _propertiesByKey(propertyKey)
+                            [property] = _propertiesByKey(key.ToString())
                         End If
                     End If
                 End If

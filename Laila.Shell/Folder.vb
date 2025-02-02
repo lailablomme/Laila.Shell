@@ -42,6 +42,8 @@ Public Class Folder
     Private _isListening As Boolean
     Private _listeningLock As Object = New Object()
     Private _wasActivity As Boolean
+    Protected _initializeItemsGroupByPropertyName As String
+    Private _isInitializing As Boolean
 
     Public Shared Function FromDesktop() As Folder
         Return Shell.RunOnSTAThread(
@@ -520,6 +522,14 @@ Public Class Folder
 
     Public Overridable ReadOnly Property Items As ObservableCollection(Of Item)
         Get
+            If Not _isInitializing AndAlso Not String.IsNullOrWhiteSpace(_initializeItemsGroupByPropertyName) Then
+                _isInitializing = True
+                Me.ItemsGroupByPropertyName = _initializeItemsGroupByPropertyName
+                If Me.ItemsGroupByPropertyName = _initializeItemsGroupByPropertyName Then
+                    _initializeItemsGroupByPropertyName = Nothing
+                End If
+                _isInitializing = False
+            End If
             Return _items
         End Get
     End Property
@@ -844,7 +854,7 @@ Public Class Folder
 
                                             ' preload System_StorageProviderUIStatus images
                                             Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                                                = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                                                = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.Key)
                                             If Not System_StorageProviderUIStatus Is Nothing _
                                                 AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
                                                 Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
@@ -984,35 +994,39 @@ Public Class Folder
 
     Public Property ItemsGroupByPropertyName As String
         Get
-            Return _itemsGroupByPropertyName
+            Return If(_initializeItemsGroupByPropertyName, _itemsGroupByPropertyName)
         End Get
         Set(value As String)
-            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-            If Not view Is Nothing Then
-                If Not String.IsNullOrWhiteSpace(value) Then
-                    Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(value)
-                    Dim groupSortDesc As SortDescription = New SortDescription() With {
-                        .PropertyName = value.Replace(".GroupByText", ".Value"),
-                        .Direction = Me.ItemsSortDirection
-                    }
-                    If view.GroupDescriptions.Count > 0 Then
-                        view.GroupDescriptions(0) = groupDescription
-                    Else
-                        view.GroupDescriptions.Add(groupDescription)
+            If System.Windows.Application.Current.Dispatcher.CheckAccess() Then
+                Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                If Not view Is Nothing Then
+                    If Not String.IsNullOrWhiteSpace(value) Then
+                        Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(value)
+                        Dim groupSortDesc As SortDescription = New SortDescription() With {
+                            .PropertyName = value.Replace(".GroupByText", ".Value"),
+                            .Direction = Me.ItemsSortDirection
+                        }
+                        If view.GroupDescriptions.Count > 0 Then
+                            view.GroupDescriptions(0) = groupDescription
+                        Else
+                            view.GroupDescriptions.Add(groupDescription)
+                        End If
+                        If view.SortDescriptions.Count = 1 Then
+                            view.SortDescriptions.Insert(0, groupSortDesc)
+                        ElseIf view.SortDescriptions.Count = 2 Then
+                            view.SortDescriptions(0) = groupSortDesc
+                        End If
+                    ElseIf view.GroupDescriptions.Count > 0 Then
+                        view.GroupDescriptions.Clear()
+                        If view.SortDescriptions.Count > 0 Then
+                            view.SortDescriptions.RemoveAt(0)
+                        End If
                     End If
-                    If view.SortDescriptions.Count = 1 Then
-                        view.SortDescriptions.Insert(0, groupSortDesc)
-                    ElseIf view.SortDescriptions.Count = 2 Then
-                        view.SortDescriptions(0) = groupSortDesc
-                    End If
-                ElseIf view.GroupDescriptions.Count > 0 Then
-                    view.GroupDescriptions.Clear()
-                    If view.SortDescriptions.Count > 0 Then
-                        view.SortDescriptions.RemoveAt(0)
-                    End If
-                End If
 
-                Me.SetValue(_itemsGroupByPropertyName, value)
+                    Me.SetValue(_itemsGroupByPropertyName, value)
+                End If
+            Else
+                _initializeItemsGroupByPropertyName = value
             End If
         End Set
     End Property

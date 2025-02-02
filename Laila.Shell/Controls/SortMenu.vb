@@ -45,7 +45,7 @@ Namespace Controls
                 End If
             End If
             Dim moreMenuItem As MenuItem
-            Dim PKEY_System_ItemNameDisplay As String = Me.Folder.PropertiesByCanonicalName("System.ItemNameDisplay").Key.ToString()
+            Dim PKEY_System_ItemNameDisplay As String = [Property].FromCanonicalName("System.ItemNameDisplay").Key.ToString()
             Dim sortMenuItemCheckedAction As RoutedEventHandler = New RoutedEventHandler(
                 Sub(s2 As Object, e2 As RoutedEventArgs)
                     If Not _isCheckingInternally Then

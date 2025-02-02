@@ -11,9 +11,9 @@ Public Class Column
     Private _index As Integer
     Friend _propertyDescription As IPropertyDescription
     Private _viewFlags As PROPDESC_VIEW_FLAGS
-    Private _canonicalName As String
+    Protected _canonicalName As String
     Private _isVisible As Boolean
-    Private _displayName As String
+    Protected _displayName As String
 
     Friend Sub New(propertyKey As PROPERTYKEY, columnInfo As CM_COLUMNINFO, index As Integer)
         _propertyKey = propertyKey
