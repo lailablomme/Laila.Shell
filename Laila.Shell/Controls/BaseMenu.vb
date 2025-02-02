@@ -380,16 +380,18 @@ Namespace Controls
                     End SyncLock
 
                     Try
-                        If Not items Is Nothing AndAlso items.Count > 0 Then
-                            ' user clicked on an item
-                            flags = flags Or CMF.CMF_ITEMMENU
+                        If Not shellFolder Is Nothing Then
+                            If Not items Is Nothing AndAlso items.Count > 0 Then
+                                ' user clicked on an item
+                                flags = flags Or CMF.CMF_ITEMMENU
 
-                            CType(shellFolder, IShellFolderForIContextMenu).GetUIObjectOf _
-                                (IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, _contextMenu)
-                        Else
-                            ' user clicked on the background
-                            CType(shellFolder, IShellFolderForIContextMenu).CreateViewObject _
-                                (IntPtr.Zero, GetType(IContextMenu).GUID, _contextMenu)
+                                CType(shellFolder, IShellFolderForIContextMenu).GetUIObjectOf _
+                                    (IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, _contextMenu)
+                            Else
+                                ' user clicked on the background
+                                CType(shellFolder, IShellFolderForIContextMenu).CreateViewObject _
+                                    (IntPtr.Zero, GetType(IContextMenu).GUID, _contextMenu)
+                            End If
                         End If
 
                         If Not _contextMenu Is Nothing Then

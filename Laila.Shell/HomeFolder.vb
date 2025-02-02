@@ -42,6 +42,10 @@ Public Class HomeFolder
         End Get
     End Property
 
+    Friend Overrides Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
+        Return Nothing
+    End Function
+
     Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
         Get
             Dim hbitmap As IntPtr, result As ImageSource, shellItem As IShellItem2
