@@ -492,7 +492,11 @@ Public Class Folder
                     ElseIf Not disposedValue Then
                         Dim attr As SFGAO = SFGAO.HASSUBFOLDER
                         SyncLock _shellItemLock
-                            Me.ShellItem2.GetAttributes(attr, attr)
+                            If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                                Me.ShellItem2.GetAttributes(attr, attr)
+                            Else
+                                attr = 0
+                            End If
                         End SyncLock
                         Return attr.HasFlag(SFGAO.HASSUBFOLDER)
                     Else
