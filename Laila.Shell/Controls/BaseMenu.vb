@@ -10,6 +10,7 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Microsoft.Win32
 
 Namespace Controls
     Public MustInherit Class BaseMenu
@@ -341,12 +342,21 @@ Namespace Controls
         End Class
 
         Private Sub makeContextMenu(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
-            Dim folderPidl As Pidl, itemPidls As Pidl()
+            Dim folderPidl As Pidl, itemPidls As Pidl(), doUseAbsolutePidls As Boolean
 
             Shell.RunOnSTAThread(
                 Sub()
                     If Not items Is Nothing AndAlso items.Count > 0 Then
                         ' user clicked on an item
+                        Dim f As Folder = items(0).Parent
+                        If items.All(Function(i) (i.Parent Is Nothing AndAlso f Is Nothing) _
+                                         OrElse (Not i.Parent Is Nothing AndAlso i.Parent.Pidl.Equals(f?.Pidl))) Then
+                            folder = f
+                        Else
+                            folder = Shell.Desktop
+                            doUseAbsolutePidls = True
+                        End If
+                        If folder Is Nothing Then folder = Shell.Desktop
                         folderPidl = folder.Pidl.Clone()
                         itemPidls = items.Select(Function(i) i.Pidl.Clone()).ToArray()
                     Else
@@ -375,7 +385,7 @@ Namespace Controls
 
                     SyncLock folder._shellItemLock
                         If Not folder.disposedValue Then
-                            shellFolder = folder.GetShellFolderOnCurrentThread
+                            shellFolder = folder.GetShellFolderOnCurrentThread()
                         End If
                     End SyncLock
 
@@ -386,7 +396,9 @@ Namespace Controls
                                 flags = flags Or CMF.CMF_ITEMMENU
 
                                 CType(shellFolder, IShellFolderForIContextMenu).GetUIObjectOf _
-                                    (IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) p.RelativePIDL).ToArray(), GetType(IContextMenu).GUID, 0, _contextMenu)
+                                    (IntPtr.Zero, itemPidls.Length, itemPidls.Select(Function(p) _
+                                        If(doUseAbsolutePidls, p.AbsolutePIDL, p.RelativePIDL)).ToArray(),
+                                        GetType(IContextMenu).GUID, 0, _contextMenu)
                             Else
                                 ' user clicked on the background
                                 CType(shellFolder, IShellFolderForIContextMenu).CreateViewObject _
@@ -410,7 +422,7 @@ Namespace Controls
                                 shellExtInit = TryCast(_contextMenu, IShellExtInit)
                                 If Not shellExtInit Is Nothing Then
                                     Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
-                                                     itemPidls.Select(Function(p) p.RelativePIDL).ToArray(),
+                                                     itemPidls.Select(Function(p) If(doUseAbsolutePidls, p.AbsolutePIDL, p.RelativePIDL)).ToArray(),
                                                      Nothing, GetType(ComTypes.IDataObject).GUID, dataObject)
                                     shellExtInit.Initialize(folder.Pidl.AbsolutePIDL, dataObject, IntPtr.Zero)
                                 End If
@@ -625,7 +637,11 @@ Namespace Controls
                 ' free unmanaged resources (unmanaged objects) and override finalizer
                 ' set large fields to null
                 If Not _contextMenu Is Nothing Then
-                    Marshal.ReleaseComObject(_contextMenu)
+                    If Not TypeOf _contextMenu Is IContextMenuImpl Then
+                        Marshal.ReleaseComObject(_contextMenu)
+                    Else
+                        CType(_contextMenu, IContextMenuImpl).Dispose()
+                    End If
                     _contextMenu = Nothing
                 End If
                 For Each hbitmap In _hbitmapsToDispose

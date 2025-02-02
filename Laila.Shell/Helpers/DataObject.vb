@@ -4,9 +4,10 @@ Imports System.Runtime.Serialization
 
 <ComVisible(True), Guid("a3b5f678-9cde-4f12-85a6-3f7b2e9d1c45")>
 Public Class DataObject
-    Implements ComTypes.IDataObject
+    Implements ComTypes.IDataObject, IDisposable
 
     Private _data As Dictionary(Of FORMATETC, Tuple(Of STGMEDIUM, Boolean)) = New Dictionary(Of FORMATETC, Tuple(Of STGMEDIUM, Boolean))()
+    Private disposedValue As Boolean
 
     Public Sub GetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) Implements ComTypes.IDataObject.GetData
         Select Case format.cfFormat
@@ -368,4 +369,27 @@ Public Class DataObject
         Debug.WriteLine("EnumDAdvise")
         Return &H80004001 ' E_NOTIMPL
     End Function
+
+    Protected Overridable Sub Dispose(disposing As Boolean)
+        If Not disposedValue Then
+            If disposing Then
+                ' dispose managed state (managed objects)
+            End If
+
+            ' free unmanaged resources (unmanaged objects) and override finalizer
+            ' set large fields to null
+            disposedValue = True
+
+            For Each item In _data
+                Functions.ReleaseStgMedium(item.Value.Item1)
+            Next
+            _data.Clear()
+        End If
+    End Sub
+
+    Public Sub Dispose() Implements IDisposable.Dispose
+        ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+        Dispose(disposing:=True)
+        GC.SuppressFinalize(Me)
+    End Sub
 End Class
