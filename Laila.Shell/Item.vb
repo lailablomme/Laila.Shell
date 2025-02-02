@@ -875,10 +875,13 @@ Public Class Item
         End Set
     End Property
 
-    Public Overridable ReadOnly Property HasSubFolders As Boolean
+    Public Overridable Property HasSubFolders As Boolean
         Get
             Return False
         End Get
+        Set(value As Boolean)
+
+        End Set
     End Property
 
     Public ReadOnly Property ContentViewModeProperties As [Property]()

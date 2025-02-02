@@ -12,7 +12,7 @@ Public Class HomeFolder
         MyBase.New(Nothing, Nothing, doKeepAlive, False, Nothing)
 
         _pidl = Pidl.FromCustomBytes(System.Text.UTF8Encoding.Default.GetBytes(Me.FullPath))
-        _hasSubFolders = False
+        Me.HasSubFolders = False
         _columns = New List(Of Column)() From {
             New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:10"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
             New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:16"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
@@ -107,7 +107,7 @@ Public Class HomeFolder
     Protected Overrides Sub EnumerateItems(flags As UInteger, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String, result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action)
 
-        _hasSubFolders = False
+        Me.HasSubFolders = False
 
         Dim count As Integer
         For Each item In PinnedItems.GetPinnedItems()
@@ -117,7 +117,7 @@ Public Class HomeFolder
 
             result.Add(clone.FullPath & "_" & clone.DisplayName, clone)
             newFullPaths.Add(clone.FullPath & "_" & clone.DisplayName)
-            If TypeOf item Is Folder Then _hasSubFolders = True
+            If TypeOf item Is Folder Then Me.HasSubFolders = True
 
             count += 1
         Next

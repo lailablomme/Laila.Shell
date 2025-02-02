@@ -483,7 +483,7 @@ Public Class Folder
         End Get
     End Property
 
-    Public Overrides ReadOnly Property HasSubFolders As Boolean
+    Public Overrides Property HasSubFolders As Boolean
         Get
             Return Shell.RunOnSTAThread(
                 Function() As Boolean
@@ -504,6 +504,9 @@ Public Class Folder
                     End If
                 End Function)
         End Get
+        Set(value As Boolean)
+            SetValue(_hasSubFolders, value)
+        End Set
     End Property
 
     Public Property EnumerationException As Exception
