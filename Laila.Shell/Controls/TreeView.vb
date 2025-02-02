@@ -858,7 +858,7 @@ Namespace Controls
                                 Next
                             Else
                                 For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                    AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Pidl.Equals(folder.Pidl)).ToList()
+                                    AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
                                     item.IsExpanded = False
                                     Me.Items.Remove(item)
                                 Next
