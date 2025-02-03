@@ -237,7 +237,9 @@ Public Class Folder
                 If text.Length > 75 Then
                     isMore = True
                     text = text.Substring(0, 75)
-                    text = text.Substring(0, text.LastIndexOf(","))
+                    If text.LastIndexOf(",") >= 0 Then
+                        text = text.Substring(0, text.LastIndexOf(","))
+                    End If
                 End If
                 If isMore Then
                     If list(0).Length > 75 Then

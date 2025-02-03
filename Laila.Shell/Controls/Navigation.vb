@@ -105,7 +105,7 @@ Namespace Controls
 
         Public Sub Up()
             Using Shell.OverrideCursor(Cursors.Wait)
-                Dim existing As Folder = _list.FirstOrDefault(Function(i) Me.Folder.LogicalParent?.Pidl?.Equals(i.Pidl))
+                Dim existing As Folder = _list.FirstOrDefault(Function(i) If(Me.Folder?.LogicalParent?.Pidl?.Equals(i.Pidl), False))
                 If Me.CanBack AndAlso Not existing Is Nothing Then
                     Me.Folder = existing
                 Else
