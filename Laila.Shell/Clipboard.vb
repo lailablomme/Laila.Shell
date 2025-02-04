@@ -53,18 +53,22 @@ Public Class Clipboard
         Dim dataObject As ComTypes.IDataObject
 
         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
-        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_COPY)
+        'ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_COPY)
 
         Functions.OleSetClipboard(dataObject)
+
+        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_COPY)
     End Sub
 
     Public Shared Sub CutFiles(items As IEnumerable(Of Item))
         Dim dataObject As ComTypes.IDataObject
 
         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
-        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_MOVE)
+        'ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_MOVE)
 
         Functions.OleSetClipboard(dataObject)
+
+        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_MOVE)
     End Sub
 
     Public Shared Sub PasteFiles(folder As Folder)
