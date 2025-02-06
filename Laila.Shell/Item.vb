@@ -6,6 +6,7 @@ Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
 Imports System.Windows
+Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
@@ -1023,11 +1024,16 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(key.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock
-                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [Property].FromKey(key, Me.ShellItem2)
-                        End If
-                    End SyncLock
+                    [property] = Shell.RunOnSTAThread(
+                        Function() As [Property]
+                            SyncLock _shellItemLock
+                                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                                    Return [Property].FromKey(key, Me.ShellItem2)
+                                Else
+                                    Return Nothing
+                                End If
+                            End SyncLock
+                        End Function)
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByKey.ContainsKey(propertyKey) Then
@@ -1052,11 +1058,16 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock
-                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
-                        End If
-                    End SyncLock
+                    [property] = Shell.RunOnSTAThread(
+                        Function() As [Property]
+                            SyncLock _shellItemLock
+                                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                                    Return [Property].FromKey(propertyKey, Me.ShellItem2)
+                                Else
+                                    Return Nothing
+                                End If
+                            End SyncLock
+                        End Function)
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByKey.ContainsKey(propertyKey.ToString()) Then
@@ -1081,11 +1092,16 @@ Public Class Item
             Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock
-                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
-                        End If
-                    End SyncLock
+                    [property] = Shell.RunOnSTAThread(
+                        Function() As [Property]
+                            SyncLock _shellItemLock
+                                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                                    Return [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                                Else
+                                    Return Nothing
+                                End If
+                            End SyncLock
+                        End Function)
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByCanonicalName.ContainsKey(canonicalName) Then
