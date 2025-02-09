@@ -179,28 +179,28 @@ Namespace Controls
                 Dim thisComputer As Folder, network As Folder
 
                 ' home, galery and favorites
-                If Shell.GetSpecialFolders().ContainsKey("Home") Then
-                    homeFolder = Shell.GetSpecialFolder("Home").Clone()
+                If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Home) Then
+                    homeFolder = Shell.GetSpecialFolder(SpecialFolders.Home).Clone()
                     homeFolder.TreeRootIndex = TreeRootSection.SYSTEM + 0
                 End If
-                If Shell.GetSpecialFolders().ContainsKey("Gallery") Then
-                    galleryFolder = Shell.GetSpecialFolder("Gallery").Clone()
+                If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Gallery) Then
+                    galleryFolder = Shell.GetSpecialFolder(SpecialFolders.Gallery).Clone()
                     galleryFolder.TreeRootIndex = TreeRootSection.SYSTEM + 1
                 End If
-                If Shell.GetSpecialFolders().ContainsKey("Favorites") Then
-                    favoritesFolder = Shell.GetSpecialFolder("Favorites").Clone()
+                If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Favorites) Then
+                    favoritesFolder = Shell.GetSpecialFolder(SpecialFolders.Favorites).Clone()
                     favoritesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 2
                 End If
 
                 ' this computer & network
-                thisComputer = Shell.GetSpecialFolder("This pc").Clone()
+                thisComputer = Shell.GetSpecialFolder(SpecialFolders.ThisPc).Clone()
                 thisComputer.TreeRootIndex = TreeRootSection.ENVIRONMENT + 0
-                network = Shell.GetSpecialFolder("Network").Clone()
+                network = Shell.GetSpecialFolder(SpecialFolders.Network).Clone()
                 network.TreeRootIndex = TreeRootSection.ENVIRONMENT + 2
 
                 ' libraries
                 If Settings.IsWindows8_1OrLower OrElse doShowLibrariesInTreeView Then
-                    librariesFolder = Shell.GetSpecialFolder("Libraries").Clone()
+                    librariesFolder = Shell.GetSpecialFolder(SpecialFolders.Libraries).Clone()
                     If Settings.IsWindows8_1OrLower Then
                         librariesFolder.TreeRootIndex = TreeRootSection.SYSTEM + 3
                     Else

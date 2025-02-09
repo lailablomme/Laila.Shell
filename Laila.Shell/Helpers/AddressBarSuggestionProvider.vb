@@ -41,7 +41,7 @@ Namespace Helpers
                     If Not String.IsNullOrWhiteSpace(folderName) Then
                         If folderName.StartsWith(IO.Path.DirectorySeparatorChar) _
                             AndAlso Not folderName.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then
-                            folderName = IO.Path.Combine((Await Shell.GetSpecialFolder("This pc").GetItemsAsync()).FirstOrDefault()?.FullPath, folderName)
+                            folderName = IO.Path.Combine((Await Shell.GetSpecialFolder(SpecialFolders.ThisPc).GetItemsAsync()).FirstOrDefault()?.FullPath, folderName)
                         End If
                         folder = TryCast(Await Item.FromParsingNameDeepGetAsync(folderName), Folder)
                     End If

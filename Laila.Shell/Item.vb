@@ -1163,10 +1163,10 @@ Public Class Item
 
             If isNetworkPath Then
                 ' network path
-                folder = Shell.GetSpecialFolder("Network")
+                folder = Shell.GetSpecialFolder(SpecialFolders.Network)
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.GetSpecialFolder("This pc")
+                folder = Shell.GetSpecialFolder(SpecialFolders.ThisPc)
             Else
                 ' root must be some special folder
                 folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
@@ -1239,10 +1239,10 @@ Public Class Item
 
             If isNetworkPath Then
                 ' network path
-                folder = Shell.GetSpecialFolder("Network")
+                folder = Shell.GetSpecialFolder(SpecialFolders.Network)
             ElseIf parts(0) = IO.Path.GetPathRoot(parsingName) Then
                 ' this is a path on disk
-                folder = Shell.GetSpecialFolder("This pc")
+                folder = Shell.GetSpecialFolder(SpecialFolders.ThisPc)
             Else
                 ' root must be some special folder
                 folder = Shell.GetSpecialFolders().Values.FirstOrDefault(Function(f) f.DisplayName.ToLower() = parts(0).ToLower() _
@@ -1277,7 +1277,7 @@ Public Class Item
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR
-                    If Me.Pidl?.Equals(e.Item1.Pidl) Then
+                    If Me.Pidl?.Equals(e.Item1?.Pidl) Then
                         Me.Refresh()
                     End If
                 Case SHCNE.FREESPACE
@@ -1290,9 +1290,9 @@ Public Class Item
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _
-                        OrElse (Me.FullPath?.ToLower().Equals(e.Item1.FullPath.ToLower())) Then
+                        OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) Then
                         Dim oldPidl As Pidl = Me.Pidl?.Clone()
-                        Me.Refresh(e.Item2.ShellItem2, e.Item2.Pidl?.Clone(), e.Item2.FullPath)
+                        Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
                         If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
                             PinnedItems.RenameItem(oldPidl, Me.Pidl)
                             FrequentFolders.RenameItem(oldPidl, Me.Pidl)
@@ -1300,7 +1300,9 @@ Public Class Item
                         If Not oldPidl Is Nothing Then
                             oldPidl.Dispose()
                         End If
-                        e.Item2._shellItem2 = Nothing
+                        If Not e.Item2 Is Nothing Then
+                            e.Item2._shellItem2 = Nothing
+                        End If
                     End If
             End Select
         End If

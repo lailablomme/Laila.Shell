@@ -274,10 +274,10 @@ Namespace Controls
         End Sub
 
         Public Shared Sub DoShare(items As IEnumerable(Of Item))
-            If (Shell.GetSpecialFolders().ContainsKey("OneDrive") _
-                AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive").FullPath & IO.Path.DirectorySeparatorChar)) _
-                OrElse (Shell.GetSpecialFolders().ContainsKey("OneDrive Business") _
-                        AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive Business").FullPath & IO.Path.DirectorySeparatorChar)) Then
+            If (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
+                AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar)) _
+                OrElse (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) _
+                        AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).FullPath & IO.Path.DirectorySeparatorChar)) Then
                 If Not _rightClickMenu Is Nothing Then
                     _rightClickMenu.Dispose()
                 End If
@@ -330,11 +330,11 @@ Namespace Controls
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
                 If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
-                    If Shell.GetSpecialFolders().ContainsKey("OneDrive") _
-                        AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive").FullPath & IO.Path.DirectorySeparatorChar) Then
+                    If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
+                        AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar) Then
                         Me.CanShare = True
-                    ElseIf Shell.GetSpecialFolders().ContainsKey("OneDrive Business") _
-                        AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder("OneDrive Business").FullPath & IO.Path.DirectorySeparatorChar) Then
+                    ElseIf Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) _
+                        AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).FullPath & IO.Path.DirectorySeparatorChar) Then
                         Me.CanShare = True
                     Else
                         Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))

@@ -33,7 +33,7 @@ Public Class SearchFolder
 
             ' set scope
             Dim pidls As List(Of Pidl)
-            If parent.Pidl.Equals(Shell.GetSpecialFolder("This pc").Pidl) Then
+            If parent.Pidl.Equals(Shell.GetSpecialFolder(SpecialFolders.ThisPc).Pidl) Then
                 pidls = parent.GetItems().Where(Function(i) TypeOf i Is Folder).Select(Function(i) i.Pidl).ToList()
             Else
                 pidls = New List(Of Pidl)() From {parent.Pidl}

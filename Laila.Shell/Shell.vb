@@ -30,7 +30,7 @@ Public Class Shell
     Friend Shared _w As Window
     Public Shared _hwnd As IntPtr
 
-    Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
+    Private Shared _specialFolders As Dictionary(Of SpecialFolders, Folder) = New Dictionary(Of SpecialFolders, Folder)()
     Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
     Private Shared _customFolders As List(Of CustomFolder) = New List(Of CustomFolder)()
     Private Shared _customPropertiesByCanonicalName As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
@@ -173,13 +173,6 @@ Public Class Shell
         ' start listening for clipboard changes
         _nextClipboardViewer = Functions.SetClipboardViewer(hwnd)
 
-        Dim addSpecialFolder As Action(Of String, Item) =
-            Sub(name As String, item As Item)
-                If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                    _specialFolders.Add(name, item)
-                End If
-            End Sub
-
         _customFolders.Add(New CustomFolder() With {
             .FullPath = "::{D5309982-C24E-4337-8D50-766A25596297}",
             .ReplacesFullPath = "::{679f85cb-0220-4080-b29b-5540cc05aab6}",
@@ -202,34 +195,34 @@ Public Class Shell
         Shell.STATaskQueue.Add(
             Sub()
                 ' add special folders
-                addSpecialFolder("Desktop", Folder.FromDesktop())
-                addSpecialFolder("Home", Folder.FromParsingName("shell:::{D5309982-C24E-4337-8D50-766A25596297}", Nothing, False))
-                addSpecialFolder("Documents", Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing, False))
-                addSpecialFolder("Pictures", Folder.FromParsingName("shell:::{24ad3ad4-a569-4530-98e1-ab02f9417aa8}", Nothing, False))
-                addSpecialFolder("Downloads", Folder.FromParsingName("shell:::{088e3905-0323-4b02-9826-5d99428e115f}", Nothing, False))
-                addSpecialFolder("Videos", Folder.FromParsingName("shell:::{A0953C92-50DC-43bf-BE83-3742FED03C9C}", Nothing, False))
-                addSpecialFolder("Music", Folder.FromParsingName("shell:::{1CF1260C-4DD0-4ebb-811F-33C572699FDE}", Nothing, False))
-                addSpecialFolder("Favorites", Folder.FromParsingName("shell:::{323CA680-C24D-4099-B94D-446DD2D7249E}", Nothing, False))
-                addSpecialFolder("This pc", Folder.FromParsingName("shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", Nothing, False))
-                addSpecialFolder("Network", Folder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing, False))
-                addSpecialFolder("Gallery", Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing, False))
-                addSpecialFolder("Recycle Bin", Folder.FromParsingName("shell:::{645FF040-5081-101B-9F08-00AA002F954E}", Nothing, False))
-                addSpecialFolder("Recent", Folder.FromParsingName(Environment.ExpandEnvironmentVariables("%APPDATA%\Microsoft\Windows\Recent"), Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Desktop, Folder.FromDesktop())
+                Shell.AddSpecialFolder(SpecialFolders.Home, Folder.FromParsingName("shell:::{D5309982-C24E-4337-8D50-766A25596297}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Documents, Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Pictures, Folder.FromParsingName("shell:::{24ad3ad4-a569-4530-98e1-ab02f9417aa8}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Downloads, Folder.FromParsingName("shell:::{088e3905-0323-4b02-9826-5d99428e115f}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Videos, Folder.FromParsingName("shell:::{A0953C92-50DC-43bf-BE83-3742FED03C9C}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Music, Folder.FromParsingName("shell:::{1CF1260C-4DD0-4ebb-811F-33C572699FDE}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Favorites, Folder.FromParsingName("shell:::{323CA680-C24D-4099-B94D-446DD2D7249E}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.ThisPc, Folder.FromParsingName("shell:::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Network, Folder.FromParsingName("shell:::{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Gallery, Folder.FromParsingName("shell:::{E88865EA-0E1C-4E20-9AA6-EDCD0212C87C}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.RecycleBin, Folder.FromParsingName("shell:::{645FF040-5081-101B-9F08-00AA002F954E}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Recent, Folder.FromParsingName(Environment.ExpandEnvironmentVariables("%APPDATA%\Microsoft\Windows\Recent"), Nothing, False))
                 '                                 .GetItems().First(Function(i) i.FullPath.EndsWith("\Recent")))
-                addSpecialFolder("OneDrive", Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing, False))
-                addSpecialFolder("OneDrive Business", Folder.FromParsingName("shell:::{04271989-C4D2-BEC7-A521-3DF166FAB4BA}", Nothing, False))
-                addSpecialFolder("Windows Tools", Folder.FromParsingName("shell:::{D20EA4E1-3957-11D2-A40B-0C5020524153}", Nothing, False))
-                addSpecialFolder("Libraries", Folder.FromParsingName("shell:::{031E4825-7B94-4DC3-B131-E946B44C8DD5}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.OneDrive, Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.OneDriveBusiness, Folder.FromParsingName("shell:::{04271989-C4D2-BEC7-A521-3DF166FAB4BA}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.WindowsTools, Folder.FromParsingName("shell:::{D20EA4E1-3957-11D2-A40B-0C5020524153}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Libraries, Folder.FromParsingName("shell:::{031E4825-7B94-4DC3-B131-E946B44C8DD5}", Nothing, False))
                 'addSpecialFolder("User Pinned", Folder.FromParsingName("shell:::{1F3427C8-5C10-4210-AA03-2EE45287D668}", Nothing, False))
-                _specialFolders.Add("Control Panel", Folder.FromParsingName("shell:::{26EE0668-A00A-44D7-9371-BEB064C98683}", Nothing))
-                addSpecialFolder("Devices and Printers", Folder.FromParsingName("shell:::{A8A91A66-3A7D-4424-8D24-04E180695C7A}", Nothing, False))
-                addSpecialFolder("All Tasks", Folder.FromParsingName("shell:::{ED7BA470-8E54-465E-825C-99712043E01C}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.ControlPanel, Folder.FromParsingName("shell:::{26EE0668-A00A-44D7-9371-BEB064C98683}", Nothing))
+                Shell.AddSpecialFolder(SpecialFolders.DevicesAndPrinters, Folder.FromParsingName("shell:::{A8A91A66-3A7D-4424-8D24-04E180695C7A}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.AllTasks, Folder.FromParsingName("shell:::{ED7BA470-8E54-465E-825C-99712043E01C}", Nothing, False))
                 '_specialFolders.Add("Applications", Folder.FromParsingName("shell:::{4234d49b-0245-4df3-b780-3893943456e1}", Nothing))
-                addSpecialFolder("Frequent Folders", Folder.FromParsingName("shell:::{3936E9E4-D92C-4EEE-A85A-BC16D5EA0819}", Nothing, False))
-                addSpecialFolder("User Profile", Folder.FromParsingName(Environment.ExpandEnvironmentVariables("%USERPROFILE%"), Nothing, False))
+                'Shell.AddSpecialFolder("Frequent Folders", Folder.FromParsingName("shell:::{3936E9E4-D92C-4EEE-A85A-BC16D5EA0819}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.UserProfile, Folder.FromParsingName(Environment.ExpandEnvironmentVariables("%USERPROFILE%"), Nothing, False))
                 '_specialFolders.Add("Installed Updates", Folder.FromParsingName("shell:::{d450a8a1-9568-45c7-9c0e-b4f9fb4537bd}", Nothing))
                 'addSpecialFolder("Network Connections", Folder.FromParsingName("shell:::{7007ACC7-3202-11D1-AAD2-00805FC1270E}", Nothing, False))
-                addSpecialFolder("Programs and Features", Folder.FromParsingName("shell:::{7b81be6a-ce2b-4676-a29e-eb907a5126c5}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.ProgramsAndFeatures, Folder.FromParsingName("shell:::{7b81be6a-ce2b-4676-a29e-eb907a5126c5}", Nothing, False))
                 '_specialFolders.Add("Public", Folder.FromParsingName("shell:::{4336a54d-038b-4685-ab02-99bb52d3fb8b}", Nothing))
                 '_specialFolders.Add("Recent Items", Folder.FromParsingName("shell:::{4564b25e-30cd-4787-82ba-39e73a750b14}", Nothing))
 
@@ -424,15 +417,21 @@ Public Class Shell
         End Select
     End Function
 
+    Public Shared Sub AddSpecialFolder(specialFolder As SpecialFolders, item As Item)
+        If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+            _specialFolders.Add(specialFolder, item)
+        End If
+    End Sub
+
     ''' <summary>
     ''' Gets the given special folder.
     ''' </summary>
     ''' <param name="id">The id of the special folder</param>
     ''' <returns>A folder object for the special folder</returns>
-    Public Shared Function GetSpecialFolder(id As String) As Folder
+    Public Shared Function GetSpecialFolder(specialFolder As SpecialFolders) As Folder
         Shell.IsSpecialFoldersReady.WaitOne()
-        If _specialFolders.ContainsKey(id) Then
-            Return _specialFolders(id)
+        If _specialFolders.ContainsKey(specialFolder) Then
+            Return _specialFolders(specialFolder)
         Else
             Return Nothing
         End If
@@ -442,7 +441,7 @@ Public Class Shell
     ''' Gets a dictionary of all special folders.
     ''' </summary>
     ''' <returns>A dictionary containing all special folders</returns>
-    Public Shared Function GetSpecialFolders() As Dictionary(Of String, Folder)
+    Public Shared Function GetSpecialFolders() As Dictionary(Of SpecialFolders, Folder)
         Shell.IsSpecialFoldersReady.WaitOne()
         Return _specialFolders
     End Function
@@ -488,7 +487,7 @@ Public Class Shell
     Public Shared ReadOnly Property Desktop As Folder
         Get
             If _desktop Is Nothing Then
-                _desktop = Shell.GetSpecialFolder("Desktop")
+                _desktop = Shell.GetSpecialFolder(SpecialFolders.Desktop)
             End If
 
             Return _desktop
