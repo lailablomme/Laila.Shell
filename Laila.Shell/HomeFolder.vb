@@ -8,8 +8,8 @@ Imports System.Windows.Media.Imaging
 Public Class HomeFolder
     Inherits Folder
 
-    Public Sub New(doKeepAlive As Boolean)
-        MyBase.New(Nothing, Nothing, doKeepAlive, False, Nothing)
+    Public Sub New(parent As Folder, doKeepAlive As Boolean)
+        MyBase.New(Nothing, parent, doKeepAlive, False, Nothing)
 
         _pidl = Pidl.FromCustomBytes(System.Text.UTF8Encoding.Default.GetBytes(Me.FullPath))
         Me.HasSubFolders = False
@@ -148,7 +148,7 @@ Public Class HomeFolder
     Public Overrides Function Clone() As Item
         Return Shell.RunOnSTAThread(
             Function() As Item
-                Return New HomeFolder(_doKeepAlive)
+                Return New HomeFolder(Nothing, _doKeepAlive)
             End Function)
     End Function
 End Class

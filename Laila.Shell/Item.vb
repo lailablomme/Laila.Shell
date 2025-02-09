@@ -48,7 +48,9 @@ Public Class Item
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
         Return Shell.RunOnSTAThread(
             Function() As Item
-                Dim customFolderType As Type = Shell.GetCustomFolderType(parsingName)
+                Dim customFolderType As Type = Shell.CustomFolders _
+                    .FirstOrDefault(Function(f) f.FullPath.ToLower().Equals(parsingName.ToLower()) _
+                                         OrElse ("shell:" & f.FullPath.ToLower()).Equals(parsingName.ToLower()))?.Type
                 If customFolderType Is Nothing Then
                     parsingName = Environment.ExpandEnvironmentVariables(parsingName)
                     Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
@@ -64,7 +66,7 @@ Public Class Item
                         Return Nothing
                     End If
                 Else
-                    Return CType(Activator.CreateInstance(customFolderType, {doKeepAlive}), Folder)
+                    Return CType(Activator.CreateInstance(customFolderType, {parent, doKeepAlive}), Folder)
                 End If
             End Function)
     End Function
@@ -951,7 +953,7 @@ Public Class Item
                     .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                     .pid = 4
                 }
-                Dim system_InfoTipText As String = Me.PropertiesByKey(PKEY_System_InfoTipText).Text
+                Dim system_InfoTipText As String = Me.PropertiesByKey(PKEY_System_InfoTipText)?.Text
                 Dim properties() As String
                 If Not String.IsNullOrWhiteSpace(system_InfoTipText) Then
                     properties = system_InfoTipText.Substring(5).Split(";")
@@ -969,7 +971,7 @@ Public Class Item
                 Next
                 Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
                     = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.Key)
-                If System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                If System_StorageProviderUIStatus?.RawValue.vt <> 0 Then
                     If Not String.IsNullOrWhiteSpace(System_StorageProviderUIStatus.Text) Then
                         text.Add(System_StorageProviderUIStatus.DisplayName & ": " & System_StorageProviderUIStatus.Text)
                     End If

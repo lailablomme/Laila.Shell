@@ -282,7 +282,7 @@ Namespace Controls
                 textBlock.FontSize,
                 textBlock.Foreground,
                 VisualTreeHelper.GetDpi(textBlock).PixelsPerDip)
-            formattedText.MaxTextWidth = textBlock.ActualWidth
+            formattedText.MaxTextWidth = textBlock.ActualWidth + 0.25
             formattedText.TextAlignment = textBlock.TextAlignment
             formattedText.Trimming = TextTrimming.None
 
@@ -320,7 +320,7 @@ Namespace Controls
                                     .FirstOrDefault(Function(b) b.Name = "PART_DisplayName" OrElse b.Tag = "PART_DisplayName")
                                 If Not textBlock Is Nothing Then
                                     If Me.GetIsDisplayNameTextBlockTooSmall(textBlock) Then
-                                        text = overItem.DisplayName & Environment.NewLine & text
+                                        text = overItem.DisplayName & If(Not String.IsNullOrWhiteSpace(text), Environment.NewLine, "") & text
                                     End If
                                 End If
                             End Sub)
@@ -331,7 +331,7 @@ Namespace Controls
                                 textFolderSize = Await CType(overItem, Folder).GetInfoTipFolderSizeAsync(_toolTipCancellationTokenSource.Token)
                             End If
                             If Not String.IsNullOrWhiteSpace(textFolderSize) Then
-                                text &= Environment.NewLine & textFolderSize
+                                text &= If(Not String.IsNullOrWhiteSpace(text), Environment.NewLine, "") & textFolderSize
                             End If
                         End If
 

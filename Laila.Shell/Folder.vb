@@ -793,6 +793,10 @@ Public Class Folder
 
         Dim isDebuggerAttached As Boolean = Debugger.IsAttached
         Dim isRootDesktop As Boolean = Me.Pidl.Equals(Shell.Desktop.Pidl)
+        Dim replacedWithCustomFolders As HashSet(Of String) = New HashSet(Of String)()
+        For Each customFolder In Shell.CustomFolders
+            replacedWithCustomFolders.Add(customFolder.ReplacesFullPath.ToLower())
+        Next
 
         Dim bindCtx As ComTypes.IBindCtx, propertyBag As IPropertyBag, var As PROPVARIANT, enumShellItems As IEnumShellItems
         Try
@@ -827,6 +831,13 @@ Public Class Folder
                                 Dim newItem As Item
                                 If CBool(attr2 And SFGAO.FOLDER) Then
                                     newItem = New Folder(shellItems(x), Me, False, False)
+
+                                    If replacedWithCustomFolders.Contains(newItem.FullPath.ToLower()) Then
+                                        newItem.Dispose()
+                                        newItem = Folder.FromParsingName(
+                                            Shell.CustomFolders.FirstOrDefault(Function(f) _
+                                                f.ReplacesFullPath.ToLower().Equals(newItem.FullPath.ToLower()))?.FullPath, Me, False, False)
+                                    End If
                                 Else
                                     newItem = New Item(shellItems(x), Me, False, False)
                                 End If

@@ -32,7 +32,7 @@ Public Class Shell
 
     Private Shared _specialFolders As Dictionary(Of String, Folder) = New Dictionary(Of String, Folder)()
     Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
-    Private Shared _customFolders As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
+    Private Shared _customFolders As List(Of CustomFolder) = New List(Of CustomFolder)()
     Private Shared _customPropertiesByCanonicalName As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
     Private Shared _customPropertiesByKey As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
 
@@ -180,9 +180,16 @@ Public Class Shell
                 End If
             End Sub
 
-        _customFolders = New Dictionary(Of String, Type) From {
-            {"shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", GetType(HomeFolder)}
-        }
+        _customFolders.Add(New CustomFolder() With {
+            .FullPath = "::{D5309982-C24E-4337-8D50-766A25596297}",
+            .ReplacesFullPath = "::{679f85cb-0220-4080-b29b-5540cc05aab6}",
+            .Type = GetType(HomeFolder)
+        })
+        _customFolders.Add(New CustomFolder() With {
+            .FullPath = "::{D5309982-C24E-4337-8D50-766A25596297}",
+            .ReplacesFullPath = "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}",
+            .Type = GetType(HomeFolder)
+        })
         _customPropertiesByCanonicalName = New Dictionary(Of String, Type) From {
             {System_StorageProviderUIStatusProperty.CanonicalName, GetType(System_StorageProviderUIStatusProperty)},
             {Home_CategoryProperty.CanonicalName, GetType(Home_CategoryProperty)}
@@ -196,7 +203,7 @@ Public Class Shell
             Sub()
                 ' add special folders
                 addSpecialFolder("Desktop", Folder.FromDesktop())
-                addSpecialFolder("Home", Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, False))
+                addSpecialFolder("Home", Folder.FromParsingName("shell:::{D5309982-C24E-4337-8D50-766A25596297}", Nothing, False))
                 addSpecialFolder("Documents", Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing, False))
                 addSpecialFolder("Pictures", Folder.FromParsingName("shell:::{24ad3ad4-a569-4530-98e1-ab02f9417aa8}", Nothing, False))
                 addSpecialFolder("Downloads", Folder.FromParsingName("shell:::{088e3905-0323-4b02-9826-5d99428e115f}", Nothing, False))
@@ -440,14 +447,11 @@ Public Class Shell
         Return _specialFolders
     End Function
 
-    Public Shared Function GetCustomFolderType(fullPath As String) As Type
-        Dim t As Type
-        If _customFolders.TryGetValue(fullPath.ToLower(), t) Then
-            Return t
-        Else
-            Return Nothing
-        End If
-    End Function
+    Public Shared ReadOnly Property CustomFolders As List(Of CustomFolder)
+        Get
+            Return _customFolders
+        End Get
+    End Property
 
     Public Shared Function GetCustomProperty(key As PROPERTYKEY) As Type
         Dim t As Type
@@ -750,4 +754,10 @@ Public Class Shell
             Return Nothing
         End If
     End Function
+
+    Public Class CustomFolder
+        Public Property FullPath As String
+        Public Property ReplacesFullPath As String
+        Public Property Type As Type
+    End Class
 End Class
