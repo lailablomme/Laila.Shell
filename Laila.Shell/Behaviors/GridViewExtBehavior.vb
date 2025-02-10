@@ -461,7 +461,7 @@ Namespace Behaviors
 
         Public Sub UpdateSortGlyphs()
             ' fix sort glyphs
-            If Not _headerRowPresenter Is Nothing Then
+            If Not _headerRowPresenter Is Nothing AndAlso Me.ColumnsIn.CanSort Then
                 Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
                 For Each ch In hcs
                     GridViewColumnHeaderGlyphAdorner.Remove(ch, "GridViewExtBehavior.Sort")
@@ -531,7 +531,7 @@ Namespace Behaviors
         End Function
 
         Private Sub ColumnHeader_Click(sender As Object, e As RoutedEventArgs)
-            If TypeOf e.OriginalSource Is GridViewColumnHeader Then
+            If Me.ColumnsIn.CanSort AndAlso TypeOf e.OriginalSource Is GridViewColumnHeader Then
                 Dim headerClicked As GridViewColumnHeader = e.OriginalSource
                 If Not headerClicked Is Nothing AndAlso Not headerClicked.Column Is Nothing Then
                     Dim propertyName As String = GetSortPropertyName(headerClicked.Column)
@@ -882,6 +882,7 @@ Namespace Behaviors
             Public Property Items As List(Of GridViewColumn)
             Public Property InitialGroupByPropertyName As String
             Public Property PrimarySortProperties As String = ""
+            Public Property CanSort As Boolean = True
         End Class
     End Class
 End Namespace

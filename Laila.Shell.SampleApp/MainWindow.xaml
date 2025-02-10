@@ -396,7 +396,17 @@
                                           Tag="{Binding ., ElementName=menus}" ToolTip="Options for sorting and grouping.">
                                 <ToggleButton.Style>
                                     <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
+                                        <Setter Property="ToggleButton.IsEnabled" Value="False" />
                                         <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Folder.CanSort}" Value="True">
+                                                <Setter Property="ToggleButton.IsEnabled" Value="True" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Folder.CanGroupBy}" Value="True">
+                                                <Setter Property="ToggleButton.IsEnabled" Value="True" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsEnabled, ElementName=SortMenuButton}" Value="False">
+                                                <Setter Property="Image.Opacity" Value="0.30" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </ToggleButton.Style>

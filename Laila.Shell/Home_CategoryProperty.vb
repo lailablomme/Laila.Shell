@@ -21,12 +21,12 @@ Public Class Home_CategoryProperty
     End Sub
 
     Public Enum [Type]
-        PINNED_ITEM
-        FREQUENT_FOLDER
-        RECENT_FILE
+        PINNED_ITEM = 3
+        FREQUENT_FOLDER = 2
+        RECENT_FILE = 1
     End Enum
 
-    Public Overrides ReadOnly Property GroupByText As String
+    Public Overrides ReadOnly Property Text As String
         Get
             Select Case CType(Me.Value, [Type])
                 Case [Type].PINNED_ITEM

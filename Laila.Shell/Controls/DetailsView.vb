@@ -22,10 +22,25 @@ Namespace Controls
             MyBase.PART_ListBox_Loaded()
         End Sub
 
+        Public Overrides Sub OnApplyTemplate()
+            MyBase.OnApplyTemplate()
+
+            AddHandler PART_Grid.SizeChanged,
+                Sub(s As Object, e As SizeChangedEventArgs)
+                    updateClip()
+                End Sub
+            updateClip()
+        End Sub
+
+        Private Sub updateClip()
+            PART_Grid.Clip = New RectangleGeometry(New Rect(0, 0, PART_Grid.ActualWidth, PART_Grid.ActualHeight))
+        End Sub
+
         Public Function buildColumnsIn(folder As Folder) As Behaviors.GridViewExtBehavior.ColumnsInData
             Dim d As Behaviors.GridViewExtBehavior.ColumnsInData = New Behaviors.GridViewExtBehavior.ColumnsInData()
             d.ViewName = folder.FullPath
             d.Items = New List(Of GridViewColumn)()
+            d.CanSort = folder.CanSort
 
             For Each column In folder.Columns.Where(Function(c) Not String.IsNullOrWhiteSpace(c.DisplayName))
                 Dim [property] As [Property] = [Property].FromCanonicalName(column.CanonicalName)

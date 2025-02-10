@@ -15,6 +15,7 @@ Namespace Controls
         Private _buttonsBottom As StackPanel
         Private _scrollViewer As ScrollViewer
         Private _list As List(Of ButtonBase) = New List(Of ButtonBase)()
+        Private _isMade As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ContextMenu), New FrameworkPropertyMetadata(GetType(ContextMenu)))
@@ -28,7 +29,15 @@ Namespace Controls
             _scrollViewer = Template.FindName("PART_ScrollViewer", Me)
         End Sub
 
+        Protected Overridable Sub Make()
+            _isMade = True
+        End Sub
+
         Protected Overrides Sub OnOpened(e As RoutedEventArgs)
+            If Not _isMade Then
+                Me.Make()
+            End If
+
             MyBase.OnOpened(e)
 
             UIHelper.OnUIThread(

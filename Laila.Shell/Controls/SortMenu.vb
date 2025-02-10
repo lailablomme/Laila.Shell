@@ -16,22 +16,26 @@ Namespace Controls
         Private _didGetProperties As Boolean
         Private _isCheckingInternally As Boolean
 
-        Protected Overrides Sub OnOpened(e As RoutedEventArgs)
+        Protected Overrides Sub Make()
             Me.Items.Clear()
 
-            Me.AddSortItems(Me.Items)
+            If Me.Folder.CanSort Then
+                Me.AddSortItems(Me.Items)
+            End If
+            If Me.Folder.CanSort AndAlso Me.Folder.CanGroupBy Then
+                Me.Items.Add(New Separator())
+            End If
+            If Me.Folder.CanGroupBy Then
+                Dim groupByMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "Group by",
+                    .Tag = "GroupBy"
+                }
+                Me.Items.Add(groupByMenuItem)
 
-            Me.Items.Add(New Separator())
+                Me.AddGroupByItems(groupByMenuItem.Items)
+            End If
 
-            Dim groupByMenuItem As MenuItem = New MenuItem() With {
-                .Header = "Group by",
-                .Tag = "GroupBy"
-            }
-            Me.Items.Add(groupByMenuItem)
-
-            Me.AddGroupByItems(groupByMenuItem.Items)
-
-            MyBase.OnOpened(e)
+            MyBase.Make()
         End Sub
 
         Public Sub AddSortItems(menu As ItemCollection)

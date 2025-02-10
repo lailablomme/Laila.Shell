@@ -12,7 +12,6 @@ Imports Laila.Shell.Helpers
 Public Class Folder
     Inherits Item
 
-    Public Event LoadingStateChanged(isLoading As Boolean)
     Public Event ExpandAllGroups As EventHandler
     Public Event CollapseAllGroups As EventHandler
 
@@ -43,7 +42,10 @@ Public Class Folder
     Private _listeningLock As Object = New Object()
     Private _wasActivity As Boolean
     Protected _initializeItemsGroupByPropertyName As String
+    Protected _initializeItemsSortDirection As ListSortDirection = -1
+    Protected _initializeItemsSortPropertyName As String
     Private _isInitializing As Boolean
+    Protected _hookFolderFullPath As String
 
     Public Shared Function FromDesktop() As Folder
         Return Shell.RunOnSTAThread(
@@ -84,6 +86,11 @@ Public Class Folder
 
     Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As IntPtr? = Nothing)
         MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
+
+        If Shell.IsSpecialFoldersReady.WaitOne(0) Then
+            _items.Add(Shell.Desktop)
+            _items.Clear()
+        End If
     End Sub
 
     Friend Overridable Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
@@ -101,7 +108,7 @@ Public Class Folder
                         End If
                     End SyncLock
                     Return result
-                End Function, 1)
+                End Function)
 
             Return _shellFolder
         End Get
@@ -552,6 +559,7 @@ Public Class Folder
         _enumerationLock.Wait()
         Try
             If Not _isEnumerated Then
+                Me.IsLoading = True
                 Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
                     = _enumerationCancellationTokenSource
 
@@ -565,6 +573,7 @@ Public Class Folder
                     prevEnumerationCancellationTokenSource.Cancel()
                 End If
             End If
+            Me.IsLoading = False
             Return _items.ToList()
         Finally
             If _enumerationLock.CurrentCount = 0 Then
@@ -581,9 +590,11 @@ Public Class Folder
                 _enumerationLock.Wait()
                 Try
                     If Not _isEnumerated Then
+                        Me.IsLoading = True
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
                         enumerateItems(True, _enumerationCancellationTokenSource.Token, doRefreshAllExistingItems)
                     End If
+                    Me.IsLoading = False
                     tcs.SetResult(_items.ToList())
                 Catch ex As Exception
                     tcs.SetException(ex)
@@ -613,7 +624,6 @@ Public Class Folder
     Protected Sub enumerateItems(isAsync As Boolean, cancellationToken As CancellationToken,
                                  Optional doRefreshAllExistingItems As Boolean = True)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
-        Me.IsLoading = True
         Me.IsEmpty = False
 
         Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS
@@ -625,7 +635,6 @@ Public Class Folder
 
         If Not cancellationToken.IsCancellationRequested Then
             _wasActivity = False
-            Me.IsLoading = False
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName)
         Else
@@ -660,6 +669,11 @@ Public Class Folder
 
                     UIHelper.OnUIThread(
                         Sub()
+                            ' init collection
+                            If Not String.IsNullOrWhiteSpace(_initializeItemsSortPropertyName) Then Me.ItemsSortPropertyName = _initializeItemsSortPropertyName
+                            If Not _initializeItemsSortDirection = -1 Then Me.ItemsSortDirection = _initializeItemsSortDirection
+                            If Not String.IsNullOrWhiteSpace(_initializeItemsGroupByPropertyName) Then Me.ItemsGroupByPropertyName = _initializeItemsGroupByPropertyName
+
                             If Not cancellationToken.IsCancellationRequested _
                                 AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
                                 If Not TypeOf Me Is SearchFolder Then
@@ -706,7 +720,7 @@ Public Class Folder
                         AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested _
                         AndAlso Not cancellationToken.IsCancellationRequested Then
 
-                        Dim size As Integer = Math.Max(1, Math.Min(existingItems.Count / 10, 100))
+                        Dim size As Integer = Math.Max(1, Math.Min(existingItems.Count / 10, 50))
                         Dim chuncks()() As Tuple(Of Item, Item) = existingItems.Chunk(existingItems.Count / size).ToArray()
                         Dim tcses As List(Of TaskCompletionSource) = New List(Of TaskCompletionSource)()
 
@@ -730,8 +744,8 @@ Public Class Folder
                                              item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
 
                                              If Not item.Item2 Is Nothing Then
+                                                 item.Item1.Refresh(item.Item2.ShellItem2)
                                                  SyncLock item.Item2._shellItemLock
-                                                     item.Item1.Refresh(item.Item2.ShellItem2)
                                                      item.Item2._shellItem2 = Nothing
                                                  End SyncLock
                                                  item.Item2._parent = Nothing
@@ -767,7 +781,7 @@ Public Class Folder
             End If
         End SyncLock
 
-        Me.EnumerateItems(flags, cancellationToken,
+        Me.EnumerateItems(Me.ShellItem2, flags, cancellationToken,
             isSortPropertyByText, isSortPropertyDisplaySortValue, sortPropertyKey,
             result, newFullPaths, addItems)
 
@@ -787,7 +801,7 @@ Public Class Folder
         End If
     End Sub
 
-    Protected Overridable Sub EnumerateItems(flags As UInt32, cancellationToken As CancellationToken,
+    Protected Overridable Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInt32, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
         result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action)
 
@@ -807,7 +821,7 @@ Public Class Folder
             propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
             SyncLock _shellItemLock
-                CType(Me.ShellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
+                CType(shellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
                     (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
             End SyncLock
 
@@ -826,10 +840,10 @@ Public Class Folder
                             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
                             If Not cancellationToken.IsCancellationRequested _
                                 AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                                Dim attr2 As Integer = SFGAO.FOLDER
+                                Dim attr2 As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
                                 shellItems(x).GetAttributes(attr2, attr2)
                                 Dim newItem As Item
-                                If CBool(attr2 And SFGAO.FOLDER) Then
+                                If attr2.HasFlag(SFGAO.FOLDER) Then
                                     newItem = New Folder(shellItems(x), Me, False, False)
 
                                     If replacedWithCustomFolders.Contains(newItem.FullPath.ToLower()) Then
@@ -838,76 +852,82 @@ Public Class Folder
                                             Shell.CustomFolders.FirstOrDefault(Function(f) _
                                                 f.ReplacesFullPath.ToLower().Equals(newItem.FullPath.ToLower()))?.FullPath, Me, False, False)
                                     End If
+                                ElseIf attr2.HasFlag(SFGAO.LINK) Then
+                                    newItem = New Link(shellItems(x), Me, False, False)
                                 Else
                                     newItem = New Item(shellItems(x), Me, False, False)
                                 End If
 
-                                Dim isAdded As Boolean = False
-                                Try
-                                    Dim isAlreadyAdded As Boolean = False
-                                    If isDebuggerAttached Then
-                                        ' only check if debugger is attached, to avoid exception,
-                                        ' otherwise, rely on exception being thrown, for speed
-                                        isAlreadyAdded = result.ContainsKey(newItem.FullPath & "_" & newItem.DisplayName)
-                                    End If
-                                    If Not isAlreadyAdded Then
-                                        result.Add(newItem.FullPath & "_" & newItem.DisplayName, newItem)
-                                        isAdded = True
+                                newItem = Me.InitializeItem(newItem)
 
-                                        ' preload sort property
-                                        If isSortPropertyByText Then
-                                            Dim sortValue As Object = newItem.PropertiesByKeyAsText(sortPropertyKey)?.Value
-                                        ElseIf isSortPropertyDisplaySortValue Then
-                                            Dim sortValue As Object = newItem.ItemNameDisplaySortValue
+                                If Not newItem Is Nothing Then
+                                    Dim isAdded As Boolean = False
+                                    Try
+                                        Dim isAlreadyAdded As Boolean = False
+                                        If isDebuggerAttached Then
+                                            ' only check if debugger is attached, to avoid exception,
+                                            ' otherwise, rely on exception being thrown, for speed
+                                            isAlreadyAdded = result.ContainsKey(newItem.FullPath & "_" & newItem.DisplayName)
                                         End If
+                                        If Not isAlreadyAdded Then
+                                            result.Add(newItem.FullPath & "_" & newItem.DisplayName, newItem)
+                                            isAdded = True
 
-                                        If TypeOf Me Is SearchFolder Then
-                                            ' preload Content view mode properties because searchfolder is slow
-                                            Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
-
-                                            ' preload System_StorageProviderUIStatus images
-                                            Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                                                = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.Key)
-                                            If Not System_StorageProviderUIStatus Is Nothing _
-                                                AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                                                Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                                            ' preload sort property
+                                            If isSortPropertyByText Then
+                                                Dim sortValue As Object = newItem.PropertiesByKeyAsText(sortPropertyKey)?.Value
+                                            ElseIf isSortPropertyDisplaySortValue Then
+                                                Dim sortValue As Object = newItem.ItemNameDisplaySortValue
                                             End If
 
-                                            ' preload attributes
-                                            Dim attributes As SFGAO = newItem.Attributes
-                                        End If
+                                            If TypeOf Me Is SearchFolder Then
+                                                ' preload Content view mode properties because searchfolder is slow
+                                                Dim contentViewModeProperties() As [Property] = newItem.ContentViewModeProperties
 
-                                        newFullPaths.Add(newItem.FullPath & "_" & newItem.DisplayName)
+                                                ' preload System_StorageProviderUIStatus images
+                                                Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                                                = newItem.PropertiesByKey(System_StorageProviderUIStatusProperty.Key)
+                                                If Not System_StorageProviderUIStatus Is Nothing _
+                                                AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                                                    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                                                End If
 
-                                        If isRootDesktop Then
-                                            If Not Shell.GetSpecialFolder(SpecialFolders.Home) Is Nothing AndAlso (newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Home").FullPath) OrElse newItem.FullPath.Equals("::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}")) Then newItem.TreeSortPrefix = "_001" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Gallery) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Gallery").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_002" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Pictures) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Pictures").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_003" _
+                                                ' preload attributes
+                                                Dim attributes As SFGAO = newItem.Attributes
+                                            End If
+
+                                            newFullPaths.Add(newItem.FullPath & "_" & newItem.DisplayName)
+
+                                            If isRootDesktop Then
+                                                If Not Shell.GetSpecialFolder(SpecialFolders.Home) Is Nothing AndAlso (newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Home).FullPath) OrElse newItem.FullPath.Equals("::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}")) Then newItem.TreeSortPrefix = "_001" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Gallery) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Gallery).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_002" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Pictures) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Pictures).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_003" _
                                             Else If newItem.FullPath.ToUpper().Equals(Shell.Desktop.FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_004" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Documents) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Documents").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_005" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.OneDrive) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("OneDrive").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_006" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("OneDrive Business").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_007" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Downloads) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Downloads").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_008" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Music) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Music").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_009" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Videos) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Videos").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_010" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.UserProfile) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("User Profile").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_011" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.ThisPc) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("This pc").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_012" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Libraries) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Libraries").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_013" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Network) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Network").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_014" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.ControlPanel) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Control Panel").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_015" _
-                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.RecycleBin) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder("Recycle Bin").FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_016" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Documents) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Documents).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_005" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.OneDrive) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_006" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_007" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Downloads) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Downloads).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_008" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Music) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Music).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_009" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Videos) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Videos).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_010" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.UserProfile) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.UserProfile).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_011" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.ThisPc) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.ThisPc).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_012" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Libraries) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Libraries).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_013" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.Network) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Network).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_014" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.ControlPanel) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.ControlPanel).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_015" _
+                                            Else If Not Shell.GetSpecialFolder(SpecialFolders.RecycleBin) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.RecycleBin).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_016" _
                                             Else newItem.TreeSortPrefix = "_100"
+                                            End If
+                                        Else
+                                            newItem.Dispose()
                                         End If
-                                    Else
-                                        newItem.Dispose()
-                                    End If
-                                Catch ex As Exception
-                                    ' there might be double items, we want to skip them without
-                                    ' checking for .Contains everytime, to save processing time
-                                    If Not isAdded Then
-                                        newItem.Dispose()
-                                    End If
-                                End Try
+                                    Catch ex As Exception
+                                        ' there might be double items, we want to skip them without
+                                        ' checking for .Contains everytime, to save processing time
+                                        If Not isAdded Then
+                                            newItem.Dispose()
+                                        End If
+                                    End Try
+                                End If
 
                                 If (DateTime.Now.Subtract(lastUpdate).TotalMilliseconds >= 1000 _
                                         OrElse result.Count >= 10) AndAlso TypeOf Me Is SearchFolder Then
@@ -950,57 +970,84 @@ Public Class Folder
         End Try
     End Sub
 
+    Protected Overridable Function InitializeItem(item As Item) As Item
+        Return item
+    End Function
+
+    Public Overridable ReadOnly Property CanSort As Boolean
+        Get
+            Return True
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property CanGroupBy As Boolean
+        Get
+            Return True
+        End Get
+    End Property
 
     Public Property ItemsSortPropertyName As String
         Get
-            Return _itemsSortPropertyName
+            Return If(_initializeItemsSortPropertyName, _itemsSortPropertyName)
         End Get
         Set(value As String)
-            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-            If Not view Is Nothing Then
-                Dim desc As SortDescription
-                If Not String.IsNullOrWhiteSpace(value) Then
-                    desc = New SortDescription() With {
+            If System.Windows.Application.Current.Dispatcher.CheckAccess() Then
+                Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                If Not view Is Nothing Then
+                    Dim desc As SortDescription
+                    If Not String.IsNullOrWhiteSpace(value) Then
+                        desc = New SortDescription() With {
                         .PropertyName = value,
                         .Direction = Me.ItemsSortDirection
                     }
-                End If
-                If view.SortDescriptions.Count = 0 AndAlso Not String.IsNullOrWhiteSpace(value) Then
-                    view.SortDescriptions.Add(desc)
-                ElseIf Not String.IsNullOrWhiteSpace(value) Then
-                    view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
-                ElseIf Not String.IsNullOrWhiteSpace(Me.ItemsGroupByPropertyName) _
+                    End If
+                    If view.SortDescriptions.Count = 0 AndAlso Not String.IsNullOrWhiteSpace(value) Then
+                        view.SortDescriptions.Add(desc)
+                    ElseIf Not String.IsNullOrWhiteSpace(value) Then
+                        view.SortDescriptions(view.SortDescriptions.Count - 1) = desc
+                    ElseIf Not String.IsNullOrWhiteSpace(Me.ItemsGroupByPropertyName) _
                     AndAlso String.IsNullOrWhiteSpace(value) _
                     AndAlso view.SortDescriptions.Count > 1 Then
-                    For x = 2 To view.SortDescriptions.Count
-                        view.SortDescriptions.RemoveAt(view.SortDescriptions.Count - 1)
-                    Next
-                ElseIf String.IsNullOrWhiteSpace(Me.ItemsGroupByPropertyName) _
+                        For x = 2 To view.SortDescriptions.Count
+                            view.SortDescriptions.RemoveAt(view.SortDescriptions.Count - 1)
+                        Next
+                    ElseIf String.IsNullOrWhiteSpace(Me.ItemsGroupByPropertyName) _
                     AndAlso String.IsNullOrWhiteSpace(value) Then
-                    view.SortDescriptions.Clear()
-                End If
+                        view.SortDescriptions.Clear()
+                    End If
 
-                Me.SetValue(_itemsSortPropertyName, value)
+                    Me.SetValue(_itemsSortPropertyName, value)
+
+                    _initializeItemsSortPropertyName = Nothing
+                End If
+            Else
+                _initializeItemsSortPropertyName = value
             End If
         End Set
     End Property
 
     Public Property ItemsSortDirection As ListSortDirection
         Get
-            Return _itemsSortDirection
+            Return If(_initializeItemsSortDirection <> -1, _initializeItemsSortDirection, _itemsSortDirection)
         End Get
         Set(value As ListSortDirection)
-            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-            If Not view Is Nothing Then
-                For x = 0 To view.SortDescriptions.Count - 1
-                    Dim desc As SortDescription = New SortDescription() With {
-                        .PropertyName = view.SortDescriptions(x).PropertyName,
-                        .Direction = value
-                    }
-                    view.SortDescriptions(x) = desc
-                Next
+            If System.Windows.Application.Current.Dispatcher.CheckAccess() Then
+                Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                If Not view Is Nothing Then
+                    For x = 0 To view.SortDescriptions.Count - 1
+                        Dim desc As SortDescription = New SortDescription() With {
+                            .PropertyName = view.SortDescriptions(x).PropertyName,
+                            .Direction = value
+                        }
+                        view.SortDescriptions(x) = desc
+                    Next
 
-                Me.SetValue(_itemsSortDirection, value)
+                    Me.SetValue(_itemsSortDirection, value)
+
+                    _initializeItemsSortDirection = -1
+                End If
+            Else
+                _initializeItemsSortDirection = value
             End If
         End Set
     End Property
@@ -1037,6 +1084,8 @@ Public Class Folder
                     End If
 
                     Me.SetValue(_itemsGroupByPropertyName, value)
+
+                    _initializeItemsGroupByPropertyName = Nothing
                 End If
             Else
                 _initializeItemsGroupByPropertyName = value
@@ -1069,13 +1118,15 @@ Public Class Folder
                 Case SHCNE.CREATE, SHCNE.MKDIR
                     If _isLoaded Then
                         If e.Item1.Parent?.Pidl?.Equals(Me.Pidl) _
-                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) Then
+                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
+                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
                                     Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                                     If existing Is Nothing Then
+                                        Me.InitializeItem(e.Item1)
                                         e.Item1._parent = Me
                                         e.Item1.HookUpdates()
                                         e.IsHandled1 = True
@@ -1093,7 +1144,8 @@ Public Class Folder
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
                         If e.Item1.Parent?.Pidl?.Equals(Me.Pidl) _
-                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) Then
+                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
+                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
@@ -1117,6 +1169,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                                    Me.InitializeItem(e.Item1)
                                     e.Item1._parent = Me
                                     e.Item1.HookUpdates()
                                     e.IsHandled1 = True
@@ -1145,7 +1198,7 @@ Public Class Folder
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
-                        If Me.Pidl?.Equals(e.Item1.Pidl) Then
+                        If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) Then
                             If (e.Event = SHCNE.UPDATEDIR _
                                 OrElse e.Item1.FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive)?.FullPath & IO.Path.DirectorySeparatorChar) _
                                 OrElse e.Item1.FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness)?.FullPath & IO.Path.DirectorySeparatorChar)) _

@@ -174,12 +174,12 @@ Public Class Shell
         _nextClipboardViewer = Functions.SetClipboardViewer(hwnd)
 
         _customFolders.Add(New CustomFolder() With {
-            .FullPath = "::{D5309982-C24E-4337-8D50-766A25596297}",
+            .FullPath = "::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}",
             .ReplacesFullPath = "::{679f85cb-0220-4080-b29b-5540cc05aab6}",
             .Type = GetType(HomeFolder)
         })
         _customFolders.Add(New CustomFolder() With {
-            .FullPath = "::{D5309982-C24E-4337-8D50-766A25596297}",
+            .FullPath = "::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}",
             .ReplacesFullPath = "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}",
             .Type = GetType(HomeFolder)
         })
@@ -196,7 +196,7 @@ Public Class Shell
             Sub()
                 ' add special folders
                 Shell.AddSpecialFolder(SpecialFolders.Desktop, Folder.FromDesktop())
-                Shell.AddSpecialFolder(SpecialFolders.Home, Folder.FromParsingName("shell:::{D5309982-C24E-4337-8D50-766A25596297}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.Home, Folder.FromParsingName("shell:::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}", Nothing, False))
                 Shell.AddSpecialFolder(SpecialFolders.Documents, Folder.FromParsingName("shell:::{d3162b92-9365-467a-956b-92703aca08af}", Nothing, False))
                 Shell.AddSpecialFolder(SpecialFolders.Pictures, Folder.FromParsingName("shell:::{24ad3ad4-a569-4530-98e1-ab02f9417aa8}", Nothing, False))
                 Shell.AddSpecialFolder(SpecialFolders.Downloads, Folder.FromParsingName("shell:::{088e3905-0323-4b02-9826-5d99428e115f}", Nothing, False))
