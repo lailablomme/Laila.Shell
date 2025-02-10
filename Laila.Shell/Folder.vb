@@ -86,11 +86,6 @@ Public Class Folder
 
     Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As IntPtr? = Nothing)
         MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
-
-        If Shell.IsSpecialFoldersReady.WaitOne(0) Then
-            _items.Add(Shell.Desktop)
-            _items.Clear()
-        End If
     End Sub
 
     Friend Overridable Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
