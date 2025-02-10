@@ -162,7 +162,7 @@ Public Class HomeFolder
                 Dim lastAccessedProperty As [Property] = target.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
                 lastAccessedProperty._rawValue.Dispose()
                 lastAccessedProperty._rawValue = New PROPVARIANT()
-                lastAccessedProperty._rawValue.SetValue(modifiedProperty.Value)
+                lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
 
                 Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
                 target._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
