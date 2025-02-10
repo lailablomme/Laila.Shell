@@ -165,6 +165,7 @@ Public Class HomeFolder
                 Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
                 target._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
 
+                item.Dispose()
                 Return target
             Else
                 target.Dispose()
