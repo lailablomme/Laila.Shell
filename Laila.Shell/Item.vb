@@ -71,19 +71,20 @@ Public Class Item
             End Function)
     End Function
 
-    Public Shared Function FromPidl(pidl As IntPtr, parent As Folder,
+    Public Shared Function FromPidl(pidl As Pidl, parent As Folder,
                                     Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
         Return Shell.RunOnSTAThread(
             Function() As Item
+                Dim pidlClone As Pidl = pidl.Clone()
                 Dim shellItem2 As IShellItem2
-                shellItem2 = GetIShellItem2FromPidl(pidl, parent?.ShellFolder)
+                shellItem2 = GetIShellItem2FromPidl(pidlClone.AbsolutePIDL, parent?.ShellFolder)
                 If Not shellItem2 Is Nothing Then
                     Dim attr As SFGAO = SFGAO.FOLDER
                     shellItem2.GetAttributes(attr, attr)
                     If attr.HasFlag(SFGAO.FOLDER) Then
-                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
+                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, pidlClone)
                     Else
-                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
+                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, pidlClone)
                     End If
                 Else
                     Return Nothing
@@ -107,15 +108,13 @@ Public Class Item
         Return result
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As IntPtr? = Nothing)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As Pidl = Nothing)
         _objectCount += 1
         _objectId = _objectCount
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
         _logicalParent = logicalParent
-        If pidl.HasValue AndAlso Not IntPtr.Zero.Equals(pidl.Value) Then
-            _pidl = New Pidl(pidl.Value).Clone()
-        End If
+        _pidl = pidl
         If Not shellItem2 Is Nothing Then
             If doHookUpdates Then Me.HookUpdates()
             Shell.AddToItemsCache(Me)
@@ -1405,7 +1404,7 @@ Public Class Item
     End Sub
 
     Public Overridable Function Clone() As Item
-        Return Item.FromPidl(Me.Pidl.AbsolutePIDL, Nothing, _doKeepAlive)
+        Return Item.FromPidl(Me.Pidl, Nothing, _doKeepAlive)
     End Function
 
     Protected Overrides Sub Finalize()

@@ -6,7 +6,7 @@ Public Class Link
     Private _shellLinkW As IShellLinkW
     Private _targetPidl As Pidl
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As IntPtr? = Nothing)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As Pidl = Nothing)
         MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, pidl)
 
         CType(shellItem2, IShellItem2ForShellLink).BindToHandler(Nothing, Guids.BHID_SFUIObject, GetType(IShellLinkW).GUID, _shellLinkW)
@@ -30,7 +30,7 @@ Public Class Link
     End Property
 
     Public Function GetTarget(parent As Folder, Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
-        Return Item.FromPidl(Me.TargetPidl.AbsolutePIDL, parent, doKeepAlive, doHookUpdates)
+        Return Item.FromPidl(Me.TargetPidl, parent, doKeepAlive, doHookUpdates)
     End Function
 
     Protected Overrides Sub Dispose(disposing As Boolean)

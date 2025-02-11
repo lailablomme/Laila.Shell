@@ -31,7 +31,7 @@ Public Class FrequentFolders
                             Dim pidl As Pidl
                             Try
                                 pidl = New Pidl(folder.Pidl)
-                                Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
+                                Dim i As Item = Item.FromPidl(pidl, Nothing)
                                 If Not i Is Nothing AndAlso TypeOf i Is Folder AndAlso Not PinnedItems.GetIsPinned(i) Then
                                     mostFrequent2.Add(i)
                                     count += 1

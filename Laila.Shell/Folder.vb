@@ -84,7 +84,7 @@ Public Class Folder
         _isListening = True
     End Sub
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As IntPtr? = Nothing)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As Pidl = Nothing)
         MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
     End Sub
 

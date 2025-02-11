@@ -27,7 +27,7 @@ Public Class PinnedItems
                     Dim pidl As Pidl
                     Try
                         pidl = New Pidl(pinnedItem.Pidl)
-                        Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
+                        Dim i As Item = Item.FromPidl(pidl, Nothing)
                         If Not i Is Nothing Then
                             existingPinnedItems.Add(i)
                         Else

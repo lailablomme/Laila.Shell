@@ -23,7 +23,7 @@ Namespace Helpers
                             Dim pidl As Pidl
                             Try
                                 pidl = New Pidl(historyItem.Pidl)
-                                Dim i As Item = Item.FromPidl(pidl.AbsolutePIDL, Nothing)
+                                Dim i As Item = Item.FromPidl(pidl, Nothing)
                                 If Not i Is Nothing Then
                                     history2.Add(i)
                                     count += 1
