@@ -414,7 +414,8 @@ Namespace Controls
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                     Dim checkBox As CheckBox = UIHelper.FindVisualChildren(Of CheckBox)(listBoxItem)(0)
                     Dim p As Point = Mouse.GetPosition(checkBox)
-                    If p.X > 0 AndAlso p.Y > 0 AndAlso p.X < checkBox.ActualWidth AndAlso p.Y < checkBox.ActualHeight Then
+                    If checkBox.Visibility = Visibility.Visible AndAlso p.X > 0 AndAlso p.Y > 0 _
+                        AndAlso p.X < checkBox.ActualWidth AndAlso p.Y < checkBox.ActualHeight Then
                         checkBox.IsChecked = Not checkBox.IsChecked
                         e.Handled = True
                     ElseIf Keyboard.Modifiers = ModifierKeys.None Then
