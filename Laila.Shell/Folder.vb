@@ -801,7 +801,7 @@ Public Class Folder
         result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action)
 
         Dim isDebuggerAttached As Boolean = Debugger.IsAttached
-        Dim isRootDesktop As Boolean = Me.Pidl.Equals(Shell.Desktop.Pidl)
+        Dim isRootDesktop As Boolean = If(Me.Pidl?.Equals(Shell.Desktop.Pidl), False)
         Dim replacedWithCustomFolders As HashSet(Of String) = New HashSet(Of String)()
         For Each customFolder In Shell.CustomFolders
             replacedWithCustomFolders.Add(customFolder.ReplacesFullPath.ToLower())

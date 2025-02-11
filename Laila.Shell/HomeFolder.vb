@@ -11,7 +11,6 @@ Public Class HomeFolder
     Public Sub New(parent As Folder, doKeepAlive As Boolean)
         MyBase.New(Nothing, parent, doKeepAlive, False, Nothing)
 
-        _pidl = Pidl.FromCustomBytes(System.Text.UTF8Encoding.Default.GetBytes(Me.FullPath))
         Me.HasSubFolders = False
         _columns = New List(Of Column)() From {
             New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:10"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},

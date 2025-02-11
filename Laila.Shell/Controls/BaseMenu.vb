@@ -350,15 +350,15 @@ Namespace Controls
                         ' user clicked on an item
                         Dim f As Folder = items(0).Parent
                         If items.All(Function(i) (i.Parent Is Nothing AndAlso f Is Nothing) _
-                                         OrElse (Not i.Parent Is Nothing AndAlso i.Parent.Pidl.Equals(f?.Pidl))) Then
+                                         OrElse (Not i.Parent Is Nothing AndAlso i.Parent.Pidl?.Equals(f?.Pidl))) Then
                             folder = f
                         Else
                             folder = Shell.Desktop
                             doUseAbsolutePidls = True
                         End If
                         If folder Is Nothing Then folder = Shell.Desktop
-                        folderPidl = folder.Pidl.Clone()
-                        itemPidls = items.Select(Function(i) i.Pidl.Clone()).ToArray()
+                        folderPidl = folder.Pidl?.Clone()
+                        itemPidls = items.Select(Function(i) i.Pidl?.Clone()).ToArray()
                     Else
                         ' user clicked on the background
                         If folder.FullPath = Shell.Desktop.FullPath Then
@@ -370,9 +370,9 @@ Namespace Controls
                             If TypeOf folder Is SearchFolder Then
                                 folderPidl = Shell.Desktop.Pidl.Clone()
                             Else
-                                folderPidl = folder.Parent.Pidl.Clone()
+                                folderPidl = folder.Parent.Pidl?.Clone()
                             End If
-                            itemPidls = {folder.Pidl.Clone()}
+                            itemPidls = {folder.Pidl?.Clone()}
                         End If
                     End If
                 End Sub)
@@ -437,7 +437,7 @@ Namespace Controls
                         Shell.RunOnSTAThread(
                             Sub()
                                 folderPidl.Dispose()
-                                For Each p In itemPidls
+                                For Each p In itemPidls.Where(Function(p2) Not p2 Is Nothing)
                                     p.Dispose()
                                 Next
                             End Sub)

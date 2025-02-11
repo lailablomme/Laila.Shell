@@ -446,10 +446,10 @@ Namespace Controls
 
                     If Not currentFolder Is Nothing Then
                         While Not currentFolder Is Nothing _
-                        AndAlso Not noRecursive.Contains(currentFolder.Pidl.ToString()) _
+                        AndAlso Not noRecursive.Contains(currentFolder.Pidl?.ToString()) _
                         AndAlso (currentFolder.TreeRootIndex <> -1 _
                                  OrElse Not currentFolder.LogicalParent Is Nothing)
-                            noRecursive.Add(currentFolder.Pidl.ToString())
+                            noRecursive.Add(currentFolder.Pidl?.ToString())
                             list.Add(currentFolder)
                             Debug.WriteLine("SetSelectedFolder Added parent " & currentFolder.FullPath)
                             If currentFolder.TreeRootIndex <> -1 Then
@@ -647,7 +647,7 @@ Namespace Controls
                                     ' this allows for better reponse to double-clicking an unselected item
                                     UIHelper.OnUIThread(
                                         Sub()
-                                            If TypeOf clickedItem Is Folder AndAlso Not Me.Folder?.Pidl?.Equals(clickedItem.Pidl) Then
+                                            If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
                                                 CType(clickedItem, Folder).LastScrollOffset = New Point()
                                                 Me.Folder = clickedItem
                                             End If

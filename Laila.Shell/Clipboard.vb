@@ -21,10 +21,10 @@ Public Class Clipboard
                 Dim dropTarget As IDropTarget
                 Try
                     If Not folder.Parent Is Nothing Then
-                        folder.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        folder.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {If(folder.Pidl?.RelativePIDL, IntPtr.Zero)}, GetType(IDropTarget).GUID, 0, dropTarget)
                     Else
                         ' desktop
-                        Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {If(folder.Pidl?.RelativePIDL, IntPtr.Zero)}, GetType(IDropTarget).GUID, 0, dropTarget)
                     End If
 
                     If Not dropTarget Is Nothing Then

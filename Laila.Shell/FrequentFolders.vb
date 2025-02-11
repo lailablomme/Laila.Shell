@@ -53,6 +53,10 @@ Public Class FrequentFolders
     End Function
 
     Public Shared Sub Track(folder As Folder)
+        If folder.Pidl Is Nothing Then
+            Return
+        End If
+
         ' register with os
         Functions.SHAddToRecentDocs(SHARD.SHARD_PATHW, folder.FullPath)
 

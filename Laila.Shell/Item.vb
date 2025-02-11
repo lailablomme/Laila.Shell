@@ -788,7 +788,8 @@ Public Class Item
                     path = If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
                                   parent.DisplayName, parent.AddressBarDisplayName)
                 End If
-                If Not Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl)) Then
+                If Not Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) _
+                    If(f.Pidl?.Equals(parent?.Pidl), False) OrElse (f?.Pidl Is Nothing AndAlso parent?.Pidl Is Nothing)) Then
                     parent = parent.LogicalParent
                     If parent Is Nothing Then
                         Dim i As Int16 = 9
@@ -801,7 +802,8 @@ Public Class Item
                             path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
                                                           parent.DisplayName, parent.AddressBarDisplayName), path)
                         End If
-                        If Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) f.Pidl.Equals(parent.Pidl)) Then
+                        If Shell.GetSpecialFolders().Values.ToList().Exists(Function(f) _
+                            If(f.Pidl?.Equals(parent?.Pidl), False) OrElse (f?.Pidl Is Nothing AndAlso parent?.Pidl Is Nothing)) Then
                             Exit While
                         End If
                         parent = parent.LogicalParent
