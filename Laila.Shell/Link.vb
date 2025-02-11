@@ -15,14 +15,23 @@ Public Class Link
     Public ReadOnly Property TargetPidl As Pidl
         Get
             If _targetPidl Is Nothing Then
-                Dim pidl As IntPtr
-                _shellLinkW.GetIDList(pidl)
-                _targetPidl = New Pidl(pidl)
+                Try
+                    Dim pidl As IntPtr
+                    _shellLinkW.GetIDList(pidl)
+                    If Not IntPtr.Zero.Equals(pidl) Then
+                        _targetPidl = New Pidl(pidl)
+                    End If
+                Catch ex As Exception
+                End Try
             End If
 
             Return _targetPidl
         End Get
     End Property
+
+    Public Function GetTarget(parent As Folder, Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
+        Return Item.FromPidl(Me.TargetPidl.AbsolutePIDL, parent, doKeepAlive, doHookUpdates)
+    End Function
 
     Protected Overrides Sub Dispose(disposing As Boolean)
         SyncLock _shellItemLock

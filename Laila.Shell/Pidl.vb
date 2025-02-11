@@ -11,41 +11,41 @@ Public Class Pidl
     Private disposedValue As Boolean
 
     Public Shared Function FromCustomBytes(bytes As Byte()) As Pidl
-        Dim cb As Integer = 2 + bytes.Length ' 2 bytes for cb + data length
+        ' Compute total size: 2 bytes (size) + data length + 2 bytes (NULL terminator)
+        Dim cb As Integer = 2 + bytes.Length + 2
 
         ' Allocate memory for PIDL using CoTaskMemAlloc
-        Dim pidlPtr As IntPtr = Marshal.AllocCoTaskMem(cb + 2) ' +2 for the NULL terminator
+        Dim pidlPtr As IntPtr = Marshal.AllocCoTaskMem(cb)
 
         If pidlPtr = IntPtr.Zero Then
             Throw New OutOfMemoryException("Failed to allocate memory for PIDL")
         End If
 
-        ' Create a structure at the allocated memory
-        Marshal.WriteInt16(pidlPtr, CType(cb, Short)) ' Write cb (size)
-        Marshal.Copy(bytes, 0, IntPtr.Add(pidlPtr, 2), bytes.Length) ' Copy data
+        ' Write cb (total size including NULL terminator)
+        Marshal.WriteInt16(pidlPtr, CType(cb, Short))
 
-        ' Null terminator at the end
-        Marshal.WriteInt16(IntPtr.Add(pidlPtr, cb), 0)
+        ' Copy data into the PIDL
+        Marshal.Copy(bytes, 0, IntPtr.Add(pidlPtr, 2), bytes.Length)
+
+        ' Write the NULL terminator (final 2 bytes)
+        Marshal.WriteInt16(IntPtr.Add(pidlPtr, 2 + bytes.Length), 0)
 
         Return New Pidl(pidlPtr)
     End Function
 
     Public Sub New(pidl As IntPtr)
         _pidl = pidl
-        _lastId = Functions.ILFindLastID(_pidl)
     End Sub
 
     Public Sub New(pidl As String)
         Dim bytes As Byte() = pidl.Split("-"c).Select(Function(hex) Convert.ToByte(hex, 16)).ToArray()
         _pidl = Marshal.AllocCoTaskMem(bytes.Length)
         Marshal.Copy(bytes, 0, _pidl, bytes.Length)
-        _lastId = Functions.ILFindLastID(_pidl)
     End Sub
 
     Public Sub New(bytes As Byte())
         _pidl = Marshal.AllocCoTaskMem(bytes.Length)
         Marshal.Copy(bytes, 0, _pidl, bytes.Length)
-        _lastId = Functions.ILFindLastID(_pidl)
     End Sub
 
     Public Shared Function CreateShellIDListArray(items As IEnumerable(Of Item)) As IntPtr
@@ -186,6 +186,9 @@ Public Class Pidl
 
     Public ReadOnly Property RelativePIDL As IntPtr
         Get
+            If IntPtr.Zero.Equals(_lastId) AndAlso Not IntPtr.Zero.Equals(_pidl) Then
+                _lastId = Functions.ILFindLastID(_pidl)
+            End If
             Return _lastId
         End Get
     End Property
@@ -206,12 +209,6 @@ Public Class Pidl
     End Function
 
     Public Function Clone() As Pidl
-        'Dim bytes As Byte() = Me.Bytes
-        'Dim ptr As IntPtr = Marshal.AllocCoTaskMem(bytes.Count)
-        'For i = 0 To bytes.Length - 1
-        '    Marshal.Copy(bytes, 0, ptr, bytes.Length)
-        'Next
-        'Return New Pidl(ptr)
         Return New Pidl(Functions.ILClone(Me.AbsolutePIDL))
     End Function
 

@@ -143,38 +143,38 @@ Public Class HomeFolder
 
             count -= 1
         Next
-
+        Debug.WriteLine("-------------------")
         MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).ShellItem2, flags, cancellationToken, isSortPropertyByText,
             isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems)
+        Debug.WriteLine("-------------------")
     End Sub
 
     Protected Overrides Function InitializeItem(item As Item) As Item
-        MyBase.InitializeItem(item)
+        Try
+            If TypeOf item Is Link Then
+                Dim target As Item = CType(item, Link).GetTarget(Me)
+                If Not TypeOf target Is Folder _
+                    AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
+                    Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
+                    target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
-        If TypeOf item Is Link Then
-            Dim link As Link = item
-            Dim target As Item = Item.FromPidl(link.TargetPidl.AbsolutePIDL, Me, False, True)
-            If Not TypeOf target Is Folder _
-                AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Value) Then
-                Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
-                target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
+                    Dim lastAccessedProperty As [Property] = target.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
+                    lastAccessedProperty._rawValue.Dispose()
+                    lastAccessedProperty._rawValue = New PROPVARIANT()
+                    lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
 
-                Dim lastAccessedProperty As [Property] = target.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
-                lastAccessedProperty._rawValue.Dispose()
-                lastAccessedProperty._rawValue = New PROPVARIANT()
-                lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
+                    Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
+                    target._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
 
-                Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
-                target._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
-
-                item.Dispose()
-                Return target
-            Else
-                target.Dispose()
+                    Return target
+                Else
+                    target.Dispose()
+                End If
             End If
-        End If
+        Finally
+            item.Dispose()
+        End Try
 
-        item.Dispose()
         Return Nothing
     End Function
 
