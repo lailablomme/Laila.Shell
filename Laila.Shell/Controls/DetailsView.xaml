@@ -49,8 +49,8 @@
                                                                 <ColumnDefinition Width="Auto" />
                                                             </Grid.ColumnDefinitions>
                                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
-                                                                      VerticalAlignment="Center" Margin="2,0,2,0" x:Name="SelectionCheckBox"
-                                                                      Visibility="Collapsed" HorizontalAlignment="Left"/>
+                                                                      VerticalAlignment="Center" Margin="2,0,-2,0" x:Name="SelectionCheckBox"
+                                                                      Visibility="Collapsed" HorizontalAlignment="Left" />
                                                             <GridViewRowPresenter Grid.Column="1" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                                                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
                                                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}" 
@@ -66,7 +66,6 @@
                                                         </MultiDataTrigger.Conditions>
                                                         <MultiDataTrigger.Setters>
                                                             <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
-                                                            <Setter Property="GridViewRowPresenter.Margin" TargetName="rowPresenter" Value="14,0,0,0" />
                                                         </MultiDataTrigger.Setters>
                                                     </MultiDataTrigger>
                                                     <MultiDataTrigger>
@@ -76,7 +75,6 @@
                                                         </MultiDataTrigger.Conditions>
                                                         <MultiDataTrigger.Setters>
                                                             <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
-                                                            <Setter Property="GridViewRowPresenter.Margin" TargetName="rowPresenter" Value="14,0,0,0" />
                                                         </MultiDataTrigger.Setters>
                                                     </MultiDataTrigger>
                                                     <MultiDataTrigger>
@@ -87,7 +85,6 @@
                                                         </MultiDataTrigger.Conditions>
                                                         <MultiDataTrigger.Setters>
                                                             <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Hidden" />
-                                                            <Setter Property="GridViewRowPresenter.Margin" TargetName="rowPresenter" Value="14,0,0,0" />
                                                         </MultiDataTrigger.Setters>
                                                     </MultiDataTrigger>
                                                     <Trigger Property="IsMouseOver" Value="True">
