@@ -35,6 +35,9 @@ Public Class Pidl
 
     Public Sub New(pidl As IntPtr)
         _pidl = pidl
+        If IntPtr.Zero.Equals(pidl) Then
+            Throw New InvalidOperationException("Pidl can't be zero")
+        End If
     End Sub
 
     Public Sub New(pidl As String)
@@ -174,13 +177,19 @@ Public Class Pidl
 
     Public ReadOnly Property AbsolutePIDL As IntPtr
         Get
+            If IntPtr.Zero.Equals(_pidl) Then
+                Throw New InvalidOperationException("Pidl can't be zero")
+            End If
             Return _pidl
         End Get
     End Property
 
     Public ReadOnly Property RelativePIDL As IntPtr
         Get
-            If IntPtr.Zero.Equals(_lastId) AndAlso Not IntPtr.Zero.Equals(_pidl) Then
+            If IntPtr.Zero.Equals(_pidl) Then
+                Throw New InvalidOperationException("Pidl can't be zero")
+            End If
+            If IntPtr.Zero.Equals(_lastId) Then
                 _lastId = Functions.ILFindLastID(_pidl)
             End If
             Return _lastId
