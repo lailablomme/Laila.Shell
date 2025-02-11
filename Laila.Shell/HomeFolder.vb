@@ -112,69 +112,83 @@ Public Class HomeFolder
 
         Dim count As UInt64 = UInt64.MaxValue
         For Each item In PinnedItems.GetPinnedItems()
-            Dim clone As Item = item.Clone()
-            clone.LogicalParent = Me
-            clone.TreeSortPrefix = String.Format("{0:00000000000000000000}", count)
-            clone.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
+            item.LogicalParent = Me
+            item.TreeSortPrefix = String.Format("{0:00000000000000000000}", count)
+            item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
 
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
-            clone._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
+            item._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
 
-            result.Add(clone.FullPath & "_" & clone.DisplayName, clone)
-            newFullPaths.Add(clone.FullPath & "_" & clone.DisplayName)
+            result.Add(item.FullPath & "_" & item.DisplayName, item)
+            newFullPaths.Add(item.FullPath & "_" & item.DisplayName)
             If TypeOf item Is Folder Then Me.HasSubFolders = True
 
             count -= 1
         Next
 
         For Each item In FrequentFolders.GetMostFrequent()
-            Dim clone As Item = item.Clone()
-            clone.LogicalParent = Me
-            clone.TreeSortPrefix = String.Format("{0:00000000000000000000}", count)
-            clone.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
+            item.LogicalParent = Me
+            item.TreeSortPrefix = String.Format("{0:00000000000000000000}", count)
+            item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
 
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.FREQUENT_FOLDER)
-            clone._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
+            item._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
 
-            result.Add(clone.FullPath & "_" & clone.DisplayName, clone)
-            newFullPaths.Add(clone.FullPath & "_" & clone.DisplayName)
+            result.Add(item.FullPath & "_" & item.DisplayName, item)
+            newFullPaths.Add(item.FullPath & "_" & item.DisplayName)
             If TypeOf item Is Folder Then Me.HasSubFolders = True
 
             count -= 1
         Next
-        Debug.WriteLine("-------------------")
-        MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).ShellItem2, flags, cancellationToken, isSortPropertyByText,
-            isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems)
-        Debug.WriteLine("-------------------")
+
+        For Each item In CType(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone(), Folder).GetItems()
+            Dim clone As Item = item.Clone()
+
+            clone.LogicalParent = Me
+
+            Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
+            clone._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
+
+            result.Add(clone.FullPath & "_" & clone.DisplayName, clone)
+            newFullPaths.Add(clone.FullPath & "_" & clone.DisplayName)
+            If TypeOf clone Is Folder Then Me.HasSubFolders = True
+        Next
+        'Debug.WriteLine("-------------------")
+        'MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).ShellItem2, flags, cancellationToken, isSortPropertyByText,
+        '    isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems)
+        'Debug.WriteLine("-------------------")
     End Sub
 
     Protected Overrides Function InitializeItem(item As Item) As Item
         Try
             If TypeOf item Is Link Then
-                Dim target As Item = CType(item, Link).GetTarget(Me)
-                If Not TypeOf target Is Folder _
-                    AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
-                    Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
-                    target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
+                'Debug.WriteLine("LINK: " & item.FullPath & "=" & CType(item, Link).TargetFullPath)
+                'Dim p As Pidl = CType(item, Link).TargetPidl
+                'p.Dispose()
+                'Dim target As Item = CType(item, Link).GetTarget(Me)
+                'If Not TypeOf target Is Folder _
+                '    AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
+                '    Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
+                '    target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
-                    Dim lastAccessedProperty As [Property] = target.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
-                    lastAccessedProperty._rawValue.Dispose()
-                    lastAccessedProperty._rawValue = New PROPVARIANT()
-                    lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
+                '    Dim lastAccessedProperty As [Property] = target.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
+                '    lastAccessedProperty._rawValue.Dispose()
+                '    lastAccessedProperty._rawValue = New PROPVARIANT()
+                '    lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
 
-                    Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
-                    target._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
+                Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
+                item._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
 
-                    Return target
-                Else
-                    target.Dispose()
-                End If
+                '    Return target
+                'Else
+                '    target.Dispose()
+                'End If
             End If
         Finally
-            item.Dispose()
+            'item.Dispose()
         End Try
 
-        Return Nothing
+        Return item
     End Function
 
     Public Overrides ReadOnly Property CanSort As Boolean

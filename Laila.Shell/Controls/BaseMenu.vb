@@ -348,9 +348,9 @@ Namespace Controls
                 Sub()
                     If Not items Is Nothing AndAlso items.Count > 0 Then
                         ' user clicked on an item
-                        Dim f As Folder = items(0).Parent
-                        If items.All(Function(i) (i.Parent Is Nothing AndAlso f Is Nothing) _
-                                         OrElse (Not i.Parent Is Nothing AndAlso i.Parent.Pidl?.Equals(f?.Pidl))) Then
+                        Dim f As Folder = items(0).LogicalParent
+                        If items.All(Function(i) (i.LogicalParent Is Nothing AndAlso f Is Nothing) _
+                                         OrElse (Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Pidl?.Equals(f?.Pidl))) Then
                             folder = f
                         Else
                             folder = Shell.Desktop

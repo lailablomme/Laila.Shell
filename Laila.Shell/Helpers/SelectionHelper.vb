@@ -59,7 +59,7 @@ Namespace Helpers
                 End If
             Next
 
-            'lb.ScrollIntoView(item)
+            lb.ScrollIntoView(item)
 
             For Each i In d
                 i.Key.ScrollToHorizontalOffset(i.Value.Item1)

@@ -403,9 +403,9 @@ Namespace Controls
                             If TypeOf clickedItem Is Folder Then
                                 CType(clickedItem, Folder).LastScrollOffset = New Point()
                                 Me.Host.Folder = clickedItem
-                                UIHelper.OnUIThread(
-                            Sub()
-                            End Sub, Threading.DispatcherPriority.Render)
+                                '    UIHelper.OnUIThread(
+                                'Sub()
+                                'End Sub, Threading.DispatcherPriority.Render)
                             Else
                                 invokeDefaultCommand(clickedItem)
                             End If
