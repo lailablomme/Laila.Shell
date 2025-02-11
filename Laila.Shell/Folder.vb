@@ -568,12 +568,12 @@ Public Class Folder
                     prevEnumerationCancellationTokenSource.Cancel()
                 End If
             End If
-            Me.IsLoading = False
             Return _items.ToList()
         Finally
             If _enumerationLock.CurrentCount = 0 Then
                 _enumerationLock.Release()
             End If
+            Me.IsLoading = False
         End Try
     End Function
 
@@ -589,7 +589,6 @@ Public Class Folder
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
                         enumerateItems(True, _enumerationCancellationTokenSource.Token, doRefreshAllExistingItems)
                     End If
-                    Me.IsLoading = False
                     tcs.SetResult(_items.ToList())
                 Catch ex As Exception
                     tcs.SetException(ex)
@@ -597,6 +596,7 @@ Public Class Folder
                     If _enumerationLock.CurrentCount = 0 Then
                         _enumerationLock.Release()
                     End If
+                    Me.IsLoading = False
                 End Try
             End Sub)
 

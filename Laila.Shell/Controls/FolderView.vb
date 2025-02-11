@@ -70,6 +70,7 @@ Namespace Controls
                 Me.ActiveView.Host = Me
                 Me.ActiveView.SearchBox = Me.SearchBox
                 Me.ActiveView.Navigation = Me.Navigation
+                Me.ActiveView.Visibility = Visibility.Hidden
                 _views.Add(view.Key, Me.ActiveView)
                 If Not Me.PART_Grid Is Nothing Then
                     Me.PART_Grid.Children.Add(Me.ActiveView)
@@ -246,6 +247,7 @@ Namespace Controls
                     v.SetValue(Panel.ZIndexProperty, 0)
                 Next
                 Me.ActiveView = _views(newValue)
+                Me.ActiveView.Visibility = Visibility.Visible
                 Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
                 If hasFocus Then Me.ActiveView.Focus()
                 Me.ActiveView.Folder = folder
