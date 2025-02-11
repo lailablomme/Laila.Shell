@@ -59,7 +59,7 @@ Namespace Helpers
                 End If
             Next
 
-            lb.ScrollIntoView(item)
+            'lb.ScrollIntoView(item)
 
             For Each i In d
                 i.Key.ScrollToHorizontalOffset(i.Value.Item1)
@@ -111,8 +111,10 @@ Namespace Helpers
                     ElseIf selectedItems.Count = 1 Then
                         If Not selectedItems(0).Equals(_control.SelectedItem) Then
                             '_control.ScrollIntoView(selectedItems(0))
-                            scrollIntoView(_control, selectedItems(0))
                             _control.SelectedItem = selectedItems(0)
+                            If doScrollIntoView Then
+                                scrollIntoView(_control, selectedItems(0))
+                            End If
                             SelectionChanged()
                         End If
                     Else

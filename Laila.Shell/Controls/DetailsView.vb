@@ -15,6 +15,33 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(DetailsView), New FrameworkPropertyMetadata(GetType(DetailsView)))
         End Sub
 
+        Public Sub New()
+            EventManager.RegisterClassHandler(GetType(FrameworkElement), FrameworkElement.RequestBringIntoViewEvent,
+                                              New RequestBringIntoViewEventHandler(AddressOf OnRequestBringIntoView))
+        End Sub
+
+        Private Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
+            If TypeOf e.OriginalSource Is ListViewItem AndAlso UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox) Then
+                Dim item As ListViewItem = e.OriginalSource
+                If Not item Is Nothing Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                    Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
+                    Dim headerRowPresenter As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(Me.PART_ListBox)(0)
+
+                    ' Check if item is outside the viewport and adjust scrolling, but only vertically
+                    If itemRect.Top < headerRowPresenter.ActualHeight Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top - headerRowPresenter.ActualHeight)
+                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight - headerRowPresenter.ActualHeight))
+                    End If
+                    e.Handled = True
+                End If
+            ElseIf Not If(TypeOf e.OriginalSource Is Expander, e.OriginalSource, UIHelper.GetParentOfType(Of Expander)(e.OriginalSource)) Is Nothing _
+                AndAlso UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox) Then
+                e.Handled = True
+            End If
+        End Sub
+
         Protected Overrides Sub PART_ListBox_Loaded()
             ' notify of sort/group by changes
             Me.PART_Ext = Microsoft.Xaml.Behaviors.Interaction.GetBehaviors(Me.PART_ListBox).FirstOrDefault(Function(b) TypeOf b Is Behaviors.GridViewExtBehavior)
@@ -25,7 +52,7 @@ Namespace Controls
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
-            AddHandler PART_Grid.SizeChanged,
+            AddHandler Me.PART_Grid.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)
                     updateClip()
                 End Sub
