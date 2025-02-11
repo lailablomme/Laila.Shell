@@ -116,10 +116,6 @@ Public Class Pidl
                     Dim itemPidl As Pidl = New Pidl(IntPtr.Add(start, offset))
                     result.Add(Item.FromPidl(itemPidl, parentFolder, True, True))
                 Next
-
-                If Not parentFolder Is Nothing Then
-                    parentFolder.Dispose()
-                End If
             End Sub, 1)
 
         Return result
