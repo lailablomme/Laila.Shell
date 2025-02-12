@@ -371,7 +371,7 @@ Public Class Shell
                                      SHCNE.MKDIR, SHCNE.NETSHARE, SHCNE.NETUNSHARE, SHCNE.RENAMEFOLDER, SHCNE.RENAMEITEM,
                                      SHCNE.RMDIR, SHCNE.SERVERDISCONNECT, SHCNE.UPDATEDIR, SHCNE.UPDATEIMAGE, SHCNE.UPDATEITEM
                                     If Not IntPtr.Zero.Equals(pidl1) Then
-                                        Using p As Pidl = New Pidl(pidl1)
+                                        Using p As Pidl = New Pidl(pidl1).Clone()
                                             e.Item1 = Item.FromPidl(p, Nothing, False, False)
                                             If Not e.Item1 Is Nothing Then
                                                 text &= BitConverter.ToString(e.Item1.Pidl.Bytes) & Environment.NewLine & e.Item1.DisplayName & " (" & e.Item1.FullPath & ")" & Environment.NewLine
@@ -381,7 +381,7 @@ Public Class Shell
                                         End Using
                                     End If
                                     If Not IntPtr.Zero.Equals(pidl2) Then
-                                        Using p As Pidl = New Pidl(pidl2)
+                                        Using p As Pidl = New Pidl(pidl2).Clone()
                                             e.Item2 = Item.FromPidl(p, Nothing, False, False)
                                             If Not e.Item2 Is Nothing Then
                                                 text &= BitConverter.ToString(e.Item2.Pidl.Bytes) & Environment.NewLine & e.Item2.DisplayName & " (" & e.Item2.FullPath & ")" & Environment.NewLine
@@ -656,16 +656,26 @@ Public Class Shell
                                 fswNotify(e2)
                             End Sub)
                     End Sub
-                AddHandler fsw.Changed,
-                    Sub(s As Object, e As FileSystemEventArgs)
-                        ' make eventargs
-                        Dim e2 As NotificationEventArgs = New NotificationEventArgs()
-                        e2.Event = SHCNE.UPDATEITEM
-                        e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
-                        fswNotify(e2)
-                    End Sub
-
+                'AddHandler fsw.Changed,
+                '    Sub(s As Object, e As FileSystemEventArgs)
+                '        ' make eventargs
+                '        Dim e2 As NotificationEventArgs = New NotificationEventArgs()
+                '        e2.Event = SHCNE.UPDATEITEM
+                '        e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
+                '        fswNotify(e2)
+                '    End Sub
                 fsw.EnableRaisingEvents = True
+
+                hNotify =
+                    Functions.SHChangeNotifyRegister(
+                        _hwnd,
+                        SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
+                        SHCNE.UPDATEDIR Or SHCNE.UPDATEITEM Or SHCNE.MEDIAINSERTED _
+                            Or SHCNE.MEDIAREMOVED Or SHCNE.NETSHARE Or SHCNE.NETUNSHARE _
+                            Or SHCNE.SERVERDISCONNECT,
+                        WM.USER + 1,
+                        1,
+                        entry)
             Else
                 hNotify =
                     Functions.SHChangeNotifyRegister(
