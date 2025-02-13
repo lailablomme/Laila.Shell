@@ -15,7 +15,7 @@ Namespace Helpers
 
                 Dim tcs As New TaskCompletionSource(Of IEnumerable(Of Item))
 
-                Return Shell.RunOnSTAThread(
+                Return Shell.GlobalThreadPool.Run(
                     Function() As IEnumerable(Of Item)
                         Dim history2 As List(Of Item) = New List(Of Item)()
                         Dim count As Integer = 0

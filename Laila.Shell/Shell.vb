@@ -18,8 +18,8 @@ Public Class Shell
     Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
     Public Shared Event ClipboardChanged As EventHandler
 
-    Public Shared NotificationTaskQueue As New BlockingCollection(Of Action)
-    Public Shared STATaskQueue As New BlockingCollection(Of Action)
+    Public Shared NotificationThread As Helpers.ThreadPool
+    Public Shared GlobalThreadPool As Helpers.ThreadPool
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
 
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
@@ -36,6 +36,8 @@ Public Class Shell
     Private Shared _customPropertiesByCanonicalName As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
     Private Shared _customPropertiesByKey As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
 
+    Private Shared _threadPoolCacheLock As Object = New Object()
+    Private Shared _threadPoolCache As List(Of Helpers.ThreadPool) = New List(Of Helpers.ThreadPool)()
     Private Shared _menuCacheLock As Object = New Object()
     Private Shared _menuCache As List(Of BaseMenu) = New List(Of BaseMenu)()
     Friend Shared _itemsCacheLock As Object = New Object()
@@ -71,42 +73,8 @@ Public Class Shell
 
         ImageHelper.Load()
 
-        Dim notificationThread As Thread = New Thread(
-                Sub()
-                    Try
-                        ' Process tasks from the queue
-                        For Each task In NotificationTaskQueue.GetConsumingEnumerable()
-                            task.Invoke()
-                        Next
-                    Catch ex As OperationCanceledException
-                        Debug.WriteLine("NotificationTaskQueue thread was canceled.")
-                    End Try
-                End Sub)
-        notificationThread.IsBackground = True
-        notificationThread.SetApartmentState(ApartmentState.STA)
-        notificationThread.Priority = ThreadPriority.Highest
-        notificationThread.Start()
-        _threads.Add(notificationThread)
-
-        ' all sta threads, because not every shell item supports mta
-        For i = 1 To 75
-            Dim staThread As Thread = New Thread(
-                Sub()
-                    Try
-                        ' Process tasks from the queue
-                        For Each task In STATaskQueue.GetConsumingEnumerable()
-                            task.Invoke()
-                        Next
-                    Catch ex As OperationCanceledException
-                        Debug.WriteLine("STATaskQueue thread was canceled.")
-                    End Try
-                End Sub)
-            staThread.IsBackground = True
-            staThread.SetApartmentState(ApartmentState.STA)
-            staThread.Priority = ThreadPriority.Highest
-            staThread.Start()
-            _threads.Add(staThread)
-        Next
+        Shell.NotificationThread = New Helpers.ThreadPool(1) ' these events need to be processed sequentially
+        Shell.GlobalThreadPool = New Helpers.ThreadPool(100)
 
         ' thread for disposing items
         Dim disposeThread As Thread = New Thread(
@@ -161,7 +129,7 @@ Public Class Shell
         _w.Width = 1920
         _w.Height = 1080
         _w.ShowInTaskbar = False
-        _w.Title = "Hidden Window"
+        _w.Title = "Messaging Window"
         _w.Show()
 
         ' add hook
@@ -192,7 +160,7 @@ Public Class Shell
             {Home_CategoryProperty.Key.ToString(), GetType(Home_CategoryProperty)}
         }
 
-        Shell.STATaskQueue.Add(
+        Shell.GlobalThreadPool.Add(
             Sub()
                 ' add special folders
                 Shell.AddSpecialFolder(SpecialFolders.Desktop, Folder.FromDesktop())
@@ -293,6 +261,8 @@ Public Class Shell
                 Next
             End SyncLock
 
+            Shell.NotificationThread.Dispose()
+
             ' stop monitoring changes to settings so we can properly close the registry keys
             Shell.Settings.StopMonitoring()
 
@@ -333,10 +303,17 @@ Public Class Shell
                 End SyncLock
             End While
 
+            SyncLock _threadPoolCacheLock
+                For Each item In Shell.ThreadPoolCache.ToList()
+                    item.Dispose()
+                Next
+            End SyncLock
+
             ' uninitialize ole
             Functions.OleUninitialize()
 
             ' close messaging window to allow the application to close when using ShutdownMode.OnLastWindowClose
+            Debug.WriteLine("Closing messaging window")
             If Not _w Is Nothing Then _w.Close()
         End If
     End Sub
@@ -356,7 +333,7 @@ Public Class Shell
                     pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                     Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
-                    Shell.NotificationTaskQueue.Add(
+                    Shell.NotificationThread.Add(
                         Sub()
                             ' make eventargs
                             Dim e As NotificationEventArgs = New NotificationEventArgs() With {
@@ -552,6 +529,24 @@ Public Class Shell
         End SyncLock
     End Sub
 
+    Friend Shared ReadOnly Property ThreadPoolCache As List(Of Helpers.ThreadPool)
+        Get
+            Return _threadPoolCache
+        End Get
+    End Property
+
+    Friend Shared Sub AddToThreadPoolCache(item As Helpers.ThreadPool)
+        SyncLock _threadPoolCacheLock
+            _threadPoolCache.Add(item)
+        End SyncLock
+    End Sub
+
+    Friend Shared Sub RemoveFromThreadPoolCache(item As Helpers.ThreadPool)
+        SyncLock _threadPoolCacheLock
+            _threadPoolCache.Remove(item)
+        End SyncLock
+    End Sub
+
     Friend Shared ReadOnly Property MenuCache As List(Of BaseMenu)
         Get
             Return _menuCache
@@ -620,7 +615,7 @@ Public Class Shell
                 fsw = New FileSystemWatcher(folder.FullPath)
                 AddHandler fsw.Created,
                     Sub(s As Object, e As FileSystemEventArgs)
-                        Shell.NotificationTaskQueue.Add(
+                        Shell.NotificationThread.Add(
                             Sub()
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
@@ -631,7 +626,7 @@ Public Class Shell
                     End Sub
                 AddHandler fsw.Deleted,
                     Sub(s As Object, e As FileSystemEventArgs)
-                        Shell.NotificationTaskQueue.Add(
+                        Shell.NotificationThread.Add(
                             Sub()
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
@@ -642,7 +637,7 @@ Public Class Shell
                     End Sub
                 AddHandler fsw.Renamed,
                     Sub(s As Object, e As RenamedEventArgs)
-                        Shell.NotificationTaskQueue.Add(
+                        Shell.NotificationThread.Add(
                             Sub()
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
@@ -720,49 +715,6 @@ Public Class Shell
             End If
         End SyncLock
     End Sub
-
-    Public Shared Sub RunOnSTAThread(action As Action, Optional maxRetries As Integer = 1)
-        RunOnSTAThread(
-            Function() As Boolean
-                action()
-                Return True
-            End Function, maxRetries)
-    End Sub
-
-    Public Shared Function RunOnSTAThread(Of TResult)(func As Func(Of TResult), Optional maxRetries As Integer = 1) As TResult
-        Dim tcs As TaskCompletionSource(Of TResult)
-        Dim numTries = 1
-        While (tcs Is Nothing OrElse Not (tcs.Task.IsCompleted OrElse tcs.Task.IsCanceled)) _
-            AndAlso numTries <= 3 AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested
-            Try
-                tcs = New TaskCompletionSource(Of TResult)()
-                Shell.STATaskQueue.Add(
-                    Sub()
-                        Try
-                            tcs.SetResult(func())
-                        Catch ex As Exception
-                            Debug.WriteLine("RunOnSTAThread STATaskQueue Exception: " & ex.Message)
-                            tcs.SetException(ex)
-                        End Try
-                    End Sub)
-                tcs.Task.Wait(Shell.ShuttingDownToken)
-                If numTries > 1 AndAlso tcs.Task.IsCompleted Then
-                    Debug.WriteLine("RunOnSTAThread succeeded after " & numTries & " tries")
-                ElseIf tcs.Task.IsFaulted Then
-                    numTries += 1
-                End If
-            Catch ex As Exception
-                Debug.WriteLine("RunOnSTAThread While Exception: " & ex.Message)
-                numTries += 1
-            End Try
-        End While
-        If Not tcs Is Nothing AndAlso tcs.Task.IsCompleted _
-            AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
-            Return tcs.Task.Result
-        Else
-            Return Nothing
-        End If
-    End Function
 
     Public Class CustomFolder
         Public Property FullPath As String

@@ -346,7 +346,7 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property HasIconAsync As Boolean
         Get
-            Shell.RunOnSTAThread(
+            Shell.GlobalThreadPool.Run(
                 Function() As Boolean
                     Return Me.HasIcon
                 End Function)
@@ -394,7 +394,7 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property Icons16Async As ImageSource()
         Get
-            Dim imageReferences16 As String() = Shell.RunOnSTAThread(
+            Dim imageReferences16 As String() = Shell.GlobalThreadPool.Run(
                 Function() As String()
                     Return Me.ImageReferences16
                 End Function)

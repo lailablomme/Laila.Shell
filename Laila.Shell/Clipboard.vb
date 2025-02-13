@@ -12,7 +12,7 @@ Public Class Clipboard
     End Function
 
     Public Shared Function CanPaste(folder As Folder) As Boolean
-        Return Shell.RunOnSTAThread(
+        Return Shell.GlobalThreadPool.Run(
             Function() As Boolean
                 ' check for paste by checking if it would accept a drop
                 Dim dataObject As ComTypes.IDataObject

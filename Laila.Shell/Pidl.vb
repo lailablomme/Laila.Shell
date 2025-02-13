@@ -103,7 +103,7 @@ Public Class Pidl
         Dim parentFolder As Folder
 
         ' read items
-        Shell.RunOnSTAThread(
+        Shell.GlobalThreadPool.Run(
             Sub()
                 If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) <> 0 Then
                     Dim parentPidl As Pidl = New Pidl(IntPtr.Add(start, offset))

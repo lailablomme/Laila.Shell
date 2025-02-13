@@ -12,7 +12,7 @@ Public Class SearchFolder
     Private _threadCompletionSource As TaskCompletionSource = New TaskCompletionSource()
 
     Public Shared Function FromTerms(terms As String, parent As Folder) As SearchFolder
-        Dim folder As SearchFolder = Shell.RunOnSTAThread(
+        Dim folder As SearchFolder = Shell.GlobalThreadPool.Run(
             Function() As SearchFolder
                 Return New SearchFolder(getShellItem(terms, parent), parent) With {.View = "Content", .Terms = terms}
             End Function)
@@ -158,7 +158,7 @@ Public Class SearchFolder
         Me.Terms = terms
 
         ' get new shellitem
-        Shell.RunOnSTAThread(
+        Shell.GlobalThreadPool.Run(
             Sub()
                 Dim oldShellItem2 As IShellItem2 = _shellItem2
                 _shellItem2 = getShellItem(terms, Me.LogicalParent)

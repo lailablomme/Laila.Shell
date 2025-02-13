@@ -23,7 +23,7 @@ Public Class FrequentFolders
                 Dim mostFrequent1 As List(Of FrequentFolder) = collection.Query() _
                     .OrderByDescending(Function(f) f.AccessCount).ToList()
 
-                Return Shell.RunOnSTAThread(
+                Return Shell.GlobalThreadPool.Run(
                     Function() As IEnumerable(Of Item)
                         Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
                         Dim count As Integer = 0

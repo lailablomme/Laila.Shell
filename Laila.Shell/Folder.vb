@@ -48,7 +48,7 @@ Public Class Folder
     Protected _hookFolderFullPath As String
 
     Public Shared Function FromDesktop() As Folder
-        Return Shell.RunOnSTAThread(
+        Return Shell.GlobalThreadPool.Run(
             Function() As Folder
                 Dim pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
                 Try
@@ -94,7 +94,7 @@ Public Class Folder
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            _shellFolder = Shell.RunOnSTAThread(
+            _shellFolder = Shell.GlobalThreadPool.Run(
                 Function() As IShellFolder
                     Dim result As IShellFolder
                     SyncLock _shellItemLock
@@ -126,7 +126,7 @@ Public Class Folder
 
     Public Overrides Property IsExpanded As Boolean
         Get
-            Return _isExpanded AndAlso (Me.TreeRootIndex <> -1 OrElse If(_logicalParent, _parent) Is Nothing OrElse If(_logicalParent, _parent).IsExpanded)
+            Return _isExpanded 'AndAlso (Me.TreeRootIndex <> -1 OrElse If(_logicalParent, _parent) Is Nothing OrElse If(_logicalParent, _parent).IsExpanded)
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)
@@ -199,7 +199,7 @@ Public Class Folder
     End Property
 
     Public Async Function GetInfoTipFolderSizeAsync(cancellationToken As CancellationToken) As Task(Of String)
-        Dim folderList As List(Of String) = Shell.RunOnSTAThread(
+        Dim folderList As List(Of String) = Shell.GlobalThreadPool.Run(
             Function() As List(Of String)
                 Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.ENABLE_ASYNC
                 If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
@@ -207,7 +207,7 @@ Public Class Folder
                 Return quickEnum(flags, 11)
             End Function)
 
-        Dim fileList As List(Of String) = Shell.RunOnSTAThread(
+        Dim fileList As List(Of String) = Shell.GlobalThreadPool.Run(
             Function() As List(Of String)
                 Dim flags As UInt32 = SHCONTF.NONFOLDERS Or SHCONTF.ENABLE_ASYNC
                 If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
@@ -218,7 +218,7 @@ Public Class Folder
         Dim result As List(Of String) = New List(Of String)()
 
         If Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
-            Dim size As UInt64? = Shell.RunOnSTAThread(
+            Dim size As UInt64? = Shell.GlobalThreadPool.Run(
                 Function() As UInt64?
                     Return getSizeRecursive(2500, cancellationToken)
                 End Function)
@@ -437,7 +437,7 @@ Public Class Folder
 
     Public ReadOnly Property ColumnManager As IColumnManager
         Get
-            Return Shell.RunOnSTAThread(
+            Return Shell.GlobalThreadPool.Run(
                 Function() As IShellView
                     Dim shellView As IShellView
                     Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
@@ -491,7 +491,7 @@ Public Class Folder
 
     Public Overrides Property HasSubFolders As Boolean
         Get
-            Return Shell.RunOnSTAThread(
+            Return Shell.GlobalThreadPool.Run(
                 Function() As Boolean
                     If _hasSubFolders.HasValue Then
                         Return _hasSubFolders.Value
@@ -580,7 +580,7 @@ Public Class Folder
     Public Overridable Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True) As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
-        Shell.STATaskQueue.Add(
+        Shell.GlobalThreadPool.Add(
             Sub()
                 _enumerationLock.Wait()
                 Try
@@ -724,7 +724,7 @@ Public Class Folder
                             Dim j As Integer = i
                             Dim tcs As TaskCompletionSource = New TaskCompletionSource()
                             tcses.Add(tcs)
-                            Shell.STATaskQueue.Add(
+                            Shell.GlobalThreadPool.Add(
                                  Sub()
                                      'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
 
@@ -1125,7 +1125,7 @@ Public Class Folder
                                         e.Item1._parent = Me
                                         e.Item1.HookUpdates()
                                         e.IsHandled1 = True
-                                        Shell.RunOnSTAThread(
+                                        Shell.GlobalThreadPool.Run(
                                             Sub()
                                                 e.Item1.Refresh()
                                             End Sub)
@@ -1173,7 +1173,10 @@ Public Class Folder
                                     Me.IsEmpty = _items.Count = 0
                                 End If
                             End Sub)
-                        e.Item1.Refresh()
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                e.Item1.Refresh()
+                            End Sub)
                     End If
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then

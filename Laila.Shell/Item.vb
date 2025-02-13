@@ -46,7 +46,7 @@ Public Class Item
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
-        Return Shell.RunOnSTAThread(
+        Return Shell.GlobalThreadPool.Run(
             Function() As Item
                 Dim customFolderType As Type = Shell.CustomFolders _
                     .FirstOrDefault(Function(f) f.FullPath.ToLower().Equals(parsingName.ToLower()) _
@@ -73,7 +73,7 @@ Public Class Item
 
     Public Shared Function FromPidl(pidl As Pidl, parent As Folder,
                                     Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
-        Return Shell.RunOnSTAThread(
+        Return Shell.GlobalThreadPool.Run(
             Function() As Item
                 Dim pidlClone As Pidl = pidl.Clone()
                 Dim shellItem2 As IShellItem2
@@ -420,7 +420,7 @@ Public Class Item
                 ' if we don't have any yet/anymore...
                 If _parent Is Nothing Then
                     Dim parentShellItem2 As IShellItem2
-                    _parent = Shell.RunOnSTAThread(
+                    _parent = Shell.GlobalThreadPool.Run(
                         Function() As Folder
                             SyncLock _shellItemLock
                                 If Not Me.ShellItem2 Is Nothing Then
@@ -494,7 +494,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property AssociatedApplicationIconAsync(size As Integer) As ImageSource
         Get
-            Return Shell.RunOnSTAThread(
+            Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource
                     Dim result As ImageSource
                     result = Me.AssociatedApplicationIcon(size)
@@ -539,7 +539,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlayImageAsync(size As Integer) As ImageSource
         Get
-            Dim overlayIconIndex As Byte? = Shell.RunOnSTAThread(
+            Dim overlayIconIndex As Byte? = Shell.GlobalThreadPool.Run(
                 Function() As Byte?
                     Return Me.OverlayIconIndex
                 End Function, 3)
@@ -592,7 +592,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property IconAsync(size As Integer) As ImageSource
         Get
-            Return Shell.RunOnSTAThread(
+            Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource
                     Dim result As ImageSource
                     result = Me.Icon(size)
@@ -643,7 +643,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property ImageAsync(size As Integer) As ImageSource
         Get
-            Return Shell.RunOnSTAThread(
+            Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource
                     Dim result As ImageSource
                     result = Me.Image(size)
@@ -655,7 +655,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property StorageProviderUIStatusIcons16Async As ImageSource()
         Get
-            Return Shell.RunOnSTAThread(
+            Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource()
                     Dim result As ImageSource()
                     If Not Me.disposedValue Then
@@ -668,7 +668,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property StorageProviderUIStatusFirstIcon16Async As ImageSource
         Get
-            Return Shell.RunOnSTAThread(
+            Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource
                     Dim result As ImageSource
                     If Not Me.disposedValue Then
@@ -723,7 +723,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property HasThumbnailAsync As Boolean
         Get
-            Dim result As Boolean? = Shell.RunOnSTAThread(
+            Dim result As Boolean? = Shell.GlobalThreadPool.Run(
                 Function() As Boolean?
                     Return Me.HasThumbnail
                 End Function, 3)
@@ -1035,7 +1035,7 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(key.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = Shell.RunOnSTAThread(
+                    [property] = Shell.GlobalThreadPool.Run(
                         Function() As [Property]
                             SyncLock _shellItemLock
                                 If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
@@ -1069,7 +1069,7 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = Shell.RunOnSTAThread(
+                    [property] = Shell.GlobalThreadPool.Run(
                         Function() As [Property]
                             SyncLock _shellItemLock
                                 If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
@@ -1103,7 +1103,7 @@ Public Class Item
             Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = Shell.RunOnSTAThread(
+                    [property] = Shell.GlobalThreadPool.Run(
                         Function() As [Property]
                             SyncLock _shellItemLock
                                 If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
@@ -1287,31 +1287,43 @@ Public Class Item
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR
                     If Me.Pidl?.Equals(e.Item1?.Pidl) Then
-                        Me.Refresh()
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                Me.Refresh()
+                            End Sub)
                     End If
                 Case SHCNE.FREESPACE
                     If Me.IsDrive Then
-                        Me.Refresh()
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                Me.Refresh()
+                            End Sub)
                     End If
                 Case SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
                     If Me.IsDrive AndAlso Me.Pidl?.Equals(e.Item1?.Pidl) Then
-                        Me.Refresh()
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                Me.Refresh()
+                            End Sub)
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _
                         OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) Then
-                        Dim oldPidl As Pidl = Me.Pidl?.Clone()
-                        Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
-                        If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
-                            PinnedItems.RenameItem(oldPidl, Me.Pidl)
-                            FrequentFolders.RenameItem(oldPidl, Me.Pidl)
-                        End If
-                        If Not oldPidl Is Nothing Then
-                            oldPidl.Dispose()
-                        End If
-                        If Not e.Item2 Is Nothing Then
-                            e.Item2._shellItem2 = Nothing
-                        End If
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                Dim oldPidl As Pidl = Me.Pidl?.Clone()
+                                Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
+                                If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                                    PinnedItems.RenameItem(oldPidl, Me.Pidl)
+                                    FrequentFolders.RenameItem(oldPidl, Me.Pidl)
+                                End If
+                                If Not oldPidl Is Nothing Then
+                                    oldPidl.Dispose()
+                                End If
+                                If Not e.Item2 Is Nothing Then
+                                    e.Item2._shellItem2 = Nothing
+                                End If
+                            End Sub)
                     End If
             End Select
         End If
@@ -1324,7 +1336,7 @@ Public Class Item
                 Me.NotifyOfPropertyChange("DisplayName")
             Case "DoShowDriveLetters"
                 If Me.IsDrive Then
-                    Shell.RunOnSTAThread(
+                    Shell.GlobalThreadPool.Run(
                         Sub()
                             Me.Refresh()
                         End Sub)

@@ -20,7 +20,7 @@ Public Class PinnedItems
         End SyncLock
 
         ' return existing pinned items, delete others
-        Return Shell.RunOnSTAThread(
+        Return Shell.GlobalThreadPool.Run(
             Function() As IEnumerable(Of Item)
                 Dim existingPinnedItems As List(Of Item) = New List(Of Item)()
                 For Each pinnedItem In pinnedItems

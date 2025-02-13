@@ -334,7 +334,7 @@ Namespace Controls
             Private _selectedItems As IEnumerable(Of Item)
 
             Public Sub New()
-                Me.Folder = Shell.GetSpecialFolder(SpecialFolders.ThisPc).Clone()
+                Me.Folder = Shell.GetSpecialFolder(SpecialFolders.Home).Clone()
             End Sub
 
             Public Property Folder As Folder

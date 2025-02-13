@@ -35,31 +35,13 @@ Namespace Controls
         Private _isWaitingForCreate As Boolean
         Private _wasMade As Boolean
         Private disposedValue As Boolean
-        Private _staThread2 As Thread
-        Private _taskQueue As New BlockingCollection(Of Action)
-        Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
-        Private _disposeToken As CancellationToken = _disposeTokensSource.Token
+        Private _threadPool As Helpers.ThreadPool
         Private _hbitmapsToDispose As HashSet(Of IntPtr) = New HashSet(Of IntPtr)()
 
         Public Sub New()
             Shell.AddToMenuCache(Me)
 
-            _staThread2 = New Thread(
-                Sub()
-                    Try
-                        ' Process tasks from the queue
-                        Functions.OleInitialize(IntPtr.Zero)
-                        For Each task In _taskQueue.GetConsumingEnumerable(_disposeToken)
-                            task.Invoke()
-                        Next
-                    Catch ex As OperationCanceledException
-                        Debug.WriteLine("Menu TaskQueue was canceled.")
-                    End Try
-                    Functions.OleUninitialize()
-                End Sub)
-            _staThread2.IsBackground = True
-            _staThread2.SetApartmentState(ApartmentState.STA)
-            _staThread2.Start()
+            _threadPool = New Helpers.ThreadPool(1)
 
             AddHandler Shell.Notification, AddressOf shell_Notification
         End Sub
@@ -169,7 +151,7 @@ Namespace Controls
 
         Protected Function getMenuItems() As List(Of Control)
             Dim tcs4 As New TaskCompletionSource(Of List(Of MenuItemData))
-            _taskQueue.Add(
+            _threadPool.Run(
                 Sub()
                     tcs4.SetResult(getMenuItemData(_hMenu, -1))
                 End Sub)
@@ -218,7 +200,7 @@ Namespace Controls
                     End If
 
                     ' wait for menu to populate
-                    Shell.RunOnSTAThread(
+                    Shell.GlobalThreadPool.Run(
                         Sub()
                             Dim initialCount As Integer
                             Do
@@ -344,13 +326,13 @@ Namespace Controls
         Private Sub makeContextMenu(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             Dim folderPidl As Pidl, itemPidls As Pidl(), doUseAbsolutePidls As Boolean
 
-            Shell.RunOnSTAThread(
+            Shell.GlobalThreadPool.Run(
                 Sub()
                     If Not items Is Nothing AndAlso items.Count > 0 Then
                         ' user clicked on an item
-                        Dim f As Folder = items(0).LogicalParent
-                        If items.All(Function(i) (i.LogicalParent Is Nothing AndAlso f Is Nothing) _
-                                         OrElse (Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Pidl?.Equals(f?.Pidl))) Then
+                        Dim f As Folder = items(0).Parent
+                        If items.All(Function(i) (i.Parent Is Nothing AndAlso f Is Nothing) _
+                                         OrElse (Not i.Parent Is Nothing AndAlso If(i.Parent.Pidl?.Equals(f?.Pidl), False))) Then
                             folder = f
                         Else
                             folder = Shell.Desktop
@@ -378,7 +360,7 @@ Namespace Controls
                 End Sub)
 
             Dim tcs As New TaskCompletionSource()
-            _taskQueue.Add(
+            _threadPool.Run(
                 Sub()
                     Dim flags As Integer = CMF.CMF_NORMAL
                     Dim shellFolder As IShellFolder
@@ -434,7 +416,7 @@ Namespace Controls
                             End Try
                         End If
                     Finally
-                        Shell.RunOnSTAThread(
+                        Shell.GlobalThreadPool.Run(
                             Sub()
                                 folderPidl.Dispose()
                                 For Each p In itemPidls.Where(Function(p2) Not p2 Is Nothing)
@@ -493,7 +475,7 @@ Namespace Controls
                 End Sub)
 
             If Not e.IsHandled Then
-                _taskQueue.Add(
+                _threadPool.Run(
                     Sub()
                         Select Case id.Item2
                             Case "Windows.ModernShare"
@@ -502,7 +484,7 @@ Namespace Controls
                             Case "paste"
                                 If selectedItems Is Nothing OrElse selectedItems.Count = 0 Then
                                     Clipboard.PasteFiles(folder)
-                                ElseIf selectedItems?.Count = 1 AndAlso TypeOf selectedItems(0) Is folder Then
+                                ElseIf selectedItems?.Count = 1 AndAlso TypeOf selectedItems(0) Is Folder Then
                                     Clipboard.PasteFiles(selectedItems(0))
                                 End If
                             Case "delete"
@@ -653,7 +635,7 @@ Namespace Controls
                     _hMenu = IntPtr.Zero
                 End If
 
-                _disposeTokensSource.Cancel()
+                _threadPool.Dispose()
 
                 Shell.RemoveFromMenuCache(Me)
             End If
