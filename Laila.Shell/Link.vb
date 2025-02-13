@@ -18,6 +18,7 @@ Public Class Link
         Shell.GlobalThreadPool.Run(
             Sub()
                 CType(shellItem2, IShellItem2ForShellLink).BindToHandler(Nothing, Guids.BHID_SFUIObject, GetType(IShellLinkW).GUID, _shellLinkW)
+                _shellLinkW.Resolve(IntPtr.Zero, SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
             End Sub,, _threadId)
     End Sub
 

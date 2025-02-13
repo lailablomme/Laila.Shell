@@ -166,13 +166,13 @@ Public Class HomeFolder
                 Dim target As Item = CType(item, Link).GetTarget(Me)
                 If Not TypeOf target Is Folder _
                     AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
-                    '    Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
-                    '    target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
+                    Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
+                    target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
-                    '    Dim lastAccessedProperty As [Property] = target.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
-                    '    lastAccessedProperty._rawValue.Dispose()
-                    '    lastAccessedProperty._rawValue = New PROPVARIANT()
-                    '    lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
+                    Dim lastAccessedProperty As [Property] = target.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
+                    lastAccessedProperty._rawValue.Dispose()
+                    lastAccessedProperty._rawValue = New PROPVARIANT()
+                    lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
 
                     Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
                     target._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)

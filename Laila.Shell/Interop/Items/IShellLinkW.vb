@@ -66,7 +66,7 @@ Public Interface IShellLinkW
                         dwReserved As UInteger)
 
     ''' <summary>Attempts to find the target of a Shell link, even if it has been moved or renamed</summary>
-    Sub Resolve(hwnd As IntPtr, fFlags As UInteger)
+    Sub Resolve(hwnd As IntPtr, fFlags As SLR_FLAGS)
 
     ''' <summary>Sets the path and file name of a Shell link object</summary>
     Sub SetPath(<MarshalAs(UnmanagedType.LPWStr)> pszFile As String)
