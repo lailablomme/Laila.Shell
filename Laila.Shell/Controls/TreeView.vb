@@ -796,45 +796,48 @@ Namespace Controls
         End Sub
 
         Private Sub folder_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)
-            Select Case e.Action
-                Case NotifyCollectionChangedAction.Add
-                    For Each item In e.NewItems
-                        If TypeOf item Is Folder AndAlso CType(item, Item).IsVisibleInTree Then
-                            Me.Items.Add(item)
-                        End If
-                    Next
-                Case NotifyCollectionChangedAction.Remove
-                    For Each item In e.OldItems
-                        If TypeOf item Is Folder Then
-                            Me.Items.Remove(item)
-                        End If
-                    Next
-                Case NotifyCollectionChangedAction.Replace
-                    For Each item In e.NewItems
-                        If TypeOf item Is Folder AndAlso CType(item, Item).IsVisibleInTree Then
-                            Me.Items.Add(item)
-                        End If
-                    Next
-                    For Each item In e.OldItems
-                        If TypeOf item Is Folder Then
-                            Me.Items.Remove(item)
-                        End If
-                    Next
-                Case NotifyCollectionChangedAction.Reset
-                    Dim collection As ObservableCollection(Of Item) = s
-                    Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
+            UIHelper.OnUIThreadAsync(
+                Sub()
+                    Select Case e.Action
+                        Case NotifyCollectionChangedAction.Add
+                            For Each item In e.NewItems
+                                If TypeOf item Is Folder AndAlso CType(item, Item).IsVisibleInTree Then
+                                    Me.Items.Add(item)
+                                End If
+                            Next
+                        Case NotifyCollectionChangedAction.Remove
+                            For Each item In e.OldItems
+                                If TypeOf item Is Folder Then
+                                    Me.Items.Remove(item)
+                                End If
+                            Next
+                        Case NotifyCollectionChangedAction.Replace
+                            For Each item In e.NewItems
+                                If TypeOf item Is Folder AndAlso CType(item, Item).IsVisibleInTree Then
+                                    Me.Items.Add(item)
+                                End If
+                            Next
+                            For Each item In e.OldItems
+                                If TypeOf item Is Folder Then
+                                    Me.Items.Remove(item)
+                                End If
+                            Next
+                        Case NotifyCollectionChangedAction.Reset
+                            Dim collection As ObservableCollection(Of Item) = s
+                            Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
-                    If Not folder Is Nothing Then
-                        For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
-                            Me.Items.Remove(item)
-                        Next
-                        For Each item In collection.Where(Function(i) _
-                            Not i.disposedValue AndAlso i.IsVisibleInTree AndAlso TypeOf i Is Folder)
-                            Me.Items.Add(item)
-                        Next
-                    End If
-            End Select
+                            If Not folder Is Nothing Then
+                                For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                    AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
+                                    Me.Items.Remove(item)
+                                Next
+                                For Each item In collection.Where(Function(i) _
+                                    Not i.disposedValue AndAlso i.IsVisibleInTree AndAlso TypeOf i Is Folder)
+                                    Me.Items.Add(item)
+                                Next
+                            End If
+                    End Select
+                End Sub)
         End Sub
 
         Private Sub folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
