@@ -14,9 +14,9 @@ Public Class [Property]
     Inherits NotifyPropertyChangedBase
     Implements IDisposable
 
-    Private Shared _descriptionsByCanonicalName As Dictionary(Of String, IPropertyDescription) = New Dictionary(Of String, IPropertyDescription)
-    Private Shared _descriptionsByPropertyKey As Dictionary(Of String, IPropertyDescription) = New Dictionary(Of String, IPropertyDescription)
-    Private Shared _descriptionsLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+    Private Shared _cachedDescriptionsByCanonicalName As Dictionary(Of String, CachedPropertyDescription) = New Dictionary(Of String, CachedPropertyDescription)
+    Private Shared _cachedDescriptionsByPropertyKey As Dictionary(Of String, CachedPropertyDescription) = New Dictionary(Of String, CachedPropertyDescription)
+    Private Shared _cachedDescriptionsLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _hasIcon As Dictionary(Of String, Boolean) = New Dictionary(Of String, Boolean)()
     Private Shared _hasIconLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _imageReferences16 As Dictionary(Of String, String()) = New Dictionary(Of String, String())()
@@ -34,129 +34,151 @@ Public Class [Property]
     Protected _displayName As String
     Protected _isCustom As Boolean
 
-    Private Shared Function getDescription(canonicalName As String) As IPropertyDescription
-        _descriptionsLock.Wait()
-        Dim propertyDescription As IPropertyDescription
-        Try
-            If Not _descriptionsByCanonicalName.TryGetValue(canonicalName, propertyDescription) Then
-                Dim pkey As PROPERTYKEY
-                Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
-                If propertyDescription Is Nothing Then Return Nothing
-                _descriptionsByCanonicalName.Add(canonicalName, propertyDescription)
-            End If
-        Finally
-            _descriptionsLock.Release()
-        End Try
-        Return propertyDescription
-    End Function
-
-    Private Shared Function getDescription(pkey As PROPERTYKEY) As IPropertyDescription
-        _descriptionsLock.Wait()
-        Dim propertyDescription As IPropertyDescription
-        Try
-            If Not _descriptionsByPropertyKey.TryGetValue(pkey.ToString(), propertyDescription) Then
-                Dim canonicalName As String
-                Functions.PSGetPropertyDescription(pkey, GetType(IPropertyDescription).GUID, propertyDescription)
-                If propertyDescription Is Nothing Then Return Nothing
-                _descriptionsByPropertyKey.Add(pkey.ToString(), propertyDescription)
-            End If
-        Finally
-            _descriptionsLock.Release()
-        End Try
-        Return propertyDescription
-    End Function
-
     Public Shared Function FromCanonicalName(canonicalName As String) As [Property]
-        Dim t As Type = Shell.GetCustomProperty(canonicalName)
-        If Not t Is Nothing Then
-            Return Activator.CreateInstance(t)
-        Else
-            Dim desc As IPropertyDescription = [Property].getDescription(canonicalName)
-            If Not desc Is Nothing Then
-                Return New [Property](canonicalName)
-            Else
-                Return Nothing
-            End If
-        End If
+        Return makeProperty(Nothing, canonicalName,
+            Function(cachedPropertyDescription) New [Property](cachedPropertyDescription),
+            Function(type) Activator.CreateInstance(type))
     End Function
 
     Public Shared Function FromCanonicalName(canonicalName As String, propertyStore As IPropertyStore) As [Property]
-        Dim t As Type = Shell.GetCustomProperty(canonicalName)
-        If Not t Is Nothing Then
-            Return Activator.CreateInstance(t, {propertyStore})
-        Else
-            Return New [Property](canonicalName, propertyStore)
-        End If
+        Return makeProperty(Nothing, canonicalName,
+            Function(cachedPropertyDescription) New [Property](cachedPropertyDescription, propertyStore),
+            Function(type) Activator.CreateInstance(type, {propertyStore}))
     End Function
 
     Public Shared Function FromCanonicalName(canonicalName As String, shellItem2 As IShellItem2) As [Property]
-        Dim t As Type = Shell.GetCustomProperty(canonicalName)
-        If Not t Is Nothing Then
-            Return Activator.CreateInstance(t, {shellItem2})
-        Else
-            Return New [Property](canonicalName, shellItem2)
-        End If
+        Return makeProperty(Nothing, canonicalName,
+            Function(cachedPropertyDescription) New [Property](cachedPropertyDescription, shellItem2),
+            Function(type) Activator.CreateInstance(type, {shellItem2}))
     End Function
 
     Public Shared Function FromKey(propertyKey As PROPERTYKEY, Optional propertyStore As IPropertyStore = Nothing) As [Property]
-        Dim t As Type = Shell.GetCustomProperty(propertyKey)
-        If Not t Is Nothing Then
-            Return Activator.CreateInstance(t, {propertyStore})
-        Else
-            Return New [Property](propertyKey, propertyStore)
-        End If
+        Return makeProperty(propertyKey, Nothing,
+            Function(cachedPropertyDescription) New [Property](cachedPropertyDescription, propertyStore),
+            Function(type) Activator.CreateInstance(type, {propertyStore}))
     End Function
 
     Public Shared Function FromKey(propertyKey As PROPERTYKEY, Optional shellItem2 As IShellItem2 = Nothing) As [Property]
-        Dim t As Type = Shell.GetCustomProperty(propertyKey)
-        If Not t Is Nothing Then
-            Return Activator.CreateInstance(t, {shellItem2})
-        Else
-            Return New [Property](propertyKey, shellItem2)
-        End If
+        Return makeProperty(propertyKey, Nothing,
+            Function(cachedPropertyDescription) New [Property](cachedPropertyDescription, shellItem2),
+            Function(type) Activator.CreateInstance(type, {shellItem2}))
     End Function
 
-    Public Sub New(canonicalName As String, Optional propertyStore As IPropertyStore = Nothing)
-        _canonicalName = canonicalName
-        _propertyDescription = [Property].getDescription(canonicalName)
-        If Not _propertyDescription Is Nothing Then
-            _propertyDescription.GetPropertyKey(_propertyKey)
-            If Not propertyStore Is Nothing Then
-                propertyStore.GetValue(_propertyKey, _rawValue)
-            End If
-        End If
+    Protected Sub New(cachedPropertyDescription As CachedPropertyDescription)
+        _propertyKey = cachedPropertyDescription.PropertyKey
+        _canonicalName = cachedPropertyDescription.CanonicalName
+        _propertyDescription = cachedPropertyDescription.PropertyDescription
     End Sub
 
-    Public Sub New(canonicalName As String, shellItem2 As IShellItem2)
-        _canonicalName = canonicalName
-        _propertyDescription = [Property].getDescription(canonicalName)
-        If Not _propertyDescription Is Nothing Then
-            _propertyDescription.GetPropertyKey(_propertyKey)
-            If Not shellItem2 Is Nothing Then
-                shellItem2.GetProperty(_propertyKey, _rawValue)
-            End If
-        End If
-    End Sub
-
-    Public Sub New(propertyKey As PROPERTYKEY, propertyStore As IPropertyStore)
-        _propertyKey = propertyKey
+    Protected Sub New(cachedPropertyDescription As CachedPropertyDescription, Optional propertyStore As IPropertyStore = Nothing)
+        Me.New(cachedPropertyDescription)
         If Not propertyStore Is Nothing Then
             propertyStore.GetValue(_propertyKey, _rawValue)
         End If
     End Sub
 
-    Public Sub New(propertyKey As PROPERTYKEY, shellItem2 As IShellItem2)
-        _propertyKey = propertyKey
+    Protected Sub New(cachedPropertyDescription As CachedPropertyDescription, shellItem2 As IShellItem2)
+        Me.New(cachedPropertyDescription)
         If Not shellItem2 Is Nothing Then
             shellItem2.GetProperty(_propertyKey, _rawValue)
         End If
     End Sub
 
+    Private Shared Function makeProperty(propertyKey As PROPERTYKEY?, canonicalName As String,
+                                         func1 As Func(Of CachedPropertyDescription, [Property]),
+                                         func2 As Func(Of Type, [Property])) As [Property]
+        Return Shell.GlobalThreadPool.Run(
+            Function() As [Property]
+                Dim t As Type
+                If propertyKey.HasValue Then
+                    t = Shell.GetCustomProperty(propertyKey.Value)
+                Else
+                    t = Shell.GetCustomProperty(canonicalName)
+                End If
+                If Not t Is Nothing Then
+                    Return func2(t)
+                Else
+                    Dim cachedPropertyDescription As CachedPropertyDescription
+                    If propertyKey.HasValue Then
+                        cachedPropertyDescription = [Property].GetDescription(propertyKey)
+                    Else
+                        cachedPropertyDescription = [Property].GetDescription(canonicalName)
+                    End If
+                    If Not cachedPropertyDescription Is Nothing Then
+                        Return func1(cachedPropertyDescription)
+                    Else
+                        Return Nothing
+                    End If
+                End If
+            End Function)
+    End Function
+
+    Protected Shared Function GetDescription(canonicalName As String) As CachedPropertyDescription
+        Dim result As CachedPropertyDescription
+        Try
+            _cachedDescriptionsLock.Wait()
+            If Not _cachedDescriptionsByCanonicalName.TryGetValue(canonicalName, result) Then
+                _cachedDescriptionsLock.Release()
+                Dim propertyDescription As IPropertyDescription
+                Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
+                If Not propertyDescription Is Nothing Then
+                    Dim pkey As PROPERTYKEY
+                    propertyDescription.GetPropertyKey(pkey)
+                    _cachedDescriptionsLock.Wait()
+                    If Not _cachedDescriptionsByPropertyKey.ContainsKey(pkey.ToString().ToLower()) Then
+                        result = New CachedPropertyDescription() With {
+                            .PropertyDescription = propertyDescription,
+                            .PropertyKey = pkey,
+                            .CanonicalName = canonicalName
+                        }
+                        _cachedDescriptionsByCanonicalName.Add(canonicalName, result)
+                        _cachedDescriptionsByPropertyKey.Add(pkey.ToString().ToLower(), result)
+                    End If
+                    _cachedDescriptionsLock.Release()
+                End If
+            End If
+        Finally
+            If _cachedDescriptionsLock.CurrentCount = 0 Then
+                _cachedDescriptionsLock.Release()
+            End If
+        End Try
+        Return result
+    End Function
+
+    Protected Shared Function GetDescription(pkey As PROPERTYKEY) As CachedPropertyDescription
+        Dim result As CachedPropertyDescription
+        Try
+            _cachedDescriptionsLock.Wait()
+            If Not _cachedDescriptionsByPropertyKey.TryGetValue(pkey.ToString().ToLower(), result) Then
+                _cachedDescriptionsLock.Release()
+                Dim propertyDescription As IPropertyDescription
+                Functions.PSGetPropertyDescription(pkey, GetType(IPropertyDescription).GUID, propertyDescription)
+                If Not propertyDescription Is Nothing Then
+                    Dim canonicalName As String
+                    Functions.PSGetNameFromPropertyKey(pkey, canonicalName)
+                    _cachedDescriptionsLock.Wait()
+                    If Not _cachedDescriptionsByPropertyKey.ContainsKey(pkey.ToString().ToLower()) Then
+                        result = New CachedPropertyDescription() With {
+                            .PropertyDescription = propertyDescription,
+                            .PropertyKey = pkey,
+                            .CanonicalName = canonicalName
+                        }
+                        _cachedDescriptionsByCanonicalName.Add(canonicalName, result)
+                        _cachedDescriptionsByPropertyKey.Add(pkey.ToString().ToLower(), result)
+                    End If
+                    _cachedDescriptionsLock.Release()
+                End If
+            End If
+        Finally
+            If _cachedDescriptionsLock.CurrentCount = 0 Then
+                _cachedDescriptionsLock.Release()
+            End If
+        End Try
+        Return result
+    End Function
+
     Public ReadOnly Property CanonicalName As String
         Get
-            If String.IsNullOrWhiteSpace(_canonicalName) Then
-                Functions.PSGetNameFromPropertyKey(_propertyKey, _canonicalName)
-            End If
             Return _canonicalName
         End Get
     End Property
@@ -186,9 +208,6 @@ Public Class [Property]
 
     Public ReadOnly Property Description As IPropertyDescription
         Get
-            If _propertyDescription Is Nothing Then
-                _propertyDescription = [Property].getDescription(_propertyKey)
-            End If
             Return _propertyDescription
         End Get
     End Property
@@ -346,7 +365,7 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property HasIconAsync As Boolean
         Get
-            Shell.GlobalThreadPool.Run(
+            Return Shell.GlobalThreadPool.Run(
                 Function() As Boolean
                     Return Me.HasIcon
                 End Function)
@@ -492,4 +511,10 @@ Public Class [Property]
         Dispose(disposing:=True)
         GC.SuppressFinalize(Me)
     End Sub
+
+    Protected Class CachedPropertyDescription
+        Public Property PropertyDescription As IPropertyDescription
+        Public Property PropertyKey As PROPERTYKEY
+        Public Property CanonicalName As String
+    End Class
 End Class

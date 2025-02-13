@@ -7,7 +7,10 @@ Public Class Home_CategoryProperty
     Public Shared Shadows Property CanonicalName As String = "Laila.Shell.Home.Category"
 
     Public Sub New()
-        MyBase.New(Key, CType(Nothing, IShellItem2))
+        MyBase.New(New CachedPropertyDescription() With {
+                      .PropertyKey = Home_CategoryProperty.Key,
+                      .CanonicalName = Home_CategoryProperty.CanonicalName
+                   }, CType(Nothing, IShellItem2))
         _isCustom = True
         _displayName = "Home category"
         _dataType = VarEnum.VT_UI4

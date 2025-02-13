@@ -30,16 +30,16 @@ Public Class System_StorageProviderUIStatusProperty
     Private _imageReference16 As String()
 
     Public Sub New()
-        MyBase.New(Key, CType(Nothing, IPropertyStore))
+        MyBase.New([Property].getDescription(Key))
     End Sub
 
     Public Sub New(propertyStore As IPropertyStore)
-        MyBase.New(Key, propertyStore)
+        MyBase.New([Property].GetDescription(Key), propertyStore)
         If Not propertyStore Is Nothing Then _hasData = True
     End Sub
 
     Public Sub New(shellItem2 As IShellItem2)
-        MyBase.New(Key, shellItem2)
+        MyBase.New([Property].GetDescription(Key), shellItem2)
         If Not shellItem2 Is Nothing Then _hasData = True
     End Sub
 
@@ -56,10 +56,10 @@ Public Class System_StorageProviderUIStatusProperty
                     MyBase.RawValue.union.bstrblobVal.pData, MyBase.RawValue.union.bstrblobVal.cbSize)
 
                 If _system_StorageProviderStateProperty Is Nothing Then
-                    _system_StorageProviderStateProperty = New [Property](_system_StorageProviderStateKey, _propertyStore1)
+                    _system_StorageProviderStateProperty = New [Property]([Property].GetDescription(_system_StorageProviderStateKey), _propertyStore1)
                 End If
                 If _system_StorageProviderCustomStatesProperty Is Nothing Then
-                    _system_StorageProviderCustomStatesProperty = New [Property](_system_StorageProviderCustomStatesKey, _propertyStore1)
+                    _system_StorageProviderCustomStatesProperty = New [Property]([Property].GetDescription(_system_StorageProviderCustomStatesKey), _propertyStore1)
                 End If
             End If
 
@@ -73,10 +73,10 @@ Public Class System_StorageProviderUIStatusProperty
                         _system_StorageProviderCustomStatesProperty.RawValue.union.bstrblobVal.cbSize)
 
                     If _system_ItemCustomState_ValuesProperty Is Nothing Then
-                        _system_ItemCustomState_ValuesProperty = New [Property](_system_ItemCustomState_ValuesKey, _propertyStore2)
+                        _system_ItemCustomState_ValuesProperty = New [Property]([Property].GetDescription(_system_ItemCustomState_ValuesKey), _propertyStore2)
                     End If
                     If _system_ItemCustomState_IconReferencesProperty Is Nothing Then
-                        _system_ItemCustomState_IconReferencesProperty = New [Property](_system_ItemCustomState_IconReferencesKey, _propertyStore2)
+                        _system_ItemCustomState_IconReferencesProperty = New [Property]([Property].GetDescription(_system_ItemCustomState_IconReferencesKey), _propertyStore2)
                     End If
                 Finally
                     If Not _propertyStore1 Is Nothing Then

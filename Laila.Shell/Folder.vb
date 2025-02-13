@@ -224,7 +224,7 @@ Public Class Folder
                 End Function)
 
             If size.HasValue AndAlso Not size.Value = 0 Then
-                Dim prop As [Property] = New [Property]("System.Size")
+                Dim prop As [Property] = [Property].FromCanonicalName("System.Size")
                 prop._rawValue = New PROPVARIANT()
                 prop._rawValue.SetValue(size.Value)
                 result.Add(prop.DisplayNameWithColon & " " & prop.Text)
@@ -312,7 +312,7 @@ Public Class Folder
                             If attr.HasFlag(SFGAO.FOLDER) Then
                                 subFolders.Add(shellItems(x))
                             Else
-                                Dim prop As [Property] = New [Property]("System.Size", CType(shellItems(x), IShellItem2))
+                                Dim prop As [Property] = [Property].FromCanonicalName("System.Size", CType(shellItems(x), IShellItem2))
                                 If Not prop.Value Is Nothing AndAlso TypeOf prop.Value Is UInt64 Then
                                     result += prop.Value
                                 End If
