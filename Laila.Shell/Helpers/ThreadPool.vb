@@ -59,12 +59,14 @@ Namespace Helpers
 
         Public Function GetNextFreeThreadId() As Integer
             If _isThreadFree.Count > 1 Then
+                Dim isFirst As Boolean = True
                 SyncLock _nextThreadIdLock
                     Do
                         _nextThreadId += 1
                         If _nextThreadId >= _isThreadFree.Length Then
                             _nextThreadId = 0
-                            Thread.Sleep(1)
+                            If Not isFirst Then Thread.Sleep(10)
+                            isFirst = False
                         End If
                     Loop Until _isThreadFree(_nextThreadId)
                     Return _nextThreadId
