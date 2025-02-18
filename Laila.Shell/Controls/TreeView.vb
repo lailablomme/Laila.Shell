@@ -863,7 +863,7 @@ Namespace Controls
                                         End If
                                     End If
                                     If Me.SelectedItem Is Nothing AndAlso Not Me.Folder Is Nothing _
-                                        AndAlso item.Pidl.Equals(Me.Folder.Pidl) Then
+                                        AndAlso item.Pidl?.Equals(Me.Folder.Pidl) Then
                                         Me.SetSelectedItem(item)
                                     End If
                                 Next
