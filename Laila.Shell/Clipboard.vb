@@ -12,12 +12,12 @@ Public Class Clipboard
     End Function
 
     Public Shared Function CanPaste(folder As Folder) As Boolean
+        Dim dataObject As ComTypes.IDataObject
+        Functions.OleGetClipboard(dataObject)
+
         Return Shell.GlobalThreadPool.Run(
             Function() As Boolean
                 ' check for paste by checking if it would accept a drop
-                Dim dataObject As ComTypes.IDataObject
-                Functions.OleGetClipboard(dataObject)
-
                 Dim dropTarget As IDropTarget
                 Try
                     If Not folder.Parent Is Nothing Then
