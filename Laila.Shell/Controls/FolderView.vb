@@ -55,6 +55,11 @@ Namespace Controls
 
                         _dropTarget = New ListViewDropTarget(Me)
                         WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
+
+                        AddHandler Window.GetWindow(Me).Closed,
+                            Sub(s2 As Object, e2 As EventArgs)
+                                Me.Dispose()
+                            End Sub
                     End If
                 End Sub
         End Sub

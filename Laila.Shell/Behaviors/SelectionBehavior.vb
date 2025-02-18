@@ -85,9 +85,9 @@ Namespace Behaviors
                                                _listBox.ActualHeight - _listBox.BorderThickness.Bottom - 1)
                             Dim vs As ScrollBar = _sv.Template.FindName("PART_VerticalScrollBar", _sv)
                             Dim hs As ScrollBar = _sv.Template.FindName("PART_HorizontalScrollBar", _sv)
-                            If vs.Visibility = Visibility.Visible Then _
+                            If vs?.Visibility = Visibility.Visible Then _
                                 _ptMax.X = _listBox.PointFromScreen(vs.PointToScreen(New Point(0, 0))).X - 1
-                            If hs.Visibility = Visibility.Visible Then _
+                            If hs?.Visibility = Visibility.Visible Then _
                                 _ptMax.Y = _listBox.PointFromScreen(hs.PointToScreen(New Point(0, 0))).Y - 1
 
                             _grid.Margin = New Thickness(_ptMin.X, _ptMin.Y, 0, 0)

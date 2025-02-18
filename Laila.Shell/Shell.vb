@@ -68,6 +68,13 @@ Public Class Shell
                 End Sub
         End If
 
+        If Not Application.Current.MainWindow Is Nothing Then
+            RemoveHandler CType(Application.Current.MainWindow, Window).Closed, AddressOf window_Closed
+            RemoveHandler CType(Application.Current.MainWindow, Window).Closing, AddressOf window_Closing
+            AddHandler CType(Application.Current.MainWindow, Window).Closed, AddressOf window_Closed
+            AddHandler CType(Application.Current.MainWindow, Window).Closing, AddressOf window_Closing
+        End If
+
         ' initialize com & ole
         Functions.OleInitialize(IntPtr.Zero)
 

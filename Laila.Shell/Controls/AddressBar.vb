@@ -294,7 +294,7 @@ Namespace Controls
                                 End Sub)
 
                             AddHandler subFoldersContextMenu.ItemClicked,
-                                Sub(clickedItem As Item, e2 As EventArgs)
+                                Async Sub(clickedItem As Item, e2 As EventArgs)
                                     If TypeOf clickedItem Is Folder Then
                                         CType(clickedItem, Folder).LastScrollOffset = New Point()
                                         Me.Folder = clickedItem
@@ -307,7 +307,7 @@ Namespace Controls
                                             .SelectedItems = {clickedItem},
                                             .IsDefaultOnly = True
                                         }
-                                        _menu.Make()
+                                        Await _menu.Make()
                                         _menu.InvokeCommand(_menu.DefaultId)
                                     End If
                                 End Sub

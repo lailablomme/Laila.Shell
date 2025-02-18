@@ -1,11 +1,13 @@
 ﻿Imports System.IO
+Imports System.Threading
 Imports LiteDB
 
 Public Class FrequentFolders
-    Private Shared _lock As Object = New Object()
+    Private Shared _lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
 
     Public Shared Function GetMostFrequent() As IEnumerable(Of Folder)
-        SyncLock _lock
+        _lock.Wait()
+        Try
             Using db = New LiteDatabase(getDBFileName())
                 Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
 
@@ -49,7 +51,9 @@ Public Class FrequentFolders
                         Return mostFrequent2
                     End Function)
             End Using
-        End SyncLock
+        Finally
+            _lock.Release()
+        End Try
     End Function
 
     Public Shared Sub Track(folder As Folder)
@@ -60,7 +64,8 @@ Public Class FrequentFolders
         ' register with os
         Functions.SHAddToRecentDocs(SHARD.SHARD_PATHW, folder.FullPath)
 
-        SyncLock _lock
+        _lock.Wait()
+        Try
             Using db = New LiteDatabase(getDBFileName())
                 ' register in db
                 Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
@@ -79,11 +84,14 @@ Public Class FrequentFolders
                     collection.Insert(frequentFolder)
                 End If
             End Using
-        End SyncLock
+        Finally
+            _lock.Release()
+        End Try
     End Sub
 
     Public Shared Sub RenameItem(oldPidl As Pidl, newPidl As Pidl)
-        SyncLock _lock
+        _lock.Wait()
+        Try
             Using db = New LiteDatabase(getDBFileName())
                 ' update in db
                 Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
@@ -94,7 +102,9 @@ Public Class FrequentFolders
                     collection.Update(frequentFolder)
                 End If
             End Using
-        End SyncLock
+        Finally
+            _lock.Release()
+        End Try
     End Sub
 
     Private Shared Function getDBFileName() As String

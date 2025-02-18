@@ -11,6 +11,18 @@
 	<EnableRegFreeCom>true</EnableRegFreeCom>
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+	<Title>Laila.Shell</Title>
+	<Version>0.0.6-alpha1</Version>
+	<Authors>laila_blomme</Authors>
+	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
+	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
+	<PackageProjectUrl>https://laila-shell.sourceforge.io/</PackageProjectUrl>
+	<PackageReleaseNotes>This is a work in progress (pre-alpha). Hang on.
+Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleaseNotes>
+	<RepositoryUrl>https://git.code.sf.net/p/laila-shell/code</RepositoryUrl>
+	<PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -88,6 +100,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Laila.AutoCompleteTextBox" Version="2.0.15" />
     <PackageReference Include="Laila.BalloonTip" Version="1.0.4" />
     <PackageReference Include="LiteDB" Version="5.0.21" />
@@ -159,8 +178,20 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\VirtualizingWrapPanel\VirtualizingWrapPanel.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="$(OutputPath)Laila.Shell.WinRT.dll">
+			<Pack>true</Pack>
+			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
+		</None>
+	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\VirtualizingWrapPanel\VirtualizingWrapPanel.csproj" />
+	</ItemGroup>
+	
+	<Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">
+		<ItemGroup>
+			<BuildOutputInPackage Include="@(ReferenceCopyLocalPaths-&gt;WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
+		</ItemGroup>
+	</Target>
 </Project>

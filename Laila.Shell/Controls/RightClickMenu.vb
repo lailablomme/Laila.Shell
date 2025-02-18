@@ -5,7 +5,7 @@ Namespace Controls
     Public Class RightClickMenu
         Inherits BaseMenu
 
-        Protected Overrides Sub AddItems()
+        Protected Overrides Async Function AddItems() As Task
             Dim osver As Version = Environment.OSVersion.Version
             Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
 
@@ -38,7 +38,7 @@ Namespace Controls
             Dim hasPaste As Boolean =
                 Not Me.IsDefaultOnly _
                 AndAlso (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0) _
-                AndAlso Clipboard.CanPaste(Me.Folder)
+                AndAlso Await Clipboard.CanPaste(Me.Folder)
 
             Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "cut")
             If Not menuItem Is Nothing Then Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
@@ -102,6 +102,6 @@ Namespace Controls
                     Me.Items.Insert(insertIndex, New Separator())
                 End If
             End If
-        End Sub
+        End Function
     End Class
 End Namespace

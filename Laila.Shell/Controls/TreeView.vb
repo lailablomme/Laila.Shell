@@ -54,6 +54,14 @@ Namespace Controls
         Public Sub New()
             Shell.AddToControlCache(Me)
 
+            AddHandler Me.Loaded,
+                Sub(s As Object, e As RoutedEventArgs)
+                    AddHandler Window.GetWindow(Me).Closed,
+                        Sub(s2 As Object, e2 As EventArgs)
+                            Me.Dispose()
+                        End Sub
+                End Sub
+
             Me.Items = New ObservableCollection(Of Item)()
 
             Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
@@ -742,7 +750,7 @@ Namespace Controls
             End If
         End Sub
 
-        Private Sub invokeDefaultCommand(item As Item)
+        Private Async Function invokeDefaultCommand(item As Item) As Task
             If Not _menu Is Nothing Then
                 _menu.Dispose()
             End If
@@ -751,9 +759,9 @@ Namespace Controls
                 .SelectedItems = {item},
                 .IsDefaultOnly = True
             }
-            _menu.Make()
-            _menu.InvokeCommand(_menu.DefaultId)
-        End Sub
+            Await _menu.Make()
+            Await _menu.InvokeCommand(_menu.DefaultId)
+        End Function
 
         Private Sub items_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)
             Select Case e.Action

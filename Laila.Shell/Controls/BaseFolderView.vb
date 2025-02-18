@@ -259,11 +259,11 @@ Namespace Controls
             End If
         End Sub
 
-        Private Sub invokeDefaultCommand(item As Item)
+        Private Async Function invokeDefaultCommand(item As Item) As Task
             getMenu(Me.Folder, {item}, True)
-            _menu.Make()
-            _menu.InvokeCommand(_menu.DefaultId)
-        End Sub
+            Await _menu.Make()
+            Await _menu.InvokeCommand(_menu.DefaultId)
+        End Function
 
         Protected Function GetIsDisplayNameTextBlockTooSmall(textBlock As TextBlock) As Boolean
             textBlock.Measure(New Size(textBlock.ActualWidth,

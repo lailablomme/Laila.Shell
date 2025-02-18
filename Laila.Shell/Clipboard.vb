@@ -11,12 +11,12 @@ Public Class Clipboard
         Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE))
     End Function
 
-    Public Shared Function CanPaste(folder As Folder) As Boolean
-        Dim dataObject As ComTypes.IDataObject
-        Functions.OleGetClipboard(dataObject)
-
+    Public Shared Async Function CanPaste(folder As Folder) As Task(Of Boolean)
         Return Shell.GlobalThreadPool.Run(
             Function() As Boolean
+                Dim dataObject As ComTypes.IDataObject
+                Functions.OleGetClipboard(dataObject)
+
                 ' check for paste by checking if it would accept a drop
                 Dim dropTarget As IDropTarget
                 Try
@@ -29,7 +29,7 @@ Public Class Clipboard
 
                     If Not dropTarget Is Nothing Then
                         Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
-                        Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
+                        Dim hr As HRESULT = dropTarget.DragEnter(DataObject, 0, New WIN32POINT(), effect)
                         dropTarget.DragLeave()
 
                         Return hr = HRESULT.S_OK AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
@@ -39,9 +39,9 @@ Public Class Clipboard
                         Marshal.ReleaseComObject(dropTarget)
                         dropTarget = Nothing
                     End If
-                    If Not dataObject Is Nothing Then
-                        Marshal.ReleaseComObject(dataObject)
-                        dataObject = Nothing
+                    If Not DataObject Is Nothing Then
+                        Marshal.ReleaseComObject(DataObject)
+                        DataObject = Nothing
                     End If
                 End Try
 

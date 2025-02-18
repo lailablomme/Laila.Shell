@@ -46,11 +46,11 @@ Namespace Controls
             AddHandler Shell.Notification, AddressOf shell_Notification
         End Sub
 
-        Protected MustOverride Sub AddItems()
+        Protected MustOverride Async Function AddItems() As Task
 
-        Protected Overrides Sub OnOpened(e As RoutedEventArgs)
+        Protected Overrides Async Sub OnOpened(e As RoutedEventArgs)
             Using Shell.OverrideCursor(Cursors.Wait)
-                Me.Make()
+                Await Me.Make()
                 MyBase.OnOpened(e)
             End Using
         End Sub
@@ -66,7 +66,7 @@ Namespace Controls
                     Function(c) _invokedId.Equals(c.Tag)) Is Nothing
         End Function
 
-        Public Sub Make()
+        Public Async Function Make() As Task
             If _wasMade Then Return
 
             makeContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
@@ -75,7 +75,7 @@ Namespace Controls
             Me.Items.Clear()
             Me.Buttons.Clear()
 
-            Me.AddItems()
+            Await Me.AddItems()
 
             AddHandler Me.Closed,
                 Sub(s As Object, e As EventArgs)
@@ -112,7 +112,7 @@ Namespace Controls
             wireMenuItems(Me.Buttons.Cast(Of Control).ToList())
 
             _wasMade = True
-        End Sub
+        End Function
 
         Protected Function MakeButton(tag As Tuple(Of Integer, String), toolTip As String) As Button
             Dim button As Button = New Button()
@@ -442,10 +442,10 @@ Namespace Controls
             _invokedId = id
         End Sub
 
-        Public Sub InvokeCommand(id As Tuple(Of Integer, String))
+        Public Async Function InvokeCommand(id As Tuple(Of Integer, String)) As Task
             If id Is Nothing Then Return
 
-            Make()
+            Await Make()
 
             Dim folder As Folder
             Dim selectedItems As IEnumerable(Of Item)
@@ -529,7 +529,7 @@ Namespace Controls
                         End Select
                     End Sub)
             End If
-        End Sub
+        End Function
 
         Private Sub initializeRenameRequest()
             _isWaitingForCreate = True

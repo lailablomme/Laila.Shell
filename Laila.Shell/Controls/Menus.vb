@@ -39,12 +39,12 @@ Namespace Controls
 
         Public Sub New()
             AddHandler Shell.ClipboardChanged,
-                Sub(s As Object, e As EventArgs)
-                    Me.UpdateButtons()
+                Async Sub(s As Object, e As EventArgs)
+                    Await Me.UpdateButtons()
                 End Sub
         End Sub
 
-        Public Shared Sub InvokeDefaultCommand(item As Item)
+        Public Shared Async Function InvokeDefaultCommand(item As Item) As Task
             If Not _rightClickMenu Is Nothing Then
                 _rightClickMenu.Dispose()
             End If
@@ -54,9 +54,9 @@ Namespace Controls
             _rightClickMenu.SelectedItems = {item}
             _rightClickMenu.IsDefaultOnly = True
 
-            _rightClickMenu.Make()
-            _rightClickMenu.InvokeCommand(_rightClickMenu.DefaultId)
-        End Sub
+            Await _rightClickMenu.Make()
+            Await _rightClickMenu.InvokeCommand(_rightClickMenu.DefaultId)
+        End Function
 
         Delegate Sub GetItemNameCoordinatesDelegate(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                          ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
@@ -273,7 +273,7 @@ Namespace Controls
             thread.Start()
         End Sub
 
-        Public Shared Sub DoShare(items As IEnumerable(Of Item))
+        Public Shared Async Function DoShare(items As IEnumerable(Of Item)) As Task
             If (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
                 AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar)) _
                 OrElse (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) _
@@ -286,8 +286,8 @@ Namespace Controls
                     .SelectedItems = items,
                     .IsDefaultOnly = True
                 }
-                _rightClickMenu.Make()
-                _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}"))
+                Await _rightClickMenu.Make()
+                Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}"))
             Else
                 Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
                 Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
@@ -296,9 +296,9 @@ Namespace Controls
                 methodInfo.Invoke(instance, {items.ToList().Select(Function(i) i.FullPath).ToList(),
                                   System.Windows.Application.Current.MainWindow})
             End If
-        End Sub
+        End Function
 
-        Public Sub UpdateNewItemMenu()
+        Public Async Function UpdateNewItemMenu() As Task
             If Shell.ShuttingDownToken.IsCancellationRequested Then Return
 
             If Not Me.NewItemMenu Is Nothing Then
@@ -307,7 +307,7 @@ Namespace Controls
             End If
 
             Dim newItemMenu As NewItemMenu = New NewItemMenu() With {.Folder = Me.Folder}
-            newItemMenu.Make()
+            Await newItemMenu.Make()
             If newItemMenu.Items.Count > 0 Then
                 AddHandler newItemMenu.RenameRequest,
                     Async Sub(s As Object, e As RenameRequestEventArgs)
@@ -320,13 +320,13 @@ Namespace Controls
                 newItemMenu.Dispose()
                 Me.NewItemMenu = Nothing
             End If
-        End Sub
+        End Function
 
-        Public Sub UpdateButtons()
+        Public Async Function UpdateButtons() As Task
             If Not Shell.ShuttingDownToken.IsCancellationRequested Then
                 Me.CanCut = Clipboard.CanCut(Me.SelectedItems)
                 Me.CanCopy = Clipboard.CanCopy(Me.SelectedItems)
-                Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
+                Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Await Clipboard.CanPaste(Me.Folder)
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
                 If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
@@ -343,7 +343,7 @@ Namespace Controls
                     Me.CanShare = False
                 End If
             End If
-        End Sub
+        End Function
 
         Public Property CanCut As Boolean
             Get
@@ -435,17 +435,17 @@ Namespace Controls
             End Set
         End Property
 
-        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim icm As Menus = TryCast(d, Menus)
             If Not e.NewValue Is Nothing Then
-                icm.UpdateNewItemMenu()
+                Await icm.UpdateNewItemMenu()
             End If
-            icm.UpdateButtons()
+            Await icm.UpdateButtons()
         End Sub
 
-        Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Async Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim icm As Menus = TryCast(d, Menus)
-            icm.UpdateButtons()
+            Await icm.UpdateButtons()
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)
