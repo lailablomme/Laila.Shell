@@ -236,7 +236,7 @@ Namespace Controls
             gridFactory.AppendChild(getIconFactory("IconAsync[16]"))
             gridFactory.AppendChild(getIconFactory("OverlayImageAsync[16]"))
 
-            If [property].HasIcon Then
+            If [property]?.HasIcon Then
                 Dim imageFactory2 As FrameworkElementFactory = New FrameworkElementFactory(GetType(Image))
                 imageFactory2.SetValue(Image.WidthProperty, Convert.ToDouble(16))
                 imageFactory2.SetValue(Image.HeightProperty, Convert.ToDouble(16))
