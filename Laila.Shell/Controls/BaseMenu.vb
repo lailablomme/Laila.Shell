@@ -406,7 +406,7 @@ Namespace Controls
                                     Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
                                                      itemPidls.Select(Function(p) If(doUseAbsolutePidls, p.AbsolutePIDL, p.RelativePIDL)).ToArray(),
                                                      Nothing, GetType(ComTypes.IDataObject).GUID, dataObject)
-                                    shellExtInit.Initialize(folder.Pidl.AbsolutePIDL, dataObject, IntPtr.Zero)
+                                    shellExtInit.Initialize(folder.Pidl?.AbsolutePIDL, dataObject, IntPtr.Zero)
                                 End If
                             Finally
                                 If Not dataObject Is Nothing Then

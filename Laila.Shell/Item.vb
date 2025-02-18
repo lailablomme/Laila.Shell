@@ -153,8 +153,8 @@ Public Class Item
                     Functions.SHGetIDListFromObject(_shellItem2, pidlptr)
                     _pidl = New Pidl(pidlptr)
                 End If
+                Return _pidl ' return pidl wirhin lock to make sure it's nothing after it's been disposed
             End SyncLock
-            Return _pidl
         End Get
     End Property
 

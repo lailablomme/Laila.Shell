@@ -94,16 +94,16 @@ Public Class Folder
 
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
-            _shellFolder = Shell.GlobalThreadPool.Run(
-                Function() As IShellFolder
-                    Dim result As IShellFolder
-                    SyncLock _shellItemLock
-                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            result = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
-                        End If
-                    End SyncLock
-                    Return result
-                End Function)
+            If _shellFolder Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                Shell.GlobalThreadPool.Run(
+                    Sub()
+                        SyncLock _shellItemLock
+                            If _shellFolder Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                                _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+                            End If
+                        End SyncLock
+                    End Sub)
+            End If
 
             Return _shellFolder
         End Get

@@ -162,7 +162,7 @@ Public Class HomeFolder
     Protected Overrides Function InitializeItem(item As Item) As Item
         Try
             If TypeOf item Is Link Then
-                'Debug.WriteLine("LINK: " & item.FullPath & "=" & CType(item, Link).TargetFullPath)
+                CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
                 Dim target As Item = CType(item, Link).GetTarget(Me)
                 If Not TypeOf target Is Folder _
                     AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then

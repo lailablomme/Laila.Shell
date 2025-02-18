@@ -15,11 +15,27 @@ Public Class Link
         MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, pidl)
 
         _threadId = Shell.GlobalThreadPool.GetNextFreeThreadId()
+    End Sub
+
+    Protected ReadOnly Property ShellLink As IShellLinkW
+        Get
+            If _shellLinkW Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                SyncLock _shellItemLock
+                    If _shellLinkW Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                        CType(ShellItem2, IShellItem2ForShellLink).BindToHandler(Nothing, Guids.BHID_SFUIObject, GetType(IShellLinkW).GUID, _shellLinkW)
+                    End If
+                End SyncLock
+            End If
+
+            Return _shellLinkW
+        End Get
+    End Property
+
+    Public Sub Resolve(flags As SLR_FLAGS)
         Shell.GlobalThreadPool.Run(
             Sub()
-                CType(shellItem2, IShellItem2ForShellLink).BindToHandler(Nothing, Guids.BHID_SFUIObject, GetType(IShellLinkW).GUID, _shellLinkW)
                 Try
-                    _shellLinkW.Resolve(IntPtr.Zero, SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
+                    Me.ShellLink.Resolve(IntPtr.Zero, flags)
                 Catch ex As NotImplementedException
                 End Try
             End Sub,, _threadId)
@@ -31,7 +47,7 @@ Public Class Link
                 _targetPidl = Shell.GlobalThreadPool.Run(
                     Function() As Pidl
                         Dim pidl As IntPtr
-                        _shellLinkW.GetIDList(pidl)
+                        Me.ShellLink?.GetIDList(pidl)
                         If Not IntPtr.Zero.Equals(pidl) Then
                             Return New Pidl(pidl)
                         End If
