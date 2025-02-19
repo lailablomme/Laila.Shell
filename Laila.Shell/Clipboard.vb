@@ -1,6 +1,7 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Threading
+Imports System.Windows.Input
 
 Public Class Clipboard
     Public Shared Function CanCopy(items As IEnumerable(Of Item)) As Boolean
@@ -29,69 +30,10 @@ Public Class Clipboard
 
                     If Not dropTarget Is Nothing Then
                         Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
-                        Dim hr As HRESULT = dropTarget.DragEnter(DataObject, 0, New WIN32POINT(), effect)
+                        Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
                         dropTarget.DragLeave()
 
                         Return hr = HRESULT.S_OK AndAlso effect <> DROPEFFECT.DROPEFFECT_NONE
-                    End If
-                Finally
-                    If Not dropTarget Is Nothing Then
-                        Marshal.ReleaseComObject(dropTarget)
-                        dropTarget = Nothing
-                    End If
-                    If Not DataObject Is Nothing Then
-                        Marshal.ReleaseComObject(DataObject)
-                        DataObject = Nothing
-                    End If
-                End Try
-
-                Return False
-            End Function)
-    End Function
-
-    Public Shared Sub CopyFiles(items As IEnumerable(Of Item))
-        Dim dataObject As ComTypes.IDataObject
-
-        dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
-        'ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_COPY)
-
-        Functions.OleSetClipboard(dataObject)
-
-        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_COPY)
-    End Sub
-
-    Public Shared Sub CutFiles(items As IEnumerable(Of Item))
-        Dim dataObject As ComTypes.IDataObject
-
-        dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
-        'ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(dataObject, DROPEFFECT.DROPEFFECT_MOVE)
-
-        Functions.OleSetClipboard(dataObject)
-
-        ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_MOVE)
-    End Sub
-
-    Public Shared Sub PasteFiles(folder As Folder)
-        Dim thread As Thread = New Thread(New ThreadStart(
-            Sub()
-                Dim dataObject As ComTypes.IDataObject = Nothing
-                Functions.OleGetClipboard(dataObject)
-
-                Dim dropTarget As IDropTarget = Nothing
-                Try
-                    If Not folder.Parent Is Nothing Then
-                        folder.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-                    Else
-                        ' desktop
-                        Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-                    End If
-
-                    If Not dropTarget Is Nothing Then
-                        Dim effect As DROPEFFECT = ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.GetClipboard()
-                        Dim grfKeyState As MK = MK.MK_LBUTTON
-                        If effect = DROPEFFECT.DROPEFFECT_COPY Then grfKeyState = grfKeyState Or MK.MK_CONTROL
-                        Dim hr As HRESULT = dropTarget.DragEnter(dataObject, grfKeyState, New WIN32POINT(), effect)
-                        dropTarget.Drop(dataObject, grfKeyState, New WIN32POINT(), effect)
                     End If
                 Finally
                     If Not dropTarget Is Nothing Then
@@ -103,10 +45,67 @@ Public Class Clipboard
                         dataObject = Nothing
                     End If
                 End Try
-            End Sub))
 
-        thread.SetApartmentState(ApartmentState.STA)
-        thread.Start()
+                Return False
+            End Function)
+    End Function
+
+    Public Shared Sub CopyFiles(items As IEnumerable(Of Item))
+        Using Shell.OverrideCursor(Cursors.Wait)
+            Dim dataObject As ComTypes.IDataObject
+            dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+            Functions.OleSetClipboard(dataObject)
+            ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_COPY)
+        End Using
+    End Sub
+
+    Public Shared Sub CutFiles(items As IEnumerable(Of Item))
+        Using Shell.OverrideCursor(Cursors.Wait)
+            Dim dataObject As ComTypes.IDataObject
+            dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+            Functions.OleSetClipboard(dataObject)
+            ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_MOVE)
+        End Using
+    End Sub
+
+    Public Shared Sub PasteFiles(folder As Folder)
+        Using Shell.OverrideCursor(Cursors.Wait)
+            Dim thread As Thread = New Thread(New ThreadStart(
+                Sub()
+                    Dim dataObject As ComTypes.IDataObject = Nothing
+                    Functions.OleGetClipboard(dataObject)
+
+                    Dim dropTarget As IDropTarget = Nothing
+                    Try
+                        If Not folder.Parent Is Nothing Then
+                            folder.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        Else
+                            ' desktop
+                            Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        End If
+
+                        If Not dropTarget Is Nothing Then
+                            Dim effect As DROPEFFECT = ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.GetClipboard()
+                            Dim grfKeyState As MK = MK.MK_LBUTTON
+                            If effect = DROPEFFECT.DROPEFFECT_COPY Then grfKeyState = grfKeyState Or MK.MK_CONTROL
+                            Dim hr As HRESULT = dropTarget.DragEnter(dataObject, grfKeyState, New WIN32POINT(), effect)
+                            dropTarget.Drop(dataObject, grfKeyState, New WIN32POINT(), effect)
+                        End If
+                    Finally
+                        If Not dropTarget Is Nothing Then
+                            Marshal.ReleaseComObject(dropTarget)
+                            dropTarget = Nothing
+                        End If
+                        If Not dataObject Is Nothing Then
+                            Marshal.ReleaseComObject(dataObject)
+                            dataObject = Nothing
+                        End If
+                    End Try
+                End Sub))
+
+            thread.SetApartmentState(ApartmentState.STA)
+            thread.Start()
+        End Using
     End Sub
 
     Public Shared Function GetFileNameList(dataObj As ComTypes.IDataObject) As String()
