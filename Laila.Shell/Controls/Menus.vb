@@ -1,14 +1,9 @@
-﻿Imports System.ComponentModel
-Imports System.Reflection
+﻿Imports System.Reflection
 Imports System.Runtime.InteropServices
-Imports System.Runtime.Serialization
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
-Imports System.Windows.Media
-Imports System.Windows.Media.Imaging
 Imports Laila.BalloonTip
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -45,17 +40,19 @@ Namespace Controls
         End Sub
 
         Public Shared Async Function InvokeDefaultCommand(item As Item) As Task
-            If Not _rightClickMenu Is Nothing Then
-                _rightClickMenu.Dispose()
-            End If
+            Using Shell.OverrideCursor(Cursors.Wait)
+                If Not _rightClickMenu Is Nothing Then
+                    _rightClickMenu.Dispose()
+                End If
 
-            _rightClickMenu = New RightClickMenu()
-            _rightClickMenu.Folder = If(item.LogicalParent Is Nothing, item, item.LogicalParent)
-            _rightClickMenu.SelectedItems = {item}
-            _rightClickMenu.IsDefaultOnly = True
+                _rightClickMenu = New RightClickMenu()
+                _rightClickMenu.Folder = If(item.LogicalParent Is Nothing, item, item.LogicalParent)
+                _rightClickMenu.SelectedItems = {item}
+                _rightClickMenu.IsDefaultOnly = True
 
-            Await _rightClickMenu.Make()
-            Await _rightClickMenu.InvokeCommand(_rightClickMenu.DefaultId)
+                Await _rightClickMenu.Make()
+                Await _rightClickMenu.InvokeCommand(_rightClickMenu.DefaultId)
+            End Using
         End Function
 
         Delegate Sub GetItemNameCoordinatesDelegate(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
@@ -247,55 +244,62 @@ Namespace Controls
         End Sub
 
         Public Shared Sub DoDelete(items As IEnumerable(Of Item))
-            Dim thread As Thread = New Thread(New ThreadStart(
-                Sub()
-                    Dim fo As IFileOperation = Nothing
-                    Dim dataObject As ComTypes.IDataObject = Nothing
-                    Try
-                        fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                        dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
-                        If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                        fo.DeleteItems(dataObject)
-                        fo.PerformOperations()
-                    Finally
-                        If Not fo Is Nothing Then
-                            Marshal.ReleaseComObject(fo)
-                            fo = Nothing
-                        End If
-                        If Not dataObject Is Nothing Then
-                            Marshal.ReleaseComObject(dataObject)
-                            dataObject = Nothing
-                        End If
-                    End Try
-                End Sub))
+            Using Shell.OverrideCursor(Cursors.Wait)
+                Dim thread As Thread = New Thread(New ThreadStart(
+                    Sub()
+                        Dim fo As IFileOperation = Nothing
+                        Dim dataObject As ComTypes.IDataObject = Nothing
+                        Try
+                            fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                            dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+                            If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                            fo.DeleteItems(dataObject)
+                            fo.PerformOperations()
+                        Finally
+                            If Not fo Is Nothing Then
+                                Marshal.ReleaseComObject(fo)
+                                fo = Nothing
+                            End If
+                            If Not dataObject Is Nothing Then
+                                Marshal.ReleaseComObject(dataObject)
+                                dataObject = Nothing
+                            End If
+                        End Try
+                    End Sub))
 
-            thread.SetApartmentState(ApartmentState.STA)
-            thread.Start()
+                thread.SetApartmentState(ApartmentState.STA)
+                thread.Start()
+            End Using
         End Sub
 
         Public Shared Async Function DoShare(items As IEnumerable(Of Item)) As Task
-            If (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
-                AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar)) _
-                OrElse (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) _
+            Using Shell.OverrideCursor(Cursors.Wait)
+                If (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
+                    AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar)) _
+                    OrElse (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) _
                         AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).FullPath & IO.Path.DirectorySeparatorChar)) Then
-                If Not _rightClickMenu Is Nothing Then
-                    _rightClickMenu.Dispose()
+                    If Not _rightClickMenu Is Nothing Then
+                        _rightClickMenu.Dispose()
+                    End If
+                    _rightClickMenu = New RightClickMenu() With {
+                        .Folder = items(0).Parent,
+                        .SelectedItems = items,
+                        .IsDefaultOnly = True
+                    }
+                    Await _rightClickMenu.Make()
+                    Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}"))
+                Else
+                    Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
+                    Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
+                    Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
+                    Dim instance As Object = Activator.CreateInstance(type)
+                    methodInfo.Invoke(instance, {items.ToList().Select(Function(i) i.FullPath).ToList(),
+                                      If(New List(Of Window)(
+                                            System.Windows.Application.Current.Windows.Cast(Of Window)()) _
+                                                .FirstOrDefault(Function(w) w.IsActive),
+                                         System.Windows.Application.Current.MainWindow)})
                 End If
-                _rightClickMenu = New RightClickMenu() With {
-                    .Folder = items(0).Parent,
-                    .SelectedItems = items,
-                    .IsDefaultOnly = True
-                }
-                Await _rightClickMenu.Make()
-                Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}"))
-            Else
-                Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
-                Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
-                Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
-                Dim instance As Object = Activator.CreateInstance(type)
-                methodInfo.Invoke(instance, {items.ToList().Select(Function(i) i.FullPath).ToList(),
-                                  System.Windows.Application.Current.MainWindow})
-            End If
+            End Using
         End Function
 
         Public Async Function UpdateNewItemMenu() As Task
