@@ -20,7 +20,7 @@ Namespace Helpers
                         Dim history2 As List(Of Item) = New List(Of Item)()
                         Dim count As Integer = 0
                         For Each historyItem In history1
-                            Dim pidl As Pidl
+                            Dim pidl As Pidl = Nothing
                             Try
                                 pidl = New Pidl(historyItem.Pidl)
                                 Dim i As Item = Item.FromPidl(pidl, Nothing)

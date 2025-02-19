@@ -29,13 +29,13 @@ Namespace Controls
             _scrollViewer = Template.FindName("PART_ScrollViewer", Me)
         End Sub
 
-        Protected Overridable Sub Make()
+        Public Overridable Async Function Make() As Task
             _isMade = True
-        End Sub
+        End Function
 
-        Protected Overrides Sub OnOpened(e As RoutedEventArgs)
+        Protected Overrides Async Sub OnOpened(e As RoutedEventArgs)
             If Not _isMade Then
-                Me.Make()
+                Await Me.Make()
             End If
 
             MyBase.OnOpened(e)

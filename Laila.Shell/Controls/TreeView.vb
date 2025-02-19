@@ -183,8 +183,9 @@ Namespace Controls
 
             If Not Me.DoShowAllFoldersInTreeView Then
                 Dim tcs As New TaskCompletionSource()
-                Dim homeFolder As Folder, galleryFolder As Folder, librariesFolder As Folder, favoritesFolder As Folder
-                Dim thisComputer As Folder, network As Folder
+                Dim homeFolder As Folder = Nothing, galleryFolder As Folder = Nothing
+                Dim librariesFolder As Folder = Nothing, favoritesFolder As Folder = Nothing
+                Dim thisComputer As Folder = Nothing, network As Folder = Nothing
 
                 ' home, galery and favorites
                 If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Home) Then
@@ -448,7 +449,7 @@ Namespace Controls
 
                     Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
                     Dim list As List(Of Folder) = New List(Of Folder)()
-                    Dim tf As Folder
+                    Dim tf As Folder = Nothing
                     Dim currentFolder As Folder = folder
                     Dim noRecursive As List(Of String) = New List(Of String)()
 
@@ -469,11 +470,11 @@ Namespace Controls
 
                         list.Reverse()
 
-                        Dim en As IEnumerator(Of Folder)
+                        Dim en As IEnumerator(Of Folder) = Nothing
                         Dim en2 As IEnumerator(Of Folder) = list.GetEnumerator()
-                        Dim en3 As IEnumerator(Of Item)
-                        Dim func As Func(Of Folder, Func(Of Task), Task)
-                        Dim cb As System.Func(Of Task)
+                        Dim en3 As IEnumerator(Of Item) = Nothing
+                        Dim func As Func(Of Folder, Func(Of Task), Task) = Nothing
+                        Dim cb As System.Func(Of Task) = Nothing
                         Dim triedDesktop As Boolean = False
 
                         If Not tf Is Nothing Then en2.MoveNext()
@@ -486,7 +487,7 @@ Namespace Controls
                             End Sub
 
                         Dim findNextRoot2 As Action =
-                            Async Sub()
+                            Sub()
                                 While Not en3 Is Nothing AndAlso tf Is Nothing AndAlso en3.MoveNext()
                                     If en3.Current.FullPath = en2.Current.FullPath Then
                                         tf = en3.Current
@@ -522,7 +523,7 @@ Namespace Controls
                                     list.Insert(0, Shell.Desktop)
                                     en2 = list.GetEnumerator()
                                     triedDesktop = True
-                                    findNextRoot()
+                                    Await findNextRoot()
                                 Else
                                     Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- giving up")
                                     If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
@@ -876,7 +877,7 @@ Namespace Controls
                             End If
                         End Sub)
                 Case "TreeSortKey"
-                    Dim list As List(Of Item)
+                    Dim list As List(Of Item) = Nothing
                     UIHelper.OnUIThread(
                         Sub()
                             list = Me.Items.Where(Function(i) TypeOf i Is Folder _

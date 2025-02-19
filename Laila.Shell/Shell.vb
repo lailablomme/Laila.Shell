@@ -437,7 +437,7 @@ Public Class Shell
     End Property
 
     Public Shared Function GetCustomProperty(key As PROPERTYKEY) As Type
-        Dim t As Type
+        Dim t As Type = Nothing
         If _customPropertiesByKey.TryGetValue(key.ToString(), t) Then
             Return t
         Else
@@ -446,7 +446,7 @@ Public Class Shell
     End Function
 
     Public Shared Function GetCustomProperty(canonicalName As String) As Type
-        Dim t As Type
+        Dim t As Type = Nothing
         If _customPropertiesByCanonicalName.TryGetValue(canonicalName, t) Then
             Return t
         Else
@@ -617,7 +617,7 @@ Public Class Shell
                     End If
                 End Sub
 
-            Dim fsw As FileSystemWatcher, hNotify As UInt32?
+            Dim fsw As FileSystemWatcher = Nothing, hNotify As UInt32?
             If folder.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) AndAlso folder.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
                 fsw = New FileSystemWatcher(folder.FullPath)
                 AddHandler fsw.Created,

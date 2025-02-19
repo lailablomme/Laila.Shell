@@ -51,7 +51,7 @@ Public Class HomeFolder
 
     Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
         Get
-            Dim hbitmap As IntPtr, result As ImageSource, shellItem As IShellItem2
+            Dim hbitmap As IntPtr, result As ImageSource = Nothing, shellItem As IShellItem2 = Nothing
             Try
                 shellItem = Item.GetIShellItem2FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}")
                 Dim h As HRESULT = CType(shellItem, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY, hbitmap)
@@ -76,7 +76,7 @@ Public Class HomeFolder
 
     Public Overrides ReadOnly Property Image(size As Integer) As ImageSource
         Get
-            Dim hbitmap As IntPtr, result As ImageSource, shellItem As IShellItem2
+            Dim hbitmap As IntPtr, result As ImageSource = Nothing, shellItem As IShellItem2 = Nothing
             Try
                 shellItem = Item.GetIShellItem2FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}")
                 Dim h As HRESULT = CType(shellItem, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), 0, hbitmap)
@@ -117,7 +117,7 @@ Public Class HomeFolder
             item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
 
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
-            item._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
+            item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
             result.Add(item.FullPath & "_" & item.DisplayName, item)
             newFullPaths.Add(item.FullPath & "_" & item.DisplayName)
@@ -132,7 +132,7 @@ Public Class HomeFolder
             item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
 
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.FREQUENT_FOLDER)
-            item._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
+            item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
             result.Add(item.FullPath & "_" & item.DisplayName, item)
             newFullPaths.Add(item.FullPath & "_" & item.DisplayName)
@@ -175,7 +175,7 @@ Public Class HomeFolder
                     lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
 
                     Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
-                    target._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
+                    target._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
                     Return target
                 Else

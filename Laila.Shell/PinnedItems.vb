@@ -24,7 +24,7 @@ Public Class PinnedItems
             Function() As IEnumerable(Of Item)
                 Dim existingPinnedItems As List(Of Item) = New List(Of Item)()
                 For Each pinnedItem In pinnedItems
-                    Dim pidl As Pidl
+                    Dim pidl As Pidl = Nothing
                     Try
                         pidl = New Pidl(pinnedItem.Pidl)
                         Dim i As Item = Item.FromPidl(pidl, Nothing)
@@ -56,7 +56,7 @@ Public Class PinnedItems
     End Function
 
     Public Shared Sub PinItem(item As Item, Optional newIndex As Long = -1)
-        Dim e As PinnedItemEventArgs
+        Dim e As PinnedItemEventArgs = Nothing
 
         SyncLock _lock
             Using db = New LiteDatabase(getDBFileName())
@@ -88,7 +88,7 @@ Public Class PinnedItems
     End Sub
 
     Public Shared Function UnpinItem(pidl As Pidl) As Integer
-        Dim e As PinnedItemEventArgs
+        Dim e As PinnedItemEventArgs = Nothing
 
         SyncLock _lock
             Using db = New LiteDatabase(getDBFileName())

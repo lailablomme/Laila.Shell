@@ -327,7 +327,7 @@ Namespace Controls
                             End Sub)
 
                         If doShow Then
-                            Dim textFolderSize As String
+                            Dim textFolderSize As String = Nothing
                             If TypeOf overItem Is Folder Then
                                 textFolderSize = Await CType(overItem, Folder).GetInfoTipFolderSizeAsync(_toolTipCancellationTokenSource.Token)
                             End If
@@ -1024,7 +1024,7 @@ Namespace Controls
             End If
         End Sub
 
-        Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = TryCast(d, BaseFolderView)
 
             ' hide listview so no-one sees us binding to the new folder and restoring the scroll position

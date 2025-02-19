@@ -24,9 +24,10 @@ Public Class SearchFolder
     End Function
 
     Private Shared Function getShellItem(terms As String, parent As Folder) As IShellItem2
-        Dim factory As ISearchFolderItemFactory, array As IShellItemArray
-        Dim queryParserManager As IQueryParserManager, queryParser As IQueryParser, querySolution As IQuerySolution
-        Dim condition As ICondition, resolvedCondition As ICondition
+        Dim factory As ISearchFolderItemFactory = Nothing, array As IShellItemArray = Nothing
+        Dim queryParserManager As IQueryParserManager = Nothing, queryParser As IQueryParser = Nothing
+        Dim condition As ICondition = Nothing, resolvedCondition As ICondition = Nothing
+        Dim querySolution As IQuerySolution = Nothing
         Try
             ' make factory
             factory = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_SearchFolderItemFactory))
@@ -58,7 +59,7 @@ Public Class SearchFolder
             factory.SetFolderTypeID(Guids.FOLDERTYPEID_GenericSearchResults)
 
             ' get and return shellitem
-            Dim shellItem As IShellItem2
+            Dim shellItem As IShellItem2 = Nothing
             factory.GetShellItem(GetType(IShellItem2).GUID, shellItem)
             Return shellItem
         Finally

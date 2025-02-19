@@ -82,7 +82,7 @@ Public Class ListViewDropTarget
             Try
                 Dim overItem As Item = getOverItem(ptWIN32)
                 If Not overItem Is Nothing AndAlso overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" Then
-                    Dim fo As IFileOperation
+                    Dim fo As IFileOperation = Nothing
                     Try
                         fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
                         If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
@@ -176,7 +176,7 @@ Public Class ListViewDropTarget
             If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 _lastOverItem = overItem
 
-                Dim dropTarget As IDropTarget
+                Dim dropTarget As IDropTarget = Nothing
                 ' first check if we're not trying to drop on ourselves or our parent
                 Dim isOurSelvesOrParent As Boolean
                 If Not _files Is Nothing Then

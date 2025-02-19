@@ -268,8 +268,8 @@ Namespace Controls
                     panel.Children.Add(subFoldersButton)
                     Dim func As Func(Of ToggleButton, Task) =
                         Async Function(button As ToggleButton) As Task
-                            Dim subFolder As Folder
-                            Dim subFoldersContextMenu As ItemsContextMenu
+                            Dim subFolder As Folder = Nothing
+                            Dim subFoldersContextMenu As ItemsContextMenu = Nothing
 
                             UIHelper.OnUIThread(
                                 Sub()
@@ -308,7 +308,7 @@ Namespace Controls
                                             .IsDefaultOnly = True
                                         }
                                         Await _menu.Make()
-                                        _menu.InvokeCommand(_menu.DefaultId)
+                                        Await _menu.InvokeCommand(_menu.DefaultId)
                                     End If
                                 End Sub
                             AddHandler subFoldersContextMenu.Closed,

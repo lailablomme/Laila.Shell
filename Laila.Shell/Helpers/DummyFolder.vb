@@ -1,12 +1,8 @@
 ﻿Imports System.Collections.ObjectModel
-Imports System.Windows
 Imports System.Windows.Media
-Imports System.Windows.Media.Imaging
 
 Public Class DummyFolder
     Inherits Folder
-
-    Private _displayName As String
 
     Public Sub New(displayName As String, logicalParent As Folder, Optional id As String = Nothing)
         MyBase.New(Nothing, logicalParent, True, False)

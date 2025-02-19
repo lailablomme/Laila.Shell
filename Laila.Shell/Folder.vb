@@ -50,7 +50,7 @@ Public Class Folder
     Public Shared Function FromDesktop() As Folder
         Return Shell.GlobalThreadPool.Run(
             Function() As Folder
-                Dim pidl As IntPtr, shellFolder As IShellFolder, shellItem2 As IShellItem2
+                Dim pidl As IntPtr, shellFolder As IShellFolder = Nothing, shellItem2 As IShellItem2 = Nothing
                 Try
                     Functions.SHGetDesktopFolder(shellFolder)
                     Functions.SHGetIDListFromObject(shellFolder, pidl)
@@ -67,7 +67,7 @@ Public Class Folder
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
-        Dim result As IShellFolder
+        Dim result As IShellFolder = Nothing
         shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, result)
         Return result
     End Function
@@ -280,7 +280,8 @@ Public Class Folder
         Dim result As UInt64? = 0
         Dim subFolders As List(Of IShellItem2) = New List(Of IShellItem2)()
 
-        Dim bindCtx As ComTypes.IBindCtx, propertyBag As IPropertyBag, var As PROPVARIANT, enumShellItems As IEnumShellItems
+        Dim bindCtx As ComTypes.IBindCtx = Nothing, propertyBag As IPropertyBag = Nothing
+        Dim var As PROPVARIANT, enumShellItems As IEnumShellItems = Nothing
         Try
             Functions.CreateBindCtx(0, bindCtx)
             Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBag)
@@ -379,7 +380,8 @@ Public Class Folder
     End Function
 
     Protected Function quickEnum(flags As UInt32, celt As Integer) As List(Of String)
-        Dim bindCtx As ComTypes.IBindCtx, propertyBag As IPropertyBag, var As PROPVARIANT, enumShellItems As IEnumShellItems
+        Dim bindCtx As ComTypes.IBindCtx = Nothing, propertyBag As IPropertyBag = Nothing
+        Dim var As PROPVARIANT, enumShellItems As IEnumShellItems = Nothing
         Try
             Functions.CreateBindCtx(0, bindCtx)
             Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBag)
@@ -398,7 +400,7 @@ Public Class Folder
                 Dim shellItems(celt - 1) As IShellItem, fetched As UInt32 = 1
                 Dim h As HRESULT = enumShellItems.Next(celt, shellItems, fetched)
                 If fetched > 0 Then
-                    Dim displayName As String
+                    Dim displayName As String = Nothing
                     Dim displayNameList As List(Of String) = New List(Of String)()
                     For x As UInt32 = 0 To fetched - 1
                         shellItems(x).GetDisplayName(SHGDN.NORMAL, displayName)
@@ -439,7 +441,7 @@ Public Class Folder
         Get
             Return Shell.GlobalThreadPool.Run(
                 Function() As IShellView
-                    Dim shellView As IShellView
+                    Dim shellView As IShellView = Nothing
                     Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
                     Return shellView
                 End Function)
@@ -452,7 +454,7 @@ Public Class Folder
                 _columns = New List(Of Column)()
 
                 ' get columns from shell
-                Dim columnManager As IColumnManager
+                Dim columnManager As IColumnManager = Nothing
                 Try
                     columnManager = Me.ColumnManager
                     Dim count As Integer
@@ -461,7 +463,7 @@ Public Class Folder
                     columnManager.GetColumns(CM_ENUM_FLAGS.CM_ENUM_ALL, propertyKeys, count)
                     Dim index As Integer = 0
                     For Each propertyKey In propertyKeys
-                        Dim info As CM_COLUMNINFO
+                        Dim info As CM_COLUMNINFO = New CM_COLUMNINFO()
                         info.dwMask = CM_MASK.CM_MASK_NAME Or CM_MASK.CM_MASK_DEFAULTWIDTH Or CM_MASK.CM_MASK_IDEALWIDTH _
                                           Or CM_MASK.CM_MASK_STATE Or CM_MASK.CM_MASK_WIDTH
                         info.cbSize = Marshal.SizeOf(Of CM_COLUMNINFO)
@@ -645,7 +647,7 @@ Public Class Folder
         Dim newFullPaths As HashSet(Of String) = New HashSet(Of String)()
 
         ' pre-parse sort property 
-        Dim isSortPropertyByText As Boolean, sortPropertyKey As String, isSortPropertyDisplaySortValue As Boolean
+        Dim isSortPropertyByText As Boolean, sortPropertyKey As String = Nothing, isSortPropertyDisplaySortValue As Boolean
         If Not String.IsNullOrWhiteSpace(Me.ItemsSortPropertyName) Then
             isSortPropertyByText = Me.ItemsSortPropertyName.Contains("PropertiesByKeyAsText")
             If isSortPropertyByText Then
@@ -660,7 +662,7 @@ Public Class Folder
         Dim addItems As System.Action =
             Sub()
                 If result.Count > 0 Then
-                    Dim existingItems() As Tuple(Of Item, Item)
+                    Dim existingItems() As Tuple(Of Item, Item) = Nothing
 
                     UIHelper.OnUIThread(
                         Sub()
@@ -807,7 +809,8 @@ Public Class Folder
             replacedWithCustomFolders.Add(customFolder.ReplacesFullPath.ToLower())
         Next
 
-        Dim bindCtx As ComTypes.IBindCtx, propertyBag As IPropertyBag, var As PROPVARIANT, enumShellItems As IEnumShellItems
+        Dim bindCtx As ComTypes.IBindCtx = Nothing, propertyBag As IPropertyBag = Nothing
+        Dim var As PROPVARIANT, enumShellItems As IEnumShellItems = Nothing
         Try
             Functions.CreateBindCtx(0, bindCtx)
             Functions.PSCreateMemoryPropertyStore(GetType(IPropertyBag).GUID, propertyBag)

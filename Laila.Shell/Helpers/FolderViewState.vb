@@ -30,7 +30,7 @@ Namespace Helpers
         End Function
 
         Public Shared Function FromViewName(viewName As String, Optional folder As Folder = Nothing) As FolderViewState
-            Dim result As FolderViewState
+            Dim result As FolderViewState = Nothing
 
             Dim dbPath As String = GetStateDBPath()
             Dim viewId As String = getMD5Hash(viewName)

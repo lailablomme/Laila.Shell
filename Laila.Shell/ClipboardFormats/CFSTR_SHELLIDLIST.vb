@@ -16,7 +16,7 @@ Namespace ClipboardFormats
                     .tymed = TYMED.TYMED_HGLOBAL
                 }
                 If dataObject.QueryGetData(format) = 0 Then
-                    Dim medium As STGMEDIUM
+                    Dim medium As STGMEDIUM = New STGMEDIUM()
                     dataObject.GetData(format, medium)
                     Dim ptr As IntPtr = medium.unionmember
                     Dim test As Integer = Marshal.ReadInt32(medium.unionmember)

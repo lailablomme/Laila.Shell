@@ -1,7 +1,6 @@
 ﻿Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
 Imports System.Text
-Imports Microsoft.WindowsAPICodePack.Shell.PropertySystem
 
 ' https://learn.microsoft.com/en-us/windows/win32/api/propsys/nn-propsys-ipropertydescription
 

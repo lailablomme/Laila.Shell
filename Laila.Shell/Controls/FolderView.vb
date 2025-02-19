@@ -1,18 +1,11 @@
 ﻿Imports System.Collections.Specialized
 Imports System.ComponentModel
-Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
-Imports System.Windows.Forms.Design
-Imports System.Windows.Forms.Integration
-Imports System.Windows.Media
-Imports Laila.Shell.Behaviors
-Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
-Imports OpenMcdf
 
 Namespace Controls
     Public Class FolderView
@@ -169,7 +162,7 @@ Namespace Controls
                                 size += item.PropertiesByCanonicalName("System.Size")?.Value
                             Next
                             If size > 0 Then
-                                Dim propertyDescription As IPropertyDescription, pkey As PROPERTYKEY
+                                Dim propertyDescription As IPropertyDescription = Nothing, pkey As PROPERTYKEY
                                 Try
                                     Functions.PSGetPropertyDescriptionByName("System.Size", GetType(IPropertyDescription).GUID, propertyDescription)
                                     propertyDescription.GetPropertyKey(pkey)
@@ -205,7 +198,7 @@ Namespace Controls
             End If
         End Sub
 
-        Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim fv As FolderView = d
             fv.SelectedItems = Nothing
             If Not e.OldValue Is Nothing Then
@@ -265,7 +258,7 @@ Namespace Controls
             End If
         End Sub
 
-        Shared Async Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim fv As FolderView = d
             fv.updateStatusText()
         End Sub

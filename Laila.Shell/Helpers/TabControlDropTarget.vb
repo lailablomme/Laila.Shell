@@ -29,12 +29,14 @@ Namespace Helpers
             If Not _dragOpenTimer Is Nothing Then
                 _dragOpenTimer.Dispose()
             End If
+            Return HRESULT.S_OK
         End Function
 
         Public Overrides Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As MK, pt As WIN32POINT, ByRef pdwEffect As Integer) As Integer
             If Not _dragOpenTimer Is Nothing Then
                 _dragOpenTimer.Dispose()
             End If
+            Return HRESULT.S_OK
         End Function
 
         Private Function getOverItem(ptWIN32 As WIN32POINT) As Controls.TabControl.TabData

@@ -100,7 +100,7 @@ Public Class Pidl
         ' read parent
         Dim offset As UInt32 = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32)) ' parent
         Dim parentShellFolder As IShellFolder
-        Dim parentFolder As Folder
+        Dim parentFolder As Folder = Nothing
 
         ' read items
         Shell.GlobalThreadPool.Run(

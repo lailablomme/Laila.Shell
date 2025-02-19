@@ -65,9 +65,9 @@ Namespace Controls
                                    grid As Grid, listBoxItem As ListBoxItem, listBox As ListBox)
             Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
             Dim item As Item = listBoxItem.DataContext
-            Dim originalName As String, ext As String = "", isDrive As Boolean, isWithExt As Boolean
+            Dim originalName As String = Nothing, ext As String = "", isDrive As Boolean, isWithExt As Boolean
             Dim doHideKnownFileExtensions As Boolean = Shell.Settings.DoHideKnownFileExtensions
-            Dim balloonTip As BalloonTip.BalloonTip
+            Dim balloonTip As BalloonTip.BalloonTip = Nothing
             Dim scrollViewer As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(listBox)(0)
 
             ' make sure we get the latest values according to the DoHideKnownFileExtensions setting
@@ -111,7 +111,7 @@ Namespace Controls
                             End Try
                         Else
                             Dim composedFullName As String = If(isWithExt, newName, newName & ext)
-                            Dim fileOperation As IFileOperation
+                            Dim fileOperation As IFileOperation = Nothing
                             Try
                                 Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
                                 SyncLock item._shellItemLock
@@ -249,8 +249,8 @@ Namespace Controls
         Public Shared Sub DoDelete(items As IEnumerable(Of Item))
             Dim thread As Thread = New Thread(New ThreadStart(
                 Sub()
-                    Dim fo As IFileOperation
-                    Dim dataObject As ComTypes.IDataObject
+                    Dim fo As IFileOperation = Nothing
+                    Dim dataObject As ComTypes.IDataObject = Nothing
                     Try
                         fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
                         dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)

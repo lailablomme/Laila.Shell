@@ -272,7 +272,7 @@ Namespace Controls
             previewer.setMessage()
         End Sub
 
-        Private Shared Function makeWindow(previewer As Previewer)
+        Private Shared Sub makeWindow(previewer As Previewer)
             previewer._window = New Window()
             previewer._window.SetValue(System.Windows.Shell.WindowChrome.WindowChromeProperty,
                 New System.Windows.Shell.WindowChrome() With {
@@ -293,7 +293,7 @@ Namespace Controls
             previewer._window.ShowActivated = False
             updateWindowCoords(previewer)
             previewer._window.Show()
-        End Function
+        End Sub
 
         Private Sub owner_OpacityChanged(s As Object, e As EventArgs)
             If CType(s, Window).Opacity > 0 Then

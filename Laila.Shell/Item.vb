@@ -93,7 +93,7 @@ Public Class Item
     End Function
 
     Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, parentShellFolder As IShellFolder) As IShellItem2
-        Dim result As IShellItem2
+        Dim result As IShellItem2 = Nothing
         If parentShellFolder Is Nothing Then
             Functions.SHCreateItemFromIDList(pidl, Guids.IID_IShellItem2, result)
         Else
@@ -103,7 +103,7 @@ Public Class Item
     End Function
 
     Friend Shared Function GetIShellItem2FromParsingName(parsingName As String) As IShellItem2
-        Dim result As IShellItem2
+        Dim result As IShellItem2 = Nothing
         Functions.SHCreateItemFromParsingName(parsingName, IntPtr.Zero, Guids.IID_IShellItem2, result)
         Return result
     End Function
@@ -236,7 +236,7 @@ Public Class Item
     End Property
 
     Protected Overridable Function GetNewShellItem() As IShellItem2
-        Dim result As IShellItem2
+        Dim result As IShellItem2 = Nothing
         If Not Me.Pidl Is Nothing Then
             Functions.SHCreateItemFromIDList(Me.Pidl.AbsolutePIDL, GetType(IShellItem2).GUID, result)
         End If
@@ -259,9 +259,9 @@ Public Class Item
     Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing,
                                    Optional newPidl As Pidl = Nothing,
                                    Optional newFullPath As String = Nothing)
-        Dim oldPropertiesByKey As Dictionary(Of String, [Property])
-        Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property])
-        Dim oldItemNameDisplaySortValue As String
+        Dim oldPropertiesByKey As Dictionary(Of String, [Property]) = Nothing
+        Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property]) = Nothing
+        Dim oldItemNameDisplaySortValue As String = Nothing
 
         SyncLock _shellItemLock
             If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
@@ -419,7 +419,7 @@ Public Class Item
 
                 ' if we don't have any yet/anymore...
                 If _parent Is Nothing Then
-                    Dim parentShellItem2 As IShellItem2
+                    Dim parentShellItem2 As IShellItem2 = Nothing
                     _parent = Shell.GlobalThreadPool.Run(
                         Function() As Folder
                             SyncLock _shellItemLock
@@ -557,7 +557,7 @@ Public Class Item
             Try
                 SyncLock _shellItemLock
                     If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                        Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource
+                        Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource = Nothing
                         If Not Settings.IsWindows8_1OrLower Then
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                             If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
@@ -608,7 +608,7 @@ Public Class Item
             Try
                 If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                     SyncLock _shellItemLock
-                        Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource
+                        Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource = Nothing
                         If Not Settings.IsWindows8_1OrLower Then
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                             If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
@@ -657,7 +657,7 @@ Public Class Item
         Get
             Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource()
-                    Dim result As ImageSource()
+                    Dim result As ImageSource() = Nothing
                     If Not Me.disposedValue Then
                         result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16
                     End If
@@ -670,7 +670,7 @@ Public Class Item
         Get
             Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource
-                    Dim result As ImageSource
+                    Dim result As ImageSource = Nothing
                     If Not Me.disposedValue Then
                         result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.FirstIcon16
                     End If
@@ -1029,7 +1029,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
-            Dim [property] As [Property]
+            Dim [property] As [Property] = Nothing
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
             _propertiesLock.Wait()
             Try
@@ -1064,7 +1064,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByKey(propertyKey As PROPERTYKEY) As [Property]
         Get
-            Dim [property] As [Property]
+            Dim [property] As [Property] = Nothing
             _propertiesLock.Wait()
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
@@ -1098,7 +1098,7 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByCanonicalName(canonicalName As String) As [Property]
         Get
-            Dim [property] As [Property]
+            Dim [property] As [Property] = Nothing
             _propertiesLock.Wait()
             Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then

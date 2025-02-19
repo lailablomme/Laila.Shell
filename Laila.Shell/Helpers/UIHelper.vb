@@ -1,12 +1,9 @@
 ﻿Imports System.Reflection
 Imports System.Windows
-Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Interop
 Imports System.Windows.Media
 Imports System.Windows.Threading
-Imports Laila.Shell.ViewModels
-Imports Microsoft
 
 Namespace Helpers
     Public Class UIHelper

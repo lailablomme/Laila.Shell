@@ -14,11 +14,11 @@ Public Class Clipboard
     Public Shared Async Function CanPaste(folder As Folder) As Task(Of Boolean)
         Return Shell.GlobalThreadPool.Run(
             Function() As Boolean
-                Dim dataObject As ComTypes.IDataObject
+                Dim dataObject As ComTypes.IDataObject = Nothing
                 Functions.OleGetClipboard(dataObject)
 
                 ' check for paste by checking if it would accept a drop
-                Dim dropTarget As IDropTarget
+                Dim dropTarget As IDropTarget = Nothing
                 Try
                     If Not folder.Parent Is Nothing Then
                         folder.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {If(folder.Pidl?.RelativePIDL, IntPtr.Zero)}, GetType(IDropTarget).GUID, 0, dropTarget)
@@ -74,18 +74,16 @@ Public Class Clipboard
     Public Shared Sub PasteFiles(folder As Folder)
         Dim thread As Thread = New Thread(New ThreadStart(
             Sub()
-                Dim dataObject As ComTypes.IDataObject
+                Dim dataObject As ComTypes.IDataObject = Nothing
                 Functions.OleGetClipboard(dataObject)
 
-                Dim dropTarget As IDropTarget, shellFolder As IShellFolder
+                Dim dropTarget As IDropTarget = Nothing
                 Try
                     If Not folder.Parent Is Nothing Then
-                        shellFolder = folder.Parent.ShellFolder
-                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        folder.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                     Else
                         ' desktop
-                        shellFolder = Shell.Desktop.ShellFolder
-                        shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                     End If
 
                     If Not dropTarget Is Nothing Then
@@ -121,7 +119,7 @@ Public Class Clipboard
     End Function
 
     Public Shared Function GetHasGlobalData(clipboardFormat As String)
-        Dim dataObject As ComTypes.IDataObject
+        Dim dataObject As ComTypes.IDataObject = Nothing
         Try
             Functions.OleGetClipboard(dataObject)
             Return GetHasGlobalData(dataObject, clipboardFormat)
@@ -149,7 +147,7 @@ Public Class Clipboard
     End Function
 
     Public Shared Function GetDataObjectFor(folder As Folder, items As IEnumerable(Of Item)) As ComTypes.IDataObject
-        Dim result As ComTypes.IDataObject
+        Dim result As ComTypes.IDataObject = Nothing
 
         ' make a DataObject for our list of items
         Dim inner As DataObject = New DataObject()
@@ -164,7 +162,7 @@ Public Class Clipboard
 
         ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
         ' and I don't know what it's doing 
-        Dim initDropTarget As IDropTarget
+        Dim initDropTarget As IDropTarget = Nothing
         Try
             Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, initDropTarget)
             initDropTarget.DragEnter(result, 0, New WIN32POINT() With {.x = 0, .y = 0}, 0)
@@ -187,7 +185,7 @@ Public Class Clipboard
             .ptd = IntPtr.Zero,
             .tymed = TYMED.TYMED_HGLOBAL
         }
-        Dim medium As STGMEDIUM
+        Dim medium As STGMEDIUM = New STGMEDIUM()
         Dim result As Integer = dataObject.QueryGetData(format)
         If result = 0 Then
             dataObject.GetData(format, medium)

@@ -416,6 +416,7 @@ Public Class EnumFORMATETC
     Public Function Reset() As Integer Implements ComTypes.IEnumFORMATETC.Reset
         Debug.WriteLine("EnumFORMATETC.Reset")
         currentIndex = 0
+        Return HRESULT.S_OK
     End Function
 
     Public Sub Clone(ByRef ppenum As ComTypes.IEnumFORMATETC) Implements ComTypes.IEnumFORMATETC.Clone

@@ -11,7 +11,7 @@ Namespace Controls
 
             ' add menu items
             Dim menuItems As List(Of Control) = getMenuItems()
-            Dim lastMenuItem As Control
+            Dim lastMenuItem As Control = Nothing
             For Each item In menuItems
                 Dim verb As String = If(Not item.Tag Is Nothing, CType(item.Tag, Tuple(Of Integer, String)).Item2, Nothing)
                 Select Case verb

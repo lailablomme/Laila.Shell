@@ -262,7 +262,7 @@ Namespace Behaviors
 
                    ' hook reorder event
                    AddHandler _gridView.Columns.CollectionChanged,
-                       Async Sub(s2 As Object, e2 As NotifyCollectionChangedEventArgs)
+                       Sub(s2 As Object, e2 As NotifyCollectionChangedEventArgs)
                            If e2.Action = NotifyCollectionChangedAction.Move Then
                                ' move
                                Dim actualOldIndex As Integer = -1
@@ -710,7 +710,7 @@ Namespace Behaviors
         Private Sub icgStatusChanged(sender As Object, e As EventArgs)
             If _listView.ItemContainerGenerator.Status = Primitives.GeneratorStatus.ContainersGenerated Then
                 UIHelper.OnUIThreadAsync(
-                    Async Sub()
+                    Sub()
                         resizeVisibleRows()
                     End Sub, Threading.DispatcherPriority.ContextIdle)
             End If

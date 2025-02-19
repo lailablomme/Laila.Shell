@@ -30,7 +30,7 @@ Public Class FrequentFolders
                         Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
                         Dim count As Integer = 0
                         For Each folder In mostFrequent1
-                            Dim pidl As Pidl
+                            Dim pidl As Pidl = Nothing
                             Try
                                 pidl = New Pidl(folder.Pidl)
                                 Dim i As Item = Item.FromPidl(pidl, Nothing)

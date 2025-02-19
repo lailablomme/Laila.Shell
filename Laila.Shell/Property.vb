@@ -114,12 +114,12 @@ Public Class [Property]
     End Function
 
     Protected Shared Function GetDescription(canonicalName As String) As CachedPropertyDescription
-        Dim result As CachedPropertyDescription
+        Dim result As CachedPropertyDescription = Nothing
         Try
             _cachedDescriptionsLock.Wait()
             If Not _cachedDescriptionsByCanonicalName.TryGetValue(canonicalName, result) Then
                 _cachedDescriptionsLock.Release()
-                Dim propertyDescription As IPropertyDescription
+                Dim propertyDescription As IPropertyDescription = Nothing
                 Functions.PSGetPropertyDescriptionByName(canonicalName, GetType(IPropertyDescription).GUID, propertyDescription)
                 If Not propertyDescription Is Nothing Then
                     Dim pkey As PROPERTYKEY
@@ -146,15 +146,15 @@ Public Class [Property]
     End Function
 
     Protected Shared Function GetDescription(pkey As PROPERTYKEY) As CachedPropertyDescription
-        Dim result As CachedPropertyDescription
+        Dim result As CachedPropertyDescription = Nothing
         Try
             _cachedDescriptionsLock.Wait()
             If Not _cachedDescriptionsByPropertyKey.TryGetValue(pkey.ToString().ToLower(), result) Then
                 _cachedDescriptionsLock.Release()
-                Dim propertyDescription As IPropertyDescription
+                Dim propertyDescription As IPropertyDescription = Nothing
                 Functions.PSGetPropertyDescription(pkey, GetType(IPropertyDescription).GUID, propertyDescription)
                 If Not propertyDescription Is Nothing Then
-                    Dim canonicalName As String
+                    Dim canonicalName As String = Nothing
                     Functions.PSGetNameFromPropertyKey(pkey, canonicalName)
                     _cachedDescriptionsLock.Wait()
                     If Not _cachedDescriptionsByPropertyKey.ContainsKey(pkey.ToString().ToLower()) Then
@@ -324,16 +324,16 @@ Public Class [Property]
                 If Not _hasIcon.TryGetValue(_propertyKey.ToString(), hi) Then
                     Dim result As Boolean = False
                     If Me.DisplayType = PropertyDisplayType.Enumerated Then
-                        Dim propertyEnumTypeList As IPropertyEnumTypeList
+                        Dim propertyEnumTypeList As IPropertyEnumTypeList = Nothing
                         Try
                             Me.Description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
                             Dim count As UInt32
                             propertyEnumTypeList.GetCount(count)
                             For x As UInt32 = 0 To count - 1
-                                Dim propertyEnumType2 As IPropertyEnumType2
+                                Dim propertyEnumType2 As IPropertyEnumType2 = Nothing
                                 Try
                                     propertyEnumTypeList.GetAt(x, GetType(IPropertyEnumType2).GUID, propertyEnumType2)
-                                    Dim imageReference As String
+                                    Dim imageReference As String = Nothing
                                     propertyEnumType2.GetImageReference(imageReference)
                                     If Not String.IsNullOrWhiteSpace(imageReference) Then
                                         result = True
@@ -376,13 +376,13 @@ Public Class [Property]
         Get
             If Me.DisplayType = PropertyDisplayType.Enumerated Then
                 _imageReferences16Lock.Wait()
-                Dim i16 As String()
+                Dim i16 As String() = Nothing
                 Try
                     If Not _imageReferences16.TryGetValue(String.Format("{0}_{1}", _propertyKey, Me.RawValue.GetValue()), i16) Then
-                        Dim propertyEnumType2 As IPropertyEnumType2
+                        Dim propertyEnumType2 As IPropertyEnumType2 = Nothing
                         Try
                             propertyEnumType2 = getSelectedPropertyEnumType(Me.RawValue, Me.Description)
-                            Dim imageReference As String
+                            Dim imageReference As String = Nothing
                             propertyEnumType2.GetImageReference(imageReference)
                             If Not String.IsNullOrWhiteSpace(imageReference) Then
                                 i16 = {imageReference}
@@ -447,7 +447,7 @@ Public Class [Property]
 
     Protected Function getSelectedPropertyEnumType(value As PROPVARIANT, description As IPropertyDescription) As IPropertyEnumType
         If Me.DisplayType = PropertyDisplayType.Enumerated Then
-            Dim propertyEnumTypeList As IPropertyEnumTypeList, propertyEnumType As IPropertyEnumType
+            Dim propertyEnumTypeList As IPropertyEnumTypeList = Nothing, propertyEnumType As IPropertyEnumType = Nothing
             Try
                 description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
                 Dim index As UInt32 = value.GetValue()

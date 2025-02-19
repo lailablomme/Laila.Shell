@@ -145,6 +145,7 @@ Public Structure PROPVARIANT
                     Return Nothing
             End Select
         End If
+        Return Nothing
     End Function
 
     Public Sub Dispose() Implements IDisposable.Dispose

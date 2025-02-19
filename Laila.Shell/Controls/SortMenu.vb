@@ -2,7 +2,6 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
-Imports Laila.Shell.Helpers
 
 Namespace Controls
     Public Class SortMenu
@@ -16,7 +15,7 @@ Namespace Controls
         Private _didGetProperties As Boolean
         Private _isCheckingInternally As Boolean
 
-        Protected Overrides Sub Make()
+        Public Overrides Async Function Make() As Task
             Me.Items.Clear()
 
             If Me.Folder.CanSort Then
@@ -36,7 +35,7 @@ Namespace Controls
             End If
 
             MyBase.Make()
-        End Sub
+        End Function
 
         Public Sub AddSortItems(menu As ItemCollection)
             getProperties()

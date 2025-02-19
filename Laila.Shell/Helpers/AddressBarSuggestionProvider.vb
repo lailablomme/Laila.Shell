@@ -37,7 +37,7 @@ Namespace Helpers
                     End If
 
                     ' get folder
-                    Dim folder As Folder
+                    Dim folder As Folder = Nothing
                     If Not String.IsNullOrWhiteSpace(folderName) Then
                         If folderName.StartsWith(IO.Path.DirectorySeparatorChar) _
                             AndAlso Not folderName.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then

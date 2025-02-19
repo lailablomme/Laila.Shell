@@ -17,7 +17,7 @@ Namespace ClipboardFormats
                     .tymed = TYMED.TYMED_HGLOBAL
                 }
                 If dataObject.QueryGetData(format) = 0 Then
-                    Dim medium As STGMEDIUM
+                    Dim medium As STGMEDIUM = New STGMEDIUM()
                     dataObject.GetData(format, medium)
 
                     Dim fileCount As UInteger = Functions.DragQueryFile(medium.unionmember, UInt32.MaxValue, Nothing, 0)

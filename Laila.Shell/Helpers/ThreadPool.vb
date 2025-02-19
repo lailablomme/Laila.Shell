@@ -95,7 +95,7 @@ Namespace Helpers
             If Not threadId.HasValue Then
                 threadId = GetNextFreeThreadId()
             End If
-            Dim tcs As TaskCompletionSource(Of TResult)
+            Dim tcs As TaskCompletionSource(Of TResult) = Nothing
             Dim numTries = 1
             While (tcs Is Nothing OrElse Not (tcs.Task.IsCompleted OrElse tcs.Task.IsCanceled)) _
                 AndAlso numTries <= 3 AndAlso Not _disposeToken.IsCancellationRequested

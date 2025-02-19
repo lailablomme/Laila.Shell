@@ -66,7 +66,7 @@ Namespace Controls
                     Function(c) _invokedId.Equals(c.Tag)) Is Nothing
         End Function
 
-        Public Async Function Make() As Task
+        Public Overrides Async Function Make() As Task
             If _wasMade Then Return
 
             makeContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
@@ -266,7 +266,7 @@ Namespace Controls
                         mii.fMask = MIIM.MIIM_ID
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        Dim verb As String, id As Integer
+                        Dim verb As String = Nothing, id As Integer
                         Dim cmd As StringBuilder = New StringBuilder()
                         cmd.Append(New String(" ", 512))
                         If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
@@ -324,7 +324,7 @@ Namespace Controls
         End Class
 
         Private Sub makeContextMenu(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
-            Dim folderPidl As Pidl, itemPidls As Pidl(), doUseAbsolutePidls As Boolean
+            Dim folderPidl As Pidl = Nothing, itemPidls As Pidl() = Nothing, doUseAbsolutePidls As Boolean
 
             Shell.GlobalThreadPool.Run(
                 Sub()
@@ -359,11 +359,11 @@ Namespace Controls
                     End If
                 End Sub)
 
-            Dim tcs As New TaskCompletionSource()
+            Dim tcs As TaskCompletionSource = New TaskCompletionSource()
             _threadPool.Run(
                 Sub()
                     Dim flags As Integer = CMF.CMF_NORMAL
-                    Dim shellFolder As IShellFolder
+                    Dim shellFolder As IShellFolder = Nothing
 
                     SyncLock folder._shellItemLock
                         If Not folder.disposedValue Then
@@ -399,7 +399,7 @@ Namespace Controls
                             If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
                             _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
 
-                            Dim shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject
+                            Dim shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject = Nothing
                             Try
                                 shellExtInit = TryCast(_contextMenu, IShellExtInit)
                                 If Not shellExtInit Is Nothing Then
@@ -447,9 +447,9 @@ Namespace Controls
 
             Await Make()
 
-            Dim folder As Folder
-            Dim selectedItems As IEnumerable(Of Item)
-            Dim e As CommandInvokedEventArgs
+            Dim folder As Folder = Nothing
+            Dim selectedItems As IEnumerable(Of Item) = Nothing
+            Dim e As CommandInvokedEventArgs = Nothing
 
             UIHelper.OnUIThread(
                 Sub()
@@ -488,7 +488,7 @@ Namespace Controls
                                     Clipboard.PasteFiles(selectedItems(0))
                                 End If
                             Case "delete"
-                                Dim dataObject As ComTypes.IDataObject, fo As IFileOperation
+                                Dim dataObject As ComTypes.IDataObject = Nothing, fo As IFileOperation = Nothing
                                 Try
                                     dataObject = Clipboard.GetDataObjectFor(folder, selectedItems.ToList())
                                     fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
