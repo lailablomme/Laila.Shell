@@ -173,18 +173,12 @@ Public Class Pidl
 
     Public ReadOnly Property AbsolutePIDL As IntPtr
         Get
-            If IntPtr.Zero.Equals(_pidl) Then
-                Throw New InvalidOperationException("Pidl can't be zero")
-            End If
             Return _pidl
         End Get
     End Property
 
     Public ReadOnly Property RelativePIDL As IntPtr
         Get
-            If IntPtr.Zero.Equals(_pidl) Then
-                Throw New InvalidOperationException("Pidl can't be zero")
-            End If
             If IntPtr.Zero.Equals(_lastId) Then
                 _lastId = Functions.ILFindLastID(_pidl)
             End If
