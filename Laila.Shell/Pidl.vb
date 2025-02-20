@@ -10,45 +10,29 @@ Public Class Pidl
     Private _lastId As IntPtr
     Private disposedValue As Boolean
 
-    Public Shared Function FromCustomBytes(bytes As Byte()) As Pidl
-        ' Compute total size: 2 bytes (size) + data length + 2 bytes (NULL terminator)
+    Public Shared Function FromBytes(bytes As Byte()) As Pidl
         Dim cb As Integer = 2 + bytes.Length + 2
-
-        ' Allocate memory for PIDL using CoTaskMemAlloc
         Dim pidlPtr As IntPtr = Marshal.AllocCoTaskMem(cb)
-
-        If pidlPtr = IntPtr.Zero Then
-            Throw New OutOfMemoryException("Failed to allocate memory for PIDL")
-        End If
-
-        ' Write cb (total size including NULL terminator)
         Marshal.WriteInt16(pidlPtr, CType(cb, Short))
-
-        ' Copy data into the PIDL
         Marshal.Copy(bytes, 0, IntPtr.Add(pidlPtr, 2), bytes.Length)
-
-        ' Write the NULL terminator (final 2 bytes)
         Marshal.WriteInt16(IntPtr.Add(pidlPtr, 2 + bytes.Length), 0)
-
         Return New Pidl(pidlPtr)
     End Function
 
     Public Sub New(pidl As IntPtr)
-        _pidl = pidl
         If IntPtr.Zero.Equals(pidl) Then
             Throw New InvalidOperationException("Pidl can't be zero")
         End If
-    End Sub
-
-    Public Sub New(pidl As String)
-        Dim bytes As Byte() = pidl.Split("-"c).Select(Function(hex) Convert.ToByte(hex, 16)).ToArray()
-        _pidl = Marshal.AllocCoTaskMem(bytes.Length)
-        Marshal.Copy(bytes, 0, _pidl, bytes.Length)
+        _pidl = pidl
     End Sub
 
     Public Sub New(bytes As Byte())
         _pidl = Marshal.AllocCoTaskMem(bytes.Length)
         Marshal.Copy(bytes, 0, _pidl, bytes.Length)
+    End Sub
+
+    Public Sub New(pidl As String)
+        Me.New(pidl.Split("-"c).Select(Function(hex) Convert.ToByte(hex, 16)).ToArray())
     End Sub
 
     Public Shared Function CreateShellIDListArray(items As IEnumerable(Of Item)) As IntPtr
