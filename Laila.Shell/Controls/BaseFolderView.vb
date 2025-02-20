@@ -68,6 +68,7 @@ Namespace Controls
         Private _toolTipCancellationTokenSource As CancellationTokenSource
         Private disposedValue As Boolean
         Private _loadingFolder As Folder
+        Private _mouseOverTime As DateTime
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -306,11 +307,14 @@ Namespace Controls
                 End If
                 _toolTipCancellationTokenSource = New CancellationTokenSource()
 
+                _mouseOverTime = DateTime.Now
+
                 Dim f As Func(Of Task) =
                     Async Function() As Task
                         Dim startTime As DateTime = DateTime.Now
 
                         Dim startOverItem As Item = overItem
+                        Dim startOverTime As DateTime = _mouseOverTime
                         Dim text As String = overItem.InfoTip
                         Dim doShow As Boolean
 
@@ -340,7 +344,9 @@ Namespace Controls
 
                         UIHelper.OnUIThread(
                             Sub()
-                                If Not String.IsNullOrWhiteSpace(text) AndAlso startOverItem.Equals(_mouseItemOver) Then
+                                If Not String.IsNullOrWhiteSpace(text) _
+                                    AndAlso startOverItem.Equals(_mouseItemOver) _
+                                    AndAlso startOverTime.Equals(_mouseOverTime) Then
                                     If Not _toolTip Is Nothing Then
                                         _toolTip.IsOpen = False
                                         _toolTip = Nothing
