@@ -452,6 +452,7 @@ Namespace Controls
                     Dim tf As Folder = Nothing
                     Dim currentFolder As Folder = folder
                     Dim noRecursive As List(Of String) = New List(Of String)()
+                    Dim foldersToExpand As List(Of Folder) = New List(Of Folder)()
 
                     If Not currentFolder Is Nothing Then
                         While Not currentFolder Is Nothing _
@@ -522,6 +523,7 @@ Namespace Controls
                                     Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- trying Desktop")
                                     list.Insert(0, Shell.Desktop)
                                     en2 = list.GetEnumerator()
+                                    foldersToExpand = New List(Of Folder)()
                                     triedDesktop = True
                                     Await findNextRoot()
                                 Else
@@ -536,7 +538,7 @@ Namespace Controls
                         Async Function(item As Folder, callback2 As Func(Of Task)) As Task
                             Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
                             If Not tf2 Is Nothing Then
-                                tf.IsExpanded = True
+                                foldersToExpand.Add(tf)
                                 Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
                                 tf = tf2
                                 Await callback2()
@@ -551,6 +553,9 @@ Namespace Controls
                             If Not en Is Nothing AndAlso en.MoveNext() Then
                                 Await func(en.Current, cb)
                             Else
+                                For Each f In foldersToExpand
+                                    f.IsExpanded = True
+                                Next
                                 _selectionHelper.SetSelectedItems({tf})
                                 If Not Me.Folder?.FullPath = tf?.FullPath Then Me.Folder = tf
                                 finish(tf)
