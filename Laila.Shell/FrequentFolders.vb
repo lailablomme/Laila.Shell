@@ -8,7 +8,7 @@ Public Class FrequentFolders
     Public Shared Function GetMostFrequent() As IEnumerable(Of Folder)
         _lock.Wait()
         Try
-            Using db = New LiteDatabase(getDBFileName())
+            Using db = New LiteDatabase(String.Format("Filename=""{0}"";Mode=Shared", getDBFileName()))
                 Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
 
                 ' only keep folders accessed in the last 30 days
@@ -64,47 +64,65 @@ Public Class FrequentFolders
         ' register with os
         Functions.SHAddToRecentDocs(SHARD.SHARD_PATHW, folder.FullPath)
 
-        _lock.Wait()
-        Try
-            Using db = New LiteDatabase(getDBFileName())
-                ' register in db
-                Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
-                Dim frequentFolders As IEnumerable(Of FrequentFolder) = collection.Find(Function(f) f.Pidl.Equals(folder.Pidl.ToString()))
-                If frequentFolders.Count = 1 Then
-                    Dim frequentFolder As FrequentFolder = frequentFolders(0)
-                    frequentFolder.AccessCount += 1
-                    frequentFolder.LastAccessedDateTime = DateTime.Now
-                    collection.Update(frequentFolder)
-                Else
-                    Dim frequentFolder As FrequentFolder = New FrequentFolder() With {
+        Dim isSuccess As Boolean, numTries As Integer
+        While (Not isSuccess AndAlso numTries <= 5)
+            Try
+                _lock.Wait()
+                Try
+                    Using db = New LiteDatabase(String.Format("Filename=""{0}"";Mode=Shared", getDBFileName()))
+                        ' register in db
+                        Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
+                        Dim frequentFolders As IEnumerable(Of FrequentFolder) = collection.Find(Function(f) f.Pidl.Equals(folder.Pidl.ToString()))
+                        If frequentFolders.Count = 1 Then
+                            Dim frequentFolder As FrequentFolder = frequentFolders(0)
+                            frequentFolder.AccessCount += 1
+                            frequentFolder.LastAccessedDateTime = DateTime.Now
+                            collection.Update(frequentFolder)
+                        Else
+                            Dim frequentFolder As FrequentFolder = New FrequentFolder() With {
                         .Pidl = folder.Pidl.ToString(),
                         .AccessCount = 1,
                         .LastAccessedDateTime = DateTime.Now
                     }
-                    collection.Insert(frequentFolder)
-                End If
-            End Using
-        Finally
-            _lock.Release()
-        End Try
+                            collection.Insert(frequentFolder)
+                        End If
+                    End Using
+                Finally
+                    _lock.Release()
+                End Try
+                isSuccess = True
+            Catch ex As IO.IOException
+                numTries += 1
+                Thread.Sleep(500)
+            End Try
+        End While
     End Sub
 
     Public Shared Sub RenameItem(oldPidl As Pidl, newPidl As Pidl)
-        _lock.Wait()
-        Try
-            Using db = New LiteDatabase(getDBFileName())
-                ' update in db
-                Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
-                Dim frequentFolders As IEnumerable(Of FrequentFolder) = collection.Find(Function(f) f.Pidl.Equals(oldPidl.ToString()))
-                If frequentFolders.Count = 1 Then
-                    Dim frequentFolder As FrequentFolder = frequentFolders(0)
-                    frequentFolder.Pidl = newPidl.ToString()
-                    collection.Update(frequentFolder)
-                End If
-            End Using
-        Finally
-            _lock.Release()
-        End Try
+        Dim isSuccess As Boolean, numTries As Integer
+        While (Not isSuccess AndAlso numTries <= 5)
+            Try
+                _lock.Wait()
+                Try
+                    Using db = New LiteDatabase(String.Format("Filename=""{0}"";Mode=Shared", getDBFileName()))
+                        ' update in db
+                        Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
+                        Dim frequentFolders As IEnumerable(Of FrequentFolder) = collection.Find(Function(f) f.Pidl.Equals(oldPidl.ToString()))
+                        If frequentFolders.Count = 1 Then
+                            Dim frequentFolder As FrequentFolder = frequentFolders(0)
+                            frequentFolder.Pidl = newPidl.ToString()
+                            collection.Update(frequentFolder)
+                        End If
+                    End Using
+                Finally
+                    _lock.Release()
+                End Try
+                isSuccess = True
+            Catch ex As IO.IOException
+                numTries += 1
+                Thread.Sleep(500)
+            End Try
+        End While
     End Sub
 
     Private Shared Function getDBFileName() As String

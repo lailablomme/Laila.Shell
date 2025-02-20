@@ -4,6 +4,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
+Imports System.Windows.Media
 Imports Laila.BalloonTip
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -196,9 +197,19 @@ Namespace Controls
                 textBox.SelectionLength = textBox.Text.Length
             End If
 
+            Dim windowMouseDown As MouseButtonEventHandler =
+                Sub(s2 As Object, e2 As MouseButtonEventArgs)
+                    If Not textBox.Equals(UIHelper.GetParentOfType(Of TextBox)(textBox.InputHitTest(e2.GetPosition(textBox)))) Then
+                        doCancel()
+                    End If
+                End Sub
+            Dim tbWindow As Window = Window.GetWindow(textBox)
+            AddHandler tbWindow.PreviewMouseDown, windowMouseDown
+
             ' hook textbox
             AddHandler textBox.LostFocus,
                 Sub(s2 As Object, e2 As RoutedEventArgs)
+                    RemoveHandler tbWindow.PreviewMouseDown, windowMouseDown
                     RemoveHandler scrollViewer.ScrollChanged, onScrollChanged
                     grid.Children.Remove(textBox)
                     If Not textBox.Tag = "cancel" AndAlso Not String.IsNullOrWhiteSpace(textBox.Text) Then
@@ -213,8 +224,10 @@ Namespace Controls
                             If Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
                                 balloonTip.IsOpen = False
                             End If
+                            e2.Handled = True
                         Case Key.Escape
                             doCancel()
+                            e2.Handled = True
                         Case Key.Back
                         Case Else
                             If Keyboard.Modifiers = ModifierKeys.None Then
@@ -223,12 +236,12 @@ Namespace Controls
                                 AndAlso IO.Path.GetInvalidFileNameChars().Contains(c.Value) Then
                                     If balloonTip Is Nothing Then
                                         balloonTip = New BalloonTip.BalloonTip() With {
-                                        .PlacementTarget = textBox,
-                                        .Placement = BalloonPlacementMode.Bottom,
-                                        .Text = "The following characters can not appear in filenames:" & vbCrLf _
-                                              & "     \  /  :  *  ?  ""  <  >  |",
-                                        .Timeout = 9000
-                                    }
+                                            .PlacementTarget = textBox,
+                                            .Placement = BalloonPlacementMode.Bottom,
+                                            .Text = "The following characters can not appear in filenames:" & vbCrLf _
+                                                  & "     \  /  :  *  ?  ""  <  >  |",
+                                            .Timeout = 9000
+                                        }
                                         grid.Children.Add(balloonTip)
                                     Else
                                         balloonTip.IsOpen = False

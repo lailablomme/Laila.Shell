@@ -41,11 +41,12 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Laila.MetroWindow-Core" Version="2.4.5-alpha1" />
+    <PackageReference Include="Laila.MetroWindow-Core" Version="2.4.5-alpha2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Laila.Shell\Laila.Shell.vbproj" />
+    <ProjectReference Include="..\Laila.VirtualizingWrapPanel\Laila.VirtualizingWrapPanel.csproj" />
   </ItemGroup>
 
   <ItemGroup>

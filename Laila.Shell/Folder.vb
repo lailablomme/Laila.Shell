@@ -314,10 +314,10 @@ Public Class Folder
                                 subFolders.Add(shellItems(x))
                             Else
                                 Dim prop As [Property] = [Property].FromCanonicalName("System.Size", CType(shellItems(x), IShellItem2))
-                                If Not prop.Value Is Nothing AndAlso TypeOf prop.Value Is UInt64 Then
+                                If Not prop?.Value Is Nothing AndAlso TypeOf prop.Value Is UInt64 Then
                                     result += prop.Value
                                 End If
-                                prop.Dispose()
+                                prop?.Dispose()
                                 If Not shellItems(x) Is Nothing Then
                                     Marshal.ReleaseComObject(shellItems(x))
                                     shellItems(x) = Nothing

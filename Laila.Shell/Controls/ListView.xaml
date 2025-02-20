@@ -4,7 +4,7 @@
                     xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
                     xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:converters="clr-namespace:Laila.Shell.Converters"
-                    xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
+                    xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=Laila.VirtualizingWrapPanel"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
     <ResourceDictionary.MergedDictionaries>
