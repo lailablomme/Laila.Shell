@@ -35,13 +35,13 @@ Namespace Controls
         Private _isWaitingForCreate As Boolean
         Private _wasMade As Boolean
         Private disposedValue As Boolean
-        Private _threadPool As Helpers.ThreadPool
+        Private _thread As Helpers.ThreadPool
         Private _hbitmapsToDispose As HashSet(Of IntPtr) = New HashSet(Of IntPtr)()
 
         Public Sub New()
             Shell.AddToMenuCache(Me)
 
-            _threadPool = New Helpers.ThreadPool(1)
+            _thread = New Helpers.ThreadPool(1)
 
             AddHandler Shell.Notification, AddressOf shell_Notification
         End Sub
@@ -151,7 +151,7 @@ Namespace Controls
 
         Protected Function getMenuItems() As List(Of Control)
             Dim tcs4 As New TaskCompletionSource(Of List(Of MenuItemData))
-            _threadPool.Run(
+            _thread.Run(
                 Sub()
                     tcs4.SetResult(getMenuItemData(_hMenu, -1))
                 End Sub)
@@ -360,7 +360,7 @@ Namespace Controls
                 End Sub)
 
             Dim tcs As TaskCompletionSource = New TaskCompletionSource()
-            _threadPool.Run(
+            _thread.Run(
                 Sub()
                     Dim flags As Integer = CMF.CMF_NORMAL
                     Dim shellFolder As IShellFolder = Nothing
@@ -475,7 +475,7 @@ Namespace Controls
                 End Sub)
 
             If Not e.IsHandled Then
-                _threadPool.Run(
+                _thread.Add(
                     Sub()
                         Select Case id.Item2
                             Case "Windows.ModernShare"
@@ -618,6 +618,11 @@ Namespace Controls
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer
                 ' set large fields to null
+
+                ' first wait for thread to finish
+                _thread.Dispose()
+
+                ' clean up context menu
                 If Not _contextMenu Is Nothing Then
                     If Not TypeOf _contextMenu Is IContextMenuImpl Then
                         Marshal.ReleaseComObject(_contextMenu)
@@ -626,17 +631,20 @@ Namespace Controls
                     End If
                     _contextMenu = Nothing
                 End If
+
+                ' dispose of bitmaps
                 For Each hbitmap In _hbitmapsToDispose
                     Functions.DeleteObject(hbitmap)
                 Next
                 _hbitmapsToDispose.Clear()
+
+                ' destroy hmenu
                 If Not IntPtr.Zero.Equals(_hMenu) Then
                     Functions.DestroyMenu(_hMenu)
                     _hMenu = IntPtr.Zero
                 End If
 
-                _threadPool.Dispose()
-
+                ' remove from cache
                 Shell.RemoveFromMenuCache(Me)
             End If
         End Sub
