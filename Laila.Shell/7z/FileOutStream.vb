@@ -1,4 +1,5 @@
 ﻿' Implement ISequentialOutStream to write to a file
+Imports Laila.Shell.Interop.SevenZip
 Imports Laila.Shell.SevenZip
 Imports System.IO
 Imports System.Runtime.InteropServices

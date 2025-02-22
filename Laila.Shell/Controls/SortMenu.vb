@@ -2,6 +2,7 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
+Imports Laila.Shell.Interop.Properties
 
 Namespace Controls
     Public Class SortMenu

@@ -5,6 +5,9 @@ Imports System.Windows.Forms
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Properties
 
 Public Class System_StorageProviderUIStatusProperty
     Inherits [Property]
@@ -30,7 +33,7 @@ Public Class System_StorageProviderUIStatusProperty
     Private _imageReference16 As String()
 
     Public Sub New()
-        MyBase.New([Property].getDescription(Key))
+        MyBase.New([Property].GetDescription(Key))
     End Sub
 
     Public Sub New(propertyStore As IPropertyStore)

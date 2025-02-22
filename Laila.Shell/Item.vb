@@ -9,7 +9,12 @@ Imports System.Windows
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Folders
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Properties
 Imports Shell32
 
 Public Class Item
@@ -475,7 +480,7 @@ Public Class Item
                         Using icon As System.Drawing.Icon = Icon.ExtractAssociatedIcon(app.Trim(vbNullChar))
                             Using bitmap = icon.ToBitmap()
                                 hBitmap = bitmap.GetHbitmap()
-                                Dim image As BitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                                 image.Freeze()
                                 Return image
                             End Using
@@ -561,7 +566,7 @@ Public Class Item
                         If Not Settings.IsWindows8_1OrLower Then
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                             If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                                result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             End If
                         End If
                         If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
@@ -572,7 +577,7 @@ Public Class Item
                             End If
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY, hbitmap)
                             If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                                result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             Else
                                 Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
                             End If
@@ -612,7 +617,7 @@ Public Class Item
                         If Not Settings.IsWindows8_1OrLower Then
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                             If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                                result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             End If
                         End If
                         If h <> HRESULT.S_OK OrElse IntPtr.Zero.Equals(hbitmap) _
@@ -623,7 +628,7 @@ Public Class Item
                             End If
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), 0, hbitmap)
                             If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                                result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             Else
                                 Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
                             End If

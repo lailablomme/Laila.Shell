@@ -1,5 +1,7 @@
 ﻿Imports System.IO
 Imports System.Threading
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Application
 Imports LiteDB
 
 Public Class FrequentFolders

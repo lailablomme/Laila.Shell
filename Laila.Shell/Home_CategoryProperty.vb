@@ -1,4 +1,6 @@
 ﻿Imports System.Runtime.InteropServices
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Properties
 
 Public Class Home_CategoryProperty
     Inherits [Property]

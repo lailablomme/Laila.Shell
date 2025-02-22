@@ -1,21 +1,13 @@
 ﻿Imports System.Runtime.InteropServices
+Imports Laila.Shell.Interop.Windows
 
-<StructLayout(LayoutKind.Sequential)>
-Public Structure SHDRAGIMAGE
-    Public sizeDragImage As WIN32SIZE
-    Public ptOffset As WIN32POINT
-    Public hbmpDragImage As IntPtr
-    Public crColorKey As Integer
-End Structure
+Namespace Interop.DragDrop
+    <StructLayout(LayoutKind.Sequential)>
+    Public Structure SHDRAGIMAGE
+        Public sizeDragImage As WIN32SIZE
+        Public ptOffset As WIN32POINT
+        Public hbmpDragImage As IntPtr
+        Public crColorKey As Integer
+    End Structure
+End Namespace
 
-<StructLayout(LayoutKind.Sequential)>
-Public Structure WIN32SIZE
-    Public Width As Integer
-    Public Height As Integer
-End Structure
-
-<StructLayout(LayoutKind.Sequential)>
-Public Structure WIN32POINT
-    Public x As Integer
-    Public y As Integer
-End Structure

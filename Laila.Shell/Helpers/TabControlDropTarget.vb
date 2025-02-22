@@ -1,9 +1,10 @@
-﻿Imports Laila.Shell.Controls
-Imports System.Windows
-Imports Microsoft
-Imports System.Windows.Controls
+﻿Imports System.Runtime.InteropServices
 Imports System.Threading
-Imports System.Runtime.InteropServices
+Imports System.Windows
+Imports System.Windows.Controls
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Windows
 
 Namespace Helpers
     Public Class TabControlDropTarget

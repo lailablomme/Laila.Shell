@@ -1,9 +1,11 @@
-﻿Public Class PinnedAndFrequentPlaceholderFolder
-    Inherits DummyFolder
+﻿Namespace Helpers
+    Public Class PinnedAndFrequentPlaceholderFolder
+        Inherits DummyFolder
 
-    Public Sub New()
-        MyBase.New("-", Nothing, Nothing)
+        Public Sub New()
+            MyBase.New("-", Nothing, Nothing)
 
-        _fullPath = "-placeholder-"
-    End Sub
-End Class
+            _fullPath = "-placeholder-"
+        End Sub
+    End Class
+End Namespace

@@ -10,6 +10,11 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.ContextMenu
+Imports Laila.Shell.Interop.Folders
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Windows
 Imports Microsoft.Win32
 
 Namespace Controls
@@ -235,10 +240,10 @@ Namespace Controls
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
                         If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                            bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             bitmapSource.Freeze()
                         ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
-                            bitmapSource = Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             bitmapSource.Freeze()
                         Else
                             bitmapSource = Nothing

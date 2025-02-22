@@ -1,4 +1,5 @@
 ﻿' File input stream for compression
+Imports Laila.Shell.Interop.SevenZip
 Imports Laila.Shell.SevenZip
 Imports System.IO
 Imports System.Runtime.InteropServices

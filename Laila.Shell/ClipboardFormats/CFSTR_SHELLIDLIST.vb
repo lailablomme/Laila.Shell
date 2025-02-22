@@ -1,6 +1,7 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Runtime.Serialization
+Imports Laila.Shell.Interop
 
 Namespace ClipboardFormats
     Public Class CFSTR_SHELLIDLIST

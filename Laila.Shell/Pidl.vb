@@ -2,6 +2,8 @@
 Imports System.Runtime.InteropServices
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Folders
 
 Public Class Pidl
     Implements IDisposable

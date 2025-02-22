@@ -3,6 +3,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop.DragDrop
 
 Namespace Controls
     <TemplatePart(Name:="PART_ItemsHolder", Type:=GetType(Panel))>

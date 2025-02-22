@@ -1,4 +1,6 @@
-﻿Namespace Events
+﻿Imports Laila.Shell.Interop.Items
+
+Namespace Events
     Public Class FolderNotificationEventArgs
         Inherits EventArgs
 

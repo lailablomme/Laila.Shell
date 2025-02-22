@@ -8,6 +8,11 @@ Imports System.Windows.Input
 Imports System.Windows.Interop
 Imports System.Windows.Media
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.COM
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Storage
+Imports Laila.Shell.Interop.Windows
 
 Namespace Controls
     Public Class Previewer

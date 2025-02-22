@@ -3,6 +3,8 @@ Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Runtime.Serialization
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Items
 
 Namespace ClipboardFormats
     Public Class CFSTR_FILECONTENTS

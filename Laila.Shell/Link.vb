@@ -2,6 +2,8 @@
 Imports System.Runtime.InteropServices
 Imports System.Text
 Imports System.Threading
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Items
 
 Public Class Link
     Inherits Item

@@ -7,7 +7,12 @@ Imports System.Windows
 Imports System.Windows.Data
 Imports System.Windows.Input
 Imports System.Windows.Media
+Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Folders
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Properties
 
 Public Class Folder
     Inherits Item
@@ -356,7 +361,7 @@ Public Class Folder
             var.Dispose()
         End Try
 
-        If subFolders.Count > 0  Then
+        If subFolders.Count > 0 Then
             For Each subFolderShellItem2 In subFolders
                 If Not cancellationToken.IsCancellationRequested Then
                     If Not result Is Nothing Then

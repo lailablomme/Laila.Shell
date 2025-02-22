@@ -3,7 +3,6 @@ Imports System.IO
 Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Xml.Serialization
-Imports LiteDB
 
 Namespace Helpers
     Public Class FolderViewState

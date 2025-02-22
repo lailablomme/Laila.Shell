@@ -9,6 +9,9 @@ Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Properties
 
 Public Class [Property]
     Inherits NotifyPropertyChangedBase

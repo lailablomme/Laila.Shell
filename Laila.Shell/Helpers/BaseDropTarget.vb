@@ -1,5 +1,7 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
+Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Windows
 
 Public MustInherit Class BaseDropTarget
     Implements IDropTarget

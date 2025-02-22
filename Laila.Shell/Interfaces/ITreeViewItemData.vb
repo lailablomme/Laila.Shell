@@ -1,4 +1,4 @@
-﻿Namespace Data
+﻿Namespace Interfaces
     Public Interface ITreeViewItemData
         Property IsSelected As Boolean
         Property IsExpanded As Boolean

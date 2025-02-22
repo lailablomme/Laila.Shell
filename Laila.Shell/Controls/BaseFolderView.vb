@@ -11,6 +11,7 @@ Imports System.Windows.Input
 Imports System.Windows.Media
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop.Windows
 
 Namespace Controls
     Public MustInherit Class BaseFolderView

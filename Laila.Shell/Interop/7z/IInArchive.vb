@@ -1,6 +1,7 @@
 ﻿Imports System.Runtime.InteropServices
+Imports Laila.Shell.Interop.Properties
 
-Namespace SevenZip
+Namespace Interop.SevenZip
     <ComImport>
     <Guid("23170F69-40C1-278A-0000-000600600000")>
     <InterfaceType(ComInterfaceType.InterfaceIsIUnknown)>

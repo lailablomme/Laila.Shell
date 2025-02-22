@@ -2,6 +2,10 @@
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Threading
 Imports System.Windows.Input
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Windows
 
 Public Class Clipboard
     Public Shared Function CanCopy(items As IEnumerable(Of Item)) As Boolean
@@ -29,7 +33,7 @@ Public Class Clipboard
                     End If
 
                     If Not dropTarget Is Nothing Then
-                        Dim effect As DROPEFFECT = Laila.Shell.DROPEFFECT.DROPEFFECT_COPY
+                        Dim effect As DROPEFFECT = DROPEFFECT.DROPEFFECT_COPY
                         Dim hr As HRESULT = dropTarget.DragEnter(dataObject, 0, New WIN32POINT(), effect)
                         dropTarget.DragLeave()
 
@@ -149,7 +153,7 @@ Public Class Clipboard
         Dim result As ComTypes.IDataObject = Nothing
 
         ' make a DataObject for our list of items
-        Dim inner As DataObject = New DataObject()
+        'Dim inner As DataObject = New DataObject()
         Functions.SHCreateDataObject(folder.Pidl.Clone().AbsolutePIDL, items.Count,
             items.Select(Function(i) i.Pidl.Clone().RelativePIDL).ToArray(),
             Nothing, GetType(IDataObject).GUID, result)

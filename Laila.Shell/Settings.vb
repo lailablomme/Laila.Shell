@@ -2,6 +2,10 @@
 Imports System.Threading
 Imports System.Windows.Input
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Registry
+Imports Laila.Shell.Interop.System
+Imports Laila.Shell.Interop.Windows
 
 Public Class Settings
     Inherits NotifyPropertyChangedBase

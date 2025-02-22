@@ -1,8 +1,7 @@
-﻿Imports System.CodeDom
-Imports System.Runtime.InteropServices
+﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
-Imports System.Runtime.Serialization
-Imports System.Windows.Media.Animation
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
 
 Namespace ClipboardFormats
     Public Class CFSTR_PREFERREDDROPEFFECT

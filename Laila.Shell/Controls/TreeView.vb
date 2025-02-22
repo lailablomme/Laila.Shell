@@ -10,6 +10,9 @@ Imports System.Windows.Data
 Imports System.Windows.Input
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Windows
 Imports Laila.Shell.PinnedItems
 
 Namespace Controls

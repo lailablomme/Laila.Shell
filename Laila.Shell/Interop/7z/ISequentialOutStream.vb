@@ -1,6 +1,6 @@
 ﻿Imports System.Runtime.InteropServices
 
-Namespace SevenZip
+Namespace Interop.SevenZip
     <ComImport>
     <Guid("23170F69-40C1-278A-0000-000300020000")> ' ISequentialOutStream GUID
     <InterfaceType(ComInterfaceType.InterfaceIsIUnknown)>

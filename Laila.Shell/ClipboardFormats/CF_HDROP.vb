@@ -2,6 +2,8 @@
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Runtime.Serialization
 Imports System.Text
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
 
 Namespace ClipboardFormats
     Public Class CF_HDROP

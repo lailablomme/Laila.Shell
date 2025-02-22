@@ -4,6 +4,7 @@
                     xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
                     xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:converters="clr-namespace:Laila.Shell.Converters"
+                    xmlns:helpers="clr-namespace:Laila.Shell.Helpers"
                     xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=Laila.VirtualizingWrapPanel"
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
 
@@ -143,7 +144,7 @@
                                                 <ColumnDefinition Width="200" SharedSizeGroup="A" />
                                             </Grid.ColumnDefinitions>
                                             <Grid.Resources>
-                                                <shell:ImageHelper x:Key="imageHelper" />
+                                                <helpers:ImageHelper x:Key="imageHelper" />
                                             </Grid.Resources>
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                       VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"

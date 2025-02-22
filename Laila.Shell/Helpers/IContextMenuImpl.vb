@@ -2,6 +2,8 @@
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Text
 Imports System.Windows.Media.Animation
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.ContextMenu
 Imports Microsoft.Win32
 
 Namespace Helpers

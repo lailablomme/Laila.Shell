@@ -1,7 +1,8 @@
-﻿Imports System.ComponentModel
-Imports System.Runtime.InteropServices
-Imports System.Text
+﻿Imports System.Text
 Imports System.Windows
+Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Properties
 
 Public Class Column
     Inherits NotifyPropertyChangedBase

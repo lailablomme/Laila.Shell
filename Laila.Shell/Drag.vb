@@ -6,6 +6,11 @@ Imports System.Windows.Controls
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Windows
 
 Public Class Drag
     Implements IDropSource

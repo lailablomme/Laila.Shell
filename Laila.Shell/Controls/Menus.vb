@@ -8,6 +8,8 @@ Imports System.Windows.Media
 Imports Laila.BalloonTip
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Items
 Imports Shell32
 
 Namespace Controls

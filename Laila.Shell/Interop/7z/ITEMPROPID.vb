@@ -1,4 +1,4 @@
-﻿Namespace SevenZip
+﻿Namespace Interop.SevenZip
     Public Enum ITEMPROPID As UInteger
         kpidNoProperty = 0
         kpidMainSubfile = 1

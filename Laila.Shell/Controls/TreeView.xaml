@@ -169,7 +169,7 @@
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
                                             <Grid.Resources>
-                                                <shell:ImageHelper x:Key="imageHelper" />
+                                                <helpers:ImageHelper x:Key="imageHelper" />
                                             </Grid.Resources>
                                             <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" />
                                             <Image Grid.Column="1" Source="{Binding DefaultFileIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"

@@ -2,6 +2,9 @@
 Imports System.Runtime
 Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Items
 
 Namespace ClipboardFormats
     Public Class CFSTR_FILEDESCRIPTOR

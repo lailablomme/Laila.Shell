@@ -1,7 +1,8 @@
 ﻿' Implement IArchiveUpdateCallback to specify which files to compress
-Imports Laila.Shell.SevenZip
 Imports System.IO
 Imports System.Runtime.InteropServices
+Imports Laila.Shell.Interop.Properties
+Imports Laila.Shell.Interop.SevenZip
 
 Namespace SevenZip
     Public Class ArchiveUpdateCallback

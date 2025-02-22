@@ -1,14 +1,17 @@
-﻿Public Enum PropertyDisplayType
-    [String] = 0
+﻿Namespace Interop.Properties
+    Public Enum PropertyDisplayType
+        [String] = 0
 
-    Number = 1
-
-
-    [Boolean] = 2
+        Number = 1
 
 
-    DateTime = 3
+        [Boolean] = 2
 
 
-    Enumerated = 4
-End Enum
+        DateTime = 3
+
+
+        Enumerated = 4
+    End Enum
+End Namespace
+

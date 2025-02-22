@@ -4,6 +4,7 @@ Imports System.Windows.Data
 Imports System.Windows.Interop
 Imports System.Windows.Media
 Imports System.Windows.Threading
+Imports Laila.Shell.Interop.Windows
 
 Namespace Helpers
     Public Class UIHelper

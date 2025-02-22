@@ -10,6 +10,10 @@ Imports System.Windows.Interop
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Properties
+Imports Laila.Shell.Interop.Windows
 
 Public Class Shell
     Private Shared _desktop As Folder

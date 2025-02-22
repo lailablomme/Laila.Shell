@@ -3,6 +3,10 @@ Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Media
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Folders
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.System
 
 Public Class SearchFolder
     Inherits Folder

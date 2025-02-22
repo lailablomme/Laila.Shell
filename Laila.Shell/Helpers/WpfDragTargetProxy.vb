@@ -3,6 +3,9 @@ Imports System.Runtime.InteropServices.ComTypes
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Interop
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Windows
 
 Namespace Helpers
     <ComVisible(True), Guid("a985d29a-81ef-41b2-8440-457c38ef959b"), ProgId("Laila.Shell.Helpers.WpfDragTargetProxy")>

@@ -4,6 +4,10 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Folders
+Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Interop.Properties
 
 Public Class HomeFolder
     Inherits Folder
@@ -57,7 +61,7 @@ Public Class HomeFolder
                 shellItem = Item.GetIShellItem2FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}")
                 Dim h As HRESULT = CType(shellItem, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY, hbitmap)
                 If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                    result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                 Else
                     Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
                 End If
@@ -82,7 +86,7 @@ Public Class HomeFolder
                 shellItem = Item.GetIShellItem2FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}")
                 Dim h As HRESULT = CType(shellItem, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), 0, hbitmap)
                 If h = 0 AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                    result = Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                    result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                 Else
                     Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
                 End If
