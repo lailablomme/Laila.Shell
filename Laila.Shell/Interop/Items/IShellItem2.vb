@@ -18,7 +18,7 @@ Namespace Interop.Items
         Function GetDisplayName(<[In]> sigdnName As UInteger, <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String) As Integer
 
         <PreserveSig>
-        Sub GetAttributes(<[In]> sfgaoMask As Integer, ByRef psfgaoAttribs As Integer)
+        Function GetAttributes(<[In]> sfgaoMask As Integer, ByRef psfgaoAttribs As Integer) As Integer
 
         <PreserveSig>
         Sub Compare(<[In], MarshalAs(UnmanagedType.Interface)> psi As IShellItem, <[In]> hint As UInt32, ByRef piOrder As Integer)

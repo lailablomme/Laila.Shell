@@ -115,6 +115,7 @@ Public Class HomeFolder
 
         Me.HasSubFolders = False
 
+        ' enumerate pinned items
         Dim count As UInt64 = UInt64.MaxValue
         For Each item In PinnedItems.GetPinnedItems()
             item.LogicalParent = Me
@@ -131,6 +132,7 @@ Public Class HomeFolder
             count -= 1
         Next
 
+        ' enumerate frequent folders
         For Each item In FrequentFolders.GetMostFrequent()
             item.LogicalParent = Me
             item.TreeSortPrefix = String.Format("{0:00000000000000000000}", count)
@@ -146,22 +148,9 @@ Public Class HomeFolder
             count -= 1
         Next
 
-        'For Each item In CType(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone(), Folder).GetItems()
-        '    Dim clone As Item = item.Clone()
-
-        '    clone.LogicalParent = Me
-
-        '    Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
-        '    clone._propertiesByKey.Add(categoryProperty.Key.ToString(), categoryProperty)
-
-        '    result.Add(clone.FullPath & "_" & clone.DisplayName, clone)
-        '    newFullPaths.Add(clone.FullPath & "_" & clone.DisplayName)
-        '    If TypeOf clone Is Folder Then Me.HasSubFolders = True
-        'Next
-        'Debug.WriteLine("-------------------")
+        ' enumerate recent files
         MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).ShellItem2, flags, cancellationToken, isSortPropertyByText,
             isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems)
-        'Debug.WriteLine("-------------------")
     End Sub
 
     Protected Overrides Function InitializeItem(item As Item) As Item
@@ -169,7 +158,7 @@ Public Class HomeFolder
             If TypeOf item Is Link Then
                 CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
                 Dim target As Item = CType(item, Link).GetTarget(Me)
-                If Not TypeOf target Is Folder _
+                If Not TypeOf target Is Folder AndAlso target.IsExisting _
                     AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
                     Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
                     target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)

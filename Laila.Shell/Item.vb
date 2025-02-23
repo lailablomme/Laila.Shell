@@ -853,6 +853,15 @@ Public Class Item
         End Get
     End Property
 
+    Public ReadOnly Property IsExisting As Boolean
+        Get
+            Dim attr As SFGAO = SFGAO.VALIDATE
+            SyncLock _shellItemLock
+                Return ShellItem2.GetAttributes(attr, attr) = HRESULT.S_FALSE
+            End SyncLock
+        End Get
+    End Property
+
     Public Property IsCut As Boolean
         Get
             Return _isCut
