@@ -1410,6 +1410,7 @@ Public Class Item
                     ' dispose pidl
                     If Not _pidl Is Nothing Then
                         _pidl.Dispose()
+                        _pidl = Nothing
                     End If
                 End If
 
