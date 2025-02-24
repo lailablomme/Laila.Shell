@@ -283,7 +283,7 @@ Namespace Controls
                             verb = cmd.ToString()
                         End If
 
-                        Debug.WriteLine(header & "  " & id & vbTab & verb.ToString())
+                        Debug.WriteLine(header & "  " & id & vbTab & verb?.ToString())
 
                         mii = New MENUITEMINFO()
                         mii.cbSize = CUInt(Marshal.SizeOf(mii))

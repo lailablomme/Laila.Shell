@@ -4,19 +4,27 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Folders
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
+Imports System.Runtime.InteropServices.ComTypes
+Imports Laila.Shell.Events
 
 Public Class HomeFolder
     Inherits Folder
+    Implements ISupportDragInsert
+
+    Private _dontEnumerate As Boolean
 
     Public Sub New(parent As Folder, doKeepAlive As Boolean)
         MyBase.New(Nothing, parent, doKeepAlive, False, Nothing)
 
         _pidl = Pidl.FromBytes(System.Text.UTF8Encoding.Unicode.GetBytes(Me.FullPath))
-        Me.HasSubFolders = False
+        _hasSubFolders = True
         _columns = New List(Of Column)() From {
             New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:10"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
             New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:16"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
@@ -24,6 +32,21 @@ Public Class HomeFolder
         }
         Me.ItemsGroupByPropertyName = "PropertiesByKeyAsText[" & Home_CategoryProperty.Key.ToString() & "].GroupByText"
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
+
+        AddHandler PinnedItems.ItemPinned,
+            Sub(s2 As Object, e2 As PinnedItemEventArgs)
+                If Not _dontEnumerate AndAlso _isLoaded Then
+                    _isEnumerated = False
+                    Me.GetItemsAsync()
+                End If
+            End Sub
+        AddHandler PinnedItems.ItemUnpinned,
+            Sub(s2 As Object, e2 As PinnedItemEventArgs)
+                If Not _dontEnumerate AndAlso _isLoaded Then
+                    _isEnumerated = False
+                    Me.GetItemsAsync()
+                End If
+            End Sub
     End Sub
 
     Public Overrides ReadOnly Property DisplayName As String
@@ -113,29 +136,29 @@ Public Class HomeFolder
     Protected Overrides Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInteger, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String, result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action)
 
-        Me.HasSubFolders = False
-
         ' enumerate pinned items
         Dim count As UInt64 = UInt64.MaxValue
         For Each item In PinnedItems.GetPinnedItems()
-            item.LogicalParent = Me
-            item.TreeSortPrefix = String.Format("{0:00000000000000000000}", count)
-            item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
+            If Not result.ContainsKey(item.FullPath & "_" & item.DisplayName) Then
+                item.LogicalParent = Me
+                item.TreeSortPrefix = String.Format("{0:00000000000000000000}", UInt64.MaxValue - count)
+                item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
 
-            Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
-            item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
+                Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
+                item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
-            result.Add(item.FullPath & "_" & item.DisplayName, item)
-            newFullPaths.Add(item.FullPath & "_" & item.DisplayName)
-            If TypeOf item Is Folder Then Me.HasSubFolders = True
+                result.Add(item.FullPath & "_" & item.DisplayName, item)
+                newFullPaths.Add(item.FullPath & "_" & item.DisplayName)
+                If TypeOf item Is Folder Then Me.HasSubFolders = True
 
-            count -= 1
+                count -= 1
+            End If
         Next
 
         ' enumerate frequent folders
         For Each item In FrequentFolders.GetMostFrequent()
             item.LogicalParent = Me
-            item.TreeSortPrefix = String.Format("{0:00000000000000000000}", count)
+            item.TreeSortPrefix = String.Format("{0:00000000000000000000}", UInt64.MaxValue - count)
             item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
 
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.FREQUENT_FOLDER)
@@ -200,5 +223,39 @@ Public Class HomeFolder
             Function() As Item
                 Return New HomeFolder(Nothing, _doKeepAlive)
             End Function)
+    End Function
+
+    Public Function DragInsertBefore(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer) As HRESULT Implements ISupportDragInsert.DragInsertBefore
+        Dim canPinItem As Boolean =
+            index = 0 _
+            OrElse (index + 1 > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
+            OrElse Me.Items(index - 1).IsPinned
+        If canPinItem Then
+            WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
+            Return HRESULT.S_OK
+        Else
+            Return HRESULT.S_FALSE
+        End If
+    End Function
+
+    Public Function Drop(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer) As HRESULT Implements ISupportDragInsert.Drop
+        Try
+            _dontEnumerate = True
+            For Each file In files
+                Dim unpinnedIndex As Integer = PinnedItems.UnpinItem(file.Pidl)
+                If unpinnedIndex <> -1 AndAlso unpinnedIndex < index Then
+                    If index <> 0 Then index -= 1
+                End If
+            Next
+            For Each file In files
+                PinnedItems.PinItem(file, index)
+                If index <> -1 Then index += 1
+            Next
+            _isEnumerated = False
+            Me.GetItemsAsync()
+            Return HRESULT.S_OK
+        Finally
+            _dontEnumerate = False
+        End Try
     End Function
 End Class

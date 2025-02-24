@@ -2,7 +2,9 @@
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Threading
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
@@ -16,13 +18,14 @@ Namespace Helpers
         Private _treeView As Laila.Shell.Controls.TreeView
         Private _lastOverItem As Item
         Private _lastDropTarget As IDropTarget
-        Private _dragOpenTimer As Timer
-        Private _scrollTimer As Timer
+        Private _dragOpenTimer As DispatcherTimer
+        Private _scrollTimer As DispatcherTimer
         Private _scrollDirection As Boolean?
         Private _prevSelectedItem As Item
         Private _newPinnedIndex As Long = -2
         Private _fileNameList() As String
         Private _files As List(Of Item)
+        Private _dragInsertFolder As Folder = Nothing
 
         Public Sub New(treeView As Laila.Shell.Controls.TreeView)
             _treeView = treeView
@@ -48,10 +51,10 @@ Namespace Helpers
                 Next
             End If
             If Not _dragOpenTimer Is Nothing Then
-                _dragOpenTimer.Dispose()
+                _dragOpenTimer.IsEnabled = False
             End If
             If Not _scrollTimer Is Nothing Then
-                _scrollTimer.Dispose()
+                _scrollTimer.IsEnabled = False
                 _scrollDirection = Nothing
             End If
             _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
@@ -75,13 +78,16 @@ Namespace Helpers
 
         Public Overrides Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
             If Not _dragOpenTimer Is Nothing Then
-                _dragOpenTimer.Dispose()
+                _dragOpenTimer.IsEnabled = False
             End If
             If Not _scrollTimer Is Nothing Then
-                _scrollTimer.Dispose()
+                _scrollTimer.IsEnabled = False
                 _scrollDirection = Nothing
             End If
-            If _newPinnedIndex <> -2 Then
+            If Not _dragInsertFolder Is Nothing Then
+                CType(_dragInsertFolder, ISupportDragInsert).Drop(_dataObject, _files, _newPinnedIndex + 1)
+                _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
+            ElseIf _newPinnedIndex <> -2 Then
                 For Each file In _files
                     Dim unpinnedIndex As Integer = PinnedItems.UnpinItem(file.Pidl)
                     If unpinnedIndex <> -1 AndAlso unpinnedIndex < _newPinnedIndex Then
@@ -184,35 +190,37 @@ Namespace Helpers
                 If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
                     _scrollDirection = False
                     If Not _scrollTimer Is Nothing Then
-                        _scrollTimer.Dispose()
+                        _scrollTimer.IsEnabled = True
+                    Else
+                        _scrollTimer = New DispatcherTimer()
+                        AddHandler _scrollTimer.Tick,
+                            Sub(s2 As Object, e As EventArgs)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView)(0)
+                                sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
+                            End Sub
+                        _scrollTimer.Interval = TimeSpan.FromMilliseconds(350)
+                        _scrollTimer.IsEnabled = True
                     End If
-                    _scrollTimer = New Timer(New TimerCallback(
-                        Sub()
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView)(0)
-                                    sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
-                                End Sub)
-                        End Sub), Nothing, 350, 350)
                 End If
             ElseIf pt.Y > _treeView.ActualHeight - 100 Then
                 If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> True Then
                     _scrollDirection = True
                     If Not _scrollTimer Is Nothing Then
-                        _scrollTimer.Dispose()
+                        _scrollTimer.IsEnabled = True
+                    Else
+                        _scrollTimer = New DispatcherTimer()
+                        AddHandler _scrollTimer.Tick,
+                            Sub(s2 As Object, e As EventArgs)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView)(0)
+                                sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
+                            End Sub
+                        _scrollTimer.Interval = TimeSpan.FromMilliseconds(350)
+                        _scrollTimer.IsEnabled = True
                     End If
-                    _scrollTimer = New Timer(New TimerCallback(
-                        Sub()
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView)(0)
-                                    sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
-                                End Sub)
-                        End Sub), Nothing, 350, 350)
                 End If
             Else
                 If Not _scrollTimer Is Nothing Then
-                    _scrollTimer.Dispose()
+                    _scrollTimer.IsEnabled = False
                     _scrollDirection = Nothing
                 End If
             End If
@@ -256,39 +264,94 @@ Namespace Helpers
                     End If
                 Else
                     Debug.WriteLine("* Not over pinned item")
-                    _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
-                    newPinnedIndex = -2
+                    '_treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
+                    'newPinnedIndex = -2
                 End If
 
-                Debug.WriteLine("_newPinnedIndex=" & newPinnedIndex & "   overItem.TreeRootIndex=" & overItem.TreeRootIndex)
+                Debug.WriteLine("_newPinnedIndex=" & newPinnedIndex & "   overItem.TreeRootIndex=" & overItem.TreeRootIndex & "  dispn=" & overItem.DisplayName)
+
+                If _fileNameList?.Count > 0 AndAlso newPinnedIndex = -2 Then
+                    Dim ptItem As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, overListBoxItem)
+                    If ptItem.Y <= 3 AndAlso Not TypeOf overItem Is SeparatorFolder _
+                        AndAlso TypeOf If(overItem.LogicalParent, overItem.Parent) Is ISupportDragInsert Then
+                        _dragInsertFolder = If(overItem.LogicalParent, overItem.Parent)
+                        _treeView.PART_DragInsertIndicator.Margin =
+                            New Thickness(0, _treeView.PointFromScreen(overListBoxItem.PointToScreen(
+                                New Point(0, 0))).Y - 3, 0, 0)
+                        newPinnedIndex = _dragInsertFolder.Items.Where(Function(i) i.IsVisibleInTree).OrderBy(Function(i) i.TreeSortKey).ToList().IndexOf(overItem) - 1
+                        Debug.WriteLine("* Drag: insert before item")
+                    ElseIf ptItem.Y >= overListBoxItem.ActualHeight - 3 AndAlso Not overItem.IsExpanded Then
+                        _dragInsertFolder = If(overItem.LogicalParent, overItem.Parent)
+                        While Not _dragInsertFolder Is Nothing _
+                            AndAlso Not TypeOf If(_dragInsertFolder.LogicalParent, _dragInsertFolder.Parent) Is ISupportDragInsert _
+                            AndAlso _dragInsertFolder.Items.Where(Function(i) i.IsVisibleInTree).OrderBy(Function(i) i.TreeSortKey).ToList().IndexOf(overItem) = _dragInsertFolder.Items.Count - 1
+                            _dragInsertFolder = If(_dragInsertFolder.LogicalParent, _dragInsertFolder.Parent)
+                        End While
+                        If Not _dragInsertFolder Is Nothing AndAlso TypeOf _dragInsertFolder Is ISupportDragInsert Then
+                            Debug.WriteLine("* Drag: insert after not expanded item, parent=" & _dragInsertFolder.DisplayName)
+                            _treeView.PART_DragInsertIndicator.Margin =
+                                New Thickness(0, _treeView.PointFromScreen(overListBoxItem.PointToScreen(
+                                    New Point(0, overListBoxItem.ActualHeight))).Y - 3, 0, 0)
+                            newPinnedIndex = _dragInsertFolder.Items.Where(Function(i) i.IsVisibleInTree).OrderBy(Function(i) i.TreeSortKey).ToList().IndexOf(overItem)
+                        Else
+                            _dragInsertFolder = Nothing
+                        End If
+                    ElseIf ptItem.Y >= overListBoxItem.ActualHeight - 3 Then
+                        If TypeOf overItem Is Folder AndAlso TypeOf overItem Is ISupportDragInsert Then
+                            Debug.WriteLine("* Drag: insert after expanded item")
+                            _treeView.PART_DragInsertIndicator.Margin =
+                            New Thickness(0, _treeView.PointFromScreen(overListBoxItem.PointToScreen(
+                                New Point(0, overListBoxItem.ActualHeight))).Y - 3, 0, 0)
+                            _dragInsertFolder = overItem
+                            newPinnedIndex = _dragInsertFolder.Items.Where(Function(i) i.IsVisibleInTree).Count
+                        Else
+                            _dragInsertFolder = Nothing
+                        End If
+                    Else
+                        Debug.WriteLine("* Full over item")
+                        newPinnedIndex = -2
+                        _dragInsertFolder = Nothing
+                    End If
+                Else
+                    Debug.WriteLine("* Not over item")
+                    '_treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
+                    'newPinnedIndex = -2
+                    _dragInsertFolder = Nothing
+                End If
+
+                Debug.WriteLine("_newPinnedIndex=" & newPinnedIndex & "   overItem.TreeRootIndex=" & overItem.TreeRootIndex & "  dispn=" & overItem.DisplayName)
 
                 ' if we're over a folder, expand it after two seconds of hovering
                 If TypeOf overItem Is Folder AndAlso newPinnedIndex = -2 Then
-                    If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
+                    If _lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem) OrElse newPinnedIndex <> _newPinnedIndex Then
                         If Not _dragOpenTimer Is Nothing Then
-                            _dragOpenTimer.Dispose()
-                        End If
-
-                        _dragOpenTimer = New Timer(New TimerCallback(
-                        Sub()
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    If Not CType(overItem, Folder).IsExpanded Then
-                                        CType(overItem, Folder).IsExpanded = True
-                                        _prevSelectedItem = overItem
+                            _dragOpenTimer.Tag = overItem
+                            _dragOpenTimer.IsEnabled = True
+                            Debug.WriteLine("Disposed dragOpenTimer")
+                        Else
+                            _dragOpenTimer = New DispatcherTimer()
+                            AddHandler _dragOpenTimer.Tick,
+                                Sub(s2 As Object, e As EventArgs)
+                                    If Not CType(_dragOpenTimer.Tag, Folder).IsExpanded Then
+                                        Debug.WriteLine("dragOpenTimer: expanding folder")
+                                        CType(_dragOpenTimer.Tag, Folder).IsExpanded = True
+                                    Else
+                                        Debug.WriteLine("dragOpenTimer: folder is expanded already")
                                     End If
-                                End Sub)
-                            _dragOpenTimer.Dispose()
-                            _dragOpenTimer = Nothing
-                        End Sub), Nothing, 2000, 0)
+                                End Sub
+                            _dragOpenTimer.Tag = overItem
+                            _dragOpenTimer.Interval = TimeSpan.FromMilliseconds(2000)
+                            _dragOpenTimer.IsEnabled = True
+                        End If
                     End If
                 Else
                     If Not _dragOpenTimer Is Nothing Then
-                        _dragOpenTimer.Dispose()
+                        _dragOpenTimer.IsEnabled = False
                     End If
                 End If
 
-                If newPinnedIndex = -2 AndAlso Not TypeOf overItem Is SeparatorFolder Then
+                If _dragInsertFolder Is Nothing AndAlso newPinnedIndex = -2 AndAlso Not TypeOf overItem Is SeparatorFolder Then
+                    _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
                     If _lastOverItem Is Nothing _
                         OrElse Not _lastOverItem.Equals(overItem) _
                         OrElse _newPinnedIndex <> newPinnedIndex Then
@@ -380,8 +443,7 @@ Namespace Helpers
                         _treeView.SetSelectedItem(Nothing)
                         Return HRESULT.S_OK
                     End If
-                ElseIf newPinnedIndex <> -2 Then
-                    pdwEffect = DROPEFFECT.DROPEFFECT_LINK
+                ElseIf Not _dragInsertFolder Is Nothing Then
                     _treeView.SetSelectedItem(Nothing)
                     If Not _lastDropTarget Is Nothing Then
                         Try
@@ -394,6 +456,29 @@ Namespace Helpers
                             End If
                         End Try
                     End If
+                    If CType(_dragInsertFolder, ISupportDragInsert).DragInsertBefore(_dataObject, _files, newPinnedIndex + 1) = HRESULT.S_OK Then
+                        pdwEffect = DROPEFFECT.DROPEFFECT_LINK
+                        _treeView.PART_DragInsertIndicator.Visibility = Visibility.Visible
+                    Else
+                        pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                        _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
+                    End If
+                    _newPinnedIndex = newPinnedIndex
+                    Return HRESULT.S_OK
+                ElseIf newPinnedIndex <> -2 Then
+                    If Not _lastDropTarget Is Nothing Then
+                        Try
+                            'Debug.WriteLine("_lastDropTarget.DragLeave()   newPinndedIndex=" & newPinnedIndex)
+                            _lastDropTarget.DragLeave()
+                        Finally
+                            If Not _lastDropTarget Is Nothing Then
+                                Marshal.ReleaseComObject(_lastDropTarget)
+                                _lastDropTarget = Nothing
+                            End If
+                        End Try
+                    End If
+                    pdwEffect = DROPEFFECT.DROPEFFECT_LINK
+                    _treeView.SetSelectedItem(Nothing)
                     WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
                     _newPinnedIndex = newPinnedIndex
                     Return HRESULT.S_OK
@@ -402,7 +487,7 @@ Namespace Helpers
 
             _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
             If Not _dragOpenTimer Is Nothing Then
-                _dragOpenTimer.Dispose()
+                _dragOpenTimer.IsEnabled = False
             End If
             _treeView.SetSelectedItem(Nothing)
             _lastOverItem = Nothing

@@ -48,6 +48,7 @@ Public Class Item
     Private _treeSortPrefix As String = String.Empty
     Protected _logicalParent As Folder
     Private _itemNameDisplaySortValuePrefix As String
+    Protected _canShowInTree As Boolean
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
@@ -77,19 +78,20 @@ Public Class Item
     End Function
 
     Public Shared Function FromPidl(pidl As Pidl, parent As Folder,
-                                    Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
+                                    Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True, Optional preservePidl As Boolean = False) As Item
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
                 Dim pidlClone As Pidl = pidl.Clone()
                 Dim shellItem2 As IShellItem2
                 shellItem2 = GetIShellItem2FromPidl(pidlClone.AbsolutePIDL, parent?.ShellFolder)
+                If Not preservePidl Then pidlClone.Dispose()
                 If Not shellItem2 Is Nothing Then
                     Dim attr As SFGAO = SFGAO.FOLDER
                     shellItem2.GetAttributes(attr, attr)
                     If attr.HasFlag(SFGAO.FOLDER) Then
-                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, pidlClone)
+                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, If(preservePidl, pidlClone, Nothing))
                     Else
-                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, pidlClone)
+                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, If(preservePidl, pidlClone, Nothing))
                     End If
                 Else
                     Return Nothing
@@ -152,6 +154,8 @@ Public Class Item
 
     Public ReadOnly Property Pidl As Pidl
         Get
+            'Return Shell.GlobalThreadPool.Run(
+            '    Function() As Pidl
             SyncLock _shellItemLock
                 If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                     Dim pidlptr As IntPtr
@@ -160,6 +164,7 @@ Public Class Item
                 End If
                 Return _pidl ' return pidl wirhin lock to make sure it's nothing after it's been disposed
             End SyncLock
+            'End Function)
         End Get
     End Property
 
@@ -174,8 +179,20 @@ Public Class Item
 
     Public ReadOnly Property IsVisibleInTree As Boolean
         Get
-            Return Me.TreeRootIndex <> -1 OrElse (Not If(_logicalParent, _parent) Is Nothing AndAlso If(_logicalParent, _parent).IsExpanded)
+            Return Me.TreeRootIndex <> -1 _
+                OrElse (Me.CanShowInTree AndAlso Not If(_logicalParent, _parent) Is Nothing AndAlso If(_logicalParent, _parent).IsExpanded)
         End Get
+    End Property
+
+    Public Property CanShowInTree As Boolean
+        Get
+            Return _canShowInTree
+        End Get
+        Set(value As Boolean)
+            SetValue(_canShowInTree, value)
+            Me.NotifyOfPropertyChange("IsVisibleInTree")
+            Me.NotifyOfPropertyChange("IsReadyForDispose")
+        End Set
     End Property
 
     Public Overridable ReadOnly Property IsReadyForDispose As Boolean
@@ -840,6 +857,7 @@ Public Class Item
         End Get
         Set(value As String)
             SetValue(_itemNameDisplaySortValuePrefix, value)
+            Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
         End Set
     End Property
 

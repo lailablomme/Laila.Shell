@@ -1,4 +1,5 @@
-﻿Imports Laila.Shell.Events
+﻿Imports System.Runtime.CompilerServices
+Imports Laila.Shell.Events
 Imports LiteDB
 
 Public Class PinnedItems
@@ -29,6 +30,8 @@ Public Class PinnedItems
                         pidl = New Pidl(pinnedItem.Pidl)
                         Dim i As Item = Item.FromPidl(pidl, Nothing)
                         If Not i Is Nothing Then
+                            i.CanShowInTree = True
+                            i.IsPinned = True
                             existingPinnedItems.Add(i)
                         Else
                             UnpinItem(pidl)

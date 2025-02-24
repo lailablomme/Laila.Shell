@@ -29,7 +29,7 @@ Public Class Folder
     Private _isLoading As Boolean
     Private _isRefreshingItems As Boolean
     Friend _enumerationLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
-    Private _isLoaded As Boolean
+    Protected _isLoaded As Boolean
     Private _enumerationException As Exception
     Friend _isEnumerated As Boolean
     Private _isActiveInFolderView As Boolean
@@ -81,7 +81,7 @@ Public Class Folder
     ''' This one is used for creating the root Desktop folder only.
     ''' </summary>
     Friend Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder)
-        MyBase.New(shellItem2, parent, True, True)
+        Me.New(shellItem2, parent, True, True)
 
         _shellFolder = shellFolder
 
@@ -91,6 +91,7 @@ Public Class Folder
 
     Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As Pidl = Nothing)
         MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
+        _canShowInTree = True
     End Sub
 
     Friend Overridable Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
@@ -639,6 +640,7 @@ Public Class Folder
             _wasActivity = False
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName)
+            If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
         Else
             Debug.WriteLine("Cancelled loading " & Me.DisplayName)
         End If
@@ -661,8 +663,6 @@ Public Class Folder
             End If
             isSortPropertyDisplaySortValue = Me.ItemsSortPropertyName = "ItemNameDisplaySortValue"
         End If
-
-        If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
 
         Dim addItems As System.Action =
             Sub()
@@ -695,6 +695,19 @@ Public Class Folder
                                         Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(i.FullPath & "_" & i.DisplayName)).ToArray()
                                         existingItems = _items.Where(Function(i) newFullPaths.Contains(i.FullPath & "_" & i.DisplayName)) _
                                             .Select(Function(i) New Tuple(Of Item, Item)(i, result(i.FullPath & "_" & i.DisplayName))).ToArray()
+
+                                        For Each item In existingItems
+                                            item.Item1.IsPinned = item.Item2.IsPinned
+                                            item.Item1.CanShowInTree = item.Item2.CanShowInTree
+                                            item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
+                                            item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
+                                            For Each [property] In item.Item1._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
+                                                item.Item1._propertiesByKey.Remove([property].Key)
+                                            Next
+                                            For Each [property] In item.Item2._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
+                                                item.Item1._propertiesByKey.Add([property].Key, [property].Value)
+                                            Next
+                                        Next
 
                                         ' add/remove items
                                         _items.UpdateRange(newItems, removedItems)
@@ -743,8 +756,6 @@ Public Class Folder
                                          End If
 
                                          Try
-                                             item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
-
                                              If Not item.Item2 Is Nothing Then
                                                  item.Item1.Refresh(item.Item2.ShellItem2)
                                                  SyncLock item.Item2._shellItemLock
@@ -797,8 +808,7 @@ Public Class Folder
             UIHelper.OnUIThread(
                 Sub()
                     ' set and update HasSubFolders property
-                    _hasSubFolders = Not Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder) Is Nothing
-                    Me.NotifyOfPropertyChange("HasSubFolders")
+                    Me.HasSubFolders = Not Me.Items.FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
                 End Sub)
         End If
     End Sub
@@ -1217,7 +1227,6 @@ Public Class Folder
                                     Me.GetItemsAsync()
                                 End If
                             End If
-                            _doSkipUPDATEDIR = Nothing
                         End If
                         If Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity Then
                             UIHelper.OnUIThreadAsync(

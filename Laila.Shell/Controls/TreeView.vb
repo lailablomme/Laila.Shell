@@ -342,7 +342,6 @@ Namespace Controls
                     If existingPinnedItem Is Nothing Then
                         ' insert new pinned item
                         pinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
-                        pinnedItem.IsPinned = True
                         Me.Roots.Add(pinnedItem)
                     Else
                         ' update existing pinned item
@@ -786,7 +785,7 @@ Namespace Controls
                             AddHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             UIHelper.OnUIThreadAsync(
                                 Sub()
-                                    For Each item2 In folder._items.Where(Function(i) TypeOf i Is Folder AndAlso i.IsVisibleInTree).ToList()
+                                    For Each item2 In folder._items.Where(Function(i) i.IsVisibleInTree).ToList()
                                         If Not Me.Items.Contains(item2) Then
                                             Me.Items.Add(item2)
                                         End If
@@ -802,7 +801,7 @@ Namespace Controls
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             UIHelper.OnUIThreadAsync(
                                 Sub()
-                                    For Each item2 In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                    For Each item2 In Me.Items.Where(Function(i) i.CanShowInTree _
                                         AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
                                         If Me.Items.Contains(item2) Then
                                             Me.Items.Remove(item2)
@@ -822,24 +821,24 @@ Namespace Controls
                     Select Case e.Action
                         Case NotifyCollectionChangedAction.Add
                             For Each item In e.NewItems
-                                If TypeOf item Is Folder AndAlso CType(item, Item).IsVisibleInTree Then
+                                If CType(item, Item).IsVisibleInTree Then
                                     Me.Items.Add(item)
                                 End If
                             Next
                         Case NotifyCollectionChangedAction.Remove
                             For Each item In e.OldItems
-                                If TypeOf item Is Folder Then
+                                If CType(item, Item).CanShowInTree Then
                                     Me.Items.Remove(item)
                                 End If
                             Next
                         Case NotifyCollectionChangedAction.Replace
                             For Each item In e.NewItems
-                                If TypeOf item Is Folder AndAlso CType(item, Item).IsVisibleInTree Then
+                                If CType(item, Item).IsVisibleInTree Then
                                     Me.Items.Add(item)
                                 End If
                             Next
                             For Each item In e.OldItems
-                                If TypeOf item Is Folder Then
+                                If CType(item, Item).CanShowInTree Then
                                     Me.Items.Remove(item)
                                 End If
                             Next
@@ -848,12 +847,12 @@ Namespace Controls
                             Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
                             If Not folder Is Nothing Then
-                                For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
                                     AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
                                     Me.Items.Remove(item)
                                 Next
                                 For Each item In collection.Where(Function(i) _
-                                    Not i.disposedValue AndAlso i.IsVisibleInTree AndAlso TypeOf i Is Folder)
+                                    Not i.disposedValue AndAlso i.IsVisibleInTree)
                                     Me.Items.Add(item)
                                 Next
                             End If
