@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.11-alpha1</Version>
+	<Version>0.0.12-alpha1</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
@@ -206,7 +206,9 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Laila.VirtualizingWrapPanel\Laila.VirtualizingWrapPanel.csproj" PrivateAssets="all" ExcludeAssets="runtime;build;buildtransitive" />
+	  <ProjectReference Include="..\Laila.VirtualizingWrapPanel\Laila.VirtualizingWrapPanel.csproj" 
+						PrivateAssets="all" 
+						ExcludeAssets="runtime;build;buildtransitive"/>
 	</ItemGroup>
 	
 	<Target DependsOnTargets="ResolveReferences" Name="CopyProjectReferencesToPackage">

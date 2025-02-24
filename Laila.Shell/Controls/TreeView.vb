@@ -334,47 +334,49 @@ Namespace Controls
             ' get pinned items
             Dim pinnedItemsList As IEnumerable(Of Item) = PinnedItems.GetPinnedItems()
             Dim count As Integer = 0
-            For Each pinnedItem In pinnedItemsList
-                Dim existingPinnedItem As Item = Me.Roots.FirstOrDefault(Function(i) _
-                    i.FullPath = pinnedItem.FullPath _
-                        AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT)
-                If existingPinnedItem Is Nothing Then
-                    ' insert new pinned item
-                    pinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
-                    pinnedItem.IsPinned = True
-                    Me.Roots.Add(pinnedItem)
-                Else
-                    ' update existing pinned item
-                    pinnedItem.Dispose()
-                    If existingPinnedItem.TreeRootIndex <> TreeRootSection.PINNED + count Then
-                        existingPinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
-                        Me.Roots.Remove(existingPinnedItem)
-                        Me.Roots.Add(existingPinnedItem)
+            If Not pinnedItemsList Is Nothing Then
+                For Each pinnedItem In pinnedItemsList
+                    Dim existingPinnedItem As Item = Me.Roots.FirstOrDefault(Function(i) _
+                        i.FullPath = pinnedItem.FullPath _
+                            AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT)
+                    If existingPinnedItem Is Nothing Then
+                        ' insert new pinned item
+                        pinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
+                        pinnedItem.IsPinned = True
+                        Me.Roots.Add(pinnedItem)
+                    Else
+                        ' update existing pinned item
+                        pinnedItem.Dispose()
+                        If existingPinnedItem.TreeRootIndex <> TreeRootSection.PINNED + count Then
+                            existingPinnedItem.TreeRootIndex = TreeRootSection.PINNED + count
+                            Me.Roots.Remove(existingPinnedItem)
+                            Me.Roots.Add(existingPinnedItem)
+                        End If
                     End If
-                End If
-                count += 1
-            Next
-            ' remove pinned items no longer in the list
-            For Each pinnedItem As Item In Me.Roots.Where(Function(i) _
-                Not TypeOf i Is SeparatorFolder _
-                    AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT _
-                        AndAlso Not pinnedItemsList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
-                If TypeOf pinnedItem Is Folder Then
-                    Dim f As Folder = Me.GetParentOfSelectionBefore(pinnedItem)
-                    If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
-                End If
-                Me.Roots.Remove(pinnedItem)
-            Next
-            ' add/remove placeholder
-            Dim placeholderFolder As PinnedAndFrequentPlaceholderFolder =
+                    count += 1
+                Next
+                ' remove pinned items no longer in the list
+                For Each pinnedItem As Item In Me.Roots.Where(Function(i) _
+                    Not TypeOf i Is SeparatorFolder _
+                        AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.FREQUENT _
+                            AndAlso Not pinnedItemsList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
+                    If TypeOf pinnedItem Is Folder Then
+                        Dim f As Folder = Me.GetParentOfSelectionBefore(pinnedItem)
+                        If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
+                    End If
+                    Me.Roots.Remove(pinnedItem)
+                Next
+                ' add/remove placeholder
+                Dim placeholderFolder As PinnedAndFrequentPlaceholderFolder =
                     Me.Roots.FirstOrDefault(Function(i) TypeOf i Is PinnedAndFrequentPlaceholderFolder)
-            If Me.Roots.Where(Function(i) _
-                Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
-                    AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT).Count > 0 Then
-                If Not placeholderFolder Is Nothing Then Me.Roots.Remove(placeholderFolder)
-            Else
-                If placeholderFolder Is Nothing Then
-                    Me.Roots.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
+                If Me.Roots.Where(Function(i) _
+                    Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
+                        AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT).Count > 0 Then
+                    If Not placeholderFolder Is Nothing Then Me.Roots.Remove(placeholderFolder)
+                Else
+                    If placeholderFolder Is Nothing Then
+                        Me.Roots.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
+                    End If
                 End If
             End If
         End Function
@@ -383,44 +385,46 @@ Namespace Controls
             ' get frequent folders
             Dim frequentFoldersList As IEnumerable(Of Folder) = FrequentFolders.GetMostFrequent()
             Dim count As Integer = 0
-            For Each frequentFolder In frequentFoldersList
-                Dim existingFrequentFolder As Folder = Me.Roots.FirstOrDefault(Function(i) _
-                    i.FullPath = frequentFolder.FullPath _
-                        AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT)
-                If existingFrequentFolder Is Nothing Then
-                    ' insert new frequent folder
-                    frequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
-                    Me.Roots.Add(frequentFolder)
-                Else
-                    ' update existing frequent folder
-                    frequentFolder.Dispose()
-                    If existingFrequentFolder.TreeRootIndex <> TreeRootSection.FREQUENT + count Then
-                        existingFrequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
-                        Me.Roots.Remove(existingFrequentFolder)
-                        Me.Roots.Add(existingFrequentFolder)
+            If Not frequentFoldersList Is Nothing Then
+                For Each frequentFolder In frequentFoldersList
+                    Dim existingFrequentFolder As Folder = Me.Roots.FirstOrDefault(Function(i) _
+                        i.FullPath = frequentFolder.FullPath _
+                            AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT)
+                    If existingFrequentFolder Is Nothing Then
+                        ' insert new frequent folder
+                        frequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
+                        Me.Roots.Add(frequentFolder)
+                    Else
+                        ' update existing frequent folder
+                        frequentFolder.Dispose()
+                        If existingFrequentFolder.TreeRootIndex <> TreeRootSection.FREQUENT + count Then
+                            existingFrequentFolder.TreeRootIndex = TreeRootSection.FREQUENT + count
+                            Me.Roots.Remove(existingFrequentFolder)
+                            Me.Roots.Add(existingFrequentFolder)
+                        End If
                     End If
-                End If
-                count += 1
-            Next
-            ' remove frequent folders no longer in the list
-            For Each frequentFolder As Folder In Me.Roots.Where(Function(i) _
-                Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
-                    AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
-                        AndAlso Not frequentFoldersList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
-                Dim f As Folder = Me.GetParentOfSelectionBefore(frequentFolder)
-                If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
-                Me.Roots.Remove(frequentFolder)
-            Next
-            ' add/remove placeholder
-            Dim placeholderFolder As PinnedAndFrequentPlaceholderFolder =
+                    count += 1
+                Next
+                ' remove frequent folders no longer in the list
+                For Each frequentFolder As Folder In Me.Roots.Where(Function(i) _
+                    Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
+                        AndAlso i.TreeRootIndex >= TreeRootSection.FREQUENT AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT _
+                            AndAlso Not frequentFoldersList.ToList().Exists(Function(f) f.FullPath = i.FullPath)).ToList()
+                    Dim f As Folder = Me.GetParentOfSelectionBefore(frequentFolder)
+                    If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
+                    Me.Roots.Remove(frequentFolder)
+                Next
+                ' add/remove placeholder
+                Dim placeholderFolder As PinnedAndFrequentPlaceholderFolder =
                     Me.Roots.FirstOrDefault(Function(i) TypeOf i Is PinnedAndFrequentPlaceholderFolder)
-            If Me.Roots.Where(Function(i) _
-                Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
-                    AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT).Count > 0 Then
-                If Not placeholderFolder Is Nothing Then Me.Roots.Remove(placeholderFolder)
-            Else
-                If placeholderFolder Is Nothing Then
-                    Me.Roots.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
+                If Me.Roots.Where(Function(i) _
+                    Not TypeOf i Is SeparatorFolder AndAlso Not TypeOf i Is PinnedAndFrequentPlaceholderFolder _
+                        AndAlso i.TreeRootIndex >= TreeRootSection.PINNED AndAlso i.TreeRootIndex < TreeRootSection.ENVIRONMENT).Count > 0 Then
+                    If Not placeholderFolder Is Nothing Then Me.Roots.Remove(placeholderFolder)
+                Else
+                    If placeholderFolder Is Nothing Then
+                        Me.Roots.Add(New PinnedAndFrequentPlaceholderFolder() With {.TreeRootIndex = TreeRootSection.FREQUENT})
+                    End If
                 End If
             End If
         End Function
