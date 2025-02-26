@@ -202,7 +202,7 @@ Namespace Controls
                 Dim sec As BaseTreeViewSection = section
                 RemoveHandler sec.Items.CollectionChanged, AddressOf sectionItems_CollectionChanged
                 For Each item In sec.Items
-                    Me.Items.Remove(item)
+                    Me.Roots.Remove(item)
                 Next
             Next
         End Sub
@@ -247,6 +247,9 @@ Namespace Controls
                     Next
                 Case NotifyCollectionChangedAction.Remove
                     For Each item In e.OldItems
+                        If TypeOf item Is Folder AndAlso CType(item, Folder).IsExpanded Then
+                            CType(item, Folder).IsExpanded = False
+                        End If
                         Me.Items.Remove(item)
                     Next
                 Case Else
