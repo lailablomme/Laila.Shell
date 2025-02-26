@@ -2,6 +2,7 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
+Imports System.Windows.Input
 Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop.DragDrop
@@ -91,8 +92,10 @@ Namespace Controls
                 End Sub
             AddHandler Me.PART_AddTabButton.Click,
                 Sub(s As Object, e As EventArgs)
-                    _items.Add(New TabData())
-                    Me.SelectedItem = _items(_items.Count - 1)
+                    Using Shell.OverrideCursor(Cursors.Wait)
+                        _items.Add(New TabData())
+                        Me.SelectedItem = _items(_items.Count - 1)
+                    End Using
                 End Sub
 
             updateSelectedItem()
