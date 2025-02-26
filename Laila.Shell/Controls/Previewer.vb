@@ -17,12 +17,14 @@ Imports Laila.Shell.Interop.Windows
 Namespace Controls
     Public Class Previewer
         Inherits Control
+        Implements IDisposable
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(Previewer), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(Previewer), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
 
         Private Const ERROR_MESSAGE As String = "There was an error displaying the preview ({0})."
 
+        Private Shared _thread As Helpers.ThreadPool = New Helpers.ThreadPool(1)
         Private _handler As IPreviewHandler
         Private _stream As IStream
         Private _window As Window
@@ -33,12 +35,16 @@ Namespace Controls
         Private _previewItem As Item
         Private PART_Message As TextBlock
         Private PART_Thumbnail As Image
+        Private Shared _cancelTokenSource As CancellationTokenSource
+        Private disposedValue As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Previewer), New FrameworkPropertyMetadata(GetType(Previewer)))
         End Sub
 
         Public Sub New()
+            Shell.AddToControlCache(Me)
+
             AddHandler Me.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)
                     If Not _window Is Nothing Then
@@ -146,107 +152,157 @@ Namespace Controls
         End Sub
 
         Private Shared Sub showPreview(previewer As Previewer)
-            previewer._errorText = Nothing
+            _thread.Add(
+                Sub()
+                    _cancelTokenSource = New CancellationTokenSource()
+                    previewer._errorText = Nothing
 
-            If Not previewer.SelectedItems Is Nothing AndAlso previewer.SelectedItems.Count > 0 AndAlso Not previewer._isMade Then
-                If Not previewer._previewItem Is Nothing Then
-                    RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
-                End If
-                previewer._previewItem = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
-                AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
-                Debug.WriteLine("PreviewItem=" & previewer._previewItem.FullPath)
+                    Dim isReady As Boolean
+                    UIHelper.OnUIThread(
+                        Sub()
+                            isReady = Not previewer.SelectedItems Is Nothing _
+                                      AndAlso previewer.SelectedItems.Count > 0 _
+                                      AndAlso Not previewer._isMade
+                        End Sub)
 
-                previewer._isThumbnail = ImageHelper.IsImage(previewer._previewItem.FullPath)
-                If previewer._isThumbnail Then
-                    previewer.setThumbnail()
-                Else
-                    Dim clsid As Guid = getHandlerCLSID(IO.Path.GetExtension(previewer._previewItem.FullPath))
-                    If Not Guid.Empty.Equals(clsid) Then
-                        Debug.WriteLine("IPreviewHandler=" & clsid.ToString())
-                        Dim cc As ClassContext = ClassContext.LocalServer
-                        If Debugger.IsAttached Then cc = cc Or ClassContext.InProcServer
-                        Dim h As HRESULT = Functions.CoCreateInstance(clsid, IntPtr.Zero, cc, GetType(IPreviewHandler).GUID, previewer._handler)
-                        If h = HRESULT.S_OK Then
-                            h = HRESULT.S_FALSE
-                            If Not previewer._handler Is Nothing Then
-                                If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
-                                    Try
-                                        If IO.File.Exists(previewer._previewItem.FullPath) Then
-                                            h = Functions.SHCreateStreamOnFileEx(previewer._previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
-                                            Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
-                                        Else
-                                            SyncLock previewer._previewItem._shellItemLock
-                                                h = previewer._previewItem.ShellItem2.BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
-                                            End SyncLock
-                                            Debug.WriteLine("BHID_Stream=" & h.ToString())
+                    If isReady Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                If Not previewer._previewItem Is Nothing Then
+                                    RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+                                End If
+                                previewer._previewItem = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
+                                AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+                                Debug.WriteLine("PreviewItem=" & previewer._previewItem.FullPath)
+                            End Sub)
+
+                        If _cancelTokenSource.IsCancellationRequested Then Return
+                        previewer._isThumbnail = ImageHelper.IsImage(previewer._previewItem.FullPath)
+                        If previewer._isThumbnail Then
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    previewer.setThumbnail()
+                                    previewer._isMade = True
+                                    previewer.setMessage()
+                                End Sub)
+                        Else
+                            Dim clsid As Guid = getHandlerCLSID(IO.Path.GetExtension(previewer._previewItem.FullPath))
+                            If _cancelTokenSource.IsCancellationRequested Then Return
+                            If Not Guid.Empty.Equals(clsid) Then
+                                Debug.WriteLine("IPreviewHandler=" & clsid.ToString())
+                                Dim h As HRESULT
+                                Dim cc As ClassContext = ClassContext.LocalServer
+                                If Debugger.IsAttached Then cc = cc Or ClassContext.InProcServer
+                                If _cancelTokenSource.IsCancellationRequested Then Return
+                                h = Functions.CoCreateInstance(clsid, IntPtr.Zero, cc, GetType(IPreviewHandler).GUID, previewer._handler)
+                                If _cancelTokenSource.IsCancellationRequested Then Return
+                                If h = HRESULT.S_OK Then
+                                    h = HRESULT.S_FALSE
+                                    If Not previewer._handler Is Nothing Then
+                                        If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
+                                            Try
+                                                If IO.File.Exists(previewer._previewItem.FullPath) Then
+                                                    If _cancelTokenSource.IsCancellationRequested Then Return
+                                                    h = Functions.SHCreateStreamOnFileEx(previewer._previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
+                                                    Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
+                                                Else
+                                                    SyncLock previewer._previewItem._shellItemLock
+                                                        If _cancelTokenSource.IsCancellationRequested Then Return
+                                                        h = previewer._previewItem.ShellItem2.BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
+                                                    End SyncLock
+                                                    Debug.WriteLine("BHID_Stream=" & h.ToString())
+                                                End If
+                                            Catch ex As Exception
+                                                h = HRESULT.E_FAIL
+                                            End Try
+                                            If h = HRESULT.S_OK Then
+                                                Try
+                                                    If _cancelTokenSource.IsCancellationRequested Then Return
+                                                    h = CType(previewer._handler, IInitializeWithStream).Initialize(previewer._stream, STGM.STGM_READ)
+                                                    Debug.WriteLine("IPreviewHandler.IInitializeWithStream=" & h.ToString())
+                                                Catch ex As Exception
+                                                    h = HRESULT.E_FAIL
+                                                End Try
+                                            End If
                                         End If
-                                    Catch ex As Exception
-                                        h = HRESULT.E_FAIL
-                                    End Try
-                                    If h = HRESULT.S_OK Then
-                                        Try
-                                            h = CType(previewer._handler, IInitializeWithStream).Initialize(previewer._stream, STGM.STGM_READ)
-                                            Debug.WriteLine("IPreviewHandler.IInitializeWithStream=" & h.ToString())
-                                        Catch ex As Exception
-                                            h = HRESULT.E_FAIL
-                                        End Try
+                                        If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithFile Then
+                                            Try
+                                                If _cancelTokenSource.IsCancellationRequested Then Return
+                                                h = CType(previewer._handler, IInitializeWithFile).Initialize(previewer._previewItem.FullPath, STGM.STGM_READ)
+                                                Debug.WriteLine("IPreviewHandler.IInitializeWithFile=" & h.ToString())
+                                            Catch ex As Exception
+                                                h = HRESULT.E_FAIL
+                                            End Try
+                                        End If
+                                        If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithItem Then
+                                            Try
+                                                If _cancelTokenSource.IsCancellationRequested Then Return
+                                                h = CType(previewer._handler, IInitializeWithItem).Initialize(previewer._previewItem, STGM.STGM_READ)
+                                                Debug.WriteLine("IPreviewHandler.IInitializeWithItem=" & h.ToString())
+                                            Catch ex As Exception
+                                                h = HRESULT.E_FAIL
+                                            End Try
+                                        End If
+                                        If h <> HRESULT.S_OK Then
+                                            UIHelper.OnUIThread(
+                                                Sub()
+                                                    previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
+                                                End Sub)
+                                            hidePreview(previewer)
+                                        End If
+                                    End If
+                                Else
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
+                                        End Sub)
+                                End If
+
+                                If Not previewer._handler Is Nothing AndAlso previewer.IsVisible Then
+                                    Dim hwnd As IntPtr
+                                    If _cancelTokenSource.IsCancellationRequested Then Return
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            makeWindow(previewer)
+                                            Dim ih As New WindowInteropHelper(previewer._window)
+                                            ih.EnsureHandle()
+                                            hwnd = ih.Handle
+                                            previewer._handler.SetWindow(hwnd, getRect(previewer))
+                                        End Sub)
+                                    If _cancelTokenSource.IsCancellationRequested Then Return
+                                    h = previewer._handler.DoPreview()
+                                    If _cancelTokenSource.IsCancellationRequested Then Return
+                                    Debug.WriteLine("IPreviewHandler.DoPreview=" & h.ToString())
+                                    'Dim color As Color = Colors.Red
+                                    'Dim c As UInteger = (CUInt(color.B) << 16) Or (CUInt(color.G) << 8) Or CUInt(color.R)
+                                    'CType(previewer._handler, IPreviewHandlerVisuals).SetTextColor(c)
+                                    If h <> HRESULT.S_OK Then
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
+                                            End Sub)
+                                        hidePreview(previewer)
+                                    Else
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                previewer._handler.SetRect(getRect(previewer))
+                                            End Sub)
                                     End If
                                 End If
-                                If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithFile Then
-                                    Try
-                                        h = CType(previewer._handler, IInitializeWithFile).Initialize(previewer._previewItem.FullPath, STGM.STGM_READ)
-                                        Debug.WriteLine("IPreviewHandler.IInitializeWithFile=" & h.ToString())
-                                    Catch ex As Exception
-                                        h = HRESULT.E_FAIL
-                                    End Try
-                                End If
-                                If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithItem Then
-                                    Try
-                                        h = CType(previewer._handler, IInitializeWithItem).Initialize(previewer._previewItem, STGM.STGM_READ)
-                                        Debug.WriteLine("IPreviewHandler.IInitializeWithItem=" & h.ToString())
-                                    Catch ex As Exception
-                                        h = HRESULT.E_FAIL
-                                    End Try
-                                End If
-                                If h <> HRESULT.S_OK Then
-                                    previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
-                                    hidePreview(previewer)
-                                End If
                             End If
-                        Else
-                            previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
-                        End If
-
-                        If Not previewer._handler Is Nothing AndAlso previewer.IsVisible Then
-                            makeWindow(previewer)
-                            Dim ih As New WindowInteropHelper(previewer._window)
-                            ih.EnsureHandle()
-                            Dim hwnd As IntPtr = ih.Handle
-                            'Dim color As Color = Colors.Red
-                            'Dim c As UInteger = (CUInt(color.B) << 16) Or (CUInt(color.G) << 8) Or CUInt(color.R)
-                            'CType(previewer._handler, IPreviewHandlerVisuals).SetTextColor(c)
-                            Dim el As IInputElement = Keyboard.FocusedElement
-                            previewer._handler.SetWindow(hwnd, getRect(previewer))
-                            h = previewer._handler.DoPreview()
-                            Debug.WriteLine("IPreviewHandler.DoPreview=" & h.ToString())
-                            If h <> HRESULT.S_OK Then
-                                previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
-                                hidePreview(previewer)
-                            Else
-                                previewer._handler.SetRect(getRect(previewer))
-                            End If
-                            If Not el Is Nothing AndAlso Not previewer._window Is Nothing _
-                                AndAlso previewer._window.IsKeyboardFocusWithin Then el.Focus()
                         End If
                     End If
-                End If
 
-                previewer._isMade = True
-                previewer.setMessage()
-            End If
+                    UIHelper.OnUIThread(
+                        Sub()
+                            previewer.setMessage()
+                        End Sub)
+                End Sub)
         End Sub
 
         Private Shared Sub hidePreview(previewer As Previewer)
+            _cancelTokenSource.Cancel()
+
             If Not previewer._handler Is Nothing Then
                 Debug.WriteLine("Unloading IPreviewHandler")
                 previewer._handler.Unload()
@@ -257,24 +313,32 @@ Namespace Controls
                 Marshal.ReleaseComObject(previewer._stream)
                 previewer._stream = Nothing
             End If
-            If Not previewer._window Is Nothing Then
-                RemoveHandler previewer._window.Owner.SizeChanged, AddressOf previewer.owner_SizeChanged
-                previewer._window.Close()
-                previewer._window = Nothing
-            End If
 
-            If previewer._isThumbnail Then
-                previewer._isThumbnail = False
-                previewer.PART_Thumbnail.Visibility = Visibility.Collapsed
-            End If
+            UIHelper.OnUIThread(
+                Sub()
+                    If Not previewer._window Is Nothing Then
+                        RemoveHandler previewer._window.Owner.SizeChanged, AddressOf previewer.owner_SizeChanged
+                        previewer._window.Close()
+                        previewer._window = Nothing
+                    End If
 
-            If Not previewer._previewItem Is Nothing Then
-                RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
-            End If
+                    If previewer._isThumbnail Then
+                        previewer._isThumbnail = False
+                        previewer.PART_Thumbnail.Visibility = Visibility.Collapsed
+                    End If
+
+                    If Not previewer._previewItem Is Nothing Then
+                        RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+                    End If
+                End Sub)
+
             previewer._previewItem = Nothing
             previewer._isMade = False
 
-            previewer.setMessage()
+            UIHelper.OnUIThread(
+                Sub()
+                    previewer.setMessage()
+                End Sub)
         End Sub
 
         Private Shared Sub makeWindow(previewer As Previewer)
@@ -380,6 +444,31 @@ Namespace Controls
                     hidePreview(Me)
                     showPreview(Me)
                 End Sub)
+        End Sub
+
+        Protected Overridable Sub Dispose(disposing As Boolean)
+            If Not disposedValue Then
+                If disposing Then
+                    ' dispose managed state (managed objects)
+                End If
+
+                ' free unmanaged resources (unmanaged objects) and override finalizer
+                If Not _thread Is Nothing Then
+                    _thread.Dispose()
+                    _thread = Nothing
+                End If
+
+                Shell.RemoveFromControlCache(Me)
+
+                ' set large fields to null
+                disposedValue = True
+            End If
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+            Dispose(disposing:=True)
+            GC.SuppressFinalize(Me)
         End Sub
     End Class
 End Namespace
