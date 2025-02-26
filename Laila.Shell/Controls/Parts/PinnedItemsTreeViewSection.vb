@@ -79,8 +79,8 @@ Namespace Controls.Parts
                 selectedPidl.Dispose()
             End If
 
-            If Me.Items.Count = 0 Then
-                Me.Items.Add(New PinnedAndFrequentPlaceholderFolder())
+            If Me.Items.Count = 1 Then
+                Me.Items.Add(New PinnedItemsPlaceholderFolder())
             End If
         End Sub
 
@@ -92,9 +92,10 @@ Namespace Controls.Parts
 
         Public Function DragInsertBefore(dataObject As IDataObject, files As List(Of Item), index As Integer) As Interop.HRESULT Implements ISupportDragInsert.DragInsertBefore
             Dim canPinItem As Boolean =
-            index = 0 _
-            OrElse (index + 1 > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
-            OrElse Me.Items(index + 1).IsPinned
+                (Me.Items.Count = 2 AndAlso TypeOf Me.Items(1) Is PinnedItemsPlaceholderFolder AndAlso index = -1) _
+                OrElse index = 0 _
+                OrElse (index + 1 > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
+                OrElse Me.Items(index + 1).IsPinned
             If canPinItem Then
                 WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
                 Return HRESULT.S_OK

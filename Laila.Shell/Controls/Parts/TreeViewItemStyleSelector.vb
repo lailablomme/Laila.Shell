@@ -12,7 +12,7 @@ Namespace Controls.Parts
         Public Overrides Function SelectStyle(item As Object, container As DependencyObject) As Style
             If TypeOf item Is SeparatorFolder Then
                 Return Me.TreeViewSeparatorItemStyle
-            ElseIf TypeOf item Is PinnedAndFrequentPlaceholderFolder Then
+            ElseIf TypeOf item Is PinnedItemsPlaceholderFolder Then
                 Return Me.TreeViewPlaceholderItemStyle
             ElseIf TypeOf item Is Folder Or TypeOf item Is Item Then
                 Return Me.TreeViewItemStyle

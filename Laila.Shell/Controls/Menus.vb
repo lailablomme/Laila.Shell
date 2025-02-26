@@ -456,7 +456,7 @@ Namespace Controls
 
         Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim icm As Menus = TryCast(d, Menus)
-            If Not e.NewValue Is Nothing Then
+            If Not e.NewValue Is Nothing AndAlso Not TypeOf e.NewValue Is DummyFolder Then
                 Await icm.UpdateNewItemMenu()
             End If
             Await icm.UpdateButtons()

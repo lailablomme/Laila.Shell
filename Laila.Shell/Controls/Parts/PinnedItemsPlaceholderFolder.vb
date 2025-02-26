@@ -1,7 +1,7 @@
 ﻿Imports Laila.Shell.Helpers
 
 Namespace Controls.Parts
-    Public Class PinnedAndFrequentPlaceholderFolder
+    Public Class PinnedItemsPlaceholderFolder
         Inherits DummyFolder
 
         Public Sub New()
