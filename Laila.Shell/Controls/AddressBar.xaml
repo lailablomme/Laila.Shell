@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Laila.Shell.Controls"
+                    xmlns:parts="clr-namespace:Laila.Shell.Controls.Parts"
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers"
                     xmlns:balloon="clr-namespace:Laila.BalloonTip;assembly=Laila.BalloonTip"
                     xmlns:autocomplete="clr-namespace:Laila.AutoCompleteTextBox;assembly=Laila.AutoCompleteTextBox">
@@ -9,7 +10,7 @@
         <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
-    <helpers:AddressBarSuggestionProvider x:Key="suggestionProvider" />
+    <parts:AddressBarSuggestionProvider x:Key="suggestionProvider" />
 
     <SolidColorBrush Color="#41B1E1" x:Key="laila_AutoComplete_FocusBrush" />
 

@@ -1,4 +1,5 @@
 ﻿Imports Laila.AutoCompleteTextBox
+Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop.Windows
 Imports System.Collections.Specialized

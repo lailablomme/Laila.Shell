@@ -5,6 +5,7 @@ Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
+Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop

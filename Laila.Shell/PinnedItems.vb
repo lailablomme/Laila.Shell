@@ -8,6 +8,8 @@ Public Class PinnedItems
 
     Private Shared _lock As Object = New Object()
 
+    Public Shared Property IsNotifying As Boolean = True
+
     Public Shared Function GetPinnedItems() As IEnumerable(Of Item)
         Dim pinnedItems As List(Of PinnedItem)
 
@@ -87,7 +89,7 @@ Public Class PinnedItems
             End Using
         End SyncLock
 
-        If Not e Is Nothing Then RaiseEvent ItemPinned(Nothing, e)
+        If IsNotifying AndAlso Not e Is Nothing Then RaiseEvent ItemPinned(Nothing, e)
     End Sub
 
     Public Shared Function UnpinItem(pidl As Pidl) As Integer
@@ -112,12 +114,17 @@ Public Class PinnedItems
         End SyncLock
 
         If Not e Is Nothing Then
-            RaiseEvent ItemUnpinned(Nothing, e)
+            If IsNotifying Then RaiseEvent ItemUnpinned(Nothing, e)
             Return e.Index
         Else
             Return -1
         End If
     End Function
+
+    Public Shared Sub NotifyReset()
+        Dim e As PinnedItemEventArgs = New PinnedItemEventArgs() With {.Index = -1}
+        RaiseEvent ItemUnpinned(Nothing, e)
+    End Sub
 
     Public Shared Sub RenameItem(oldPidl As Pidl, newPidl As Pidl)
         SyncLock _lock

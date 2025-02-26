@@ -13,12 +13,11 @@ Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
 Imports System.Runtime.InteropServices.ComTypes
 Imports Laila.Shell.Events
+Imports System.Collections.ObjectModel
 
 Public Class HomeFolder
     Inherits Folder
     Implements ISupportDragInsert
-
-    Private _dontEnumerate As Boolean
 
     Public Sub New(parent As Folder, doKeepAlive As Boolean)
         MyBase.New(Nothing, parent, doKeepAlive, False, Nothing)
@@ -35,14 +34,14 @@ Public Class HomeFolder
 
         AddHandler PinnedItems.ItemPinned,
             Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                If Not _dontEnumerate AndAlso _isLoaded Then
+                If _isLoaded Then
                     _isEnumerated = False
                     Me.GetItemsAsync()
                 End If
             End Sub
         AddHandler PinnedItems.ItemUnpinned,
             Sub(s2 As Object, e2 As PinnedItemEventArgs)
-                If Not _dontEnumerate AndAlso _isLoaded Then
+                If _isLoaded Then
                     _isEnumerated = False
                     Me.GetItemsAsync()
                 End If
@@ -218,6 +217,12 @@ Public Class HomeFolder
         End Get
     End Property
 
+    Private ReadOnly Property ISupportDragInsert_Items As ObservableCollection(Of Item) Implements ISupportDragInsert.Items
+        Get
+            Return Me.Items
+        End Get
+    End Property
+
     Public Overrides Function Clone() As Item
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
@@ -228,8 +233,8 @@ Public Class HomeFolder
     Public Function DragInsertBefore(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer) As HRESULT Implements ISupportDragInsert.DragInsertBefore
         Dim canPinItem As Boolean =
             index = 0 _
-            OrElse (index + 1 > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
-            OrElse Me.Items(index - 1).IsPinned
+            OrElse (index > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
+            OrElse Me.Items(index).IsPinned
         If canPinItem Then
             WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
             Return HRESULT.S_OK
@@ -240,7 +245,8 @@ Public Class HomeFolder
 
     Public Function Drop(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer) As HRESULT Implements ISupportDragInsert.Drop
         Try
-            _dontEnumerate = True
+            PinnedItems.IsNotifying = False
+
             For Each file In files
                 Dim unpinnedIndex As Integer = PinnedItems.UnpinItem(file.Pidl)
                 If unpinnedIndex <> -1 AndAlso unpinnedIndex < index Then
@@ -251,11 +257,14 @@ Public Class HomeFolder
                 PinnedItems.PinItem(file, index)
                 If index <> -1 Then index += 1
             Next
+
             _isEnumerated = False
             Me.GetItemsAsync()
+
             Return HRESULT.S_OK
         Finally
-            _dontEnumerate = False
+            PinnedItems.IsNotifying = True
+            PinnedItems.NotifyReset()
         End Try
     End Function
 End Class

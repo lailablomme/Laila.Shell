@@ -1,7 +1,7 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
 
-Namespace Helpers
+Namespace Controls.Parts
     Public Class TreeViewItemStyleSelector
         Inherits StyleSelector
 

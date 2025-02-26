@@ -1,21 +1,18 @@
 Imports System.ComponentModel
 Imports System.Drawing
-Imports System.Drawing.Imaging
 Imports System.IO
 Imports System.Runtime.InteropServices
-Imports System.Text
 Imports System.Threading
 Imports System.Windows
-Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
+Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Folders
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
-Imports Shell32
 
 Public Class Item
     Inherits NotifyPropertyChangedBase
@@ -168,7 +165,7 @@ Public Class Item
         End Get
     End Property
 
-    Public Property IsVisibleInAddressBar As Boolean
+    Protected Friend Property IsVisibleInAddressBar As Boolean
         Get
             Return _isVisibleInAddressBar
         End Get
@@ -177,14 +174,14 @@ Public Class Item
         End Set
     End Property
 
-    Public ReadOnly Property IsVisibleInTree As Boolean
+    Protected Friend ReadOnly Property IsVisibleInTree As Boolean
         Get
             Return Me.TreeRootIndex <> -1 _
                 OrElse (Me.CanShowInTree AndAlso Not If(_logicalParent, _parent) Is Nothing AndAlso If(_logicalParent, _parent).IsExpanded)
         End Get
     End Property
 
-    Public Property CanShowInTree As Boolean
+    Protected Friend Property CanShowInTree As Boolean
         Get
             Return _canShowInTree
         End Get
@@ -195,7 +192,7 @@ Public Class Item
         End Set
     End Property
 
-    Public Overridable ReadOnly Property IsReadyForDispose As Boolean
+    Protected Friend Overridable ReadOnly Property IsReadyForDispose As Boolean
         Get
             Return Not _doKeepAlive _
                 AndAlso (If(_logicalParent, _parent) Is Nothing OrElse (Not If(_logicalParent, _parent).IsActiveInFolderView)) _
@@ -203,13 +200,15 @@ Public Class Item
         End Get
     End Property
 
-    Public Overridable Sub MaybeDispose()
+    Protected Friend Overridable Sub MaybeDispose()
         If Me.IsReadyForDispose Then
             Me.Dispose()
         End If
     End Sub
 
-    Public Property TreeRootIndex As Long
+    Protected Friend Property TreeViewSection As BaseTreeViewSection
+
+    Protected Friend Property TreeRootIndex As Long
         Get
             Return _treeRootIndex
         End Get
@@ -219,7 +218,7 @@ Public Class Item
         End Set
     End Property
 
-    Friend Property TreeSortPrefix As String
+    Protected Friend Property TreeSortPrefix As String
         Get
             Return _treeSortPrefix
         End Get
@@ -794,11 +793,11 @@ Public Class Item
         End Get
     End Property
 
-    Public Property AddressBarRoot As String
+    Protected Friend Property AddressBarRoot As String
 
-    Public Property AddressBarDisplayName As String
+    Protected Friend Property AddressBarDisplayName As String
 
-    Public ReadOnly Property AddressBarDisplayPath As String
+    Protected Friend ReadOnly Property AddressBarDisplayPath As String
         Get
             If String.IsNullOrWhiteSpace(Me.AddressBarRoot) Then
                 Dim parent As Item = Me
@@ -851,7 +850,7 @@ Public Class Item
         End Get
     End Property
 
-    Public Property ItemNameDisplaySortValuePrefix As String
+    Protected Friend Property ItemNameDisplaySortValuePrefix As String
         Get
             Return _itemNameDisplaySortValuePrefix
         End Get

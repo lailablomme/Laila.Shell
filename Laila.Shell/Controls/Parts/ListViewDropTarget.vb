@@ -3,12 +3,13 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports Laila.Shell.Controls
+Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Windows
 
-Namespace Helpers
+Namespace Controls.Parts
     Public Class ListViewDropTarget
         Inherits BaseDropTarget
 

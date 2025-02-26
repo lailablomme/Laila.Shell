@@ -2,6 +2,7 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
+Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop.DragDrop
 

@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Laila.Shell.Controls"
+                    xmlns:parts="clr-namespace:Laila.Shell.Controls.Parts"
                     xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers">
 
@@ -125,7 +126,7 @@
         </Setter>
     </Style>
 
-    <helpers:TreeViewItemStyleSelector 
+    <parts:TreeViewItemStyleSelector 
         x:Key="treeViewItemStyleSelector"
         TreeViewItemStyle="{StaticResource lailaShell_TreeViewItemStyle}"
         TreeViewSeparatorItemStyle="{StaticResource lailaShell_TreeViewSeparatorItemStyle}"

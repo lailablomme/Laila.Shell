@@ -1,7 +1,7 @@
 ﻿Imports System.IO
 Imports Laila.AutoCompleteTextBox
 
-Namespace Helpers
+Namespace Controls.Parts
     Public Class AddressBarSuggestionProvider
         Implements ISuggestionProviderAsync
 

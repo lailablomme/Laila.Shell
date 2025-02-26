@@ -124,7 +124,7 @@ Public Class Folder
         End Set
     End Property
 
-    Public ReadOnly Property IsRootFolder As Boolean
+    Protected Friend ReadOnly Property IsRootFolder As Boolean
         Get
             Return Shell.GetSpecialFolders().Values.Contains(Me) OrElse Me.TreeRootIndex <> -1
         End Get
@@ -147,7 +147,7 @@ Public Class Folder
         End Set
     End Property
 
-    Public Property IsActiveInFolderView As Boolean
+    Protected Friend Property IsActiveInFolderView As Boolean
         Get
             Return _isActiveInFolderView
         End Get
@@ -160,7 +160,7 @@ Public Class Folder
         End Set
     End Property
 
-    Public Property IsInHistory As Boolean
+    Protected Friend Property IsInHistory As Boolean
         Get
             Return _isInHistory
         End Get
@@ -169,7 +169,7 @@ Public Class Folder
         End Set
     End Property
 
-    Public Overrides ReadOnly Property IsReadyForDispose As Boolean
+    Protected Friend Overrides ReadOnly Property IsReadyForDispose As Boolean
         Get
             Return Not _doKeepAlive AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
                 AndAlso Not Me.IsRootFolder AndAlso Not Me.IsVisibleInTree AndAlso Not Me.IsVisibleInAddressBar _
@@ -180,7 +180,7 @@ Public Class Folder
         End Get
     End Property
 
-    Public Overrides Sub MaybeDispose()
+    Protected Friend Overrides Sub MaybeDispose()
         If Me.IsReadyForDispose Then
             Me.Dispose()
         End If
@@ -615,7 +615,7 @@ Public Class Folder
         Return Nothing
     End Function
 
-    Friend Overridable Sub CancelEnumeration()
+    Public Overridable Sub CancelEnumeration()
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
             If _enumerationLock.CurrentCount = 0 Then

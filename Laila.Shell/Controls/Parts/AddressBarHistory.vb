@@ -1,7 +1,7 @@
 ﻿Imports Laila.Shell.FrequentFolders
 Imports LiteDB
 
-Namespace Helpers
+Namespace Controls.Parts
     Public Class AddressBarHistory
         Public Shared Function GetHistory(searchTerm As String) As IEnumerable(Of Item)
             Using db = New LiteDatabase(getDBFileName())

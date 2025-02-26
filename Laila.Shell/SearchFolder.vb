@@ -178,7 +178,7 @@ Public Class SearchFolder
         Me.GetItemsAsync()
     End Sub
 
-    Friend Overrides Sub CancelEnumeration()
+    Public Overrides Sub CancelEnumeration()
         If Not _enumerationCancellationTokenSource Is Nothing Then
             _enumerationCancellationTokenSource.Cancel()
             If _enumerationLock.CurrentCount = 0 Then
