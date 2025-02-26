@@ -46,9 +46,11 @@ Public Class Item
     Protected _logicalParent As Folder
     Private _itemNameDisplaySortValuePrefix As String
     Protected _canShowInTree As Boolean
+    Friend _livesOnThreadId As Integer
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
+        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
                 Dim customFolderType As Type = Shell.CustomFolders _
@@ -61,9 +63,9 @@ Public Class Item
                         Dim attr As SFGAO = SFGAO.FOLDER
                         shellItem2.GetAttributes(attr, attr)
                         If attr.HasFlag(SFGAO.FOLDER) Then
-                            Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates)
+                            Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
                         Else
-                            Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates)
+                            Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
                         End If
                     Else
                         Return Nothing
@@ -71,11 +73,12 @@ Public Class Item
                 Else
                     Return CType(Activator.CreateInstance(customFolderType, {parent, doKeepAlive}), Folder)
                 End If
-            End Function)
+            End Function,, threadId)
     End Function
 
     Public Shared Function FromPidl(pidl As Pidl, parent As Folder,
                                     Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True, Optional preservePidl As Boolean = False) As Item
+        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
                 Dim pidlClone As Pidl = pidl.Clone()
@@ -86,14 +89,14 @@ Public Class Item
                     Dim attr As SFGAO = SFGAO.FOLDER
                     shellItem2.GetAttributes(attr, attr)
                     If attr.HasFlag(SFGAO.FOLDER) Then
-                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, If(preservePidl, pidlClone, Nothing))
+                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
                     Else
-                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, If(preservePidl, pidlClone, Nothing))
+                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
                     End If
                 Else
                     Return Nothing
                 End If
-            End Function)
+            End Function,, threadId)
     End Function
 
     Friend Shared Function GetIShellItem2FromPidl(pidl As IntPtr, parentShellFolder As IShellFolder) As IShellItem2
@@ -112,13 +115,14 @@ Public Class Item
         Return result
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As Pidl = Nothing)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer, Optional pidl As Pidl = Nothing)
         _objectCount += 1
         _objectId = _objectCount
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
         _logicalParent = logicalParent
         _pidl = pidl
+        _livesOnThreadId = threadId
         If Not shellItem2 Is Nothing Then
             If doHookUpdates Then Me.HookUpdates()
             Shell.AddToItemsCache(Me)
@@ -441,6 +445,7 @@ Public Class Item
                 ' if we don't have any yet/anymore...
                 If _parent Is Nothing Then
                     Dim parentShellItem2 As IShellItem2 = Nothing
+                    Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
                     _parent = Shell.GlobalThreadPool.Run(
                         Function() As Folder
                             SyncLock _shellItemLock
@@ -449,10 +454,10 @@ Public Class Item
                                 End If
                             End SyncLock
                             If Not parentShellItem2 Is Nothing Then
-                                Return New Folder(parentShellItem2, Nothing, False, True)
+                                Return New Folder(parentShellItem2, Nothing, False, True, threadId)
                             End If
                             Return Nothing
-                        End Function, 1)
+                        End Function, 1, threadId)
                 End If
             End If
             Return _parent
@@ -1066,16 +1071,13 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(key.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = Shell.GlobalThreadPool.Run(
-                        Function() As [Property]
-                            SyncLock _shellItemLock
-                                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                                    Return [Property].FromKey(key, Me.ShellItem2)
-                                Else
-                                    Return Nothing
-                                End If
-                            End SyncLock
-                        End Function)
+                    SyncLock _shellItemLock
+                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                            [property] = [Property].FromKey(key, Me.ShellItem2)
+                        Else
+                            [property] = Nothing
+                        End If
+                    End SyncLock
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByKey.ContainsKey(propertyKey) Then
@@ -1100,16 +1102,13 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = Shell.GlobalThreadPool.Run(
-                        Function() As [Property]
-                            SyncLock _shellItemLock
-                                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                                    Return [Property].FromKey(propertyKey, Me.ShellItem2)
-                                Else
-                                    Return Nothing
-                                End If
-                            End SyncLock
-                        End Function)
+                    SyncLock _shellItemLock
+                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                            [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                        Else
+                            [property] = Nothing
+                        End If
+                    End SyncLock
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByKey.ContainsKey(propertyKey.ToString()) Then
@@ -1134,16 +1133,13 @@ Public Class Item
             Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    [property] = Shell.GlobalThreadPool.Run(
-                        Function() As [Property]
-                            SyncLock _shellItemLock
-                                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                                    Return [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
-                                Else
-                                    Return Nothing
-                                End If
-                            End SyncLock
-                        End Function)
+                    SyncLock _shellItemLock
+                        If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                            [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                        Else
+                            [property] = Nothing
+                        End If
+                    End SyncLock
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByCanonicalName.ContainsKey(canonicalName) Then

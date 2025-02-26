@@ -4,6 +4,7 @@ Imports System.Threading
 Imports System.Windows.Input
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Folders
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Windows
 
@@ -79,13 +80,15 @@ Public Class Clipboard
                     Dim dataObject As ComTypes.IDataObject = Nothing
                     Functions.OleGetClipboard(dataObject)
 
-                    Dim dropTarget As IDropTarget = Nothing
+                    Dim dropTarget As IDropTarget = Nothing, shellFolder As IShellFolder = Nothing
                     Try
                         If Not folder.Parent Is Nothing Then
-                            folder.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                            shellFolder = folder.Parent.GetShellFolderOnCurrentThread()
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                         Else
                             ' desktop
-                            Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                            shellFolder = Shell.Desktop.GetShellFolderOnCurrentThread()
+                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                         End If
 
                         If Not dropTarget Is Nothing Then
@@ -104,6 +107,12 @@ Public Class Clipboard
                             Marshal.ReleaseComObject(dataObject)
                             dataObject = Nothing
                         End If
+                        If Not shellFolder Is Nothing Then
+                            Marshal.ReleaseComObject(shellFolder)
+                            shellFolder = Nothing
+                        End If
+
+                        Functions.OleUninitialize()
                     End Try
                 End Sub))
 

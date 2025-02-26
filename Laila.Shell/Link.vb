@@ -13,8 +13,8 @@ Public Class Link
     Private _targetPidl As Pidl
     Private _targetFullPath As String
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As Pidl = Nothing)
-        MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, pidl)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer, Optional pidl As Pidl = Nothing)
+        MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, pidl)
 
         _threadId = Shell.GlobalThreadPool.GetNextFreeThreadId()
     End Sub

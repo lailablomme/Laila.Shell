@@ -64,15 +64,27 @@ Namespace Controls.Parts
                 selectedPidl = Me.TreeView.SelectedItem.Pidl.Clone()
             End If
 
-            For Each item In Me.Items.ToList()
-                Me.Items.Remove(item)
+            If Me.Items.Count = 0 Then
+                Me.Items.Add(New SeparatorFolder())
+            End If
+
+            Dim items As IEnumerable(Of Item) = PinnedItems.GetPinnedItems()
+            For i = 0 To items.Count - 1
+                If i + 1 < Me.Items.Count Then
+                    If Not Me.Items(i + 1).Pidl.Equals(items(i).Pidl) Then
+                        If i + 2 < Me.Items.Count AndAlso Me.Items(i + 2).Pidl.Equals(items(i).Pidl) Then
+                            Me.Items.Remove(Me.Items(i + 1))
+                        Else
+                            Me.Items.Insert(i + 1, items(i))
+                        End If
+                        If items(i).Pidl.Equals(selectedPidl) Then Me.TreeView.SetSelectedItem(items(i))
+                    End If
+                Else
+                    Me.Items.Add(items(i))
+                End If
             Next
-
-            Me.Items.Add(New SeparatorFolder())
-
-            For Each item In PinnedItems.GetPinnedItems()
-                Me.Items.Add(item)
-                If item.Pidl.Equals(selectedPidl) Then Me.TreeView.SetSelectedItem(item)
+            For i = items.Count To Me.Items.Count - 2
+                Me.Items.Remove(Me.Items.Last())
             Next
 
             If Not selectedPidl Is Nothing Then

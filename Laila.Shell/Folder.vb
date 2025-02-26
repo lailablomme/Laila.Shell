@@ -53,6 +53,7 @@ Public Class Folder
     Protected _hookFolderFullPath As String
 
     Public Shared Function FromDesktop() As Folder
+        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
         Return Shell.GlobalThreadPool.Run(
             Function() As Folder
                 Dim pidl As IntPtr, shellFolder As IShellFolder = Nothing, shellItem2 As IShellItem2 = Nothing
@@ -67,8 +68,8 @@ Public Class Folder
                     End If
                 End Try
 
-                Return New Folder(shellFolder, shellItem2, Nothing)
-            End Function)
+                Return New Folder(shellFolder, shellItem2, Nothing, threadId)
+            End Function,, threadId)
     End Function
 
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
@@ -80,8 +81,8 @@ Public Class Folder
     ''' <summary>
     ''' This one is used for creating the root Desktop folder only.
     ''' </summary>
-    Friend Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder)
-        Me.New(shellItem2, parent, True, True)
+    Friend Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder, threadId As Integer)
+        Me.New(shellItem2, parent, True, True, threadId)
 
         _shellFolder = shellFolder
 
@@ -89,8 +90,8 @@ Public Class Folder
         _isListening = True
     End Sub
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, Optional pidl As Pidl = Nothing)
-        MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, pidl)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer, Optional pidl As Pidl = Nothing)
+        MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, pidl)
         _canShowInTree = True
     End Sub
 
@@ -569,7 +570,7 @@ Public Class Folder
                 Dim cts As CancellationTokenSource = New CancellationTokenSource()
                 _enumerationCancellationTokenSource = cts
 
-                enumerateItems(False, cts.Token, doRefreshAllExistingItems)
+                enumerateItems(False, cts.Token, -1, doRefreshAllExistingItems)
 
                 ' terminate previous enumeration thread
                 If Not prevEnumerationCancellationTokenSource Is Nothing Then
@@ -588,6 +589,7 @@ Public Class Folder
     Public Overridable Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True) As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
+        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
         Shell.GlobalThreadPool.Add(
             Sub()
                 _enumerationLock.Wait()
@@ -595,7 +597,7 @@ Public Class Folder
                     If Not _isEnumerated Then
                         Me.IsLoading = True
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
-                        enumerateItems(True, _enumerationCancellationTokenSource.Token, doRefreshAllExistingItems)
+                        enumerateItems(True, _enumerationCancellationTokenSource.Token, threadId, doRefreshAllExistingItems)
                     End If
                     tcs.SetResult(_items.ToList())
                 Catch ex As Exception
@@ -606,7 +608,7 @@ Public Class Folder
                     End If
                     Me.IsLoading = False
                 End Try
-            End Sub)
+            End Sub, threadId)
 
         Await tcs.Task.WaitAsync(Shell.ShuttingDownToken)
         If Not Shell.ShuttingDownToken.IsCancellationRequested Then
@@ -624,7 +626,7 @@ Public Class Folder
         End If
     End Sub
 
-    Protected Sub enumerateItems(isAsync As Boolean, cancellationToken As CancellationToken,
+    Protected Sub enumerateItems(isAsync As Boolean, cancellationToken As CancellationToken, threadId As Integer,
                                  Optional doRefreshAllExistingItems As Boolean = True)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
         Me.IsEmpty = False
@@ -634,7 +636,7 @@ Public Class Folder
         If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
-        enumerateItems(flags, cancellationToken, doRefreshAllExistingItems)
+        enumerateItems(flags, cancellationToken, threadId, doRefreshAllExistingItems)
 
         If Not cancellationToken.IsCancellationRequested Then
             _wasActivity = False
@@ -646,7 +648,7 @@ Public Class Folder
         End If
     End Sub
 
-    Protected Sub enumerateItems(flags As UInt32, cancellationToken As CancellationToken,
+    Protected Sub enumerateItems(flags As UInt32, cancellationToken As CancellationToken, threadId As Integer,
                                  doRefreshAllExistingItems As Boolean)
         If disposedValue Then Return
 
@@ -796,7 +798,7 @@ Public Class Folder
 
         Me.EnumerateItems(Me.ShellItem2, flags, cancellationToken,
             isSortPropertyByText, isSortPropertyDisplaySortValue, sortPropertyKey,
-            result, newFullPaths, addItems)
+            result, newFullPaths, addItems, threadId)
 
         If Not cancellationToken.IsCancellationRequested Then
             ' add new items
@@ -815,7 +817,8 @@ Public Class Folder
 
     Protected Overridable Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInt32, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
-        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action)
+        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action,
+        threadId As Integer)
 
         Dim isDebuggerAttached As Boolean = Debugger.IsAttached
         Dim isRootDesktop As Boolean = If(Me.Pidl?.Equals(Shell.Desktop.Pidl), False)
@@ -857,7 +860,7 @@ Public Class Folder
                                 shellItems(x).GetAttributes(attr2, attr2)
                                 Dim newItem As Item
                                 If attr2.HasFlag(SFGAO.FOLDER) Then
-                                    newItem = New Folder(shellItems(x), Me, False, False)
+                                    newItem = New Folder(shellItems(x), Me, False, False, threadId)
 
                                     If replacedWithCustomFolders.Contains(newItem.FullPath.ToLower()) Then
                                         newItem.Dispose()
@@ -866,9 +869,9 @@ Public Class Folder
                                                 f.ReplacesFullPath.ToLower().Equals(newItem.FullPath.ToLower()))?.FullPath, Me, False, False)
                                     End If
                                 ElseIf attr2.HasFlag(SFGAO.LINK) Then
-                                    newItem = New Link(shellItems(x), Me, False, False)
+                                    newItem = New Link(shellItems(x), Me, False, False, threadId)
                                 Else
-                                    newItem = New Item(shellItems(x), Me, False, False)
+                                    newItem = New Item(shellItems(x), Me, False, False, threadId)
                                 End If
 
                                 newItem = Me.InitializeItem(newItem)

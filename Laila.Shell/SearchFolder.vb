@@ -16,10 +16,11 @@ Public Class SearchFolder
     Private _threadCompletionSource As TaskCompletionSource = New TaskCompletionSource()
 
     Public Shared Function FromTerms(terms As String, parent As Folder) As SearchFolder
+        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
         Dim folder As SearchFolder = Shell.GlobalThreadPool.Run(
             Function() As SearchFolder
-                Return New SearchFolder(getShellItem(terms, parent), parent) With {.View = "Content", .Terms = terms}
-            End Function)
+                Return New SearchFolder(getShellItem(terms, parent), parent, threadId) With {.View = "Content", .Terms = terms}
+            End Function,, threadId)
 
         folder.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Value"
         folder.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
@@ -99,8 +100,8 @@ Public Class SearchFolder
         Return Nothing
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder)
-        MyBase.New(shellItem2, parent, False, True)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder, threadId As Integer)
+        MyBase.New(shellItem2, parent, False, True, threadId)
     End Sub
 
     Public Overrides Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True) As Task(Of List(Of Item))
@@ -117,7 +118,7 @@ Public Class SearchFolder
                             = _enumerationCancellationTokenSource
 
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
-                        enumerateItems(True, _enumerationCancellationTokenSource.Token, doRefreshAllExistingItems)
+                        enumerateItems(True, _enumerationCancellationTokenSource.Token, -1, doRefreshAllExistingItems)
 
                         ' terminate previous enumeration thread
                         If Not prevEnumerationCancellationTokenSource Is Nothing Then

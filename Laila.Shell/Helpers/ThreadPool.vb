@@ -11,6 +11,7 @@ Namespace Helpers
         Private _threadsLock As Object = New Object()
         Private _threads As List(Of Thread) = New List(Of Thread)()
         Private _isThreadFree As Boolean()
+        Private _isThreadLocked As Boolean()
         Private _nextThreadIdLock As Object = New Object()
         Private _nextThreadId As Integer = 0
         Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
@@ -22,6 +23,7 @@ Namespace Helpers
                 ' initialize
                 Me.TaskQueues = New List(Of BlockingCollection(Of Action))
                 ReDim _isThreadFree(size - 1)
+                ReDim _isThreadLocked(size - 1)
                 For i = 0 To size - 1
                     _isThreadFree(i) = True
                 Next
@@ -69,13 +71,24 @@ Namespace Helpers
                             If Not isFirst Then Thread.Sleep(10)
                             isFirst = False
                         End If
-                    Loop Until _isThreadFree(_nextThreadId)
+                    Loop Until _isThreadFree(_nextThreadId) AndAlso Not _isThreadLocked(_nextThreadId)
                     Return _nextThreadId
                 End SyncLock
             Else
                 Return 0
             End If
         End Function
+
+        Public Sub LockThread(threadId As Integer)
+            _isThreadLocked(threadId) = True
+            Do While Me.TaskQueues(threadId).Count > 0
+                Thread.Sleep(1)
+            Loop
+        End Sub
+
+        Public Sub UnlockThread(threadId As Integer)
+            _isThreadLocked(threadId) = False
+        End Sub
 
         Public Sub Add(action As Action, Optional threadId As Integer? = Nothing)
             If Not threadId.HasValue Then

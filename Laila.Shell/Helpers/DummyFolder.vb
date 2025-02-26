@@ -8,7 +8,7 @@ Namespace Helpers
         Inherits Folder
 
         Public Sub New(displayName As String, logicalParent As Folder, Optional id As String = Nothing)
-            MyBase.New(Nothing, logicalParent, True, False)
+            MyBase.New(Nothing, logicalParent, True, False, -1)
 
             _displayName = displayName
             _fullPath = "dummy" & If(id Is Nothing, Guid.NewGuid().ToString(), id)

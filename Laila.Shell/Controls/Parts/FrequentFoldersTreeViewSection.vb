@@ -78,13 +78,22 @@ Namespace Controls.Parts
                     selectedPidl = Me.TreeView.SelectedItem.Pidl.Clone()
                 End If
 
-                For Each item In Me.Items.ToList()
-                    Me.Items.Remove(item)
+                For i = 0 To folders.Count - 1
+                    If i < Me.Items.Count Then
+                        If Not Me.Items(i).Pidl.Equals(folders(i).Pidl) Then
+                            If i + 1 < Me.Items.Count AndAlso Me.Items(i + 1).Pidl.Equals(folders(i).Pidl) Then
+                                Me.Items.Remove(Me.Items(i))
+                            Else
+                                Me.Items.Insert(i, folders(i))
+                            End If
+                            If folders(i).Pidl.Equals(selectedPidl) Then Me.TreeView.SetSelectedItem(folders(i))
+                        End If
+                    Else
+                        Me.Items.Add(folders(i))
+                    End If
                 Next
-
-                For Each folder In folders
-                    Me.Items.Add(folder)
-                    If folder.Pidl.Equals(selectedPidl) Then Me.TreeView.SetSelectedItem(folder)
+                For i = folders.Count To Me.Items.Count - 1
+                    Me.Items.Remove(Me.Items.Last())
                 Next
 
                 If Not selectedPidl Is Nothing Then

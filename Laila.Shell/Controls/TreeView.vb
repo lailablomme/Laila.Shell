@@ -760,7 +760,7 @@ Namespace Controls
                     Dim list As List(Of Item) = Nothing
                     UIHelper.OnUIThread(
                         Sub()
-                            list = Me.Items.Where(Function(i) TypeOf i Is Folder _
+                            list = Me.Items.Where(Function(i) TypeOf i Is Folder AndAlso Not TypeOf i Is DummyFolder _
                                 AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
                         End Sub)
                     For Each item2 In list

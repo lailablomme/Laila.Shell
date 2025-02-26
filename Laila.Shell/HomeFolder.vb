@@ -133,7 +133,8 @@ Public Class HomeFolder
     End Property
 
     Protected Overrides Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInteger, cancellationToken As CancellationToken,
-        isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String, result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action)
+        isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
+        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action, threadId As Integer)
 
         ' enumerate pinned items
         Dim count As UInt64 = UInt64.MaxValue
@@ -172,7 +173,7 @@ Public Class HomeFolder
 
         ' enumerate recent files
         MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).ShellItem2, flags, cancellationToken, isSortPropertyByText,
-            isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems)
+            isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId)
     End Sub
 
     Protected Overrides Function InitializeItem(item As Item) As Item
