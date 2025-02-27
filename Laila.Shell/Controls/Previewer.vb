@@ -199,13 +199,16 @@ Namespace Controls
                                 If h = HRESULT.S_OK Then
                                     h = HRESULT.S_FALSE
                                     If Not previewer._handler Is Nothing Then
+                                        If _cancelTokenSource.IsCancellationRequested Then Return
                                         If h <> HRESULT.S_OK AndAlso TypeOf previewer._handler Is IInitializeWithStream Then
                                             Try
+                                                If _cancelTokenSource.IsCancellationRequested Then Return
                                                 If IO.File.Exists(previewer._previewItem.FullPath) Then
                                                     If _cancelTokenSource.IsCancellationRequested Then Return
                                                     h = Functions.SHCreateStreamOnFileEx(previewer._previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
                                                     Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
                                                 Else
+                                                    If _cancelTokenSource.IsCancellationRequested Then Return
                                                     SyncLock previewer._previewItem._shellItemLock
                                                         If _cancelTokenSource.IsCancellationRequested Then Return
                                                         h = previewer._previewItem.ShellItem2.BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
@@ -246,14 +249,17 @@ Namespace Controls
                                         If h <> HRESULT.S_OK Then
                                             UIHelper.OnUIThread(
                                                 Sub()
+                                                    If _cancelTokenSource.IsCancellationRequested Then Return
                                                     previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
                                                 End Sub)
+                                            If _cancelTokenSource.IsCancellationRequested Then Return
                                             hidePreview(previewer)
                                         End If
                                     End If
                                 Else
                                     UIHelper.OnUIThread(
                                         Sub()
+                                            If _cancelTokenSource.IsCancellationRequested Then Return
                                             previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
                                         End Sub)
                                 End If
@@ -279,12 +285,14 @@ Namespace Controls
                                     If h <> HRESULT.S_OK Then
                                         UIHelper.OnUIThread(
                                             Sub()
+                                                If _cancelTokenSource.IsCancellationRequested Then Return
                                                 previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
                                             End Sub)
                                         hidePreview(previewer)
                                     Else
                                         UIHelper.OnUIThread(
                                             Sub()
+                                                If _cancelTokenSource.IsCancellationRequested Then Return
                                                 previewer._handler.SetRect(getRect(previewer))
                                             End Sub)
                                     End If
@@ -295,6 +303,7 @@ Namespace Controls
 
                     UIHelper.OnUIThread(
                         Sub()
+                            If _cancelTokenSource.IsCancellationRequested Then Return
                             previewer.setMessage()
                         End Sub)
                 End Sub)
