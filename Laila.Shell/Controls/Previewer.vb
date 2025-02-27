@@ -22,7 +22,7 @@ Namespace Controls
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(Previewer), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(Previewer), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
 
-        Private Const ERROR_MESSAGE As String = "There was an error displaying the preview ({0})."
+        Private Const ERROR_MESSAGE As String = "A preview cannot be displayed for this item ({0})."
 
         Private Shared _thread As Helpers.ThreadPool = New Helpers.ThreadPool(1)
         Private _handler As IPreviewHandler
@@ -182,7 +182,6 @@ Namespace Controls
                             UIHelper.OnUIThread(
                                 Sub()
                                     previewer.setThumbnail()
-                                    previewer._isMade = True
                                     previewer.setMessage()
                                 End Sub)
                         Else
@@ -303,7 +302,7 @@ Namespace Controls
 
                     UIHelper.OnUIThread(
                         Sub()
-                            If _cancelTokenSource.IsCancellationRequested Then Return
+                            previewer._isMade = True
                             previewer.setMessage()
                         End Sub)
                 End Sub)
