@@ -55,6 +55,10 @@ Namespace Controls
 
         Protected Overrides Async Sub OnOpened(e As RoutedEventArgs)
             Using Shell.OverrideCursor(Cursors.Wait)
+                UIHelper.OnUIThread(
+                    Sub()
+                    End Sub, Threading.DispatcherPriority.Render)
+
                 Await Me.Make()
                 MyBase.OnOpened(e)
             End Using

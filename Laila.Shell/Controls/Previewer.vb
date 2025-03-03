@@ -173,11 +173,11 @@ Namespace Controls
                                 End If
                                 previewer._previewItem = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
                                 AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
-                                Debug.WriteLine("PreviewItem=" & previewer._previewItem.FullPath)
+                                Debug.WriteLine("PreviewItem=" & previewer._previewItem?.FullPath)
                             End Sub)
 
                         If _cancelTokenSource.IsCancellationRequested Then Return
-                        previewer._isThumbnail = ImageHelper.IsImage(previewer._previewItem.FullPath)
+                        previewer._isThumbnail = ImageHelper.IsImage(previewer._previewItem?.FullPath)
                         If previewer._isThumbnail Then
                             UIHelper.OnUIThread(
                                 Sub()
@@ -185,7 +185,7 @@ Namespace Controls
                                     previewer.setMessage()
                                 End Sub)
                         Else
-                            Dim clsid As Guid = getHandlerCLSID(IO.Path.GetExtension(previewer._previewItem.FullPath))
+                            Dim clsid As Guid = getHandlerCLSID(IO.Path.GetExtension(previewer._previewItem?.FullPath))
                             If _cancelTokenSource.IsCancellationRequested Then Return
                             If Not Guid.Empty.Equals(clsid) Then
                                 Debug.WriteLine("IPreviewHandler=" & clsid.ToString())
@@ -204,7 +204,7 @@ Namespace Controls
                                                 If _cancelTokenSource.IsCancellationRequested Then Return
                                                 If IO.File.Exists(previewer._previewItem.FullPath) Then
                                                     If _cancelTokenSource.IsCancellationRequested Then Return
-                                                    h = Functions.SHCreateStreamOnFileEx(previewer._previewItem.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
+                                                    h = Functions.SHCreateStreamOnFileEx(previewer._previewItem?.FullPath, STGM.STGM_READ Or STGM.STGM_SHARE_DENY_NONE, 0, 0, IntPtr.Zero, previewer._stream)
                                                     Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
                                                 Else
                                                     If _cancelTokenSource.IsCancellationRequested Then Return
