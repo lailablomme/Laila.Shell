@@ -68,7 +68,6 @@ Namespace Controls
         Private _toolTip As ToolTip
         Private _toolTipCancellationTokenSource As CancellationTokenSource
         Private disposedValue As Boolean
-        Private _loadingFolder As Folder
         Private _mouseOverTime As DateTime
 
         Shared Sub New()
@@ -962,29 +961,6 @@ Namespace Controls
                                 folderViewState.Persist()
                             End If
                         End Sub)
-                Case "IsLoading"
-                    If _loadingFolder?.Equals(folder) AndAlso Not folder.IsLoading Then
-                        _loadingFolder = Nothing
-
-                        ' async because otherwise we're a tad too early
-                        UIHelper.OnUIThreadAsync(
-                            Async Sub()
-                                If Not TypeOf folder Is SearchFolder Then
-                                    Await Task.Delay(50)
-
-                                    If Not _scrollViewer Is Nothing Then
-                                        ' restore folder scroll position
-                                        Me.ScrollOffset = folder.LastScrollOffset
-                                        _lastScrollSize = folder.LastScrollSize
-                                        _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, Me.ScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
-                                        _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, Me.ScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
-                                    End If
-                                End If
-
-                                ' show listview
-                                Me.PART_ListBox.Visibility = Visibility.Visible
-                            End Sub, Threading.DispatcherPriority.ContextIdle)
-                    End If
             End Select
         End Sub
 
@@ -1090,8 +1066,26 @@ Namespace Controls
                 bfv.MakeBinding(newValue)
 
                 ' load items
-                bfv._loadingFolder = newValue
                 newValue.GetItemsAsync()
+
+                ' async because otherwise we're a tad too early
+                UIHelper.OnUIThreadAsync(
+                    Async Sub()
+                        If Not TypeOf newValue Is SearchFolder Then
+                            Await Task.Delay(50)
+
+                            If Not bfv._scrollViewer Is Nothing Then
+                                ' restore folder scroll position
+                                bfv.ScrollOffset = newValue.LastScrollOffset
+                                bfv._lastScrollSize = newValue.LastScrollSize
+                                bfv._scrollViewer.ScrollToHorizontalOffset(If(bfv._lastScrollSize.Width = 0, 0, bfv.ScrollOffset.X * bfv._scrollViewer.ScrollableWidth / bfv._lastScrollSize.Width))
+                                bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv.ScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
+                            End If
+                        End If
+
+                        ' show listview
+                        bfv.PART_ListBox.Visibility = Visibility.Visible
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
         End Sub
 

@@ -114,11 +114,15 @@ Public Class SearchFolder
                 _enumerationLock.Wait()
                 Try
                     If Not _isEnumerated Then
+                        Me.IsLoading = True
+
                         Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
                             = _enumerationCancellationTokenSource
 
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
                         enumerateItems(True, _enumerationCancellationTokenSource.Token, -1, doRefreshAllExistingItems)
+
+                        Me.IsLoading = False
 
                         ' terminate previous enumeration thread
                         If Not prevEnumerationCancellationTokenSource Is Nothing Then
@@ -164,7 +168,7 @@ Public Class SearchFolder
         Me.Terms = terms
 
         ' get new shellitem
-        Shell.GlobalThreadPool.Run(
+        Shell.GlobalThreadPool.Add(
             Sub()
                 Dim oldShellItem2 As IShellItem2 = _shellItem2
                 _shellItem2 = getShellItem(terms, Me.LogicalParent)
@@ -172,11 +176,11 @@ Public Class SearchFolder
                     Marshal.ReleaseComObject(oldShellItem2)
                     oldShellItem2 = Nothing
                 End If
-            End Sub)
 
-        ' re-enumerate
-        _isEnumerated = False
-        Me.GetItemsAsync()
+                ' re-enumerate
+                _isEnumerated = False
+                Me.GetItemsAsync()
+            End Sub)
     End Sub
 
     Public Overrides Sub CancelEnumeration()
