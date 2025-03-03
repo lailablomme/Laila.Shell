@@ -235,7 +235,7 @@ Public Class HomeFolder
         Dim canPinItem As Boolean =
             index = 0 _
             OrElse (index > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
-            OrElse Me.Items(index).IsPinned
+            OrElse Me.Items(index - 1).IsPinned
         If canPinItem Then
             WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
             Return HRESULT.S_OK
