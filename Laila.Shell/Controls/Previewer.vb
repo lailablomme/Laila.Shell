@@ -172,7 +172,9 @@ Namespace Controls
                                     RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
                                 End If
                                 previewer._previewItem = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
-                                AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+                                If Not previewer._previewItem Is Nothing Then
+                                    AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+                                End If
                                 Debug.WriteLine("PreviewItem=" & previewer._previewItem?.FullPath)
                             End Sub)
 

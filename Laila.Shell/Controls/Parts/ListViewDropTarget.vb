@@ -2,8 +2,10 @@
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Threading
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
@@ -17,11 +19,17 @@ Namespace Controls.Parts
         Private _folderView As FolderView
         Private _lastOverItem As Item
         Private _lastDropTarget As IDropTarget
-        Private _scrollTimer As Timer
-        Private _scrollDirection As Boolean?
+        Private _scrollUpTimer As DispatcherTimer
+        Private _scrollDownTimer As DispatcherTimer
+        Private _scrollLeftTimer As DispatcherTimer
+        Private _scrollRightTimer As DispatcherTimer
+        Private _scrollDirectionY As Boolean?
+        Private _scrollDirectionX As Boolean?
         Private _prevSelectedItems As IEnumerable(Of Item)
         Private _fileNameList() As String
         Private _files As List(Of Item)
+        Private _dragInsertParent As ISupportDragInsert = Nothing
+        Private _insertIndex As Long = -2
 
         Public Sub New(folderView As FolderView)
             _folderView = folderView
@@ -50,10 +58,19 @@ Namespace Controls.Parts
                 Next
             End If
             _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
-            If Not _scrollTimer Is Nothing Then
-                _scrollTimer.Dispose()
-                _scrollDirection = Nothing
+            If Not _scrollUpTimer Is Nothing Then
+                _scrollUpTimer.IsEnabled = False
             End If
+            If Not _scrollDownTimer Is Nothing Then
+                _scrollDownTimer.IsEnabled = False
+            End If
+            If Not _scrollLeftTimer Is Nothing Then
+                _scrollLeftTimer.IsEnabled = False
+            End If
+            If Not _scrollRightTimer Is Nothing Then
+                _scrollRightTimer.IsEnabled = False
+            End If
+            _folderView.ActiveView.DragViewStrategy?.SetDragInsertIndicator(Nothing, Nothing, Visibility.Collapsed, -1)
             _lastOverItem = Nothing
             If Not _lastDropTarget Is Nothing Then
                 Try
@@ -70,20 +87,30 @@ Namespace Controls.Parts
         End Function
 
         Public Overrides Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
-            If Not _files Is Nothing Then
-                For Each f In _files
-                    f.Dispose()
-                Next
-            End If
             _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
-            If Not _scrollTimer Is Nothing Then
-                _scrollTimer.Dispose()
-                _scrollDirection = Nothing
+            If Not _scrollUpTimer Is Nothing Then
+                _scrollUpTimer.IsEnabled = False
+            End If
+            If Not _scrollDownTimer Is Nothing Then
+                _scrollDownTimer.IsEnabled = False
+            End If
+            If Not _scrollLeftTimer Is Nothing Then
+                _scrollLeftTimer.IsEnabled = False
+            End If
+            If Not _scrollRightTimer Is Nothing Then
+                _scrollRightTimer.IsEnabled = False
             End If
             _lastOverItem = Nothing
+
+            ' we're inserting
+            If Not _dragInsertParent Is Nothing Then
+                CType(_dragInsertParent, ISupportDragInsert).Drop(_dataObject, _files, _insertIndex)
+                _folderView.ActiveView.DragViewStrategy?.SetDragInsertIndicator(Nothing, Nothing, Visibility.Collapsed, -1)
+            End If
+
             If Not _lastDropTarget Is Nothing Then
                 Try
-                    Dim overItem As Item = getOverItem(ptWIN32)
+                    Dim overItem As Item = _folderView.ActiveView.DragViewStrategy.GetOverListBoxItem(ptWIN32)?.DataContext
                     If Not overItem Is Nothing AndAlso overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" Then
                         Dim fo As IFileOperation = Nothing
                         Try
@@ -110,150 +137,227 @@ Namespace Controls.Parts
                     End If
                 End Try
             End If
+
+            If Not _files Is Nothing Then
+                For Each f In _files
+                    f.Dispose()
+                Next
+            End If
+
             Return 0
         End Function
 
-        Private Function getOverItem(ptWIN32 As WIN32POINT) As Item
-            ' translate point to listview
-            Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListBox)
-
-            ' find which item we're over
-            Dim overObject As IInputElement = _folderView.ActiveView.PART_ListBox.InputHitTest(pt)
-            Dim overListViewItem As ListViewItem
-            If TypeOf overObject Is ListViewItem Then
-                overListViewItem = overObject
-            Else
-                overListViewItem = UIHelper.GetParentOfType(Of ListViewItem)(overObject)
-            End If
-            If Not overListViewItem Is Nothing Then
-                Return overListViewItem.DataContext
-            Else
-                Return _folderView.Folder
-            End If
-        End Function
-
         Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
-            Debug.WriteLine("dragPoint")
-
-            Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView.ActiveView.PART_ListBox)
+            ' scroll up and down while dragging?
+            Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView)
             If pt.Y < 100 Then
-                If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> False Then
-                    _scrollDirection = False
-                    If Not _scrollTimer Is Nothing Then
-                        _scrollTimer.Dispose()
+                If _scrollUpTimer Is Nothing OrElse Not _scrollDirectionY.HasValue OrElse _scrollDirectionY <> False Then
+                    _scrollDirectionY = False
+                    If Not _scrollDownTimer Is Nothing Then _scrollDownTimer.IsEnabled = False
+                    If Not _scrollUpTimer Is Nothing Then
+                        _scrollUpTimer.IsEnabled = True
+                    Else
+                        _scrollUpTimer = New DispatcherTimer()
+                        AddHandler _scrollUpTimer.Tick,
+                            Sub(s2 As Object, e As EventArgs)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
+                                sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
+                            End Sub
+                        _scrollUpTimer.Interval = TimeSpan.FromMilliseconds(350)
+                        _scrollUpTimer.IsEnabled = True
                     End If
-                    _scrollTimer = New Timer(New TimerCallback(
-                        Sub()
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
-                                    sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
-                                End Sub, Threading.DispatcherPriority.ContextIdle)
-                        End Sub), Nothing, 350, 350)
                 End If
-            ElseIf pt.Y > _folderView.ActiveView.PART_ListBox.ActualHeight - 100 Then
-                If _scrollTimer Is Nothing OrElse Not _scrollDirection.HasValue OrElse _scrollDirection <> True Then
-                    _scrollDirection = True
-                    If Not _scrollTimer Is Nothing Then
-                        _scrollTimer.Dispose()
+            ElseIf pt.Y > _folderView.ActualHeight - 100 Then
+                If _scrollDownTimer Is Nothing OrElse Not _scrollDirectionY.HasValue OrElse _scrollDirectionY <> True Then
+                    _scrollDirectionY = True
+                    If Not _scrollUpTimer Is Nothing Then _scrollUpTimer.IsEnabled = False
+                    If Not _scrollDownTimer Is Nothing Then
+                        _scrollDownTimer.IsEnabled = True
+                    Else
+                        _scrollDownTimer = New DispatcherTimer()
+                        AddHandler _scrollDownTimer.Tick,
+                            Sub(s2 As Object, e As EventArgs)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
+                                sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
+                            End Sub
+                        _scrollDownTimer.Interval = TimeSpan.FromMilliseconds(350)
+                        _scrollDownTimer.IsEnabled = True
                     End If
-                    _scrollTimer = New Timer(New TimerCallback(
-                        Sub()
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
-                                    sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
-                                End Sub)
-                        End Sub), Nothing, 350, 350)
                 End If
             Else
-                If Not _scrollTimer Is Nothing Then
-                    _scrollTimer.Dispose()
-                    _scrollDirection = Nothing
+                If Not _scrollUpTimer Is Nothing Then
+                    _scrollUpTimer.IsEnabled = False
                 End If
+                If Not _scrollDownTimer Is Nothing Then
+                    _scrollDownTimer.IsEnabled = False
+                End If
+                _scrollDirectionY = Nothing
+            End If
+            ' scroll left and right while dragging?
+            If pt.X < 100 Then
+                If _scrollLeftTimer Is Nothing OrElse Not _scrollDirectionX.HasValue OrElse _scrollDirectionX <> False Then
+                    _scrollDirectionX = False
+                    If Not _scrollRightTimer Is Nothing Then _scrollRightTimer.IsEnabled = False
+                    If Not _scrollLeftTimer Is Nothing Then
+                        _scrollLeftTimer.IsEnabled = True
+                    Else
+                        _scrollLeftTimer = New DispatcherTimer()
+                        AddHandler _scrollLeftTimer.Tick,
+                            Sub(s2 As Object, e As EventArgs)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
+                                sv.ScrollToHorizontalOffset(sv.HorizontalOffset - 25)
+                            End Sub
+                        _scrollLeftTimer.Interval = TimeSpan.FromMilliseconds(175)
+                        _scrollLeftTimer.IsEnabled = True
+                    End If
+                End If
+            ElseIf pt.X > _folderView.ActualWidth - 100 Then
+                If _scrollRightTimer Is Nothing OrElse Not _scrollDirectionX.HasValue OrElse _scrollDirectionX <> True Then
+                    _scrollDirectionX = True
+                    If Not _scrollLeftTimer Is Nothing Then _scrollLeftTimer.IsEnabled = False
+                    If Not _scrollRightTimer Is Nothing Then
+                        _scrollRightTimer.IsEnabled = True
+                    Else
+                        _scrollRightTimer = New DispatcherTimer()
+                        AddHandler _scrollRightTimer.Tick,
+                            Sub(s2 As Object, e As EventArgs)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_folderView.ActiveView.PART_ListBox)(0)
+                                sv.ScrollToHorizontalOffset(sv.HorizontalOffset + 25)
+                                Debug.WriteLine("scroll right")
+                            End Sub
+                        _scrollRightTimer.Interval = TimeSpan.FromMilliseconds(175)
+                        _scrollRightTimer.IsEnabled = True
+                    End If
+                End If
+            Else
+                If Not _scrollLeftTimer Is Nothing Then
+                    _scrollLeftTimer.IsEnabled = False
+                End If
+                If Not _scrollRightTimer Is Nothing Then
+                    _scrollRightTimer.IsEnabled = False
+                End If
+                _scrollDirectionX = Nothing
             End If
 
-            Dim overItem As Item = getOverItem(ptWIN32)
+            Dim overListBoxItem As ListBoxItem = _folderView.ActiveView.DragViewStrategy.GetOverListBoxItem(ptWIN32)
+            Dim overItem As Item = overListBoxItem?.DataContext
+
+            Dim insertIndex As Long = -1
 
             If Not overItem Is Nothing Then
-                If (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
-                    _lastOverItem = overItem
+                If Not _folderView.ActiveView?.DragViewStrategy Is Nothing Then
+                    _folderView.ActiveView?.DragViewStrategy.GetInsertIndex(ptWIN32, overListBoxItem, overItem, _dragInsertParent, insertIndex)
+                End If
 
-                    Dim dropTarget As IDropTarget = Nothing
-                    ' first check if we're not trying to drop on ourselves or our parent
-                    Dim isOurSelvesOrParent As Boolean
-                    If Not _files Is Nothing Then
-                        isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
-                        If Not isOurSelvesOrParent Then
-                            For Each file In _files
-                                isOurSelvesOrParent = Not file.LogicalParent Is Nothing _
+                If _dragInsertParent Is Nothing Then
+                    If _lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem) OrElse _insertIndex <> insertIndex Then
+                        _lastOverItem = overItem
+
+                        Dim dropTarget As IDropTarget = Nothing
+                        ' first check if we're not trying to drop on ourselves or our parent
+                        Dim isOurSelvesOrParent As Boolean
+                        If Not _files Is Nothing Then
+                            isOurSelvesOrParent = _files.Exists(Function(f) f.Pidl.Equals(overItem.Pidl))
+                            If Not isOurSelvesOrParent Then
+                                For Each file In _files
+                                    isOurSelvesOrParent = Not file.LogicalParent Is Nothing _
                                                 AndAlso file.LogicalParent.Pidl.Equals(overItem.Pidl)
-                                If isOurSelvesOrParent Then Exit For
-                            Next
+                                    If isOurSelvesOrParent Then Exit For
+                                Next
+                            End If
                         End If
-                    End If
-                    If Not _fileNameList Is Nothing AndAlso Not isOurSelvesOrParent Then
-                        isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
-                        If Not isOurSelvesOrParent Then
-                            isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) _
+                        If Not _fileNameList Is Nothing AndAlso Not isOurSelvesOrParent Then
+                            isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
+                            If Not isOurSelvesOrParent Then
+                                isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) _
                                             Not IO.Path.GetDirectoryName(f) Is Nothing _
                                             AndAlso IO.Path.GetDirectoryName(f).ToLower().TrimEnd(IO.Path.DirectorySeparatorChar) _
                                                 = overItem.FullPath.ToLower().TrimEnd(IO.Path.DirectorySeparatorChar))
+                            End If
                         End If
-                    End If
 
-                    If Not isOurSelvesOrParent Then
-                        ' try get droptarget
-                        If Not overItem.Parent Is Nothing Then
-                            overItem.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-                        Else
-                            ' desktop
-                            Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                        If Not isOurSelvesOrParent Then
+                            ' try get droptarget
+                            If Not overItem.Parent Is Nothing Then
+                                overItem.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                            Else
+                                ' desktop
+                                Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                            End If
                         End If
-                    End If
 
-                    If Not dropTarget Is Nothing Then
-                        Debug.WriteLine("Got dropTarget")
-                        _folderView.ActiveView.SetSelectedItemsSoft({overItem}.Union(_prevSelectedItems))
-                        If Not _lastDropTarget Is Nothing Then
-                            Debug.WriteLine("      Got _lastDropTarget")
-                            _lastDropTarget.DragLeave()
+                        If Not dropTarget Is Nothing Then
+                            Debug.WriteLine("Got dropTarget")
+                            _folderView.ActiveView.SetSelectedItemsSoft({overItem}.Union(_prevSelectedItems))
+                            If Not _lastDropTarget Is Nothing Then
+                                Debug.WriteLine("      Got _lastDropTarget")
+                                _lastDropTarget.DragLeave()
+                            Else
+                                Debug.WriteLine("      No _lastDropTarget")
+                            End If
+                            Try
+                                Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
+                            Finally
+                                _folderView.ActiveView.DragViewStrategy?.SetDragInsertIndicator(Nothing, Nothing, Visibility.Collapsed, -1)
+                                _lastDropTarget = dropTarget
+                                customizeDropDescription(overItem, grfKeyState, pdwEffect)
+                            End Try
                         Else
-                            Debug.WriteLine("      No _lastDropTarget")
+                            Debug.WriteLine("No dropTarget")
+                            _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
+                            pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                            If Not _lastDropTarget Is Nothing Then
+                                Try
+                                    Debug.WriteLine("   Got _lastDropTarget")
+                                    _lastDropTarget.DragLeave()
+                                Finally
+                                    If Not _lastDropTarget Is Nothing Then
+                                        Marshal.ReleaseComObject(_lastDropTarget)
+                                        _lastDropTarget = Nothing
+                                    End If
+                                End Try
+                            End If
                         End If
+                        _folderView.ActiveView.DragViewStrategy?.SetDragInsertIndicator(Nothing, Nothing, Visibility.Collapsed, -1)
+                    ElseIf Not _lastDropTarget Is Nothing Then
+                        Debug.WriteLine("DragOver")
                         Try
-                            Return dropTarget.DragEnter(_dataObject, grfKeyState, ptWIN32, pdwEffect)
+                            If Not _folderView.ActiveView.SelectedItems.Contains(overItem) Then
+                                _folderView.ActiveView.SetSelectedItemsSoft({overItem}.Union(_prevSelectedItems))
+                            End If
+                            _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
                         Finally
-                            _lastDropTarget = dropTarget
+                            Debug.WriteLine("pdwEffect=" & pdwEffect)
                             customizeDropDescription(overItem, grfKeyState, pdwEffect)
                         End Try
                     Else
-                        Debug.WriteLine("No dropTarget")
+                        Debug.WriteLine("DROPEFFECT_NONE")
+                        pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                    End If
+                Else
+                    If Not _lastDropTarget Is Nothing Then
+                        Try
+                            _lastDropTarget.DragLeave()
+                        Finally
+                            If Not _lastDropTarget Is Nothing Then
+                                Marshal.ReleaseComObject(_lastDropTarget)
+                                _lastDropTarget = Nothing
+                            End If
+                        End Try
+                    End If
+
+                    ' we can insert, so modify user interface to reflect that
+                    If CType(_dragInsertParent, ISupportDragInsert).DragInsertBefore(_dataObject, _files, insertIndex, overListBoxItem) = HRESULT.S_OK Then
+                        _folderView.ActiveView.SetSelectedItemsSoft(Nothing)
+                        pdwEffect = DROPEFFECT.DROPEFFECT_LINK
+                        _folderView.ActiveView.DragViewStrategy?.SetDragInsertIndicator(overListBoxItem, overItem, Visibility.Visible, insertIndex)
+                    Else
                         _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
                         pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-                        If Not _lastDropTarget Is Nothing Then
-                            Try
-                                Debug.WriteLine("   Got _lastDropTarget")
-                                _lastDropTarget.DragLeave()
-                            Finally
-                                If Not _lastDropTarget Is Nothing Then
-                                    Marshal.ReleaseComObject(_lastDropTarget)
-                                    _lastDropTarget = Nothing
-                                End If
-                            End Try
-                        End If
+                        _folderView.ActiveView.DragViewStrategy?.SetDragInsertIndicator(Nothing, Nothing, Visibility.Collapsed, -1)
                     End If
-                ElseIf Not _lastDropTarget Is Nothing Then
-                    Debug.WriteLine("DragOver")
-                    Try
-                        Return _lastDropTarget.DragOver(grfKeyState, ptWIN32, pdwEffect)
-                    Finally
-                        Debug.WriteLine("pdwEffect=" & pdwEffect)
-                        customizeDropDescription(overItem, grfKeyState, pdwEffect)
-                    End Try
-                Else
-                    Debug.WriteLine("DROPEFFECT_NONE")
-                    pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+
+                    _insertIndex = insertIndex
                 End If
             Else
                 Debug.WriteLine("overItem=Nothing")
@@ -270,6 +374,7 @@ Namespace Controls.Parts
                     End Try
                 End If
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                _folderView.ActiveView.DragViewStrategy?.SetDragInsertIndicator(Nothing, Nothing, Visibility.Collapsed, -1)
             End If
 
             Return HRESULT.S_OK

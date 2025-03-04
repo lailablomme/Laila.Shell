@@ -14,6 +14,8 @@ Imports Laila.Shell.Interop.Properties
 Imports System.Runtime.InteropServices.ComTypes
 Imports Laila.Shell.Events
 Imports System.Collections.ObjectModel
+Imports System.Windows.Controls
+Imports Laila.Shell.Controls
 
 Public Class HomeFolder
     Inherits Folder
@@ -231,11 +233,13 @@ Public Class HomeFolder
             End Function)
     End Function
 
-    Public Function DragInsertBefore(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer) As HRESULT Implements ISupportDragInsert.DragInsertBefore
+    Public Function DragInsertBefore(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer, overListBoxItem As ListBoxItem) As HRESULT Implements ISupportDragInsert.DragInsertBefore
         Dim canPinItem As Boolean =
             index = 0 _
             OrElse (index > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
-            OrElse Me.Items(index - 1).IsPinned
+            OrElse (Me.Items(index - 1).IsPinned _
+                AndAlso (UIHelper.GetParentOfType(Of BaseFolderView)(overListBoxItem) Is Nothing _
+                         OrElse CType(overListBoxItem?.DataContext, Item).IsPinned))
         If canPinItem Then
             WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
             Return HRESULT.S_OK

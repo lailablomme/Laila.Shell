@@ -1,5 +1,6 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Runtime.InteropServices.ComTypes
+Imports System.Windows.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interfaces
@@ -102,7 +103,7 @@ Namespace Controls.Parts
             End Get
         End Property
 
-        Public Function DragInsertBefore(dataObject As IDataObject, files As List(Of Item), index As Integer) As Interop.HRESULT Implements ISupportDragInsert.DragInsertBefore
+        Public Function DragInsertBefore(dataObject As IDataObject, files As List(Of Item), index As Integer, overListBoxItem As ListBoxItem) As Interop.HRESULT Implements ISupportDragInsert.DragInsertBefore
             Dim canPinItem As Boolean =
                 (Me.Items.Count = 2 AndAlso TypeOf Me.Items(1) Is PinnedItemsPlaceholderFolder AndAlso index = -1) _
                 OrElse index = 0 _

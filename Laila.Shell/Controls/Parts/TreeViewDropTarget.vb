@@ -23,10 +23,10 @@ Namespace Controls.Parts
         Private _scrollDownTimer As DispatcherTimer
         Private _scrollDirection As Boolean?
         Private _prevSelectedItem As Item
-        Private _insertIndex As Long = -2
         Private _fileNameList() As String
         Private _files As List(Of Item)
         Private _dragInsertParent As ISupportDragInsert = Nothing
+        Private _insertIndex As Long = -2
 
         Public Sub New(treeView As Laila.Shell.Controls.TreeView)
             _treeView = treeView
@@ -196,7 +196,7 @@ Namespace Controls.Parts
                         _scrollUpTimer = New DispatcherTimer()
                         AddHandler _scrollUpTimer.Tick,
                             Sub(s2 As Object, e As EventArgs)
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView.PART_ListBox)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset - 50)
                             End Sub
                         _scrollUpTimer.Interval = TimeSpan.FromMilliseconds(350)
@@ -213,7 +213,7 @@ Namespace Controls.Parts
                         _scrollDownTimer = New DispatcherTimer()
                         AddHandler _scrollDownTimer.Tick,
                             Sub(s2 As Object, e As EventArgs)
-                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView)(0)
+                                Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_treeView.PART_ListBox)(0)
                                 sv.ScrollToVerticalOffset(sv.VerticalOffset + 50)
                             End Sub
                         _scrollDownTimer.Interval = TimeSpan.FromMilliseconds(350)
@@ -421,7 +421,7 @@ Namespace Controls.Parts
 
                     ' we can insert, so modify user interface to reflect that
                     _treeView.SetSelectedItem(Nothing)
-                    If CType(_dragInsertParent, ISupportDragInsert).DragInsertBefore(_dataObject, _files, insertIndex) = HRESULT.S_OK Then
+                    If CType(_dragInsertParent, ISupportDragInsert).DragInsertBefore(_dataObject, _files, insertIndex, overListBoxItem) = HRESULT.S_OK Then
                         pdwEffect = DROPEFFECT.DROPEFFECT_LINK
                         _treeView.PART_DragInsertIndicator.Visibility = Visibility.Visible
                     Else

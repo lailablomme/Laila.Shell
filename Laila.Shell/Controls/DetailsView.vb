@@ -4,6 +4,7 @@ Imports Laila.Shell.Helpers
 Imports System.ComponentModel
 Imports System.Windows.Data
 Imports System.Windows.Media
+Imports Laila.Shell.Controls.Parts
 
 Namespace Controls
     Public Class DetailsView
@@ -51,6 +52,8 @@ Namespace Controls
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
+
+            Me.DragViewStrategy = New VerticalDragViewStrategy(Me.PART_DragInsertIndicator, Me)
 
             AddHandler Me.PART_Grid.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)

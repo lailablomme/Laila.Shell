@@ -163,9 +163,15 @@ Public Class Clipboard
 
         ' make a DataObject for our list of items
         'Dim inner As DataObject = New DataObject()
-        Functions.SHCreateDataObject(folder.Pidl.Clone().AbsolutePIDL, items.Count,
-            items.Select(Function(i) i.Pidl.Clone().RelativePIDL).ToArray(),
-            Nothing, GetType(IDataObject).GUID, result)
+        If Not folder Is Nothing Then
+            Functions.SHCreateDataObject(folder.Pidl.Clone().AbsolutePIDL, items.Count,
+                items.Select(Function(i) i.Pidl.Clone().RelativePIDL).ToArray(),
+                Nothing, GetType(IDataObject).GUID, result)
+        Else
+            Functions.SHCreateDataObject(Shell.Desktop.Pidl.Clone().AbsolutePIDL, items.Count,
+                items.Select(Function(i) i.Pidl.Clone().AbsolutePIDL).ToArray(),
+                Nothing, GetType(IDataObject).GUID, result)
+        End If
         'result = inner
         'ClipboardFormats.CF_HDROP.SetData(result, items)
         'ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(result, items)

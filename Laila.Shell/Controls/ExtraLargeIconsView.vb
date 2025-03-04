@@ -1,5 +1,6 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
+Imports Laila.Shell.Controls.Parts
 
 Namespace Controls
     Public Class ExtraLargeIconsView
@@ -7,6 +8,12 @@ Namespace Controls
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ExtraLargeIconsView), New FrameworkPropertyMetadata(GetType(ExtraLargeIconsView)))
+        End Sub
+
+        Public Overrides Sub OnApplyTemplate()
+            MyBase.OnApplyTemplate()
+
+            Me.DragViewStrategy = New HorizontalDragViewStrategy(Me.PART_DragInsertIndicator, Me)
         End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,

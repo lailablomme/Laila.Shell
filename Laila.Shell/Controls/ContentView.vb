@@ -1,5 +1,6 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
+Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 
 Namespace Controls
@@ -8,6 +9,12 @@ Namespace Controls
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ContentView), New FrameworkPropertyMetadata(GetType(ContentView)))
+        End Sub
+
+        Public Overrides Sub OnApplyTemplate()
+            MyBase.OnApplyTemplate()
+
+            Me.DragViewStrategy = New VerticalDragViewStrategy(Me.PART_DragInsertIndicator, Me)
         End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,

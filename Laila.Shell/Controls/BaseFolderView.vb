@@ -11,6 +11,7 @@ Imports System.Windows.Input
 Imports System.Windows.Media
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop.Windows
 
 Namespace Controls
@@ -50,6 +51,7 @@ Namespace Controls
         Friend Host As FolderView
         Friend PART_ListBox As System.Windows.Controls.ListBox
         Protected PART_Grid As Grid
+        Protected PART_DragInsertIndicator As Grid
         Private PART_CheckBoxSelectAll As CheckBox
         Private _isInternallySettingSelectAll As Boolean
         Private _selectionHelper As SelectionHelper(Of Item) = Nothing
@@ -69,6 +71,7 @@ Namespace Controls
         Private _toolTipCancellationTokenSource As CancellationTokenSource
         Private disposedValue As Boolean
         Private _mouseOverTime As DateTime
+        Private _dragViewStrategy As IDragViewStrategy
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -82,6 +85,7 @@ Namespace Controls
             Me.PART_ListBox = Template.FindName("PART_ListView", Me)
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
             Me.PART_CheckBoxSelectAll = Template.FindName("PART_CheckBoxSelectAll", Me)
+            Me.PART_DragInsertIndicator = Template.FindName("PART_DragInsertIndicator", Me)
             Dim b = Shell.Settings.DoShowTypeOverlay
             If Not Me.PART_CheckBoxSelectAll Is Nothing Then
                 AddHandler Me.PART_CheckBoxSelectAll.Checked,
@@ -182,6 +186,31 @@ Namespace Controls
                 setGrouping(Me.Folder)
             End If
         End Sub
+
+        Public Function GetListBoxClientSize() As Size
+            If Not _scrollViewer Is Nothing Then
+                Dim widthWithoutScroll As Double = Me.PART_ListBox.ActualWidth
+                Dim heightWithoutScroll As Double = Me.PART_ListBox.ActualHeight
+
+                Dim vs As ScrollBar = _scrollViewer.Template.FindName("PART_VerticalScrollBar", _scrollViewer)
+                Dim hs As ScrollBar = _scrollViewer.Template.FindName("PART_HorizontalScrollBar", _scrollViewer)
+
+                ' Check visibility of vertical scrollbar
+                If vs IsNot Nothing AndAlso vs.Visibility = Visibility.Visible Then
+                    widthWithoutScroll -= vs.ActualWidth
+                End If
+
+                ' Check visibility of horizontal scrollbar
+                If hs IsNot Nothing AndAlso hs.Visibility = Visibility.Visible Then
+                    heightWithoutScroll -= hs.ActualHeight
+                End If
+
+                Return New Size(Math.Max(widthWithoutScroll, 0), Math.Max(heightWithoutScroll, 0))
+            End If
+
+            ' Return the full size if no ScrollViewer was found
+            Return New Size(Me.PART_ListBox.ActualWidth, Me.PART_ListBox.ActualHeight)
+        End Function
 
         Public Sub SetSelectedItemsSoft(items As IEnumerable(Of Item))
             _ignoreSelection = True
@@ -922,6 +951,15 @@ Namespace Controls
             End Get
             Set(ByVal value As Navigation)
                 SetCurrentValue(NavigationProperty, value)
+            End Set
+        End Property
+
+        Public Property DragViewStrategy As IDragViewStrategy
+            Get
+                Return _dragViewStrategy
+            End Get
+            Protected Set(value As IDragViewStrategy)
+                _dragViewStrategy = value
             End Set
         End Property
 
