@@ -698,10 +698,14 @@ Public Class Folder
                                             .Select(Function(i) New Tuple(Of Item, Item)(i, result(i.FullPath & "_" & i.DisplayName))).ToArray()
 
                                     For Each item In existingItems
-                                        item.Item1.IsPinned = item.Item2.IsPinned
-                                        item.Item1.CanShowInTree = item.Item2.CanShowInTree
-                                        item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
-                                        item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
+                                        If item.Item1.IsPinned <> item.Item2.IsPinned Then item.Item1.IsPinned = item.Item2.IsPinned
+                                        If item.Item1.CanShowInTree <> item.Item2.CanShowInTree Then item.Item1.CanShowInTree = item.Item2.CanShowInTree
+                                        If Not EqualityComparer(Of String).Default.Equals(item.Item1.TreeSortPrefix, item.Item2.TreeSortPrefix) Then
+                                            item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
+                                        End If
+                                        If Not EqualityComparer(Of String).Default.Equals(item.Item1.ItemNameDisplaySortValuePrefix, item.Item2.ItemNameDisplaySortValuePrefix) Then
+                                            item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
+                                        End If
                                         For Each [property] In item.Item1._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
                                             item.Item1._propertiesByKey.Remove([property].Key)
                                         Next

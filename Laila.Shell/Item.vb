@@ -1323,6 +1323,7 @@ Public Class Item
                     If Me.IsDrive Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
+                                Thread.Sleep(100)
                                 Me.Refresh()
                             End Sub)
                     End If
