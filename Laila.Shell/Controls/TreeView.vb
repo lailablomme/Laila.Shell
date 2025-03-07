@@ -518,32 +518,36 @@ Namespace Controls
                         End If
                     ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso e.ClickCount = 2 Then
                         If Not clickedItem Is Nothing Then
-                            If TypeOf clickedItem Is Folder Then
-                                CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
-                                e.Handled = True
-                            Else
-                                invokeDefaultCommand(clickedItem)
-                            End If
+                            Using Shell.OverrideCursor(Cursors.Wait)
+                                If TypeOf clickedItem Is Folder Then
+                                    CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
+                                    e.Handled = True
+                                Else
+                                    invokeDefaultCommand(clickedItem)
+                                End If
+                            End Using
                         End If
                     ElseIf e.LeftButton = MouseButtonState.Pressed Then
                         If Not clickedItem Is Nothing Then
-                            If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
-                                CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
-                            Else
-                                Using Shell.OverrideCursor(Cursors.Wait)
-                                    _selectionHelper.SetSelectedItems({clickedItem})
+                            Using Shell.OverrideCursor(Cursors.Wait)
+                                If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
+                                    CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
+                                Else
+                                    Using Shell.OverrideCursor(Cursors.Wait)
+                                        _selectionHelper.SetSelectedItems({clickedItem})
 
-                                    ' this allows for better reponse to double-clicking an unselected item
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
-                                                CType(clickedItem, Folder).LastScrollOffset = New Point()
-                                                Me.Folder = clickedItem
-                                            End If
-                                        End Sub, Threading.DispatcherPriority.Background)
-                                End Using
-                            End If
-                            e.Handled = True
+                                        ' this allows for better reponse to double-clicking an unselected item
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
+                                                    CType(clickedItem, Folder).LastScrollOffset = New Point()
+                                                    Me.Folder = clickedItem
+                                                End If
+                                            End Sub, Threading.DispatcherPriority.Background)
+                                    End Using
+                                End If
+                                e.Handled = True
+                            End Using
                         End If
                     End If
 

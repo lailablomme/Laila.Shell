@@ -41,6 +41,7 @@ Public Class FrequentFolders
                                     count += 1
                                     If count = 5 Then Exit For
                                 ElseIf Not i Is Nothing Then
+                                    collection.Delete(folder.Id)
                                     i.Dispose()
                                 End If
                             Finally
