@@ -291,6 +291,7 @@ Public Class Item
         Dim oldPropertiesByKey As Dictionary(Of String, [Property]) = Nothing
         Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property]) = Nothing
         Dim oldItemNameDisplaySortValue As String = Nothing
+        Dim oldAttr As SFGAO = _attributes
 
         SyncLock _shellItemLock
             If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
@@ -362,6 +363,20 @@ Public Class Item
                 Debug.WriteLine(Me.FullPath & "  " & disposedValue)
             End If
         End SyncLock
+
+
+        If Not Me.LogicalParent Is Nothing _
+            AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> _attributes.HasFlag(SFGAO.FOLDER) _
+                     OrElse oldAttr.HasFlag(SFGAO.LINK) <> _attributes.HasFlag(SFGAO.LINK)) Then
+            Dim newItem As Item = Me.Clone()
+            UIHelper.OnUIThread(
+                Sub()
+                    Dim c As IComparer = New Helpers.ItemComparer(Me.LogicalParent.ItemsGroupByPropertyName, Me.LogicalParent.ItemsSortPropertyName, Me.LogicalParent.ItemsSortDirection)
+                    Me.LogicalParent._items.InsertSorted(newItem, c)
+                    Me.LogicalParent.IsEmpty = Me.LogicalParent._items.Count = 0
+                End Sub)
+            Me.Dispose()
+        End If
 
         If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
             Me.NotifyOfPropertyChange("DisplayName")
