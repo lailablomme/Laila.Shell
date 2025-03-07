@@ -12,6 +12,8 @@ Imports System.Windows.Media
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interfaces
+Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Application
 Imports Laila.Shell.Interop.Windows
 
 Namespace Controls
@@ -438,7 +440,7 @@ Namespace Controls
                             If TypeOf clickedItem Is Folder Then
                                 CType(clickedItem, Folder).LastScrollOffset = New Point()
                                 Me.Host.Folder = clickedItem
-                            ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is folder Then
+                            ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder Then
                                 CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
                                 Me.Host.Folder = CType(clickedItem, Link).TargetItem
                             Else

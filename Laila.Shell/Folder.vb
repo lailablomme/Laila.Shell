@@ -1148,14 +1148,14 @@ Public Class Folder
                                         e.Item1._parent = Me
                                         e.Item1.HookUpdates()
                                         e.IsHandled1 = True
-                                        Shell.GlobalThreadPool.Run(
-                                            Sub()
-                                                e.Item1.Refresh()
-                                            End Sub)
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(e.Item1, c)
                                         Me.IsEmpty = _items.Count = 0
                                     End If
+                                End Sub)
+                            Shell.GlobalThreadPool.Run(
+                                Sub()
+                                    e.Item1.Refresh()
                                 End Sub)
                         End If
                     End If

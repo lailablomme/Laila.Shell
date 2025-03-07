@@ -11,6 +11,7 @@ Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.Application
 Imports Laila.Shell.Interop.ContextMenu
 Imports Laila.Shell.Interop.Folders
 Imports Laila.Shell.Interop.Items
@@ -42,6 +43,7 @@ Namespace Controls
         Private disposedValue As Boolean
         Private _thread As Helpers.ThreadPool
         Private _hbitmapsToDispose As HashSet(Of IntPtr) = New HashSet(Of IntPtr)()
+        Private _activeItems As List(Of Item)
 
         Public Sub New()
             Shell.AddToMenuCache(Me)
@@ -77,6 +79,9 @@ Namespace Controls
 
         Public Overrides Async Function Make() As Task
             If _wasMade Then Return
+
+            _activeItems = If(Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0,
+                Me.SelectedItems.ToList(), New List(Of Item) From {Me.Folder})
 
             makeContextMenu(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
 
@@ -459,6 +464,15 @@ Namespace Controls
             Dim folder As Folder = Nothing
             Dim selectedItems As IEnumerable(Of Item) = Nothing
             Dim e As CommandInvokedEventArgs = Nothing
+
+            If id.Item1.Equals(Me.DefaultId?.Item1) Then
+                For Each item In _activeItems
+                    If Not String.IsNullOrWhiteSpace(item.FullPath) Then
+                        ' register with os
+                        Functions.SHAddToRecentDocs(SHARD.SHARD_PATHW, item.FullPath)
+                    End If
+                Next
+            End If
 
             UIHelper.OnUIThread(
                 Sub()

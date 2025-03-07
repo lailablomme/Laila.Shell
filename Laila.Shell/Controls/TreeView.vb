@@ -11,6 +11,7 @@ Imports System.Windows.Input
 Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interop.Application
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Windows
@@ -543,7 +544,7 @@ Namespace Controls
                                             Sub()
                                                 If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
                                                     CType(clickedItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = clickedItem
+Me.Folder = clickedItem
                                                 ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is folder _
                                                     AndAlso Not If(Me.Folder?.Pidl?.Equals(CType(clickedItem, Link).TargetItem.Pidl), False) Then
                                                     CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
