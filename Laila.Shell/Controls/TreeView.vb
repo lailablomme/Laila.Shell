@@ -522,6 +522,8 @@ Namespace Controls
                                 If TypeOf clickedItem Is Folder Then
                                     CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
                                     e.Handled = True
+                                ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder Then
+                                    e.Handled = True
                                 Else
                                     invokeDefaultCommand(clickedItem)
                                 End If
@@ -542,6 +544,10 @@ Namespace Controls
                                                 If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
                                                     CType(clickedItem, Folder).LastScrollOffset = New Point()
                                                     Me.Folder = clickedItem
+                                                ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is folder _
+                                                    AndAlso Not If(Me.Folder?.Pidl?.Equals(CType(clickedItem, Link).TargetItem.Pidl), False) Then
+                                                    CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
+                                                    Me.Folder = CType(clickedItem, Link).TargetItem
                                                 End If
                                             End Sub, Threading.DispatcherPriority.Background)
                                     End Using

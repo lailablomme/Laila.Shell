@@ -54,7 +54,8 @@ Public Class PinnedItems
             Using db = New LiteDatabase(getDBFileName())
                 ' register in db
                 Dim collection As ILiteCollection(Of PinnedItem) = db.GetCollection(Of PinnedItem)("PinnedItems")
-                Dim pinnedItems As IEnumerable(Of PinnedItem) = collection.Find(Function(f) f.Pidl.Equals(item.Pidl.ToString()))
+                Dim pinnedItems As IEnumerable(Of PinnedItem) = collection _
+                    .Find(Function(f) Not item.Pidl Is Nothing AndAlso Not f.Pidl Is Nothing AndAlso Not f.Pidl Is Nothing AndAlso f.Pidl.Equals(item.Pidl.ToString()))
                 Return pinnedItems.Count > 0
             End Using
         End SyncLock

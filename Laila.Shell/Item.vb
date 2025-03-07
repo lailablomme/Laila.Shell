@@ -35,7 +35,7 @@ Public Class Item
     Friend _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
     Private Shared _objectCount As Long = 0
-    Protected _pidl As Pidl
+    Friend _pidl As Pidl
     Private _isImage As Boolean?
     Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Friend _shellItemLock As Object = New Object()
@@ -60,10 +60,12 @@ Public Class Item
                     parsingName = Environment.ExpandEnvironmentVariables(parsingName)
                     Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
                     If Not shellItem2 Is Nothing Then
-                        Dim attr As SFGAO = SFGAO.FOLDER
+                        Dim attr As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
                         shellItem2.GetAttributes(attr, attr)
                         If attr.HasFlag(SFGAO.FOLDER) Then
                             Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
+                        ElseIf attr.HasFlag(SFGAO.link) Then
+                            Return New Link(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
                         Else
                             Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
                         End If
@@ -86,10 +88,12 @@ Public Class Item
                 shellItem2 = GetIShellItem2FromPidl(pidlClone.AbsolutePIDL, parent?.ShellFolder)
                 If Not preservePidl Then pidlClone.Dispose()
                 If Not shellItem2 Is Nothing Then
-                    Dim attr As SFGAO = SFGAO.FOLDER
+                    Dim attr As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
                     shellItem2.GetAttributes(attr, attr)
                     If attr.HasFlag(SFGAO.FOLDER) Then
                         Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                    ElseIf attr.HasFlag(SFGAO.LINK) Then
+                        Return New Link(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
                     Else
                         Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
                     End If

@@ -12,6 +12,7 @@ Public Class Link
     Private _shellLinkW As IShellLinkW
     Private _targetPidl As Pidl
     Private _targetFullPath As String
+    Private _targetItem As Item = Nothing
 
     Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer, Optional pidl As Pidl = Nothing)
         MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, pidl)
@@ -75,9 +76,29 @@ Public Class Link
     '    End Get
     'End Property
 
-    Public Function GetTarget(parent As Folder, Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
-        Return Item.FromPidl(Me.TargetPidl, parent, doKeepAlive, doHookUpdates)
-    End Function
+    Public ReadOnly Property TargetItem As Item
+        Get
+            If Not disposedValue Then
+                If Not _targetItem Is Nothing Then
+                    SyncLock _targetItem._shellItemLock
+                        ' if still alive...
+                        If Not _targetItem.disposedValue Then
+                            ' extend lifetime
+                            Shell.AddToItemsCache(_targetItem)
+                        Else
+                            _targetItem = Nothing
+                        End If
+                    End SyncLock
+                End If
+
+                If _targetItem Is Nothing Then
+                    _targetItem = Item.FromPidl(Me.TargetPidl, Nothing, _doKeepAlive, True)
+                End If
+            End If
+
+            Return _targetItem
+        End Get
+    End Property
 
     Protected Overrides Sub Dispose(disposing As Boolean)
         SyncLock _shellItemLock
