@@ -1274,15 +1274,16 @@ Public Class Folder
 
                 Me.CancelEnumeration()
 
-                For Each item In _items
-                    item.Dispose()
-                Next
-
                 If Not _shellFolder Is Nothing Then
                     Marshal.ReleaseComObject(_shellFolder)
                     _shellFolder = Nothing
                 End If
             End If
         End SyncLock
+
+        ' dispose outside of the lock because it can take a while
+        For Each item In _items
+            item.Dispose()
+        Next
     End Sub
 End Class
