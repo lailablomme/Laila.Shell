@@ -1373,6 +1373,7 @@ Public Class Item
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
+        Dim oldShellItem As IShellItem2 = Nothing
         SyncLock _shellItemLock
             If Not disposedValue Then
                 disposedValue = True
@@ -1412,11 +1413,8 @@ Public Class Item
                     Next
                     _propertiesByCanonicalName.Clear()
 
-                    ' dispose shellitem
-                    If Not _shellItem2 Is Nothing Then
-                        Marshal.ReleaseComObject(_shellItem2)
-                        _shellItem2 = Nothing
-                    End If
+                    oldShellItem = _shellItem2
+                    _shellItem2 = Nothing
 
                     ' remove from cache
                     Shell.RemoveFromItemsCache(Me)
@@ -1431,6 +1429,12 @@ Public Class Item
                 ' free unmanaged resources (unmanaged objects) and override finalizer
             End If
         End SyncLock
+
+        ' dispose shellitem outside of the lock because it can take a while for large items
+        If Not oldShellItem Is Nothing Then
+            Marshal.ReleaseComObject(oldShellItem)
+            oldShellItem = Nothing
+        End If
     End Sub
 
     ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
