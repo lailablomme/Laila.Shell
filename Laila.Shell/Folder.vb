@@ -1273,17 +1273,20 @@ Public Class Folder
                 End SyncLock
 
                 Me.CancelEnumeration()
+            End If
+        End SyncLock
+
+        Shell.GlobalThreadPool.Add(
+            Sub()
+                ' dispose outside of the lock because it can take a while
+                For Each item In _items
+                    item.Dispose()
+                Next
 
                 If Not _shellFolder Is Nothing Then
                     Marshal.ReleaseComObject(_shellFolder)
                     _shellFolder = Nothing
                 End If
-            End If
-        End SyncLock
-
-        ' dispose outside of the lock because it can take a while
-        For Each item In _items
-            item.Dispose()
-        Next
+            End Sub, _livesOnThreadId)
     End Sub
 End Class

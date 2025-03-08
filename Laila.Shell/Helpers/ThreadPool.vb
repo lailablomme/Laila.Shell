@@ -69,9 +69,14 @@ Namespace Helpers
                         If _nextThreadId >= _isThreadFree.Length Then
                             _nextThreadId = 0
                             If Not isFirst Then
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                    End Sub, System.Windows.Threading.DispatcherPriority.Input)
+                                Dim appl As System.Windows.Application = System.Windows.Application.Current
+                                If Not appl Is Nothing AndAlso appl.Dispatcher.CheckAccess Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                        End Sub, System.Windows.Threading.DispatcherPriority.Input)
+                                Else
+                                    Thread.Sleep(10)
+                                End If
                             End If
                             isFirst = False
                         End If

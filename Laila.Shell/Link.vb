@@ -104,20 +104,20 @@ Public Class Link
         SyncLock _shellItemLock
             If Not disposedValue Then
                 MyBase.Dispose(disposing)
-
-                Shell.GlobalThreadPool.Run(
-                    Sub()
-                        If Not _shellLinkW Is Nothing Then
-                            Marshal.ReleaseComObject(_shellLinkW)
-                            _shellLinkW = Nothing
-                        End If
-
-                        If Not _targetPidl Is Nothing Then
-                            _targetPidl.Dispose()
-                            _targetPidl = Nothing
-                        End If
-                    End Sub,, _threadId)
             End If
         End SyncLock
+
+        Shell.GlobalThreadPool.Add(
+            Sub()
+                If Not _shellLinkW Is Nothing Then
+                    Marshal.ReleaseComObject(_shellLinkW)
+                    _shellLinkW = Nothing
+                End If
+
+                If Not _targetPidl Is Nothing Then
+                    _targetPidl.Dispose()
+                    _targetPidl = Nothing
+                End If
+            End Sub, _threadId)
     End Sub
 End Class

@@ -64,7 +64,7 @@ Public Class Item
                         shellItem2.GetAttributes(attr, attr)
                         If attr.HasFlag(SFGAO.FOLDER) Then
                             Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
-                        ElseIf attr.HasFlag(SFGAO.link) Then
+                        ElseIf attr.HasFlag(SFGAO.LINK) Then
                             Return New Link(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
                         Else
                             Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
@@ -1449,11 +1449,14 @@ Public Class Item
             End If
         End SyncLock
 
-        ' dispose shellitem outside of the lock because it can take a while for large items
-        If Not oldShellItem Is Nothing Then
-            Marshal.ReleaseComObject(oldShellItem)
-            oldShellItem = Nothing
-        End If
+        Shell.GlobalThreadPool.Add(
+            Sub()
+                ' dispose shellitem outside of the lock because it can take a while for large items
+                If Not oldShellItem Is Nothing Then
+                    Marshal.ReleaseComObject(oldShellItem)
+                    oldShellItem = Nothing
+                End If
+            End Sub, _livesOnThreadId)
     End Sub
 
     ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources

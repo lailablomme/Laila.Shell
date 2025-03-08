@@ -6,6 +6,7 @@ Class Application
     End Sub
 
     Private Sub Application_Startup(sender As Object, e As StartupEventArgs)
+        AddHandler Me.DispatcherUnhandledException, AddressOf Application_DispatcherUnhandledException
         AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException
         AddHandler TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException
     End Sub
