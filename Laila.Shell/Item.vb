@@ -365,10 +365,11 @@ Public Class Item
         End SyncLock
 
 
-        If Not Me.LogicalParent Is Nothing _
+        If Not _logicalParent Is Nothing _
             AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> _attributes.HasFlag(SFGAO.FOLDER) _
                      OrElse oldAttr.HasFlag(SFGAO.LINK) <> _attributes.HasFlag(SFGAO.LINK)) Then
             Dim newItem As Item = Me.Clone()
+            newItem.LogicalParent = _logicalParent
             UIHelper.OnUIThread(
                 Sub()
                     Dim c As IComparer = New Helpers.ItemComparer(Me.LogicalParent.ItemsGroupByPropertyName, Me.LogicalParent.ItemsSortPropertyName, Me.LogicalParent.ItemsSortDirection)

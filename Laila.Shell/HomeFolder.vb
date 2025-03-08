@@ -174,7 +174,7 @@ Public Class HomeFolder
         Next
 
         ' enumerate recent files
-        MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).ShellItem2, flags, cancellationToken, isSortPropertyByText,
+        MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone().ShellItem2, flags, cancellationToken, isSortPropertyByText,
             isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId)
     End Sub
 

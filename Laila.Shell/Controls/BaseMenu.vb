@@ -467,9 +467,16 @@ Namespace Controls
 
             If id.Item1.Equals(Me.DefaultId?.Item1) Then
                 For Each item In _activeItems
-                    If Not String.IsNullOrWhiteSpace(item.FullPath) Then
-                        ' register with os
-                        Functions.SHAddToRecentDocs(SHARD.SHARD_PATHW, item.FullPath)
+                    If TypeOf item Is Link Then
+                        If Not String.IsNullOrWhiteSpace(CType(item, Link).TargetItem.FullPath) Then
+                            ' register with os
+                            Functions.SHAddToRecentDocs(SHARD.SHARD_PATHW, CType(item, Link).TargetItem.FullPath)
+                        End If
+                    Else
+                        If Not String.IsNullOrWhiteSpace(item.FullPath) Then
+                            ' register with os
+                            Functions.SHAddToRecentDocs(SHARD.SHARD_PATHW, item.FullPath)
+                        End If
                     End If
                 Next
             End If
