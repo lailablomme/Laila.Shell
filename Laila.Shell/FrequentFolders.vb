@@ -8,55 +8,62 @@ Public Class FrequentFolders
     Private Shared _lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
 
     Public Shared Function GetMostFrequent() As IEnumerable(Of Folder)
-        _lock.Wait()
-        Try
-            Using db = New LiteDatabase(String.Format("Filename=""{0}"";Mode=Shared", getDBFileName()))
-                Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
+        Dim isSuccess As Boolean, numTries As Integer
+        While (Not isSuccess AndAlso numTries <= 5)
+            Try
+                _lock.Wait()
+                Using db = New LiteDatabase(String.Format("Filename=""{0}"";Mode=Shared", getDBFileName()))
+                    Dim collection As ILiteCollection(Of FrequentFolder) = db.GetCollection(Of FrequentFolder)("FrequentFolders")
 
-                ' only keep folders accessed in the last 30 days
-                Dim foldersToDelete As List(Of FrequentFolder) = collection.Query().ToList()
-                foldersToDelete = foldersToDelete _
-                    .OrderByDescending(Function(f) f.LastAccessedDateTime) _
-                    .Where(Function(f) (DateTime.Now - f.LastAccessedDateTime).TotalDays > 30) _
-                    .Skip(100).ToList()
-                For Each deleteFolder In foldersToDelete
-                    collection.Delete(deleteFolder.Id)
-                Next
+                    ' only keep folders accessed in the last 30 days
+                    Dim foldersToDelete As List(Of FrequentFolder) = collection.Query().ToList()
+                    foldersToDelete = foldersToDelete _
+                        .OrderByDescending(Function(f) f.LastAccessedDateTime) _
+                        .Where(Function(f) (DateTime.Now - f.LastAccessedDateTime).TotalDays > 30) _
+                        .Skip(100).ToList()
+                    For Each deleteFolder In foldersToDelete
+                        collection.Delete(deleteFolder.Id)
+                    Next
 
-                ' return most frequent
-                Dim mostFrequent1 As List(Of FrequentFolder) = collection.Query() _
-                    .OrderByDescending(Function(f) f.AccessCount).ToList()
+                    ' return most frequent
+                    Dim mostFrequent1 As List(Of FrequentFolder) = collection.Query() _
+                        .OrderByDescending(Function(f) f.AccessCount).ToList()
 
-                Return Shell.GlobalThreadPool.Run(
-                    Function() As IEnumerable(Of Item)
-                        Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
-                        Dim count As Integer = 0
-                        For Each folder In mostFrequent1
-                            Dim pidl As Pidl = Nothing
-                            Try
-                                pidl = New Pidl(folder.Pidl)
-                                Dim i As Item = Item.FromPidl(pidl, Nothing)
-                                If Not i Is Nothing AndAlso TypeOf i Is Folder AndAlso Not PinnedItems.GetIsPinned(i) Then
-                                    mostFrequent2.Add(i)
-                                    count += 1
-                                    If count = 5 Then Exit For
-                                ElseIf Not i Is Nothing Then
-                                    collection.Delete(folder.Id)
-                                    i.Dispose()
-                                End If
-                            Finally
-                                If Not pidl Is Nothing Then
-                                    pidl.Dispose()
-                                End If
-                            End Try
-                        Next
+                    Return Shell.GlobalThreadPool.Run(
+                        Function() As IEnumerable(Of Item)
+                            Dim mostFrequent2 As List(Of Folder) = New List(Of Folder)()
+                            Dim count As Integer = 0
+                            For Each folder In mostFrequent1
+                                Dim pidl As Pidl = Nothing
+                                Try
+                                    pidl = New Pidl(folder.Pidl)
+                                    Dim i As Item = Item.FromPidl(pidl, Nothing)
+                                    If Not i Is Nothing AndAlso TypeOf i Is Folder AndAlso Not PinnedItems.GetIsPinned(i) Then
+                                        mostFrequent2.Add(i)
+                                        count += 1
+                                        If count = 5 Then Exit For
+                                    ElseIf Not i Is Nothing Then
+                                        collection.Delete(folder.Id)
+                                        i.Dispose()
+                                    End If
+                                Finally
+                                    If Not pidl Is Nothing Then
+                                        pidl.Dispose()
+                                    End If
+                                End Try
+                            Next
 
-                        Return mostFrequent2
-                    End Function)
-            End Using
-        Finally
-            _lock.Release()
-        End Try
+                            Return mostFrequent2
+                        End Function)
+                End Using
+                isSuccess = True
+            Catch ex As IO.IOException
+                numTries += 1
+                Thread.Sleep(500)
+            Finally
+                _lock.Release()
+            End Try
+        End While
     End Function
 
     Public Shared Sub Track(folder As Folder)

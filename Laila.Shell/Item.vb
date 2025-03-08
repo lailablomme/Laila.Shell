@@ -822,7 +822,7 @@ Public Class Item
 
     Protected Friend Property AddressBarDisplayName As String
 
-    Protected Friend ReadOnly Property AddressBarDisplayPath As String
+    Public ReadOnly Property AddressBarDisplayPath As String
         Get
             If String.IsNullOrWhiteSpace(Me.AddressBarRoot) Then
                 Dim parent As Item = Me
