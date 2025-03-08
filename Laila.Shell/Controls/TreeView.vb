@@ -544,8 +544,8 @@ Namespace Controls
                                             Sub()
                                                 If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
                                                     CType(clickedItem, Folder).LastScrollOffset = New Point()
-Me.Folder = clickedItem
-                                                ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is folder _
+                                                    Me.Folder = clickedItem
+                                                ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder _
                                                     AndAlso Not If(Me.Folder?.Pidl?.Equals(CType(clickedItem, Link).TargetItem.Pidl), False) Then
                                                     CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
                                                     Me.Folder = CType(clickedItem, Link).TargetItem
@@ -682,7 +682,7 @@ Me.Folder = clickedItem
                             UIHelper.OnUIThreadAsync(
                                 Sub()
                                     For Each item2 In Me.Items.Where(Function(i) i.CanShowInTree _
-                                        AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
+                                        AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
                                         If Me.Items.Contains(item2) Then
                                             Me.Items.Remove(item2)
                                         End If
