@@ -14,6 +14,20 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Interop
     Public Class Functions
+
+        <StructLayout(LayoutKind.Sequential)>
+        Public Structure SHQUERYRBINFO
+            Public cbSize As Integer
+            Public i64Size As Long
+            Public i64NumItems As Long
+        End Structure
+
+        <DllImport("Shell32.dll", CharSet:=CharSet.Unicode)>
+        Public Shared Function SHQueryRecycleBin(
+        ByVal pszRootPath As String,
+        ByRef pSHQueryRBInfo As SHQUERYRBINFO) As Integer
+        End Function
+
         <DllImport("shell32.dll", CharSet:=CharSet.Unicode, SetLastError:=False)>
         Public Shared Function CDefFolderMenu_Create2(
     ByVal pidlFolder As IntPtr, _                   ' Absolute PIDL of the parent folder (optional)

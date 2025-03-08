@@ -22,15 +22,19 @@ Namespace Controls.Parts
         Public Sub GetInsertIndex(ptWIN32 As WIN32POINT, overListBoxItem As ListBoxItem, overItem As Item, ByRef dragInsertParent As ISupportDragInsert, ByRef insertIndex As Integer) Implements IDragViewStrategy.GetInsertIndex
             Dim ptItem As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, overListBoxItem)
             If ptItem.X <= 10 Then
-                dragInsertParent = If(overItem.LogicalParent, overItem.Parent)
-                Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(overItem.LogicalParent.Items)
-                insertIndex = view.IndexOf(overItem)
-                Debug.WriteLine("* Drag: insert before item")
+                If TypeOf overItem.LogicalParent Is ISupportDragInsert Then
+                    dragInsertParent = overItem.LogicalParent
+                    Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(overItem.LogicalParent.Items)
+                    insertIndex = view.IndexOf(overItem)
+                    Debug.WriteLine("* Drag: insert before item")
+                End If
             ElseIf ptItem.X >= overListBoxItem.ActualWidth - 10 Then
-                dragInsertParent = If(overItem.LogicalParent, overItem.Parent)
-                Debug.WriteLine("* Drag: insert after not expanded item")
-                Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(overItem.LogicalParent.Items)
-                insertIndex = view.IndexOf(overItem) + 1
+                If TypeOf overItem.LogicalParent Is ISupportDragInsert Then
+                    dragInsertParent = overItem.LogicalParent
+                    Debug.WriteLine("* Drag: insert after not expanded item")
+                    Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(overItem.LogicalParent.Items)
+                    insertIndex = view.IndexOf(overItem) + 1
+                End If
             Else
                 Debug.WriteLine("* Full over item")
                 dragInsertParent = Nothing

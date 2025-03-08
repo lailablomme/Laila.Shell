@@ -14,6 +14,7 @@ Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
 Imports Laila.Shell.Interop.Windows
+Imports Shell32
 
 Public Class Shell
     Private Shared _desktop As Folder
@@ -206,6 +207,8 @@ Public Class Shell
                 '_specialFolders.Add("Recent Items", Folder.FromParsingName("shell:::{4564b25e-30cd-4787-82ba-39e73a750b14}", Nothing))
 
                 Shell.IsSpecialFoldersReady.Set()
+
+                Shell.StartListening(Shell.Desktop)
             End Sub)
 
         ' register folder views
@@ -595,7 +598,7 @@ Public Class Shell
             ' start receiving notifications
             Dim entry(0) As SHChangeNotifyEntry
             entry(0).pIdl = folder.Pidl.AbsolutePIDL
-            entry(0).Recursively = False
+            entry(0).Recursively = folder.Pidl?.ToString.Equals("00-00")
 
             Dim fswNotify As Action(Of NotificationEventArgs) =
                 Sub(e As NotificationEventArgs)

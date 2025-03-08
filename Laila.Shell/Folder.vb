@@ -12,6 +12,7 @@ Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Folders
+Imports Laila.Shell.Interop.Functions
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
 
@@ -41,7 +42,6 @@ Public Class Folder
     Private _itemsSortDirection As ListSortDirection
     Private _itemsGroupByPropertyName As String
     Protected _enumerationCancellationTokenSource As CancellationTokenSource
-    Private _doSkipUPDATEDIR As DateTime?
     Private _shellFolder As IShellFolder
     Private _isEmpty As Boolean
     Private _isListening As Boolean
@@ -643,7 +643,6 @@ Public Class Folder
             _wasActivity = False
             Me.IsEmpty = _items.Count = 0
             Debug.WriteLine("End loading " & Me.DisplayName)
-            If Me.FullPath = "::{645FF040-5081-101B-9F08-00AA002F954E}" Then _doSkipUPDATEDIR = DateTime.Now
         Else
             Debug.WriteLine("Cancelled loading " & Me.DisplayName)
         End If
@@ -1156,6 +1155,19 @@ Public Class Folder
         MyBase.shell_Notification(sender, e)
 
         If Not disposedValue Then
+            If Me.Pidl?.Equals(Shell.GetSpecialFolder(SpecialFolders.RecycleBin).Pidl) Then
+                If Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar Then
+                    Dim info As SHQUERYRBINFO = New SHQUERYRBINFO()
+                    info.cbSize = Marshal.SizeOf(info)
+                    Functions.SHQueryRecycleBin(Nothing, info)
+                    If info.i64NumItems <> _items.Count Then
+                        Debug.WriteLine("RECYCLE BIN=" & info.i64NumItems & " vs " & _items.Count)
+                        _isEnumerated = False
+                        Me.GetItemsAsync()
+                    End If
+                End If
+            End If
+
             Select Case e.Event
                 Case SHCNE.CREATE, SHCNE.MKDIR
                     If _isLoaded Then
@@ -1164,23 +1176,23 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
-                                Sub()
-                                    Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                    Sub()
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
-                                    If existing Is Nothing Then
-                                        Me.InitializeItem(e.Item1)
-                                        e.Item1._parent = Me
-                                        e.Item1.HookUpdates()
-                                        e.IsHandled1 = True
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                        _items.InsertSorted(e.Item1, c)
-                                        Me.IsEmpty = _items.Count = 0
-                                    End If
-                                End Sub)
+                                        If existing Is Nothing Then
+                                            Me.InitializeItem(e.Item1)
+                                            e.Item1._parent = Me
+                                            e.Item1.HookUpdates()
+                                            e.IsHandled1 = True
+                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                            _items.InsertSorted(e.Item1, c)
+                                            Me.IsEmpty = _items.Count = 0
+                                        End If
+                                    End Sub)
                             Shell.GlobalThreadPool.Run(
-                                Sub()
-                                    e.Item1.Refresh()
-                                End Sub)
+                                    Sub()
+                                        e.Item1.Refresh()
+                                    End Sub)
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
@@ -1190,19 +1202,19 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
-                                Sub()
-                                    Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                    Sub()
+                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
-                                    If Not existing Is Nothing Then
-                                        If TypeOf existing Is Folder Then
-                                            Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                        If Not existing Is Nothing Then
+                                            If TypeOf existing Is Folder Then
+                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                             .Folder = existing,
                                             .[Event] = e.Event
                                         })
+                                            End If
+                                            existing.Dispose()
                                         End If
-                                        existing.Dispose()
-                                    End If
-                                End Sub)
+                                    End Sub)
                         End If
                     End If
                 Case SHCNE.DRIVEADD
@@ -1221,46 +1233,35 @@ Public Class Folder
                                 End If
                             End Sub)
                         Shell.GlobalThreadPool.Run(
-                            Sub()
-                                e.Item1.Refresh()
-                            End Sub)
+                                Sub()
+                                    e.Item1.Refresh()
+                                End Sub)
                     End If
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
                         UIHelper.OnUIThread(
-                            Sub()
-                                Dim item As Item
-                                item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                    Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
+                                Sub()
+                                    Dim item As Item
+                                    item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                    If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                                        Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
                                         .Folder = item,
                                         .[Event] = e.Event
                                     })
-                                    item.Dispose()
-                                End If
-                            End Sub)
+                                        item.Dispose()
+                                    End If
+                                End Sub)
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
-                        If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) Then
+                        If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
+                                OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso (_wasActivity OrElse Me.Pidl.Equals(Shell.GetSpecialFolder(SpecialFolders.RecycleBin).Pidl))) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
-                                AndAlso (Not _doSkipUPDATEDIR.HasValue _
-                                         OrElse DateTime.Now.Subtract(_doSkipUPDATEDIR.Value).TotalMilliseconds > 1000) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False
                                 Me.GetItemsAsync()
                             End If
-                        End If
-                        If Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity Then
-                            UIHelper.OnUIThreadAsync(
-                                Async Sub()
-                                    Await Task.Delay(500)
-                                    _isEnumerated = False
-                                    If Me.IsActiveInFolderView OrElse (Me.IsVisibleInTree AndAlso Me.IsExpanded) Then
-                                        Me.GetItemsAsync()
-                                    End If
-                                End Sub)
                         End If
                     End If
             End Select

@@ -242,11 +242,15 @@ Namespace Controls.Parts
             Dim overListBoxItem As ListBoxItem = _folderView.ActiveView.DragViewStrategy.GetOverListBoxItem(ptWIN32)
             Dim overItem As Item = overListBoxItem?.DataContext
 
+            If overItem Is Nothing Then overItem = _folderView.Folder
+
             Dim insertIndex As Long = -1
 
             If Not overItem Is Nothing Then
-                If Not _folderView.ActiveView?.DragViewStrategy Is Nothing Then
+                If Not overItem?.Equals(_folderView.Folder) AndAlso Not _folderView.ActiveView?.DragViewStrategy Is Nothing Then
                     _folderView.ActiveView?.DragViewStrategy.GetInsertIndex(ptWIN32, overListBoxItem, overItem, _dragInsertParent, insertIndex)
+                Else
+                    _dragInsertParent = Nothing
                 End If
 
                 If _dragInsertParent Is Nothing Then
