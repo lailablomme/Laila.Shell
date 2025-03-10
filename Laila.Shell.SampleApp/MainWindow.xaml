@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Laila.Shell.SampleApp"
         xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" 
+        xmlns:data="clr-namespace:Laila.Shell.SampleApp.Data"
         xmlns:shell="clr-namespace:Laila.Shell;assembly=Laila.Shell" 
         xmlns:metroWindow="clr-namespace:Laila.MetroWindow.Controls;assembly=Laila.MetroWindow"
         xmlns:localConverters="clr-namespace:Laila.Shell.SampleApp.Converters"
@@ -139,7 +140,7 @@
             </Setter>
         </Style>
     </metroWindow:MetroWindow.Style>
-    <controls:TabControl x:Name="tabControl">
+    <controls:TabControl x:Name="tabControl" ModelType="{x:Type data:TabData}">
         <controls:TabControl.ItemTemplate>
             <DataTemplate>
                 <Grid>

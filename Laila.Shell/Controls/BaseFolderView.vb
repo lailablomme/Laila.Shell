@@ -1047,7 +1047,7 @@ Namespace Controls
             End If
         End Sub
 
-        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = TryCast(d, BaseFolderView)
 
             ' hide listview so no-one sees us binding to the new folder and restoring the scroll position
@@ -1106,7 +1106,8 @@ Namespace Controls
                 bfv.MakeBinding(newValue)
 
                 ' load items
-                newValue.GetItemsAsync()
+                Dim t As Task = newValue.GetItemsAsync()
+                If Not TypeOf bfv.Folder Is SearchFolder Then Await t
 
                 ' async because otherwise we're a tad too early
                 UIHelper.OnUIThreadAsync(

@@ -13,7 +13,7 @@ Namespace Controls
                 Sub(s As Object, e As EventArgs)
                     Dim tabItem As TabItem = UIHelper.GetParentOfType(Of TabItem)(Me)
                     Dim tabControl As TabControl = UIHelper.GetParentOfType(Of TabControl)(tabItem)
-                    Dim items As ObservableCollection(Of TabData) = tabControl.ItemsSource
+                    Dim items As ObservableCollection(Of Object) = tabControl.ItemsSource
                     If tabControl.Items.Count > 1 Then
                         items.Remove(tabItem.DataContext)
                     Else

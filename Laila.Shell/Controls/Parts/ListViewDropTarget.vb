@@ -39,7 +39,7 @@ Namespace Controls.Parts
             Debug.WriteLine("DragEnter")
             _dataObject = pDataObj
             _fileNameList = Clipboard.GetFileNameList(pDataObj)
-            _files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(pDataObj)
+            _files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(pDataObj, True)
             _prevSelectedItems = _folderView.SelectedItems?.ToList()
             If _prevSelectedItems Is Nothing Then _prevSelectedItems = {}
             _folderView.ActiveView.PART_ListBox.Focus()
@@ -54,6 +54,7 @@ Namespace Controls.Parts
             Debug.WriteLine("DragLeave")
             If Not _files Is Nothing Then
                 For Each f In _files
+                    f.LogicalParent.Dispose()
                     f.Dispose()
                 Next
             End If
@@ -140,6 +141,7 @@ Namespace Controls.Parts
 
             If Not _files Is Nothing Then
                 For Each f In _files
+                    f.LogicalParent.Dispose()
                     f.Dispose()
                 Next
             End If
@@ -148,6 +150,11 @@ Namespace Controls.Parts
         End Function
 
         Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
+            If Not If(_fileNameList?.Count, 0) > 0 Then
+                pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                Return HRESULT.S_OK
+            End If
+
             ' scroll up and down while dragging?
             Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _folderView)
             If pt.Y < 100 Then

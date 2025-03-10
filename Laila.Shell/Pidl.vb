@@ -75,7 +75,7 @@ Public Class Pidl
         Return hGlobal
     End Function
 
-    Public Shared Function GetItemsFromShellIDListArray(ptr As IntPtr) As List(Of Item)
+    Public Shared Function GetItemsFromShellIDListArray(ptr As IntPtr, doKeepAlive As Boolean) As List(Of Item)
         Dim result As List(Of Item) = New List(Of Item)()
         Dim start As IntPtr = ptr
 
@@ -93,14 +93,14 @@ Public Class Pidl
             Sub()
                 If Convert.ToUInt16(Marshal.ReadInt16(IntPtr.Add(start, offset))) <> 0 Then
                     Dim parentPidl As Pidl = New Pidl(IntPtr.Add(start, offset))
-                    parentFolder = CType(Item.FromPidl(parentPidl, Nothing, True), Folder)
+                    parentFolder = CType(Item.FromPidl(parentPidl, Nothing, doKeepAlive), Folder)
                     parentShellFolder = parentFolder.ShellFolder
                 End If
 
                 For i = 0 To count - 1
                     offset = Convert.ToUInt32(Marshal.ReadInt32(ptr)) : ptr = IntPtr.Add(ptr, Marshal.SizeOf(Of UInt32))
                     Dim itemPidl As Pidl = New Pidl(IntPtr.Add(start, offset))
-                    result.Add(Item.FromPidl(itemPidl, parentFolder, True, True))
+                    result.Add(Item.FromPidl(itemPidl, parentFolder, doKeepAlive, True))
                 Next
             End Sub, 1)
 

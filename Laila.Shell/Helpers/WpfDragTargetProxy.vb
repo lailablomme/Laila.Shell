@@ -16,6 +16,7 @@ Namespace Helpers
         Private Shared _hwnds As Dictionary(Of UIElement, IntPtr) = New Dictionary(Of UIElement, IntPtr)()
         Private Shared _activeDropTarget As BaseDropTarget
         Private Shared _instance As WpfDragTargetProxy = New WpfDragTargetProxy()
+        Private Shared _hasDragImage As Boolean
         Public Shared _isDropDescriptionSet As Boolean = False
 
         Private _dataObject As ComTypes.IDataObject
@@ -84,6 +85,8 @@ Namespace Helpers
         End Function
 
         Public Shared Sub SetDropDescription(dataObject As ComTypes.IDataObject, type As DROPIMAGETYPE, message As String, insert As String)
+            If Not _hasDragImage Then Return
+
             Dim dropDescription As DROPDESCRIPTION
             Dim format As FORMATETC = New FORMATETC() With {
                 .cfFormat = Functions.RegisterClipboardFormat("DropDescription"),
@@ -143,6 +146,8 @@ Namespace Helpers
             'Drag.InitializeDragImage()
             _dataObject = pDataObj
 
+            _hasDragImage = Clipboard.GetHasGlobalData(_dataObject, "DragImageBits")
+
             If Drag._isDragging Then
             End If
 
@@ -155,8 +160,8 @@ Namespace Helpers
                 If Clipboard.GetHasGlobalData(_dataObject, "DropDescription") AndAlso Not _isDropDescriptionSet AndAlso Drag._isDragging Then
                     SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                 End If
-                'Debug.WriteLine("_dropTargetHelper.DragEnter")
-                _dropTargetHelper.DragEnter(hwnd, _dataObject, ptWIN32, pdwEffect)
+                Debug.WriteLine("_dropTargetHelper.DragEnter")
+                If _hasDragImage Then _dropTargetHelper.DragEnter(hwnd, _dataObject, ptWIN32, pdwEffect)
                 Debug.WriteLine("DragEnter out")
                 Return h
             Else
@@ -177,12 +182,12 @@ Namespace Helpers
                         SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     End If
                     'Debug.WriteLine("_dropTargetHelper.DragOver")
-                    _dropTargetHelper.DragOver(ptWIN32, pdwEffect)
+                    If _hasDragImage Then _dropTargetHelper.DragOver(ptWIN32, pdwEffect)
                     Return h
                 Else
                     If Not _activeDropTarget Is Nothing Then
                         'Debug.WriteLine("_dropTargetHelper.DragLeave")
-                        _dropTargetHelper.DragLeave()
+                        If _hasDragImage Then _dropTargetHelper.DragLeave()
                         _activeDropTarget.DragLeave()
                     End If
 
@@ -193,8 +198,8 @@ Namespace Helpers
                         SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, Nothing, Nothing)
                     End If
                     'Debug.WriteLine("_dropTargetHelper.DragEnter")
-                    _dropTargetHelper.DragEnter(_hwnds(_controls.FirstOrDefault(Function(kv) kv.Value.Equals(_activeDropTarget)).Key),
-                                                _dataObject, ptWIN32, pdwEffect)
+                    If _hasDragImage Then _dropTargetHelper.DragEnter(_hwnds(_controls.FirstOrDefault(Function(kv) kv.Value.Equals(_activeDropTarget)).Key),
+                                                                  _dataObject, ptWIN32, pdwEffect)
                     Return h
                 End If
             Else
@@ -202,7 +207,7 @@ Namespace Helpers
                 If Not _activeDropTarget Is Nothing Then
                     Try
                         'Debug.WriteLine("_dropTargetHelper.DragLeave")
-                        _dropTargetHelper.DragLeave()
+                        If _hasDragImage Then _dropTargetHelper.DragLeave()
                         Dim h As HRESULT = _activeDropTarget.DragLeave()
                         Return h
                     Finally
@@ -218,7 +223,7 @@ Namespace Helpers
             If Not _activeDropTarget Is Nothing Then
                 Try
                     Debug.WriteLine("_dropTargetHelper.DragLeave")
-                    _dropTargetHelper.DragLeave()
+                    If _hasDragImage Then _dropTargetHelper.DragLeave()
                     Dim h As HRESULT = _activeDropTarget.DragLeave()
                     Return h
                 Finally
@@ -234,7 +239,7 @@ Namespace Helpers
             Dim dropTarget As IDropTarget = GetDropTargetFromWIN32POINT(ptWIN32)
             If Not dropTarget Is Nothing Then
                 Debug.WriteLine("_dropTargetHelper.Drop")
-                _dropTargetHelper.Drop(_dataObject, ptWIN32, pdwEffect)
+                If _hasDragImage Then _dropTargetHelper.Drop(_dataObject, ptWIN32, pdwEffect)
                 Return dropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
             Else
                 pdwEffect = DROPEFFECT.DROPEFFECT_NONE

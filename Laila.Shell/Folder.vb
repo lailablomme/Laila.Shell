@@ -992,6 +992,10 @@ Public Class Folder
                 End If
             End If
             Me.EnumerationException = Nothing
+        Catch ex As COMException
+            If Not (ex.HResult = HRESULT.S_OK OrElse ex.HResult = HRESULT.S_FALSE OrElse ex.HResult = HRESULT.ERROR_INVALID_PARAMETER) Then
+                Me.EnumerationException = ex
+            End If
         Catch ex As Exception
             Me.EnumerationException = ex
         Finally
@@ -1256,7 +1260,7 @@ Public Class Folder
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
                         If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
-                                OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso (_wasActivity OrElse Me.Pidl.Equals(Shell.GetSpecialFolder(SpecialFolders.RecycleBin).Pidl))) Then
+                                OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False

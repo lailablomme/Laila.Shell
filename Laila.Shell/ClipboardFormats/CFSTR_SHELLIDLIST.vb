@@ -7,7 +7,7 @@ Namespace ClipboardFormats
     Public Class CFSTR_SHELLIDLIST
         Private Const CFSTR_SHELLIDLIST As String = "Shell IDList Array"
 
-        Public Shared Function GetData(dataObject As ComTypes.IDataObject) As List(Of Item)
+        Public Shared Function GetData(dataObject As ComTypes.IDataObject, doKeepAlive As Boolean) As List(Of Item)
             Try
                 Dim format As New FORMATETC With {
                     .cfFormat = Functions.RegisterClipboardFormat(CFSTR_SHELLIDLIST),
@@ -26,7 +26,7 @@ Namespace ClipboardFormats
                         ' however SHCreateDataObject does not
                         ptr = Marshal.ReadIntPtr(medium.unionmember)
                     End If
-                    Return Pidl.GetItemsFromShellIDListArray(ptr)
+                    Return Pidl.GetItemsFromShellIDListArray(ptr, doKeepAlive)
                 Else
                     Return Nothing
                 End If

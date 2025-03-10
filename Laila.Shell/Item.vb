@@ -128,6 +128,8 @@ Public Class Item
         _pidl = pidl
         _livesOnThreadId = threadId
         If Not shellItem2 Is Nothing Then
+            Dim d As String = Me.DisplayName
+            Dim b As Boolean = Me.StorageProviderUIStatusHasIcon
             If doHookUpdates Then Me.HookUpdates()
             Shell.AddToItemsCache(Me)
         Else
@@ -796,12 +798,14 @@ Public Class Item
             Dim isNew As Boolean
 
             ' get displayname?
-            SyncLock _shellItemLock
-                If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
-                    Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
-                    isNew = True
-                End If
-            End SyncLock
+            If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
+                SyncLock _shellItemLock
+                    If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
+                        Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
+                        isNew = True
+                    End If
+                End SyncLock
+            End If
 
             ' strip root name from displayname
             If isNew AndAlso Me.FullPath?.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then

@@ -13,6 +13,8 @@ Namespace Controls
         Inherits System.Windows.Controls.TabControl
         Implements IDisposable
 
+        Public Shared ReadOnly ModelTypeProperty As DependencyProperty = DependencyProperty.Register("ModelType", GetType(Type), GetType(TabControl), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+
         Private PART_ItemsHolder As Panel
         Private PART_LeftButton As RepeatButton
         Private PART_RightButton As RepeatButton
@@ -21,7 +23,7 @@ Namespace Controls
         Private PART_AddTabButton As Button
         Private PART_TabGrid As Grid
         Private PART_TabColumn As ColumnDefinition
-        Private _items As ObservableCollection(Of TabData) = New ObservableCollection(Of TabData)()
+        Private _items As ObservableCollection(Of Object) = New ObservableCollection(Of Object)()
         Private _dropTarget As IDropTarget
         Private _isLoaded As Boolean
         Private disposedValue As Boolean
@@ -33,10 +35,9 @@ Namespace Controls
         Public Sub New()
             Shell.AddToControlCache(Me)
 
-            AddHandler ItemContainerGenerator.StatusChanged, AddressOf ItemContainerGeneratorStatusChanged
-
-            _items.Add(New TabData())
             Me.ItemsSource = _items
+
+            AddHandler ItemContainerGenerator.StatusChanged, AddressOf ItemContainerGeneratorStatusChanged
 
             AddHandler Me.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -93,10 +94,14 @@ Namespace Controls
             AddHandler Me.PART_AddTabButton.Click,
                 Sub(s As Object, e As EventArgs)
                     Using Shell.OverrideCursor(Cursors.Wait)
-                        _items.Add(New TabData())
+                        Dim newTab As Object = Activator.CreateInstance(Me.ModelType)
+                        _items.Add(newTab)
                         Me.SelectedItem = _items(_items.Count - 1)
                     End Using
                 End Sub
+
+            Dim firstTab As Object = Activator.CreateInstance(Me.ModelType)
+            _items.Add(firstTab)
 
             updateSelectedItem()
 
@@ -337,34 +342,14 @@ Namespace Controls
             Me.PART_TabColumn.Width = New GridLength(If(allTabsWidth > allTabsMaxWidth, allTabsMaxWidth, allTabsWidth) + 5)
         End Sub
 
-        Public Class TabData
-            Inherits NotifyPropertyChangedBase
-
-            Private _folder As Folder
-            Private _selectedItems As IEnumerable(Of Item)
-
-            Public Sub New()
-                Me.Folder = Shell.GetSpecialFolder(SpecialFolders.Home).Clone()
-            End Sub
-
-            Public Property Folder As Folder
-                Get
-                    Return _folder
-                End Get
-                Set(value As Folder)
-                    SetValue(_folder, value)
-                End Set
-            End Property
-
-            Public Property SelectedItems As IEnumerable(Of Item)
-                Get
-                    Return _selectedItems
-                End Get
-                Set(value As IEnumerable(Of Item))
-                    SetValue(_selectedItems, value)
-                End Set
-            End Property
-        End Class
+        Public Property ModelType As Type
+            Get
+                Return GetValue(ModelTypeProperty)
+            End Get
+            Set(value As Type)
+                SetValue(ModelTypeProperty, value)
+            End Set
+        End Property
 
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then

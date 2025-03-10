@@ -35,7 +35,7 @@ Namespace Controls.Parts
         Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As Integer) As Integer
             _dataObject = pDataObj
             _fileNameList = Clipboard.GetFileNameList(pDataObj)
-            _files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(pDataObj)
+            _files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(pDataObj, True)
             _prevSelectedItem = _treeView.SelectedItem
             _treeView.PART_ListBox.Focus()
             Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
@@ -49,6 +49,7 @@ Namespace Controls.Parts
             ' clean up
             If Not _files Is Nothing Then
                 For Each f In _files
+                    f.LogicalParent.Dispose()
                     f.Dispose()
                 Next
             End If
@@ -141,6 +142,7 @@ Namespace Controls.Parts
             ' clean up
             If Not _files Is Nothing Then
                 For Each f In _files
+                    f.LogicalParent.Dispose()
                     f.Dispose()
                 Next
             End If
@@ -184,6 +186,11 @@ Namespace Controls.Parts
         End Function
 
         Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
+            If Not If(_fileNameList?.Count, 0) > 0 Then
+                pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                Return HRESULT.S_OK
+            End If
+
             ' scroll up and down while dragging?
             Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _treeView)
             If pt.Y < 100 Then
@@ -251,7 +258,7 @@ Namespace Controls.Parts
                         insertIndex = _dragInsertParent.Items.Where(Function(i) i.IsVisibleInTree AndAlso Not TypeOf i Is DummyFolder) _
                             .OrderBy(Function(i) i.TreeSortKey).ToList().IndexOf(overItem)
                         Debug.WriteLine("* Drag: insert before item")
-                    ElseIf ptItem.Y >= overListBoxItem.ActualHeight - 3 AndAlso (Not overitem.IsFolder OrElse Not overItem.IsExpanded OrElse CType(overItem, Folder).Items.Count = 0) Then
+                    ElseIf ptItem.Y >= overListBoxItem.ActualHeight - 3 AndAlso (Not overItem.IsFolder OrElse Not overItem.IsExpanded OrElse CType(overItem, Folder).Items.Count = 0) Then
                         Dim child As Object = overItem
                         Dim dip As Object = If(overItem.TreeViewSection, If(overItem.LogicalParent, overItem.Parent))
                         While Not dip Is Nothing _

@@ -13,7 +13,7 @@ Namespace Controls.Parts
 
         Private _tabControl As Controls.TabControl
         Private _dragOpenTimer As Timer
-        Private _lastOverItem As Controls.TabControl.TabData
+        Private _lastOverItem As Object
 
         Public Sub New(tabControl As Controls.TabControl)
             _tabControl = tabControl
@@ -41,7 +41,7 @@ Namespace Controls.Parts
             Return HRESULT.S_OK
         End Function
 
-        Private Function getOverItem(ptWIN32 As WIN32POINT) As Controls.TabControl.TabData
+        Private Function getOverItem(ptWIN32 As WIN32POINT) As Object
             ' translate point to listview
             Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _tabControl)
 
@@ -61,7 +61,7 @@ Namespace Controls.Parts
         End Function
 
         Private Function dragPoint(grfKeyState As UInteger, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
-            Dim overItem As Controls.TabControl.TabData = getOverItem(ptWIN32)
+            Dim overItem As Object = getOverItem(ptWIN32)
 
             If Not overItem Is Nothing AndAlso (_lastOverItem Is Nothing OrElse Not _lastOverItem.Equals(overItem)) Then
                 If Not _dragOpenTimer Is Nothing Then

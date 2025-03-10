@@ -673,19 +673,26 @@ Public Class Shell
                 '        e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                 '        fswNotify(e2)
                 '    End Sub
-                fsw.EnableRaisingEvents = True
+                Try
+                    fsw.EnableRaisingEvents = True
 
-                hNotify =
-                    Functions.SHChangeNotifyRegister(
-                        _hwnd,
-                        SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
-                        SHCNE.UPDATEDIR Or SHCNE.UPDATEITEM Or SHCNE.MEDIAINSERTED _
-                            Or SHCNE.MEDIAREMOVED Or SHCNE.NETSHARE Or SHCNE.NETUNSHARE _
-                            Or SHCNE.SERVERDISCONNECT,
-                        WM.USER + 1,
-                        1,
-                        entry)
-            Else
+                    hNotify =
+                        Functions.SHChangeNotifyRegister(
+                            _hwnd,
+                            SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
+                            SHCNE.UPDATEDIR Or SHCNE.UPDATEITEM Or SHCNE.MEDIAINSERTED _
+                                Or SHCNE.MEDIAREMOVED Or SHCNE.NETSHARE Or SHCNE.NETUNSHARE _
+                                Or SHCNE.SERVERDISCONNECT,
+                            WM.USER + 1,
+                            1,
+                            entry)
+                Catch ex As Exception
+                    fsw.Dispose()
+                    fsw = Nothing
+                End Try
+            End If
+
+            If fsw Is Nothing Then
                 hNotify =
                     Functions.SHChangeNotifyRegister(
                         _hwnd,

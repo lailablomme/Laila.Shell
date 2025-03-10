@@ -123,7 +123,7 @@ Public Class Clipboard
 
     Public Shared Function GetFileNameList(dataObj As ComTypes.IDataObject) As String()
         Dim files() As String
-        files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(dataObj)?.Select(Function(i) i.FullPath).ToArray()
+        files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(dataObj, False)?.Select(Function(i) i.FullPath).ToArray()
         If files Is Nothing OrElse files.Count = 0 Then
             files = ClipboardFormats.CF_HDROP.GetData(dataObj)
         End If

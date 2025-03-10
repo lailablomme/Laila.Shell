@@ -149,8 +149,8 @@ Public Class HomeFolder
                 Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
                 item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
-                result.Add(item.FullPath & "_" & item.DisplayName, item)
-                newFullPaths.Add(item.FullPath & "_" & item.DisplayName)
+                result.Add(item.Pidl.ToString(), item)
+                newFullPaths.Add(item.Pidl.ToString())
                 If TypeOf item Is Folder Then Me.HasSubFolders = True
 
                 count -= 1
@@ -166,8 +166,8 @@ Public Class HomeFolder
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.FREQUENT_FOLDER)
             item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
-            result.Add(item.FullPath & "_" & item.DisplayName, item)
-            newFullPaths.Add(item.FullPath & "_" & item.DisplayName)
+            result.Add(item.Pidl.ToString(), item)
+            newFullPaths.Add(item.Pidl.ToString())
             If TypeOf item Is Folder Then Me.HasSubFolders = True
 
             count -= 1
