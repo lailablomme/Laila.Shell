@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
-  <assemblyIdentity version="0.0.19.0" name="Laila.Shell"/>
+  <assemblyIdentity version="0.0.20.0" name="Laila.Shell"/>
 
 	<dependency>
 		<dependentAssembly>
@@ -8,7 +8,7 @@
 			<assemblyIdentity
                 type="win32"
                 name="Laila.Shell.X"
-                version="0.0.19.0" />
+                version="0.0.20.0" />
 		</dependentAssembly>
 	</dependency>
 
