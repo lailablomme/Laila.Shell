@@ -691,26 +691,26 @@ Public Class Folder
                                     Dim hasDupes As HashSet(Of String) = New HashSet(Of String)
                                     Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)
                                     For Each item In _items
-                                        If Not hasDupes.Contains(item.FullPath) Then
+                                        If Not hasDupes.Contains(item.FullPath & item.DeDupeKey) Then
                                             Try
-                                                previousFullPaths.Add(item.FullPath)
+                                                previousFullPaths.Add(item.FullPath & item.DeDupeKey)
                                             Catch ex As Exception
-                                                hasDupes.Add(item.FullPath)
-                                                previousFullPaths.Remove(item.FullPath)
+                                                hasDupes.Add(item.FullPath & item.DeDupeKey)
+                                                previousFullPaths.Remove(item.FullPath & item.DeDupeKey)
                                             End Try
                                         Else
-                                            previousFullPaths.Add(item.Pidl.ToString())
+                                            previousFullPaths.Add(item.Pidl.ToString() & item.DeDupeKey)
                                         End If
                                     Next
                                     If hasDupes.Count > 0 Then
-                                        For Each item In _items.Where(Function(i) hasDupes.Contains(i.FullPath))
-                                            previousFullPaths.Add(item.Pidl.ToString())
+                                        For Each item In _items.Where(Function(i) hasDupes.Contains(i.FullPath & i.DeDupeKey))
+                                            previousFullPaths.Add(item.Pidl.ToString() & item.DeDupeKey)
                                         Next
                                     End If
                                     Dim newItems As Item() = result.Where(Function(i) Not previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
-                                    Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath, i.Pidl.ToString()))).ToArray()
-                                    existingItems = _items.Where(Function(i) newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath, i.Pidl.ToString()))) _
-                                            .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not hasDupes.Contains(i.FullPath), i.FullPath, i.Pidl.ToString())))).ToArray()
+                                    Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
+                                    existingItems = _items.Where(Function(i) newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
+                                            .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
 
                                     For Each item In existingItems
                                         If item.Item1.IsPinned <> item.Item2.IsPinned Then item.Item1.IsPinned = item.Item2.IsPinned
@@ -899,11 +899,11 @@ Public Class Folder
                                     If isDebuggerAttached Then
                                         ' only check if debugger is attached, to avoid exception,
                                         ' otherwise, rely on exception being thrown, for speed
-                                        isAlreadyAdded = result.ContainsKey(newItem.FullPath)
+                                        isAlreadyAdded = result.ContainsKey(newItem.FullPath & newItem.DeDupeKey)
                                     End If
                                     If Not isAlreadyAdded Then
                                         Try
-                                            result.Add(newItem.FullPath, newItem)
+                                            result.Add(newItem.FullPath & newItem.DeDupeKey, newItem)
                                         Catch ex As Exception
                                             isAlreadyAdded = True
                                         End Try
@@ -980,12 +980,16 @@ Public Class Folder
 
                     If hasDupes.Count > 0 Then
                         For Each item In result.Where(Function(kv) hasDupes.Exists(Function(d) d.FullPath = kv.Value.FullPath)).ToList()
-                            hasDupes.Add(item.Value)
-                            result.Remove(item.Key)
+                            If Not hasDupes.Exists(Function(d) d.Pidl.Equals(item.Value.Pidl)) Then
+                                hasDupes.Add(item.Value)
+                                result.Remove(item.Key)
+                            Else
+                                hasDupes.Remove(hasDupes.FirstOrDefault(Function(d) d.Pidl.Equals(item.Value.Pidl)))
+                            End If
                         Next
                         For Each item In hasDupes
                             If Not result.ContainsKey(item.Pidl.ToString()) Then
-                                result.Add(item.Pidl.ToString(), item)
+                                result.Add(item.Pidl.ToString() & item.DeDupeKey, item)
                             End If
                         Next
                     End If

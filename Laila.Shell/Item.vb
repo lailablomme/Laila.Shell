@@ -266,6 +266,8 @@ Public Class Item
         End Get
     End Property
 
+    Public Property DeDupeKey As String = String.Empty
+
     Protected Overridable Function GetNewShellItem() As IShellItem2
         Dim result As IShellItem2 = Nothing
         If Not Me.Pidl Is Nothing Then

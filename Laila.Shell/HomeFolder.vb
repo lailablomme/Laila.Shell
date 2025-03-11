@@ -16,6 +16,7 @@ Imports Laila.Shell.Events
 Imports System.Collections.ObjectModel
 Imports System.Windows.Controls
 Imports Laila.Shell.Controls
+Imports System.Windows.Data
 
 Public Class HomeFolder
     Inherits Folder
@@ -149,8 +150,9 @@ Public Class HomeFolder
                 Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
                 item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
-                result.Add(item.Pidl.ToString(), item)
-                newFullPaths.Add(item.Pidl.ToString())
+                item.DeDupeKey = "PINNED"
+                result.Add(item.FullPath & item.DeDupeKey, item)
+                newFullPaths.Add(item.FullPath & item.DeDupeKey)
                 If TypeOf item Is Folder Then Me.HasSubFolders = True
 
                 count -= 1
@@ -166,8 +168,9 @@ Public Class HomeFolder
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.FREQUENT_FOLDER)
             item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
-            result.Add(item.Pidl.ToString(), item)
-            newFullPaths.Add(item.Pidl.ToString())
+            item.DeDupeKey = "FREQUENT"
+            result.Add(item.FullPath & item.DeDupeKey, item)
+            newFullPaths.Add(item.FullPath & item.DeDupeKey)
             If TypeOf item Is Folder Then Me.HasSubFolders = True
 
             count -= 1
@@ -236,10 +239,11 @@ Public Class HomeFolder
     End Function
 
     Public Function DragInsertBefore(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer, overListBoxItem As ListBoxItem) As HRESULT Implements ISupportDragInsert.DragInsertBefore
+        Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Me.Items)
         Dim canPinItem As Boolean =
             index = 0 _
-            OrElse (index > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
-            OrElse (Me.Items(index - 1).IsPinned _
+            OrElse (index > view.Count - 1 AndAlso view(view.Count - 1).IsPinned) _
+            OrElse (view(index - 1).IsPinned _
                 AndAlso (UIHelper.GetParentOfType(Of BaseFolderView)(overListBoxItem) Is Nothing _
                          OrElse CType(overListBoxItem?.DataContext, Item).IsPinned))
         If canPinItem Then
