@@ -39,7 +39,7 @@ Public Class Link
             Sub()
                 Try
                     Me.ShellLink.Resolve(IntPtr.Zero, flags)
-                Catch ex As NotImplementedException
+                Catch ex As Exception
                 End Try
             End Sub,, _threadId)
     End Sub

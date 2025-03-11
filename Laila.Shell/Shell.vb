@@ -676,24 +676,25 @@ Public Class Shell
                 Try
                     fsw.EnableRaisingEvents = True
 
-                    hNotify =
-                        Functions.SHChangeNotifyRegister(
-                            _hwnd,
-                            SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
-                            SHCNE.UPDATEDIR Or SHCNE.UPDATEITEM Or SHCNE.MEDIAINSERTED _
-                                Or SHCNE.MEDIAREMOVED Or SHCNE.NETSHARE Or SHCNE.NETUNSHARE _
-                                Or SHCNE.SERVERDISCONNECT,
-                            WM.USER + 1,
-                            1,
-                            entry)
+                    'hNotify =
+                    '    Functions.SHChangeNotifyRegister(
+                    '        _hwnd,
+                    '        SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
+                    '        SHCNE.UPDATEDIR Or SHCNE.UPDATEITEM Or SHCNE.MEDIAINSERTED _
+                    '            Or SHCNE.MEDIAREMOVED Or SHCNE.NETSHARE Or SHCNE.NETUNSHARE _
+                    '            Or SHCNE.SERVERDISCONNECT,
+                    '        WM.USER + 1,
+                    '        1,
+                    '        entry)
                 Catch ex As Exception
+                    Debug.WriteLine(ex.Message)
                     fsw.Dispose()
                     fsw = Nothing
                 End Try
             End If
 
-            If fsw Is Nothing Then
-                hNotify =
+            'If fsw Is Nothing Then
+            hNotify =
                     Functions.SHChangeNotifyRegister(
                         _hwnd,
                         SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
@@ -701,7 +702,7 @@ Public Class Shell
                         WM.USER + 1,
                         1,
                         entry)
-            End If
+            'End If
 
             SyncLock _listenersLock
                 If hNotify.HasValue Then _listenerhNotifies.Add(folder.FullPath, hNotify)
