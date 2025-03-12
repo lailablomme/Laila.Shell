@@ -555,7 +555,7 @@ Public Class Folder
                 Me.CancelEnumeration()
             End If
             _isEnumerated = False
-            Await GetItemsAsync(False)
+            Await GetItemsAsync()
             Me.IsRefreshingItems = False
         End Using
     End Function
@@ -587,7 +587,8 @@ Public Class Folder
         End Try
     End Function
 
-    Public Overridable Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True) As Task(Of List(Of Item))
+    Public Overridable Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True,
+                                                    Optional doRecursive As Boolean = False) As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
@@ -598,7 +599,7 @@ Public Class Folder
                     If Not _isEnumerated Then
                         Me.IsLoading = True
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
-                        enumerateItems(True, _enumerationCancellationTokenSource.Token, threadId, doRefreshAllExistingItems)
+                        enumerateItems(True, _enumerationCancellationTokenSource.Token, threadId, doRefreshAllExistingItems, doRecursive)
                     End If
                     tcs.SetResult(_items.ToList())
                 Catch ex As Exception
@@ -628,7 +629,7 @@ Public Class Folder
     End Sub
 
     Protected Sub enumerateItems(isAsync As Boolean, cancellationToken As CancellationToken, threadId As Integer,
-                                 Optional doRefreshAllExistingItems As Boolean = True)
+                                 Optional doRefreshAllExistingItems As Boolean = True, Optional doRecursive As Boolean = False)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
         Me.IsEmpty = False
 
@@ -637,7 +638,7 @@ Public Class Folder
         If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
-        enumerateItems(flags, cancellationToken, threadId, doRefreshAllExistingItems)
+        enumerateItems(flags, cancellationToken, threadId, doRefreshAllExistingItems, doRecursive)
 
         If Not cancellationToken.IsCancellationRequested Then
             _wasActivity = False
@@ -649,7 +650,7 @@ Public Class Folder
     End Sub
 
     Protected Sub enumerateItems(flags As UInt32, cancellationToken As CancellationToken, threadId As Integer,
-                                 doRefreshAllExistingItems As Boolean)
+                                 doRefreshAllExistingItems As Boolean, doRecursive As Boolean)
         If disposedValue Then Return
 
         Dim result As Dictionary(Of String, Item) = New Dictionary(Of String, Item)
@@ -791,6 +792,14 @@ Public Class Folder
                                             Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(sortPropertyKey)?.Value
                                         ElseIf isSortPropertyDisplaySortValue Then
                                             Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
+                                        End If
+
+                                        If doRecursive AndAlso TypeOf item.Item1 Is Folder Then
+                                            Dim recursiveFolder As Folder = item.Item1
+                                            If recursiveFolder._isLoaded Then
+                                                recursiveFolder._isEnumerated = False
+                                                recursiveFolder.GetItemsAsync(doRefreshAllExistingItems, doRecursive)
+                                            End If
                                         End If
                                     Catch ex As Exception
                                         Debug.WriteLine("Exception refreshing " & item.Item1.FullPath & ": " & ex.Message)
@@ -1184,23 +1193,35 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
-                                    Sub()
-                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                Sub()
+                                    Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
-                                        If existing Is Nothing Then
-                                            Me.InitializeItem(e.Item1)
-                                            e.Item1._parent = Me
-                                            e.Item1.HookUpdates()
-                                            e.IsHandled1 = True
-                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                            _items.InsertSorted(e.Item1, c)
-                                            Me.IsEmpty = _items.Count = 0
-                                        End If
-                                    End Sub)
-                            Shell.GlobalThreadPool.Run(
+                                    If existing Is Nothing Then
+                                        Me.InitializeItem(e.Item1)
+                                        e.Item1.LogicalParent = Me
+                                        e.Item1.HookUpdates()
+                                        e.IsHandled1 = True
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(e.Item1, c)
+                                        Me.IsEmpty = _items.Count = 0
+                                    ElseIf TypeOf existing Is Folder Then
+                                        Shell.GlobalThreadPool.Run(
+                                            Sub()
+                                                Dim existingFolder As Folder = existing
+                                                Dim oldPidl As Pidl = Me.Pidl?.Clone()
+                                                existingFolder.Refresh(e.Item1?.ShellItem2, e.Item1?.Pidl?.Clone(), e.Item1?.FullPath)
+                                                e.Item1._shellItem2 = Nothing
+                                                existingFolder._isEnumerated = False
+                                                existingFolder.GetItemsAsync(True, True)
+                                            End Sub)
+                                    End If
+                                End Sub)
+                            If e.IsHandled1 Then
+                                Shell.GlobalThreadPool.Run(
                                     Sub()
                                         e.Item1.Refresh()
                                     End Sub)
+                            End If
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
@@ -1216,9 +1237,9 @@ Public Class Folder
                                         If Not existing Is Nothing Then
                                             If TypeOf existing Is Folder Then
                                                 Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                            .Folder = existing,
-                                            .[Event] = e.Event
-                                        })
+                                                    .Folder = existing,
+                                                    .[Event] = e.Event
+                                                })
                                             End If
                                             existing.Dispose()
                                         End If
@@ -1232,7 +1253,7 @@ Public Class Folder
                             Sub()
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
                                     Me.InitializeItem(e.Item1)
-                                    e.Item1._parent = Me
+                                    e.Item1.LogicalParent = Me
                                     e.Item1.HookUpdates()
                                     e.IsHandled1 = True
                                     Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
@@ -1254,17 +1275,18 @@ Public Class Folder
                                     item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                     If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                                         Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                        .Folder = item,
-                                        .[Event] = e.Event
-                                    })
+                                            .Folder = item,
+                                            .[Event] = e.Event
+                                        })
                                         item.Dispose()
                                     End If
                                 End Sub)
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
-                        If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
-                                OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity) Then
+                        If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
+                                OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) _
+                                AndAlso (e.Event = SHCNE.UPDATEDIR OrElse _wasActivity) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False
@@ -1272,6 +1294,28 @@ Public Class Folder
                             End If
                         End If
                     End If
+                    'Case SHCNE.RENAMEFOLDER
+                    '    If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _
+                    '        OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) _
+                    '        AndAlso (e.Item2.IsFolder AndAlso Not e.Item2.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
+                    '                 AndAlso e.Item1.Pidl Is Nothing) Then
+                    '        Dim existing As Item = Nothing
+                    '        UIHelper.OnUIThread(
+                    '            Sub()
+                    '                existing = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                    '                                AndAlso (i.Pidl?.Equals(e.Item2.Pidl) OrElse i.FullPath?.Equals(e.Item2.FullPath)))
+                    '            End Sub)
+                    '        If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
+                    '            Shell.GlobalThreadPool.Run(
+                    '                Sub()
+                    '                    Dim existingFolder As Folder = existing
+                    '                    Dim oldPidl As Pidl = Me.Pidl?.Clone()
+                    '                    existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
+                    '                    existingFolder._isEnumerated = False
+                    '                    existingFolder.GetItemsAsync(True, True)
+                    '                End Sub)
+                    '        End If
+                    '    End If
             End Select
         End If
     End Sub
@@ -1312,7 +1356,7 @@ Public Class Folder
         Shell.GlobalThreadPool.Add(
             Sub()
                 ' dispose outside of the lock because it can take a while
-                For Each item In _items
+                For Each item In _items.ToList()
                     item.Dispose()
                 Next
 

@@ -107,25 +107,22 @@ Namespace Controls
             setDoExpandTreeViewToCurrentFolder()
             setDoShowLibrariesInTreeView()
 
-            AddHandler Shell.Notification,
-                Sub(s As Object, e As NotificationEventArgs)
-                    Select Case e.Event
-                        Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                            UIHelper.OnUIThread(
-                                Async Sub()
-                                    If Not Me.SelectedItem Is Nothing AndAlso TypeOf e.Item1 Is Folder Then
-                                        If Not Me.SelectedItem.LogicalParent Is Nothing AndAlso Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
-                                            Await Me.SetSelectedFolder(Me.SelectedItem.LogicalParent)
-                                        ElseIf Not Me.SelectedItem.Pidl.Equals(e.Item1.Pidl) Then
-                                            Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
-                                            If Not f Is Nothing Then Await Me.SetSelectedFolder(f)
-                                        End If
-                                    End If
-                                End Sub)
-                    End Select
-                End Sub
+            AddHandler Shell.Notification, AddressOf shell_Notification
 
             CollectionViewSource.GetDefaultView(Me.Items).Refresh()
+        End Sub
+
+        Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+            Select Case e.Event
+                Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
+                    Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If Not f Is Nothing Then
+                                Me.Folder = f
+                            End If
+                        End Sub)
+            End Select
         End Sub
 
         Private Sub loadSections()
@@ -266,9 +263,16 @@ Namespace Controls
             End If
         End Sub
 
-        Private Function GetParentOfSelectionBefore(folder As Folder, Optional selectedItem As Folder = Nothing) As Folder
-            If selectedItem Is Nothing Then selectedItem = Me.SelectedItem
-            If selectedItem?.Pidl.Equals(folder.Pidl) Then
+        Private Function GetParentOfSelectionBefore(folder As Item, Optional selectedItem As Folder = Nothing) As Folder
+            If selectedItem Is Nothing Then
+                UIHelper.OnUIThread(
+                    Sub()
+                        selectedItem = Me.SelectedItem
+                    End Sub)
+            End If
+            If selectedItem Is Nothing Then
+                Return Nothing
+            ElseIf selectedItem?.Pidl?.Equals(folder.Pidl) OrElse selectedItem.FullPath?.Equals(folder.FullPath) Then
                 Return selectedItem.LogicalParent
             ElseIf Not selectedItem?.LogicalParent Is Nothing Then
                 Return Me.GetParentOfSelectionBefore(folder, selectedItem.LogicalParent)
@@ -682,7 +686,7 @@ Namespace Controls
                             UIHelper.OnUIThreadAsync(
                                 Sub()
                                     For Each item2 In Me.Items.Where(Function(i) i.CanShowInTree _
-                                        AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
+                                        AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                                         If Me.Items.Contains(item2) Then
                                             Me.Items.Remove(item2)
                                         End If
@@ -696,48 +700,45 @@ Namespace Controls
         End Sub
 
         Private Sub folder_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)
-            UIHelper.OnUIThreadAsync(
-                Sub()
-                    Select Case e.Action
-                        Case NotifyCollectionChangedAction.Add
-                            For Each item In e.NewItems
-                                If CType(item, Item).IsVisibleInTree Then
-                                    Me.Items.Add(item)
-                                End If
-                            Next
-                        Case NotifyCollectionChangedAction.Remove
-                            For Each item In e.OldItems
-                                If CType(item, Item).CanShowInTree Then
-                                    Me.Items.Remove(item)
-                                End If
-                            Next
-                        Case NotifyCollectionChangedAction.Replace
-                            For Each item In e.NewItems
-                                If CType(item, Item).IsVisibleInTree Then
-                                    Me.Items.Add(item)
-                                End If
-                            Next
-                            For Each item In e.OldItems
-                                If CType(item, Item).CanShowInTree Then
-                                    Me.Items.Remove(item)
-                                End If
-                            Next
-                        Case NotifyCollectionChangedAction.Reset
-                            Dim collection As ObservableCollection(Of Item) = s
-                            Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
+            Select Case e.Action
+                Case NotifyCollectionChangedAction.Add
+                    For Each item In e.NewItems
+                        If CType(item, Item).IsVisibleInTree Then
+                            Me.Items.Add(item)
+                        End If
+                    Next
+                Case NotifyCollectionChangedAction.Remove
+                    For Each item In e.OldItems
+                        If CType(item, Item).CanShowInTree Then
+                            Me.Items.Remove(item)
+                        End If
+                    Next
+                Case NotifyCollectionChangedAction.Replace
+                    For Each item In e.NewItems
+                        If CType(item, Item).IsVisibleInTree Then
+                            Me.Items.Add(item)
+                        End If
+                    Next
+                    For Each item In e.OldItems
+                        If CType(item, Item).CanShowInTree Then
+                            Me.Items.Remove(item)
+                        End If
+                    Next
+                Case NotifyCollectionChangedAction.Reset
+                    Dim collection As ObservableCollection(Of Item) = s
+                    Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
-                            If Not folder Is Nothing Then
-                                For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
-                                    AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
-                                    Me.Items.Remove(item)
-                                Next
-                                For Each item In collection.Where(Function(i) _
-                                    Not i.disposedValue AndAlso i.IsVisibleInTree)
-                                    Me.Items.Add(item)
-                                Next
-                            End If
-                    End Select
-                End Sub)
+                    If Not folder Is Nothing Then
+                        For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
+                            AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
+                            Me.Items.Remove(item)
+                        Next
+                        For Each item In collection.Where(Function(i) _
+                            Not i.disposedValue AndAlso i.IsVisibleInTree)
+                            Me.Items.Add(item)
+                        Next
+                    End If
+            End Select
         End Sub
 
         Private Sub folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
@@ -1029,6 +1030,8 @@ Namespace Controls
             If Not disposedValue Then
                 If disposing Then
                     ' dispose managed state (managed objects)
+                    RemoveHandler Shell.Notification, AddressOf shell_Notification
+
                     If Not _typeToSearchTimer Is Nothing Then
                         _typeToSearchTimer.Dispose()
                         _typeToSearchTimer = Nothing

@@ -77,6 +77,8 @@ Public Class Clipboard
         Using Shell.OverrideCursor(Cursors.Wait)
             Dim thread As Thread = New Thread(New ThreadStart(
                 Sub()
+                    Functions.OleInitialize(IntPtr.Zero)
+
                     Dim dataObject As ComTypes.IDataObject = Nothing
                     Functions.OleGetClipboard(dataObject)
 

@@ -152,11 +152,15 @@ Namespace Helpers
             End If
         End Function
 
+        Public Sub Cancel()
+            _disposeTokensSource.Cancel()
+        End Sub
+
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then
                 If disposing Then
                     ' TODO: dispose managed state (managed objects)
-                    _disposeTokensSource.Cancel()
+                    Me.Cancel()
 
                     ' wait for threads to finish so we don't have memory issues on shutdown
                     Dim count As Integer = -1

@@ -43,7 +43,7 @@ Public Class Item
     Private _contentViewModeProperties() As [Property]
     Private _isVisibleInAddressBar As Boolean
     Private _treeSortPrefix As String = String.Empty
-    Protected _logicalParent As Folder
+    Friend _logicalParent As Folder
     Private _itemNameDisplaySortValuePrefix As String
     Protected _canShowInTree As Boolean
     Friend _livesOnThreadId As Integer
@@ -371,7 +371,9 @@ Public Class Item
 
         If Not _logicalParent Is Nothing _
             AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> _attributes.HasFlag(SFGAO.FOLDER) _
-                     OrElse oldAttr.HasFlag(SFGAO.LINK) <> _attributes.HasFlag(SFGAO.LINK)) Then
+                     OrElse oldAttr.HasFlag(SFGAO.LINK) <> _attributes.HasFlag(SFGAO.LINK) _
+                     OrElse TypeOf Me Is Folder AndAlso Not _attributes.HasFlag(SFGAO.FOLDER) _
+                     OrElse Not TypeOf Me Is Folder AndAlso _attributes.HasFlag(SFGAO.FOLDER)) Then
             Dim newItem As Item = Me.Clone()
             newItem.LogicalParent = _logicalParent
             UIHelper.OnUIThread(
@@ -1362,22 +1364,49 @@ Public Class Item
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _
-                        OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) Then
-                        Shell.GlobalThreadPool.Run(
-                            Sub()
-                                Dim oldPidl As Pidl = Me.Pidl?.Clone()
-                                Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
-                                If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
-                                    PinnedItems.RenameItem(oldPidl, Me.Pidl)
-                                    FrequentFolders.RenameItem(oldPidl, Me.Pidl)
-                                End If
-                                If Not oldPidl Is Nothing Then
-                                    oldPidl.Dispose()
-                                End If
-                                If Not e.Item2 Is Nothing Then
-                                    e.Item2._shellItem2 = Nothing
-                                End If
-                            End Sub)
+                        OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) _
+                        AndAlso Not (Me.IsFolder AndAlso Not Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
+                                     AndAlso e.Item1.Pidl Is Nothing AndAlso IO.Path.GetFileName(e.Item2?.FullPath)?.Contains("~") _
+                                     AndAlso IO.Path.GetExtension(e.Item2?.FullPath?.ToLower())?.Equals(".tmp")) Then
+                        Dim doRefresh As Boolean = True
+                        If (e.Event = SHCNE.RENAMEFOLDER AndAlso e.Item2.IsFolder AndAlso Not e.Item2.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
+                            AndAlso e.Item1.Pidl Is Nothing AndAlso Not _logicalParent Is Nothing) Then
+                            Dim existing As Item = Nothing
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    existing = _logicalParent.Items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                                AndAlso (i.Pidl?.Equals(e.Item2.Pidl) OrElse i.FullPath?.Equals(e.Item2.FullPath)))
+                                End Sub)
+                            If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
+                                doRefresh = False
+                                Shell.GlobalThreadPool.Run(
+                                    Sub()
+                                        Dim existingFolder As Folder = existing
+                                        Dim oldPidl As Pidl = Me.Pidl?.Clone()
+                                        existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
+                                        e.Item2._shellItem2 = Nothing
+                                        existingFolder._isEnumerated = False
+                                        existingFolder.GetItemsAsync(True, True)
+                                    End Sub)
+                            End If
+                        End If
+                        If doRefresh Then
+                            Shell.GlobalThreadPool.Run(
+                                Sub()
+                                    Dim oldPidl As Pidl = Me.Pidl?.Clone()
+                                    Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
+                                    If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                                        PinnedItems.RenameItem(oldPidl, Me.Pidl)
+                                        FrequentFolders.RenameItem(oldPidl, Me.Pidl)
+                                    End If
+                                    If Not oldPidl Is Nothing Then
+                                        oldPidl.Dispose()
+                                    End If
+                                    If Not e.Item2 Is Nothing Then
+                                        e.Item2._shellItem2 = Nothing
+                                    End If
+                                End Sub)
+                        End If
                     End If
             End Select
         End If
@@ -1419,7 +1448,6 @@ Public Class Item
                                 _logicalParent._items.Remove(Me)
                                 _logicalParent._isEnumerated = False
                                 _logicalParent.IsEmpty = _logicalParent._items.Count = 0
-                                _logicalParent = Nothing
                             End If
                             If Not _parent Is Nothing Then
                                 _parent._items.Remove(Me)

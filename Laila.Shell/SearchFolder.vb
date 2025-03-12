@@ -104,7 +104,8 @@ Public Class SearchFolder
         MyBase.New(shellItem2, parent, False, True, threadId)
     End Sub
 
-    Public Overrides Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True) As Task(Of List(Of Item))
+    Public Overrides Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True,
+                                                  Optional doRecursive As Boolean = False) As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
         Dim staThread As Thread = New Thread(New ThreadStart(

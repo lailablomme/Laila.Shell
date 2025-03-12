@@ -6,9 +6,11 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports Laila.Shell.Controls.Parts
+Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
 
 Namespace Controls
@@ -59,7 +61,40 @@ Namespace Controls
                             End Sub
                     End If
                 End Sub
+
+            AddHandler Shell.Notification, AddressOf shell_Notification
         End Sub
+
+        Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+            Select Case e.Event
+                Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
+                    Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If Not f Is Nothing Then
+                                Me.Folder = f
+                            End If
+                        End Sub)
+            End Select
+        End Sub
+
+        Private Function GetParentOfSelectionBefore(folder As Item, Optional selectedItem As Folder = Nothing) As Folder
+            If selectedItem Is Nothing Then
+                UIHelper.OnUIThread(
+                    Sub()
+                        selectedItem = Me.Folder
+                    End Sub)
+            End If
+            If selectedItem Is Nothing Then
+                Return Nothing
+            ElseIf selectedItem?.Pidl?.Equals(folder.Pidl) OrElse selectedItem.FullPath?.Equals(folder.FullPath) Then
+                Return selectedItem.LogicalParent
+            ElseIf Not selectedItem?.LogicalParent Is Nothing Then
+                Return Me.GetParentOfSelectionBefore(folder, selectedItem.LogicalParent)
+            Else
+                Return Nothing
+            End If
+        End Function
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
@@ -271,6 +306,8 @@ Namespace Controls
             If Not disposedValue Then
                 If disposing Then
                     ' dispose managed state (managed objects)
+                    RemoveHandler Shell.Notification, AddressOf shell_Notification
+
                     If Not Me.Folder Is Nothing Then
                         Me.Folder.IsActiveInFolderView = False
                     End If

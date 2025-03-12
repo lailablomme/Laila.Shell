@@ -212,7 +212,8 @@ Namespace Controls
                                                     If _cancelTokenSource.IsCancellationRequested Then Return
                                                     SyncLock previewer._previewItem._shellItemLock
                                                         If _cancelTokenSource.IsCancellationRequested Then Return
-                                                        h = previewer._previewItem.ShellItem2.BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
+                                                        h = CType(previewer._previewItem.ShellItem2, IShellItem2ForIStream) _
+                                                            .BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
                                                     End SyncLock
                                                     Debug.WriteLine("BHID_Stream=" & h.ToString())
                                                 End If

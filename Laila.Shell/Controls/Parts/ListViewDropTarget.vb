@@ -8,6 +8,7 @@ Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Interop.Folders
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Windows
 
@@ -30,6 +31,7 @@ Namespace Controls.Parts
         Private _files As List(Of Item)
         Private _dragInsertParent As ISupportDragInsert = Nothing
         Private _insertIndex As Long = -2
+        Private _threads(0) As Helpers.ThreadPool
 
         Public Sub New(folderView As FolderView)
             _folderView = folderView
@@ -43,6 +45,8 @@ Namespace Controls.Parts
             _prevSelectedItems = _folderView.SelectedItems?.ToList()
             If _prevSelectedItems Is Nothing Then _prevSelectedItems = {}
             _folderView.ActiveView.PART_ListBox.Focus()
+            ReDim _threads(_threads.Count + 1)
+            _threads(_threads.Count - 1) = New Helpers.ThreadPool(1)
             Return dragPoint(grfKeyState, ptWIN32, pdwEffect)
         End Function
 
@@ -82,7 +86,12 @@ Namespace Controls.Parts
                         _lastDropTarget = Nothing
                     End If
                     _lastDropTarget = Nothing
+                    _threads(_threads.Count - 1).Dispose()
+                    ReDim _threads(_threads.Count - 1)
                 End Try
+            Else
+                _threads(_threads.Count - 1).Dispose()
+                ReDim _threads(_threads.Count - 1)
             End If
             Return 0
         End Function
@@ -110,33 +119,41 @@ Namespace Controls.Parts
             End If
 
             If Not _lastDropTarget Is Nothing Then
-                Try
-                    Dim overItem As Item = _folderView.ActiveView.DragViewStrategy.GetOverListBoxItem(ptWIN32)?.DataContext
-                    If Not overItem Is Nothing AndAlso overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" Then
-                        Dim fo As IFileOperation = Nothing
-                        Try
-                            fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                            If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                            fo.DeleteItems(_dataObject)
-                            fo.PerformOperations()
-                            Return HRESULT.S_OK
-                        Finally
-                            If Not fo Is Nothing Then
-                                Marshal.ReleaseComObject(fo)
-                                fo = Nothing
-                            End If
-                        End Try
-                    Else
-                        Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect)
-                        Debug.WriteLine("drop=" & h.ToString())
-                        Return h
-                    End If
-                Finally
-                    If Not _lastDropTarget Is Nothing Then
-                        Marshal.ReleaseComObject(_lastDropTarget)
-                        _lastDropTarget = Nothing
-                    End If
-                End Try
+                Dim overItem As Item = _folderView.ActiveView.DragViewStrategy.GetOverListBoxItem(ptWIN32)?.DataContext
+                If overItem Is Nothing Then overItem = _folderView.Folder
+
+                Dim t As Helpers.ThreadPool = _threads(_threads.Count - 1)
+                Dim pdwEffect2 As Integer = pdwEffect
+                t.Add(
+                    Sub()
+                        If overItem.FullPath = "shell:::{645FF040-5081-101B-9F08-00AA002F954E}" Then
+                            Dim fo As IFileOperation = Nothing
+                            Try
+                                fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
+                                If grfKeyState.HasFlag(MK.MK_SHIFT) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
+                                fo.DeleteItems(_dataObject)
+                                fo.PerformOperations()
+                            Finally
+                                If Not fo Is Nothing Then
+                                    Marshal.ReleaseComObject(fo)
+                                    fo = Nothing
+                                End If
+                            End Try
+                        Else
+                            Dim h As HRESULT = _lastDropTarget.Drop(pDataObj, grfKeyState, ptWIN32, pdwEffect2)
+                            Debug.WriteLine("drop=" & h.ToString())
+                        End If
+
+                        If Not _lastDropTarget Is Nothing Then
+                            Marshal.ReleaseComObject(_lastDropTarget)
+                            _lastDropTarget = Nothing
+                        End If
+
+                        t.Cancel()
+                        Shell.RemoveFromThreadPoolCache(t)
+                    End Sub)
+            Else
+                _threads(_threads.Count - 1).Dispose()
             End If
 
             If Not _files Is Nothing Then
@@ -146,7 +163,9 @@ Namespace Controls.Parts
                 Next
             End If
 
-            Return 0
+            ReDim _threads(_threads.Count - 1)
+
+            Return HRESULT.S_OK
         End Function
 
         Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
@@ -284,12 +303,25 @@ Namespace Controls.Parts
 
                         If Not isOurSelvesOrParent Then
                             ' try get droptarget
-                            If Not overItem.Parent Is Nothing Then
-                                overItem.Parent.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-                            Else
-                                ' desktop
-                                Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
-                            End If
+                            _threads(_threads.Count - 1).Run(
+                                Sub()
+                                    Dim shellFolder As IShellFolder = Nothing
+                                    Try
+                                        If Not overItem.Parent Is Nothing Then
+                                            shellFolder = overItem.Parent.GetShellFolderOnCurrentThread()
+                                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                                        Else
+                                            ' desktop
+                                            shellFolder = Shell.Desktop.GetShellFolderOnCurrentThread()
+                                            shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
+                                        End If
+                                    Finally
+                                        If Not shellFolder Is Nothing Then
+                                            Marshal.ReleaseComObject(shellFolder)
+                                            shellFolder = Nothing
+                                        End If
+                                    End Try
+                                End Sub)
                         End If
 
                         If Not dropTarget Is Nothing Then
