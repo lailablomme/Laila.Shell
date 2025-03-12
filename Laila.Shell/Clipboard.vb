@@ -130,7 +130,7 @@ Public Class Clipboard
         Return files
     End Function
 
-    Public Shared Function GetHasGlobalData(clipboardFormat As String)
+    Public Shared Function GetHasGlobalData(clipboardFormat As String) As Boolean
         Dim dataObject As ComTypes.IDataObject = Nothing
         Try
             Functions.OleGetClipboard(dataObject)
@@ -143,11 +143,11 @@ Public Class Clipboard
         End Try
     End Function
 
-    Public Shared Function GetHasGlobalData(dataObject As ComTypes.IDataObject, clipboardFormat As String)
+    Public Shared Function GetHasGlobalData(dataObject As ComTypes.IDataObject, clipboardFormat As String) As Boolean
         Return GetHasGlobalData(dataObject, Functions.RegisterClipboardFormat(clipboardFormat))
     End Function
 
-    Public Shared Function GetHasGlobalData(dataObject As ComTypes.IDataObject, clipboardFormat As Short)
+    Public Shared Function GetHasGlobalData(dataObject As ComTypes.IDataObject, clipboardFormat As Short) As Boolean
         Dim format As FORMATETC = New FORMATETC() With {
             .cfFormat = clipboardFormat,
             .dwAspect = DVASPECT.DVASPECT_CONTENT,

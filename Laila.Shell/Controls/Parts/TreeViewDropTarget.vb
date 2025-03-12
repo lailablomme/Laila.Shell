@@ -186,11 +186,6 @@ Namespace Controls.Parts
         End Function
 
         Private Function dragPoint(grfKeyState As MK, ptWIN32 As WIN32POINT, ByRef pdwEffect As UInteger) As Integer
-            If Not If(_fileNameList?.Count, 0) > 0 Then
-                pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-                Return HRESULT.S_OK
-            End If
-
             ' scroll up and down while dragging?
             Dim pt As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, _treeView)
             If pt.Y < 100 Then
