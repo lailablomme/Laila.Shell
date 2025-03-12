@@ -17,12 +17,13 @@
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
 	<PackageProjectUrl>https://laila-shell.sourceforge.io/</PackageProjectUrl>
-	<PackageReleaseNotes>This is a work in progress (pre-alpha). Hang on.
+	<PackageReleaseNotes>This is a work in progress (alpha). Hang on.
 Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleaseNotes>
 	<RepositoryUrl>https://git.code.sf.net/p/laila-shell/code</RepositoryUrl>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -175,6 +176,10 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
   <ItemGroup>
     <None Update="Laila.Shell.manifest">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 
