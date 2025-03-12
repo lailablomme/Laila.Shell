@@ -268,17 +268,19 @@ Namespace Controls
 
                                 If Not previewer._handler Is Nothing AndAlso previewer.IsVisible Then
                                     Dim hwnd As IntPtr
-                                    If _cancelTokenSource.IsCancellationRequested Then Return
                                     UIHelper.OnUIThread(
                                         Sub()
-                                            makeWindow(previewer)
-                                            Dim ih As New WindowInteropHelper(previewer._window)
-                                            ih.EnsureHandle()
-                                            hwnd = ih.Handle
-                                            previewer._handler.SetWindow(hwnd, getRect(previewer))
+                                            If _cancelTokenSource.IsCancellationRequested Then Return
+                                            If Not previewer._handler Is Nothing AndAlso previewer.IsVisible Then
+                                                makeWindow(previewer)
+                                                Dim ih As New WindowInteropHelper(previewer._window)
+                                                ih.EnsureHandle()
+                                                hwnd = ih.Handle
+                                                previewer._handler.SetWindow(hwnd, getRect(previewer))
+                                            End If
                                         End Sub)
                                     If _cancelTokenSource.IsCancellationRequested Then Return
-                                    h = previewer._handler.DoPreview()
+                                    h = If(previewer._handler?.DoPreview(), HRESULT.S_FALSE)
                                     If _cancelTokenSource.IsCancellationRequested Then Return
                                     Debug.WriteLine("IPreviewHandler.DoPreview=" & h.ToString())
                                     'Dim color As Color = Colors.Red
