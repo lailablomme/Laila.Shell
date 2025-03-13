@@ -96,6 +96,14 @@ Public Class Folder
         _canShowInTree = True
     End Sub
 
+    Protected Overrides Sub AutohookUpdates()
+        If _doHookUpdates AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse Me._logicalParent?.IsActiveInFolderView OrElse Me.IsActiveInFolderView) Then
+            Me.HookUpdates()
+        Else
+            Me.UnhookUpdates()
+        End If
+    End Sub
+
     Friend Overridable Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
         Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
     End Function
@@ -139,6 +147,7 @@ Public Class Folder
         Set(value As Boolean)
             SetValue(_isExpanded, value)
 
+            Me.AutohookUpdates()
             If value Then
                 Me.GetItemsAsync()
             Else
@@ -156,6 +165,7 @@ Public Class Folder
         Set(value As Boolean)
             SetValue(_isActiveInFolderView, value)
 
+            Me.AutohookUpdates()
             If Not value AndAlso TypeOf Me Is SearchFolder AndAlso Me.IsLoading Then
                 Me.CancelEnumeration()
             End If
@@ -685,7 +695,7 @@ Public Class Folder
                                     ' this happens the first time a folder is loaded
                                     _items.UpdateRange(result.Values, Nothing)
                                     For Each item In result.Values
-                                        item.HookUpdates()
+                                        item.DoHookUpdates = True
                                     Next
                                 Else
                                     ' this happens when a folder is refreshed
@@ -716,7 +726,7 @@ Public Class Folder
                                     ' add/remove items
                                     _items.UpdateRange(newItems, removedItems)
                                     For Each item In newItems
-                                        item.HookUpdates()
+                                        item.DoHookUpdates = True
                                     Next
                                 End If
                             Else
@@ -726,7 +736,7 @@ Public Class Folder
                                     _items.InsertSorted(item, c)
                                 Next
                                 For Each item In result.Values
-                                    item.HookUpdates()
+                                    item.DoHookUpdates = True
                                 Next
                             End If
                         End If
@@ -1167,7 +1177,7 @@ Public Class Folder
         RaiseEvent CollapseAllGroups(Me, New EventArgs())
     End Sub
 
-    Protected Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+    Protected Friend Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         MyBase.shell_Notification(sender, e)
 
         If Not disposedValue Then
@@ -1199,7 +1209,7 @@ Public Class Folder
                                     If existing Is Nothing Then
                                         Me.InitializeItem(e.Item1)
                                         e.Item1.LogicalParent = Me
-                                        e.Item1.HookUpdates()
+                                        e.Item1.DoHookUpdates = True
                                         e.IsHandled1 = True
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(e.Item1, c)
@@ -1253,7 +1263,7 @@ Public Class Folder
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
                                     Me.InitializeItem(e.Item1)
                                     e.Item1.LogicalParent = Me
-                                    e.Item1.HookUpdates()
+                                    e.Item1.DoHookUpdates = True
                                     e.IsHandled1 = True
                                     Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                     _items.InsertSorted(e.Item1, c)
@@ -1316,6 +1326,9 @@ Public Class Folder
     End Sub
 
     Protected Overrides Sub Dispose(disposing As Boolean)
+        Dim oldShellFolder As IShellFolder = Nothing
+        Dim wasDisposed As Boolean = disposedValue
+
         SyncLock _shellItemLock
             If Not disposedValue Then
                 MyBase.Dispose(disposing)
@@ -1327,20 +1340,40 @@ Public Class Folder
                 End SyncLock
 
                 Me.CancelEnumeration()
+
+                If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                    ' extensive cleanup, because we're still live:
+
+                    ' switch shellfolder, we'll release it later
+                    oldShellFolder = _shellFolder
+                    _shellFolder = Nothing
+                Else
+                    ' quick cleanup, because we're shutting down anyway and it has to go fast:
+
+                    ' release shellfolder
+                    If Not _shellFolder Is Nothing Then
+                        Marshal.ReleaseComObject(_shellFolder)
+                        _shellFolder = Nothing
+                    End If
+                End If
             End If
         End SyncLock
 
-        Shell.GlobalThreadPool.Add(
-            Sub()
-                ' dispose outside of the lock because it can take a while
-                For Each item In _items.ToList()
-                    item.Dispose()
-                Next
+        If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso Not wasDisposed Then
+            ' dispose outside of the lock because it can take a while
+            Shell.GlobalThreadPool.Add(
+                Sub()
+                    ' dispose of children
+                    For Each item In _items.ToList()
+                        item.Dispose()
+                    Next
 
-                If Not _shellFolder Is Nothing Then
-                    Marshal.ReleaseComObject(_shellFolder)
-                    _shellFolder = Nothing
-                End If
-            End Sub, _livesOnThreadId)
+                    ' dispose of shellfolder
+                    If Not oldShellFolder Is Nothing Then
+                        Marshal.ReleaseComObject(oldShellFolder)
+                        oldShellFolder = Nothing
+                    End If
+                End Sub, _livesOnThreadId)
+        End If
     End Sub
 End Class

@@ -62,23 +62,19 @@ Namespace Helpers
 
         Public Function GetNextFreeThreadId() As Integer
             If _isThreadFree.Count > 1 Then
-                Dim isFirst As Boolean = True
                 SyncLock _nextThreadIdLock
                     Do
                         _nextThreadId += 1
                         If _nextThreadId >= _isThreadFree.Length Then
                             _nextThreadId = 0
-                            If Not isFirst Then
-                                Dim appl As System.Windows.Application = System.Windows.Application.Current
-                                If Not appl Is Nothing AndAlso appl.Dispatcher.CheckAccess Then
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                        End Sub, System.Windows.Threading.DispatcherPriority.Input)
-                                Else
-                                    Thread.Sleep(10)
-                                End If
+                            Dim appl As System.Windows.Application = System.Windows.Application.Current
+                            If Not appl Is Nothing AndAlso appl.Dispatcher.CheckAccess Then
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                    End Sub, System.Windows.Threading.DispatcherPriority.Input)
+                            Else
+                                Thread.Sleep(10)
                             End If
-                            isFirst = False
                         End If
                     Loop Until _isThreadFree(_nextThreadId) AndAlso Not _isThreadLocked(_nextThreadId)
                     Return _nextThreadId

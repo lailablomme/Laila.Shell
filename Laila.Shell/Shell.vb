@@ -26,6 +26,8 @@ Public Class Shell
     Public Shared NotificationThread As Helpers.ThreadPool
     Public Shared GlobalThreadPool As Helpers.ThreadPool
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
+    Private Shared _disposeThread As Thread
+    Private Shared _unhookUpdatesThread As Thread
 
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
     Private Shared _shutDownTokensSource As CancellationTokenSource = New CancellationTokenSource()
@@ -89,7 +91,7 @@ Public Class Shell
         Shell.GlobalThreadPool = New Helpers.ThreadPool(100)
 
         ' thread for disposing items
-        Dim disposeThread As Thread = New Thread(
+        _disposeThread = New Thread(
             Sub()
                 Try
                     ' while we're not shutting down...
@@ -113,7 +115,7 @@ Public Class Shell
                             End If
 
                             ' don't hog the process
-                            Thread.Sleep(50)
+                            Thread.Sleep(25)
                         Next
                         Thread.Sleep(5000)
                     End While
@@ -121,10 +123,49 @@ Public Class Shell
                     Debug.WriteLine("Disposing thread was canceled.")
                 End Try
             End Sub)
-        disposeThread.IsBackground = True
-        disposeThread.SetApartmentState(ApartmentState.MTA)
-        disposeThread.Start()
-        _threads.Add(disposeThread)
+        _disposeThread.IsBackground = True
+        _disposeThread.SetApartmentState(ApartmentState.MTA)
+        _disposeThread.Start()
+        _threads.Add(_disposeThread)
+
+        ' thread for unhooking updates from items
+        _unhookUpdatesThread = New Thread(
+            Sub()
+                Try
+                    ' while we're not shutting down...
+                    While Not ShuttingDownToken.IsCancellationRequested
+                        ' take a snapshot of the shellitem cache...
+                        Dim list As List(Of Tuple(Of Item, DateTime))
+                        SyncLock _itemsCacheLock
+                            list = Shell.ItemsCache.Where(Function(i) i.Item1._mustUnhookUpdates).ToList()
+                        End SyncLock
+
+                        ' ...and go through it
+                        For Each item In list
+                            If ShuttingDownToken.IsCancellationRequested Then Exit For
+
+                            ' try to dispose the item
+                            SyncLock item.Item1._hookUpdatesLock
+                                If item.Item1._mustUnhookUpdates Then
+                                    item.Item1._mustUnhookUpdates = False
+                                    item.Item1._isUpdatesHooked = False
+                                    RemoveHandler Shell.Notification, AddressOf item.Item1.shell_Notification
+                                End If
+                            End SyncLock
+
+                            ' don't hog the process
+                            Thread.Sleep(10)
+                        Next
+                        Thread.Sleep(5000)
+                    End While
+                Catch ex As OperationCanceledException
+                    Debug.WriteLine("Disposing thread was canceled.")
+                End Try
+            End Sub)
+        _unhookUpdatesThread.IsBackground = True
+        _unhookUpdatesThread.SetApartmentState(ApartmentState.MTA)
+        _unhookUpdatesThread.Start()
+        _threads.Add(_unhookUpdatesThread)
 
         ' make window to receive SHChangeNotify messages and for building
         ' the drag and drop image
@@ -298,18 +339,13 @@ Public Class Shell
 
             ' items need not really be disposed of, because they have no managed resources,
             ' but we do it anyway, in case that changes in the future
-            Dim ilist As List(Of Item)
+            Dim c As Integer = 0
             SyncLock _itemsCache
-                ilist = _itemsCache.Select(Function(i) i.Item1).ToList()
-            End SyncLock
-            While Not ilist.Count = 0
-                For Each item In ilist
+                For Each item In _itemsCache.Select(Function(i) i.Item1).ToList()
                     item.Dispose()
+                    c += 1
                 Next
-                SyncLock _itemsCache
-                    ilist = _itemsCache.Select(Function(i) i.Item1).ToList()
-                End SyncLock
-            End While
+            End SyncLock
 
             SyncLock _threadPoolCacheLock
                 For Each item In Shell.ThreadPoolCache.ToList()

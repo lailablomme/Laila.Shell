@@ -762,7 +762,7 @@ Namespace Controls
                                 Next
                             Else
                                 For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
-                                    AndAlso Not i.LogicalParent Is Nothing AndAlso i.LogicalParent.Equals(folder)).ToList()
+                                    AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                                     If item.IsExpanded Then item.IsExpanded = False
                                     Me.Items.Remove(item)
                                 Next
@@ -773,7 +773,7 @@ Namespace Controls
                     UIHelper.OnUIThread(
                         Sub()
                             list = Me.Items.Where(Function(i) TypeOf i Is Folder AndAlso Not TypeOf i Is DummyFolder _
-                                AndAlso Not i.Parent Is Nothing AndAlso i.Parent.Equals(folder)).ToList()
+                                AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                         End Sub)
                     For Each item2 In list
                         item2.NotifyOfPropertyChange("TreeSortKey")

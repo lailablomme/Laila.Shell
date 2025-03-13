@@ -47,58 +47,86 @@ Public Class Item
     Private _itemNameDisplaySortValuePrefix As String
     Protected _canShowInTree As Boolean
     Friend _livesOnThreadId As Integer?
+    Protected _doHookUpdates As Boolean
+    Friend _isUpdatesHooked As Boolean
+    Friend _mustUnhookUpdates As Boolean
+    Friend _hookUpdatesLock As Object = New Object()
 
-    Public Shared Function FromParsingName(parsingName As String, parent As Folder,
+    ''' <summary>
+    ''' Makes a new Folder/Item/Link object from a parsing name.
+    ''' </summary>
+    ''' <param name="parsingName">The parsing name of the item</param>
+    ''' <param name="logicalParent">The logical parent folder for this item</param>
+    ''' <param name="doKeepAlive">Set to 'true' to avoid this item getting disposed after 10 seconds if it isn't visible in the tree, folder view or address bar.</param>
+    ''' <param name="doHookUpdates">Set to 'true' if you want this item to listen for update notifications while it's visible in the tree, folder view or address bar.</param>
+    ''' <returns>A new Folder/Item/Link object</returns>
+    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
-        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
+        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId() ' select a random thread we're going to live on
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
+                ' is there a custom Folder implementation for this parsing name?
                 Dim customFolderType As Type = Shell.CustomFolders _
                     .FirstOrDefault(Function(f) f.FullPath.ToLower().Equals(parsingName.ToLower()) _
                                          OrElse ("shell:" & f.FullPath.ToLower()).Equals(parsingName.ToLower()))?.Type
                 If customFolderType Is Nothing Then
-                    parsingName = Environment.ExpandEnvironmentVariables(parsingName)
-                    Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName)
+                    ' no custom implementation
+                    parsingName = Environment.ExpandEnvironmentVariables(parsingName) ' expand environment variables
+                    Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName) 'get the IShellItem2
                     If Not shellItem2 Is Nothing Then
+                        ' read the attributes and decide what type of item we're dealing with
                         Dim attr As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
                         shellItem2.GetAttributes(attr, attr)
                         If attr.HasFlag(SFGAO.FOLDER) Then
-                            Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
+                            Return New Folder(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId)
                         ElseIf attr.HasFlag(SFGAO.LINK) Then
-                            Return New Link(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
+                            Return New Link(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId)
                         Else
-                            Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, threadId)
+                            Return New Item(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId)
                         End If
                     Else
+                        ' there is no item with this parsing name
                         Return Nothing
                     End If
                 Else
-                    Return CType(Activator.CreateInstance(customFolderType, {parent, doKeepAlive}), Folder)
+                    ' return custom folder implementation (like for example the 'Home' folder)
+                    Return CType(Activator.CreateInstance(customFolderType, {logicalParent, doKeepAlive}), Folder)
                 End If
             End Function,, threadId)
     End Function
 
-    Public Shared Function FromPidl(pidl As Pidl, parent As Folder,
+    ''' <summary>
+    ''' Makes a new Folder/Item/Link object from a PIDL.
+    ''' </summary>
+    ''' <param name="pidl">The pidl for this item. It will be cloned so you'll have to dispose this one yourself.</param>
+    ''' <param name="logicalParent">The logical parent folder for this item</param>
+    ''' <param name="doKeepAlive">Set to 'true' to avoid this item getting disposed after 10 seconds if it isn't visible in the tree, folder view or address bar.</param>
+    ''' <param name="doHookUpdates">Set to 'true' if you want this item to listen for update notifications while it's visible in the tree, folder view or address bar.</param>
+    ''' <param name="preservePidl">Set to 'true' to keep the given pidl as the value for the 'Pidl' property instead of disposing it and asking the system.</param>
+    ''' <returns>A new Folder/Item/Link object</returns>
+    Public Shared Function FromPidl(pidl As Pidl, logicalParent As Folder,
                                     Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True, Optional preservePidl As Boolean = False) As Item
+        ' check input
         If pidl Is Nothing OrElse pidl.AbsolutePIDL.Equals(IntPtr.Zero) Then
             Throw New ArgumentException("pidl must not be null")
         End If
-        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
+        Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId() ' get a random thread we're going to live on
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
-                Dim pidlClone As Pidl = pidl.Clone()
+                Dim pidlClone As Pidl = pidl.Clone() ' clone the input pidl so we don't interfere with the original
                 Dim shellItem2 As IShellItem2
-                shellItem2 = GetIShellItem2FromPidl(pidlClone.AbsolutePIDL, parent?.ShellFolder)
-                If Not preservePidl Then pidlClone.Dispose()
+                shellItem2 = GetIShellItem2FromPidl(pidlClone.AbsolutePIDL, logicalParent?.ShellFolder) ' get the IShellItem2
+                If Not preservePidl Then pidlClone.Dispose() ' dispose the clone if we're not going to keep it
                 If Not shellItem2 Is Nothing Then
+                    ' read the attributes and decide what type of item we're dealing with
                     Dim attr As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
                     shellItem2.GetAttributes(attr, attr)
                     If attr.HasFlag(SFGAO.FOLDER) Then
-                        Return New Folder(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                        Return New Folder(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
                     ElseIf attr.HasFlag(SFGAO.LINK) Then
-                        Return New Link(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                        Return New Link(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
                     Else
-                        Return New Item(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                        Return New Item(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
                     End If
                 Else
                     Return Nothing
@@ -127,12 +155,12 @@ Public Class Item
         _objectId = _objectCount
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
-        _logicalParent = logicalParent
+        Me.LogicalParent = logicalParent
         _pidl = pidl
         _livesOnThreadId = threadId
+        Me.DoHookUpdates = doHookUpdates
         If Not shellItem2 Is Nothing Then
             Dim d As String = Me.DisplayName
-            If doHookUpdates Then Me.HookUpdates()
             Shell.AddToItemsCache(Me)
         Else
             _fullPath = String.Empty
@@ -151,29 +179,65 @@ Public Class Item
         _displayName = IO.Path.GetFileName(_fullPath)
     End Sub
 
+    ''' <summary>
+    ''' Hook update notifications for this item.
+    ''' </summary>
     Public Sub HookUpdates()
-        AddHandler Shell.Notification, AddressOf shell_Notification
+        SyncLock _hookUpdatesLock
+            If Not _isUpdatesHooked Then
+                _isUpdatesHooked = True
+                _mustUnhookUpdates = False
+                AddHandler Shell.Notification, AddressOf shell_Notification
+            End If
+        End SyncLock
     End Sub
 
+    ''' <summary>
+    ''' Unhook update notifications for this item.
+    ''' </summary>
+    Public Sub UnhookUpdates()
+        SyncLock _hookUpdatesLock
+            If _isUpdatesHooked Then
+                _mustUnhookUpdates = True
+            End If
+        End SyncLock
+    End Sub
+
+    ''' <summary>
+    ''' Automatically hooks or unhooks update notifications based on the visibility of this item in the tree, folder view or address bar.
+    ''' </summary>
+    Protected Overridable Sub AutohookUpdates()
+        If _doHookUpdates AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse Me._logicalParent?.IsActiveInFolderView) Then
+            Me.HookUpdates()
+        Else
+            Me.UnhookUpdates()
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' The IShellItem2 this object is based on.
+    ''' </summary>
+    ''' <returns>The IShellItem2 this object is based on.</returns>
     Public ReadOnly Property ShellItem2 As IShellItem2
         Get
             Return _shellItem2
         End Get
     End Property
 
+    ''' <summary>
+    ''' Returns the PIDL for this item, or null if this item is disposed.
+    ''' </summary>
+    ''' <returns>The PIDL for this item, or null if this item is disposed</returns>
     Public ReadOnly Property Pidl As Pidl
         Get
-            'Return Shell.GlobalThreadPool.Run(
-            '    Function() As Pidl
             SyncLock _shellItemLock
                 If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                     Dim pidlptr As IntPtr
                     Functions.SHGetIDListFromObject(_shellItem2, pidlptr)
                     _pidl = New Pidl(pidlptr)
                 End If
-                Return _pidl ' return pidl wirhin lock to make sure it's nothing after it's been disposed
+                Return _pidl ' return pidl within lock to make sure it's nothing after it's been disposed
             End SyncLock
-            'End Function)
         End Get
     End Property
 
@@ -183,6 +247,7 @@ Public Class Item
         End Get
         Set(value As Boolean)
             SetValue(_isVisibleInAddressBar, value)
+            Me.AutohookUpdates()
         End Set
     End Property
 
@@ -199,6 +264,7 @@ Public Class Item
         End Get
         Set(value As Boolean)
             SetValue(_canShowInTree, value)
+            Me.AutohookUpdates()
             Me.NotifyOfPropertyChange("IsVisibleInTree")
             Me.NotifyOfPropertyChange("IsReadyForDispose")
         End Set
@@ -218,6 +284,16 @@ Public Class Item
         End If
     End Sub
 
+    Public Property DoHookUpdates As Boolean
+        Get
+            Return _doHookUpdates
+        End Get
+        Set(value As Boolean)
+            SetValue(_doHookUpdates, value)
+            Me.AutohookUpdates()
+        End Set
+    End Property
+
     Protected Friend Property TreeViewSection As BaseTreeViewSection
 
     Protected Friend Property TreeRootIndex As Long
@@ -226,6 +302,7 @@ Public Class Item
         End Get
         Set(value As Long)
             SetValue(_treeRootIndex, value)
+            Me.AutohookUpdates()
             Me.NotifyOfPropertyChange("TreeSortKey")
         End Set
     End Property
@@ -293,7 +370,8 @@ Public Class Item
 
     Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing,
                                    Optional newPidl As Pidl = Nothing,
-                                   Optional newFullPath As String = Nothing)
+                                   Optional newFullPath As String = Nothing,
+                                   Optional doRefreshImage As Boolean = True)
         Dim oldPropertiesByKey As Dictionary(Of String, [Property]) = Nothing
         Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property]) = Nothing
         Dim oldItemNameDisplaySortValue As String = Nothing
@@ -392,12 +470,14 @@ Public Class Item
             If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
                 Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
             End If
-            Me.NotifyOfPropertyChange("OverlayImageAsync")
-            Me.NotifyOfPropertyChange("IconAsync")
-            Me.NotifyOfPropertyChange("ImageAsync")
-            Me.NotifyOfPropertyChange("HasThumbnailAsync")
+            If doRefreshImage Then
+                Me.NotifyOfPropertyChange("OverlayImageAsync")
+                Me.NotifyOfPropertyChange("IconAsync")
+                Me.NotifyOfPropertyChange("ImageAsync")
+                Me.NotifyOfPropertyChange("HasThumbnailAsync")
+                Me.NotifyOfPropertyChange("IsImage")
+            End If
             Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
-            Me.NotifyOfPropertyChange("IsImage")
             Me.NotifyOfPropertyChange("IsHidden")
             Me.NotifyOfPropertyChange("IsCompressed")
             Me.NotifyOfPropertyChange("IsEncrypted")
@@ -433,6 +513,10 @@ Public Class Item
         RaiseEvent Refreshed(Me, New EventArgs())
     End Sub
 
+    ''' <summary>
+    ''' The full path a.k.a. parsing name of this object.
+    ''' </summary>
+    ''' <returns>The full path a.k.a. parsing name of this object.</returns>
     Public Overridable ReadOnly Property FullPath As String
         Get
             SyncLock _shellItemLock
@@ -445,20 +529,46 @@ Public Class Item
         End Get
     End Property
 
+    ''' <summary>
+    ''' Gets/sets the logical parent for this item, which is the parent folder in the UI.
+    ''' This is not necessarily the same as the actual parent folder in the file system.
+    ''' </summary>
+    ''' <returns>The logical parent folder for this item</returns>
     Public Property LogicalParent As Folder
         Get
             Return If(_logicalParent, Me.Parent)
         End Get
         Set(value As Folder)
+            If Not _logicalParent Is Nothing Then
+                RemoveHandler _logicalParent.PropertyChanged, AddressOf logicalParent_PropertyChanged
+            End If
+
             SetValue(_logicalParent, value)
+
+            If Not _logicalParent Is Nothing Then
+                AddHandler _logicalParent.PropertyChanged, AddressOf logicalParent_PropertyChanged
+            End If
+
+            Me.AutohookUpdates()
         End Set
     End Property
 
+    Private Sub logicalParent_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
+        Select Case e.PropertyName
+            Case "IsExpanded", "IsActiveInFolderView"
+                Me.AutohookUpdates()
+        End Select
+    End Sub
+
+    ''' <summary>
+    ''' The actual parent folder of this object, as wired in the shell namespace.
+    ''' </summary>
+    ''' <returns>The actual parent folder of this object</returns>
     Public Overridable ReadOnly Property Parent As Folder
         Get
-            If Not disposedValue _
-                AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
-                If Not _parent Is Nothing Then
+            ' if we're not disposed and we're not the desktop...
+            If Not disposedValue AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
+                If Not _parent Is Nothing Then ' we've still got a parent object
                     SyncLock _parent._shellItemLock
                         ' if still alive...
                         If Not _parent.disposedValue Then
@@ -466,6 +576,7 @@ Public Class Item
                             Shell.RemoveFromItemsCache(_parent)
                             Shell.AddToItemsCache(_parent)
                         Else
+                            ' clear so we can start over
                             _parent = Nothing
                         End If
                     End SyncLock
@@ -474,12 +585,12 @@ Public Class Item
                 ' if we don't have any yet/anymore...
                 If _parent Is Nothing Then
                     Dim parentShellItem2 As IShellItem2 = Nothing
-                    Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
+                    Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId() ' get an availble thread for this parent object
                     _parent = Shell.GlobalThreadPool.Run(
                         Function() As Folder
                             SyncLock _shellItemLock
                                 If Not Me.ShellItem2 Is Nothing Then
-                                    Me.ShellItem2.GetParent(parentShellItem2)
+                                    Me.ShellItem2.GetParent(parentShellItem2) ' get our parent folder, all objects must be created on a STA thread
                                 End If
                             End SyncLock
                             If Not parentShellItem2 Is Nothing Then
@@ -502,6 +613,11 @@ Public Class Item
         End Set
     End Property
 
+    ''' <summary>
+    ''' Gets the executable path of the application associated with this item. 
+    ''' We use this to get to the icon for the application which is shown in certain cases in the folder view.
+    ''' </summary>
+    ''' <returns>The executable path of the application associated with this item</returns>
     Public Function GetAssociatedApplication() As String
         Dim ext As String = IO.Path.GetExtension(Me.FullPath)
 
@@ -520,6 +636,11 @@ Public Class Item
         Return Nothing
     End Function
 
+    ''' <summary>
+    ''' Gets the associated application icon for this item.
+    ''' </summary>
+    ''' <param name="size">The size of the icon in pixels</param>
+    ''' <returns>The associated application icon for this item</returns>
     Public ReadOnly Property AssociatedApplicationIcon(size As Integer) As ImageSource
         Get
             If Not disposedValue AndAlso (IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath)) Then
@@ -547,6 +668,11 @@ Public Class Item
         End Get
     End Property
 
+    ''' <summary>
+    ''' Gets the associated application icon for this item asynchronously.
+    ''' </summary>
+    ''' <param name="size">The requested icon size in pixels</param>
+    ''' <returns>The associated application icon for this item</returns>
     Public Overridable ReadOnly Property AssociatedApplicationIconAsync(size As Integer) As ImageSource
         Get
             Return Shell.GlobalThreadPool.Run(
@@ -1346,71 +1472,76 @@ Public Class Item
         End If
     End Function
 
-    Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+    Protected Friend Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
         If Not disposedValue Then
             Select Case e.Event
-                Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR
-                    If Me.Pidl?.Equals(e.Item1?.Pidl) Then
+                Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR ' general update
+                    If Me.Pidl?.Equals(e.Item1?.Pidl) Then ' if this is us...
                         Shell.GlobalThreadPool.Run(
                             Sub()
-                                Me.Refresh()
+                                Me.Refresh() ' refresh
                             End Sub)
                     End If
-                Case SHCNE.FREESPACE
+                Case SHCNE.FREESPACE ' free space has changed, disk not specified
                     If Me.IsDrive Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
-                                Thread.Sleep(100)
-                                Me.Refresh()
+                                Me.Refresh(,,, False) ' don't refresh image because there's times when it does this a lot and we want to avoid flicker
                             End Sub)
                     End If
-                Case SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED
+                Case SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED ' cdrom has been inserted or removed
                     If Me.IsDrive AndAlso Me.Pidl?.Equals(e.Item1?.Pidl) Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
-                                Me.Refresh()
+                                Me.Refresh() ' refresh, as the icon and name may have changed
                             End Sub)
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
-                    If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _
-                        OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) _
-                        AndAlso Not (Me.IsFolder AndAlso Not Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
-                                     AndAlso e.Item1.Pidl Is Nothing AndAlso IO.Path.GetFileName(e.Item2?.FullPath)?.Contains("~") _
-                                     AndAlso IO.Path.GetExtension(e.Item2?.FullPath?.ToLower())?.Equals(".tmp")) Then
+                    ' all the following conditions are to support file operations in .zip folders
+                    If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _  ' if this is our pidl
+                        OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) _   ' or our fullpath
+                        AndAlso Not (Me.IsFolder AndAlso Not Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _ ' and we're not a zip folder being renamed...
+                                     AndAlso e.Item1.Pidl Is Nothing AndAlso IO.Path.GetFileName(e.Item2?.FullPath)?.Contains("~") _ ' ..to...
+                                     AndAlso IO.Path.GetExtension(e.Item2?.FullPath?.ToLower())?.Equals(".tmp")) Then   ' ...a temp file
                         Dim doRefresh As Boolean = True
                         If (e.Event = SHCNE.RENAMEFOLDER AndAlso e.Item2.IsFolder AndAlso Not e.Item2.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
-                            AndAlso e.Item1.Pidl Is Nothing AndAlso Not _logicalParent Is Nothing) Then
+                            AndAlso e.Item1.Pidl Is Nothing AndAlso Not _logicalParent Is Nothing) Then ' if we're being renamed to a .zip file
                             Dim existing As Item = Nothing
                             UIHelper.OnUIThread(
                                 Sub()
+                                    ' check if the new zip folder already exists in the parent
                                     existing = _logicalParent.Items.FirstOrDefault(Function(i) Not i.disposedValue _
                                                 AndAlso (i.Pidl?.Equals(e.Item2.Pidl) OrElse i.FullPath?.Equals(e.Item2.FullPath)))
                                 End Sub)
-                            If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
-                                doRefresh = False
+                            If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then ' the folder exists...
+                                doRefresh = False ' don't do regular refresh on rename
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         Dim existingFolder As Folder = existing
-                                        existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
+                                        existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath) ' refresh the folder itself
                                         e.Item2._shellItem2 = Nothing
                                         existingFolder._isEnumerated = False
-                                        existingFolder.GetItemsAsync(True, True)
+                                        existingFolder.GetItemsAsync(True, True) ' refresh the contents
                                     End Sub)
                             End If
                         End If
+
+                        ' regular refresh on rename
                         If doRefresh Then
                             Shell.GlobalThreadPool.Run(
                                 Sub()
-                                    Dim oldPidl As Pidl = Me.Pidl?.Clone()
-                                    Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
+                                    Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
+                                    Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath) ' refresh this item
                                     If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                                        ' rename pinned and frequent items with the same pidl
                                         PinnedItems.RenameItem(oldPidl, Me.Pidl)
                                         FrequentFolders.RenameItem(oldPidl, Me.Pidl)
                                     End If
                                     If Not oldPidl Is Nothing Then
-                                        oldPidl.Dispose()
+                                        oldPidl.Dispose() ' dispose of old pidl
                                     End If
                                     If Not e.Item2 Is Nothing Then
+                                        ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
                                         e.Item2._shellItem2 = Nothing
                                     End If
                                 End Sub)
@@ -1437,6 +1568,7 @@ Public Class Item
 
     Protected Overridable Sub Dispose(disposing As Boolean)
         Dim oldShellItem As IShellItem2 = Nothing
+        Dim wasDisposed As Boolean = disposedValue
         SyncLock _shellItemLock
             If Not disposedValue Then
                 disposedValue = True
@@ -1445,61 +1577,88 @@ Public Class Item
                 If disposing Then
                     ' dispose managed state (managed objects):
 
-                    ' unsubscribe from notifications
-                    RemoveHandler Shell.Notification, AddressOf shell_Notification
-                    RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
+                    If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                        ' extensive cleanup, because we're still live:
 
-                    ' remove from parent collection
-                    UIHelper.OnUIThreadAsync(
-                        Sub()
-                            If Not _logicalParent Is Nothing Then
-                                _logicalParent._items.Remove(Me)
-                                _logicalParent._isEnumerated = False
-                                _logicalParent.IsEmpty = _logicalParent._items.Count = 0
-                            End If
-                            If Not _parent Is Nothing Then
-                                _parent._items.Remove(Me)
-                                _parent._isEnumerated = False
-                                _parent.IsEmpty = _parent._items.Count = 0
-                                _parent = Nothing
-                            End If
-                        End Sub)
+                        ' unsubscribe from notifications
+                        If Not _logicalParent Is Nothing Then
+                            RemoveHandler _logicalParent.PropertyChanged, AddressOf logicalParent_PropertyChanged
+                        End If
+                        Me.UnhookUpdates()
+                        RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
 
-                    ' dispose properties
-                    For Each [property] In _propertiesByKey
-                        [property].Value.Dispose()
-                    Next
-                    _propertiesByKey.Clear()
-                    For Each [property] In _propertiesByCanonicalName
-                        [property].Value.Dispose()
-                    Next
-                    _propertiesByCanonicalName.Clear()
+                        ' remove from parent collection(s)
+                        UIHelper.OnUIThreadAsync(
+                            Sub()
+                                If Not _logicalParent Is Nothing Then
+                                    _logicalParent._items.Remove(Me)
+                                    _logicalParent._isEnumerated = False
+                                    _logicalParent.IsEmpty = _logicalParent._items.Count = 0
+                                    ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
+                                End If
+                                If Not _parent Is Nothing Then
+                                    _parent._items.Remove(Me)
+                                    _parent._isEnumerated = False
+                                    _parent.IsEmpty = _parent._items.Count = 0
+                                    _parent = Nothing
+                                End If
+                            End Sub)
 
-                    oldShellItem = _shellItem2
-                    _shellItem2 = Nothing
+                        ' dispose properties
+                        For Each [property] In _propertiesByKey.ToList()
+                            [property].Value.Dispose()
+                        Next
+                        _propertiesByKey.Clear()
+                        For Each [property] In _propertiesByCanonicalName.ToList()
+                            [property].Value.Dispose()
+                        Next
+                        _propertiesByCanonicalName.Clear()
 
-                    ' remove from cache
-                    Shell.RemoveFromItemsCache(Me)
+                        ' switch shellitem, we'll release it later
+                        oldShellItem = _shellItem2
+                        _shellItem2 = Nothing
+
+                        ' remove from cache
+                        Shell.RemoveFromItemsCache(Me)
+                    Else
+                        ' quick cleanup, because we're shutting down anyway and it has to go fast:
+
+                        ' release shellitem
+                        If Not _shellItem2 Is Nothing Then
+                            Marshal.ReleaseComObject(_shellItem2)
+                            _shellItem2 = Nothing
+                        End If
+
+                        ' dispose properties
+                        For Each [property] In _propertiesByKey.ToList()
+                            [property].Value.Dispose()
+                        Next
+                        For Each [property] In _propertiesByCanonicalName.ToList()
+                            [property].Value.Dispose()
+                        Next
+                    End If
 
                     ' dispose pidl
                     If Not _pidl Is Nothing Then
                         _pidl.Dispose()
                         _pidl = Nothing
                     End If
-                End If
 
-                ' free unmanaged resources (unmanaged objects) and override finalizer
+                    ' free unmanaged resources (unmanaged objects) and override finalizer
+                End If
             End If
         End SyncLock
 
-        Shell.GlobalThreadPool.Add(
-            Sub()
-                ' dispose shellitem outside of the lock because it can take a while for large items
-                If Not oldShellItem Is Nothing Then
-                    Marshal.ReleaseComObject(oldShellItem)
-                    oldShellItem = Nothing
-                End If
-            End Sub, _livesOnThreadId)
+        If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso Not wasDisposed Then
+            ' dispose shellitem outside of the lock because it can take a while for large items
+            Shell.GlobalThreadPool.Add(
+                Sub()
+                    If Not oldShellItem Is Nothing Then
+                        Marshal.ReleaseComObject(oldShellItem)
+                        oldShellItem = Nothing
+                    End If
+                End Sub, _livesOnThreadId)
+        End If
     End Sub
 
     ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources
@@ -1518,8 +1677,4 @@ Public Class Item
     Public Overridable Function Clone() As Item
         Return Item.FromPidl(Me.Pidl, Nothing, _doKeepAlive)
     End Function
-
-    Protected Overrides Sub Finalize()
-        MyBase.Finalize()
-    End Sub
 End Class
