@@ -723,6 +723,13 @@ Public Class Folder
                                     existingItems = _items.Where(Function(i) newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
                                             .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
 
+                                    Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
+                                    For Each item In existingItems
+                                        If Not seq.Equals(item.Item1.TreeSortPrefix, item.Item2.TreeSortPrefix) Then
+                                            item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
+                                        End If
+                                    Next
+
                                     ' add/remove items
                                     _items.UpdateRange(newItems, removedItems)
                                     For Each item In newItems
@@ -773,9 +780,6 @@ Public Class Folder
                                     Try
                                         If item.Item1.IsPinned <> item.Item2.IsPinned Then item.Item1.IsPinned = item.Item2.IsPinned
                                         If item.Item1.CanShowInTree <> item.Item2.CanShowInTree Then item.Item1.CanShowInTree = item.Item2.CanShowInTree
-                                        If Not seq.Equals(item.Item1.TreeSortPrefix, item.Item2.TreeSortPrefix) Then
-                                            item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
-                                        End If
                                         If Not seq.Equals(item.Item1.ItemNameDisplaySortValuePrefix, item.Item2.ItemNameDisplaySortValuePrefix) Then
                                             item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
                                         End If

@@ -2,10 +2,12 @@
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Forms.DataFormats
 Imports System.Windows.Interop
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Windows
+Imports Microsoft.Xaml.Behaviors
 
 Namespace Helpers
     <ComVisible(True), Guid("a985d29a-81ef-41b2-8440-457c38ef959b"), ProgId("Laila.Shell.Helpers.WpfDragTargetProxy")>
@@ -101,16 +103,17 @@ Namespace Helpers
                 Dim m As STGMEDIUM = New STGMEDIUM()
                 dataObject.GetData(format, m)
                 If m.tymed <> TYMED.TYMED_NULL Then
-                    dropDescription = Marshal.PtrToStructure(Of DROPDESCRIPTION)(m.unionmember)
-                    'Debug.WriteLine("Drop description type = " & dropDescription.type.ToString())
-                    dropDescription.type = type
-                    dropDescription.szMessage = message
-                    dropDescription.szInsert = insert
-                    If m.unionmember = _lastAllocedDropDescriptionPtr Then Functions.GlobalFree(m.unionmember)
-                    m.unionmember = Marshal.AllocHGlobal(Marshal.SizeOf(Of DROPDESCRIPTION))
+                    dropDescription = New DROPDESCRIPTION() With {
+                        .type = type,
+                        .szMessage = message,
+                        .szInsert = insert
+                    }
+                    'If m.unionmember = _lastAllocedDropDescriptionPtr Then Functions.GlobalFree(m.unionmember)
+                    'm.unionmember = Marshal.AllocHGlobal(Marshal.SizeOf(Of DROPDESCRIPTION))
                     _lastAllocedDropDescriptionPtr = m.unionmember
                     Marshal.StructureToPtr(dropDescription, m.unionmember, False)
-                    Debug.WriteLine("Drop description overwritten to " & type.ToString())
+                    'dataObject.SetData(format, m, True)
+                    Debug.WriteLine("Drop description overwritten to " & type.ToString() & "   " & message)
                     doSet = False
                     'Else
                     'Debug.WriteLine("Drop description is NULL         " & type.ToString())
