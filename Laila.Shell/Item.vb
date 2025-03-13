@@ -1117,7 +1117,9 @@ Public Class Item
                     End If
                 End If
             Finally
-                _propertiesLock.Release()
+                If _propertiesLock.CurrentCount = 0 Then
+                    _propertiesLock.Release()
+                End If
             End Try
             Return [property]
         End Get
@@ -1148,7 +1150,9 @@ Public Class Item
                     End If
                 End If
             Finally
-                _propertiesLock.Release()
+                If _propertiesLock.CurrentCount = 0 Then
+                    _propertiesLock.Release()
+                End If
             End Try
             Return [property]
         End Get
@@ -1179,7 +1183,9 @@ Public Class Item
                     End If
                 End If
             Finally
-                _propertiesLock.Release()
+                If _propertiesLock.CurrentCount = 0 Then
+                    _propertiesLock.Release()
+                End If
             End Try
             Return [property]
         End Get
