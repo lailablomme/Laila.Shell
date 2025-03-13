@@ -84,6 +84,7 @@ Public Class Link
                         ' if still alive...
                         If Not _targetItem.disposedValue Then
                             ' extend lifetime
+                            Shell.RemoveFromItemsCache(_targetItem)
                             Shell.AddToItemsCache(_targetItem)
                         Else
                             _targetItem = Nothing

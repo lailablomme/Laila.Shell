@@ -108,18 +108,12 @@ Public Class Shell
                             If Not item Is Nothing AndAlso Not item.Item1 Is Nothing _
                                 AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
                                 SyncLock item.Item1._shellItemLock
-                                    SyncLock _itemsCacheLock
-                                        If Not _itemsCache.FirstOrDefault(Function(i) _
-                                            item.Item1.Equals(i.Item1) _
-                                            AndAlso DateTime.Now.Subtract(i.Item2).TotalMilliseconds > 10000) Is Nothing Then
-                                            item.Item1.MaybeDispose()
-                                        End If
-                                    End SyncLock
+                                    item.Item1.MaybeDispose()
                                 End SyncLock
                             End If
 
                             ' don't hog the process
-                            Thread.Sleep(10)
+                            Thread.Sleep(50)
                         Next
                         Thread.Sleep(5000)
                     End While
@@ -520,7 +514,7 @@ Public Class Shell
 
     Friend Shared Sub AddToItemsCache(item As Item)
         SyncLock _itemsCacheLock
-            _itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
+            '_itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
             _itemsCache.Add(New Tuple(Of Item, Date)(item, DateTime.Now))
         End SyncLock
     End Sub

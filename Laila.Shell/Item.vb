@@ -80,6 +80,9 @@ Public Class Item
 
     Public Shared Function FromPidl(pidl As Pidl, parent As Folder,
                                     Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True, Optional preservePidl As Boolean = False) As Item
+        If pidl Is Nothing OrElse pidl.AbsolutePIDL.Equals(IntPtr.Zero) Then
+            Throw New ArgumentException("pidl must not be null")
+        End If
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
@@ -129,7 +132,6 @@ Public Class Item
         _livesOnThreadId = threadId
         If Not shellItem2 Is Nothing Then
             Dim d As String = Me.DisplayName
-            Dim b As Boolean = Me.StorageProviderUIStatusHasIcon
             If doHookUpdates Then Me.HookUpdates()
             Shell.AddToItemsCache(Me)
         Else
@@ -461,6 +463,7 @@ Public Class Item
                         ' if still alive...
                         If Not _parent.disposedValue Then
                             ' extend lifetime
+                            Shell.RemoveFromItemsCache(_parent)
                             Shell.AddToItemsCache(_parent)
                         Else
                             _parent = Nothing
@@ -1388,7 +1391,6 @@ Public Class Item
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         Dim existingFolder As Folder = existing
-                                        Dim oldPidl As Pidl = Me.Pidl?.Clone()
                                         existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
                                         e.Item2._shellItem2 = Nothing
                                         existingFolder._isEnumerated = False

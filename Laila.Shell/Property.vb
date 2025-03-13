@@ -90,9 +90,9 @@ Public Class [Property]
     Private Shared Function makeProperty(propertyKey As PROPERTYKEY?, canonicalName As String,
                                          func1 As Func(Of CachedPropertyDescription, [Property]),
                                          func2 As Func(Of Type, [Property])) As [Property]
-        Return Shell.GlobalThreadPool.Run(
-            Function() As [Property]
-                Dim t As Type
+        'Return Shell.GlobalThreadPool.Run(
+        '    Function() As [Property]
+        Dim t As Type
                 If propertyKey.HasValue Then
                     t = Shell.GetCustomProperty(propertyKey.Value)
                 Else
@@ -113,7 +113,7 @@ Public Class [Property]
                         Return Nothing
                     End If
                 End If
-            End Function)
+        'End Function)
     End Function
 
     Protected Shared Function GetDescription(canonicalName As String) As CachedPropertyDescription

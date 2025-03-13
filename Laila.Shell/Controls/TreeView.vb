@@ -379,7 +379,7 @@ Namespace Controls
                             Async Function() As Task
                                 findNextRoot2()
                                 While tf Is Nothing AndAlso en2.MoveNext()
-                                    en3 = Me.Roots.GetEnumerator()
+                                    en3 = Me.Roots.ToList().GetEnumerator()
                                     findNextRoot2()
                                 End While
 
@@ -408,7 +408,7 @@ Namespace Controls
                                     Await findNextRoot()
                                 Else
                                     Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- giving up")
-                                    If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
+                                    'If Not Me.Folder.FullPath = folder?.FullPath Then Me.Folder = folder
                                     _selectionHelper.SetSelectedItems({})
                                     finish(Nothing)
                                     _isSettingSelectedFolder = False
@@ -797,11 +797,9 @@ Namespace Controls
             End Set
         End Property
 
-        Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Using Shell.OverrideCursor(Cursors.Wait)
-                Dim tv As TreeView = TryCast(d, TreeView)
-                Await tv.SetSelectedFolder(e.NewValue)
-            End Using
+        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim tv As TreeView = TryCast(d, TreeView)
+            tv.SetSelectedFolder(e.NewValue)
         End Sub
 
         Public Property Items As ObservableCollection(Of Item)

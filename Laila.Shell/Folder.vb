@@ -713,23 +713,6 @@ Public Class Folder
                                     existingItems = _items.Where(Function(i) newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
                                             .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
 
-                                    For Each item In existingItems
-                                        If item.Item1.IsPinned <> item.Item2.IsPinned Then item.Item1.IsPinned = item.Item2.IsPinned
-                                        If item.Item1.CanShowInTree <> item.Item2.CanShowInTree Then item.Item1.CanShowInTree = item.Item2.CanShowInTree
-                                        If Not EqualityComparer(Of String).Default.Equals(item.Item1.TreeSortPrefix, item.Item2.TreeSortPrefix) Then
-                                            item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
-                                        End If
-                                        If Not EqualityComparer(Of String).Default.Equals(item.Item1.ItemNameDisplaySortValuePrefix, item.Item2.ItemNameDisplaySortValuePrefix) Then
-                                            item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
-                                        End If
-                                        For Each [property] In item.Item1._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
-                                            item.Item1._propertiesByKey.Remove([property].Key)
-                                        Next
-                                        For Each [property] In item.Item2._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
-                                            item.Item1._propertiesByKey.Add([property].Key, [property].Value)
-                                        Next
-                                    Next
-
                                     ' add/remove items
                                     _items.UpdateRange(newItems, removedItems)
                                     For Each item In newItems
@@ -768,6 +751,7 @@ Public Class Folder
                         Shell.GlobalThreadPool.Add(
                             Sub()
                                 'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
+                                Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
 
                                 ' Process tasks from the queue
                                 For Each item In chuncks(j)
@@ -777,6 +761,21 @@ Public Class Folder
                                     End If
 
                                     Try
+                                        If item.Item1.IsPinned <> item.Item2.IsPinned Then item.Item1.IsPinned = item.Item2.IsPinned
+                                        If item.Item1.CanShowInTree <> item.Item2.CanShowInTree Then item.Item1.CanShowInTree = item.Item2.CanShowInTree
+                                        If Not seq.Equals(item.Item1.TreeSortPrefix, item.Item2.TreeSortPrefix) Then
+                                            item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
+                                        End If
+                                        If Not seq.Equals(item.Item1.ItemNameDisplaySortValuePrefix, item.Item2.ItemNameDisplaySortValuePrefix) Then
+                                            item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
+                                        End If
+                                        For Each [property] In item.Item1._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
+                                            item.Item1._propertiesByKey.Remove([property].Key)
+                                        Next
+                                        For Each [property] In item.Item2._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
+                                            item.Item1._propertiesByKey.Add([property].Key, [property].Value)
+                                        Next
+
                                         If Not item.Item2 Is Nothing Then
                                             item.Item1.Refresh(item.Item2.ShellItem2)
                                             SyncLock item.Item2._shellItemLock
@@ -787,12 +786,12 @@ Public Class Folder
                                             item.Item1.Refresh()
                                         End If
 
-                                        ' preload sort property
-                                        If isSortPropertyByText Then
-                                            Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(sortPropertyKey)?.Value
-                                        ElseIf isSortPropertyDisplaySortValue Then
-                                            Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
-                                        End If
+                                        '' preload sort property
+                                        'If isSortPropertyByText Then
+                                        '    Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(sortPropertyKey)?.Value
+                                        'ElseIf isSortPropertyDisplaySortValue Then
+                                        '    Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
+                                        'End If
 
                                         If doRecursive AndAlso TypeOf item.Item1 Is Folder Then
                                             Dim recursiveFolder As Folder = item.Item1
@@ -811,7 +810,7 @@ Public Class Folder
                             End Sub)
                     Next
 
-                    Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), cancellationToken)
+                    'Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), cancellationToken)
                 End If
             End Sub
 
@@ -908,7 +907,7 @@ Public Class Folder
                                     If isDebuggerAttached Then
                                         ' only check if debugger is attached, to avoid exception,
                                         ' otherwise, rely on exception being thrown, for speed
-                                        isAlreadyAdded = result.ContainsKey(newItem.FullPath & newItem.DeDupeKey)
+                                        isAlreadyAdded = newFullPaths.Contains(newItem.FullPath & newItem.DeDupeKey)
                                     End If
                                     If Not isAlreadyAdded Then
                                         Try
@@ -921,9 +920,9 @@ Public Class Folder
                                         hasDupes.Add(newItem)
                                     End If
 
-                                    ' preload sort property
+                                    ' preload sort property 
                                     If isSortPropertyByText Then
-                                        Dim sortValue As Object = newItem.PropertiesByKeyAsText(sortPropertyKey)?.Value
+                                        Dim sortValue As Object = newItem.PropertiesByKeyAsText(sortPropertyKey)
                                     ElseIf isSortPropertyDisplaySortValue Then
                                         Dim sortValue As Object = newItem.ItemNameDisplaySortValue
                                     End If
@@ -944,7 +943,7 @@ Public Class Folder
                                         Dim attributes As SFGAO = newItem.Attributes
                                     End If
 
-                                    newFullPaths.Add(newItem.FullPath)
+                                    newFullPaths.Add(newItem.FullPath & newItem.DeDupeKey)
 
                                     If isRootDesktop Then
                                         If Not Shell.GetSpecialFolder(SpecialFolders.Home) Is Nothing AndAlso (newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Home).FullPath) OrElse newItem.FullPath.Equals("::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}")) Then newItem.TreeSortPrefix = "_001" _
@@ -1192,9 +1191,10 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
+                            Dim existing As Item
                             UIHelper.OnUIThread(
                                 Sub()
-                                    Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                                     If existing Is Nothing Then
                                         Me.InitializeItem(e.Item1)
@@ -1204,22 +1204,21 @@ Public Class Folder
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(e.Item1, c)
                                         Me.IsEmpty = _items.Count = 0
-                                    ElseIf TypeOf existing Is Folder Then
-                                        Shell.GlobalThreadPool.Run(
-                                            Sub()
-                                                Dim existingFolder As Folder = existing
-                                                Dim oldPidl As Pidl = Me.Pidl?.Clone()
-                                                existingFolder.Refresh(e.Item1?.ShellItem2, e.Item1?.Pidl?.Clone(), e.Item1?.FullPath)
-                                                e.Item1._shellItem2 = Nothing
-                                                existingFolder._isEnumerated = False
-                                                existingFolder.GetItemsAsync(True, True)
-                                            End Sub)
                                     End If
                                 End Sub)
-                            If e.IsHandled1 Then
+                            If existing Is Nothing Then
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         e.Item1.Refresh()
+                                    End Sub)
+                            ElseIf TypeOf existing Is Folder Then
+                                Shell.GlobalThreadPool.Run(
+                                    Sub()
+                                        Dim existingFolder As Folder = existing
+                                        existingFolder.Refresh(e.Item1?.ShellItem2, e.Item1?.Pidl?.Clone(), e.Item1?.FullPath)
+                                        e.Item1._shellItem2 = Nothing
+                                        existingFolder._isEnumerated = False
+                                        existingFolder.GetItemsAsync(True, True)
                                     End Sub)
                             End If
                         End If
@@ -1294,28 +1293,6 @@ Public Class Folder
                             End If
                         End If
                     End If
-                    'Case SHCNE.RENAMEFOLDER
-                    '    If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _
-                    '        OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) _
-                    '        AndAlso (e.Item2.IsFolder AndAlso Not e.Item2.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
-                    '                 AndAlso e.Item1.Pidl Is Nothing) Then
-                    '        Dim existing As Item = Nothing
-                    '        UIHelper.OnUIThread(
-                    '            Sub()
-                    '                existing = _items.FirstOrDefault(Function(i) Not i.disposedValue _
-                    '                                AndAlso (i.Pidl?.Equals(e.Item2.Pidl) OrElse i.FullPath?.Equals(e.Item2.FullPath)))
-                    '            End Sub)
-                    '        If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
-                    '            Shell.GlobalThreadPool.Run(
-                    '                Sub()
-                    '                    Dim existingFolder As Folder = existing
-                    '                    Dim oldPidl As Pidl = Me.Pidl?.Clone()
-                    '                    existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath)
-                    '                    existingFolder._isEnumerated = False
-                    '                    existingFolder.GetItemsAsync(True, True)
-                    '                End Sub)
-                    '        End If
-                    '    End If
             End Select
         End If
     End Sub

@@ -155,12 +155,12 @@ Namespace Controls.Parts
                     End If
                 Finally
                     _treeView.SetSelectedItem(_prevSelectedItem)
-                    If TypeOf _prevSelectedItem Is Folder Then _treeView.SetSelectedFolder(_prevSelectedItem)
+                    If TypeOf _prevSelectedItem Is Folder Then _treeView.Folder = _prevSelectedItem
                 End Try
             Else
                 _threads(_threads.Count - 1).Dispose()
                 _treeView.SetSelectedItem(_prevSelectedItem)
-                If TypeOf _prevSelectedItem Is Folder Then _treeView.SetSelectedFolder(_prevSelectedItem)
+                If TypeOf _prevSelectedItem Is Folder Then _treeView.Folder = _prevSelectedItem
             End If
 
             ' clean up
