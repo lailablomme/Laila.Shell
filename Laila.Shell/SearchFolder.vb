@@ -121,7 +121,7 @@ Public Class SearchFolder
                             = _enumerationCancellationTokenSource
 
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
-                        enumerateItems(True, _enumerationCancellationTokenSource.Token, -1, doRefreshAllExistingItems)
+                        enumerateItems(True, _enumerationCancellationTokenSource.Token, Nothing, doRefreshAllExistingItems)
 
                         Me.IsLoading = False
 

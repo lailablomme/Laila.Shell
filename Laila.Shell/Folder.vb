@@ -82,7 +82,7 @@ Public Class Folder
     ''' <summary>
     ''' This one is used for creating the root Desktop folder only.
     ''' </summary>
-    Friend Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder, threadId As Integer)
+    Friend Sub New(shellFolder As IShellFolder, shellItem2 As IShellItem2, parent As Folder, threadId As Integer?)
         Me.New(shellItem2, parent, True, True, threadId)
 
         _shellFolder = shellFolder
@@ -91,7 +91,7 @@ Public Class Folder
         _isListening = True
     End Sub
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer, Optional pidl As Pidl = Nothing)
+    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer?, Optional pidl As Pidl = Nothing)
         MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, pidl)
         _canShowInTree = True
     End Sub
@@ -628,7 +628,7 @@ Public Class Folder
         End If
     End Sub
 
-    Protected Sub enumerateItems(isAsync As Boolean, cancellationToken As CancellationToken, threadId As Integer,
+    Protected Sub enumerateItems(isAsync As Boolean, cancellationToken As CancellationToken, threadId As Integer?,
                                  Optional doRefreshAllExistingItems As Boolean = True, Optional doRecursive As Boolean = False)
         Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
         Me.IsEmpty = False
@@ -649,7 +649,7 @@ Public Class Folder
         End If
     End Sub
 
-    Protected Sub enumerateItems(flags As UInt32, cancellationToken As CancellationToken, threadId As Integer,
+    Protected Sub enumerateItems(flags As UInt32, cancellationToken As CancellationToken, threadId As Integer?,
                                  doRefreshAllExistingItems As Boolean, doRecursive As Boolean)
         If disposedValue Then Return
 
@@ -844,7 +844,7 @@ Public Class Folder
     Protected Overridable Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInt32, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
         result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action,
-        threadId As Integer)
+        threadId As Integer?)
 
         Dim isDebuggerAttached As Boolean = Debugger.IsAttached
         Dim isRootDesktop As Boolean = If(Me.Pidl?.Equals(Shell.Desktop.Pidl), False)

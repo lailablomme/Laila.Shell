@@ -46,7 +46,7 @@ Public Class Item
     Friend _logicalParent As Folder
     Private _itemNameDisplaySortValuePrefix As String
     Protected _canShowInTree As Boolean
-    Friend _livesOnThreadId As Integer
+    Friend _livesOnThreadId As Integer?
 
     Public Shared Function FromParsingName(parsingName As String, parent As Folder,
                                            Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
@@ -119,7 +119,7 @@ Public Class Item
         Return result
     End Function
 
-    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer, Optional pidl As Pidl = Nothing)
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer?, Optional pidl As Pidl = Nothing)
         _objectCount += 1
         _objectId = _objectCount
         _shellItem2 = shellItem2
