@@ -219,16 +219,13 @@ Namespace Behaviors
             Dim height As Double = _selectionRectangle.Height
             Dim rect As Rect = New Rect(left, top, width, height)
 
-            For Each item In _listBox.Items
-                Dim listViewItem As ListViewItem = _listBox.ItemContainerGenerator.ContainerFromItem(item)
-                If Not listViewItem Is Nothing Then
-                    Dim bounds As Rect = listViewItem.TransformToAncestor(_listBox).TransformBounds(
-                                    New Rect(0.0, 0.0, listViewItem.ActualWidth, listViewItem.ActualHeight))
-                    If rect.IntersectsWith(bounds) AndAlso Not _listBox.SelectedItems.Contains(item) Then
-                        _listBox.SelectedItems.Add(item)
-                    ElseIf Not rect.IntersectsWith(bounds) AndAlso _listBox.SelectedItems.Contains(item) Then
-                        _listBox.SelectedItems.Remove(item)
-                    End If
+            For Each listViewItem In UIHelper.FindVisualChildren(Of ListViewItem)(_listBox)
+                Dim bounds As Rect = listViewItem.TransformToAncestor(_listBox).TransformBounds(
+                                New Rect(0.0, 0.0, listViewItem.ActualWidth, listViewItem.ActualHeight))
+                If rect.IntersectsWith(bounds) AndAlso Not _listBox.SelectedItems.Contains(listViewItem.DataContext) Then
+                    _listBox.SelectedItems.Add(listViewItem.DataContext)
+                ElseIf Not rect.IntersectsWith(bounds) AndAlso _listBox.SelectedItems.Contains(listViewItem.DataContext) Then
+                    _listBox.SelectedItems.Remove(listViewItem.DataContext)
                 End If
             Next
 
