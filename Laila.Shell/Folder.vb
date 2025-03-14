@@ -10,6 +10,7 @@ Imports System.Windows.Input
 Imports System.Windows.Media
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Folders
 Imports Laila.Shell.Interop.Functions
@@ -18,6 +19,7 @@ Imports Laila.Shell.Interop.Properties
 
 Public Class Folder
     Inherits Item
+    Implements INotify
 
     Public Event ExpandAllGroups As EventHandler
     Public Event CollapseAllGroups As EventHandler
@@ -52,6 +54,8 @@ Public Class Folder
     Protected _initializeItemsSortPropertyName As String
     Private _isInitializing As Boolean
     Protected _hookFolderFullPath As String
+    Private _notificationSubscribersLock As Object = New Object()
+    Private _notificationSubscribers As List(Of IProcessNotifications) = New List(Of IProcessNotifications)()
 
     Public Shared Function FromDesktop() As Folder
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
@@ -96,13 +100,14 @@ Public Class Folder
         _canShowInTree = True
     End Sub
 
-    Protected Overrides Sub AutohookUpdates()
-        If _doHookUpdates AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse Me._logicalParent?.IsActiveInFolderView OrElse Me.IsActiveInFolderView) Then
-            Me.HookUpdates()
-        Else
-            Me.UnhookUpdates()
-        End If
-    End Sub
+    Public Overrides Property IsProcessingNotifications As Boolean
+        Get
+            Return MyBase.IsProcessingNotifications AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse If(Me._logicalParent?.IsActiveInFolderView, False) OrElse Me.IsActiveInFolderView)
+        End Get
+        Friend Set(value As Boolean)
+            MyBase.IsProcessingNotifications = value
+        End Set
+    End Property
 
     Friend Overridable Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
         Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
@@ -147,7 +152,6 @@ Public Class Folder
         Set(value As Boolean)
             SetValue(_isExpanded, value)
 
-            Me.AutohookUpdates()
             If value Then
                 Me.GetItemsAsync()
             Else
@@ -165,7 +169,6 @@ Public Class Folder
         Set(value As Boolean)
             SetValue(_isActiveInFolderView, value)
 
-            Me.AutohookUpdates()
             If Not value AndAlso TypeOf Me Is SearchFolder AndAlso Me.IsLoading Then
                 Me.CancelEnumeration()
             End If
@@ -695,7 +698,7 @@ Public Class Folder
                                     ' this happens the first time a folder is loaded
                                     _items.UpdateRange(result.Values, Nothing)
                                     For Each item In result.Values
-                                        item.DoHookUpdates = True
+                                        item.IsProcessingNotifications = True
                                     Next
                                 Else
                                     ' this happens when a folder is refreshed
@@ -736,7 +739,7 @@ Public Class Folder
                                     ' add/remove items
                                     _items.UpdateRange(newItems, removedItems)
                                     For Each item In newItems
-                                        item.DoHookUpdates = True
+                                        item.IsProcessingNotifications = True
                                     Next
                                 End If
                             Else
@@ -746,7 +749,7 @@ Public Class Folder
                                     _items.InsertSorted(item, c)
                                 Next
                                 For Each item In result.Values
-                                    item.DoHookUpdates = True
+                                    item.IsProcessingNotifications = True
                                 Next
                             End If
                         End If
@@ -1181,8 +1184,20 @@ Public Class Folder
         RaiseEvent CollapseAllGroups(Me, New EventArgs())
     End Sub
 
-    Protected Friend Overrides Sub shell_Notification(sender As Object, e As NotificationEventArgs)
-        MyBase.shell_Notification(sender, e)
+    Public Sub SubscribeToNotifications(item As IProcessNotifications) Implements INotify.SubscribeToNotifications
+        SyncLock _notificationSubscribersLock
+            _notificationSubscribers.Add(item)
+        End SyncLock
+    End Sub
+
+    Public Sub UnsubscribeFromNotifications(item As IProcessNotifications) Implements INotify.UnsubscribeFromNotifications
+        SyncLock _notificationSubscribersLock
+            _notificationSubscribers.Remove(item)
+        End SyncLock
+    End Sub
+
+    Protected Friend Overrides Sub ProcessNotification(e As NotificationEventArgs)
+        MyBase.ProcessNotification(e)
 
         If Not disposedValue Then
             If Me.Pidl?.Equals(Shell.GetSpecialFolder(SpecialFolders.RecycleBin).Pidl) Then
@@ -1213,7 +1228,7 @@ Public Class Folder
                                     If existing Is Nothing Then
                                         Me.InitializeItem(e.Item1)
                                         e.Item1.LogicalParent = Me
-                                        e.Item1.DoHookUpdates = True
+                                        e.Item1.IsProcessingNotifications = True
                                         e.IsHandled1 = True
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(e.Item1, c)
@@ -1248,12 +1263,6 @@ Public Class Folder
                                         Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                                         If Not existing Is Nothing Then
-                                            If TypeOf existing Is Folder Then
-                                                Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                                    .Folder = existing,
-                                                    .[Event] = e.Event
-                                                })
-                                            End If
                                             existing.Dispose()
                                         End If
                                     End Sub)
@@ -1267,7 +1276,7 @@ Public Class Folder
                                 If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
                                     Me.InitializeItem(e.Item1)
                                     e.Item1.LogicalParent = Me
-                                    e.Item1.DoHookUpdates = True
+                                    e.Item1.IsProcessingNotifications = True
                                     e.IsHandled1 = True
                                     Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                     _items.InsertSorted(e.Item1, c)
@@ -1287,10 +1296,6 @@ Public Class Folder
                                     Dim item As Item
                                     item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                     If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                        Shell.RaiseFolderNotificationEvent(Me, New Events.FolderNotificationEventArgs() With {
-                                            .Folder = item,
-                                            .[Event] = e.Event
-                                        })
                                         item.Dispose()
                                     End If
                                 End Sub)
@@ -1308,6 +1313,39 @@ Public Class Folder
                         End If
                     End If
             End Select
+
+            ' notify children
+            Dim list As List(Of Item) = Nothing
+            UIHelper.OnUIThread(
+                Sub()
+                    SyncLock _notificationSubscribersLock
+                        list = _items.Where(Function(i) i.IsProcessingNotifications).ToList()
+                    End SyncLock
+                End Sub)
+            If list.Count > 0 Then
+                Dim size As Integer = Math.Max(1, Math.Min(list.Count / 10, 250))
+                Dim chuncks()() As Item = list.Chunk(list.Count / size).ToArray()
+                Dim tcses As List(Of TaskCompletionSource) = New List(Of TaskCompletionSource)()
+
+                ' threads for refreshing
+                For i = 0 To chuncks.Count - 1
+                    Dim j As Integer = i
+                    Dim tcs As TaskCompletionSource = New TaskCompletionSource()
+                    tcses.Add(tcs)
+                    Shell.GlobalThreadPool.Add(
+                        Sub()
+                            ' Process tasks from the queue
+                            For Each item In chuncks(j)
+                                If Shell.ShuttingDownToken.IsCancellationRequested Then Exit For
+                                item.ProcessNotification(e)
+                            Next
+
+                            tcs.SetResult()
+                        End Sub)
+                Next
+
+                Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
+            End If
         End If
     End Sub
 

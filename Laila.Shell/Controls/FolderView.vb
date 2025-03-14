@@ -8,6 +8,7 @@ Imports System.Windows.Data
 Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
@@ -16,7 +17,7 @@ Imports Laila.Shell.Interop.Properties
 Namespace Controls
     Public Class FolderView
         Inherits Control
-        Implements IDisposable
+        Implements IDisposable, IProcessNotifications
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
@@ -28,6 +29,8 @@ Namespace Controls
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
         End Sub
+
+        Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
         Private _views As Dictionary(Of String, Control)
         Private _activeView As BaseFolderView
@@ -62,10 +65,10 @@ Namespace Controls
                     End If
                 End Sub
 
-            AddHandler Shell.Notification, AddressOf shell_Notification
+            Shell.SubscribeToNotifications(Me)
         End Sub
 
-        Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+        Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
             Select Case e.Event
                 Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
                     Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
@@ -306,7 +309,7 @@ Namespace Controls
             If Not disposedValue Then
                 If disposing Then
                     ' dispose managed state (managed objects)
-                    RemoveHandler Shell.Notification, AddressOf shell_Notification
+                    Shell.UnsubscribeFromNotifications(Me)
 
                     If Not Me.Folder Is Nothing Then
                         Me.Folder.IsActiveInFolderView = False

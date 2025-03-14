@@ -9,6 +9,7 @@ Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Folders
 Imports Laila.Shell.Interop.Items
@@ -17,6 +18,7 @@ Imports Laila.Shell.Interop.Properties
 Public Class Item
     Inherits NotifyPropertyChangedBase
     Implements IDisposable
+    Implements IProcessNotifications
 
     Public Event Refreshed As EventHandler
 
@@ -47,10 +49,9 @@ Public Class Item
     Private _itemNameDisplaySortValuePrefix As String
     Protected _canShowInTree As Boolean
     Friend _livesOnThreadId As Integer?
-    Protected _doHookUpdates As Boolean
-    Friend _isUpdatesHooked As Boolean
-    Friend _mustUnhookUpdates As Boolean
-    Friend _hookUpdatesLock As Object = New Object()
+    Private _isProcessingNotifications As Boolean
+    Private _notifier As INotify
+    Private _isInstantiated As Boolean
 
     ''' <summary>
     ''' Makes a new Folder/Item/Link object from a parsing name.
@@ -155,10 +156,10 @@ Public Class Item
         _objectId = _objectCount
         _shellItem2 = shellItem2
         _doKeepAlive = doKeepAlive
+        Me.IsProcessingNotifications = doHookUpdates
         Me.LogicalParent = logicalParent
         _pidl = pidl
         _livesOnThreadId = threadId
-        Me.DoHookUpdates = doHookUpdates
         If Not shellItem2 Is Nothing Then
             Dim d As String = Me.DisplayName
             Shell.AddToItemsCache(Me)
@@ -166,6 +167,7 @@ Public Class Item
             _fullPath = String.Empty
         End If
         AddHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
+        _isInstantiated = True
     End Sub
 
     ''' <summary>
@@ -177,41 +179,6 @@ Public Class Item
         _objectId = _objectCount
         _fullPath = fullPath
         _displayName = IO.Path.GetFileName(_fullPath)
-    End Sub
-
-    ''' <summary>
-    ''' Hook update notifications for this item.
-    ''' </summary>
-    Public Sub HookUpdates()
-        SyncLock _hookUpdatesLock
-            If Not _isUpdatesHooked Then
-                _isUpdatesHooked = True
-                _mustUnhookUpdates = False
-                AddHandler Shell.Notification, AddressOf shell_Notification
-            End If
-        End SyncLock
-    End Sub
-
-    ''' <summary>
-    ''' Unhook update notifications for this item.
-    ''' </summary>
-    Public Sub UnhookUpdates()
-        SyncLock _hookUpdatesLock
-            If _isUpdatesHooked Then
-                _mustUnhookUpdates = True
-            End If
-        End SyncLock
-    End Sub
-
-    ''' <summary>
-    ''' Automatically hooks or unhooks update notifications based on the visibility of this item in the tree, folder view or address bar.
-    ''' </summary>
-    Protected Overridable Sub AutohookUpdates()
-        If _doHookUpdates AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse Me._logicalParent?.IsActiveInFolderView) Then
-            Me.HookUpdates()
-        Else
-            Me.UnhookUpdates()
-        End If
     End Sub
 
     ''' <summary>
@@ -247,7 +214,6 @@ Public Class Item
         End Get
         Set(value As Boolean)
             SetValue(_isVisibleInAddressBar, value)
-            Me.AutohookUpdates()
         End Set
     End Property
 
@@ -264,7 +230,6 @@ Public Class Item
         End Get
         Set(value As Boolean)
             SetValue(_canShowInTree, value)
-            Me.AutohookUpdates()
             Me.NotifyOfPropertyChange("IsVisibleInTree")
             Me.NotifyOfPropertyChange("IsReadyForDispose")
         End Set
@@ -284,16 +249,6 @@ Public Class Item
         End If
     End Sub
 
-    Public Property DoHookUpdates As Boolean
-        Get
-            Return _doHookUpdates
-        End Get
-        Set(value As Boolean)
-            SetValue(_doHookUpdates, value)
-            Me.AutohookUpdates()
-        End Set
-    End Property
-
     Protected Friend Property TreeViewSection As BaseTreeViewSection
 
     Protected Friend Property TreeRootIndex As Long
@@ -302,7 +257,6 @@ Public Class Item
         End Get
         Set(value As Long)
             SetValue(_treeRootIndex, value)
-            Me.AutohookUpdates()
             Me.NotifyOfPropertyChange("TreeSortKey")
         End Set
     End Property
@@ -539,26 +493,23 @@ Public Class Item
             Return If(_logicalParent, Me.Parent)
         End Get
         Set(value As Folder)
-            If Not _logicalParent Is Nothing Then
-                RemoveHandler _logicalParent.PropertyChanged, AddressOf logicalParent_PropertyChanged
+            If Not _notifier Is Nothing Then
+                _notifier.UnsubscribeFromNotifications(Me)
+            ElseIf _isInstantiated Then
+                Shell.UnsubscribeFromNotifications(Me)
             End If
 
             SetValue(_logicalParent, value)
 
             If Not _logicalParent Is Nothing Then
-                AddHandler _logicalParent.PropertyChanged, AddressOf logicalParent_PropertyChanged
+                _notifier = _logicalParent
+                _notifier.SubscribeToNotifications(Me)
+            Else
+                _notifier = Nothing
+                Shell.SubscribeToNotifications(Me)
             End If
-
-            Me.AutohookUpdates()
         End Set
     End Property
-
-    Private Sub logicalParent_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
-        Select Case e.PropertyName
-            Case "IsExpanded", "IsActiveInFolderView"
-                Me.AutohookUpdates()
-        End Select
-    End Sub
 
     ''' <summary>
     ''' The actual parent folder of this object, as wired in the shell namespace.
@@ -1320,6 +1271,15 @@ Public Class Item
         End Get
     End Property
 
+    Public Overridable Property IsProcessingNotifications As Boolean Implements IProcessNotifications.IsProcessingNotifications
+        Get
+            Return _isProcessingNotifications AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse If(Me._logicalParent?.IsActiveInFolderView, False))
+        End Get
+        Friend Set(value As Boolean)
+            SetValue(_isProcessingNotifications, value)
+        End Set
+    End Property
+
     Public Shared Async Function FromParsingNameDeepGetAsync(parsingName As String) As Task(Of Item)
         ' resolve environment variable?
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)
@@ -1472,7 +1432,7 @@ Public Class Item
         End If
     End Function
 
-    Protected Friend Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+    Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR ' general update
@@ -1581,10 +1541,11 @@ Public Class Item
                         ' extensive cleanup, because we're still live:
 
                         ' unsubscribe from notifications
-                        If Not _logicalParent Is Nothing Then
-                            RemoveHandler _logicalParent.PropertyChanged, AddressOf logicalParent_PropertyChanged
+                        If Not _notifier Is Nothing Then
+                            _notifier.UnsubscribeFromNotifications(Me)
+                        Else
+                            Shell.UnsubscribeFromNotifications(Me)
                         End If
-                        Me.UnhookUpdates()
                         RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
 
                         ' remove from parent collection(s)

@@ -11,7 +11,8 @@ Imports Laila.Shell.Interop.Items
 Namespace Controls.Parts
     Public Class PinnedItemsTreeViewSection
         Inherits BaseTreeViewSection
-        Implements ISupportDragInsert
+        Implements ISupportDragInsert, IProcessNotifications
+        Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
         Friend Overrides Sub Initialize()
             updatePinnedItems()
@@ -25,38 +26,7 @@ Namespace Controls.Parts
                     updatePinnedItems()
                 End Sub
 
-            AddHandler Shell.Notification,
-                Sub(s As Object, e As NotificationEventArgs)
-                    Select Case e.Event
-                        Case SHCNE.RMDIR, SHCNE.DELETE
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    If Not Me.Items.FirstOrDefault(Function(i) _
-                                        Not i.disposedValue _
-                                        AndAlso Not i.FullPath Is Nothing _
-                                        AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing Then
-                                        updatePinnedItems()
-                                    End If
-                                End Sub)
-                        Case SHCNE.UPDATEDIR
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    If (Not Me.Items.FirstOrDefault(
-                                        Function(i)
-                                            If Not i.disposedValue Then
-                                                Return (Not i.Parent Is Nothing _
-                                                    AndAlso Not i.Parent.FullPath Is Nothing _
-                                                    AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
-                                            Else
-                                                Return False
-                                            End If
-                                        End Function) Is Nothing _
-                                    OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath)) Then
-                                        updatePinnedItems()
-                                    End If
-                                End Sub)
-                    End Select
-                End Sub
+            Shell.SubscribeToNotifications(Me)
         End Sub
 
         Private Sub updatePinnedItems()
@@ -95,6 +65,38 @@ Namespace Controls.Parts
             If Me.Items.Count = 1 Then
                 Me.Items.Add(New PinnedItemsPlaceholderFolder())
             End If
+        End Sub
+
+        Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
+            Select Case e.Event
+                Case SHCNE.RMDIR, SHCNE.DELETE
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If Not Me.Items.FirstOrDefault(Function(i) _
+                                        Not i.disposedValue _
+                                        AndAlso Not i.FullPath Is Nothing _
+                                        AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing Then
+                                updatePinnedItems()
+                            End If
+                        End Sub)
+                Case SHCNE.UPDATEDIR
+                    UIHelper.OnUIThread(
+                        Sub()
+                            If (Not Me.Items.FirstOrDefault(
+                                        Function(i)
+                                            If Not i.disposedValue Then
+                                                Return (Not i.Parent Is Nothing _
+                                                    AndAlso Not i.Parent.FullPath Is Nothing _
+                                                    AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
+                                            Else
+                                                Return False
+                                            End If
+                                        End Function) Is Nothing _
+                                    OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath)) Then
+                                updatePinnedItems()
+                            End If
+                        End Sub)
+            End Select
         End Sub
 
         Private ReadOnly Property ISupportDragInsert_Items As ObservableCollection(Of Item) Implements ISupportDragInsert.Items

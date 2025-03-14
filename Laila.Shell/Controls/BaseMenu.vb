@@ -10,6 +10,7 @@ Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Application
 Imports Laila.Shell.Interop.ContextMenu
@@ -22,7 +23,7 @@ Imports Microsoft.Win32
 Namespace Controls
     Public MustInherit Class BaseMenu
         Inherits ContextMenu
-        Implements IDisposable
+        Implements IDisposable, IProcessNotifications
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(BaseMenu), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseMenu), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
@@ -32,6 +33,7 @@ Namespace Controls
         Public Event RenameRequest(sender As Object, e As RenameRequestEventArgs)
 
         Public Property DefaultId As Tuple(Of Integer, String)
+        Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
         Private _contextMenu As IContextMenu
         Private _contextMenu2 As IContextMenu2
@@ -51,7 +53,7 @@ Namespace Controls
 
             _thread = New Helpers.ThreadPool(1)
 
-            AddHandler Shell.Notification, AddressOf shell_Notification
+            Shell.SubscribeToNotifications(Me)
         End Sub
 
         Protected MustOverride Async Function AddItems() As Task
@@ -582,7 +584,7 @@ Namespace Controls
                 End Sub), Nothing, 2500, Timeout.Infinite)
         End Sub
 
-        Protected Async Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+        Protected Friend Overridable Async Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
             If Not disposedValue Then
                 Select Case e.Event
                     Case SHCNE.CREATE, SHCNE.MKDIR
@@ -644,7 +646,7 @@ Namespace Controls
 
                 If disposing Then
                     ' dispose managed state (managed objects)
-                    RemoveHandler Shell.Notification, AddressOf shell_Notification
+                    Shell.UnsubscribeFromNotifications(Me)
                 End If
 
                 ' free unmanaged resources (unmanaged objects) and override finalizer

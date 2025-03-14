@@ -11,6 +11,7 @@ Imports System.Windows.Input
 Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop.Application
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
@@ -20,7 +21,7 @@ Imports Laila.Shell.PinnedItems
 Namespace Controls
     Public Class TreeView
         Inherits Control
-        Implements IDisposable
+        Implements IDisposable, IProcessNotifications
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -38,6 +39,7 @@ Namespace Controls
         Public Shared ReadOnly DoExpandTreeViewToCurrentFolderOverrideProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolderOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoExpandTreeViewToCurrentFolderOverrideChanged))
         Public Shared ReadOnly DoShowLibrariesInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowLibrariesInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowLibrariesInTreeViewOverrideChanged))
+        Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -107,12 +109,12 @@ Namespace Controls
             setDoExpandTreeViewToCurrentFolder()
             setDoShowLibrariesInTreeView()
 
-            AddHandler Shell.Notification, AddressOf shell_Notification
+            Shell.SubscribeToNotifications(Me)
 
             CollectionViewSource.GetDefaultView(Me.Items).Refresh()
         End Sub
 
-        Protected Overridable Sub shell_Notification(sender As Object, e As NotificationEventArgs)
+        Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
             Select Case e.Event
                 Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
                     Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
@@ -1028,7 +1030,7 @@ Namespace Controls
             If Not disposedValue Then
                 If disposing Then
                     ' dispose managed state (managed objects)
-                    RemoveHandler Shell.Notification, AddressOf shell_Notification
+                    Shell.UnsubscribeFromNotifications(Me)
 
                     If Not _typeToSearchTimer Is Nothing Then
                         _typeToSearchTimer.Dispose()

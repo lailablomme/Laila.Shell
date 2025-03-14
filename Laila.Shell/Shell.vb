@@ -10,6 +10,7 @@ Imports System.Windows.Interop
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
@@ -19,11 +20,10 @@ Imports Shell32
 Public Class Shell
     Private Shared _desktop As Folder
 
-    Public Shared Event Notification(sender As Object, e As NotificationEventArgs)
-    Friend Shared Event FolderNotification(sender As Object, e As FolderNotificationEventArgs)
     Public Shared Event ClipboardChanged As EventHandler
 
-    Public Shared NotificationThread As Helpers.ThreadPool
+    Public Shared NotificationMainThread As Helpers.ThreadPool
+    Public Shared NotificationThreadPool As Helpers.ThreadPool
     Public Shared GlobalThreadPool As Helpers.ThreadPool
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
     Private Shared _disposeThread As Thread
@@ -32,8 +32,8 @@ Public Class Shell
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
     Private Shared _shutDownTokensSource As CancellationTokenSource = New CancellationTokenSource()
     Public Shared ShuttingDownToken As CancellationToken = _shutDownTokensSource.Token
-    Private Shared _mainWindow As Window
 
+    Private Shared _mainWindow As Window
     Friend Shared _w As Window
     Public Shared _hwnd As IntPtr
 
@@ -43,6 +43,8 @@ Public Class Shell
     Private Shared _customPropertiesByCanonicalName As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
     Private Shared _customPropertiesByKey As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
 
+    Private Shared _notificationSubscribersLock As Object = New Object()
+    Private Shared _notificationSubscribers As List(Of IProcessNotifications) = New List(Of IProcessNotifications)()
     Private Shared _threadPoolCacheLock As Object = New Object()
     Private Shared _threadPoolCache As List(Of Helpers.ThreadPool) = New List(Of Helpers.ThreadPool)()
     Private Shared _menuCacheLock As Object = New Object()
@@ -87,7 +89,8 @@ Public Class Shell
 
         ImageHelper.Load()
 
-        Shell.NotificationThread = New Helpers.ThreadPool(1) ' these events need to be processed sequentially
+        Shell.NotificationMainThread = New Helpers.ThreadPool(1)
+        Shell.NotificationThreadPool = New Helpers.ThreadPool(100)
         Shell.GlobalThreadPool = New Helpers.ThreadPool(100)
 
         ' thread for disposing items
@@ -127,45 +130,6 @@ Public Class Shell
         _disposeThread.SetApartmentState(ApartmentState.MTA)
         _disposeThread.Start()
         _threads.Add(_disposeThread)
-
-        ' thread for unhooking updates from items
-        _unhookUpdatesThread = New Thread(
-            Sub()
-                Try
-                    ' while we're not shutting down...
-                    While Not ShuttingDownToken.IsCancellationRequested
-                        ' take a snapshot of the shellitem cache...
-                        Dim list As List(Of Tuple(Of Item, DateTime))
-                        SyncLock _itemsCacheLock
-                            list = Shell.ItemsCache.Where(Function(i) i.Item1._mustUnhookUpdates).ToList()
-                        End SyncLock
-
-                        ' ...and go through it
-                        For Each item In list
-                            If ShuttingDownToken.IsCancellationRequested Then Exit For
-
-                            ' try to dispose the item
-                            SyncLock item.Item1._hookUpdatesLock
-                                If item.Item1._mustUnhookUpdates Then
-                                    item.Item1._mustUnhookUpdates = False
-                                    item.Item1._isUpdatesHooked = False
-                                    RemoveHandler Shell.Notification, AddressOf item.Item1.shell_Notification
-                                End If
-                            End SyncLock
-
-                            ' don't hog the process
-                            Thread.Sleep(10)
-                        Next
-                        Thread.Sleep(5000)
-                    End While
-                Catch ex As OperationCanceledException
-                    Debug.WriteLine("Disposing thread was canceled.")
-                End Try
-            End Sub)
-        _unhookUpdatesThread.IsBackground = True
-        _unhookUpdatesThread.SetApartmentState(ApartmentState.MTA)
-        _unhookUpdatesThread.Start()
-        _threads.Add(_unhookUpdatesThread)
 
         ' make window to receive SHChangeNotify messages and for building
         ' the drag and drop image
@@ -310,7 +274,8 @@ Public Class Shell
                 Next
             End SyncLock
 
-            Shell.NotificationThread.Dispose()
+            Shell.NotificationMainThread.Dispose()
+            Shell.NotificationThreadPool.Dispose()
 
             ' stop monitoring changes to settings so we can properly close the registry keys
             Shell.Settings.StopMonitoring()
@@ -377,7 +342,7 @@ Public Class Shell
                     pppidl = IntPtr.Add(pppidl, IntPtr.Size)
                     Dim pidl2 As IntPtr = Marshal.ReadIntPtr(pppidl)
 
-                    Shell.NotificationThread.Add(
+                    Shell.NotificationMainThread.Add(
                         Sub()
                             ' make eventargs
                             Dim e As NotificationEventArgs = New NotificationEventArgs() With {
@@ -415,8 +380,8 @@ Public Class Shell
 
                             Debug.Write(text)
 
-                            ' notify components
-                            RaiseEvent Notification(Nothing, e)
+                            ' notify children
+                            notifySubscribers(e)
 
                             If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
                             If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
@@ -437,6 +402,40 @@ Public Class Shell
                 End If
         End Select
     End Function
+
+    Private Shared Sub notifySubscribers(e As NotificationEventArgs)
+        Dim list As List(Of IProcessNotifications) = Nothing
+        UIHelper.OnUIThread(
+            Sub()
+                SyncLock _notificationSubscribersLock
+                    list = _notificationSubscribers.Where(Function(i) i.IsProcessingNotifications).ToList()
+                End SyncLock
+            End Sub)
+        If list.Count > 0 Then
+            Dim size As Integer = Math.Max(1, Math.Min(list.Count / 10, 250))
+            Dim chuncks()() As IProcessNotifications = list.Chunk(list.Count / size).ToArray()
+            Dim tcses As List(Of TaskCompletionSource) = New List(Of TaskCompletionSource)()
+
+            ' threads for refreshing
+            For i = 0 To chuncks.Count - 1
+                Dim j As Integer = i
+                Dim tcs As TaskCompletionSource = New TaskCompletionSource()
+                tcses.Add(tcs)
+                Shell.GlobalThreadPool.Add(
+                    Sub()
+                        ' Process tasks from the queue
+                        For Each item In chuncks(j)
+                            If Shell.ShuttingDownToken.IsCancellationRequested Then Exit For
+                            item.ProcessNotification(e)
+                        Next
+
+                        tcs.SetResult()
+                    End Sub)
+            Next
+
+            Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
+        End If
+    End Sub
 
     Public Shared Sub AddSpecialFolder(specialFolder As SpecialFolders, item As Item)
         If Not item Is Nothing AndAlso TypeOf item Is Folder Then
@@ -533,14 +532,6 @@ Public Class Shell
             Return _settings
         End Get
     End Property
-
-    Friend Shared Sub RaiseFolderNotificationEvent(sender As Object, e As FolderNotificationEventArgs)
-        RaiseEvent FolderNotification(sender, e)
-    End Sub
-
-    Friend Shared Sub RaiseNotificationEvent(sender As Object, e As NotificationEventArgs)
-        RaiseEvent Notification(sender, e)
-    End Sub
 
     Friend Shared ReadOnly Property ItemsCache As List(Of Tuple(Of Item, DateTime))
         Get
@@ -647,7 +638,8 @@ Public Class Shell
                     If Not e.Item1 Is Nothing AndAlso
                         (Not e.Item2 Is Nothing OrElse (e.Event <> SHCNE.RENAMEITEM AndAlso e.Event <> SHCNE.RENAMEFOLDER)) Then
                         ' notify components
-                        RaiseEvent Notification(Nothing, e)
+                        notifySubscribers(e)
+
                         ' dispose of items
                         If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
                         If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
@@ -659,7 +651,7 @@ Public Class Shell
                 fsw = New FileSystemWatcher(folder.FullPath)
                 AddHandler fsw.Created,
                     Sub(s As Object, e As FileSystemEventArgs)
-                        Shell.NotificationThread.Add(
+                        Shell.NotificationMainThread.Add(
                             Sub()
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
@@ -670,7 +662,7 @@ Public Class Shell
                     End Sub
                 AddHandler fsw.Deleted,
                     Sub(s As Object, e As FileSystemEventArgs)
-                        Shell.NotificationThread.Add(
+                        Shell.NotificationMainThread.Add(
                             Sub()
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
@@ -681,7 +673,7 @@ Public Class Shell
                     End Sub
                 AddHandler fsw.Renamed,
                     Sub(s As Object, e As RenamedEventArgs)
-                        Shell.NotificationThread.Add(
+                        Shell.NotificationMainThread.Add(
                             Sub()
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
@@ -695,27 +687,9 @@ Public Class Shell
                                 fswNotify(e2)
                             End Sub)
                     End Sub
-                'AddHandler fsw.Changed,
-                '    Sub(s As Object, e As FileSystemEventArgs)
-                '        ' make eventargs
-                '        Dim e2 As NotificationEventArgs = New NotificationEventArgs()
-                '        e2.Event = SHCNE.UPDATEITEM
-                '        e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
-                '        fswNotify(e2)
-                '    End Sub
+
                 Try
                     fsw.EnableRaisingEvents = True
-
-                    'hNotify =
-                    '    Functions.SHChangeNotifyRegister(
-                    '        _hwnd,
-                    '        SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
-                    '        SHCNE.UPDATEDIR Or SHCNE.UPDATEITEM Or SHCNE.MEDIAINSERTED _
-                    '            Or SHCNE.MEDIAREMOVED Or SHCNE.NETSHARE Or SHCNE.NETUNSHARE _
-                    '            Or SHCNE.SERVERDISCONNECT,
-                    '        WM.USER + 1,
-                    '        1,
-                    '        entry)
                 Catch ex As Exception
                     Debug.WriteLine(ex.Message)
                     fsw.Dispose()
@@ -723,16 +697,14 @@ Public Class Shell
                 End Try
             End If
 
-            'If fsw Is Nothing Then
             hNotify =
-                    Functions.SHChangeNotifyRegister(
-                        _hwnd,
-                        SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
-                        SHCNE.ALLEVENTS,
-                        WM.USER + 1,
-                        1,
-                        entry)
-            'End If
+                Functions.SHChangeNotifyRegister(
+                    _hwnd,
+                    SHCNRF.NewDelivery Or SHCNRF.InterruptLevel Or SHCNRF.ShellLevel,
+                    SHCNE.ALLEVENTS,
+                    WM.USER + 1,
+                    1,
+                    entry)
 
             SyncLock _listenersLock
                 If hNotify.HasValue Then _listenerhNotifies.Add(folder.FullPath, hNotify)
@@ -765,6 +737,18 @@ Public Class Shell
                     _listenerCount(folder.FullPath) -= 1
                 End If
             End If
+        End SyncLock
+    End Sub
+
+    Public Shared Sub SubscribeToNotifications(item As IProcessNotifications)
+        SyncLock _notificationSubscribersLock
+            _notificationSubscribers.Add(item)
+        End SyncLock
+    End Sub
+
+    Public Shared Sub UnsubscribeFromNotifications(item As IProcessNotifications)
+        SyncLock _notificationSubscribersLock
+            _notificationSubscribers.Remove(item)
         End SyncLock
     End Sub
 
