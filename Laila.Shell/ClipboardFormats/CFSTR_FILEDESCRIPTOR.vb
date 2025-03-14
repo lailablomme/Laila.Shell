@@ -8,7 +8,7 @@ Imports Laila.Shell.Interop.Items
 
 Namespace ClipboardFormats
     Public Class CFSTR_FILEDESCRIPTOR
-        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, items As IEnumerable(Of Item))
+        Public Shared Sub SetData(dataObject As IDataObject_PreserveSig, items As IEnumerable(Of Item))
             Dim filePaths() As String = items.Select(Function(i) i.FullPath).ToArray()
 
             ' Create the file group descriptor for the number of files being dragged
@@ -40,7 +40,7 @@ Namespace ClipboardFormats
             Dim medium As New STGMEDIUM With {
                 .tymed = TYMED.TYMED_HGLOBAL,
                 .unionmember = ptr,
-                .pUnkForRelease = IntPtr.Zero
+                .pUnkForRelease = Nothing
             }
 
             dataObject.SetData(format, medium, True)

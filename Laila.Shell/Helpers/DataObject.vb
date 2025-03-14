@@ -7,12 +7,12 @@ Imports Laila.Shell.Interop.DragDrop
 Namespace Helpers
     <ComVisible(True), Guid("a3b5f678-9cde-4f12-85a6-3f7b2e9d1c45")>
     Public Class DataObject
-        Implements ComTypes.IDataObject, IDisposable
+        Implements IDataObject_PreserveSig, IDisposable
 
         Private _data As Dictionary(Of FORMATETC, Tuple(Of STGMEDIUM, Boolean)) = New Dictionary(Of FORMATETC, Tuple(Of STGMEDIUM, Boolean))()
         Private disposedValue As Boolean
 
-        Public Sub GetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) Implements ComTypes.IDataObject.GetData
+        Public Function GetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) As Integer Implements IDataObject_PreserveSig.GetData
             Select Case format.cfFormat
                 Case ClipboardFormat.CF_HDROP
                     Debug.WriteLine("GetData CF_HDROP")
@@ -109,6 +109,7 @@ Namespace Helpers
                                           AndAlso p.Key.lindex = fmt2.lindex AndAlso (p.Key.tymed And fmt2.tymed)).Value
                 Functions.CopyStgMedium(m.Item1, medium)
                 Debug.WriteLine("GetData S_OK")
+                Return HRESULT.S_OK
                 'If m.Item2 Then
                 '    Functions.ReleaseStgMedium(m.Item1)
                 'End If
@@ -118,10 +119,11 @@ Namespace Helpers
             Else
                 Debug.WriteLine("GetData S_FALSE")
                 medium.tymed = TYMED.TYMED_NULL
+                Return HRESULT.S_FALSE
             End If
-        End Sub
+        End Function
 
-        Public Sub GetDataHere(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) Implements ComTypes.IDataObject.GetDataHere
+        Public Function GetDataHere(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM) As Integer Implements IDataObject_PreserveSig.GetDataHere
             Debug.WriteLine("GetDataHere")
 
             Dim fmt2 As FORMATETC = New FORMATETC() With {
@@ -137,10 +139,13 @@ Namespace Helpers
                 medium.unionmember = m.unionmember
                 medium.pUnkForRelease = m.pUnkForRelease
                 medium.tymed = m.tymed
+                Return HRESULT.S_OK
+            Else
+                Return HRESULT.S_FALSE
             End If
-        End Sub
+        End Function
 
-        Public Function QueryGetData(ByRef format As ComTypes.FORMATETC) As Integer Implements ComTypes.IDataObject.QueryGetData
+        Public Function QueryGetData(ByRef format As ComTypes.FORMATETC) As Integer Implements IDataObject_PreserveSig.QueryGetData
             Select Case format.cfFormat
                 Case ClipboardFormat.CF_HDROP
                     Debug.WriteLine("QueryGetData CF_HDROP")
@@ -241,13 +246,13 @@ Namespace Helpers
                 Return HRESULT.S_FALSE
             End If
         End Function
-        Public Function GetCanonicalFormatEtc(ByRef formatIn As ComTypes.FORMATETC, ByRef formatOut As ComTypes.FORMATETC) As Integer Implements ComTypes.IDataObject.GetCanonicalFormatEtc
+        Public Function GetCanonicalFormatEtc(ByRef formatIn As ComTypes.FORMATETC, ByRef formatOut As ComTypes.FORMATETC) As Integer Implements IDataObject_PreserveSig.GetCanonicalFormatEtc
             Debug.WriteLine("GetCanonicalFormatEtc")
             formatOut = formatIn
             Return HRESULT.S_OK
         End Function
 
-        Public Sub SetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM, ByVal release As Boolean) Implements ComTypes.IDataObject.SetData
+        Public Function SetData(ByRef format As ComTypes.FORMATETC, ByRef medium As ComTypes.STGMEDIUM, ByVal release As Boolean) As Integer Implements IDataObject_PreserveSig.SetData
             Select Case format.cfFormat
                 Case ClipboardFormat.CF_HDROP
                     Debug.WriteLine("SetData CF_HDROP")
@@ -350,25 +355,29 @@ Namespace Helpers
                                           AndAlso f.lindex = fmt2.lindex AndAlso (f.tymed And fmt2.tymed)))
                 End If
                 _data.Add(fmt2, New Tuple(Of STGMEDIUM, Boolean)(medium, release))
+                Return HRESULT.S_OK
+            Else
+                Return HRESULT.E_INVALIDARG
             End If
-        End Sub
-
-        Public Function EnumFormatEtc(ByVal direction As ComTypes.DATADIR) As ComTypes.IEnumFORMATETC Implements ComTypes.IDataObject.EnumFormatEtc
-            Debug.WriteLine("EnumFormatEtc")
-            Return New EnumFORMATETC(_data.Keys.ToArray())
         End Function
 
-        Public Function DAdvise(ByRef pFormatetc As ComTypes.FORMATETC, advf As ADVF, adviseSink As ComTypes.IAdviseSink, ByRef connection As Integer) As Integer Implements ComTypes.IDataObject.DAdvise
+        Public Function EnumFormatEtc(ByVal direction As ComTypes.DATADIR, ByRef ienumformatetc As ComTypes.IEnumFORMATETC) As Integer Implements IDataObject_PreserveSig.EnumFormatEtc
+            Debug.WriteLine("EnumFormatEtc")
+            ienumformatetc = New EnumFORMATETC(_data.Keys.ToArray())
+            Return HRESULT.S_OK
+        End Function
+
+        Public Function DAdvise(ByRef pFormatetc As ComTypes.FORMATETC, advf As ADVF, adviseSink As ComTypes.IAdviseSink, ByRef connection As Integer) As Integer Implements IDataObject_PreserveSig.DAdvise
             Debug.WriteLine("DAdvise")
             Return &H80004001 ' E_NOTIMPL
         End Function
 
-        Public Sub DUnadvise(ByVal connection As Integer) Implements ComTypes.IDataObject.DUnadvise
+        Public Function DUnadvise(ByVal connection As Integer) As Integer Implements IDataObject_PreserveSig.DUnadvise
             Debug.WriteLine("DUnadvise")
-            ' Return &H80004001 ' E_NOTIMPL
-        End Sub
+            Return &H80004001 ' E_NOTIMPL
+        End Function
 
-        Public Function EnumDAdvise(ByRef enumAdvise As ComTypes.IEnumSTATDATA) As Integer Implements ComTypes.IDataObject.EnumDAdvise
+        Public Function EnumDAdvise(ByRef enumAdvise As ComTypes.IEnumSTATDATA) As Integer Implements IDataObject_PreserveSig.EnumDAdvise
             Debug.WriteLine("EnumDAdvise")
             Return &H80004001 ' E_NOTIMPL
         End Function

@@ -238,7 +238,7 @@ Public Class HomeFolder
             End Function)
     End Function
 
-    Public Function DragInsertBefore(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer, overListBoxItem As ListBoxItem) As HRESULT Implements ISupportDragInsert.DragInsertBefore
+    Public Function DragInsertBefore(dataObject As IDataObject_PreserveSig, files As List(Of Item), index As Integer, overListBoxItem As ListBoxItem) As HRESULT Implements ISupportDragInsert.DragInsertBefore
         Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Me.Items)
         Dim canPinItem As Boolean =
             index = 0 _
@@ -254,7 +254,7 @@ Public Class HomeFolder
         End If
     End Function
 
-    Public Function Drop(dataObject As ComTypes.IDataObject, files As List(Of Item), index As Integer) As HRESULT Implements ISupportDragInsert.Drop
+    Public Function Drop(dataObject As IDataObject_PreserveSig, files As List(Of Item), index As Integer) As HRESULT Implements ISupportDragInsert.Drop
         Try
             PinnedItems.IsNotifying = False
 

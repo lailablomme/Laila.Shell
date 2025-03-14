@@ -103,7 +103,7 @@ Namespace Controls.Parts
             End Get
         End Property
 
-        Public Function DragInsertBefore(dataObject As IDataObject, files As List(Of Item), index As Integer, overListBoxItem As ListBoxItem) As Interop.HRESULT Implements ISupportDragInsert.DragInsertBefore
+        Public Function DragInsertBefore(dataObject As IDataObject_PreserveSig, files As List(Of Item), index As Integer, overListBoxItem As ListBoxItem) As Interop.HRESULT Implements ISupportDragInsert.DragInsertBefore
             Dim canPinItem As Boolean =
                 (Me.Items.Count = 2 AndAlso TypeOf Me.Items(1) Is PinnedItemsPlaceholderFolder AndAlso index = -1) _
                 OrElse index = 0 _
@@ -117,7 +117,7 @@ Namespace Controls.Parts
             End If
         End Function
 
-        Public Function Drop(dataObject As IDataObject, files As List(Of Item), index As Integer) As Interop.HRESULT Implements ISupportDragInsert.Drop
+        Public Function Drop(dataObject As IDataObject_PreserveSig, files As List(Of Item), index As Integer) As Interop.HRESULT Implements ISupportDragInsert.Drop
             Try
                 PinnedItems.IsNotifying = False
 

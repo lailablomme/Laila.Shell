@@ -214,7 +214,7 @@ Namespace Interop
     ) As IntPtr
         End Function
         <DllImport("ole32.dll")>
-        Public Shared Function OleGetClipboard(ByRef dataObject As IDataObject) As Integer
+        Public Shared Function OleGetClipboard(ByRef dataObject As IDataObject_PreserveSig) As Integer
         End Function
         <DllImport("shell32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
         Public Shared Function ShellExecute(hWnd As IntPtr, lpOperation As String, lpFile As String, lpParameters As String, lpDirectory As String, nShowCmd As Integer) As IntPtr
@@ -232,7 +232,7 @@ Namespace Interop
 ) As Boolean
         End Function
         <DllImport("ole32.dll", SetLastError:=True)>
-        Public Shared Function OleSetClipboard(ByVal pDataObj As ComTypes.IDataObject) As Integer
+        Public Shared Function OleSetClipboard(ByVal pDataObj As IDataObject_PreserveSig) As Integer
         End Function
         <DllImport("shell32.dll", CharSet:=CharSet.Auto)>
         Public Shared Function ILCreateFromPath(ByVal pszPath As String) As IntPtr
@@ -420,7 +420,7 @@ Namespace Interop
         Public Shared Function CoGetInterfaceAndReleaseStream(ByVal pStm As IStream, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As Object) As Integer
         End Function
         <DllImport("ole32.dll")>
-        Public Shared Function DoDragDrop(pDataObj As ComTypes.IDataObject, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
+        Public Shared Function DoDragDrop(pDataObj As IDataObject_PreserveSig, pDropSource As IDropSource, dwOKEffects As Integer, <Out> ByRef pdwEffect As Integer) As Integer
         End Function
         <DllImport("ole32.dll")>
         Public Shared Function OleInitialize(ByVal pvReserved As IntPtr) As Integer
@@ -485,7 +485,7 @@ Namespace Interop
         ByVal pUnkOuter As IntPtr,
         ByVal dwClsContext As UInteger,
         ByRef riid As Guid,
-        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDragSourceHelper) As Integer
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDragSourceHelper2) As Integer
         End Function
         <DllImport("kernel32.dll", EntryPoint:="RtlMoveMemory", SetLastError:=False)>
         Public Shared Sub CopyMemory(destination As IntPtr, source As IntPtr, length As UInteger)
@@ -507,10 +507,10 @@ Namespace Interop
         Public Shared Function ReleaseDC(hWnd As IntPtr, hDC As IntPtr) As Integer
         End Function
         <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
-        Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As ComTypes.IDataObject) As Integer
+        Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl As IntPtr, pdtInner As IntPtr, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject_PreserveSig) As Integer
         End Function
         <DllImport("shell32.dll", CharSet:=CharSet.Unicode, PreserveSig:=False)>
-        Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, <[In], MarshalAs(UnmanagedType.Interface)> pdtInner As ComTypes.IDataObject, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As ComTypes.IDataObject) As Integer
+        Public Shared Function SHCreateDataObject(pidlFolder As IntPtr, cidl As UInteger, apidl() As IntPtr, <[In], MarshalAs(UnmanagedType.Interface)> pdtInner As IDataObject_PreserveSig, ByRef riid As Guid, <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IDataObject_PreserveSig) As Integer
         End Function
         <DllImport("ole32.dll", CharSet:=CharSet.Unicode)>
         Public Shared Function CoCreateBindCtx(dwFlags As UInt32, reserved As UInt32, pMalloc As IntPtr, ByRef ppbc As IBindCtx) As Integer

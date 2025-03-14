@@ -728,6 +728,9 @@ Public Class Folder
                                         If Not seq.Equals(item.Item1.TreeSortPrefix, item.Item2.TreeSortPrefix) Then
                                             item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
                                         End If
+                                        If Not seq.Equals(item.Item1.ItemNameDisplaySortValuePrefix, item.Item2.ItemNameDisplaySortValuePrefix) Then
+                                            item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
+                                        End If
                                     Next
 
                                     ' add/remove items
@@ -780,9 +783,6 @@ Public Class Folder
                                     Try
                                         If item.Item1.IsPinned <> item.Item2.IsPinned Then item.Item1.IsPinned = item.Item2.IsPinned
                                         If item.Item1.CanShowInTree <> item.Item2.CanShowInTree Then item.Item1.CanShowInTree = item.Item2.CanShowInTree
-                                        If Not seq.Equals(item.Item1.ItemNameDisplaySortValuePrefix, item.Item2.ItemNameDisplaySortValuePrefix) Then
-                                            item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
-                                        End If
                                         For Each [property] In item.Item1._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
                                             item.Item1._propertiesByKey.Remove([property].Key)
                                         Next

@@ -7,7 +7,7 @@ Namespace ClipboardFormats
     Public Class CFSTR_PREFERREDDROPEFFECT
         Private Const CFSTR_PREFERREDDROPEFFECT As String = "Preferred DropEffect"
 
-        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, preferredDropEffect As DROPEFFECT)
+        Public Shared Sub SetData(dataObject As IDataObject_PreserveSig, preferredDropEffect As DROPEFFECT)
             Dim effect As Byte = If(preferredDropEffect = DROPEFFECT.DROPEFFECT_MOVE, 2, 5)
             Dim hGlobal As IntPtr = Marshal.AllocHGlobal(4)
             Marshal.WriteByte(hGlobal, 0, effect)
@@ -22,7 +22,7 @@ Namespace ClipboardFormats
             Dim medium As STGMEDIUM = New STGMEDIUM With {
                 .tymed = TYMED.TYMED_HGLOBAL,
                 .unionmember = hGlobal,
-                .pUnkForRelease = IntPtr.Zero
+                .pUnkForRelease = Nothing
             }
             dataObject.SetData(format, medium, True)
         End Sub

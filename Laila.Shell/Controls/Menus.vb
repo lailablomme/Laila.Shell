@@ -9,6 +9,7 @@ Imports Laila.BalloonTip
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
 Imports Shell32
 
@@ -263,7 +264,7 @@ Namespace Controls
                 Dim thread As Thread = New Thread(New ThreadStart(
                     Sub()
                         Dim fo As IFileOperation = Nothing
-                        Dim dataObject As ComTypes.IDataObject = Nothing
+                        Dim dataObject As IDataObject_PreserveSig = Nothing
                         Try
                             fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
                             dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)

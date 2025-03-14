@@ -4,18 +4,19 @@ Imports System.Runtime.InteropServices.ComTypes
 Imports System.Runtime.Serialization
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
 
 Namespace ClipboardFormats
     Public Class CFSTR_FILECONTENTS
-        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, items As IEnumerable(Of Item))
+        Public Shared Sub SetData(dataObject As IDataObject_PreserveSig, items As IEnumerable(Of Item))
             Dim index As Integer = -1
             For Each item In items
                 setData(dataObject, item, index)
             Next
         End Sub
 
-        Private Shared Sub setData(dataObject As ComTypes.IDataObject, item As Item, ByRef index As Integer)
+        Private Shared Sub setData(dataObject As IDataObject_PreserveSig, item As Item, ByRef index As Integer)
             index += 1
 
             Dim attr As FILE_ATTRIBUTE = Functions.GetFileAttributesW(item.FullPath)
@@ -38,7 +39,7 @@ Namespace ClipboardFormats
                 Dim medium As New STGMEDIUM With {
                     .tymed = TYMED.TYMED_ISTREAM,
                     .unionmember = ptr,
-                    .pUnkForRelease = IntPtr.Zero
+                    .pUnkForRelease = Nothing
                 }
 
                 ' Set the data on the IDataObject

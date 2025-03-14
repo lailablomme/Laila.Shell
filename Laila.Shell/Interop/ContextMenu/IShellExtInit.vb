@@ -1,5 +1,6 @@
 ﻿Imports System.Runtime.InteropServices
 Imports System.Runtime.InteropServices.ComTypes
+Imports Laila.Shell.Interop.DragDrop
 
 Namespace Interop.ContextMenu
     <ComImport(), InterfaceType(ComInterfaceType.InterfaceIsIUnknown),
@@ -7,7 +8,7 @@ Namespace Interop.ContextMenu
     Public Interface IShellExtInit
         <PreserveSig()>
         Function Initialize(ByVal pidlFolder As IntPtr,
-                            ByVal lpdobj As ComTypes.IDataObject,
+                            ByVal lpdobj As IDataObject_PreserveSig,
                             ByVal hKeyProgID As IntPtr) As Integer    'Treat all HANDLEs as IntPtr
     End Interface
 End Namespace

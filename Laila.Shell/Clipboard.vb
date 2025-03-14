@@ -2,6 +2,7 @@
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Threading
 Imports System.Windows.Input
+Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Folders
@@ -20,7 +21,7 @@ Public Class Clipboard
     Public Shared Async Function CanPaste(folder As Folder) As Task(Of Boolean)
         Return Shell.GlobalThreadPool.Run(
             Function() As Boolean
-                Dim dataObject As ComTypes.IDataObject = Nothing
+                Dim dataObject As IDataObject_PreserveSig = Nothing
                 Functions.OleGetClipboard(dataObject)
 
                 ' check for paste by checking if it would accept a drop
@@ -57,7 +58,7 @@ Public Class Clipboard
 
     Public Shared Sub CopyFiles(items As IEnumerable(Of Item))
         Using Shell.OverrideCursor(Cursors.Wait)
-            Dim dataObject As ComTypes.IDataObject
+            Dim dataObject As IDataObject_PreserveSig
             dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
             Functions.OleSetClipboard(dataObject)
             ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_COPY)
@@ -66,7 +67,7 @@ Public Class Clipboard
 
     Public Shared Sub CutFiles(items As IEnumerable(Of Item))
         Using Shell.OverrideCursor(Cursors.Wait)
-            Dim dataObject As ComTypes.IDataObject
+            Dim dataObject As IDataObject_PreserveSig
             dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
             Functions.OleSetClipboard(dataObject)
             ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_MOVE)
@@ -79,7 +80,7 @@ Public Class Clipboard
                 Sub()
                     Functions.OleInitialize(IntPtr.Zero)
 
-                    Dim dataObject As ComTypes.IDataObject = Nothing
+                    Dim dataObject As IDataObject_PreserveSig = Nothing
                     Functions.OleGetClipboard(dataObject)
 
                     Dim dropTarget As IDropTarget = Nothing, shellFolder As IShellFolder = Nothing
@@ -123,7 +124,7 @@ Public Class Clipboard
         End Using
     End Sub
 
-    Public Shared Function GetFileNameList(dataObj As ComTypes.IDataObject) As String()
+    Public Shared Function GetFileNameList(dataObj As IDataObject_PreserveSig) As String()
         Dim files() As String
         files = ClipboardFormats.CFSTR_SHELLIDLIST.GetData(dataObj, False)?.Select(Function(i) i.FullPath).ToArray()
         If files Is Nothing OrElse files.Count = 0 Then
@@ -133,7 +134,7 @@ Public Class Clipboard
     End Function
 
     Public Shared Function GetHasGlobalData(clipboardFormat As String) As Boolean
-        Dim dataObject As ComTypes.IDataObject = Nothing
+        Dim dataObject As IDataObject_PreserveSig = Nothing
         Try
             Functions.OleGetClipboard(dataObject)
             Return GetHasGlobalData(dataObject, clipboardFormat)
@@ -145,11 +146,11 @@ Public Class Clipboard
         End Try
     End Function
 
-    Public Shared Function GetHasGlobalData(dataObject As ComTypes.IDataObject, clipboardFormat As String) As Boolean
+    Public Shared Function GetHasGlobalData(dataObject As IDataObject_PreserveSig, clipboardFormat As String) As Boolean
         Return GetHasGlobalData(dataObject, Functions.RegisterClipboardFormat(clipboardFormat))
     End Function
 
-    Public Shared Function GetHasGlobalData(dataObject As ComTypes.IDataObject, clipboardFormat As Short) As Boolean
+    Public Shared Function GetHasGlobalData(dataObject As IDataObject_PreserveSig, clipboardFormat As Short) As Boolean
         Dim format As FORMATETC = New FORMATETC() With {
             .cfFormat = clipboardFormat,
             .dwAspect = DVASPECT.DVASPECT_CONTENT,
@@ -160,21 +161,22 @@ Public Class Clipboard
         Return dataObject.QueryGetData(format) = 0
     End Function
 
-    Public Shared Function GetDataObjectFor(folder As Folder, items As IEnumerable(Of Item)) As ComTypes.IDataObject
-        Dim result As ComTypes.IDataObject = Nothing
+    Public Shared Function GetDataObjectFor(folder As Folder, items As IEnumerable(Of Item)) As IDataObject_PreserveSig
+        Dim result As IDataObject_PreserveSig = Nothing
 
         ' make a DataObject for our list of items
         'Dim inner As DataObject = New DataObject()
         If Not folder Is Nothing Then
             Functions.SHCreateDataObject(folder.Pidl.Clone().AbsolutePIDL, items.Count,
                 items.Select(Function(i) i.Pidl.Clone().RelativePIDL).ToArray(),
-                Nothing, GetType(IDataObject).GUID, result)
+                Nothing, GetType(IDataObject_PreserveSig).GUID, result)
         Else
             Functions.SHCreateDataObject(Shell.Desktop.Pidl.Clone().AbsolutePIDL, items.Count,
                 items.Select(Function(i) i.Pidl.Clone().AbsolutePIDL).ToArray(),
-                Nothing, GetType(IDataObject).GUID, result)
+                Nothing, GetType(IDataObject_PreserveSig).GUID, result)
         End If
-        'result = inner
+        'result = New DataObjectSpy(result)
+        'ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetData(result, DROPEFFECT.DROPEFFECT_COPY)
         'ClipboardFormats.CF_HDROP.SetData(result, items)
         'ClipboardFormats.CFSTR_FILEDESCRIPTOR.SetData(result, items)
         'ClipboardFormats.CFSTR_SHELLIDLIST.SetData(result, items)
@@ -182,22 +184,22 @@ Public Class Clipboard
 
         ' for some reason we can't properly write to our DataObject before a DropTarget initializes it,
         ' and I don't know what it's doing 
-        Dim initDropTarget As IDropTarget = Nothing
-        Try
-            Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, initDropTarget)
-            initDropTarget.DragEnter(result, 0, New WIN32POINT() With {.x = 0, .y = 0}, 0)
-            initDropTarget.DragLeave()
-        Finally
-            If Not initDropTarget Is Nothing Then
-                Marshal.ReleaseComObject(initDropTarget)
-                initDropTarget = Nothing
-            End If
-        End Try
+        'Dim initDropTarget As IDropTarget = Nothing
+        'Try
+        '    Shell.Desktop.ShellFolder.GetUIObjectOf(IntPtr.Zero, 1, {Shell.Desktop.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, initDropTarget)
+        '    initDropTarget.DragEnter(result, 0, New WIN32POINT() With {.x = 0, .y = 0}, 0)
+        '    initDropTarget.DragLeave()
+        'Finally
+        '    If Not initDropTarget Is Nothing Then
+        '        Marshal.ReleaseComObject(initDropTarget)
+        '        initDropTarget = Nothing
+        '    End If
+        'End Try
 
         Return result
     End Function
 
-    Public Shared Function GetGlobalDataDWord(dataObject As ComTypes.IDataObject, clipboardFormat As String) As Integer?
+    Public Shared Function GetGlobalDataDWord(dataObject As IDataObject_PreserveSig, clipboardFormat As String) As Integer?
         Dim format As FORMATETC = New FORMATETC() With {
             .cfFormat = Functions.RegisterClipboardFormat(clipboardFormat),
             .dwAspect = DVASPECT.DVASPECT_CONTENT,
@@ -215,7 +217,7 @@ Public Class Clipboard
         End If
     End Function
 
-    Public Shared Sub SetGlobalDataDWord(dataObject As ComTypes.IDataObject, clipboardFormat As String, val As Integer)
+    Public Shared Sub SetGlobalDataDWord(dataObject As IDataObject_PreserveSig, clipboardFormat As String, val As Integer)
         Dim ptr As IntPtr = Marshal.AllocHGlobal(Marshal.SizeOf(Of Integer))
         Marshal.WriteInt32(ptr, val)
         Dim format As FORMATETC = New FORMATETC() With {
@@ -226,7 +228,7 @@ Public Class Clipboard
             .tymed = TYMED.TYMED_HGLOBAL
         }
         Dim medium As STGMEDIUM = New STGMEDIUM() With {
-            .pUnkForRelease = IntPtr.Zero,
+            .pUnkForRelease = Nothing,
             .tymed = TYMED.TYMED_HGLOBAL,
             .unionmember = ptr
         }

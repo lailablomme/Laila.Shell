@@ -13,6 +13,7 @@ Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Application
 Imports Laila.Shell.Interop.ContextMenu
+Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Folders
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Windows
@@ -413,13 +414,13 @@ Namespace Controls
                             If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
                             _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
 
-                            Dim shellExtInit As IShellExtInit, dataObject As ComTypes.IDataObject = Nothing
+                            Dim shellExtInit As IShellExtInit, dataObject As IDataObject_PreserveSig = Nothing
                             Try
                                 shellExtInit = TryCast(_contextMenu, IShellExtInit)
                                 If Not shellExtInit Is Nothing Then
                                     Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
                                                      itemPidls.Select(Function(p) If(doUseAbsolutePidls, p.AbsolutePIDL, p.RelativePIDL)).ToArray(),
-                                                     Nothing, GetType(ComTypes.IDataObject).GUID, dataObject)
+                                                     Nothing, GetType(IDataObject_PreserveSig).GUID, dataObject)
                                     shellExtInit.Initialize(folder.Pidl?.AbsolutePIDL, dataObject, IntPtr.Zero)
                                 End If
                             Finally
@@ -518,7 +519,7 @@ Namespace Controls
                                     Clipboard.PasteFiles(selectedItems(0))
                                 End If
                             Case "delete"
-                                Dim dataObject As ComTypes.IDataObject = Nothing, fo As IFileOperation = Nothing
+                                Dim dataObject As IDataObject_PreserveSig = Nothing, fo As IFileOperation = Nothing
                                 Try
                                     dataObject = Clipboard.GetDataObjectFor(folder, selectedItems.ToList())
                                     fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
@@ -654,11 +655,11 @@ Namespace Controls
 
                 ' clean up context menu
                 If Not _contextMenu Is Nothing Then
-                    If Not TypeOf _contextMenu Is IContextMenuImpl Then
-                        Marshal.ReleaseComObject(_contextMenu)
-                    Else
-                        CType(_contextMenu, IContextMenuImpl).Dispose()
-                    End If
+                    'If Not TypeOf _contextMenu Is IContextMenuImpl Then
+                    Marshal.ReleaseComObject(_contextMenu)
+                    'Else
+                    '    CType(_contextMenu, IContextMenuImpl).Dispose()
+                    'End If
                     _contextMenu = Nothing
                 End If
 

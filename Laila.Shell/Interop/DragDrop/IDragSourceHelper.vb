@@ -6,9 +6,9 @@ Namespace Interop.DragDrop
     <ComImport(), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("DE5BF786-477A-11D2-839D-00C04FD918D0")>
     Public Interface IDragSourceHelper
         <PreserveSig()>
-        Function InitializeFromBitmap(ByRef pshdi As SHDRAGIMAGE, ByVal pDataObject As ComTypes.IDataObject) As Integer
+        Function InitializeFromBitmap(ByRef pshdi As SHDRAGIMAGE, ByVal pDataObject As IDataObject_PreserveSig) As Integer
 
         <PreserveSig()>
-        Function InitializeFromWindow(ByVal hwnd As IntPtr, ByRef ppt As WIN32POINT, ByVal pDataObject As ComTypes.IDataObject) As Integer
+        Function InitializeFromWindow(ByVal hwnd As IntPtr, ByRef ppt As WIN32POINT, ByVal pDataObject As IDataObject_PreserveSig) As Integer
     End Interface
 End Namespace

@@ -19,7 +19,7 @@ Namespace Controls.Parts
             _tabControl = tabControl
         End Sub
 
-        Public Overrides Function DragEnter(pDataObj As ComTypes.IDataObject, grfKeyState As MK, pt As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+        Public Overrides Function DragEnter(pDataObj As IDataObject_PreserveSig, grfKeyState As MK, pt As WIN32POINT, ByRef pdwEffect As Integer) As Integer
             Return dragPoint(grfKeyState, pt, pdwEffect)
         End Function
 
@@ -34,7 +34,7 @@ Namespace Controls.Parts
             Return HRESULT.S_OK
         End Function
 
-        Public Overrides Function Drop(pDataObj As ComTypes.IDataObject, grfKeyState As MK, pt As WIN32POINT, ByRef pdwEffect As Integer) As Integer
+        Public Overrides Function Drop(pDataObj As IDataObject_PreserveSig, grfKeyState As MK, pt As WIN32POINT, ByRef pdwEffect As Integer) As Integer
             If Not _dragOpenTimer Is Nothing Then
                 _dragOpenTimer.Dispose()
             End If

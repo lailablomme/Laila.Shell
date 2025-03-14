@@ -2,12 +2,13 @@
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Runtime.Serialization
 Imports Laila.Shell.Interop
+Imports Laila.Shell.Interop.DragDrop
 
 Namespace ClipboardFormats
     Public Class CFSTR_SHELLIDLIST
         Private Const CFSTR_SHELLIDLIST As String = "Shell IDList Array"
 
-        Public Shared Function GetData(dataObject As ComTypes.IDataObject, doKeepAlive As Boolean) As List(Of Item)
+        Public Shared Function GetData(dataObject As IDataObject_PreserveSig, doKeepAlive As Boolean) As List(Of Item)
             Try
                 Dim format As New FORMATETC With {
                     .cfFormat = Functions.RegisterClipboardFormat(CFSTR_SHELLIDLIST),
@@ -35,7 +36,7 @@ Namespace ClipboardFormats
             End Try
         End Function
 
-        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, items As IEnumerable(Of Item))
+        Public Shared Sub SetData(dataObject As IDataObject_PreserveSig, items As IEnumerable(Of Item))
             Dim ptr As IntPtr = Pidl.CreateShellIDListArray(items)
             Dim format As FORMATETC = New FORMATETC With {
                 .cfFormat = Functions.RegisterClipboardFormat(CFSTR_SHELLIDLIST),
@@ -47,7 +48,7 @@ Namespace ClipboardFormats
             Dim medium As STGMEDIUM = New STGMEDIUM With {
                 .tymed = TYMED.TYMED_HGLOBAL,
                 .unionmember = ptr,
-                .pUnkForRelease = IntPtr.Zero
+                .pUnkForRelease = Nothing
             }
             dataObject.SetData(format, medium, True)
         End Sub

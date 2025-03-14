@@ -18,9 +18,9 @@ Public Class Drag
     Public Shared ICON_SIZE As Integer = 128
 
     Private Shared _grid As Grid
-    Private Shared _dragSourceHelper As IDragSourceHelper
+    Private Shared _dragSourceHelper As IDragSourceHelper2
     Public Shared _bitmap As System.Drawing.Bitmap
-    Private Shared _dataObject As ComTypes.IDataObject
+    Private Shared _dataObject As IDataObject_PreserveSig
     Public Shared _isDragging As Boolean
     Private Shared _dragImage As SHDRAGIMAGE
 
@@ -148,7 +148,7 @@ Public Class Drag
         If _isDragging Then
             Debug.WriteLine("InitializeDragImage")
             Functions.CoCreateInstance(Guids.CLSID_DragDropHelper, IntPtr.Zero,
-                    &H1, GetType(IDragSourceHelper).GUID, _dragSourceHelper)
+                    &H1, GetType(IDragSourceHelper2).GUID, _dragSourceHelper)
             If Not IntPtr.Zero.Equals(_dragImage.hbmpDragImage) Then
                 Functions.DeleteObject(_dragImage.hbmpDragImage)
                 _dragImage.hbmpDragImage = IntPtr.Zero
@@ -159,7 +159,9 @@ Public Class Drag
             _dragImage.ptOffset.y = ICON_SIZE + 10
             _dragImage.hbmpDragImage = _bitmap.GetHbitmap()
             _dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
-            InitializeDragSourceHelper2()
+            'InitializeDragSourceHelper2()
+            'Clipboard.SetGlobalDataDWord(_dataObject, "IsShowingLayered", 1)
+            Debug.WriteLine("setflags:" & _dragSourceHelper.SetFlags(1))
             Dim h As HRESULT = _dragSourceHelper.InitializeFromBitmap(_dragImage, _dataObject)
             'MsgBox("h=" & h.ToString())
             Debug.WriteLine("InitializeFromBitmap returned " & h.ToString())

@@ -9,7 +9,7 @@ Namespace ClipboardFormats
     Public Class CF_HDROP
         Private Shared ReadOnly GMEM_MOVEABLE As Integer = &H2
 
-        Public Shared Function GetData(dataObject As ComTypes.IDataObject) As String()
+        Public Shared Function GetData(dataObject As IDataObject_PreserveSig) As String()
             Try
                 Dim format As New FORMATETC With {
                     .cfFormat = ClipboardFormat.CF_HDROP,
@@ -41,7 +41,7 @@ Namespace ClipboardFormats
             End Try
         End Function
 
-        Public Shared Sub SetData(dataObject As ComTypes.IDataObject, items As IEnumerable(Of Item))
+        Public Shared Sub SetData(dataObject As IDataObject_PreserveSig, items As IEnumerable(Of Item))
             Dim sb As StringBuilder = New StringBuilder()
             For Each filePath As String In items.Select(Function(i) i.FullPath).ToArray()
                 sb.Append(filePath & Chr(0))
@@ -78,7 +78,7 @@ Namespace ClipboardFormats
             Dim medium As STGMEDIUM = New STGMEDIUM With {
                 .tymed = TYMED.TYMED_HGLOBAL,
                 .unionmember = hGlobal,
-                .pUnkForRelease = IntPtr.Zero
+                .pUnkForRelease = Nothing
             }
             dataObject.SetData(format, medium, True)
         End Sub
