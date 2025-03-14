@@ -137,7 +137,7 @@ Namespace Controls
             End If
             previewer._timer = New Timer(New TimerCallback(
                 Sub()
-                    If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                    If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso previewer.IsVisible Then
                         UIHelper.OnUIThread(
                             Sub()
                                 If Not previewer._timer Is Nothing Then
