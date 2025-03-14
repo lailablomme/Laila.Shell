@@ -259,10 +259,12 @@ Namespace Controls
                     _visibleFolders.Add(currentFolder)
                     currentFolder.IsVisibleInAddressBar = True
                     AddHandler folderButton.Click,
-                    Sub(s As Object, e As EventArgs)
-                        CType(folderButton.Tag, Folder).LastScrollOffset = New Point()
-                        Me.Folder = folderButton.Tag
-                    End Sub
+                        Sub(s As Object, e As EventArgs)
+                            Using Shell.OverrideCursor(Cursors.Wait)
+                                CType(folderButton.Tag, Folder).LastScrollOffset = New Point()
+                                Me.Folder = folderButton.Tag
+                            End Using
+                        End Sub
                     panel.Children.Add(folderButton)
                     Dim subFoldersButton As ToggleButton = New ToggleButton()
                     subFoldersButton.Tag = currentFolder

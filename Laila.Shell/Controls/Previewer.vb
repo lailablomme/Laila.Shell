@@ -138,15 +138,12 @@ Namespace Controls
             previewer._timer = New Timer(New TimerCallback(
                 Sub()
                     If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso previewer.IsVisible Then
-                        UIHelper.OnUIThread(
-                            Sub()
-                                If Not previewer._timer Is Nothing Then
-                                    previewer._timer.Dispose()
-                                    previewer._timer = Nothing
-                                End If
+                        If Not previewer._timer Is Nothing Then
+                            previewer._timer.Dispose()
+                            previewer._timer = Nothing
+                        End If
 
-                                showPreview(d)
-                            End Sub)
+                        showPreview(d)
                     End If
                 End Sub), Nothing, 500, Timeout.Infinite)
         End Sub
@@ -156,27 +153,25 @@ Namespace Controls
                 Sub()
                     _cancelTokenSource = New CancellationTokenSource()
                     previewer._errorText = Nothing
+                    Dim item As Item = Nothing
 
-                    Dim isReady As Boolean
                     UIHelper.OnUIThread(
                         Sub()
-                            isReady = Not previewer.SelectedItems Is Nothing _
+                            If Not previewer.SelectedItems Is Nothing _
                                       AndAlso previewer.SelectedItems.Count > 0 _
-                                      AndAlso Not previewer._isMade
+                                      AndAlso Not previewer._isMade Then _
+                                item = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
                         End Sub)
 
-                    If isReady Then
-                        UIHelper.OnUIThread(
-                            Sub()
-                                If Not previewer._previewItem Is Nothing Then
-                                    RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
-                                End If
-                                previewer._previewItem = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
-                                If Not previewer._previewItem Is Nothing Then
-                                    AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
-                                End If
-                                Debug.WriteLine("PreviewItem=" & previewer._previewItem?.FullPath)
-                            End Sub)
+                    If Not item Is Nothing Then
+                        If Not previewer._previewItem Is Nothing Then
+                            RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+                        End If
+                        previewer._previewItem = item
+                        If Not previewer._previewItem Is Nothing Then
+                            AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+                        End If
+                        Debug.WriteLine("PreviewItem=" & previewer._previewItem?.FullPath)
 
                         If _cancelTokenSource.IsCancellationRequested Then Return
                         previewer._isThumbnail = ImageHelper.IsImage(previewer._previewItem?.FullPath)
@@ -267,7 +262,7 @@ Namespace Controls
                                 End If
 
                                 If Not previewer._handler Is Nothing AndAlso previewer.IsVisible Then
-                                    Dim hwnd As IntPtr
+                                    Dim hwnd As IntPtr, rect As WIN32RECT
                                     UIHelper.OnUIThread(
                                         Sub()
                                             If _cancelTokenSource.IsCancellationRequested Then Return
@@ -276,10 +271,11 @@ Namespace Controls
                                                 Dim ih As New WindowInteropHelper(previewer._window)
                                                 ih.EnsureHandle()
                                                 hwnd = ih.Handle
-                                                previewer._handler.SetWindow(hwnd, getRect(previewer))
+                                                rect = getRect(previewer)
                                             End If
                                         End Sub)
                                     If _cancelTokenSource.IsCancellationRequested Then Return
+                                    previewer._handler.SetWindow(hwnd, rect)
                                     h = If(previewer._handler?.DoPreview(), HRESULT.S_FALSE)
                                     If _cancelTokenSource.IsCancellationRequested Then Return
                                     Debug.WriteLine("IPreviewHandler.DoPreview=" & h.ToString())
@@ -294,11 +290,7 @@ Namespace Controls
                                             End Sub)
                                         hidePreview(previewer)
                                     Else
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If _cancelTokenSource.IsCancellationRequested Then Return
-                                                previewer._handler.SetRect(getRect(previewer))
-                                            End Sub)
+                                        previewer._handler.SetRect(rect)
                                     End If
                                 End If
                             End If
@@ -313,19 +305,35 @@ Namespace Controls
                 End Sub)
         End Sub
 
-        Private Shared Sub hidePreview(previewer As Previewer)
+        Private Shared Async Sub hidePreview(previewer As Previewer)
             _cancelTokenSource.Cancel()
 
-            If Not previewer._handler Is Nothing Then
-                Debug.WriteLine("Unloading IPreviewHandler")
-                previewer._handler.Unload()
-                Marshal.ReleaseComObject(previewer._handler)
-                previewer._handler = Nothing
-            End If
-            If Not previewer._stream Is Nothing Then
-                Marshal.ReleaseComObject(previewer._stream)
-                previewer._stream = Nothing
-            End If
+            Dim iph As IPreviewHandler = previewer._handler
+            previewer._handler = Nothing
+            Dim s As IStream = previewer._stream
+            previewer._stream = Nothing
+
+            _thread.Add(
+                Sub()
+                    Try
+                        If Not iph Is Nothing Then
+                            Debug.WriteLine("Unloading IPreviewHandler")
+                            iph.Unload()
+                            Marshal.ReleaseComObject(iph)
+                            iph = Nothing
+                        End If
+                    Catch ex As Exception
+                        ' it's a shame if it fails, but we're not going to crash the app because of it
+                    End Try
+                    Try
+                        If Not s Is Nothing Then
+                            Marshal.ReleaseComObject(s)
+                            s = Nothing
+                        End If
+                    Catch ex As Exception
+                        ' it's a shame if it fails, but we're not going to crash the app because of it
+                    End Try
+                End Sub)
 
             UIHelper.OnUIThread(
                 Sub()
@@ -339,11 +347,11 @@ Namespace Controls
                         previewer._isThumbnail = False
                         previewer.PART_Thumbnail.Visibility = Visibility.Collapsed
                     End If
-
-                    If Not previewer._previewItem Is Nothing Then
-                        RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
-                    End If
                 End Sub)
+
+            If Not previewer._previewItem Is Nothing Then
+                RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
+            End If
 
             previewer._previewItem = Nothing
             previewer._isMade = False

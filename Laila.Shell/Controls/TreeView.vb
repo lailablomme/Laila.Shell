@@ -671,7 +671,7 @@ Namespace Controls
                             AddHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             UIHelper.OnUIThreadAsync(
                                 Sub()
-                                    For Each item2 In folder._items.Where(Function(i) i.IsVisibleInTree).ToList()
+                                    For Each item2 In folder._items.ToList().Where(Function(i) i.IsVisibleInTree).ToList()
                                         If Not Me.Items.Contains(item2) Then
                                             Me.Items.Add(item2)
                                         End If

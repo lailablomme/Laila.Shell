@@ -11,11 +11,11 @@ Imports Laila.Shell.Interop.Windows
 
 Public Class Clipboard
     Public Shared Function CanCopy(items As IEnumerable(Of Item)) As Boolean
-        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANCOPY))
+        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANCOPY))
     End Function
 
     Public Shared Function CanCut(items As IEnumerable(Of Item)) As Boolean
-        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i.Attributes.HasFlag(SFGAO.CANMOVE))
+        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANMOVE))
     End Function
 
     Public Shared Async Function CanPaste(folder As Folder) As Task(Of Boolean)

@@ -347,8 +347,8 @@ Namespace Controls
                 Me.CanCut = Clipboard.CanCut(Me.SelectedItems)
                 Me.CanCopy = Clipboard.CanCopy(Me.SelectedItems)
                 Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Await Clipboard.CanPaste(Me.Folder)
-                Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME))
-                Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE))
+                Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANRENAME))
+                Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANDELETE))
                 If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
                     If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
                         AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar) Then

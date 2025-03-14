@@ -7,6 +7,10 @@ Namespace Helpers
     Public Class ItemsCollection(Of T)
         Inherits ObservableCollection(Of T)
 
+        Public Sub RemoveWithoutNotifying(item As T)
+            Me.Items.Remove(item)
+        End Sub
+
         Public Sub UpdateRange(itemsToAdd As IEnumerable(Of T), itemsToRemove As IEnumerable(Of T))
             Me.CheckReentrancy()
 

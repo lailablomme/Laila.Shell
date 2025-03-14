@@ -5,6 +5,7 @@ Imports System.Windows.Controls.Primitives
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Shapes
+Imports System.Windows.Threading
 Imports Laila.Shell.Helpers
 Imports Microsoft.Xaml.Behaviors
 
@@ -24,7 +25,7 @@ Namespace Behaviors
         Private _headerHeight As Double
         Private _ptMin As Point
         Private _ptMax As Point
-        Private _scrollTimer As Timer
+        Private _scrollTimer As DispatcherTimer
         Private _panel As Panel
         Private _grid As Grid
         Private _isLoaded As Boolean
@@ -141,8 +142,7 @@ Namespace Behaviors
                         _selectionRectangle.Visibility = Visibility.Collapsed
 
                         If Not _scrollTimer Is Nothing Then
-                            _scrollTimer.Dispose()
-                            _scrollTimer = Nothing
+                            _scrollTimer.IsEnabled = False
                         End If
                     End If
                 End Sub
@@ -158,30 +158,29 @@ Namespace Behaviors
                         If actualMousePos.X < _ptMin.X OrElse actualMousePos.Y < _ptMin.Y _
                             OrElse actualMousePos.X > _ptMax.X OrElse actualMousePos.Y > _ptMax.Y Then
                             If _scrollTimer Is Nothing Then
-                                _scrollTimer = New Timer(
-                                    Sub()
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                Dim scrollMousePos As Point = e.GetPosition(_listBox)
-                                                If scrollMousePos.X < _ptMin.X Then
-                                                    _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset - 10)
-                                                ElseIf scrollMousePos.X > _ptMax.X Then
-                                                    _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset + 10)
-                                                End If
-                                                If scrollMousePos.Y < _ptMin.Y Then
-                                                    _sv.ScrollToVerticalOffset(_sv.VerticalOffset - 10)
-                                                ElseIf scrollMousePos.Y > _ptMax.Y Then
-                                                    _sv.ScrollToVerticalOffset(_sv.VerticalOffset + 10)
-                                                End If
+                                _scrollTimer = New DispatcherTimer()
+                                AddHandler _scrollTimer.Tick,
+                                    Sub(s2 As Object, e2 As EventArgs)
+                                        Dim scrollMousePos As Point = e.GetPosition(_listBox)
+                                        If scrollMousePos.X < _ptMin.X Then
+                                            _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset - 10)
+                                        ElseIf scrollMousePos.X > _ptMax.X Then
+                                            _sv.ScrollToHorizontalOffset(_sv.HorizontalOffset + 10)
+                                        End If
+                                        If scrollMousePos.Y < _ptMin.Y Then
+                                            _sv.ScrollToVerticalOffset(_sv.VerticalOffset - 10)
+                                        ElseIf scrollMousePos.Y > _ptMax.Y Then
+                                            _sv.ScrollToVerticalOffset(_sv.VerticalOffset + 10)
+                                        End If
 
-                                                onAfterMouseMove()
-                                            End Sub)
-                                    End Sub, Nothing, 30, 30)
+                                        onAfterMouseMove()
+                                    End Sub
+                                _scrollTimer.Interval = TimeSpan.FromMilliseconds(20)
                             End If
+                            _scrollTimer.IsEnabled = True
                         Else
                             If Not _scrollTimer Is Nothing Then
-                                _scrollTimer.Dispose()
-                                _scrollTimer = Nothing
+                                _scrollTimer.IsEnabled = False
                             End If
                         End If
                     End If

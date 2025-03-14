@@ -155,7 +155,7 @@ Public Class Folder
             If value Then
                 Me.GetItemsAsync()
             Else
-                For Each item In _items.Where(Function(i) TypeOf i Is Folder).ToList()
+                For Each item In _items.ToList().Where(Function(i) TypeOf i Is Folder).ToList()
                     item.IsExpanded = False
                 Next
             End If
@@ -717,13 +717,13 @@ Public Class Folder
                                         End If
                                     Next
                                     If hasDupes.Count > 0 Then
-                                        For Each item In _items.Where(Function(i) hasDupes.Contains(i.FullPath & i.DeDupeKey))
+                                        For Each item In _items.ToList().Where(Function(i) hasDupes.Contains(i.FullPath & i.DeDupeKey))
                                             previousFullPaths.Add(item.Pidl.ToString() & item.DeDupeKey)
                                         Next
                                     End If
                                     Dim newItems As Item() = result.Where(Function(i) Not previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
-                                    Dim removedItems As Item() = _items.Where(Function(i) Not newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
-                                    existingItems = _items.Where(Function(i) newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
+                                    Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
+                                    existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
                                             .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
 
                                     Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
@@ -852,7 +852,7 @@ Public Class Folder
             UIHelper.OnUIThread(
                 Sub()
                     ' set and update HasSubFolders property
-                    Me.HasSubFolders = Not Me.Items.FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
+                    Me.HasSubFolders = Not Me.Items.ToList().FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
                 End Sub)
         End If
     End Sub
@@ -1223,7 +1223,7 @@ Public Class Folder
                             Dim existing As Item
                             UIHelper.OnUIThread(
                                 Sub()
-                                    existing = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                    existing = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                                     If existing Is Nothing Then
                                         Me.InitializeItem(e.Item1)
@@ -1260,7 +1260,7 @@ Public Class Folder
                             _wasActivity = True
                             UIHelper.OnUIThread(
                                     Sub()
-                                        Dim existing As Item = _items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                        Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                                         If Not existing Is Nothing Then
                                             existing.Dispose()
@@ -1273,7 +1273,7 @@ Public Class Folder
                         _wasActivity = True
                         UIHelper.OnUIThread(
                             Sub()
-                                If Not _items Is Nothing AndAlso _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                                If Not _items Is Nothing AndAlso _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
                                     Me.InitializeItem(e.Item1)
                                     e.Item1.LogicalParent = Me
                                     e.Item1.IsProcessingNotifications = True
@@ -1294,7 +1294,7 @@ Public Class Folder
                         UIHelper.OnUIThread(
                                 Sub()
                                     Dim item As Item
-                                    item = _items.FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                                    item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                                     If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                                         item.Dispose()
                                     End If
@@ -1319,7 +1319,7 @@ Public Class Folder
             UIHelper.OnUIThread(
                 Sub()
                     SyncLock _notificationSubscribersLock
-                        list = _items.Where(Function(i) i.IsProcessingNotifications).ToList()
+                        list = _items.ToList().Where(Function(i) If(i?.IsProcessingNotifications, False)).ToList()
                     End SyncLock
                 End Sub)
             If list.Count > 0 Then

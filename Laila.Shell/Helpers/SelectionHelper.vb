@@ -1,5 +1,6 @@
 ﻿Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Data
 Imports System.Windows.Input
 
 Namespace Helpers
@@ -90,11 +91,11 @@ Namespace Helpers
         Public Sub SetSelectedItems(value As IEnumerable(Of TData), Optional doScrollIntoView As Boolean = True)
             If Not _control Is Nothing Then
                 ' Wait for any databinding to finish
-                If Not Application.Current.Dispatcher.CheckAccess() Then
-                    Application.Current.Dispatcher.Invoke(
-                        Sub()
-                        End Sub, Threading.DispatcherPriority.DataBind)
-                End If
+                'If Not Application.Current.Dispatcher.CheckAccess() Then
+                '    Application.Current.Dispatcher.Invoke(
+                '        Sub()
+                '        End Sub, Threading.DispatcherPriority.DataBind)
+                'End If
 
                 ' clean
                 Dim selectedItems As IEnumerable(Of TData) = If(value Is Nothing, {}, value.Where(Function(v) Not v Is Nothing))
@@ -110,7 +111,6 @@ Namespace Helpers
                         End If
                     ElseIf selectedItems.Count = 1 Then
                         If Not selectedItems(0).Equals(_control.SelectedItem) Then
-                            '_control.ScrollIntoView(selectedItems(0))
                             _control.SelectedItem = selectedItems(0)
                             If doScrollIntoView Then
                                 scrollIntoView(_control, selectedItems(0))
@@ -121,32 +121,21 @@ Namespace Helpers
                         Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
                     End If
                 Else
-                    Dim isSame As Boolean = True
-                    If _control.SelectedItems.Count <> selectedItems.Count Then
-                        isSame = False
-                    Else
-                        For Each i In _control.SelectedItems
-                            If Not selectedItems.Contains(i) Then
-                                isSame = False
-                                Exit For
-                            End If
-                        Next
-                        If isSame Then
-                            For Each i In selectedItems
-                                If Not _control.SelectedItems.Contains(i) Then
-                                    isSame = False
-                                    Exit For
-                                End If
-                            Next
-                        End If
+                    Dim isSame As Boolean = False
+                    If _control.SelectedItems.Count = selectedItems.Count Then
+                        isSame = True
                     End If
 
                     If Not isSame Then
                         ' add selected items
-                        _control.SelectedItems.Clear()
-                        For Each item In selectedItems
-                            _control.SelectedItems.Add(_control.Items.Cast(Of TData).FirstOrDefault(Function(i) i.Equals(item)))
-                        Next
+                        If _control.Items.Count = selectedItems.Count Then
+                            _control.SelectAll()
+                        Else
+                            _control.SelectedItems.Clear()
+                            For Each item In selectedItems
+                                _control.SelectedItems.Add(item)
+                            Next
+                        End If
                         ' scroll into view?
                         If doScrollIntoView AndAlso selectedItems.Count > 0 Then
                             scrollIntoView(_control, selectedItems(0))

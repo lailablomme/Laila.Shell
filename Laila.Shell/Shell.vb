@@ -112,9 +112,7 @@ Public Class Shell
                             ' try to dispose the item
                             If Not item Is Nothing AndAlso Not item.Item1 Is Nothing _
                                 AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
-                                SyncLock item.Item1._shellItemLock
-                                    item.Item1.MaybeDispose()
-                                End SyncLock
+                                item.Item1.MaybeDispose()
                             End If
 
                             ' don't hog the process

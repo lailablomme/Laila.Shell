@@ -266,16 +266,16 @@ Namespace Controls
                     Dim foundItem As Item
                     If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
                         foundItem =
-                            Me.Folder.Items.Skip(Me.Folder.Items.IndexOf(Me.SelectedItems(0)) + 1) _
+                            Me.Folder.Items.ToList().Skip(Me.Folder.Items.ToList().IndexOf(Me.SelectedItems(0)) + 1) _
                                 .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
                         If foundItem Is Nothing Then
                             foundItem =
-                                Me.Folder.Items.Take(Me.Folder.Items.IndexOf(Me.SelectedItems(0))) _
+                                Me.Folder.Items.ToList().Take(Me.Folder.Items.ToList().IndexOf(Me.SelectedItems(0))) _
                                     .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
                         End If
                     Else
                         foundItem =
-                            Me.Folder.Items _
+                            Me.Folder.Items.ToList() _
                                 .FirstOrDefault(Function(i) i.DisplayName.ToLower().StartsWith(_typeToSearchString.ToLower()))
                     End If
                     If Not foundItem Is Nothing Then

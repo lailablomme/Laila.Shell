@@ -33,6 +33,8 @@ Public Class Item
     Private _isPinned As Boolean
     Private _isCut As Boolean
     Private _attributes As SFGAO
+    Friend _preloadedAttributes As SFGAO
+    Private _preloadedAttributesMask As SFGAO = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANRENAME Or SFGAO.CANDELETE
     Private _treeRootIndex As Long = -1
     Friend _shellItem2 As IShellItem2
     Friend _objectId As Long = -1
@@ -161,6 +163,7 @@ Public Class Item
         _pidl = pidl
         _livesOnThreadId = threadId
         If Not shellItem2 Is Nothing Then
+            shellItem2.GetAttributes(_preloadedAttributesMask, _preloadedAttributes)
             Dim d As String = Me.DisplayName
             Shell.AddToItemsCache(Me)
         Else
@@ -220,7 +223,7 @@ Public Class Item
     Protected Friend ReadOnly Property IsVisibleInTree As Boolean
         Get
             Return Me.TreeRootIndex <> -1 _
-                OrElse (Me.CanShowInTree AndAlso Not If(_logicalParent, _parent) Is Nothing AndAlso If(_logicalParent, _parent).IsExpanded)
+                OrElse (Me.CanShowInTree AndAlso If(If(_logicalParent, _parent)?.IsExpanded, False))
         End Get
     End Property
 
@@ -1470,7 +1473,7 @@ Public Class Item
                             UIHelper.OnUIThread(
                                 Sub()
                                     ' check if the new zip folder already exists in the parent
-                                    existing = _logicalParent.Items.FirstOrDefault(Function(i) Not i.disposedValue _
+                                    existing = _logicalParent.Items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
                                                 AndAlso (i.Pidl?.Equals(e.Item2.Pidl) OrElse i.FullPath?.Equals(e.Item2.FullPath)))
                                 End Sub)
                             If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then ' the folder exists...
@@ -1527,7 +1530,6 @@ Public Class Item
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
-        Dim oldShellItem As IShellItem2 = Nothing
         Dim wasDisposed As Boolean = disposedValue
         SyncLock _shellItemLock
             If Not disposedValue Then
@@ -1548,8 +1550,17 @@ Public Class Item
                         End If
                         RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
 
-                        ' remove from parent collection(s)
-                        UIHelper.OnUIThreadAsync(
+                        ' remove from parent collection
+                        If Me.IsReadyForDispose Then
+                            ' we're being disposed from the disposer thread, so try not to block the ui thread
+                            If Not _logicalParent Is Nothing Then
+                                _logicalParent._items.RemoveWithoutNotifying(Me)
+                                _logicalParent._isEnumerated = False
+                                _logicalParent.IsEmpty = _logicalParent._items.Count = 0
+                                _logicalParent = Nothing
+                            End If
+                        Else
+                            UIHelper.OnUIThreadAsync(
                             Sub()
                                 If Not _logicalParent Is Nothing Then
                                     _logicalParent._items.Remove(Me)
@@ -1557,13 +1568,8 @@ Public Class Item
                                     _logicalParent.IsEmpty = _logicalParent._items.Count = 0
                                     ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
                                 End If
-                                If Not _parent Is Nothing Then
-                                    _parent._items.Remove(Me)
-                                    _parent._isEnumerated = False
-                                    _parent.IsEmpty = _parent._items.Count = 0
-                                    _parent = Nothing
-                                End If
                             End Sub)
+                        End If
 
                         ' dispose properties
                         For Each [property] In _propertiesByKey.ToList()
@@ -1576,8 +1582,10 @@ Public Class Item
                         _propertiesByCanonicalName.Clear()
 
                         ' switch shellitem, we'll release it later
-                        oldShellItem = _shellItem2
-                        _shellItem2 = Nothing
+                        If Not _shellItem2 Is Nothing Then
+                            Marshal.ReleaseComObject(_shellItem2)
+                            _shellItem2 = Nothing
+                        End If
 
                         ' remove from cache
                         Shell.RemoveFromItemsCache(Me)
@@ -1609,17 +1617,6 @@ Public Class Item
                 End If
             End If
         End SyncLock
-
-        If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso Not wasDisposed Then
-            ' dispose shellitem outside of the lock because it can take a while for large items
-            Shell.GlobalThreadPool.Add(
-                Sub()
-                    If Not oldShellItem Is Nothing Then
-                        Marshal.ReleaseComObject(oldShellItem)
-                        oldShellItem = Nothing
-                    End If
-                End Sub, _livesOnThreadId)
-        End If
     End Sub
 
     ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources

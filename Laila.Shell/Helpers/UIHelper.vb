@@ -86,7 +86,11 @@ Namespace Helpers
         Public Shared Iterator Function FindVisualChildren(Of T As DependencyObject)(depObj As DependencyObject, Optional isDeep As Boolean = True) As IEnumerable(Of T)
             For i = 0 To VisualTreeHelper.GetChildrenCount(depObj) - 1
                 Dim isMatch As Boolean = False
-                Dim child As DependencyObject = VisualTreeHelper.GetChild(depObj, i)
+                Dim child As DependencyObject = Nothing
+                Try
+                    child = VisualTreeHelper.GetChild(depObj, i)
+                Catch ex As Exception
+                End Try
                 If Not child Is Nothing AndAlso TypeOf child Is T Then
                     isMatch = True
                     Yield child

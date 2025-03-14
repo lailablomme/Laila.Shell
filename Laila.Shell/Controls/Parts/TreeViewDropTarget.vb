@@ -285,8 +285,8 @@ Namespace Controls.Parts
                         While Not dip Is Nothing _
                             AndAlso TypeOf dip Is Folder _
                             AndAlso Not TypeOf dip Is ISupportDragInsert _
-                            AndAlso CType(dip, Folder).Items.Where(Function(i) i.IsVisibleInTree).OrderBy(Function(i) i.TreeSortKey).ToList().IndexOf(child) _
-                                    = CType(dip, Folder).Items.Where(Function(i) i.IsVisibleInTree).Count - 1
+                            AndAlso CType(dip, Folder).Items.ToList().Where(Function(i) i.IsVisibleInTree).OrderBy(Function(i) i.TreeSortKey).ToList().IndexOf(child) _
+                                    = CType(dip, Folder).Items.ToList().Where(Function(i) i.IsVisibleInTree).Count - 1
                             child = dip
                             dip = If(CType(dip, Folder).TreeViewSection, If(CType(dip, Folder).LogicalParent, CType(dip, Folder).Parent))
                         End While
