@@ -56,6 +56,7 @@ Public Class Folder
     Protected _hookFolderFullPath As String
     Private _notificationSubscribersLock As Object = New Object()
     Private _notificationSubscribers As List(Of IProcessNotifications) = New List(Of IProcessNotifications)()
+    Private _notificationThreadPool As Helpers.ThreadPool
 
     Public Shared Function FromDesktop() As Folder
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
@@ -652,6 +653,8 @@ Public Class Folder
         If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
         enumerateItems(flags, cancellationToken, threadId, doRefreshAllExistingItems, doRecursive)
+
+        If _notificationThreadPool Is Nothing Then _notificationThreadPool = New Helpers.ThreadPool(Math.Min(100, Math.Max(1, _notificationSubscribers.Count / 1000)))
 
         If Not cancellationToken.IsCancellationRequested Then
             _wasActivity = False
@@ -1305,13 +1308,13 @@ Public Class Folder
             End Select
 
             ' notify children
-            Dim list As List(Of Item) = Nothing
+            Dim list As List(Of IProcessNotifications) = Nothing
             SyncLock _notificationSubscribersLock
-                list = _items.ToList().Where(Function(i) If(i?.IsProcessingNotifications, False)).ToList()
+                list = _notificationSubscribers.Where(Function(i) If(i?.IsProcessingNotifications, False)).ToList()
             End SyncLock
             If list.Count > 0 Then
                 Dim size As Integer = Math.Max(1, Math.Min(list.Count / 10, 250))
-                Dim chuncks()() As Item = list.Chunk(list.Count / size).ToArray()
+                Dim chuncks()() As IProcessNotifications = list.Chunk(list.Count / size).ToArray()
                 Dim tcses As List(Of TaskCompletionSource) = New List(Of TaskCompletionSource)()
 
                 ' threads for refreshing
@@ -1319,7 +1322,7 @@ Public Class Folder
                     Dim j As Integer = i
                     Dim tcs As TaskCompletionSource = New TaskCompletionSource()
                     tcses.Add(tcs)
-                    Shell.NotificationThreadPool.Add(
+                    _notificationThreadPool.Add(
                         Sub()
                             ' Process tasks from the queue
                             For Each item In chuncks(j)
@@ -1369,6 +1372,9 @@ Public Class Folder
                 End SyncLock
 
                 Me.CancelEnumeration()
+
+                _notificationThreadPool?.Dispose()
+                _notificationThreadPool = Nothing
 
                 If Not Shell.ShuttingDownToken.IsCancellationRequested Then
                     ' extensive cleanup, because we're still live:

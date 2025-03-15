@@ -90,7 +90,7 @@ Public Class Shell
         ImageHelper.Load()
 
         Shell.NotificationMainThread = New Helpers.ThreadPool(1)
-        Shell.NotificationThreadPool = New Helpers.ThreadPool(100)
+        Shell.NotificationThreadPool = New Helpers.ThreadPool(75)
         Shell.GlobalThreadPool = New Helpers.ThreadPool(100)
 
         ' thread for disposing items
