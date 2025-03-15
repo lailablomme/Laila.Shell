@@ -403,12 +403,9 @@ Public Class Shell
 
     Private Shared Sub notifySubscribers(e As NotificationEventArgs)
         Dim list As List(Of IProcessNotifications) = Nothing
-        UIHelper.OnUIThread(
-            Sub()
-                SyncLock _notificationSubscribersLock
-                    list = _notificationSubscribers.Where(Function(i) i.IsProcessingNotifications).ToList()
-                End SyncLock
-            End Sub)
+        SyncLock _notificationSubscribersLock
+            list = _notificationSubscribers.Where(Function(i) i.IsProcessingNotifications).ToList()
+        End SyncLock
         If list.Count > 0 Then
             Dim size As Integer = Math.Max(1, Math.Min(list.Count / 10, 250))
             Dim chuncks()() As IProcessNotifications = list.Chunk(list.Count / size).ToArray()
@@ -419,7 +416,7 @@ Public Class Shell
                 Dim j As Integer = i
                 Dim tcs As TaskCompletionSource = New TaskCompletionSource()
                 tcses.Add(tcs)
-                Shell.GlobalThreadPool.Add(
+                Shell.NotificationThreadPool.Add(
                     Sub()
                         ' Process tasks from the queue
                         For Each item In chuncks(j)

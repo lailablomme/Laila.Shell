@@ -43,6 +43,7 @@ Public Class Item
     Private _isImage As Boolean?
     Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Friend _shellItemLock As Object = New Object()
+    Friend _shellItemLock2 As Object = New Object()
     Protected _doKeepAlive As Boolean
     Private _contentViewModeProperties() As [Property]
     Private _isVisibleInAddressBar As Boolean
@@ -200,14 +201,16 @@ Public Class Item
     ''' <returns>The PIDL for this item, or null if this item is disposed</returns>
     Public ReadOnly Property Pidl As Pidl
         Get
-            SyncLock _shellItemLock
-                If _pidl Is Nothing AndAlso Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
-                    Dim pidlptr As IntPtr
-                    Functions.SHGetIDListFromObject(_shellItem2, pidlptr)
-                    _pidl = New Pidl(pidlptr)
-                End If
-                Return _pidl ' return pidl within lock to make sure it's nothing after it's been disposed
-            End SyncLock
+            If _pidl Is Nothing Then
+                SyncLock _shellItemLock
+                    If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
+                        Dim pidlptr As IntPtr
+                        Functions.SHGetIDListFromObject(_shellItem2, pidlptr)
+                        _pidl = New Pidl(pidlptr)
+                    End If
+                End SyncLock
+            End If
+            Return _pidl
         End Get
     End Property
 
@@ -335,76 +338,77 @@ Public Class Item
         Dim oldAttr As SFGAO = _attributes
 
         SyncLock _shellItemLock
-            If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
-                oldItemNameDisplaySortValue = Me.ItemNameDisplaySortValue
+            SyncLock _shellItemLock2
+                If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
+                    oldItemNameDisplaySortValue = Me.ItemNameDisplaySortValue
 
-                If Not _pidl Is Nothing Then
-                    _pidl.Dispose()
-                    _pidl = Nothing
-                End If
-                If Not newPidl Is Nothing Then
-                    _pidl = newPidl
-                End If
-                If Not newFullPath Is Nothing Then
-                    _fullPath = newFullPath
-                Else
-                    _fullPath = Nothing
-                End If
+                    If Not _pidl Is Nothing Then
+                        _pidl.Dispose()
+                        _pidl = Nothing
+                    End If
+                    If Not newPidl Is Nothing Then
+                        _pidl = newPidl
+                    End If
+                    If Not newFullPath Is Nothing Then
+                        _fullPath = newFullPath
+                    Else
+                        _fullPath = Nothing
+                    End If
 
-                Dim oldShellItem As IShellItem2 = _shellItem2
-                If Not newShellItem Is Nothing Then
-                    _shellItem2 = newShellItem
-                Else
-                    _shellItem2 = Me.GetNewShellItem()
-                End If
-                If Not oldShellItem Is Nothing Then
-                    Marshal.ReleaseComObject(oldShellItem)
-                    oldShellItem = Nothing
-                End If
+                    Dim oldShellItem As IShellItem2 = _shellItem2
+                    If Not newShellItem Is Nothing Then
+                        _shellItem2 = newShellItem
+                    Else
+                        _shellItem2 = Me.GetNewShellItem()
+                    End If
+                    If Not oldShellItem Is Nothing Then
+                        Marshal.ReleaseComObject(oldShellItem)
+                        oldShellItem = Nothing
+                    End If
 
-                _propertiesLock.Wait()
-                Try
-                    oldPropertiesByKey = _propertiesByKey
-                    oldPropertiesByCanonicalName = _propertiesByCanonicalName
-                    _propertiesByKey = New Dictionary(Of String, [Property])()
-                    _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
-                    _contentViewModeProperties = Nothing
-                    For Each [property] In oldPropertiesByKey.Values
-                        If Not [property].IsCustom Then
+                    _propertiesLock.Wait()
+                    Try
+                        oldPropertiesByKey = _propertiesByKey
+                        oldPropertiesByCanonicalName = _propertiesByCanonicalName
+                        _propertiesByKey = New Dictionary(Of String, [Property])()
+                        _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
+                        _contentViewModeProperties = Nothing
+                        For Each [property] In oldPropertiesByKey.Values
+                            If Not [property].IsCustom Then
+                                [property].Dispose()
+                            Else
+                                _propertiesByKey.Add([property].Key.ToString(), [property])
+                            End If
+                        Next
+                        For Each [property] In oldPropertiesByCanonicalName.Values
                             [property].Dispose()
-                        Else
-                            _propertiesByKey.Add([property].Key.ToString(), [property])
-                        End If
-                    Next
-                    For Each [property] In oldPropertiesByCanonicalName.Values
-                        [property].Dispose()
-                    Next
-                Finally
-                    _propertiesLock.Release()
-                End Try
+                        Next
+                    Finally
+                        _propertiesLock.Release()
+                    End Try
 
-                _displayName = Nothing
+                    _displayName = Nothing
 
-                If Not Me.ShellItem2 Is Nothing Then
-                    _fullPath = Me.FullPath
-                    _attributes = 0
-                    _attributes = Me.Attributes
+                    If Not Me.ShellItem2 Is Nothing Then
+                        _fullPath = Me.FullPath
+                        _attributes = 0
+                        _attributes = Me.Attributes
 
-                    ' preload System_StorageProviderUIStatus images
-                    'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                    '    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
-                    'If Not System_StorageProviderUIStatus Is Nothing _
-                    '            AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                    '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
-                    'End If
+                        ' preload System_StorageProviderUIStatus images
+                        'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                        '    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                        'If Not System_StorageProviderUIStatus Is Nothing _
+                        '            AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                        '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                        'End If
+                    Else
+                        Me.Dispose()
+                    End If
                 Else
-                    Me.Dispose()
+                    Debug.WriteLine(Me.FullPath & "  " & disposedValue)
                 End If
-            Else
-                Debug.WriteLine(Me.FullPath & "  " & disposedValue)
-            End If
+            End SyncLock
         End SyncLock
-
 
         If Not _logicalParent Is Nothing _
             AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> _attributes.HasFlag(SFGAO.FOLDER) _
@@ -476,11 +480,13 @@ Public Class Item
     ''' <returns>The full path a.k.a. parsing name of this object.</returns>
     Public Overridable ReadOnly Property FullPath As String
         Get
-            SyncLock _shellItemLock
-                If String.IsNullOrWhiteSpace(_fullPath) AndAlso Not disposedValue Then
-                    Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
-                End If
-            End SyncLock
+            If String.IsNullOrWhiteSpace(_fullPath) Then
+                SyncLock _shellItemLock
+                    If Not disposedValue Then
+                        Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
+                    End If
+                End SyncLock
+            End If
 
             Return _fullPath
         End Get
@@ -1182,7 +1188,7 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(key.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock
+                    SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                             [property] = [Property].FromKey(key, Me.ShellItem2)
                         Else
@@ -1215,7 +1221,7 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock
+                    SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                             [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                         Else
@@ -1248,7 +1254,7 @@ Public Class Item
             Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock
+                    SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                             [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                         Else
@@ -1469,13 +1475,8 @@ Public Class Item
                         Dim doRefresh As Boolean = True
                         If (e.Event = SHCNE.RENAMEFOLDER AndAlso e.Item2.IsFolder AndAlso Not e.Item2.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
                             AndAlso e.Item1.Pidl Is Nothing AndAlso Not _logicalParent Is Nothing) Then ' if we're being renamed to a .zip file
-                            Dim existing As Item = Nothing
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    ' check if the new zip folder already exists in the parent
-                                    existing = _logicalParent.Items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
+                            Dim existing As Item = _logicalParent.Items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
                                                 AndAlso (i.Pidl?.Equals(e.Item2.Pidl) OrElse i.FullPath?.Equals(e.Item2.FullPath)))
-                                End Sub)
                             If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then ' the folder exists...
                                 doRefresh = False ' don't do regular refresh on rename
                                 Shell.GlobalThreadPool.Run(
@@ -1530,93 +1531,107 @@ Public Class Item
     End Sub
 
     Protected Overridable Sub Dispose(disposing As Boolean)
+        Dim oldShellItem As IShellItem2 = Nothing
         Dim wasDisposed As Boolean = disposedValue
+
         SyncLock _shellItemLock
-            If Not disposedValue Then
-                disposedValue = True
-                'Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
+            SyncLock _shellItemLock2
+                If Not disposedValue Then
+                    disposedValue = True
+                    'Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
 
-                If disposing Then
-                    ' dispose managed state (managed objects):
+                    If disposing Then
+                        ' dispose managed state (managed objects):
 
-                    If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                        ' extensive cleanup, because we're still live:
+                        If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                            ' extensive cleanup, because we're still live:
 
-                        ' unsubscribe from notifications
-                        If Not _notifier Is Nothing Then
-                            _notifier.UnsubscribeFromNotifications(Me)
-                        Else
-                            Shell.UnsubscribeFromNotifications(Me)
-                        End If
-                        RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
-
-                        ' remove from parent collection
-                        If Me.IsReadyForDispose Then
-                            ' we're being disposed from the disposer thread, so try not to block the ui thread
-                            If Not _logicalParent Is Nothing Then
-                                _logicalParent._items.RemoveWithoutNotifying(Me)
-                                _logicalParent._isEnumerated = False
-                                _logicalParent.IsEmpty = _logicalParent._items.Count = 0
-                                _logicalParent = Nothing
+                            ' unsubscribe from notifications
+                            If Not _notifier Is Nothing Then
+                                _notifier.UnsubscribeFromNotifications(Me)
+                            Else
+                                Shell.UnsubscribeFromNotifications(Me)
                             End If
-                        Else
-                            UIHelper.OnUIThreadAsync(
-                            Sub()
+                            RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
+
+                            ' remove from parent collection
+                            If Me.IsReadyForDispose Then
+                                ' we're being disposed from the disposer thread, so try not to block the ui thread
                                 If Not _logicalParent Is Nothing Then
-                                    _logicalParent._items.Remove(Me)
+                                    _logicalParent._items.RemoveWithoutNotifying(Me)
                                     _logicalParent._isEnumerated = False
                                     _logicalParent.IsEmpty = _logicalParent._items.Count = 0
-                                    ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
+                                    _logicalParent = Nothing
                                 End If
-                            End Sub)
-                        End If
+                            Else
+                                UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    If Not _logicalParent Is Nothing Then
+                                        _logicalParent._items.Remove(Me)
+                                        _logicalParent._isEnumerated = False
+                                        _logicalParent.IsEmpty = _logicalParent._items.Count = 0
+                                        ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
+                                    End If
+                                End Sub)
+                            End If
 
-                        ' dispose properties
-                        For Each [property] In _propertiesByKey.ToList()
-                            [property].Value.Dispose()
-                        Next
-                        _propertiesByKey.Clear()
-                        For Each [property] In _propertiesByCanonicalName.ToList()
-                            [property].Value.Dispose()
-                        Next
-                        _propertiesByCanonicalName.Clear()
+                            ' dispose properties
+                            For Each [property] In _propertiesByKey.ToList()
+                                [property].Value.Dispose()
+                            Next
+                            _propertiesByKey.Clear()
+                            For Each [property] In _propertiesByCanonicalName.ToList()
+                                [property].Value.Dispose()
+                            Next
+                            _propertiesByCanonicalName.Clear()
 
-                        ' switch shellitem, we'll release it later
-                        If Not _shellItem2 Is Nothing Then
-                            Marshal.ReleaseComObject(_shellItem2)
+                            ' switch shellitem, we'll release it later
+                            oldShellItem = _shellItem2
                             _shellItem2 = Nothing
+
+                            ' remove from cache
+                            Shell.RemoveFromItemsCache(Me)
+                        Else
+                            ' quick cleanup, because we're shutting down anyway and it has to go fast:
+
+                            ' release shellitem
+                            If Not _shellItem2 Is Nothing Then
+                                Marshal.ReleaseComObject(_shellItem2)
+                                _shellItem2 = Nothing
+                            End If
+
+                            ' dispose properties
+                            For Each [property] In _propertiesByKey.ToList()
+                                [property].Value.Dispose()
+                            Next
+                            For Each [property] In _propertiesByCanonicalName.ToList()
+                                [property].Value.Dispose()
+                            Next
                         End If
 
-                        ' remove from cache
-                        Shell.RemoveFromItemsCache(Me)
-                    Else
-                        ' quick cleanup, because we're shutting down anyway and it has to go fast:
-
-                        ' release shellitem
-                        If Not _shellItem2 Is Nothing Then
-                            Marshal.ReleaseComObject(_shellItem2)
-                            _shellItem2 = Nothing
+                        ' dispose pidl
+                        If Not _pidl Is Nothing Then
+                            _pidl.Dispose()
+                            _pidl = Nothing
                         End If
 
-                        ' dispose properties
-                        For Each [property] In _propertiesByKey.ToList()
-                            [property].Value.Dispose()
-                        Next
-                        For Each [property] In _propertiesByCanonicalName.ToList()
-                            [property].Value.Dispose()
-                        Next
+                        ' free unmanaged resources (unmanaged objects) and override finalizer
                     End If
-
-                    ' dispose pidl
-                    If Not _pidl Is Nothing Then
-                        _pidl.Dispose()
-                        _pidl = Nothing
-                    End If
-
-                    ' free unmanaged resources (unmanaged objects) and override finalizer
                 End If
-            End If
+            End SyncLock
         End SyncLock
+
+        If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso Not wasDisposed Then
+            ' dispose outside of the lock because it can take a while
+            Shell.GlobalThreadPool.Add(
+                Sub()
+                    ' dispose of shellfolder
+                    If Not oldShellItem Is Nothing Then
+                        Marshal.ReleaseComObject(oldShellItem)
+                        oldShellItem = Nothing
+                    End If
+                End Sub, _livesOnThreadId)
+        End If
     End Sub
 
     ' override finalizer only if 'Dispose(disposing As Boolean)' has code to free unmanaged resources

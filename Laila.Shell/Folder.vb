@@ -1220,22 +1220,19 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            Dim existing As Item
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    existing = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
+                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
-                                    If existing Is Nothing Then
-                                        Me.InitializeItem(e.Item1)
-                                        e.Item1.LogicalParent = Me
-                                        e.Item1.IsProcessingNotifications = True
-                                        e.IsHandled1 = True
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                        _items.InsertSorted(e.Item1, c)
-                                        Me.IsEmpty = _items.Count = 0
-                                    End If
-                                End Sub)
                             If existing Is Nothing Then
+                                Me.InitializeItem(e.Item1)
+                                e.Item1.LogicalParent = Me
+                                e.Item1.IsProcessingNotifications = True
+                                e.IsHandled1 = True
+                                Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        _items.InsertSorted(e.Item1, c)
+                                    End Sub)
+                                Me.IsEmpty = _items.Count = 0
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         e.Item1.Refresh()
@@ -1258,47 +1255,40 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            UIHelper.OnUIThread(
-                                    Sub()
-                                        Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
+                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
-                                        If Not existing Is Nothing Then
-                                            existing.Dispose()
-                                        End If
-                                    End Sub)
+                            If Not existing Is Nothing Then
+                                existing.Dispose()
+                            End If
                         End If
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        UIHelper.OnUIThread(
-                            Sub()
-                                If Not _items Is Nothing AndAlso _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
-                                    Me.InitializeItem(e.Item1)
-                                    e.Item1.LogicalParent = Me
-                                    e.Item1.IsProcessingNotifications = True
-                                    e.IsHandled1 = True
-                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                    _items.InsertSorted(e.Item1, c)
-                                    Me.IsEmpty = _items.Count = 0
-                                End If
-                            End Sub)
-                        Shell.GlobalThreadPool.Run(
+                        If Not _items Is Nothing AndAlso _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                            Me.InitializeItem(e.Item1)
+                            e.Item1.LogicalParent = Me
+                            e.Item1.IsProcessingNotifications = True
+                            e.IsHandled1 = True
+                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                            UIHelper.OnUIThread(
                                 Sub()
-                                    e.Item1.Refresh()
+                                    _items.InsertSorted(e.Item1, c)
                                 End Sub)
+                            Me.IsEmpty = _items.Count = 0
+                        End If
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                e.Item1.Refresh()
+                            End Sub)
                     End If
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        UIHelper.OnUIThread(
-                                Sub()
-                                    Dim item As Item
-                                    item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                                    If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                                        item.Dispose()
-                                    End If
-                                End Sub)
+                        Dim item As Item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                        If Not item Is Nothing AndAlso TypeOf item Is Folder Then
+                            item.Dispose()
+                        End If
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
@@ -1316,12 +1306,9 @@ Public Class Folder
 
             ' notify children
             Dim list As List(Of Item) = Nothing
-            UIHelper.OnUIThread(
-                Sub()
-                    SyncLock _notificationSubscribersLock
-                        list = _items.ToList().Where(Function(i) If(i?.IsProcessingNotifications, False)).ToList()
-                    End SyncLock
-                End Sub)
+            SyncLock _notificationSubscribersLock
+                list = _items.ToList().Where(Function(i) If(i?.IsProcessingNotifications, False)).ToList()
+            End SyncLock
             If list.Count > 0 Then
                 Dim size As Integer = Math.Max(1, Math.Min(list.Count / 10, 250))
                 Dim chuncks()() As Item = list.Chunk(list.Count / size).ToArray()
@@ -1332,7 +1319,7 @@ Public Class Folder
                     Dim j As Integer = i
                     Dim tcs As TaskCompletionSource = New TaskCompletionSource()
                     tcses.Add(tcs)
-                    Shell.GlobalThreadPool.Add(
+                    Shell.NotificationThreadPool.Add(
                         Sub()
                             ' Process tasks from the queue
                             For Each item In chuncks(j)
