@@ -657,7 +657,7 @@ Public Class Folder
         Dim poolSize As Integer = Math.Min(100, Math.Max(1, _notificationSubscribers.Count / 1000))
         If _notificationThreadPool Is Nothing Then
             _notificationThreadPool = New Helpers.ThreadPool(poolSize)
-        Else
+        ElseIf poolSize > _notificationThreadPool.Size Then
             _notificationThreadPool.Redimension(poolSize)
         End If
 

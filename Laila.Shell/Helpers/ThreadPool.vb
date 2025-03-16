@@ -8,6 +8,7 @@ Namespace Helpers
 
         Public Property TaskQueues As List(Of BlockingCollection(Of Action))
 
+        Private _size As Integer
         Private _threadsLock As Object = New Object()
         Private _threads As List(Of Thread) = New List(Of Thread)()
         Private _isThreadFree As Boolean()
@@ -23,22 +24,20 @@ Namespace Helpers
         End Sub
 
         Public Sub Redimension(size As Integer)
-            SyncLock _threadsLock
-                ' start new pool
-                _disposeTokensSource.Cancel()
-                _disposeTokensSource = New CancellationTokenSource()
-                _disposeToken = _disposeTokensSource.Token
+            If size < _size Then Throw New ArgumentException("ThreadPool.Redimension: size must be greater than the current size.")
+            If size = _size Then Return
 
+            SyncLock _threadsLock
                 ' initialize
                 Me.TaskQueues = New List(Of BlockingCollection(Of Action))
-                ReDim _isThreadFree(size - 1)
-                ReDim _isThreadLocked(size - 1)
-                For i = 0 To size - 1
+                ReDim Preserve _isThreadFree(size - 1)
+                ReDim Preserve _isThreadLocked(size - 1)
+                For i = _size To size - 1
                     _isThreadFree(i) = True
                 Next
 
                 ' create threads
-                For i = 0 To size - 1
+                For i = _size To size - 1
                     Me.TaskQueues.Add(New BlockingCollection(Of Action))
                     Dim thread As Thread = New Thread(
                         Sub(obj As Object)
@@ -64,8 +63,17 @@ Namespace Helpers
                     thread.Start(i)
                     _threads.Add(thread)
                 Next
+
+                ' remember new size
+                _size = size
             End SyncLock
         End Sub
+
+        Public ReadOnly Property Size As Integer
+            Get
+                Return _size
+            End Get
+        End Property
 
         Public Function GetNextFreeThreadId() As Integer
             If _isThreadFree.Count > 1 Then
