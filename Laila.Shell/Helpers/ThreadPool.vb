@@ -6,20 +6,29 @@ Namespace Helpers
     Public Class ThreadPool
         Implements IDisposable
 
-        Public ReadOnly Property TaskQueues As List(Of BlockingCollection(Of Action))
+        Public Property TaskQueues As List(Of BlockingCollection(Of Action))
 
         Private _threadsLock As Object = New Object()
         Private _threads As List(Of Thread) = New List(Of Thread)()
         Private _isThreadFree As Boolean()
         Private _isThreadLocked As Boolean()
-        Private _nextThreadIdLock As Object = New Object()
         Private _nextThreadId As Integer = 0
         Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
         Private _disposeToken As CancellationToken = _disposeTokensSource.Token
         Private disposedValue As Boolean
 
         Public Sub New(size As Integer)
+            Me.Redimension(size)
+            Shell.AddToThreadPoolCache(Me)
+        End Sub
+
+        Public Sub Redimension(size As Integer)
             SyncLock _threadsLock
+                ' start new pool
+                _disposeTokensSource.Cancel()
+                _disposeTokensSource = New CancellationTokenSource()
+                _disposeToken = _disposeTokensSource.Token
+
                 ' initialize
                 Me.TaskQueues = New List(Of BlockingCollection(Of Action))
                 ReDim _isThreadFree(size - 1)
@@ -40,7 +49,7 @@ Namespace Helpers
                                 For Each task In Me.TaskQueues(threadId).GetConsumingEnumerable(_disposeToken)
                                     _isThreadFree(threadId) = False
                                     task.Invoke()
-                                    _isThreadFree(threadId) = True
+                                    If Not _disposeToken.IsCancellationRequested Then _isThreadFree(threadId) = True
                                 Next
                             Catch ex As OperationCanceledException
                                 Debug.WriteLine("ThreadPool TaskQueue thread was canceled.")
@@ -56,13 +65,11 @@ Namespace Helpers
                     _threads.Add(thread)
                 Next
             End SyncLock
-
-            Shell.AddToThreadPoolCache(Me)
         End Sub
 
         Public Function GetNextFreeThreadId() As Integer
             If _isThreadFree.Count > 1 Then
-                SyncLock _nextThreadIdLock
+                SyncLock _threadsLock
                     Do
                         _nextThreadId += 1
                         If _nextThreadId >= _isThreadFree.Length Then

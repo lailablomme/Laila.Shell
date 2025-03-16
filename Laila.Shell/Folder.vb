@@ -654,7 +654,12 @@ Public Class Folder
 
         enumerateItems(flags, cancellationToken, threadId, doRefreshAllExistingItems, doRecursive)
 
-        If _notificationThreadPool Is Nothing Then _notificationThreadPool = New Helpers.ThreadPool(Math.Min(100, Math.Max(1, _notificationSubscribers.Count / 1000)))
+        Dim poolSize As Integer = Math.Min(100, Math.Max(1, _notificationSubscribers.Count / 1000))
+        If _notificationThreadPool Is Nothing Then
+            _notificationThreadPool = New Helpers.ThreadPool(poolSize)
+        Else
+            _notificationThreadPool.Redimension(poolSize)
+        End If
 
         If Not cancellationToken.IsCancellationRequested Then
             _wasActivity = False
