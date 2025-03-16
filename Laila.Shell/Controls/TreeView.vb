@@ -751,7 +751,7 @@ Namespace Controls
                     UIHelper.OnUIThread(
                         Sub()
                             If folder.IsExpanded Then
-                                For Each item In folder.Items
+                                For Each item In folder.Items.ToList()
                                     If TypeOf item Is Folder Then
                                         If Not Me.Items.Contains(item) Then
                                             Me.Items.Add(item)

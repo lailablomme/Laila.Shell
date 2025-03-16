@@ -24,10 +24,10 @@ Namespace Helpers
         End Sub
 
         Public Sub Redimension(size As Integer)
-            If size < _size Then Throw New ArgumentException("ThreadPool.Redimension: size must be greater than the current size.")
-            If size = _size Then Return
-
             SyncLock _threadsLock
+                If size < _size Then Throw New ArgumentException("ThreadPool.Redimension: size must be greater than the current size.")
+                If size = _size Then Return
+
                 ' initialize
                 Me.TaskQueues = New List(Of BlockingCollection(Of Action))
                 ReDim Preserve _isThreadFree(size - 1)
