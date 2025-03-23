@@ -39,7 +39,7 @@ jobs:
 
       - name: Package SampleApp2
         run: |
-          $outputDir = "./Laila.Shell.SampleApp/bin/Release"
+          $outputDir = "./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0"
           $zipFile = "Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}.zip"
           Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
 
