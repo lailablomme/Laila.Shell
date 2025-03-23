@@ -24,14 +24,14 @@ jobs:
         run: |
           [xml]$vbproj = Get-Content "Laila.Shell/Laila.Shell.vbproj"
           $version = $vbproj.Project.PropertyGroup.Version
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            $version = "1.0.0"
-            Write-Host "Version not found, defaulting to $version"
+          if ($null -eq $version -or [string]::IsNullOrWhiteSpace($version.'#text')) {
+            $versionNumber = "1.0.0"
+            Write-Host "Version not found, defaulting to $versionNumber"
           } else {
-            $version = $version?.Trim()
+            $versionNumber = $version.'#text'.Trim()
           }
-          $isPrerelease = $version -match "alpha"
-          Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $isPrerelease = $versionNumber -match "alpha"
+          Write-Output "version=$versionNumber" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
           Write-Output "prerelease=$isPrerelease" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Explicitly build WinRT dependency
