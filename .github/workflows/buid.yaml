@@ -23,7 +23,7 @@ jobs:
         shell: pwsh
         run: |
           [xml]$vbproj = Get-Content "Laila.Shell/Laila.Shell.vbproj"
-          $version = $vbproj.Project.PropertyGroup.Version
+          $version = $vbproj.Project.PropertyGroup.Version.Trim()
           if ([string]::IsNullOrWhiteSpace($version)) {
             $version = "1.0.0"
             Write-Host "Version not found, defaulting to $version"
