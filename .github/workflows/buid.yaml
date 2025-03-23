@@ -30,11 +30,16 @@ jobs:
             $version = "1.0.0"
             Write-Host "Version not found, defaulting to $version"
           }
+          $isPrerelease = $version -match "alpha"
           Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Output "prerelease=$isPrerelease" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Build solution
+      - name: Explicitly build WinRT dependency
         run: |
           msbuild Laila.Shell.WinRT/Laila.Shell.WinRT.csproj /p:Configuration=Release /p:Platform="x64" /m
+
+      - name: Build Solution
+        run: |
           msbuild Laila.Shell.sln /p:Configuration=Release /p:Platform="x64" /m
 
       - name: Package SampleApp2
@@ -47,10 +52,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}
-          path: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}.zip
+          path: $outputDir
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ steps.extract_version.outputs.prerelease }}
           files: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}.zip
