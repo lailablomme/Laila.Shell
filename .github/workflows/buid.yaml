@@ -34,7 +34,7 @@ jobs:
 
       - name: Build solution
         run: |
-          msbuild Laila.Shell.sln /p:Configuration=Release /p:Platform="Any CPU" /m
+          msbuild Laila.Shell.sln /p:Configuration=Release /p:Platform="x64" /m
 
       - name: Package SampleApp2
         run: |
