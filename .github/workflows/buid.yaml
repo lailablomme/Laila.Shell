@@ -52,6 +52,14 @@ jobs:
           name: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}
           path: ./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0/*
 
+      - name: Create and Push Tag
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: v${{ steps.extract_version.outputs.version }}
+          force_push_tag: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
