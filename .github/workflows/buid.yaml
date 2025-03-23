@@ -1,0 +1,55 @@
+name: Build and Publish Laila.Shell SampleApp2
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET Framework
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet Packages
+        run: nuget restore Laila.Shell.sln
+
+      - name: Extract Version from vbproj
+        id: extract_version
+        shell: pwsh
+        run: |
+          [xml]$vbproj = Get-Content "Laila.Shell/Laila.Shell.vbproj"
+          $version = $vbproj.Project.PropertyGroup.Version
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $version = "1.0.0"
+            Write-Host "Version not found, defaulting to $version"
+          }
+          Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Build solution
+        run: |
+          msbuild Laila.Shell.sln /p:Configuration=Release /p:Platform="Any CPU" /m
+
+      - name: Package SampleApp2
+        run: |
+          $outputDir = "./Laila.Shell.SampleApp/bin/Release"
+          $zipFile = "Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}.zip"
+          Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}
+          path: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}.zip
