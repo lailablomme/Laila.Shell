@@ -56,9 +56,12 @@ jobs:
 
       - name: Create and Push Tag
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://$env:GITHUB_TOKEN@github.com/$env:GITHUB_REPOSITORY.git"
           git tag "v${{ steps.extract_version.outputs.version }}" -f
           git push origin "v${{ steps.extract_version.outputs.version }}" -f
 
