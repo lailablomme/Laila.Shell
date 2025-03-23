@@ -36,6 +36,10 @@ jobs:
         run: |
           msbuild Laila.Shell.sln /p:Configuration=Release /p:Platform="x64" /m
 
+      - name: Pack Laila.Shell NuGet
+        run: |
+          dotnet pack Laila.Shell/Laila.Shell.vbproj --configuration Release --output ./Laila.Shell/bin/x64/Release/net6.0-windows7.0
+
       - name: Package SampleApp2
         run: |
           $outputDir = "./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0"
@@ -56,6 +60,8 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           tag_name: ${{ steps.extract_version.outputs.version }}
           name: Release ${{ steps.extract_version.outputs.version }}
