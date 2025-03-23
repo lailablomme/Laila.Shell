@@ -2,7 +2,8 @@ name: Build and Publish Laila.Shell SampleApp2
 
 on:
   push:
-    branches: [main]
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -15,24 +16,17 @@ jobs:
       - name: Setup .NET Framework
         uses: microsoft/setup-msbuild@v2
 
-      - name: Extract Version from vbproj
+      - name: Restore NuGet Packages
+        run: nuget restore Laila.Shell.sln
+
+      - name: Extract Version from Tag
         id: extract_version
         shell: pwsh
         run: |
-          [xml]$vbproj = Get-Content "Laila.Shell/Laila.Shell.vbproj"
-          $versionNode = $vbproj.Project.PropertyGroup | Where-Object { $_.Version -and -not [string]::IsNullOrWhiteSpace($_.Version) } | Select-Object -First 1
-          if ($versionNode -and $versionNode.Version) {
-            $versionNumber = $versionNode.Version.Trim()
-          } else {
-            $versionNumber = "1.0.0"
-            Write-Host "Version not found, defaulting to $versionNumber"
-          }
-          $isPrerelease = $versionNumber -match "alpha"
-          Write-Output "version=$versionNumber" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $version = "${{ github.ref_name }}"
+          $isPrerelease = $version -match "alpha"
+          Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
           Write-Output "prerelease=$isPrerelease" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-      - name: Restore NuGet Packages
-        run: nuget restore Laila.Shell.sln
 
       - name: Explicitly build WinRT dependency
         run: |
@@ -45,33 +39,28 @@ jobs:
       - name: Package SampleApp2
         run: |
           $outputDir = "./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0"
-          $zipFile = "Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}.zip"
+          $zipFile = "Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip"
           Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
 
-      - name: Upload Artifact
+      - name: Upload SampleApp2 Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}
+          name: Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}
           path: ./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0/*
 
-      - name: Create and Push Tag
-        shell: pwsh
-        env:
-          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        run: |
-          $version = "${{ steps.extract_version.outputs.version }}"
-          git config user.name "lailablomme"
-          git config user.email "lailablomme@users.noreply.github.com"
-          git remote remove origin
-          git remote add origin "https://$env:PERSONAL_ACCESS_TOKEN@github.com/$env:GITHUB_REPOSITORY.git"
-          git tag "v$version" -f
-          git push origin "v$version" -f
+      - name: Upload Laila.Shell NuGet Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Laila.Shell-nuget-${{ steps.extract_version.outputs.version }}
+          path: ./Laila.Shell/bin/x64/Release/net6.0-windows7.0/*.nupkg
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.extract_version.outputs.version }}
-          name: Release v${{ steps.extract_version.outputs.version }}
+          tag_name: ${{ steps.extract_version.outputs.version }}
+          name: Release ${{ steps.extract_version.outputs.version }}
           draft: false
           prerelease: ${{ steps.extract_version.outputs.prerelease }}
-          files: Laila.Shell.SampleApp2-v${{ steps.extract_version.outputs.version }}.zip
+          files: |
+            Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip
+            ./Laila.Shell/bin/x64/Release/net6.0-windows7.0/*.nupkg
