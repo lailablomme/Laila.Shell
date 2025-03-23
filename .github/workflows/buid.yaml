@@ -28,7 +28,7 @@ jobs:
             $version = "1.0.0"
             Write-Host "Version not found, defaulting to $version"
           } else {
-            $version = $version.Trim()
+            $version = $version?.Trim()
           }
           $isPrerelease = $version -match "alpha"
           Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
