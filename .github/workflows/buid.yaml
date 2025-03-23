@@ -59,11 +59,13 @@ jobs:
         env:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
+          $version = "${{ steps.extract_version.outputs.version }}"
           git config user.name "lailablomme"
           git config user.email "lailablomme@users.noreply.github.com"
-          git remote set-url origin "https://$env:PERSONAL_ACCESS_TOKEN@github.com/$env:GITHUB_REPOSITORY.git"
-          git tag "v${{ steps.extract_version.outputs.version }}" -f
-          git push origin "v${{ steps.extract_version.outputs.version }}" -f
+          git remote remove origin
+          git remote add origin "https://$env:PERSONAL_ACCESS_TOKEN@github.com/$env:GITHUB_REPOSITORY.git"
+          git tag "v$version" -f
+          git push origin "v$version" -f
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
