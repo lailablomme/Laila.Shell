@@ -53,12 +53,12 @@ jobs:
           path: ./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0/*
 
       - name: Create and Push Tag
-        uses: rickstaa/action-create-tag@v1
-        with:
-          tag: v${{ steps.extract_version.outputs.version }}
-          force_push_tag: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.extract_version.outputs.version }}" -f
+          git push origin "v${{ steps.extract_version.outputs.version }}" -f
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
