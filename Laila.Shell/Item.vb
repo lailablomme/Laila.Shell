@@ -417,6 +417,9 @@ Public Class Item
                      OrElse Not TypeOf Me Is Folder AndAlso _attributes.HasFlag(SFGAO.FOLDER)) Then
             Dim newItem As Item = Me.Clone()
             newItem.LogicalParent = _logicalParent
+            If Not _logicalParent Is Nothing Then
+                _logicalParent.InitializeItem(newItem)
+            End If
             UIHelper.OnUIThread(
                 Sub()
                     Dim c As IComparer = New Helpers.ItemComparer(Me.LogicalParent.ItemsGroupByPropertyName, Me.LogicalParent.ItemsSortPropertyName, Me.LogicalParent.ItemsSortDirection)

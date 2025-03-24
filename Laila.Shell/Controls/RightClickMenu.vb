@@ -7,56 +7,11 @@ Namespace Controls
         Inherits BaseMenu
 
         Protected Overrides Async Function AddItems() As Task
-            Dim osver As Version = Environment.OSVersion.Version
-            Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
-
-            ' add menu items
-            Dim menuItems As List(Of Control) = getMenuItems()
-            Dim lastMenuItem As Control = Nothing
-            For Each item In menuItems
-                Dim verb As String = If(Not item.Tag Is Nothing, CType(item.Tag, Tuple(Of Integer, String)).Item2, Nothing)
-                Select Case verb
-                    Case "copy", "cut", "paste", "delete", "pintohome", "rename"
-                        ' don't add these
-                    Case Else
-                        Dim isNotDoubleSeparator As Boolean = Not (TypeOf item Is Separator AndAlso
-                                (Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator))
-                        Dim isNotInitialSeparator As Boolean = Not (TypeOf item Is Separator AndAlso Me.Items.Count = 0)
-                        Dim isNotDoubleOneDriveItem As Boolean = verb Is Nothing OrElse
-                                Not (isWindows11 AndAlso
-                                    (verb.StartsWith("{5250E46F-BB09-D602-5891-F476DC89B70") _
-                                     OrElse verb.StartsWith("{1FA0E654-C9F2-4A1F-9800-B9A75D744B0") _
-                                     OrElse verb = "MakeAvailableOffline" _
-                                     OrElse verb = "MakeAvailableOnline"))
-                        If isNotDoubleSeparator AndAlso isNotInitialSeparator AndAlso isNotDoubleOneDriveItem Then
-                            Me.Items.Add(item)
-                            lastMenuItem = item
-                        End If
-                End Select
-            Next
-
-            ' add buttons
-            Dim hasPaste As Boolean =
-                Not Me.IsDefaultOnly _
-                AndAlso (Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0) _
-                AndAlso Await Clipboard.CanPaste(Me.Folder)
-
-            Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "cut")
-            If Not menuItem Is Nothing Then Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-            menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "copy")
-            If Not menuItem Is Nothing Then Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-            menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "paste")
-            If Not menuItem Is Nothing Then Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
-                Else If hasPaste Then Me.Buttons.Add(MakeButton(New Tuple(Of Integer, String)(-1, "paste"), "Paste"))
-            menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "rename")
-            If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME)) Then _
-                Me.Buttons.Add(MakeButton(New Tuple(Of Integer, String)(-1, "rename"), "Rename"))
-            menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "delete")
-            If Not menuItem Is Nothing Then Me.Buttons.Add(MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-            If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
-                Dim isPinned As Boolean = PinnedItems.GetIsPinned(Me.SelectedItems(0))
-                Me.Buttons.Add(MakeToggleButton(New Tuple(Of Integer, String)(-1, "laila.shell.(un)pin"),
-                                                        If(isPinned, "Unpin item", "Pin item"), isPinned))
+            ' add right click menu items
+            If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso TypeOf Me.SelectedItems(0) Is Folder Then
+                Await CType(Me.SelectedItems(0), Folder).AddRightClickMenuItems(Me)
+            Else
+                Await Me.Folder.AddRightClickMenuItems(Me)
             End If
 
             ' add view, sort and group by menus

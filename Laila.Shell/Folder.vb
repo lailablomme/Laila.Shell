@@ -5,9 +5,11 @@ Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
+Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Input
 Imports System.Windows.Media
+Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interfaces
@@ -539,6 +541,60 @@ Public Class Folder
         End Set
     End Property
 
+    Public Overridable Async Function AddRightClickMenuItems(menu As RightClickMenu) As Task
+        Dim osver As Version = Environment.OSVersion.Version
+        Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
+
+        ' add menu items
+        Dim menuItems As List(Of Control) = menu.GetMenuItems()
+        Dim lastMenuItem As Control = Nothing
+        For Each item In menuItems
+            Dim verb As String = If(Not item.Tag Is Nothing, CType(item.Tag, Tuple(Of Integer, String)).Item2, Nothing)
+            Select Case verb
+                Case "copy", "cut", "paste", "delete", "pintohome", "rename"
+                    ' don't add these
+                Case Else
+                    Dim isNotDoubleSeparator As Boolean = Not (TypeOf item Is Separator AndAlso
+                                (Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator))
+                    Dim isNotInitialSeparator As Boolean = Not (TypeOf item Is Separator AndAlso Me.Items.Count = 0)
+                    Dim isNotDoubleOneDriveItem As Boolean = verb Is Nothing OrElse
+                                Not (isWindows11 AndAlso
+                                    (verb.StartsWith("{5250E46F-BB09-D602-5891-F476DC89B70") _
+                                     OrElse verb.StartsWith("{1FA0E654-C9F2-4A1F-9800-B9A75D744B0") _
+                                     OrElse verb = "MakeAvailableOffline" _
+                                     OrElse verb = "MakeAvailableOnline"))
+                    If isNotDoubleSeparator AndAlso isNotInitialSeparator AndAlso isNotDoubleOneDriveItem Then
+                        menu.Items.Add(item)
+                        lastMenuItem = item
+                    End If
+            End Select
+        Next
+
+        ' add buttons
+        Dim hasPaste As Boolean =
+                Not menu.IsDefaultOnly _
+                AndAlso (menu.SelectedItems Is Nothing OrElse menu.SelectedItems.Count = 0) _
+                AndAlso Await Clipboard.CanPaste(Me)
+
+        Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "cut")
+        If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "copy")
+        If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "paste")
+        If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
+                Else If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String)(-1, "paste"), "Paste"))
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "rename")
+        If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 AndAlso menu.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME)) Then _
+                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String)(-1, "rename"), "Rename"))
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "delete")
+        If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
+        If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 Then
+            Dim isPinned As Boolean = PinnedItems.GetIsPinned(menu.SelectedItems(0))
+            menu.Buttons.Add(menu.MakeToggleButton(New Tuple(Of Integer, String)(-1, "laila.shell.(un)pin"),
+                                                        If(isPinned, "Unpin item", "Pin item"), isPinned))
+        End If
+    End Function
+
     Public Property EnumerationException As Exception
         Get
             Return _enumerationException
@@ -971,7 +1027,7 @@ Public Class Folder
                                     newFullPaths.Add(newItem.FullPath & newItem.DeDupeKey)
 
                                     If isRootDesktop Then
-                                        If Not Shell.GetSpecialFolder(SpecialFolders.Home) Is Nothing AndAlso (newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Home).FullPath) OrElse newItem.FullPath.Equals("::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}")) Then newItem.TreeSortPrefix = "_001" _
+                                        If Not Shell.GetSpecialFolder(SpecialFolders.Home) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Home).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_001" _
                                     Else If Not Shell.GetSpecialFolder(SpecialFolders.Gallery) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Gallery).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_002" _
                                     Else If Not Shell.GetSpecialFolder(SpecialFolders.Pictures) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Pictures).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_003" _
                                     Else If newItem.FullPath.ToUpper().Equals(Shell.Desktop.FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_004" _
@@ -1052,7 +1108,7 @@ Public Class Folder
         End Try
     End Sub
 
-    Protected Overridable Function InitializeItem(item As Item) As Item
+    Protected Friend Overridable Function InitializeItem(item As Item) As Item
         Return item
     End Function
 
@@ -1312,22 +1368,23 @@ Public Class Folder
                     End If
             End Select
 
-            ' notify children
-            Dim list As List(Of IProcessNotifications) = Nothing
-            SyncLock _notificationSubscribersLock
-                list = _notificationSubscribers.Where(Function(i) If(i?.IsProcessingNotifications, False)).ToList()
-            End SyncLock
-            If list.Count > 0 Then
-                Dim size As Integer = Math.Max(1, Math.Min(list.Count / 10, 250))
-                Dim chuncks()() As IProcessNotifications = list.Chunk(list.Count / size).ToArray()
-                Dim tcses As List(Of TaskCompletionSource) = New List(Of TaskCompletionSource)()
+            If _isLoaded Then
+                ' notify children
+                Dim list As List(Of IProcessNotifications) = Nothing
+                SyncLock _notificationSubscribersLock
+                    list = _notificationSubscribers.Where(Function(i) If(i?.IsProcessingNotifications, False)).ToList()
+                End SyncLock
+                If list.Count > 0 Then
+                    Dim size As Integer = Math.Max(1, Math.Min(list.Count / 10, 250))
+                    Dim chuncks()() As IProcessNotifications = list.Chunk(list.Count / size).ToArray()
+                    Dim tcses As List(Of TaskCompletionSource) = New List(Of TaskCompletionSource)()
 
-                ' threads for refreshing
-                For i = 0 To chuncks.Count - 1
-                    Dim j As Integer = i
-                    Dim tcs As TaskCompletionSource = New TaskCompletionSource()
-                    tcses.Add(tcs)
-                    _notificationThreadPool.Add(
+                    ' threads for refreshing
+                    For i = 0 To chuncks.Count - 1
+                        Dim j As Integer = i
+                        Dim tcs As TaskCompletionSource = New TaskCompletionSource()
+                        tcses.Add(tcs)
+                        _notificationThreadPool.Add(
                         Sub()
                             ' Process tasks from the queue
                             For Each item In chuncks(j)
@@ -1337,9 +1394,10 @@ Public Class Folder
 
                             tcs.SetResult()
                         End Sub)
-                Next
+                    Next
 
-                Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
+                    Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
+                End If
             End If
         End If
     End Sub

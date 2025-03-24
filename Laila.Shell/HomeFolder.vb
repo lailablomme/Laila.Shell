@@ -23,9 +23,8 @@ Public Class HomeFolder
     Implements ISupportDragInsert
 
     Public Sub New(parent As Folder, doKeepAlive As Boolean)
-        MyBase.New(Nothing, parent, doKeepAlive, False, Nothing)
+        MyBase.New(Nothing, parent, doKeepAlive, True, Nothing)
 
-        _pidl = Pidl.FromBytes(System.Text.UTF8Encoding.Unicode.GetBytes(Me.FullPath))
         _hasSubFolders = True
         _columns = New List(Of Column)() From {
             New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:10"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
@@ -135,6 +134,14 @@ Public Class HomeFolder
         End Get
     End Property
 
+    Public Overrides Async Function AddRightClickMenuItems(menu As RightClickMenu) As Task
+        ' don't show menu for home folder, except for children
+        If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count > 0 _
+            AndAlso Not (menu.SelectedItems.Count = 1 AndAlso menu.SelectedItems(0).Equals(Me)) Then
+            Await MyBase.AddRightClickMenuItems(menu)
+        End If
+    End Function
+
     Protected Overrides Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInteger, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
         result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action, threadId As Integer?)
@@ -177,11 +184,12 @@ Public Class HomeFolder
         Next
 
         ' enumerate recent files
+        _hookFolderFullPath = Shell.GetSpecialFolder(SpecialFolders.Recent).FullPath
         MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone().ShellItem2, flags, cancellationToken, isSortPropertyByText,
             isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId)
     End Sub
 
-    Protected Overrides Function InitializeItem(item As Item) As Item
+    Protected Friend Overrides Function InitializeItem(item As Item) As Item
         Try
             If TypeOf item Is Link Then
                 CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)

@@ -65,7 +65,12 @@ Namespace Controls
                     End Sub, Threading.DispatcherPriority.Render)
 
                 Await Me.Make()
-                MyBase.OnOpened(e)
+
+                If Me.Items.Count > 0 Then
+                    MyBase.OnOpened(e)
+                Else
+                    Me.IsOpen = False
+                End If
             End Using
         End Sub
 
@@ -131,7 +136,7 @@ Namespace Controls
             _wasMade = True
         End Function
 
-        Protected Function MakeButton(tag As Tuple(Of Integer, String), toolTip As String) As Button
+        Public Function MakeButton(tag As Tuple(Of Integer, String), toolTip As String) As Button
             Dim button As Button = New Button()
             Dim image As Image = New Image()
             image.Width = 16
@@ -150,7 +155,7 @@ Namespace Controls
             Return button
         End Function
 
-        Protected Function MakeToggleButton(tag As Tuple(Of Integer, String), toolTip As String, isChecked As Boolean) As ToggleButton
+        Public Function MakeToggleButton(tag As Tuple(Of Integer, String), toolTip As String, isChecked As Boolean) As ToggleButton
             Dim button As ToggleButton = New ToggleButton()
             Dim image As Image = New Image()
             image.Width = 16
@@ -166,7 +171,7 @@ Namespace Controls
             Return button
         End Function
 
-        Protected Function getMenuItems() As List(Of Control)
+        Public Function GetMenuItems() As List(Of Control)
             Dim tcs4 As New TaskCompletionSource(Of List(Of MenuItemData))
             _thread.Run(
                 Sub()
@@ -357,7 +362,7 @@ Namespace Controls
                         End If
                         If folder Is Nothing Then folder = Shell.Desktop
                         folderPidl = folder.Pidl?.Clone()
-                        itemPidls = items.Select(Function(i) i.Pidl?.Clone()).ToArray()
+                        itemPidls = items.Where(Function(i) Not i.Pidl Is Nothing).Select(Function(i) i.Pidl?.Clone()).ToArray()
                     Else
                         ' user clicked on the background
                         If folder.FullPath = Shell.Desktop.FullPath Then
@@ -371,7 +376,7 @@ Namespace Controls
                             Else
                                 folderPidl = folder.Parent.Pidl?.Clone()
                             End If
-                            itemPidls = {folder.Pidl?.Clone()}
+                            If Not folder.Pidl Is Nothing Then itemPidls = {folder.Pidl?.Clone()}
                         End If
                     End If
                 End Sub)
@@ -436,9 +441,11 @@ Namespace Controls
                         Shell.GlobalThreadPool.Run(
                             Sub()
                                 folderPidl.Dispose()
-                                For Each p In itemPidls.Where(Function(p2) Not p2 Is Nothing)
-                                    p.Dispose()
-                                Next
+                                If Not itemPidls Is Nothing Then
+                                    For Each p In itemPidls.Where(Function(p2) Not p2 Is Nothing)
+                                        p.Dispose()
+                                    Next
+                                End If
                             End Sub)
                         If Not shellFolder Is Nothing Then
                             Marshal.ReleaseComObject(shellFolder)
