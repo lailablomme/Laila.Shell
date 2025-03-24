@@ -28,17 +28,13 @@ jobs:
           Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
           Write-Output "prerelease=$isPrerelease" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Explicitly build WinRT dependency
+      - name: Build WinRT dependency
         run: |
           msbuild Laila.Shell.WinRT/Laila.Shell.WinRT.csproj /p:Configuration=Release /p:Platform="x64" /m
 
-      - name: Build Solution
+      - name: Build and Pack Laila.Shell
         run: |
-          msbuild Laila.Shell.sln /p:Configuration=Release /p:Platform="x64" /m
-
-      - name: Pack Laila.Shell NuGet
-        run: |
-          msbuild Laila.Shell/Laila.Shell.vbproj /t:pack /p:Configuration=Release /p:Platform="x64"
+          msbuild Laila.Shell/Laila.Shell.vbproj /t:Build;Pack /p:Configuration=Release /p:Platform="x64"
 
       - name: Package SampleApp2
         run: |
