@@ -52,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Laila.Shell-nuget-${{ steps.extract_version.outputs.version }}
-          path: ./Laila.Shell/bin/x64/Release/net6.0-windows7.0/*.nupkg
+          path: ./Laila.Shell/bin/x64/Release/*.nupkg
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -65,4 +65,4 @@ jobs:
           prerelease: ${{ steps.extract_version.outputs.prerelease }}
           files: |
             Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip
-            ./Laila.Shell/bin/x64/Release/net6.0-windows7.0/*.nupkg
+            ./Laila.Shell/bin/x64/Release/*.nupkg
