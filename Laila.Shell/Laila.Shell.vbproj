@@ -168,9 +168,6 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="7z.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="Laila.Shell.manifest">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -181,10 +178,11 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
   </ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="7z">
-			<HintPath>7z.dll</HintPath>
-			<Private>true</Private>
-		</Reference>
+		<None Include="7z.dll">
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native/</PackagePath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Include="$(OutputPath)Laila.Shell.WinRT.dll">
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
