@@ -39,7 +39,8 @@ Namespace Helpers
                 ' create threads
                 For i = _size To size - 1
                     Me.TaskQueues.Add(New BlockingCollection(Of Action))
-                    Dim thread As Thread = New Thread(
+                    Dim thread As Thread = Nothing
+                    thread = New Thread(
                         Sub(obj As Object)
                             Dim threadId As Integer = Convert.ToInt32(obj)
                             Try

@@ -6,12 +6,12 @@ Namespace Controls
     Public Class RightClickMenu
         Inherits BaseMenu
 
-        Protected Overrides Async Function AddItems() As Task
+        Protected Overrides Function AddItems() As Task
             ' add right click menu items
             If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso TypeOf Me.SelectedItems(0) Is Folder Then
-                Await CType(Me.SelectedItems(0), Folder).AddRightClickMenuItems(Me)
+                CType(Me.SelectedItems(0), Folder).AddRightClickMenuItems(Me)
             Else
-                Await Me.Folder.AddRightClickMenuItems(Me)
+                Me.Folder.AddRightClickMenuItems(Me)
             End If
 
             ' add view, sort and group by menus
@@ -54,6 +54,8 @@ Namespace Controls
                     Me.Items.Insert(insertIndex, New Separator())
                 End If
             End If
+
+            Return Task.CompletedTask
         End Function
     End Class
 End Namespace

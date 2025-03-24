@@ -79,7 +79,7 @@ Namespace Controls
 
             AddHandler Me.SizeChanged,
                 Sub(s As Object, e As SizeChangedEventArgs)
-                    Me.ShowNavigationButtons(Me.Folder, False)
+                    Dim __ = Me.ShowNavigationButtons(Me.Folder, False)
                 End Sub
             AddHandler Me.PART_ClickToEdit.MouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
@@ -137,7 +137,7 @@ Namespace Controls
                         AddressBarHistory.Track(Me.Folder)
                     ElseIf Not item Is Nothing AndAlso TypeOf item Is Item Then
                         AddressBarHistory.Track(item)
-                        Menus.InvokeDefaultCommand(item)
+                        Dim __ = Menus.InvokeDefaultCommand(item)
                         Me.Cancel()
                     Else
                         System.Media.SystemSounds.Asterisk.Play()
@@ -150,14 +150,14 @@ Namespace Controls
                             Dim folder As Folder = selectedItem.Clone()
                             Me.Folder = folder
                             Me.IsLoading = True
-                            Me.ShowNavigationButtons(folder, False)
+                            Dim __ = Me.ShowNavigationButtons(folder, False)
                             AddressBarHistory.Track(folder)
                         Else
                             Me.Cancel()
                         End If
                     ElseIf TypeOf Me.SelectedItem Is Item Then
                         AddressBarHistory.Track(Me.SelectedItem)
-                        Menus.InvokeDefaultCommand(Me.SelectedItem)
+                        Dim __ = Menus.InvokeDefaultCommand(Me.SelectedItem)
                         Me.Cancel()
                     End If
                 Else
@@ -173,7 +173,7 @@ Namespace Controls
 
             Me.PART_TextBox.IsEnabled = False
             Me.IsLoading = True
-            Me.ShowNavigationButtons(Me.Folder, False)
+            Dim __ = Me.ShowNavigationButtons(Me.Folder, False)
 
             releaseItems()
         End Sub
@@ -322,7 +322,7 @@ Namespace Controls
 
                             AddHandler button.Checked,
                                 Sub(s As Object, e As EventArgs)
-                                    subFolder.GetItemsAsync()
+                                    Dim ___ = subFolder.GetItemsAsync()
                                     subFoldersContextMenu.IsOpen = True
                                 End Sub
 
@@ -335,7 +335,7 @@ Namespace Controls
                                     End Sub)
                             End If
                         End Function
-                    Task.Run(Sub() func(subFoldersButton))
+                    Dim __ = Task.Run(Sub() func(subFoldersButton))
 
                     panel.Measure(New Size(1000, 1000))
                     If totalWidth + panel.DesiredSize.Width < Me.ActualWidth - 60 Then
@@ -438,7 +438,7 @@ Namespace Controls
             f.AddressBarRoot = Nothing
             f.AddressBarDisplayName = Nothing
             ab.IsLoading = True
-            ab.ShowNavigationButtons(f, True)
+            Dim __ = ab.ShowNavigationButtons(f, True)
         End Sub
 
         Public Property IsLoading As Boolean

@@ -180,7 +180,7 @@ Public Class SearchFolder
 
                 ' re-enumerate
                 _isEnumerated = False
-                Me.GetItemsAsync()
+                Dim __ = Me.GetItemsAsync()
             End Sub)
     End Sub
 

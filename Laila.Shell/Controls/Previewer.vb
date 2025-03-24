@@ -308,6 +308,8 @@ Namespace Controls
         Private Shared Async Sub hidePreview(previewer As Previewer)
             _cancelTokenSource.Cancel()
 
+            Await Task.CompletedTask ' get rid the warning because it function is async. it is because we want to fire and forget it
+
             Dim iph As IPreviewHandler = previewer._handler
             previewer._handler = Nothing
             Dim s As IStream = previewer._stream

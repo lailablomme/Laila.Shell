@@ -156,7 +156,7 @@ Public Class Folder
             SetValue(_isExpanded, value)
 
             If value Then
-                Me.GetItemsAsync()
+                Dim __ = Me.GetItemsAsync()
             Else
                 For Each item In _items.ToList().Where(Function(i) TypeOf i Is Folder).ToList()
                     item.IsExpanded = False
@@ -222,7 +222,7 @@ Public Class Folder
         End Set
     End Property
 
-    Public Async Function GetInfoTipFolderSizeAsync(cancellationToken As CancellationToken) As Task(Of String)
+    Public Function GetInfoTipFolderSizeAsync(cancellationToken As CancellationToken) As String
         Dim folderList As List(Of String) = Shell.GlobalThreadPool.Run(
             Function() As List(Of String)
                 Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.ENABLE_ASYNC
@@ -541,7 +541,7 @@ Public Class Folder
         End Set
     End Property
 
-    Public Overridable Async Function AddRightClickMenuItems(menu As RightClickMenu) As Task
+    Public Overridable Sub AddRightClickMenuItems(menu As RightClickMenu)
         Dim osver As Version = Environment.OSVersion.Version
         Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
 
@@ -574,7 +574,7 @@ Public Class Folder
         Dim hasPaste As Boolean =
                 Not menu.IsDefaultOnly _
                 AndAlso (menu.SelectedItems Is Nothing OrElse menu.SelectedItems.Count = 0) _
-                AndAlso Await Clipboard.CanPaste(Me)
+                AndAlso Clipboard.CanPaste(Me)
 
         Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "cut")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
@@ -593,7 +593,7 @@ Public Class Folder
             menu.Buttons.Add(menu.MakeToggleButton(New Tuple(Of Integer, String)(-1, "laila.shell.(un)pin"),
                                                         If(isPinned, "Unpin item", "Pin item"), isPinned))
         End If
-    End Function
+    End Sub
 
     Public Property EnumerationException As Exception
         Get
@@ -878,7 +878,7 @@ Public Class Folder
                                             Dim recursiveFolder As Folder = item.Item1
                                             If recursiveFolder._isLoaded Then
                                                 recursiveFolder._isEnumerated = False
-                                                recursiveFolder.GetItemsAsync(doRefreshAllExistingItems, doRecursive)
+                                                Dim __ = recursiveFolder.GetItemsAsync(doRefreshAllExistingItems, doRecursive)
                                             End If
                                         End If
                                     Catch ex As Exception
@@ -1272,7 +1272,7 @@ Public Class Folder
                     If info.i64NumItems <> _items.Count Then
                         Debug.WriteLine("RECYCLE BIN=" & info.i64NumItems & " vs " & _items.Count)
                         _isEnumerated = False
-                        Me.GetItemsAsync()
+                        Dim __ = Me.GetItemsAsync()
                     End If
                 End If
             End If
@@ -1284,8 +1284,8 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
-                                        AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
+                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i?.disposedValue _
+                                        AndAlso (i?.Pidl?.Equals(e.Item1.Pidl) OrElse i?.FullPath?.Equals(e.Item1.FullPath)))
                             If existing Is Nothing Then
                                 Me.InitializeItem(e.Item1)
                                 e.Item1.LogicalParent = Me
@@ -1308,7 +1308,7 @@ Public Class Folder
                                         existingFolder.Refresh(e.Item1?.ShellItem2, e.Item1?.Pidl?.Clone(), e.Item1?.FullPath)
                                         e.Item1._shellItem2 = Nothing
                                         existingFolder._isEnumerated = False
-                                        existingFolder.GetItemsAsync(True, True)
+                                        Dim __ = existingFolder.GetItemsAsync(True, True)
                                     End Sub)
                             End If
                         End If
@@ -1319,8 +1319,8 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
-                                        AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
+                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i?.disposedValue _
+                                        AndAlso (i?.Pidl?.Equals(e.Item1.Pidl) OrElse i?.FullPath?.Equals(e.Item1.FullPath)))
                             If Not existing Is Nothing Then
                                 existing.Dispose()
                             End If
@@ -1329,7 +1329,7 @@ Public Class Folder
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        If Not _items Is Nothing AndAlso _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                        If Not _items Is Nothing AndAlso _items.ToList().FirstOrDefault(Function(i) Not i?.disposedValue AndAlso i?.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
                             Me.InitializeItem(e.Item1)
                             e.Item1.LogicalParent = Me
                             e.Item1.IsProcessingNotifications = True
@@ -1349,7 +1349,7 @@ Public Class Folder
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        Dim item As Item = _items.ToList().FirstOrDefault(Function(i) Not i.disposedValue AndAlso i.Pidl?.Equals(e.Item1.Pidl))
+                        Dim item As Item = _items.ToList().FirstOrDefault(Function(i) Not i?.disposedValue AndAlso i?.Pidl?.Equals(e.Item1.Pidl))
                         If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                             item.Dispose()
                         End If
@@ -1362,7 +1362,7 @@ Public Class Folder
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False
-                                Me.GetItemsAsync()
+                                Dim __ = Me.GetItemsAsync()
                             End If
                         End If
                     End If
@@ -1411,12 +1411,12 @@ Public Class Folder
                     Me.CancelEnumeration()
                     _isEnumerated = False
                 End If
-                Me.GetItemsAsync()
+                Dim __ = Me.GetItemsAsync()
             Case "DoShowDriveLetters"
                 If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                     _isEnumerated = False
                 End If
-                Me.GetItemsAsync()
+                Dim __ = Me.GetItemsAsync()
         End Select
     End Sub
 

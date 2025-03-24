@@ -105,7 +105,7 @@ Namespace Controls
                         If Me.DoRenameAfter(_invokedId) Then
                             initializeRenameRequest()
                         End If
-                        Me.InvokeCommand(_invokedId)
+                        Dim __ = Me.InvokeCommand(_invokedId)
                         _invokedId = Nothing
                     End If
                 End Sub
@@ -506,7 +506,7 @@ Namespace Controls
 
                     Select Case id.Item2
                         Case "Windows.ModernShare"
-                            Menus.DoShare(selectedItems)
+                            Dim __ = Menus.DoShare(selectedItems)
                         Case "copy"
                             Clipboard.CopyFiles(selectedItems)
                         Case "cut"

@@ -1488,7 +1488,7 @@ Public Class Item
                                         existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath) ' refresh the folder itself
                                         e.Item2._shellItem2 = Nothing
                                         existingFolder._isEnumerated = False
-                                        existingFolder.GetItemsAsync(True, True) ' refresh the contents
+                                        Dim __ = existingFolder.GetItemsAsync(True, True) ' refresh the contents
                                     End Sub)
                             End If
                         End If

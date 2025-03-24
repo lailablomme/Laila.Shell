@@ -38,9 +38,9 @@ Namespace Controls
 
         Public Sub New()
             AddHandler Shell.ClipboardChanged,
-                Async Sub(s As Object, e As EventArgs)
-                    Await Me.UpdateButtons()
-                End Sub
+                 Sub(s As Object, e As EventArgs)
+                     Me.UpdateButtons()
+                 End Sub
         End Sub
 
         Public Shared Async Function InvokeDefaultCommand(item As Item) As Task
@@ -342,11 +342,11 @@ Namespace Controls
             End If
         End Function
 
-        Public Async Function UpdateButtons() As Task
+        Public Sub UpdateButtons()
             If Not Shell.ShuttingDownToken.IsCancellationRequested Then
                 Me.CanCut = Clipboard.CanCut(Me.SelectedItems)
                 Me.CanCopy = Clipboard.CanCopy(Me.SelectedItems)
-                Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Await Clipboard.CanPaste(Me.Folder)
+                Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANDELETE))
                 If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
@@ -363,7 +363,7 @@ Namespace Controls
                     Me.CanShare = False
                 End If
             End If
-        End Function
+        End Sub
 
         Public Property CanCut As Boolean
             Get
@@ -460,12 +460,12 @@ Namespace Controls
             If Not e.NewValue Is Nothing AndAlso Not TypeOf e.NewValue Is DummyFolder Then
                 Await icm.UpdateNewItemMenu()
             End If
-            Await icm.UpdateButtons()
+            icm.UpdateButtons()
         End Sub
 
-        Shared Async Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim icm As Menus = TryCast(d, Menus)
-            Await icm.UpdateButtons()
+            icm.UpdateButtons()
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)

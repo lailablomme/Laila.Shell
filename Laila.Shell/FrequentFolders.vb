@@ -64,6 +64,8 @@ Public Class FrequentFolders
                 _lock.Release()
             End Try
         End While
+
+        Return Array.Empty(Of Folder)()
     End Function
 
     Public Shared Sub Track(folder As Folder)

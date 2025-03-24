@@ -38,14 +38,14 @@ Public Class HomeFolder
             Sub(s2 As Object, e2 As PinnedItemEventArgs)
                 If _isLoaded Then
                     _isEnumerated = False
-                    Me.GetItemsAsync()
+                    Dim __ = Me.GetItemsAsync()
                 End If
             End Sub
         AddHandler PinnedItems.ItemUnpinned,
             Sub(s2 As Object, e2 As PinnedItemEventArgs)
                 If _isLoaded Then
                     _isEnumerated = False
-                    Me.GetItemsAsync()
+                    Dim __ = Me.GetItemsAsync()
                 End If
             End Sub
     End Sub
@@ -134,13 +134,13 @@ Public Class HomeFolder
         End Get
     End Property
 
-    Public Overrides Async Function AddRightClickMenuItems(menu As RightClickMenu) As Task
+    Public Overrides Sub AddRightClickMenuItems(menu As RightClickMenu)
         ' don't show menu for home folder, except for children
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count > 0 _
             AndAlso Not (menu.SelectedItems.Count = 1 AndAlso menu.SelectedItems(0).Equals(Me)) Then
-            Await MyBase.AddRightClickMenuItems(menu)
+            MyBase.AddRightClickMenuItems(menu)
         End If
-    End Function
+    End Sub
 
     Protected Overrides Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInteger, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
@@ -278,7 +278,7 @@ Public Class HomeFolder
             Next
 
             _isEnumerated = False
-            Me.GetItemsAsync()
+            Dim __ = Me.GetItemsAsync()
 
             Return HRESULT.S_OK
         Finally

@@ -233,7 +233,7 @@ Namespace Controls
                     If TypeOf Me.SelectedItems(0) Is Folder Then
                         Me.Host.Folder = Me.SelectedItems(0)
                     Else
-                        invokeDefaultCommand(Me.SelectedItems(0))
+                        Dim __ = invokeDefaultCommand(Me.SelectedItems(0))
                     End If
                     e.Handled = True
                 ElseIf e.Key = Key.Back AndAlso Keyboard.Modifiers = ModifierKeys.None Then
@@ -364,7 +364,7 @@ Namespace Controls
                         If doShow Then
                             Dim textFolderSize As String = Nothing
                             If TypeOf overItem Is Folder Then
-                                textFolderSize = Await CType(overItem, Folder).GetInfoTipFolderSizeAsync(_toolTipCancellationTokenSource.Token)
+                                textFolderSize = CType(overItem, Folder).GetInfoTipFolderSizeAsync(_toolTipCancellationTokenSource.Token)
                             End If
                             If Not String.IsNullOrWhiteSpace(textFolderSize) Then
                                 text &= If(Not String.IsNullOrWhiteSpace(text), Environment.NewLine, "") & textFolderSize
@@ -444,7 +444,7 @@ Namespace Controls
                                 CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
                                 Me.Host.Folder = CType(clickedItem, Link).TargetItem
                             Else
-                                invokeDefaultCommand(clickedItem)
+                                Dim __ = invokeDefaultCommand(clickedItem)
                             End If
                         End Using
                     End If
@@ -493,7 +493,7 @@ Namespace Controls
                             Sub()
                             End Sub, Threading.DispatcherPriority.Render)
                     Else
-                        invokeDefaultCommand(_mouseItemDown)
+                        Dim __ = invokeDefaultCommand(_mouseItemDown)
                     End If
                 End Using
             End If
@@ -1081,11 +1081,11 @@ Namespace Controls
 
                 ' track recent/frequent folders (in a task because for some folders this might take a while)
                 If Not TypeOf newValue Is SearchFolder Then
-                    Dim func As Func(Of Task) =
-                        Async Function() As Task
+                    Dim func As Action =
+                        Sub()
                             FrequentFolders.Track(newValue)
-                        End Function
-                    Task.Run(func)
+                        End Sub
+                    Dim __ = Task.Run(func)
                 End If
 
                 ' set sorting and grouping

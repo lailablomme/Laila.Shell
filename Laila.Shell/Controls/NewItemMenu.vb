@@ -4,8 +4,8 @@ Namespace Controls
     Public Class NewItemMenu
         Inherits BaseMenu
 
-        Protected Overrides Async Function AddItems() As Task
-            Dim menuItems As List(Of Control) = getMenuItems()
+        Protected Overrides Function AddItems() As Task
+            Dim menuItems As List(Of Control) = GetMenuItems()
 
             Dim newMenuItem As MenuItem = menuItems _
                 .FirstOrDefault(Function(c) TypeOf c Is MenuItem _
@@ -21,6 +21,8 @@ Namespace Controls
                     Me.Items.Add(item)
                 Next
             End If
+
+            Return Task.CompletedTask
         End Function
 
         Protected Overrides Function DoRenameAfter(Tag As Tuple(Of Integer, String)) As Boolean

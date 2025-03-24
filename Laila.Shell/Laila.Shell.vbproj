@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.35-alpha1</Version>
+	<Version>0.0.36-alpha1</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
@@ -95,12 +95,6 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="7z.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="..\LICENSE">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
@@ -174,6 +168,9 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="7z.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Laila.Shell.manifest">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -184,6 +181,10 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
   </ItemGroup>
 
 	<ItemGroup>
+		<Reference Include="7z">
+			<HintPath>7z.dll</HintPath>
+			<Private>true</Private>
+		</Reference>
 		<None Include="$(OutputPath)Laila.Shell.WinRT.dll">
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>

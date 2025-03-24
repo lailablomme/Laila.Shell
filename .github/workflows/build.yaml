@@ -70,3 +70,10 @@ jobs:
           files: |
             Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip
             ./Laila.Shell/bin/x64/Release/*.nupkg
+
+      - name: Publish NuGet package to nuget.org
+        run: |
+          nuget push ./Laila.Shell/bin/x64/Release/*.nupkg `
+            -ApiKey ${{ secrets.PUSH_LAILA_SHELL }} `
+            -Source https://api.nuget.org/v3/index.json `
+            -SkipDuplicate

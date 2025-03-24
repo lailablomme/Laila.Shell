@@ -51,9 +51,9 @@ Namespace Helpers
             End Get
         End Property
 
-        Public Overrides Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True,
+        Public Overrides Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True,
                                                       Optional doRecursive As Boolean = False) As Task(Of List(Of Item))
-            Return New List(Of Item)
+            Return Task.FromResult(New List(Of Item))
         End Function
 
         Public Overrides ReadOnly Property Items As ObservableCollection(Of Item)

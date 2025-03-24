@@ -35,7 +35,7 @@ Namespace Controls
                 Me.AddGroupByItems(groupByMenuItem.Items)
             End If
 
-            MyBase.Make()
+            Await MyBase.Make()
         End Function
 
         Public Sub AddSortItems(menu As ItemCollection)

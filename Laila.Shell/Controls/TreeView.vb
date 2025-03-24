@@ -532,7 +532,7 @@ Namespace Controls
                                 ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder Then
                                     e.Handled = True
                                 Else
-                                    invokeDefaultCommand(clickedItem)
+                                    Dim __ = invokeDefaultCommand(clickedItem)
                                 End If
                             End Using
                         End If
@@ -599,7 +599,7 @@ Namespace Controls
                     If TypeOf Me.SelectedItem Is Folder Then
                         Me.Folder = Me.SelectedItem
                     Else
-                        invokeDefaultCommand(Me.SelectedItem)
+                        Dim __ = invokeDefaultCommand(Me.SelectedItem)
                     End If
                     e.Handled = True
                 ElseIf e.Key = Key.Add AndAlso Keyboard.Modifiers = ModifierKeys.None _
@@ -801,7 +801,7 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim tv As TreeView = TryCast(d, TreeView)
-            tv.SetSelectedFolder(e.NewValue)
+            Dim __ = tv.SetSelectedFolder(e.NewValue)
         End Sub
 
         Public Property Items As ObservableCollection(Of Item)

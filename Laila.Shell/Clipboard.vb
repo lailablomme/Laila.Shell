@@ -18,7 +18,7 @@ Public Class Clipboard
         Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANMOVE))
     End Function
 
-    Public Shared Async Function CanPaste(folder As Folder) As Task(Of Boolean)
+    Public Shared Function CanPaste(folder As Folder) As Boolean
         Return Shell.GlobalThreadPool.Run(
             Function() As Boolean
                 Dim dataObject As IDataObject_PreserveSig = Nothing
