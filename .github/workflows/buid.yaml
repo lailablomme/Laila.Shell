@@ -32,9 +32,9 @@ jobs:
         run: |
           msbuild Laila.Shell.WinRT/Laila.Shell.WinRT.csproj /p:Configuration=Release /p:Platform="x64" /m
 
-      - name: Build and Pack Laila.Shell
+      - name: Pack Laila.Shell NuGet Package
         run: |
-          msbuild Laila.Shell/Laila.Shell.vbproj /t:Build;Pack /p:Configuration=Release /p:Platform="x64"
+          msbuild Laila.Shell/Laila.Shell.vbproj /t:Pack /p:Configuration=Release /p:Platform="x64"
 
       - name: Package SampleApp2
         run: |
