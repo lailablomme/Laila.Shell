@@ -10,19 +10,15 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # 1) Check out the repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2) Setup MSBuild for .NET Framework
       - name: Setup .NET Framework
         uses: microsoft/setup-msbuild@v2
 
-      # 3) Restore NuGet packages
       - name: Restore NuGet Packages
         run: nuget restore Laila.Shell.sln
 
-      # 4) Extract version info from the Git tag
       - name: Extract Version from Tag
         id: extract_version
         shell: pwsh
@@ -32,40 +28,28 @@ jobs:
           Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
           Write-Output "prerelease=$isPrerelease" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      # 5) Clean, Rebuild, and Pack the entire solution.
-      #    This ensures WinRT, Laila.Shell, SampleApp, etc. all build with Release + x64.
-      #    If 'IsPackable' is true only for Laila.Shell, you'll get one .nupkg from this step.
       - name: Clean, Rebuild, and Pack
         run: |
-          msbuild Laila.Shell.sln ^
-            /t:Clean;Rebuild;Pack ^
-            /p:Configuration=Release ^
-            /p:Platform="x64" ^
-            /m
+          msbuild "Laila.Shell.sln" /t:"Clean;Rebuild;Pack" /p:Configuration=Release /p:Platform="x64" /m
 
-      # 6) Package the SampleApp's Release folder into a .zip
       - name: Package SampleApp2
         run: |
           $outputDir = "./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0"
           $zipFile = "Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip"
           Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
 
-      # 7) Upload the SampleApp zip as an artifact
       - name: Upload SampleApp2 Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}
           path: ./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0/*
 
-      # 8) Upload the resulting NuGet package as an artifact
-      #    (assuming Laila.Shell is the only project with <IsPackable>true).
       - name: Upload Laila.Shell NuGet Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Laila.Shell-nuget-${{ steps.extract_version.outputs.version }}
           path: ./Laila.Shell/bin/x64/Release/net6.0-windows7.0/*.nupkg
 
-      # 9) Create a GitHub release, attaching the .zip and .nupkg
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         env:
