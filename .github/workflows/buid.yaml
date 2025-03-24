@@ -38,7 +38,7 @@ jobs:
 
       - name: Pack Laila.Shell NuGet
         run: |
-          dotnet pack Laila.Shell/Laila.Shell.vbproj --configuration Release --output ./Laila.Shell/bin/x64/Release/net6.0-windows7.0
+          msbuild Laila.Shell/Laila.Shell.vbproj /t:pack /p:Configuration=Release /p:Platform="x64"
 
       - name: Package SampleApp2
         run: |
