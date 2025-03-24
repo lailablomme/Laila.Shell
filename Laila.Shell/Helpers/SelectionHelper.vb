@@ -37,8 +37,10 @@ Namespace Helpers
 
         Private Sub listBox_SelectionChanged(sender As Object, e As SelectionChangedEventArgs)
             If Not _isWorking Then
+                _isWorking = True
                 ' notify changed
                 SelectionChanged()
+                _isWorking = False
             End If
         End Sub
 
@@ -90,43 +92,29 @@ Namespace Helpers
 
         Public Sub SetSelectedItems(value As IEnumerable(Of TData), Optional doScrollIntoView As Boolean = True)
             If Not _control Is Nothing Then
-                ' Wait for any databinding to finish
-                'If Not Application.Current.Dispatcher.CheckAccess() Then
-                '    Application.Current.Dispatcher.Invoke(
-                '        Sub()
-                '        End Sub, Threading.DispatcherPriority.DataBind)
-                'End If
+                If Not _isWorking Then
+                    _isWorking = True
+                    ' clean
+                    Dim selectedItems As IEnumerable(Of TData) = If(value Is Nothing, {}, value.Where(Function(v) Not v Is Nothing)).ToList()
 
-                ' clean
-                Dim selectedItems As IEnumerable(Of TData) = If(value Is Nothing, {}, value.Where(Function(v) Not v Is Nothing))
-
-                ' turn off notifications  
-                _isWorking = True
-
-                If _control.SelectionMode = SelectionMode.Single Then
-                    If selectedItems.Count = 0 Then
-                        If Not _control.SelectedItem Is Nothing Then
-                            _control.SelectedItem = Nothing
-                            SelectionChanged()
-                        End If
-                    ElseIf selectedItems.Count = 1 Then
-                        If Not selectedItems(0).Equals(_control.SelectedItem) Then
-                            _control.SelectedItem = selectedItems(0)
-                            If doScrollIntoView Then
-                                scrollIntoView(_control, selectedItems(0))
+                    If _control.SelectionMode = SelectionMode.Single Then
+                        If selectedItems.Count = 0 Then
+                            If Not _control.SelectedItem Is Nothing Then
+                                _control.SelectedItem = Nothing
+                                SelectionChanged()
                             End If
-                            SelectionChanged()
+                        ElseIf selectedItems.Count = 1 Then
+                            If Not selectedItems(0).Equals(_control.SelectedItem) Then
+                                _control.SelectedItem = selectedItems(0)
+                                If doScrollIntoView Then
+                                    scrollIntoView(_control, selectedItems(0))
+                                End If
+                                SelectionChanged()
+                            End If
+                        Else
+                            Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
                         End If
                     Else
-                        Throw New ArgumentException("You cannot select multiple items when SelectionMode is Single.")
-                    End If
-                Else
-                    Dim isSame As Boolean = False
-                    If _control.SelectedItems.Count = selectedItems.Count Then
-                        isSame = True
-                    End If
-
-                    If Not isSame Then
                         ' add selected items
                         If _control.Items.Count = selectedItems.Count Then
                             _control.SelectAll()
@@ -144,10 +132,10 @@ Namespace Helpers
                         ' notify change
                         SelectionChanged()
                     End If
-                End If
 
-                ' turn back on notifications  
-                _isWorking = False
+                    ' turn back on notifications  
+                    _isWorking = False
+                End If
             Else
                 Throw New InvalidOperationException()
             End If

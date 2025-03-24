@@ -384,7 +384,7 @@ Namespace Controls.Parts
                             End If
                         End If
 
-                        If Not isOurSelvesOrParent Then
+                        If Not isOurSelvesOrParent AndAlso Not overItem.Pidl Is Nothing Then
                             ' try get droptarget
                             _threads(_threads.Count - 1).Run(
                                 Sub()
