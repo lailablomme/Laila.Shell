@@ -254,8 +254,8 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel UseLayoutRounding="True" SnapsToDevicePixels="True"  
-                                                Orientation="Horizontal" x:Name="PART_NavigationButtonsPanel" Focusable="False" />
+                                        <local:SelectedFolderControl UseLayoutRounding="True" SnapsToDevicePixels="True" 
+                                                                     x:Name="PART_NavigationButtonsPanel" HorizontalAlignment="Stretch" />
                                         <Border Grid.Column="1" Cursor="IBeam" Background="White" x:Name="PART_ClickToEdit" />
                                     </Grid>
                                 </Grid>
