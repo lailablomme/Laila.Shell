@@ -610,6 +610,22 @@ Namespace Controls
                     AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
                     CType(Me.SelectedItem, Folder).IsExpanded = False
                     e.Handled = True
+                ElseIf e.Key = Key.Up Then
+                    For x = Me.PART_ListBox.SelectedIndex - 1 To 0 Step -1
+                        If Me.Items(x).IsVisibleInTree AndAlso Not TypeOf Me.Items(x) Is DummyFolder Then
+                            Me.SetSelectedItem(Me.Items(x))
+                            Exit For
+                        End If
+                    Next
+                    e.Handled = True
+                ElseIf e.Key = Key.Down Then
+                    For x = Me.PART_ListBox.SelectedIndex + 1 To Me.Items.Count - 1
+                        If Me.Items(x).IsVisibleInTree AndAlso Not TypeOf Me.Items(x) Is DummyFolder Then
+                            Me.SetSelectedItem(Me.Items(x))
+                            Exit For
+                        End If
+                    Next
+                    e.Handled = True
                 End If
             End If
         End Sub
