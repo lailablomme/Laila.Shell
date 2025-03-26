@@ -52,7 +52,7 @@ Public Class Item
     Private _itemNameDisplaySortValuePrefix As String
     Protected _canShowInTree As Boolean
     Friend _livesOnThreadId As Integer?
-    Private _isProcessingNotifications As Boolean
+    Protected _isProcessingNotifications As Boolean
     Private _notifier As INotify
     Private _isInstantiated As Boolean
 

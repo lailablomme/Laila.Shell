@@ -103,7 +103,7 @@ Public Class Folder
 
     Public Overrides Property IsProcessingNotifications As Boolean
         Get
-            Return MyBase.IsProcessingNotifications AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse If(Me._logicalParent?.IsActiveInFolderView, False) OrElse Me.IsActiveInFolderView)
+            Return _isProcessingNotifications AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse If(Me._logicalParent?.IsActiveInFolderView, False) OrElse Me.IsActiveInFolderView)
         End Get
         Friend Set(value As Boolean)
             MyBase.IsProcessingNotifications = value
