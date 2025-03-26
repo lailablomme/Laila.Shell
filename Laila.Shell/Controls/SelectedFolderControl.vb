@@ -35,6 +35,10 @@ Namespace Controls
         Public Sub New()
             Me.Orientation = Orientation.Horizontal
             Me.Focusable = False
+            AddHandler Me.Loaded,
+                Sub(sender As Object, e As EventArgs)
+                    Dim __ = ShowNavigationButtons(Me.Folder, False)
+                End Sub
         End Sub
 
         Public Overrides Sub OnApplyTemplate()
@@ -53,7 +57,15 @@ Namespace Controls
         End Sub
 
         Public Async Function ShowNavigationButtons(folder As Folder, isWithDelay As Boolean) As Task
-            If folder Is Nothing Then Return
+            If folder Is Nothing Then
+                Me.Children.Clear()
+                Dim dummyButton As Button = New Button()
+                dummyButton.Style = TryFindResource("lailaShell_AddressBarButtonStyle")
+                dummyButton.Visibility = Visibility.Hidden
+                dummyButton.Content = "X"
+                Me.Children.Add(dummyButton)
+                Return
+            End If
             If isWithDelay Then Await Task.Delay(150)
 
             Await _lock.WaitAsync()
@@ -128,6 +140,9 @@ Namespace Controls
                     subFoldersButton.Tag = currentFolder
                     If Not chevronButtonStyle Is Nothing Then subFoldersButton.Style = chevronButtonStyle
                     panel.Children.Add(subFoldersButton)
+                    subFoldersButton.Visibility = If(currentFolder.Equals(folder),
+                        If(currentFolder.Items.ToList().Where(Function(i) TypeOf i Is Folder).Count = 0, Visibility.Collapsed, Visibility.Visible),
+                        Visibility.Visible)
                     Dim func As Func(Of ToggleButton, Task) =
                         Async Function(button As ToggleButton) As Task
                             Dim subFolder As Folder = Nothing
@@ -179,13 +194,19 @@ Namespace Controls
                                     subFoldersContextMenu.IsOpen = True
                                 End Sub
 
-                            If subFolder.Equals(folder) AndAlso (TypeOf subFolder Is SearchFolder OrElse
-                                (Await subFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count = 0) Then
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                        button.Visibility = Visibility.Collapsed
-                                        subFoldersContextMenu.IsOpen = False
-                                    End Sub)
+                            If subFolder.Equals(folder) Then
+                                If (Not TypeOf subFolder Is SearchFolder AndAlso
+                                    (Await subFolder.GetItemsAsync()).Where(Function(i) TypeOf i Is Folder).Count > 0) Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            button.Visibility = Visibility.Visible
+                                        End Sub)
+                                Else
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            button.Visibility = Visibility.Collapsed
+                                        End Sub)
+                                End If
                             End If
                         End Function
                     Dim __ = Task.Run(Sub() func(subFoldersButton))

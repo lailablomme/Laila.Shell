@@ -6,10 +6,6 @@
                     xmlns:balloon="clr-namespace:Laila.BalloonTip;assembly=Laila.BalloonTip"
                     xmlns:autocomplete="clr-namespace:Laila.AutoCompleteTextBox;assembly=Laila.AutoCompleteTextBox">
 
-    <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
-    </ResourceDictionary.MergedDictionaries>
-
     <parts:AddressBarSuggestionProvider x:Key="suggestionProvider" />
 
     <SolidColorBrush Color="#41B1E1" x:Key="laila_AutoComplete_FocusBrush" />
@@ -166,7 +162,7 @@
                                                          Focusable="False" BorderThickness="0" Padding="0" 
                                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
                                                          ScrollViewer.VerticalScrollBarVisibility="Auto" 
-                                                         ItemContainerStyle="{StaticResource laila_AutoComplete_SuggestionItemStyle}">
+                                                         ItemContainerStyle="{DynamicResource laila_AutoComplete_SuggestionItemStyle}">
                                                         <ListBox.Style>
                                                             <Style>
                                                                 <Setter Property="ListBox.Visibility" Value="Visible" />

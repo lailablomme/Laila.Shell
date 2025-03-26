@@ -52,7 +52,8 @@ Namespace Helpers
         End Property
 
         Public Overrides Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True,
-                                                      Optional doRecursive As Boolean = False) As Task(Of List(Of Item))
+                                                Optional doRecursive As Boolean = False,
+                                                Optional isForTree As Boolean = False) As Task(Of List(Of Item))
             Return Task.FromResult(New List(Of Item))
         End Function
 

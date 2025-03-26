@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Laila.Shell.WinRT", "Laila.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Laila.VirtualizingWrapPanel", "Laila.VirtualizingWrapPanel\Laila.VirtualizingWrapPanel.csproj", "{FB049E24-28F2-478E-92E8-D53B180B8646}"
 EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Laila.Shell.SampleApp1", "Laila.Shell.SampleApp1\Laila.Shell.SampleApp1.vbproj", "{4B35B1BE-4963-4033-8F02-D7DB0C91190D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		CodeAnalysisDebug|Any CPU = CodeAnalysisDebug|Any CPU
@@ -89,6 +91,16 @@ Global
 		{FB049E24-28F2-478E-92E8-D53B180B8646}.Release|x64.Build.0 = Release|Any CPU
 		{FB049E24-28F2-478E-92E8-D53B180B8646}.Release|x86.ActiveCfg = Release|Any CPU
 		{FB049E24-28F2-478E-92E8-D53B180B8646}.Release|x86.Build.0 = Release|Any CPU
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.CodeAnalysisDebug|Any CPU.ActiveCfg = Debug|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.CodeAnalysisDebug|x64.ActiveCfg = Debug|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.CodeAnalysisDebug|x86.ActiveCfg = Debug|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.Debug|x64.ActiveCfg = Debug|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.Debug|x64.Build.0 = Debug|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.Debug|x86.ActiveCfg = Debug|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.Release|Any CPU.ActiveCfg = Release|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.Release|x64.ActiveCfg = Release|x64
+		{4B35B1BE-4963-4033-8F02-D7DB0C91190D}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

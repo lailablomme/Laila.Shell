@@ -2,6 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/AddressBar.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ContextMenu.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ItemsContextMenu.xaml" />
@@ -18,6 +19,7 @@
         <ResourceDictionary Source="/Laila.Shell;component/Controls/ContentView.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/Previewer.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/SearchBox.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/FolderComboBox.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

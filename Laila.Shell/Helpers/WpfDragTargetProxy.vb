@@ -2,6 +2,7 @@
 Imports System.Runtime.InteropServices.ComTypes
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Controls.Primitives
 Imports System.Windows.Forms.DataFormats
 Imports System.Windows.Interop
 Imports Laila.Shell.Interop
@@ -43,8 +44,22 @@ Namespace Helpers
                 End If
                 _controls.Add(element, dropTarget)
                 _hwnds.Add(element, hwnd)
-            Else
-                Throw New InvalidOperationException("This control is already registered.")
+
+                Dim parentPopup As Popup = UIHelper.GetParentOfType(Of Popup)(element)
+                If Not parentPopup Is Nothing Then
+                    AddHandler parentPopup.Closed,
+                        Sub(s As Object, e As EventArgs)
+                            RevokeDragDrop(element)
+                        End Sub
+                Else
+                    Dim parentWindow As Window = UIHelper.GetParentOfType(Of Window)(element)
+                    If Not parentWindow Is Nothing Then
+                        AddHandler parentWindow.Closed,
+                            Sub(s As Object, e As EventArgs)
+                                RevokeDragDrop(element)
+                            End Sub
+                    End If
+                End If
             End If
         End Sub
 
@@ -56,14 +71,7 @@ Namespace Helpers
                 If Not _controls.Keys.ToList().Exists(Function(c) GetHwndFromControl(c).Equals(hwnd)) Then
                     Dim h As HRESULT = Functions.RevokeDragDrop(hwnd)
                     Debug.WriteLine("RevokeDragDrop returned " & h.ToString())
-                    If Not h = HRESULT.S_OK Then
-                        Dim ex As InvalidOperationException = New InvalidOperationException("Error revoking drag and drop.")
-                        ex.HResult = h
-                        Throw ex
-                    End If
                 End If
-            Else
-                Throw New InvalidOperationException("This control is not registered.")
             End If
         End Sub
 

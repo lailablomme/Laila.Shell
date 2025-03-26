@@ -9,7 +9,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
     </ResourceDictionary.MergedDictionaries>
-    
+
     <Style TargetType="{x:Type local:DetailsView}">
         <Setter Property="Template">
             <Setter.Value>

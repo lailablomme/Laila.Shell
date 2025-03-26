@@ -38,6 +38,7 @@ Public Class HomeFolder
             Sub(s2 As Object, e2 As PinnedItemEventArgs)
                 If _isLoaded Then
                     _isEnumerated = False
+                    _isEnumeratedForTree = False
                     Dim __ = Me.GetItemsAsync()
                 End If
             End Sub
@@ -45,6 +46,7 @@ Public Class HomeFolder
             Sub(s2 As Object, e2 As PinnedItemEventArgs)
                 If _isLoaded Then
                     _isEnumerated = False
+                    _isEnumeratedForTree = False
                     Dim __ = Me.GetItemsAsync()
                 End If
             End Sub
@@ -278,6 +280,7 @@ Public Class HomeFolder
             Next
 
             _isEnumerated = False
+            _isEnumeratedForTree = False
             Dim __ = Me.GetItemsAsync()
 
             Return HRESULT.S_OK
