@@ -41,7 +41,7 @@ Namespace Controls
 
             AddHandler Me.Loaded,
                 Sub(s As Object, e As EventArgs)
-                    Me.LoadSelectedItem()
+                    Me.PART_NavigationButtonsPanel.MaxWidth = If(Me.ActualWidth - CLICKABLE_SPACE_WIDTH <= 0, Me.ActualWidth, Me.ActualWidth - CLICKABLE_SPACE_WIDTH)
                 End Sub
 
             AddHandler Me.SizeChanged,
@@ -195,17 +195,6 @@ Namespace Controls
             Me.Cancel()
         End Sub
 
-        Protected Sub LoadSelectedItem()
-            Me.IsLoading = True
-            If Not Me.PART_NavigationButtons Is Nothing Then
-                Me.PART_NavigationButtons.Visibility = Visibility.Hidden
-                Me.PART_NavigationButtonsPanel.MaxWidth = If(Me.ActualWidth - CLICKABLE_SPACE_WIDTH <= 0, Me.ActualWidth, Me.ActualWidth - CLICKABLE_SPACE_WIDTH)
-                Me.PART_NavigationButtonsPanel.Folder = Me.Folder
-                Me.PART_NavigationButtons.Visibility = Visibility.Visible
-            End If
-            Me.IsLoading = False
-        End Sub
-
         Public Property Folder As Folder
             Get
                 Return GetValue(FolderProperty)
@@ -222,7 +211,7 @@ Namespace Controls
             ab.SelectedItem = f
             f.AddressBarRoot = Nothing
             f.AddressBarDisplayName = Nothing
-            ab.LoadSelectedItem()
+            ab.IsLoading = False
         End Sub
 
         Public Property IsLoading As Boolean
