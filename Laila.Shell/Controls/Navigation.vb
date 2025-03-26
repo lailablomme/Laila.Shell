@@ -5,6 +5,7 @@ Imports Laila.Shell.Helpers
 Namespace Controls
     Public Class Navigation
         Inherits FrameworkElement
+        Implements IDisposable
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(Navigation), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly CanBackProperty As DependencyProperty = DependencyProperty.Register("CanBack", GetType(Boolean), GetType(Navigation), New FrameworkPropertyMetadata(False))
@@ -17,9 +18,24 @@ Namespace Controls
         Private _isFolderChanging As Boolean
         Private _list As List(Of Folder)
         Private _pointer As Integer = -1
+        Private disposedValue As Boolean
+        Private _isLoaded As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Navigation), New FrameworkPropertyMetadata(GetType(Navigation)))
+        End Sub
+
+        Public Sub New()
+            AddHandler Me.Loaded,
+                Sub(s As Object, e As EventArgs)
+                    If Not _isLoaded Then
+                        _isLoaded = True
+                        AddHandler Window.GetWindow(Me).Closed,
+                            Sub(s2 As Object, e2 As EventArgs)
+                                Me.Dispose()
+                            End Sub
+                    End If
+                End Sub
         End Sub
 
         Public Property Folder As Folder
@@ -152,6 +168,27 @@ Namespace Controls
 
         Shared Sub OnCanUpChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim h As Navigation = TryCast(d, Navigation)
+        End Sub
+
+        Protected Overridable Sub Dispose(disposing As Boolean)
+            If Not disposedValue Then
+                If disposing Then
+                    ' dispose managed state (managed objects)
+                    For Each f In _list
+                        f.IsInHistory = False
+                    Next
+                End If
+
+                ' free unmanaged resources (unmanaged objects) and override finalizer
+                ' set large fields to null
+                disposedValue = True
+            End If
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
+            Dispose(disposing:=True)
+            GC.SuppressFinalize(Me)
         End Sub
     End Class
 End Namespace
