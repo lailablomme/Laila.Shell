@@ -5,15 +5,6 @@
                     xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers">
 
-    <Style x:Key="FocusVisual">
-        <Setter Property="Control.Template">
-            <Setter.Value>
-                <ControlTemplate>
-                    <Rectangle Margin="2" SnapsToDevicePixels="true" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" StrokeDashArray="1 2"/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
     <SolidColorBrush x:Key="Item.MouseOver.Background" Color="#1F26A0DA"/>
     <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#a826A0Da"/>
     <SolidColorBrush x:Key="Item.SelectedInactive.Background" Color="#3DDADADA"/>
@@ -26,7 +17,7 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
@@ -73,7 +64,7 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
@@ -98,7 +89,7 @@
         </Setter>
         <Setter Property="BorderBrush" Value="Goldenrod"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
@@ -141,7 +132,7 @@
                         <ListBox ItemsSource="{TemplateBinding Items}" x:Name="PART_ListBox" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
                              VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
-                             ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0"
+                             ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" FocusVisualStyle="{x:Null}" 
                              VirtualizingPanel.ScrollUnit="Pixel" ItemContainerStyleSelector="{StaticResource treeViewItemStyleSelector}">
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>

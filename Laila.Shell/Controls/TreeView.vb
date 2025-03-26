@@ -39,7 +39,10 @@ Namespace Controls
         Public Shared ReadOnly DoExpandTreeViewToCurrentFolderOverrideProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolderOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoExpandTreeViewToCurrentFolderOverrideChanged))
         Public Shared ReadOnly DoShowLibrariesInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowLibrariesInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowLibrariesInTreeViewOverrideChanged))
+        Public Shared ReadOnly DoShowPinnedAndFrequentItemsPlaceholderProperty As DependencyProperty = DependencyProperty.Register("DoShowPinnedAndFrequentItemsPlaceholder", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
+
+        Public Event FolderChosen As EventHandler
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -64,12 +67,19 @@ Namespace Controls
 
             AddHandler Me.Loaded,
                 Sub(s As Object, e As RoutedEventArgs)
-                    _isLoaded = True
-                    loadSections()
-                    AddHandler Window.GetWindow(Me).Closed,
-                        Sub(s2 As Object, e2 As EventArgs)
-                            Me.Dispose()
-                        End Sub
+                    If Not Me.PART_ListBox Is Nothing AndAlso Not _isLoaded Then
+                        _isLoaded = True
+                        loadSections()
+                        AddHandler Window.GetWindow(Me).Closed,
+                            Sub(s2 As Object, e2 As EventArgs)
+                                Me.Dispose()
+                            End Sub
+
+                        _dropTarget = New TreeViewDropTarget(Me)
+                    End If
+                    If Not Me.PART_ListBox Is Nothing Then
+                        WpfDragTargetProxy.RegisterDragDrop(PART_ListBox, _dropTarget)
+                    End If
                 End Sub
 
             Me.Items = New ObservableCollection(Of Item)()
@@ -115,6 +125,8 @@ Namespace Controls
         End Sub
 
         Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
+            If Me.PART_ListBox Is Nothing Then Return
+
             Select Case e.Event
                 Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
                     Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
@@ -243,7 +255,17 @@ Namespace Controls
                         Else
                             currentTreeRootIndex = i.TreeRootIndex + 1
                         End If
-                        Me.Items.Add(item)
+                        If TypeOf i Is SeparatorFolder AndAlso TypeOf Me.Items.OrderByDescending(Function(i2) i2.TreeRootIndex).FirstOrDefault(Function(i2) i2.TreeRootIndex < i.TreeRootIndex) Is SeparatorFolder Then
+                            UIHelper.OnUIThreadAsync(
+                                Sub()
+                                    Me.Roots.Remove(i)
+                                    For Each section In Me.Sections
+                                        section.Items.Remove(i)
+                                    Next
+                                End Sub)
+                        Else
+                            Me.Items.Add(item)
+                        End If
                     Next
                 Case NotifyCollectionChangedAction.Remove
                     For Each item In e.OldItems
@@ -299,9 +321,6 @@ Namespace Controls
             AddHandler PART_ListBox.MouseLeave, AddressOf OnTreeViewMouseLeave
             AddHandler Me.PreviewKeyDown, AddressOf OnTreeViewKeyDown
             AddHandler Me.PreviewTextInput, AddressOf OnTreeViewTextInput
-
-            _dropTarget = New TreeViewDropTarget(Me)
-            WpfDragTargetProxy.RegisterDragDrop(PART_ListBox, _dropTarget)
         End Sub
 
         Public ReadOnly Property SelectedItem As Item
@@ -418,7 +437,7 @@ Namespace Controls
                             End Function
                         func =
                         Async Function(item As Folder, callback2 As Func(Of Task)) As Task
-                            Dim tf2 = (Await tf.GetItemsAsync()).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
+                            Dim tf2 = (Await tf.GetItemsAsync(,, True)).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
                             If Not tf2 Is Nothing Then
                                 foldersToExpand.Add(tf)
                                 Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
@@ -493,6 +512,7 @@ Namespace Controls
                                             If TypeOf clickedItem Is Folder Then
                                                 _selectionHelper.SetSelectedItems({clickedItem})
                                                 Me.Folder = clickedItem
+                                                RaiseEvent FolderChosen(Me, New EventArgs())
                                                 e2.IsHandled = True
                                             End If
                                         Case "rename"
@@ -551,10 +571,12 @@ Namespace Controls
                                                 If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
                                                     CType(clickedItem, Folder).LastScrollOffset = New Point()
                                                     Me.Folder = clickedItem
+                                                    RaiseEvent FolderChosen(Me, New EventArgs())
                                                 ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder _
                                                     AndAlso Not If(Me.Folder?.Pidl?.Equals(CType(clickedItem, Link).TargetItem.Pidl), False) Then
                                                     CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
                                                     Me.Folder = CType(clickedItem, Link).TargetItem
+                                                    RaiseEvent FolderChosen(Me, New EventArgs())
                                                 End If
                                             End Sub, Threading.DispatcherPriority.Background)
                                     End Using
@@ -598,6 +620,7 @@ Namespace Controls
                     AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
                     If TypeOf Me.SelectedItem Is Folder Then
                         Me.Folder = Me.SelectedItem
+                        RaiseEvent FolderChosen(Me, New EventArgs())
                     Else
                         Dim __ = invokeDefaultCommand(Me.SelectedItem)
                     End If
@@ -609,6 +632,24 @@ Namespace Controls
                 ElseIf e.Key = Key.Subtract AndAlso Keyboard.Modifiers = ModifierKeys.None _
                     AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
                     CType(Me.SelectedItem, Folder).IsExpanded = False
+                    e.Handled = True
+                ElseIf e.Key = Key.Up Then
+                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                    For x = view.Cast(Of Item).ToList().IndexOf(Me.PART_ListBox.SelectedItem) - 1 To 0 Step -1
+                        If CType(view(x), Item).IsVisibleInTree AndAlso Not TypeOf view(x) Is DummyFolder Then
+                            Me.SetSelectedItem(view(x))
+                            Exit For
+                        End If
+                    Next
+                    e.Handled = True
+                ElseIf e.Key = Key.Down Then
+                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                    For x = view.Cast(Of Item).ToList().IndexOf(Me.PART_ListBox.SelectedItem) + 1 To view.Cast(Of Item).Count - 1
+                        If CType(view(x), Item).IsVisibleInTree AndAlso Not TypeOf view(x) Is DummyFolder Then
+                            Me.SetSelectedItem(view(x))
+                            Exit For
+                        End If
+                    Next
                     e.Handled = True
                 End If
             End If
@@ -740,6 +781,7 @@ Namespace Controls
                             Me.Items.Add(item)
                         Next
                     End If
+                    Dim __ = Me.SetSelectedFolder(Me.Folder)
             End Select
         End Sub
 
@@ -1019,6 +1061,15 @@ Namespace Controls
             bfv.setDoShowLibrariesInTreeView()
         End Sub
 
+        Public Property DoShowPinnedAndFrequentItemsPlaceholder As Boolean
+            Get
+                Return GetValue(DoShowPinnedAndFrequentItemsPlaceholderProperty)
+            End Get
+            Set(ByVal value As Boolean)
+                SetCurrentValue(DoShowPinnedAndFrequentItemsPlaceholderProperty, value)
+            End Set
+        End Property
+
         Public Enum TreeRootSection As Long
             SYSTEM = 0
             PINNED = 100
@@ -1049,7 +1100,9 @@ Namespace Controls
                         End If
                     Next
 
-                    WpfDragTargetProxy.RevokeDragDrop(PART_ListBox)
+                    If Not Me.PART_ListBox Is Nothing Then
+                        WpfDragTargetProxy.RevokeDragDrop(PART_ListBox)
+                    End If
 
                     Shell.RemoveFromControlCache(Me)
                 End If

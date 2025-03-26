@@ -419,13 +419,13 @@ Public Class Item
             newItem.LogicalParent = _logicalParent
             If Not _logicalParent Is Nothing Then
                 _logicalParent.InitializeItem(newItem)
+                UIHelper.OnUIThread(
+                    Sub()
+                        Dim c As IComparer = New Helpers.ItemComparer(Me.LogicalParent.ItemsGroupByPropertyName, Me.LogicalParent.ItemsSortPropertyName, Me.LogicalParent.ItemsSortDirection)
+                        Me.LogicalParent._items.InsertSorted(newItem, c)
+                        Me.LogicalParent.IsEmpty = Me.LogicalParent._items.Count = 0
+                    End Sub)
             End If
-            UIHelper.OnUIThread(
-                Sub()
-                    Dim c As IComparer = New Helpers.ItemComparer(Me.LogicalParent.ItemsGroupByPropertyName, Me.LogicalParent.ItemsSortPropertyName, Me.LogicalParent.ItemsSortDirection)
-                    Me.LogicalParent._items.InsertSorted(newItem, c)
-                    Me.LogicalParent.IsEmpty = Me.LogicalParent._items.Count = 0
-                End Sub)
             Me.Dispose()
         End If
 
@@ -1488,6 +1488,7 @@ Public Class Item
                                         existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath) ' refresh the folder itself
                                         e.Item2._shellItem2 = Nothing
                                         existingFolder._isEnumerated = False
+                                        existingFolder._isEnumeratedForTree = False
                                         Dim __ = existingFolder.GetItemsAsync(True, True) ' refresh the contents
                                     End Sub)
                             End If
@@ -1563,6 +1564,7 @@ Public Class Item
                                 If Not _logicalParent Is Nothing Then
                                     _logicalParent._items.RemoveWithoutNotifying(Me)
                                     _logicalParent._isEnumerated = False
+                                    If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
                                     _logicalParent.IsEmpty = _logicalParent._items.Count = 0
                                     _logicalParent = Nothing
                                 End If
@@ -1572,6 +1574,7 @@ Public Class Item
                                     If Not _logicalParent Is Nothing Then
                                         _logicalParent._items.Remove(Me)
                                         _logicalParent._isEnumerated = False
+                                        If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
                                         _logicalParent.IsEmpty = _logicalParent._items.Count = 0
                                         ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
                                     End If

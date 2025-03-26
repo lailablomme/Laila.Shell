@@ -10,7 +10,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
     </ResourceDictionary.MergedDictionaries>
-    
+
     <Style TargetType="{x:Type local:NormalIconsView}">
         <Setter Property="Template">
             <Setter.Value>
@@ -68,7 +68,7 @@
                                 <behaviors:SelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
                             </i:Interaction.Behaviors>
                             <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource lailaShell_ListViewItem}">
                                     <Setter Property="OverridesDefaultStyle" Value="False" />
                                     <Setter Property="Margin" Value="5,1" />
                                 </Style>

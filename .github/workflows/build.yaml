@@ -36,15 +36,31 @@ jobs:
         run: |
           msbuild Laila.Shell/Laila.Shell.vbproj /t:"Build;Pack" /p:Configuration=Release /p:Platform="x64" 
 
+      - name: Build Laila.Shell.SampleApp1
+        run: |
+          msbuild Laila.Shell.SampleApp1/Laila.Shell.SampleApp1.vbproj /t:"Build" /p:Configuration=Release /p:Platform="x64" 
+
       - name: Build Laila.Shell.SampleApp2
         run: |
           msbuild Laila.Shell.SampleApp/Laila.Shell.SampleApp2.vbproj /t:"Build" /p:Configuration=Release /p:Platform="x64" 
+
+      - name: Package SampleApp1
+        run: |
+          $outputDir = "./Laila.Shell.SampleApp1/bin/x64/Release/net6.0-windows7.0"
+          $zipFile = "Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip"
+          Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
 
       - name: Package SampleApp2
         run: |
           $outputDir = "./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0"
           $zipFile = "Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip"
           Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
+
+      - name: Upload SampleApp1 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}
+          path: ./Laila.Shell.SampleApp1/bin/x64/Release/net6.0-windows7.0/*
 
       - name: Upload SampleApp2 Artifact
         uses: actions/upload-artifact@v4
@@ -68,6 +84,7 @@ jobs:
           draft: false
           prerelease: ${{ steps.extract_version.outputs.prerelease }}
           files: |
+            Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip
             Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip
             ./Laila.Shell/bin/x64/Release/*.nupkg
 

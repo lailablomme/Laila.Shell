@@ -105,7 +105,8 @@ Public Class SearchFolder
     End Sub
 
     Public Overrides Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True,
-                                                  Optional doRecursive As Boolean = False) As Task(Of List(Of Item))
+                                                  Optional doRecursive As Boolean = False,
+                                                  Optional isForTree As Boolean = False) As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
         Dim staThread As Thread = New Thread(New ThreadStart(
@@ -114,7 +115,7 @@ Public Class SearchFolder
 
                 _enumerationLock.Wait()
                 Try
-                    If Not _isEnumerated Then
+                    If Not _isEnumerated OrElse Not _isEnumeratedForTree Then
                         Me.IsLoading = True
 
                         Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
@@ -180,6 +181,7 @@ Public Class SearchFolder
 
                 ' re-enumerate
                 _isEnumerated = False
+                _isEnumeratedForTree = False
                 Dim __ = Me.GetItemsAsync()
             End Sub)
     End Sub

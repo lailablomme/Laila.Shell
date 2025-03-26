@@ -1,14 +1,11 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.ComponentModel
-Imports System.Reflection
-Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
 Imports System.Windows.Input
-Imports System.Windows.Media
 Imports Laila.Shell.Controls
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -38,6 +35,7 @@ Public Class Folder
     Protected _isLoaded As Boolean
     Private _enumerationException As Exception
     Friend _isEnumerated As Boolean
+    Friend _isEnumeratedForTree As Boolean
     Private _isActiveInFolderView As Boolean
     Private _isInHistory As Boolean
     Private _view As String
@@ -156,7 +154,7 @@ Public Class Folder
             SetValue(_isExpanded, value)
 
             If value Then
-                Dim __ = Me.GetItemsAsync()
+                Dim __ = Me.GetItemsAsync(,, True)
             Else
                 For Each item In _items.ToList().Where(Function(i) TypeOf i Is Folder).ToList()
                     item.IsExpanded = False
@@ -625,15 +623,16 @@ Public Class Folder
                 Me.CancelEnumeration()
             End If
             _isEnumerated = False
+            _isEnumeratedForTree = False
             Await GetItemsAsync()
             Me.IsRefreshingItems = False
         End Using
     End Function
 
-    Public Overridable Function GetItems(Optional doRefreshAllExistingItems As Boolean = True) As List(Of Item)
+    Public Overridable Function GetItems(Optional doRefreshAllExistingItems As Boolean = True, Optional isForTree As Boolean = False) As List(Of Item)
         _enumerationLock.Wait()
         Try
-            If Not _isEnumerated Then
+            If (Not _isEnumerated AndAlso Not isForTree) OrElse (Not _isEnumeratedForTree AndAlso isForTree) Then
                 Me.IsLoading = True
                 Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
                     = _enumerationCancellationTokenSource
@@ -658,7 +657,8 @@ Public Class Folder
     End Function
 
     Public Overridable Async Function GetItemsAsync(Optional doRefreshAllExistingItems As Boolean = True,
-                                                    Optional doRecursive As Boolean = False) As Task(Of List(Of Item))
+                                                    Optional doRecursive As Boolean = False,
+                                                    Optional isForTree As Boolean = False) As Task(Of List(Of Item))
         Dim tcs As New TaskCompletionSource(Of List(Of Item))
 
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
@@ -666,7 +666,7 @@ Public Class Folder
             Sub()
                 _enumerationLock.Wait()
                 Try
-                    If Not _isEnumerated Then
+                    If (Not _isEnumerated AndAlso Not isForTree) OrElse (Not _isEnumeratedForTree AndAlso isForTree) Then
                         Me.IsLoading = True
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
                         enumerateItems(True, _enumerationCancellationTokenSource.Token, threadId, doRefreshAllExistingItems, doRecursive)
@@ -878,6 +878,7 @@ Public Class Folder
                                             Dim recursiveFolder As Folder = item.Item1
                                             If recursiveFolder._isLoaded Then
                                                 recursiveFolder._isEnumerated = False
+                                                recursiveFolder._isEnumeratedForTree = False
                                                 Dim __ = recursiveFolder.GetItemsAsync(doRefreshAllExistingItems, doRecursive)
                                             End If
                                         End If
@@ -911,6 +912,7 @@ Public Class Folder
             addItems()
 
             _isEnumerated = True
+            _isEnumeratedForTree = True
             _isLoaded = True
 
             UIHelper.OnUIThread(
@@ -1272,6 +1274,7 @@ Public Class Folder
                     If info.i64NumItems <> _items.Count Then
                         Debug.WriteLine("RECYCLE BIN=" & info.i64NumItems & " vs " & _items.Count)
                         _isEnumerated = False
+                        _isEnumeratedForTree = False
                         Dim __ = Me.GetItemsAsync()
                     End If
                 End If
@@ -1308,6 +1311,7 @@ Public Class Folder
                                         existingFolder.Refresh(e.Item1?.ShellItem2, e.Item1?.Pidl?.Clone(), e.Item1?.FullPath)
                                         e.Item1._shellItem2 = Nothing
                                         existingFolder._isEnumerated = False
+                                        existingFolder._isEnumeratedForTree = False
                                         Dim __ = existingFolder.GetItemsAsync(True, True)
                                     End Sub)
                             End If
@@ -1362,6 +1366,7 @@ Public Class Folder
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False
+                                _isEnumeratedForTree = False
                                 Dim __ = Me.GetItemsAsync()
                             End If
                         End If
@@ -1410,11 +1415,13 @@ Public Class Folder
                 If _isLoaded AndAlso Not disposedValue Then
                     Me.CancelEnumeration()
                     _isEnumerated = False
+                    _isEnumeratedForTree = False
                 End If
                 Dim __ = Me.GetItemsAsync()
             Case "DoShowDriveLetters"
                 If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                     _isEnumerated = False
+                    _isEnumeratedForTree = False
                 End If
                 Dim __ = Me.GetItemsAsync()
         End Select

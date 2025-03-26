@@ -104,11 +104,15 @@ Namespace Helpers
                                 SelectionChanged()
                             End If
                         ElseIf selectedItems.Count = 1 Then
+                            Dim isChanged As Boolean = False
                             If Not selectedItems(0).Equals(_control.SelectedItem) Then
                                 _control.SelectedItem = selectedItems(0)
-                                If doScrollIntoView Then
-                                    scrollIntoView(_control, selectedItems(0))
-                                End If
+                                isChanged = True
+                            End If
+                            If doScrollIntoView Then
+                                scrollIntoView(_control, selectedItems(0))
+                            End If
+                            If isChanged Then
                                 SelectionChanged()
                             End If
                         Else

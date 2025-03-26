@@ -19,6 +19,7 @@ Namespace Helpers
         Private disposedValue As Boolean
 
         Public Sub New(size As Integer)
+            Me.TaskQueues = New List(Of BlockingCollection(Of Action))
             Me.Redimension(size)
             Shell.AddToThreadPoolCache(Me)
         End Sub
@@ -29,7 +30,6 @@ Namespace Helpers
                 If size = _size Then Return
 
                 ' initialize
-                Me.TaskQueues = New List(Of BlockingCollection(Of Action))
                 ReDim Preserve _isThreadFree(size - 1)
                 ReDim Preserve _isThreadLocked(size - 1)
                 For i = _size To size - 1

@@ -62,7 +62,7 @@ Namespace Controls.Parts
                 selectedPidl.Dispose()
             End If
 
-            If Me.Items.Count = 1 Then
+            If Me.Items.Count = 1 AndAlso Me.TreeView.DoShowPinnedAndFrequentItemsPlaceholder Then
                 Me.Items.Add(New PinnedItemsPlaceholderFolder())
             End If
         End Sub
