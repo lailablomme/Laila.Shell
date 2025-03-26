@@ -250,7 +250,8 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <local:SelectedFolderControl UseLayoutRounding="True" SnapsToDevicePixels="True" 
+                                        <local:SelectedFolderControl UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                                                     Folder="{Binding Folder, RelativeSource={RelativeSource Mode=TemplatedParent}}"
                                                                      x:Name="PART_NavigationButtonsPanel" HorizontalAlignment="Stretch" />
                                         <Border Grid.Column="1" Cursor="IBeam" Background="White" x:Name="PART_ClickToEdit" />
                                     </Grid>
