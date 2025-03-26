@@ -76,7 +76,7 @@ Public Class HomeFolder
         End Get
     End Property
 
-    Friend Overrides Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
+    Friend Overrides Function MakeIShellFolderOnCurrentThread() As IShellFolderForIContextMenu
         Return Nothing
     End Function
 

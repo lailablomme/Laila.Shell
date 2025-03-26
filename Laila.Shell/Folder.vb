@@ -27,37 +27,41 @@ Public Class Folder
     Public Property LastScrollSize As Size
 
     Protected _columns As List(Of Column)
-    Friend _items As ItemsCollection(Of Item) = New ItemsCollection(Of Item)()
-    Private _isExpanded As Boolean
-    Private _isLoading As Boolean
-    Private _isRefreshingItems As Boolean
-    Friend _enumerationLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
-    Protected _isLoaded As Boolean
-    Private _enumerationException As Exception
-    Friend _isEnumerated As Boolean
-    Friend _isEnumeratedForTree As Boolean
-    Private _isActiveInFolderView As Boolean
-    Private _isInHistory As Boolean
-    Private _view As String
-    Protected _hasSubFolders As Boolean?
-    Private _itemsSortPropertyName As String
-    Private _itemsSortDirection As ListSortDirection
-    Private _itemsGroupByPropertyName As String
     Protected _enumerationCancellationTokenSource As CancellationTokenSource
-    Private _shellFolder As IShellFolder
-    Private _isEmpty As Boolean
-    Private _isListening As Boolean
-    Private _listeningLock As Object = New Object()
-    Private _wasActivity As Boolean
+    Private _enumerationException As Exception
+    Friend _enumerationLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+    Protected _hasSubFolders As Boolean?
+    Protected _hookFolderFullPath As String
     Protected _initializeItemsGroupByPropertyName As String
     Protected _initializeItemsSortDirection As ListSortDirection = -1
     Protected _initializeItemsSortPropertyName As String
+    Private _isActiveInFolderView As Boolean
+    Private _isEmpty As Boolean
+    Friend _isEnumerated As Boolean
+    Friend _isEnumeratedForTree As Boolean
+    Private _isExpanded As Boolean
+    Private _isInHistory As Boolean
     Private _isInitializing As Boolean
-    Protected _hookFolderFullPath As String
-    Private _notificationSubscribersLock As Object = New Object()
+    Private _isListening As Boolean
+    Protected _isLoaded As Boolean
+    Private _isLoading As Boolean
+    Private _isRefreshingItems As Boolean
+    Friend _items As ItemsCollection(Of Item) = New ItemsCollection(Of Item)()
+    Private _itemsGroupByPropertyName As String
+    Private _itemsSortDirection As ListSortDirection
+    Private _itemsSortPropertyName As String
+    Private _listeningLock As Object = New Object()
     Private _notificationSubscribers As List(Of IProcessNotifications) = New List(Of IProcessNotifications)()
+    Private _notificationSubscribersLock As Object = New Object()
     Private _notificationThreadPool As Helpers.ThreadPool
+    Private _shellFolder As IShellFolder
+    Private _view As String
+    Private _wasActivity As Boolean
 
+    ''' <summary>
+    ''' Creates a Folder object for the Desktop folder (the root).
+    ''' </summary>
+    ''' <returns>A Folder object representing the Desktop folder (the root)</returns>
     Public Shared Function FromDesktop() As Folder
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
         Return Shell.GlobalThreadPool.Run(
@@ -78,6 +82,11 @@ Public Class Folder
             End Function,, threadId)
     End Function
 
+    ''' <summary>
+    ''' Gets an IShellFolder from an IShellItem2.
+    ''' </summary>
+    ''' <param name="shellItem2">The IShellItem2 object to derive the IShellFolder from</param>
+    ''' <returns>An IShellFolder</returns>
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
         Dim result As IShellFolder = Nothing
         shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, result)
@@ -96,11 +105,24 @@ Public Class Folder
         _isListening = True
     End Sub
 
-    Public Sub New(shellItem2 As IShellItem2, parent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer?, Optional pidl As Pidl = Nothing)
-        MyBase.New(shellItem2, parent, doKeepAlive, doHookUpdates, threadId, pidl)
+    ''' <summary>
+    ''' Main constructor for the Folder object.
+    ''' </summary>
+    ''' <param name="shellItem2">The IShellItem2 this Folder object is based on</param>
+    ''' <param name="logicalParent">The logical parent for this Folder object</param>
+    ''' <param name="doKeepAlive">Wether to keep this object alive (i.e. prevent it from getting disposed after minimum 10 seconds of inactivity).</param>
+    ''' <param name="doHookUpdates">Wether or not this Folder should listen to shell notifications</param>
+    ''' <param name="threadId">The GlobalThreadPool thread id of the thread this item lives on</param>
+    ''' <param name="pidl">The PIDL for this Folder (optional)</param>
+    Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer?, Optional pidl As Pidl = Nothing)
+        MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, pidl)
         _canShowInTree = True
     End Sub
 
+    ''' <summary>
+    ''' Gets or sets wether or not this Folder is processing shell notifications.
+    ''' </summary>
+    ''' <returns></returns>
     Public Overrides Property IsProcessingNotifications As Boolean
         Get
             Return _isProcessingNotifications AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse If(Me._logicalParent?.IsActiveInFolderView, False) OrElse Me.IsActiveInFolderView)
@@ -110,10 +132,18 @@ Public Class Folder
         End Set
     End Property
 
-    Friend Overridable Function GetShellFolderOnCurrentThread() As IShellFolderForIContextMenu
+    ''' <summary>
+    ''' Makes an IShellFolder for this Folder on the calling thread.
+    ''' </summary>
+    ''' <returns>A new IShellFolder, created on the calling thread</returns>
+    Friend Overridable Function MakeIShellFolderOnCurrentThread() As IShellFolderForIContextMenu
         Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
     End Function
 
+    ''' <summary>
+    ''' Gets the IShellFolder for this Folder on the thread this Folder lives on.
+    ''' </summary>
+    ''' <returns>The main IShellFolder for this Folder</returns>
     Public ReadOnly Property ShellFolder As IShellFolder
         Get
             If _shellFolder Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
@@ -124,13 +154,17 @@ Public Class Folder
                                 _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
                             End If
                         End SyncLock
-                    End Sub)
+                    End Sub,, _livesOnThreadId)
             End If
 
             Return _shellFolder
         End Get
     End Property
 
+    ''' <summary>
+    ''' Gets/sets wether or not this Folder turned out to be empty after enumerating it's children.
+    ''' </summary>
+    ''' <returns>True if this Folder has no children</returns>
     Public Property IsEmpty As Boolean
         Get
             Return _isEmpty
@@ -140,15 +174,25 @@ Public Class Folder
         End Set
     End Property
 
+    ''' <summary>
+    ''' Gets wether or not this Folder is a root folder (i.e. is a special folder or lives in the root of the TreeView).
+    ''' </summary>
+    ''' <returns>True if this Folder is a root folder</returns>
     Protected Friend ReadOnly Property IsRootFolder As Boolean
         Get
             Return Shell.GetSpecialFolders().Values.Contains(Me) OrElse Me.TreeRootIndex <> -1
         End Get
     End Property
 
+    ''' <summary>
+    ''' Gets/sets wether or not this Folder is expanded in the TreeView. 
+    ''' Setting this property to true enumerates it's children if necessary. 
+    ''' Setting it to false will also collapse all it's children recursively.
+    ''' </summary>
+    ''' <returns>True if this Folder is expanded in the TreeView</returns>
     Public Overrides Property IsExpanded As Boolean
         Get
-            Return _isExpanded 'AndAlso (Me.TreeRootIndex <> -1 OrElse If(_logicalParent, _parent) Is Nothing OrElse If(_logicalParent, _parent).IsExpanded)
+            Return _isExpanded
         End Get
         Set(value As Boolean)
             SetValue(_isExpanded, value)
@@ -163,11 +207,15 @@ Public Class Folder
         End Set
     End Property
 
+    ''' <summary>
+    ''' Gets/sets wether or not this Folder is opened in a FolderView.
+    ''' </summary>
+    ''' <returns>True if this Folder is opened in a FolderView</returns>
     Protected Friend Property IsActiveInFolderView As Boolean
         Get
             Return _isActiveInFolderView
         End Get
-        Set(value As Boolean)
+        Friend Set(value As Boolean)
             SetValue(_isActiveInFolderView, value)
 
             If Not value AndAlso TypeOf Me Is SearchFolder AndAlso Me.IsLoading Then
@@ -176,15 +224,23 @@ Public Class Folder
         End Set
     End Property
 
+    ''' <summary>
+    ''' Gets/sets wether this Folder is listed in the history of a Navigation control.
+    ''' </summary>
+    ''' <returns>True if this folder is listed in the history of a Navigation control</returns>
     Protected Friend Property IsInHistory As Boolean
         Get
             Return _isInHistory
         End Get
-        Set(value As Boolean)
+        Friend Set(value As Boolean)
             SetValue(_isInHistory, value)
         End Set
     End Property
 
+    ''' <summary>
+    ''' Gets wether this Folder can be safely disposed of.
+    ''' </summary>
+    ''' <returns>True when this folder can be safely disposed</returns>
     Protected Friend Overrides ReadOnly Property IsReadyForDispose As Boolean
         Get
             Return Not _doKeepAlive AndAlso Not Me.IsActiveInFolderView AndAlso Not Me.IsExpanded _
@@ -196,12 +252,19 @@ Public Class Folder
         End Get
     End Property
 
+    ''' <summary>
+    ''' Dispose this Folder when it is ready to be safely disposed. Otherwise, do nothing.
+    ''' </summary>
     Protected Friend Overrides Sub MaybeDispose()
         If Me.IsReadyForDispose Then
             Me.Dispose()
         End If
     End Sub
 
+    ''' <summary>
+    ''' Gets/sets wether or not this Folder's children are currently being enumerated.
+    ''' </summary>
+    ''' <returns>True when this Folder is in the process of enumerating it's children</returns>
     Public Overrides Property IsLoading As Boolean
         Get
             Return _isLoading
@@ -211,15 +274,24 @@ Public Class Folder
         End Set
     End Property
 
+    ''' <summary>
+    ''' Gets/sets wether or not this Folder is currently being refreshed (i.e. by a user who clicked the Refresh button).
+    ''' </summary>
+    ''' <returns>True when this Folder is currently being refreshed</returns>
     Public Property IsRefreshingItems As Boolean
         Get
             Return _isRefreshingItems
         End Get
-        Set(value As Boolean)
+        Friend Set(value As Boolean)
             SetValue(_isRefreshingItems, value)
         End Set
     End Property
 
+    ''' <summary>
+    ''' Gets the text about this Folder's contents and size to show in the infotip.
+    ''' </summary>
+    ''' <param name="cancellationToken">Use this to cancel getting the information</param>
+    ''' <returns>A string containing information about this Folder's contents and size, ready to be appended to the infotip for this Folder</returns>
     Public Function GetInfoTipFolderSizeAsync(cancellationToken As CancellationToken) As String
         Dim folderList As List(Of String) = Shell.GlobalThreadPool.Run(
             Function() As List(Of String)
@@ -290,6 +362,14 @@ Public Class Folder
         Return String.Join(Environment.NewLine, result)
     End Function
 
+    ''' <summary>
+    ''' Recursively gets the size of this Folder, in bytes.
+    ''' </summary>
+    ''' <param name="timeout">Timeout after which to stop enumerating recursively and give up, returning null.</param>
+    ''' <param name="cancellationToken">Use this token to cancel enumerating this Folder recursively to determine it's size on disk</param>
+    ''' <param name="startTime">Contains the time we started enumerating this Folder, in case of recursive iterations</param>
+    ''' <param name="shellItem2">Contains the child IShellItem2 for which this recursive iteration is getting the size</param>
+    ''' <returns>An UInt64 containing the recursive size of this Folder on disk, in bytes, or null when cancelled or timed out.</returns>
     Protected Function getSizeRecursive(timeout As Integer, cancellationToken As CancellationToken,
         Optional startTime As DateTime? = Nothing, Optional shellItem2 As IShellItem2 = Nothing) As UInt64?
 
@@ -401,7 +481,15 @@ Public Class Folder
         Return result
     End Function
 
-    Protected Function quickEnum(flags As UInt32, celt As Integer) As List(Of String)
+    ''' <summary>
+    ''' Returns the names of a limited number of child items that are enumerated as quickly as possible. This is much quicker and simpler than
+    ''' fully iterating the children for this Folder, but returns substantially less information too. This method is used to show an indication of 
+    ''' the contents of this Folder in the infotip.
+    ''' </summary>
+    ''' <param name="flags">SHCONTF flags used in enumeration</param>
+    ''' <param name="celt">Maximum number of items to enumerate.</param>
+    ''' <returns>A string array containing the dispay names of the enumerated items</returns>
+    Protected Function quickEnum(flags As SHCONTF, celt As Integer) As List(Of String)
         Dim bindCtx As ComTypes.IBindCtx = Nothing, propertyBag As IPropertyBag = Nothing
         Dim var As PROPVARIANT, enumShellItems As IEnumShellItems = Nothing
         Try
@@ -453,12 +541,21 @@ Public Class Folder
         Return Nothing
     End Function
 
+    ''' <summary>
+    ''' Gets a column of this Folder by it's canonical name.
+    ''' </summary>
+    ''' <param name="canonicalName">The canonical name of the column to return</param>
+    ''' <returns>The column that corresponds to the given canonical name</returns>
     Public ReadOnly Property Columns(canonicalName As String) As Column
         Get
             Return Me.Columns.SingleOrDefault(Function(c) canonicalName.Equals(c.CanonicalName))
         End Get
     End Property
 
+    ''' <summary>
+    ''' Returns the IColumnManager for this Folder.
+    ''' </summary>
+    ''' <returns>The IColumnManager for this Folder</returns>
     Public ReadOnly Property ColumnManager As IColumnManager
         Get
             Return Shell.GlobalThreadPool.Run(
@@ -466,10 +563,14 @@ Public Class Folder
                     Dim shellView As IShellView = Nothing
                     Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
                     Return shellView
-                End Function)
+                End Function,, _livesOnThreadId)
         End Get
     End Property
 
+    ''' <summary>
+    ''' Returns the columns for this Folder.
+    ''' </summary>
+    ''' <returns>An IEnumerable of Column objects, representing the columns in this Folder</returns>
     Public ReadOnly Property Columns As IEnumerable(Of Column)
         Get
             If _columns Is Nothing Then
@@ -513,6 +614,10 @@ Public Class Folder
         End Get
     End Property
 
+    ''' <summary>
+    ''' Gets/sets wether or not this Folder has subfolders. This is used to determine wether or not to show the expand/collapse chevron in the TreeView.
+    ''' </summary>
+    ''' <returns>True if we think this Folder has subfolders</returns>
     Public Overrides Property HasSubFolders As Boolean
         Get
             Return Shell.GlobalThreadPool.Run(
@@ -539,6 +644,10 @@ Public Class Folder
         End Set
     End Property
 
+    ''' <summary>
+    ''' Adds the right-click menu items for this Folder and the items in this folder.
+    ''' </summary>
+    ''' <param name="menu">The RightClickMenu asking us to add it's items</param>
     Public Overridable Sub AddRightClickMenuItems(menu As RightClickMenu)
         Dim osver As Version = Environment.OSVersion.Version
         Dim isWindows11 As Boolean = osver.Major = 10 AndAlso osver.Minor = 0 AndAlso osver.Build >= 22000
@@ -593,6 +702,10 @@ Public Class Folder
         End If
     End Sub
 
+    ''' <summary>
+    ''' Gets/sets the exception that occured while enumeration this Folder's children, if any. Otherwise, null.
+    ''' </summary>
+    ''' <returns>The exception that occured while enumeration this Folder's children, if any. Otherwise, null</returns>
     Public Property EnumerationException As Exception
         Get
             Return _enumerationException
@@ -602,6 +715,10 @@ Public Class Folder
         End Set
     End Property
 
+    ''' <summary>
+    ''' Gets the children of this Folder, if they were enumerated already.
+    ''' </summary>
+    ''' <returns>An ObservableCollection containing the enumerated children for this Folder</returns>
     Public Overridable ReadOnly Property Items As ObservableCollection(Of Item)
         Get
             If Not _isInitializing AndAlso Not String.IsNullOrWhiteSpace(_initializeItemsGroupByPropertyName) Then
@@ -616,6 +733,10 @@ Public Class Folder
         End Get
     End Property
 
+    ''' <summary>
+    ''' Refresh the contents of this folder.
+    ''' </summary>
+    ''' <returns>An awaitable Task</returns>
     Public Async Function RefreshItemsAsync() As Task
         Using Shell.OverrideCursor(Cursors.AppStarting)
             Me.IsRefreshingItems = True

@@ -308,11 +308,11 @@ Namespace Controls.Parts
                                     Dim shellFolder As IShellFolder = Nothing
                                     Try
                                         If Not overItem.Parent Is Nothing Then
-                                            shellFolder = overItem.Parent.GetShellFolderOnCurrentThread()
+                                            shellFolder = overItem.Parent.MakeIShellFolderOnCurrentThread()
                                             shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                                         Else
                                             ' desktop
-                                            shellFolder = Shell.Desktop.GetShellFolderOnCurrentThread()
+                                            shellFolder = Shell.Desktop.MakeIShellFolderOnCurrentThread()
                                             shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                                         End If
                                     Finally

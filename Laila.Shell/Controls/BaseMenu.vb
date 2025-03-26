@@ -389,7 +389,7 @@ Namespace Controls
 
                     SyncLock folder._shellItemLock
                         If Not folder.disposedValue Then
-                            shellFolder = folder.GetShellFolderOnCurrentThread()
+                            shellFolder = folder.MakeIShellFolderOnCurrentThread()
                         End If
                     End SyncLock
 
