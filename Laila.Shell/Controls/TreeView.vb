@@ -781,7 +781,6 @@ Namespace Controls
                             Me.Items.Add(item)
                         Next
                     End If
-                    Dim __ = Me.SetSelectedFolder(Me.Folder)
             End Select
         End Sub
 
