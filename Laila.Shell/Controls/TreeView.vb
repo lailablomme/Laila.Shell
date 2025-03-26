@@ -42,7 +42,8 @@ Namespace Controls
         Public Shared ReadOnly DoShowPinnedAndFrequentItemsPlaceholderProperty As DependencyProperty = DependencyProperty.Register("DoShowPinnedAndFrequentItemsPlaceholder", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
-        Public Event FolderChosen As EventHandler
+        Public Event BeforeFolderOpened As EventHandler(Of FolderEventArgs)
+        Public Event AfterFolderOpened As EventHandler(Of FolderEventArgs)
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
@@ -510,9 +511,11 @@ Namespace Controls
                                     Select Case e2.Verb
                                         Case "open"
                                             If TypeOf clickedItem Is Folder Then
+                                                RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(clickedItem))
                                                 _selectionHelper.SetSelectedItems({clickedItem})
+                                                CType(clickedItem, Folder).LastScrollOffset = New Point()
                                                 Me.Folder = clickedItem
-                                                RaiseEvent FolderChosen(Me, New EventArgs())
+                                                RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(clickedItem))
                                                 e2.IsHandled = True
                                             End If
                                         Case "rename"
@@ -569,14 +572,16 @@ Namespace Controls
                                         UIHelper.OnUIThread(
                                             Sub()
                                                 If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
+                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(clickedItem))
                                                     CType(clickedItem, Folder).LastScrollOffset = New Point()
                                                     Me.Folder = clickedItem
-                                                    RaiseEvent FolderChosen(Me, New EventArgs())
+                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(clickedItem))
                                                 ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder _
                                                     AndAlso Not If(Me.Folder?.Pidl?.Equals(CType(clickedItem, Link).TargetItem.Pidl), False) Then
+                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(clickedItem, Link).TargetItem))
                                                     CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
                                                     Me.Folder = CType(clickedItem, Link).TargetItem
-                                                    RaiseEvent FolderChosen(Me, New EventArgs())
+                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(clickedItem, Link).TargetItem))
                                                 End If
                                             End Sub, Threading.DispatcherPriority.Background)
                                     End Using
@@ -619,8 +624,10 @@ Namespace Controls
                 ElseIf (e.Key = Key.Space OrElse e.Key = Key.Enter) AndAlso Keyboard.Modifiers = ModifierKeys.None _
                     AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
                     If TypeOf Me.SelectedItem Is Folder Then
+                        RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
+                        CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
                         Me.Folder = Me.SelectedItem
-                        RaiseEvent FolderChosen(Me, New EventArgs())
+                        RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
                     Else
                         Dim __ = invokeDefaultCommand(Me.SelectedItem)
                     End If

@@ -84,7 +84,7 @@ Namespace Controls
                     Me.IsDropDownOpen = False
                     Me.Focus()
                 End Sub
-            AddHandler Me.PART_TreeView.FolderChosen,
+            AddHandler Me.PART_TreeView.AfterFolderOpened,
                 Sub(sender As Object, e As EventArgs)
                     Me.PART_DropDownButton.IsChecked = False
                     Me.IsDropDownOpen = False
