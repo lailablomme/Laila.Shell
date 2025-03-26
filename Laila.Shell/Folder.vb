@@ -26,7 +26,9 @@ Public Class Folder
     Public Property LastScrollOffset As Point
     Public Property LastScrollSize As Size
 
+    Private _activeView As Guid?
     Protected _columns As List(Of Column)
+    Private _defaultView As Guid
     Protected _enumerationCancellationTokenSource As CancellationTokenSource
     Private _enumerationException As Exception
     Friend _enumerationLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
@@ -55,7 +57,7 @@ Public Class Folder
     Private _notificationSubscribersLock As Object = New Object()
     Private _notificationThreadPool As Helpers.ThreadPool
     Private _shellFolder As IShellFolder
-    Private _view As String
+    Private _views As List(Of FolderViewRegistration)
     Private _wasActivity As Boolean
 
     ''' <summary>
@@ -117,6 +119,18 @@ Public Class Folder
     Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer?, Optional pidl As Pidl = Nothing)
         MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, pidl)
         _canShowInTree = True
+
+        _views = New List(Of FolderViewRegistration) From {
+            New FolderViewRegistration(New Guid("5a0a0f55-1f79-4b96-8e47-0092f06d73d6"), "Extra large icons", New Uri("pack://application:,,,/Laila.Shell;component/Images/extralargeicons16.png"), GetType(ExtraLargeIconsView)),
+            New FolderViewRegistration(New Guid("69785b58-7418-4f1b-ae2b-04f62a5cf090"), "Large icons", New Uri("pack://application:,,,/Laila.Shell;component/Images/largeicons16.png"), GetType(LargeIconsView)),
+            New FolderViewRegistration(New Guid("bde20919-1132-4f64-8124-b7b1c5b3ec47"), "Normal icons", New Uri("pack://application:,,,/Laila.Shell;component/Images/normalicons16.png"), GetType(NormalIconsView)),
+            New FolderViewRegistration(New Guid("0fc82e4f-844c-4ec4-90ff-fb4f2ec9b3c6"), "Small icons", New Uri("pack://application:,,,/Laila.Shell;component/Images/smallicons16.png"), GetType(SmallIconsView)),
+            New FolderViewRegistration(New Guid("d2e1c65f-58b4-49d1-a4c9-5d43cb2554cf"), "List", New Uri("pack://application:,,,/Laila.Shell;component/Images/list16.png"), GetType(Controls.ListView)),
+            New FolderViewRegistration(New Guid("ffc28f55-2f56-4698-97d4-f80ff8817713"), "Details", New Uri("pack://application:,,,/Laila.Shell;component/Images/details16.png"), GetType(DetailsView)),
+            New FolderViewRegistration(New Guid("3e7ea73f-22d7-4697-b858-cde65c9c9ea7"), "Tiles", New Uri("pack://application:,,,/Laila.Shell;component/Images/tiles16.png"), GetType(TileView)),
+            New FolderViewRegistration(New Guid("9d96a6be-4061-4c89-9cb7-d97c6b8dfe41"), "Content", New Uri("pack://application:,,,/Laila.Shell;component/Images/content16.png"), GetType(ContentView))
+        }
+        Me.DefaultView = New Guid("ffc28f55-2f56-4698-97d4-f80ff8817713")
     End Sub
 
     ''' <summary>
@@ -154,7 +168,7 @@ Public Class Folder
                                 _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
                             End If
                         End SyncLock
-                    End Sub,, _livesOnThreadId)
+                    End Sub)
             End If
 
             Return _shellFolder
@@ -563,7 +577,7 @@ Public Class Folder
                     Dim shellView As IShellView = Nothing
                     Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
                     Return shellView
-                End Function,, _livesOnThreadId)
+                End Function)
         End Get
     End Property
 
@@ -1354,12 +1368,21 @@ Public Class Folder
         End Set
     End Property
 
-    Public Property View As String
+    Public Property ActiveView As Guid?
         Get
-            Return _view
+            Return _activeView
         End Get
-        Set(value As String)
-            SetValue(_view, value)
+        Set(value As Guid?)
+            SetValue(_activeView, value)
+        End Set
+    End Property
+
+    Public Property DefaultView As Guid
+        Get
+            Return _defaultView
+        End Get
+        Set(value As Guid)
+            SetValue(_defaultView, value)
         End Set
     End Property
 
@@ -1548,6 +1571,12 @@ Public Class Folder
         End Select
     End Sub
 
+    Public ReadOnly Property Views As List(Of FolderViewRegistration)
+        Get
+            Return _views
+        End Get
+    End Property
+
     Protected Overrides Sub Dispose(disposing As Boolean)
         Dim oldShellFolder As IShellFolder = Nothing
         Dim wasDisposed As Boolean = disposedValue
@@ -1602,4 +1631,18 @@ Public Class Folder
                 End Sub, _livesOnThreadId)
         End If
     End Sub
+
+    Public Class FolderViewRegistration
+        Public Property Guid As Guid
+        Public Property Title As String
+        Public Property IconUri As Uri
+        Public Property Type As Type
+
+        Public Sub New(guid As Guid, title As String, iconUri As Uri, type As Type)
+            Me.Guid = guid
+            Me.Title = title
+            Me.IconUri = iconUri
+            Me.Type = type
+        End Sub
+    End Class
 End Class

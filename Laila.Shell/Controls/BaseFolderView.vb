@@ -985,7 +985,7 @@ Namespace Controls
 
             Select Case e.PropertyName
                 Case "IsRefreshingItems"
-                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
+                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "ActiveView"
                     UIHelper.OnUIThread(
                         Sub()
                             If e.PropertyName = "ItemsGroupByPropertyName" Then
@@ -997,7 +997,7 @@ Namespace Controls
                                 folderViewState.SortPropertyName = folder.ItemsSortPropertyName
                                 folderViewState.SortDirection = folder.ItemsSortDirection
                                 folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
-                                folderViewState.View = folder.View
+                                folderViewState.ActiveView = folder.ActiveView
                                 folderViewState.Persist()
                             End If
                         End Sub)

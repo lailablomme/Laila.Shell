@@ -38,7 +38,6 @@ Public Class Shell
     Public Shared _hwnd As IntPtr
 
     Private Shared _specialFolders As Dictionary(Of SpecialFolders, Folder) = New Dictionary(Of SpecialFolders, Folder)()
-    Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
     Private Shared _customFolders As List(Of CustomFolder) = New List(Of CustomFolder)()
     Private Shared _customPropertiesByCanonicalName As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
     Private Shared _customPropertiesByKey As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
@@ -207,16 +206,6 @@ Public Class Shell
 
                 Shell.StartListening(Shell.Desktop)
             End Sub)
-
-        ' register folder views
-        FolderViews.Add("Extra large icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/extralargeicons16.png", GetType(ExtraLargeIconsView)))
-        FolderViews.Add("Large icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/largeicons16.png", GetType(LargeIconsView)))
-        FolderViews.Add("Normal icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/normalicons16.png", GetType(NormalIconsView)))
-        FolderViews.Add("Small icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/smallicons16.png", GetType(SmallIconsView)))
-        FolderViews.Add("List", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/list16.png", GetType(ListView)))
-        FolderViews.Add("Details", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/details16.png", GetType(DetailsView)))
-        FolderViews.Add("Tiles", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/tiles16.png", GetType(TileView)))
-        FolderViews.Add("Content", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/content16.png", GetType(ContentView)))
 
         ' show debug window?
         If _isDebugVisible Then
@@ -484,16 +473,6 @@ Public Class Shell
             Return Nothing
         End If
     End Function
-
-    ''' <summary>
-    ''' Gets a dictionary of the registered folder views.
-    ''' </summary>
-    ''' <returns>A dictionary containing the registered folder views</returns>
-    Public Shared ReadOnly Property FolderViews As Dictionary(Of String, Tuple(Of String, Type))
-        Get
-            Return _folderViews
-        End Get
-    End Property
 
     ''' <summary>
     ''' Gets the desktop folder, the root.

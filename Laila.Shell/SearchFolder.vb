@@ -19,7 +19,7 @@ Public Class SearchFolder
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId()
         Dim folder As SearchFolder = Shell.GlobalThreadPool.Run(
             Function() As SearchFolder
-                Return New SearchFolder(getShellItem(terms, parent), parent, threadId) With {.View = "Content", .Terms = terms}
+                Return New SearchFolder(getShellItem(terms, parent), parent, threadId) With {.ActiveView = New Guid("9d96a6be-4061-4c89-9cb7-d97c6b8dfe41"), .Terms = terms}
             End Function,, threadId)
 
         folder.ItemsSortPropertyName = "PropertiesByKeyAsText[49691C90-7E17-101A-A91C-08002B2ECDA9:3].Value"

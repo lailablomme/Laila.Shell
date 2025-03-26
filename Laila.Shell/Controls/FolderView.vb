@@ -32,7 +32,7 @@ Namespace Controls
 
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
-        Private _views As Dictionary(Of String, Control)
+        Private _views As Dictionary(Of Guid, Control)
         Private _activeView As BaseFolderView
         Private _dropTarget As IDropTarget
         Private PART_Grid As Grid
@@ -52,7 +52,7 @@ Namespace Controls
                             End Sub, Threading.DispatcherPriority.Loaded)
 
                         If Not Me.Folder Is Nothing Then
-                            changeView(Me.Folder.View, Me.Folder)
+                            changeView(Me.Folder.ActiveView, Me.Folder)
                         End If
 
                         _dropTarget = New ListViewDropTarget(Me)
@@ -104,18 +104,7 @@ Namespace Controls
 
             Me.PART_Grid = Me.Template.FindName("PART_Grid", Me)
 
-            _views = New Dictionary(Of String, Control)()
-            For Each view In Shell.FolderViews
-                Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(view.Key).Item2)
-                Me.ActiveView.Host = Me
-                Me.ActiveView.SearchBox = Me.SearchBox
-                Me.ActiveView.Navigation = Me.Navigation
-                Me.ActiveView.Visibility = Visibility.Hidden
-                _views.Add(view.Key, Me.ActiveView)
-                If Not Me.PART_Grid Is Nothing Then
-                    Me.PART_Grid.Children.Add(Me.ActiveView)
-                End If
-            Next
+            _views = New Dictionary(Of Guid, Control)()
         End Sub
 
         Public Sub DoRename(item As Item)
@@ -250,10 +239,10 @@ Namespace Controls
             If Not e.NewValue Is Nothing Then
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
                 Dim folderViewState As FolderViewState = FolderViewState.FromFolder(CType(e.NewValue, Folder))
-                If String.IsNullOrWhiteSpace(CType(e.NewValue, Folder).View) Then
-                    CType(e.NewValue, Folder).View = folderViewState.View
+                If Not CType(e.NewValue, Folder).ActiveView.HasValue Then
+                    CType(e.NewValue, Folder).ActiveView = folderViewState.ActiveView
                 End If
-                fv.changeView(CType(e.NewValue, Folder).View, e.NewValue)
+                fv.changeView(CType(e.NewValue, Folder).ActiveView, e.NewValue)
                 AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
                 AddHandler CType(e.NewValue, Folder).Items.CollectionChanged, AddressOf fv.folder_Items_CollectionChanged
             End If
@@ -269,12 +258,12 @@ Namespace Controls
 
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
-                Case "View"
-                    changeView(Me.Folder.View, Me.Folder)
+                Case "ActiveView"
+                    changeView(Me.Folder.ActiveView, Me.Folder)
             End Select
         End Sub
 
-        Private Sub changeView(newValue As String, folder As Folder)
+        Private Sub changeView(newValue As Guid, folder As Folder)
             If Not _views Is Nothing Then
                 Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
                 Dim hasFocus As Boolean = Me.IsKeyboardFocusWithin
@@ -286,13 +275,24 @@ Namespace Controls
                 For Each v In _views.Values
                     v.SetValue(Panel.ZIndexProperty, 0)
                 Next
+                If Not _views.ContainsKey(newValue) Then
+                    Me.ActiveView = Activator.CreateInstance(folder.Views.First(Function(v) v.Guid = newValue).Type)
+                    Me.ActiveView.Host = Me
+                    Me.ActiveView.SearchBox = Me.SearchBox
+                    Me.ActiveView.Navigation = Me.Navigation
+                    Me.ActiveView.Visibility = Visibility.Hidden
+                    _views.Add(newValue, Me.ActiveView)
+                    If Not Me.PART_Grid Is Nothing Then
+                        Me.PART_Grid.Children.Add(Me.ActiveView)
+                    End If
+                End If
                 Me.ActiveView = _views(newValue)
                 Me.ActiveView.Visibility = Visibility.Visible
                 Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
                 If hasFocus Then Me.ActiveView.Focus()
                 Me.ActiveView.Folder = folder
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
-                folderViewState.View = newValue
+                folderViewState.ActiveView = newValue
                 folderViewState.Persist()
                 BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
                 BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty, New Binding("IsSelecting") With {.Source = Me})
