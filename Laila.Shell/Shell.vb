@@ -421,7 +421,7 @@ Public Class Shell
                         ' Process tasks from the queue
                         For Each item In chuncks(j)
                             If Shell.ShuttingDownToken.IsCancellationRequested Then Exit For
-                            item.ProcessNotification(e)
+                            item?.ProcessNotification(e)
                         Next
 
                         tcs.SetResult()

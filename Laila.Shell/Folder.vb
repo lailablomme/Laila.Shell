@@ -1392,15 +1392,15 @@ Public Class Folder
                         Dim tcs As TaskCompletionSource = New TaskCompletionSource()
                         tcses.Add(tcs)
                         _notificationThreadPool.Add(
-                        Sub()
-                            ' Process tasks from the queue
-                            For Each item In chuncks(j)
-                                If Shell.ShuttingDownToken.IsCancellationRequested Then Exit For
-                                item.ProcessNotification(e)
-                            Next
+                            Sub()
+                                ' Process tasks from the queue
+                                For Each item In chuncks(j)
+                                    If Shell.ShuttingDownToken.IsCancellationRequested Then Exit For
+                                    item?.ProcessNotification(e)
+                                Next
 
-                            tcs.SetResult()
-                        End Sub)
+                                tcs.SetResult()
+                            End Sub)
                     Next
 
                     Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
