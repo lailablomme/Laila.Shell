@@ -1431,8 +1431,8 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i?.disposedValue _
-                                        AndAlso (i?.Pidl?.Equals(e.Item1.Pidl) OrElse i?.FullPath?.Equals(e.Item1.FullPath)))
+                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                             If existing Is Nothing Then
                                 Me.InitializeItem(e.Item1)
                                 e.Item1.LogicalParent = Me
@@ -1467,8 +1467,8 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i?.disposedValue _
-                                        AndAlso (i?.Pidl?.Equals(e.Item1.Pidl) OrElse i?.FullPath?.Equals(e.Item1.FullPath)))
+                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                             If Not existing Is Nothing Then
                                 existing.Dispose()
                             End If
@@ -1477,7 +1477,8 @@ Public Class Folder
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        If Not _items Is Nothing AndAlso _items.ToList().FirstOrDefault(Function(i) Not i?.disposedValue AndAlso i?.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                        If Not _items Is Nothing AndAlso _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                                                                            AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
                             Me.InitializeItem(e.Item1)
                             e.Item1.LogicalParent = Me
                             e.Item1.IsProcessingNotifications = True
@@ -1497,7 +1498,8 @@ Public Class Folder
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        Dim item As Item = _items.ToList().FirstOrDefault(Function(i) Not i?.disposedValue AndAlso i?.Pidl?.Equals(e.Item1.Pidl))
+                        Dim item As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                                                              AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                         If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                             item.Dispose()
                         End If
