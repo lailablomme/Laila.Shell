@@ -42,6 +42,7 @@ Namespace Helpers
                         Dim s As XmlSerializer = New XmlSerializer(GetType(FolderViewState))
                         Try
                             result = s.Deserialize(stream)
+                            If String.IsNullOrWhiteSpace(result.View) Then result.View = "Details"
                         Catch ex As Exception
                         End Try
                     End Using
