@@ -159,7 +159,7 @@ Public Class Drag
             _dragImage.ptOffset.y = ICON_SIZE + 10
             _dragImage.hbmpDragImage = _bitmap.GetHbitmap()
             _dragImage.crColorKey = System.Drawing.Color.Purple.ToArgb()
-            'InitializeDragSourceHelper2()
+            InitializeDragSourceHelper2()
             'Clipboard.SetGlobalDataDWord(_dataObject, "IsShowingLayered", 1)
             Debug.WriteLine("setflags:" & _dragSourceHelper.SetFlags(1))
             Dim h As HRESULT = _dragSourceHelper.InitializeFromBitmap(_dragImage, _dataObject)
