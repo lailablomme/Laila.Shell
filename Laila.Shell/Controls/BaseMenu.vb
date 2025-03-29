@@ -546,6 +546,8 @@ Namespace Controls
                                     End If
                                 End Try
                             Case Else
+                                folder._wasActivity = True
+
                                 Dim cmi As New CMInvokeCommandInfoEx
                                 Debug.WriteLine("InvokeCommand " & id.Item1 & ", " & id.Item2)
                                 If id.Item1 > 0 Then

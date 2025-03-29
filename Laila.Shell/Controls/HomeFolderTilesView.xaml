@@ -90,7 +90,7 @@
                                                                                                     <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
                                                                                                         <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                                                                         <Setter Property="ItemsControl.Width" Value="{Binding StorageProviderUIStatusIconWidth16}" />
-                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
+                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16}" />
                                                                                                     </DataTrigger>
                                                                                                 </Style.Triggers>
                                                                                             </Style>
@@ -152,17 +152,17 @@
                                                                                                         <Setter Property="Image.Opacity" Value="0.5" />
                                                                                                     </DataTrigger>
                                                                                                     <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="True">
-                                                                                                        <Setter Property="Image.Source" Value="{Binding IconAsync[24], IsAsync=True}" />
+                                                                                                        <Setter Property="Image.Source" Value="{Binding Icon[24]}" />
                                                                                                     </DataTrigger>
                                                                                                     <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="False">
-                                                                                                        <Setter Property="Image.Source" Value="{Binding ImageAsync[24], IsAsync=True}" />
+                                                                                                        <Setter Property="Image.Source" Value="{Binding Image[24]}" />
                                                                                                     </DataTrigger>
                                                                                                 </Style.Triggers>
                                                                                             </Style>
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Border Grid.Column="2" Width="24" Height="24" VerticalAlignment="Center">
-                                                                                        <Image Source="{Binding OverlayImageAsync[16], IsAsync=True}" Width="16" Height="16" 
+                                                                                        <Image Source="{Binding OverlayImage[24]}" Width="24" Height="24" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                        VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                                                             <Image.Style>
@@ -208,7 +208,7 @@
                                                                                             </TextBlock.Style>
                                                                                         </TextBlock>
                                                                                     <TextBlock Grid.Column="5" Foreground="Gray" VerticalAlignment="Center"
-                                                           Text="{Binding PropertiesByKeyAsText[B725F130-47EF-101A-A5F1-02608C9EEBAC:16].Text}" TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding PropertiesByKeyAsText[390DCE80-0981-4BBC-A55D-95F189A5A8FD:2].Text}" TextTrimming="CharacterEllipsis"
                                                            MaxWidth="200">
                                                                                     </TextBlock>
                                                                                     <TextBlock Grid.Column="6" Foreground="Gray" VerticalAlignment="Center" 
@@ -303,7 +303,7 @@
                                                                                                     <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
                                                                                                         <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                                                                         <Setter Property="ItemsControl.Width" Value="{Binding StorageProviderUIStatusIconWidth16}" />
-                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
+                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16}" />
                                                                                                     </DataTrigger>
                                                                                                 </Style.Triggers>
                                                                                             </Style>
@@ -365,10 +365,10 @@
                                                                                                         <Setter Property="Image.Opacity" Value="0.5" />
                                                                                                     </DataTrigger>
                                                                                                     <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="True">
-                                                                                                        <Setter Property="Image.Source" Value="{Binding IconAsync[48], IsAsync=True}" />
+                                                                                                        <Setter Property="Image.Source" Value="{Binding Icon[48]}" />
                                                                                                     </DataTrigger>
                                                                                                     <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="False">
-                                                                                                        <Setter Property="Image.Source" Value="{Binding ImageAsync[48], IsAsync=True}" />
+                                                                                                        <Setter Property="Image.Source" Value="{Binding Image[48]}" />
                                                                                                     </DataTrigger>
                                                                                                 </Style.Triggers>
                                                                                             </Style>
@@ -398,7 +398,7 @@
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Border Grid.Column="2" Width="48" Height="48" VerticalAlignment="Center">
-                                                                                        <Image Source="{Binding OverlayImageAsync[48], IsAsync=True}" Width="32" Height="32" 
+                                                                                        <Image Source="{Binding OverlayImage[48]}" Width="32" Height="32" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                        VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                                                             <Image.Style>

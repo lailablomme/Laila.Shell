@@ -27,11 +27,6 @@ Public Class HomeFolder
         MyBase.New(Nothing, parent, doKeepAlive, True, Nothing)
 
         _hasSubFolders = True
-        _columns = New List(Of Column)() From {
-            New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:10"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
-            New Column(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:16"), New CM_COLUMNINFO(), 0) With {.IsVisible = True},
-            New Column(New PROPERTYKEY("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6"), New CM_COLUMNINFO(), 0) With {.IsVisible = True}
-        }
         Me.ItemsGroupByPropertyName = "PropertiesByKeyAsText[" & Home_CategoryProperty.Key.ToString() & "].GroupByText"
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
 
@@ -163,6 +158,10 @@ Public Class HomeFolder
                 item.TreeSortPrefix = String.Format("{0:00000000000000000000}", UInt64.MaxValue - count)
                 item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
 
+                Dim systemLastAccessedProperty As [Property] = item.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
+                Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
+                item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
+
                 Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
                 item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
@@ -182,6 +181,10 @@ Public Class HomeFolder
             item.TreeSortPrefix = String.Format("{0:00000000000000000000}", UInt64.MaxValue - count)
             item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
 
+            Dim systemLastAccessedProperty As [Property] = item.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
+            Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
+            item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
+
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.FREQUENT_FOLDER)
             item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
@@ -198,6 +201,10 @@ Public Class HomeFolder
         _hookFolderFullPath = Shell.GetSpecialFolder(SpecialFolders.Recent).FullPath
         MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone().ShellItem2, flags, cancellationToken, isSortPropertyByText,
             isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId, dupes)
+    End Sub
+
+    Protected Overrides Sub OnItemsChanged()
+        MyBase.OnItemsChanged()
 
         UIHelper.OnUIThread(
             Sub()
@@ -218,10 +225,8 @@ Public Class HomeFolder
                     Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
                     target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
-                    Dim lastAccessedProperty As [Property] = target.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
-                    lastAccessedProperty._rawValue.Dispose()
-                    lastAccessedProperty._rawValue = New PROPVARIANT()
-                    lastAccessedProperty._rawValue.SetValue(CType(modifiedProperty.Value, DateTime))
+                    Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(modifiedProperty.Value)
+                    target._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
 
                     Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
                     target._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)

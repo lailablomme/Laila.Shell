@@ -58,7 +58,7 @@ Public Class Folder
     Private _notificationThreadPool As Helpers.ThreadPool
     Private _shellFolder As IShellFolder
     Protected _views As List(Of FolderViewRegistration)
-    Private _wasActivity As Boolean
+    Friend _wasActivity As Boolean
 
     ''' <summary>
     ''' Creates a Folder object for the Desktop folder (the root).
@@ -1044,11 +1044,7 @@ Public Class Folder
             _isEnumeratedForTree = True
             _isLoaded = True
 
-            UIHelper.OnUIThread(
-                Sub()
-                    ' set and update HasSubFolders property
-                    Me.HasSubFolders = Not Me.Items.ToList().FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
-                End Sub)
+            Me.OnItemsChanged()
         End If
     End Sub
 
@@ -1399,6 +1395,15 @@ Public Class Folder
         End SyncLock
     End Sub
 
+    Protected Overridable Sub OnItemsChanged()
+        Me.IsEmpty = _items.Count = 0
+        UIHelper.OnUIThread(
+            Sub()
+                ' set and update HasSubFolders property
+                Me.HasSubFolders = Not Me.Items.ToList().FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
+            End Sub)
+    End Sub
+
     Protected Friend Overrides Sub ProcessNotification(e As NotificationEventArgs)
         MyBase.ProcessNotification(e)
 
@@ -1436,11 +1441,11 @@ Public Class Folder
                                     Sub()
                                         _items.InsertSorted(e.Item1, c)
                                     End Sub)
-                                Me.IsEmpty = _items.Count = 0
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         e.Item1.Refresh()
                                     End Sub)
+                                Me.OnItemsChanged()
                             ElseIf TypeOf existing Is Folder Then
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
@@ -1464,6 +1469,7 @@ Public Class Folder
                                         AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
                             If Not existing Is Nothing Then
                                 existing.Dispose()
+                                Me.OnItemsChanged()
                             End If
                         End If
                     End If
@@ -1481,7 +1487,7 @@ Public Class Folder
                                 Sub()
                                     _items.InsertSorted(e.Item1, c)
                                 End Sub)
-                            Me.IsEmpty = _items.Count = 0
+                            Me.OnItemsChanged()
                         End If
                         Shell.GlobalThreadPool.Run(
                             Sub()
@@ -1495,6 +1501,7 @@ Public Class Folder
                                                                               AndAlso i.Pidl?.Equals(e.Item1.Pidl))
                         If Not item Is Nothing AndAlso TypeOf item Is Folder Then
                             item.Dispose()
+                            Me.OnItemsChanged()
                         End If
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM

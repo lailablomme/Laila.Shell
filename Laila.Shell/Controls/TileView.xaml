@@ -202,7 +202,7 @@
                                                 </Image.Style>
                                             </Image>
                                             <Border Grid.Column="2" Width="48" Height="48" VerticalAlignment="Center">
-                                                <Image Source="{Binding OverlayImageAsync[48], IsAsync=True}" Width="32" Height="32" 
+                                                <Image Source="{Binding OverlayImageAsync[48], IsAsync=True}" Width="48" Height="48" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                        VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                     <Image.Style>
