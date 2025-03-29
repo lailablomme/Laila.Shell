@@ -1,0 +1,662 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:Laila.Shell.Controls"
+                    xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
+                    xmlns:converters="clr-namespace:Laila.Shell.Converters"
+                    xmlns:helpers="clr-namespace:Laila.Shell.Helpers"
+                    xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=Laila.VirtualizingWrapPanel"
+                    xmlns:shell="clr-namespace:Laila.Shell"
+                    xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <Style TargetType="{x:Type local:HomeFolderTilesView}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:HomeFolderTilesView}">
+                    <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True" 
+                          Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}">
+                        <ListView x:Name="PART_ListView" SelectionMode="Extended" 
+                                  FocusVisualStyle="{x:Null}" ScrollViewer.IsDeferredScrollingEnabled="False" 
+                                  ScrollViewer.CanContentScroll="False" BorderThickness="0" 
+                                  Grid.IsSharedSizeScope="True">
+                            <ListView.Resources>
+                                <GroupStyle x:Key="groupStyle">
+                                    <GroupStyle.ContainerStyle>
+                                        <Style TargetType="{x:Type GroupItem}">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate>
+                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
+                                                            <Expander.Resources>
+                                                                <converters:DoubleAdditionConverter x:Key="doubleAdditionConverter" />
+                                                            </Expander.Resources>
+                                                            <Expander.Header>
+                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                                                                    <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
+                                                                </StackPanel>
+                                                            </Expander.Header>
+                                                            <Border Width="{Binding ActualWidth, ElementName=PART_ListView, Converter={StaticResource doubleAdditionConverter}, ConverterParameter=-20}">
+                                                                <ListView ItemsSource="{Binding Items}" Margin="25,0,0,0" SelectionMode="Extended"
+                                                                          behaviors:SharedSelectedItemsBehavior.SyncedSelectedItemsWith="{Binding Tag, ElementName=PART_Grid}"
+                                                                          behaviors:ScrollViewerFix.IsEnabled="True" BorderThickness="0"
+                                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                                    <ListView.Resources>
+                                                                        <!-- Default panel and template -->
+                                                                        <ItemsPanelTemplate x:Key="GridPanel">
+                                                                            <StackPanel />
+                                                                        </ItemsPanelTemplate>
+
+                                                                        <ItemsPanelTemplate x:Key="TilePanel">
+                                                                            <WrapPanel />
+                                                                        </ItemsPanelTemplate>
+
+                                                                        <!-- Grid Item Template -->
+                                                                        <DataTemplate x:Key="GridItemTemplate">
+                                                                            <Border Padding="6,2" HorizontalAlignment="Stretch">
+                                                                                <Grid Height="24" HorizontalAlignment="Stretch">
+                                                                                    <Grid.ColumnDefinitions>
+                                                                                        <ColumnDefinition Width="Auto" />
+                                                                                        <ColumnDefinition Width="Auto" SharedSizeGroup="C" />
+                                                                                        <ColumnDefinition Width="24" />
+                                                                                        <ColumnDefinition Width="10" />
+                                                                                        <ColumnDefinition Width="*" />
+                                                                                        <ColumnDefinition Width="100" />
+                                                                                        <ColumnDefinition Width="*" />
+                                                                                    </Grid.ColumnDefinitions>
+                                                                                    <Grid.Resources>
+                                                                                        <helpers:ImageHelper x:Key="imageHelper" />
+                                                                                    </Grid.Resources>
+                                                                                    <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
+                                                      VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                      Visibility="Collapsed"/>
+                                                                                    <ItemsControl Grid.Column="1" Margin="0,0,2,0">
+                                                                                        <ItemsControl.ItemTemplate>
+                                                                                            <DataTemplate>
+                                                                                                <Image Source="{Binding .}" Width="16" Height="16" VerticalAlignment="Center" />
+                                                                                            </DataTemplate>
+                                                                                        </ItemsControl.ItemTemplate>
+                                                                                        <ItemsControl.ItemsPanel>
+                                                                                            <ItemsPanelTemplate>
+                                                                                                <StackPanel Orientation="Horizontal" />
+                                                                                            </ItemsPanelTemplate>
+                                                                                        </ItemsControl.ItemsPanel>
+                                                                                        <ItemsControl.Style>
+                                                                                            <Style>
+                                                                                                <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
+                                                                                                <Style.Triggers>
+                                                                                                    <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
+                                                                                                        <Setter Property="ItemsControl.Visibility" Value="Visible" />
+                                                                                                        <Setter Property="ItemsControl.Width" Value="{Binding StorageProviderUIStatusIconWidth16}" />
+                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </ItemsControl.Style>
+                                                                                    </ItemsControl>
+                                                                                    <Image Grid.Column="2" Source="{Binding DefaultFileIconLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                                                        <Image.Style>
+                                                                                            <Style>
+                                                                                                <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                                                                <Style.Triggers>
+                                                                                                    <MultiDataTrigger>
+                                                                                                        <MultiDataTrigger.Conditions>
+                                                                                                            <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                                                            <Condition Binding="{Binding IsFolder}" Value="False" />
+                                                                                                        </MultiDataTrigger.Conditions>
+                                                                                                        <MultiDataTrigger.Setters>
+                                                                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                                                                        </MultiDataTrigger.Setters>
+                                                                                                    </MultiDataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                                                        <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </Image.Style>
+                                                                                    </Image>
+                                                                                    <Image Grid.Column="2" Source="{Binding DefaultFolderIconLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                                                        <Image.Style>
+                                                                                            <Style>
+                                                                                                <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                                                                <Style.Triggers>
+                                                                                                    <MultiDataTrigger>
+                                                                                                        <MultiDataTrigger.Conditions>
+                                                                                                            <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                                                            <Condition Binding="{Binding IsFolder}" Value="True" />
+                                                                                                        </MultiDataTrigger.Conditions>
+                                                                                                        <MultiDataTrigger.Setters>
+                                                                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                                                                        </MultiDataTrigger.Setters>
+                                                                                                    </MultiDataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                                                        <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </Image.Style>
+                                                                                    </Image>
+                                                                                    <Image Grid.Column="2" Width="24" Height="24" 
+                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center" x:Name="PART_Image">
+                                                                                        <Image.Style>
+                                                                                            <Style>
+                                                                                                <Style.Triggers>
+                                                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                                                        <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                    </DataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding IsCut}" Value="True">
+                                                                                                        <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                    </DataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="True">
+                                                                                                        <Setter Property="Image.Source" Value="{Binding IconAsync[24], IsAsync=True}" />
+                                                                                                    </DataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="False">
+                                                                                                        <Setter Property="Image.Source" Value="{Binding ImageAsync[24], IsAsync=True}" />
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </Image.Style>
+                                                                                    </Image>
+                                                                                    <Border Grid.Column="2" Width="24" Height="24" VerticalAlignment="Center">
+                                                                                        <Image Source="{Binding OverlayImageAsync[16], IsAsync=True}" Width="16" Height="16" 
+                                                       UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                                       VerticalAlignment="Bottom" HorizontalAlignment="Left">
+                                                                                            <Image.Style>
+                                                                                                <Style>
+                                                                                                    <Style.Triggers>
+                                                                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                        </DataTrigger>
+                                                                                                        <DataTrigger Binding="{Binding IsCut}" Value="True">
+                                                                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                        </DataTrigger>
+                                                                                                    </Style.Triggers>
+                                                                                                </Style>
+                                                                                            </Image.Style>
+                                                                                        </Image>
+                                                                                    </Border>
+                                                                                    <TextBlock Grid.Column="4" TextWrapping="Wrap" VerticalAlignment="Center"
+                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
+                                                           x:Name="PART_DisplayName">
+                                                                                            <TextBlock.Style>
+                                                                                                <Style>
+                                                                                                    <Style.Triggers>
+                                                                                                        <MultiDataTrigger>
+                                                                                                            <MultiDataTrigger.Conditions>
+                                                                                                                <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                                                                <Condition Binding="{Binding IsCompressed}" Value="True" />
+                                                                                                            </MultiDataTrigger.Conditions>
+                                                                                                            <MultiDataTrigger.Setters>
+                                                                                                                <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                                                                            </MultiDataTrigger.Setters>
+                                                                                                        </MultiDataTrigger>
+                                                                                                        <MultiDataTrigger>
+                                                                                                            <MultiDataTrigger.Conditions>
+                                                                                                                <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                                                                <Condition Binding="{Binding IsEncrypted}" Value="True" />
+                                                                                                            </MultiDataTrigger.Conditions>
+                                                                                                            <MultiDataTrigger.Setters>
+                                                                                                                <Setter Property="TextBlock.Foreground" Value="#269D27" />
+                                                                                                            </MultiDataTrigger.Setters>
+                                                                                                        </MultiDataTrigger>
+                                                                                                    </Style.Triggers>
+                                                                                                </Style>
+                                                                                            </TextBlock.Style>
+                                                                                        </TextBlock>
+                                                                                    <TextBlock Grid.Column="5" Foreground="Gray" VerticalAlignment="Center"
+                                                           Text="{Binding PropertiesByKeyAsText[B725F130-47EF-101A-A5F1-02608C9EEBAC:16].Text}" TextTrimming="CharacterEllipsis"
+                                                           MaxWidth="200">
+                                                                                    </TextBlock>
+                                                                                    <TextBlock Grid.Column="6" Foreground="Gray" VerticalAlignment="Center" 
+                                                           Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
+                                                           MaxWidth="200">
+                                                                                    </TextBlock>
+                                                                                </Grid>
+                                                                            </Border>
+                                                                            <DataTemplate.Triggers>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="False" />
+                                                                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="False" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Hidden" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.IsDoubleClickToOpenItem, ElementName=PART_Grid}" Value="False" />
+                                                                                        <Condition Binding="{Binding Tag.IsUnderlineItemOnHover, ElementName=PART_Grid}" Value="False" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="TextBlock.TextDecorations" TargetName="PART_DisplayName" Value="Underline" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.IsDoubleClickToOpenItem, ElementName=PART_Grid}" Value="False" />
+                                                                                        <Condition Binding="{Binding Tag.IsUnderlineItemOnHover, ElementName=PART_Grid}" Value="True" />
+                                                                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="TextBlock.TextDecorations" TargetName="PART_DisplayName" Value="Underline" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                            </DataTemplate.Triggers>
+                                                                        </DataTemplate>
+
+                                                                        <!-- Tile Item Template -->
+                                                                        <DataTemplate x:Key="TileItemTemplate">
+                                                                            <Border Padding="8,2">
+                                                                                <Grid Height="48">
+                                                                                    <Grid.ColumnDefinitions>
+                                                                                        <ColumnDefinition Width="Auto" />
+                                                                                        <ColumnDefinition Width="Auto" SharedSizeGroup="B" />
+                                                                                        <ColumnDefinition Width="48" />
+                                                                                        <ColumnDefinition Width="10" />
+                                                                                        <ColumnDefinition Width="Auto" SharedSizeGroup="A" />
+                                                                                    </Grid.ColumnDefinitions>
+                                                                                    <Grid.Resources>
+                                                                                        <helpers:ImageHelper x:Key="imageHelper" />
+                                                                                    </Grid.Resources>
+                                                                                    <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
+                                                      VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                      Visibility="Collapsed"/>
+                                                                                    <ItemsControl Grid.Column="1" Margin="0,0,2,0">
+                                                                                        <ItemsControl.ItemTemplate>
+                                                                                            <DataTemplate>
+                                                                                                <Image Source="{Binding .}" Width="16" Height="16" VerticalAlignment="Center" />
+                                                                                            </DataTemplate>
+                                                                                        </ItemsControl.ItemTemplate>
+                                                                                        <ItemsControl.ItemsPanel>
+                                                                                            <ItemsPanelTemplate>
+                                                                                                <StackPanel Orientation="Horizontal" />
+                                                                                            </ItemsPanelTemplate>
+                                                                                        </ItemsControl.ItemsPanel>
+                                                                                        <ItemsControl.Style>
+                                                                                            <Style>
+                                                                                                <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
+                                                                                                <Style.Triggers>
+                                                                                                    <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
+                                                                                                        <Setter Property="ItemsControl.Visibility" Value="Visible" />
+                                                                                                        <Setter Property="ItemsControl.Width" Value="{Binding StorageProviderUIStatusIconWidth16}" />
+                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </ItemsControl.Style>
+                                                                                    </ItemsControl>
+                                                                                    <Image Grid.Column="2" Source="{Binding DefaultFileIconExtraLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                                                        <Image.Style>
+                                                                                            <Style>
+                                                                                                <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                                                                <Style.Triggers>
+                                                                                                    <MultiDataTrigger>
+                                                                                                        <MultiDataTrigger.Conditions>
+                                                                                                            <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                                                            <Condition Binding="{Binding IsFolder}" Value="False" />
+                                                                                                        </MultiDataTrigger.Conditions>
+                                                                                                        <MultiDataTrigger.Setters>
+                                                                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                                                                        </MultiDataTrigger.Setters>
+                                                                                                    </MultiDataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                                                        <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </Image.Style>
+                                                                                    </Image>
+                                                                                    <Image Grid.Column="2" Source="{Binding DefaultFolderIconExtraLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
+                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                                                        <Image.Style>
+                                                                                            <Style>
+                                                                                                <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                                                                <Style.Triggers>
+                                                                                                    <MultiDataTrigger>
+                                                                                                        <MultiDataTrigger.Conditions>
+                                                                                                            <Condition Binding="{Binding Source, ElementName=PART_Image}" Value="{x:Null}" />
+                                                                                                            <Condition Binding="{Binding IsFolder}" Value="True" />
+                                                                                                        </MultiDataTrigger.Conditions>
+                                                                                                        <MultiDataTrigger.Setters>
+                                                                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                                                                        </MultiDataTrigger.Setters>
+                                                                                                    </MultiDataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                                                        <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </Image.Style>
+                                                                                    </Image>
+                                                                                    <Image Grid.Column="2" Width="48" Height="48" 
+                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center" x:Name="PART_Image">
+                                                                                        <Image.Style>
+                                                                                            <Style>
+                                                                                                <Style.Triggers>
+                                                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                                                        <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                    </DataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding IsCut}" Value="True">
+                                                                                                        <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                    </DataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="True">
+                                                                                                        <Setter Property="Image.Source" Value="{Binding IconAsync[48], IsAsync=True}" />
+                                                                                                    </DataTrigger>
+                                                                                                    <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="False">
+                                                                                                        <Setter Property="Image.Source" Value="{Binding ImageAsync[48], IsAsync=True}" />
+                                                                                                    </DataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </Image.Style>
+                                                                                    </Image>
+                                                                                    <Image Grid.Column="2" Width="16" Height="16" Margin="0,0,8,0"
+                                                   UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                                   VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                                                                                        <Image.Style>
+                                                                                            <Style>
+                                                                                                <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                                                                <Style.Triggers>
+                                                                                                    <MultiDataTrigger>
+                                                                                                        <MultiDataTrigger.Conditions>
+                                                                                                            <Condition Binding="{Binding IsFolder, IsAsync=True}" Value="False" />
+                                                                                                            <Condition Binding="{Binding IsImage, IsAsync=True}" Value="False" />
+                                                                                                            <Condition Binding="{Binding HasThumbnailAsync, IsAsync=True}" Value="True" />
+                                                                                                            <Condition Binding="{Binding Tag.DoShowTypeOverlay, ElementName=PART_Grid}" Value="True" />
+                                                                                                        </MultiDataTrigger.Conditions>
+                                                                                                        <MultiDataTrigger.Setters>
+                                                                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                                                                            <Setter Property="Image.Source" Value="{Binding AssociatedApplicationIconAsync[16], IsAsync=True}" />
+                                                                                                        </MultiDataTrigger.Setters>
+                                                                                                    </MultiDataTrigger>
+                                                                                                </Style.Triggers>
+                                                                                            </Style>
+                                                                                        </Image.Style>
+                                                                                    </Image>
+                                                                                    <Border Grid.Column="2" Width="48" Height="48" VerticalAlignment="Center">
+                                                                                        <Image Source="{Binding OverlayImageAsync[48], IsAsync=True}" Width="32" Height="32" 
+                                                       UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                                       VerticalAlignment="Bottom" HorizontalAlignment="Left">
+                                                                                            <Image.Style>
+                                                                                                <Style>
+                                                                                                    <Style.Triggers>
+                                                                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                        </DataTrigger>
+                                                                                                        <DataTrigger Binding="{Binding IsCut}" Value="True">
+                                                                                                            <Setter Property="Image.Opacity" Value="0.5" />
+                                                                                                        </DataTrigger>
+                                                                                                    </Style.Triggers>
+                                                                                                </Style>
+                                                                                            </Image.Style>
+                                                                                        </Image>
+                                                                                    </Border>
+                                                                                    <Grid Grid.Column="4" VerticalAlignment="Center" MaxHeight="51">
+                                                                                        <Grid.RowDefinitions>
+                                                                                            <RowDefinition Height="Auto" />
+                                                                                            <RowDefinition Height="Auto" />
+                                                                                            <RowDefinition Height="Auto" />
+                                                                                        </Grid.RowDefinitions>
+                                                                                        <Grid.Resources>
+                                                                                            <converters:DoubleConverter x:Key="doubleConverter" />
+                                                                                        </Grid.Resources>
+                                                                                        <TextBlock Grid.Row="0" TextWrapping="Wrap" MaxWidth="200" MaxHeight="34" 
+                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
+                                                           x:Name="PART_DisplayName">
+                                                                                            <TextBlock.Style>
+                                                                                                <Style>
+                                                                                                    <Style.Triggers>
+                                                                                                        <MultiDataTrigger>
+                                                                                                            <MultiDataTrigger.Conditions>
+                                                                                                                <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                                                                <Condition Binding="{Binding IsCompressed}" Value="True" />
+                                                                                                            </MultiDataTrigger.Conditions>
+                                                                                                            <MultiDataTrigger.Setters>
+                                                                                                                <Setter Property="TextBlock.Foreground" Value="Blue" />
+                                                                                                            </MultiDataTrigger.Setters>
+                                                                                                        </MultiDataTrigger>
+                                                                                                        <MultiDataTrigger>
+                                                                                                            <MultiDataTrigger.Conditions>
+                                                                                                                <Condition Binding="{Binding Tag.DoShowEncryptedOrCompressedFilesInColor, ElementName=PART_Grid}" Value="True" />
+                                                                                                                <Condition Binding="{Binding IsEncrypted}" Value="True" />
+                                                                                                            </MultiDataTrigger.Conditions>
+                                                                                                            <MultiDataTrigger.Setters>
+                                                                                                                <Setter Property="TextBlock.Foreground" Value="#269D27" />
+                                                                                                            </MultiDataTrigger.Setters>
+                                                                                                        </MultiDataTrigger>
+                                                                                                    </Style.Triggers>
+                                                                                                </Style>
+                                                                                            </TextBlock.Style>
+                                                                                        </TextBlock>
+                                                                                        <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="Gray" 
+                                                           Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
+                                                           MaxWidth="200">
+                                                                                        </TextBlock>
+                                                                                    </Grid>
+                                                                                </Grid>
+                                                                            </Border>
+                                                                            <DataTemplate.Triggers>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Visible" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="False" />
+                                                                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="False" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Hidden" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.IsDoubleClickToOpenItem, ElementName=PART_Grid}" Value="False" />
+                                                                                        <Condition Binding="{Binding Tag.IsUnderlineItemOnHover, ElementName=PART_Grid}" Value="False" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="TextBlock.TextDecorations" TargetName="PART_DisplayName" Value="Underline" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition Binding="{Binding Tag.IsDoubleClickToOpenItem, ElementName=PART_Grid}" Value="False" />
+                                                                                        <Condition Binding="{Binding Tag.IsUnderlineItemOnHover, ElementName=PART_Grid}" Value="True" />
+                                                                                        <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=TemplatedParent}}" Value="True" />
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <MultiDataTrigger.Setters>
+                                                                                        <Setter Property="TextBlock.TextDecorations" TargetName="PART_DisplayName" Value="Underline" />
+                                                                                    </MultiDataTrigger.Setters>
+                                                                                </MultiDataTrigger>
+                                                                            </DataTemplate.Triggers>
+                                                                        </DataTemplate>
+
+                                                                        <converters:EqualsConverter x:Key="equalsConverter" />
+                                                                    </ListView.Resources>
+
+                                                                    <ListView.ItemContainerStyle>
+                                                                        <Style TargetType="ListViewItem" BasedOn="{StaticResource lailaShell_ListViewItemHome}">
+                                                                        </Style>
+                                                                    </ListView.ItemContainerStyle>
+                                                                    
+                                                                    <!-- DataTrigger to override if group name is "Tiles" -->
+                                                                    <ListView.Style>
+                                                                        <Style TargetType="ListView">
+                                                                            <Setter Property="ItemsPanel" >
+                                                                                <Setter.Value>
+                                                                                    <StaticResource ResourceKey="GridPanel"/>
+                                                                                </Setter.Value>
+                                                                            </Setter>
+                                                                            <Setter Property="ItemTemplate">
+                                                                                <Setter.Value>
+                                                                                    <StaticResource ResourceKey="GridItemTemplate"/>
+                                                                                </Setter.Value>
+                                                                            </Setter>
+                                                                            <Style.Triggers>
+                                                                                <MultiDataTrigger>
+                                                                                    <MultiDataTrigger.Conditions>
+                                                                                        <Condition>
+                                                                                            <Condition.Binding>
+                                                                                                <MultiBinding Converter="{StaticResource equalsConverter}">
+                                                                                                    <Binding Path="Name"/>
+                                                                                                    <Binding Path="Tag.TilesGroupName" ElementName="PART_Grid" />
+                                                                                                </MultiBinding>
+                                                                                            </Condition.Binding>
+                                                                                            <Condition.Value>true</Condition.Value>
+                                                                                        </Condition>
+                                                                                    </MultiDataTrigger.Conditions>
+                                                                                    <Setter Property="ItemsPanel" >
+                                                                                        <Setter.Value>
+                                                                                            <StaticResource ResourceKey="TilePanel"/>
+                                                                                        </Setter.Value>
+                                                                                    </Setter>
+                                                                                    <Setter Property="ItemTemplate">
+                                                                                        <Setter.Value>
+                                                                                            <StaticResource ResourceKey="TileItemTemplate"/>
+                                                                                        </Setter.Value>
+                                                                                    </Setter>
+                                                                                </MultiDataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </ListView.Style>
+                                                                </ListView>
+                                                            </Border>
+                                                        </Expander>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </GroupStyle.ContainerStyle>
+                                </GroupStyle>
+                            </ListView.Resources>
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel>
+                                    </StackPanel>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
+                            <i:Interaction.Behaviors>
+                                <behaviors:SharedSelectionBehavior IsSelecting="{Binding IsSelecting, RelativeSource={RelativeSource TemplatedParent}}" />
+                            </i:Interaction.Behaviors>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Panel.ZIndex="3">
+                            <Grid.Style>
+                                <Style>
+                                    <Setter Property="Grid.Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Folder.EnumerationException}" Value="{x:Null}">
+                                            <Setter Property="Grid.Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="25" />
+                                <ColumnDefinition Width="36" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="25" />
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="1" Grid.ColumnSpan="2" Background="#eeeeee" CornerRadius="5" Margin="-5" />
+                            <Image Grid.Column="1" Source="../Images/error32.png" Width="32" Height="32" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                            <TextBlock Grid.Column="2" Text="{Binding Folder.EnumerationException.Message}" VerticalAlignment="Center" />
+                        </Grid>
+                        <Grid VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="3">
+                            <Grid.Style>
+                                <Style>
+                                    <Setter Property="Grid.Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Folder.EnumerationException}" Value="{x:Null}" />
+                                                <Condition Binding="{Binding Folder.IsEmpty}" Value="True" />
+                                                <Condition Binding="{Binding Visibility, ElementName=PART_ListView}" Value="Visible" />
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="Grid.Visibility" Value="Visible" />
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="10" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="This folder is empty." Margin="0,5,0,0" 
+                                       TextAlignment="Center" TextWrapping="Wrap" Foreground="Gray" />
+                        </Grid>
+                        <Grid x:Name="PART_DragInsertIndicator" Visibility="Collapsed" IsHitTestVisible="False" 
+                              VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="2" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="2" />
+                            </Grid.RowDefinitions>
+
+                            <Line Grid.Row="0" Y1="1" X1="0" Y2="1" X2="6" Stroke="Blue" StrokeThickness="2" />
+                            <Line Grid.Row="1" Y1="0" X1="3" Y2="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Grid}}" X2="3" Stroke="Blue" StrokeThickness="2" />
+                            <Line Grid.Row="2" Y1="0" X1="0" Y2="0" X2="6" Stroke="Blue" StrokeThickness="2" />
+                        </Grid>
+                        <Grid x:Name="PART_DragInsertIndicatorVertical" Visibility="Collapsed" IsHitTestVisible="False" 
+                              VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="2" />
+                            </Grid.ColumnDefinitions>
+
+                            <Line Grid.Column="0" X1="1" Y1="0" X2="1" Y2="6" Stroke="Blue" StrokeThickness="2" />
+                            <Line Grid.Column="1" X1="0" Y1="3" X2="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}}" Y2="3" Stroke="Blue" StrokeThickness="2" />
+                            <Line Grid.Column="2" X1="0" Y1="0" X2="0" Y2="6" Stroke="Blue" StrokeThickness="2" />
+                        </Grid>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

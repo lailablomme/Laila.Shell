@@ -8,12 +8,13 @@ Imports Laila.Shell.Helpers
 Imports Microsoft.Xaml.Behaviors
 
 Namespace Behaviors
-    Public Class SelectionBehavior
+    Public Class SharedSelectionBehavior
         Inherits Behavior(Of ListBox)
 
-        Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(SelectionBehavior), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(SharedSelectionBehavior), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private _listBox As ListBox
+        Private _children As List(Of ListBox)
         Private _selectionRectangle As Border
         Private _canStartSelecting As Boolean
         Private _mouseDownPos As Point
@@ -71,7 +72,9 @@ Namespace Behaviors
                             _mouseOriginalSourceDown = UIHelper.GetParentOfType(Of TextBlock)(e.OriginalSource)
                         End If
 
-                        If Not _listBox.SelectedItems.Contains(clickedItem) _
+                        _children = UIHelper.FindVisualChildren(Of ListBox)(_listBox).ToList()
+
+                        If _children.FirstOrDefault(Function(listBox) listBox.SelectedItems.Contains(clickedItem)) Is Nothing _
                             AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing _
                             AndAlso UIHelper.GetParentOfType(Of GridViewHeaderRowPresenter)(e.OriginalSource) Is Nothing Then
                             If TypeOf _listBox Is ListView AndAlso TypeOf CType(_listBox, ListView).View Is GridView Then
@@ -171,6 +174,8 @@ Namespace Behaviors
                                             _sv.ScrollToVerticalOffset(_sv.VerticalOffset + 10)
                                         End If
 
+                                        _children = UIHelper.FindVisualChildren(Of ListBox)(_listBox).ToList()
+
                                         onAfterMouseMove()
                                     End Sub
                                 _scrollTimer.Interval = TimeSpan.FromMilliseconds(20)
@@ -216,14 +221,16 @@ Namespace Behaviors
             Dim height As Double = _selectionRectangle.Height
             Dim rect As Rect = New Rect(left, top, width, height)
 
-            For Each listViewItem In UIHelper.FindVisualChildren(Of ListViewItem)(_listBox)
-                Dim bounds As Rect = listViewItem.TransformToAncestor(_listBox).TransformBounds(
+            For Each listBox In _children
+                For Each listViewItem In UIHelper.FindVisualChildren(Of ListViewItem)(listBox)
+                    Dim bounds As Rect = listViewItem.TransformToAncestor(_listBox).TransformBounds(
                                 New Rect(0.0, 0.0, listViewItem.ActualWidth, listViewItem.ActualHeight))
-                If rect.IntersectsWith(bounds) AndAlso Not _listBox.SelectedItems.Contains(listViewItem.DataContext) Then
-                    _listBox.SelectedItems.Add(listViewItem.DataContext)
-                ElseIf Not rect.IntersectsWith(bounds) AndAlso _listBox.SelectedItems.Contains(listViewItem.DataContext) Then
-                    _listBox.SelectedItems.Remove(listViewItem.DataContext)
-                End If
+                    If rect.IntersectsWith(bounds) AndAlso Not listBox.SelectedItems.Contains(listViewItem.DataContext) Then
+                        listBox.SelectedItems.Add(listViewItem.DataContext)
+                    ElseIf Not rect.IntersectsWith(bounds) AndAlso listBox.SelectedItems.Contains(listViewItem.DataContext) Then
+                        listBox.SelectedItems.Remove(listViewItem.DataContext)
+                    End If
+                Next
             Next
 
             _listBox.Focus()

@@ -43,6 +43,7 @@ Namespace Helpers
                         Try
                             result = s.Deserialize(stream)
                             If Not result.ActiveView.HasValue Then result.ActiveView = folder.DefaultView
+                            If Not folder.Views.Exists(Function(v) v.Guid.Equals(result.ActiveView)) Then result.ActiveView = folder.DefaultView
                         Catch ex As Exception
                         End Try
                     End Using

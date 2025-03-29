@@ -56,7 +56,7 @@ Namespace Controls
         Protected PART_DragInsertIndicator As Grid
         Private PART_CheckBoxSelectAll As CheckBox
         Private _isInternallySettingSelectAll As Boolean
-        Private _selectionHelper As SelectionHelper(Of Item) = Nothing
+        Protected _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _mousePointDown As Point
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
@@ -170,8 +170,8 @@ Namespace Controls
             _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListBox)
             _selectionHelper.SelectionChanged =
                 Sub()
-                    If Not Me.Folder Is Nothing AndAlso Not _ignoreSelection Then _
-                                    Me.SelectedItems = _selectionHelper.SelectedItems
+                    If Not _selectionHelper Is Nothing AndAlso Not Me.Folder Is Nothing AndAlso Not _ignoreSelection Then _
+                        Me.SelectedItems = _selectionHelper.SelectedItems
                 End Sub
             _selectionHelper.SetSelectedItems(Me.SelectedItems)
 
@@ -214,7 +214,7 @@ Namespace Controls
             Return New Size(Me.PART_ListBox.ActualWidth, Me.PART_ListBox.ActualHeight)
         End Function
 
-        Public Sub SetSelectedItemsSoft(items As IEnumerable(Of Item))
+        Public Overridable Sub SetSelectedItemsSoft(items As IEnumerable(Of Item))
             _ignoreSelection = True
             _selectionHelper.SetSelectedItems(items, False)
             _ignoreSelection = False
@@ -321,6 +321,10 @@ Namespace Controls
 
             Return Math.Abs(formattedText.Height - textBlock.DesiredSize.Height) > 0.5
         End Function
+
+        Protected Overridable Sub ToggleCheckBox(checkBox As CheckBox)
+            checkBox.IsChecked = Not checkBox.IsChecked
+        End Sub
 
         Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
             Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
@@ -451,9 +455,9 @@ Namespace Controls
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                     Dim checkBox As CheckBox = UIHelper.FindVisualChildren(Of CheckBox)(listBoxItem)(0)
                     Dim p As Point = Mouse.GetPosition(checkBox)
-                    If checkBox.Visibility = Visibility.Visible AndAlso p.X > 0 AndAlso p.Y > 0 _
+                    If Not checkBox Is Nothing AndAlso checkBox.Visibility = Visibility.Visible AndAlso p.X > 0 AndAlso p.Y > 0 _
                         AndAlso p.X < checkBox.ActualWidth AndAlso p.Y < checkBox.ActualHeight Then
-                        checkBox.IsChecked = Not checkBox.IsChecked
+                        Me.ToggleCheckBox(checkBox)
                         e.Handled = True
                     ElseIf Keyboard.Modifiers = ModifierKeys.None Then
                         If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Contains(clickedItem) Then e.Handled = True

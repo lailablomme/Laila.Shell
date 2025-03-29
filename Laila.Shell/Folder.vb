@@ -57,7 +57,7 @@ Public Class Folder
     Private _notificationSubscribersLock As Object = New Object()
     Private _notificationThreadPool As Helpers.ThreadPool
     Private _shellFolder As IShellFolder
-    Private _views As List(Of FolderViewRegistration)
+    Protected _views As List(Of FolderViewRegistration)
     Private _wasActivity As Boolean
 
     ''' <summary>
@@ -867,6 +867,7 @@ Public Class Folder
 
         Dim result As Dictionary(Of String, Item) = New Dictionary(Of String, Item)
         Dim newFullPaths As HashSet(Of String) = New HashSet(Of String)()
+        Dim dupes As List(Of Item) = New List(Of Item)
 
         ' pre-parse sort property 
         Dim isSortPropertyByText As Boolean, sortPropertyKey As String = Nothing, isSortPropertyDisplaySortValue As Boolean
@@ -902,24 +903,17 @@ Public Class Folder
                                 Else
                                     ' this happens when a folder is refreshed
                                     Dim hasDupes As HashSet(Of String) = New HashSet(Of String)
+                                    For Each i In dupes
+                                        hasDupes.Add(i.FullPath)
+                                    Next
                                     Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)
                                     For Each item In _items
                                         If Not hasDupes.Contains(item.FullPath & item.DeDupeKey) Then
-                                            Try
-                                                previousFullPaths.Add(item.FullPath & item.DeDupeKey)
-                                            Catch ex As Exception
-                                                hasDupes.Add(item.FullPath & item.DeDupeKey)
-                                                previousFullPaths.Remove(item.FullPath & item.DeDupeKey)
-                                            End Try
+                                            previousFullPaths.Add(item.FullPath & item.DeDupeKey)
                                         Else
                                             previousFullPaths.Add(item.Pidl.ToString() & item.DeDupeKey)
                                         End If
                                     Next
-                                    If hasDupes.Count > 0 Then
-                                        For Each item In _items.ToList().Where(Function(i) hasDupes.Contains(i.FullPath & i.DeDupeKey))
-                                            previousFullPaths.Add(item.Pidl.ToString() & item.DeDupeKey)
-                                        Next
-                                    End If
                                     Dim newItems As Item() = result.Where(Function(i) Not previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
                                     Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
                                     existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
@@ -1040,7 +1034,7 @@ Public Class Folder
 
         Me.EnumerateItems(Me.ShellItem2, flags, cancellationToken,
             isSortPropertyByText, isSortPropertyDisplaySortValue, sortPropertyKey,
-            result, newFullPaths, addItems, threadId)
+            result, newFullPaths, addItems, threadId, dupes)
 
         If Not cancellationToken.IsCancellationRequested Then
             ' add new items
@@ -1061,7 +1055,7 @@ Public Class Folder
     Protected Overridable Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInt32, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
         result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action,
-        threadId As Integer?)
+        threadId As Integer?, dupes As List(Of Item))
 
         Dim isDebuggerAttached As Boolean = Debugger.IsAttached
         Dim isRootDesktop As Boolean = If(Me.Pidl?.Equals(Shell.Desktop.Pidl), False)
@@ -1069,7 +1063,6 @@ Public Class Folder
         For Each customFolder In Shell.CustomFolders
             replacedWithCustomFolders.Add(customFolder.ReplacesFullPath.ToLower())
         Next
-        Dim hasDupes As List(Of Item) = New List(Of Item)
 
         Dim bindCtx As ComTypes.IBindCtx = Nothing, propertyBag As IPropertyBag = Nothing
         Dim var As PROPVARIANT, enumShellItems As IEnumShellItems = Nothing
@@ -1135,7 +1128,7 @@ Public Class Folder
                                         End Try
                                     End If
                                     If isAlreadyAdded Then
-                                        hasDupes.Add(newItem)
+                                        dupes.Add(newItem)
                                     End If
 
                                     ' preload sort property 
@@ -1204,16 +1197,16 @@ Public Class Folder
                         Throw Marshal.GetExceptionForHR(h)
                     End If
 
-                    If hasDupes.Count > 0 Then
-                        For Each item In result.Where(Function(kv) hasDupes.Exists(Function(d) d.FullPath = kv.Value.FullPath)).ToList()
-                            If Not hasDupes.Exists(Function(d) d.Pidl.Equals(item.Value.Pidl)) Then
-                                hasDupes.Add(item.Value)
+                    If dupes.Count > 0 Then
+                        For Each item In result.Where(Function(kv) dupes.Exists(Function(d) d.FullPath = kv.Value.FullPath)).ToList()
+                            If Not dupes.Exists(Function(d) d.Pidl.Equals(item.Value.Pidl)) Then
+                                dupes.Add(item.Value)
                                 result.Remove(item.Key)
                             Else
-                                hasDupes.Remove(hasDupes.FirstOrDefault(Function(d) d.Pidl.Equals(item.Value.Pidl)))
+                                dupes.Remove(dupes.FirstOrDefault(Function(d) d.Pidl.Equals(item.Value.Pidl)))
                             End If
                         Next
-                        For Each item In hasDupes
+                        For Each item In dupes
                             If Not result.ContainsKey(item.Pidl.ToString()) Then
                                 result.Add(item.Pidl.ToString() & item.DeDupeKey, item)
                             End If

@@ -20,6 +20,7 @@
         <ResourceDictionary Source="/Laila.Shell;component/Controls/Previewer.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/SearchBox.xaml" />
         <ResourceDictionary Source="/Laila.Shell;component/Controls/FolderComboBox.xaml" />
+        <ResourceDictionary Source="/Laila.Shell;component/Controls/HomeFolderTilesView.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>

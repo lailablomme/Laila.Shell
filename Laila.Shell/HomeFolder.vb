@@ -17,6 +17,7 @@ Imports System.Collections.ObjectModel
 Imports System.Windows.Controls
 Imports Laila.Shell.Controls
 Imports System.Windows.Data
+Imports System.ComponentModel
 
 Public Class HomeFolder
     Inherits Folder
@@ -33,6 +34,12 @@ Public Class HomeFolder
         }
         Me.ItemsGroupByPropertyName = "PropertiesByKeyAsText[" & Home_CategoryProperty.Key.ToString() & "].GroupByText"
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
+
+        _views = New List(Of FolderViewRegistration) From {
+            New FolderViewRegistration(New Guid("5aab6a71-6d79-4bcd-8a85-3ed37a3fdb4d"), "Tiles", New Uri("pack://application:,,,/Laila.Shell;component/Images/tiles16.png"), GetType(HomeFolderTilesView)),
+            New FolderViewRegistration(New Guid("fc73e12c-6b88-4a3f-9a2e-c7414bcd1f1f"), "Details", New Uri("pack://application:,,,/Laila.Shell;component/Images/details16.png"), GetType(HomeFolderDetailsView))
+        }
+        Me.DefaultView = New Guid("5aab6a71-6d79-4bcd-8a85-3ed37a3fdb4d")
 
         AddHandler PinnedItems.ItemPinned,
             Sub(s2 As Object, e2 As PinnedItemEventArgs)
@@ -146,7 +153,7 @@ Public Class HomeFolder
 
     Protected Overrides Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInteger, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
-        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action, threadId As Integer?)
+        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action, threadId As Integer?, dupes As List(Of Item))
 
         ' enumerate pinned items
         Dim count As UInt64 = UInt64.MaxValue
@@ -160,8 +167,9 @@ Public Class HomeFolder
                 item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
                 item.DeDupeKey = "PINNED"
-                result.Add(item.FullPath & item.DeDupeKey, item)
-                newFullPaths.Add(item.FullPath & item.DeDupeKey)
+                result.Add(item.Pidl.ToString() & item.DeDupeKey, item)
+                dupes.Add(item)
+                newFullPaths.Add(item.Pidl.ToString() & item.DeDupeKey)
                 If TypeOf item Is Folder Then Me.HasSubFolders = True
 
                 count -= 1
@@ -178,8 +186,9 @@ Public Class HomeFolder
             item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
             item.DeDupeKey = "FREQUENT"
-            result.Add(item.FullPath & item.DeDupeKey, item)
-            newFullPaths.Add(item.FullPath & item.DeDupeKey)
+            result.Add(item.Pidl.ToString() & item.DeDupeKey, item)
+            dupes.Add(item)
+            newFullPaths.Add(item.Pidl.ToString() & item.DeDupeKey)
             If TypeOf item Is Folder Then Me.HasSubFolders = True
 
             count -= 1
@@ -188,7 +197,13 @@ Public Class HomeFolder
         ' enumerate recent files
         _hookFolderFullPath = Shell.GetSpecialFolder(SpecialFolders.Recent).FullPath
         MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone().ShellItem2, flags, cancellationToken, isSortPropertyByText,
-            isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId)
+            isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId, dupes)
+
+        UIHelper.OnUIThread(
+            Sub()
+                Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                view.Refresh()
+            End Sub)
     End Sub
 
     Protected Friend Overrides Function InitializeItem(item As Item) As Item
