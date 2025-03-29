@@ -70,8 +70,8 @@
                                                                                         <helpers:ImageHelper x:Key="imageHelper" />
                                                                                     </Grid.Resources>
                                                                                     <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
-                                                      VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
-                                                      Visibility="Collapsed"/>
+                                                                                              VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                                                              Visibility="Collapsed" Style="{StaticResource lailaShell_CheckBoxHomeStyle}" />
                                                                                     <ItemsControl Grid.Column="1" Margin="0,0,2,0">
                                                                                         <ItemsControl.ItemTemplate>
                                                                                             <DataTemplate>
@@ -97,7 +97,7 @@
                                                                                         </ItemsControl.Style>
                                                                                     </ItemsControl>
                                                                                     <Image Grid.Column="2" Source="{Binding DefaultFileIconLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
-                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                                                            UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                                                         <Image.Style>
                                                                                             <Style>
                                                                                                 <Setter Property="Image.Visibility" Value="Collapsed" />
@@ -119,7 +119,7 @@
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Image Grid.Column="2" Source="{Binding DefaultFolderIconLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
-                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                                                            UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                                                         <Image.Style>
                                                                                             <Style>
                                                                                                 <Setter Property="Image.Visibility" Value="Collapsed" />
@@ -141,7 +141,7 @@
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Image Grid.Column="2" Width="24" Height="24" 
-                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center" x:Name="PART_Image">
+                                                                                           UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center" x:Name="PART_Image">
                                                                                         <Image.Style>
                                                                                             <Style>
                                                                                                 <Style.Triggers>
@@ -163,8 +163,8 @@
                                                                                     </Image>
                                                                                     <Border Grid.Column="2" Width="24" Height="24" VerticalAlignment="Center">
                                                                                         <Image Source="{Binding OverlayImage[24]}" Width="24" Height="24" 
-                                                       UseLayoutRounding="True" SnapsToDevicePixels="True"
-                                                       VerticalAlignment="Bottom" HorizontalAlignment="Left">
+                                                                                               UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                                                                               VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                                                             <Image.Style>
                                                                                                 <Style>
                                                                                                     <Style.Triggers>
@@ -180,8 +180,8 @@
                                                                                         </Image>
                                                                                     </Border>
                                                                                     <TextBlock Grid.Column="4" TextWrapping="Wrap" VerticalAlignment="Center"
-                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
-                                                           x:Name="PART_DisplayName">
+                                                                                               Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
+                                                                                               x:Name="PART_DisplayName">
                                                                                             <TextBlock.Style>
                                                                                                 <Style>
                                                                                                     <Style.Triggers>
@@ -208,12 +208,12 @@
                                                                                             </TextBlock.Style>
                                                                                         </TextBlock>
                                                                                     <TextBlock Grid.Column="5" Foreground="Gray" VerticalAlignment="Center"
-                                                           Text="{Binding PropertiesByKeyAsText[390DCE80-0981-4BBC-A55D-95F189A5A8FD:2].Text}" TextTrimming="CharacterEllipsis"
-                                                           MaxWidth="200">
+                                                                                               Text="{Binding PropertiesByKeyAsText[390DCE80-0981-4BBC-A55D-95F189A5A8FD:2].Text}" TextTrimming="CharacterEllipsis"
+                                                                                               MaxWidth="200">
                                                                                     </TextBlock>
                                                                                     <TextBlock Grid.Column="6" Foreground="Gray" VerticalAlignment="Center" 
-                                                           Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
-                                                           MaxWidth="200">
+                                                                                               Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
+                                                                                               MaxWidth="200">
                                                                                     </TextBlock>
                                                                                 </Grid>
                                                                             </Border>
@@ -283,8 +283,8 @@
                                                                                         <helpers:ImageHelper x:Key="imageHelper" />
                                                                                     </Grid.Resources>
                                                                                     <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
-                                                      VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
-                                                      Visibility="Collapsed"/>
+                                                                                              VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                                                              Visibility="Collapsed" Style="{StaticResource lailaShell_CheckBoxHomeStyle}" />
                                                                                     <ItemsControl Grid.Column="1" Margin="0,0,2,0">
                                                                                         <ItemsControl.ItemTemplate>
                                                                                             <DataTemplate>
@@ -310,7 +310,7 @@
                                                                                         </ItemsControl.Style>
                                                                                     </ItemsControl>
                                                                                     <Image Grid.Column="2" Source="{Binding DefaultFileIconExtraLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
-                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                                                            UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                                                         <Image.Style>
                                                                                             <Style>
                                                                                                 <Setter Property="Image.Visibility" Value="Collapsed" />
@@ -332,7 +332,7 @@
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Image Grid.Column="2" Source="{Binding DefaultFolderIconExtraLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
-                                                    UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                                                                            UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                                                         <Image.Style>
                                                                                             <Style>
                                                                                                 <Setter Property="Image.Visibility" Value="Collapsed" />
@@ -354,7 +354,7 @@
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Image Grid.Column="2" Width="48" Height="48" 
-                                                   UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center" x:Name="PART_Image">
+                                                                                           UseLayoutRounding="True" SnapsToDevicePixels="True" VerticalAlignment="Center" x:Name="PART_Image">
                                                                                         <Image.Style>
                                                                                             <Style>
                                                                                                 <Style.Triggers>
@@ -375,8 +375,8 @@
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Image Grid.Column="2" Width="16" Height="16" Margin="0,0,8,0"
-                                                   UseLayoutRounding="True" SnapsToDevicePixels="True"
-                                                   VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                                                                                           UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                                                                           VerticalAlignment="Bottom" HorizontalAlignment="Right">
                                                                                         <Image.Style>
                                                                                             <Style>
                                                                                                 <Setter Property="Image.Visibility" Value="Collapsed" />
@@ -399,8 +399,8 @@
                                                                                     </Image>
                                                                                     <Border Grid.Column="2" Width="48" Height="48" VerticalAlignment="Center">
                                                                                         <Image Source="{Binding OverlayImage[48]}" Width="32" Height="32" 
-                                                       UseLayoutRounding="True" SnapsToDevicePixels="True"
-                                                       VerticalAlignment="Bottom" HorizontalAlignment="Left">
+                                                                                               UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                                                                               VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                                                             <Image.Style>
                                                                                                 <Style>
                                                                                                     <Style.Triggers>
@@ -425,8 +425,8 @@
                                                                                             <converters:DoubleConverter x:Key="doubleConverter" />
                                                                                         </Grid.Resources>
                                                                                         <TextBlock Grid.Row="0" TextWrapping="Wrap" MaxWidth="200" MaxHeight="34" 
-                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
-                                                           x:Name="PART_DisplayName">
+                                                                                                   Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
+                                                                                                   x:Name="PART_DisplayName">
                                                                                             <TextBlock.Style>
                                                                                                 <Style>
                                                                                                     <Style.Triggers>
@@ -453,8 +453,8 @@
                                                                                             </TextBlock.Style>
                                                                                         </TextBlock>
                                                                                         <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="Gray" 
-                                                           Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
-                                                           MaxWidth="200">
+                                                                                                   Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
+                                                                                                   MaxWidth="200">
                                                                                         </TextBlock>
                                                                                     </Grid>
                                                                                 </Grid>

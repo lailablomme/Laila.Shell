@@ -191,6 +191,76 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Geometry x:Key="CheckHome">M 0,3 L 4,7 L 10,0</Geometry>
+    <Style TargetType="CheckBox" x:Key="lailaShell_CheckBoxHomeStyle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Gray" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Width" Value="20" />
+        <Setter Property="MinHeight" Value="20" />
+        <Setter Property="MinWidth" Value="20" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="5" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                                BorderThickness="{TemplateBinding BorderThickness}" Padding="0" 
+                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                        <Grid>
+                            <Path x:Name="PART_Check" Data="{StaticResource CheckHome}" StrokeThickness="1.5" Visibility="Hidden" Margin="0" 
+                              Fill="Transparent" Stroke="White" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="8"/>
+                            <Border x:Name="PART_LayOver" CornerRadius="5" Width="19" Height="19" Visibility="Hidden"
+                                BorderThickness="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation 
+                                                Storyboard.TargetProperty="Width"
+                                                Storyboard.TargetName="PART_LayOver"
+                                                Duration="0:0:0.3" 
+                                                From="19" 
+                                                To="0" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Setter TargetName="PART_Check" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="PART_LayOver" Property="Visibility" Value="Visible" />
+                            <Setter Property="Background" TargetName="Bd" Value="#0690CA"/>
+                            <Setter Property="Background" TargetName="PART_LayOver" Value="#0690CA"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="#0690CA"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsChecked" Value="True" />
+                            </MultiTrigger.Conditions>
+                            <MultiTrigger.Setters>
+                                <Setter Property="Background" TargetName="PART_LayOver" Value="#26A0DA"/>
+                                <Setter Property="Background" TargetName="Bd" Value="#26A0DA"/>
+                                <Setter Property="Background" TargetName="PART_LayOver" Value="#0690CA"/>
+                            </MultiTrigger.Setters>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsChecked" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <MultiTrigger.Setters>
+                                <Setter Property="Background" TargetName="Bd" Value="#EEEEEE"/>
+                            </MultiTrigger.Setters>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
     <Style TargetType="ToggleButton" x:Key="lailaShell_GroupByExpanderToggleButtonStyle">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
