@@ -797,15 +797,21 @@ Public Class Item
         End Get
     End Property
 
+    Public Overridable ReadOnly Property StorageProviderUIStatusIcons16 As ImageSource()
+        Get
+            Dim result As ImageSource() = Nothing
+            If Not Me.disposedValue Then
+                result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16
+            End If
+            Return result
+        End Get
+    End Property
+
     Public Overridable ReadOnly Property StorageProviderUIStatusIcons16Async As ImageSource()
         Get
             Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource()
-                    Dim result As ImageSource() = Nothing
-                    If Not Me.disposedValue Then
-                        result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16
-                    End If
-                    Return result
+                    Return Me.StorageProviderUIStatusIcons16
                 End Function)
         End Get
     End Property
