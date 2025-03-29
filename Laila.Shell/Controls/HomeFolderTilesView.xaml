@@ -466,7 +466,7 @@
                                                                                                 </Style>
                                                                                             </TextBlock.Style>
                                                                                         </TextBlock>
-                                                                                        <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="Gray" 
+                                                                                        <TextBlock Grid.Row="1" Foreground="Gray" 
                                                                                                    Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
                                                                                                    MaxWidth="200">
                                                                                             <TextBlock.Style>
