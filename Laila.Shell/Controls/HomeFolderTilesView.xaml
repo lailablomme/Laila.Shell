@@ -179,7 +179,8 @@
                                                                                             </Image.Style>
                                                                                         </Image>
                                                                                     </Border>
-                                                                                    <TextBlock Grid.Column="4" TextWrapping="Wrap" VerticalAlignment="Center"
+                                                                                    <StackPanel Grid.Column="4" Orientation="Horizontal">
+                                                                                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center"
                                                                                                Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
                                                                                                x:Name="PART_DisplayName">
                                                                                             <TextBlock.Style>
@@ -207,6 +208,19 @@
                                                                                                 </Style>
                                                                                             </TextBlock.Style>
                                                                                         </TextBlock>
+                                                                                        <Image Source="../Images/pin16.png" Margin="4,0,0,0" Width="16" Height="16">
+                                                                                            <Image.Style>
+                                                                                                <Style>
+                                                                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                                                                    <Style.Triggers>
+                                                                                                        <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                                                                        </DataTrigger>
+                                                                                                    </Style.Triggers>
+                                                                                                </Style>
+                                                                                            </Image.Style>
+                                                                                        </Image>
+                                                                                    </StackPanel>
                                                                                     <TextBlock Grid.Column="5" Foreground="Gray" VerticalAlignment="Center"
                                                                                                Text="{Binding PropertiesByKeyAsText[390DCE80-0981-4BBC-A55D-95F189A5A8FD:2].Text}" TextTrimming="CharacterEllipsis"
                                                                                                MaxWidth="200">
@@ -455,7 +469,32 @@
                                                                                         <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="Gray" 
                                                                                                    Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
                                                                                                    MaxWidth="200">
+                                                                                            <TextBlock.Style>
+                                                                                                <Style>
+                                                                                                    <Setter Property="TextBlock.Visibility" Value="Visible" />
+                                                                                                    <Style.Triggers>
+                                                                                                        <DataTrigger Binding="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" Value="">
+                                                                                                            <Setter Property="TextBlock.Visibility" Value="Collapsed" />
+                                                                                                        </DataTrigger>
+                                                                                                        <DataTrigger Binding="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" Value="{x:Null}">
+                                                                                                            <Setter Property="TextBlock.Visibility" Value="Collapsed" />
+                                                                                                        </DataTrigger>
+                                                                                                    </Style.Triggers>
+                                                                                                </Style>
+                                                                                            </TextBlock.Style>
                                                                                         </TextBlock>
+                                                                                        <Image Grid.Row="2" Source="../Images/pin16.png" Width="16" Height="16" HorizontalAlignment="Left">
+                                                                                            <Image.Style>
+                                                                                                <Style>
+                                                                                                    <Setter Property="Image.Visibility" Value="Collapsed" />
+                                                                                                    <Style.Triggers>
+                                                                                                        <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                                                                                            <Setter Property="Image.Visibility" Value="Visible" />
+                                                                                                        </DataTrigger>
+                                                                                                    </Style.Triggers>
+                                                                                                </Style>
+                                                                                            </Image.Style>
+                                                                                        </Image>
                                                                                     </Grid>
                                                                                 </Grid>
                                                                             </Border>

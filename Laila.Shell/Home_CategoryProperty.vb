@@ -26,18 +26,18 @@ Public Class Home_CategoryProperty
     End Sub
 
     Public Enum [Type]
-        PINNED_ITEM = 3
-        FREQUENT_FOLDER = 2
+        QUICK_LAUNCH = 3
+        FAVORITES = 2
         RECENT_FILE = 1
     End Enum
 
     Public Overrides ReadOnly Property Text As String
         Get
             Select Case CType(Me.Value, [Type])
-                Case [Type].PINNED_ITEM
-                    Return "Pinned items"
-                Case [Type].FREQUENT_FOLDER
-                    Return "Frequent folders"
+                Case [Type].QUICK_LAUNCH
+                    Return "Quick launch"
+                Case [Type].FAVORITES
+                    Return "Favorites"
                 Case [Type].RECENT_FILE
                     Return "Recent files"
                 Case Else

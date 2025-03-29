@@ -37,7 +37,7 @@ Namespace Controls
 
         Public Overridable ReadOnly Property TilesGroupName As String
             Get
-                Return "Pinned items"
+                Return "Quick launch"
             End Get
         End Property
 

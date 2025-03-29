@@ -162,7 +162,7 @@ Public Class HomeFolder
                 Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
                 item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
 
-                Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.PINNED_ITEM)
+                Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.QUICK_LAUNCH)
                 item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
                 item.DeDupeKey = "PINNED"
@@ -185,7 +185,7 @@ Public Class HomeFolder
             Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
             item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
 
-            Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.FREQUENT_FOLDER)
+            Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.QUICK_LAUNCH)
             item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
             item.DeDupeKey = "FREQUENT"
@@ -277,7 +277,7 @@ Public Class HomeFolder
                 AndAlso (UIHelper.GetParentOfType(Of BaseFolderView)(overListBoxItem) Is Nothing _
                          OrElse CType(overListBoxItem?.DataContext, Item).IsPinned))
         If canPinItem Then
-            WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
+            WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick launch")
             Return HRESULT.S_OK
         Else
             Return HRESULT.S_FALSE
