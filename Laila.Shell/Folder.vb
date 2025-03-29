@@ -56,6 +56,7 @@ Public Class Folder
     Private _notificationSubscribers As List(Of IProcessNotifications) = New List(Of IProcessNotifications)()
     Private _notificationSubscribersLock As Object = New Object()
     Private _notificationThreadPool As Helpers.ThreadPool
+    Private _previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
     Private _shellFolder As IShellFolder
     Protected _views As List(Of FolderViewRegistration)
     Friend _wasActivity As Boolean
@@ -902,22 +903,14 @@ Public Class Folder
                                     Next
                                 Else
                                     ' this happens when a folder is refreshed
-                                    Dim hasDupes As HashSet(Of String) = New HashSet(Of String)
+                                    Dim dupeFullPaths As HashSet(Of String) = New HashSet(Of String)
                                     For Each i In dupes
-                                        hasDupes.Add(i.FullPath)
+                                        dupeFullPaths.Add(i.FullPath)
                                     Next
-                                    Dim previousFullPaths As HashSet(Of String) = New HashSet(Of String)
-                                    For Each item In _items
-                                        If Not hasDupes.Contains(item.FullPath & item.DeDupeKey) Then
-                                            previousFullPaths.Add(item.FullPath & item.DeDupeKey)
-                                        Else
-                                            previousFullPaths.Add(item.Pidl.ToString() & item.DeDupeKey)
-                                        End If
-                                    Next
-                                    Dim newItems As Item() = result.Where(Function(i) Not previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
-                                    Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
-                                    existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
-                                            .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not hasDupes.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
+                                    Dim newItems As Item() = result.Where(Function(i) Not _previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
+                                    Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
+                                    existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
+                                            .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
 
                                     Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
                                     For Each item In existingItems
@@ -945,6 +938,8 @@ Public Class Folder
                                     item.IsProcessingNotifications = True
                                 Next
                             End If
+
+                            _previousFullPaths = newFullPaths
                         End If
                     End Sub)
 
@@ -1119,12 +1114,19 @@ Public Class Folder
                                     If Not isAlreadyAdded Then
                                         Try
                                             result.Add(newItem.FullPath & newItem.DeDupeKey, newItem)
+                                            newFullPaths.Add(newItem.FullPath & newItem.DeDupeKey)
                                         Catch ex As Exception
                                             isAlreadyAdded = True
                                         End Try
                                     End If
                                     If isAlreadyAdded Then
-                                        dupes.Add(newItem)
+                                        Try
+                                            result.Add(newItem.Pidl.ToString() & newItem.DeDupeKey, newItem)
+                                            newFullPaths.Add(newItem.Pidl.ToString() & newItem.DeDupeKey)
+                                            dupes.Add(newItem)
+                                        Catch ex As Exception
+                                            isAlreadyAdded = True
+                                        End Try
                                     End If
 
                                     ' preload sort property 
@@ -1149,8 +1151,6 @@ Public Class Folder
                                         ' preload attributes
                                         Dim attributes As SFGAO = newItem.Attributes
                                     End If
-
-                                    newFullPaths.Add(newItem.FullPath & newItem.DeDupeKey)
 
                                     If isRootDesktop Then
                                         If Not Shell.GetSpecialFolder(SpecialFolders.Home) Is Nothing AndAlso newItem.FullPath.ToUpper().Equals(Shell.GetSpecialFolder(SpecialFolders.Home).FullPath.ToUpper()) Then newItem.TreeSortPrefix = "_001" _
@@ -1191,22 +1191,6 @@ Public Class Folder
                         AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested
                     If Not (h = HRESULT.S_OK OrElse h = HRESULT.S_FALSE OrElse h = HRESULT.ERROR_INVALID_PARAMETER) Then
                         Throw Marshal.GetExceptionForHR(h)
-                    End If
-
-                    If dupes.Count > 0 Then
-                        For Each item In result.Where(Function(kv) dupes.Exists(Function(d) d.FullPath = kv.Value.FullPath)).ToList()
-                            If Not dupes.Exists(Function(d) d.Pidl.Equals(item.Value.Pidl)) Then
-                                dupes.Add(item.Value)
-                                result.Remove(item.Key)
-                            Else
-                                dupes.Remove(dupes.FirstOrDefault(Function(d) d.Pidl.Equals(item.Value.Pidl)))
-                            End If
-                        Next
-                        For Each item In dupes
-                            If Not result.ContainsKey(item.Pidl.ToString()) Then
-                                result.Add(item.Pidl.ToString() & item.DeDupeKey, item)
-                            End If
-                        Next
                     End If
                 End If
             End If

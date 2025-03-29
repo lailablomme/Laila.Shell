@@ -80,7 +80,7 @@ Namespace Helpers
         End Sub
 
         Public Shared Function IsImage(fullPath As String) As Boolean
-            Return _imageFileExtensions.Contains(IO.Path.GetExtension(fullPath).ToLower())
+            Return _imageFileExtensions.Contains(IO.Path.GetExtension(fullPath)?.ToLower())
         End Function
 
         Public Shared Function GetOverlayIcon(overlayIconIndex As Byte, size As Integer) As BitmapSource

@@ -128,8 +128,6 @@ Namespace Controls
         End Property
 
         Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            hidePreview(d)
-
             Dim previewer As Previewer = d
             If Not previewer._timer Is Nothing Then
                 previewer._timer.Dispose()
@@ -151,19 +149,19 @@ Namespace Controls
         Private Shared Sub showPreview(previewer As Previewer)
             _thread.Add(
                 Sub()
-                    _cancelTokenSource = New CancellationTokenSource()
-                    previewer._errorText = Nothing
                     Dim item As Item = Nothing
 
                     UIHelper.OnUIThread(
                         Sub()
                             If Not previewer.SelectedItems Is Nothing _
-                                      AndAlso previewer.SelectedItems.Count > 0 _
-                                      AndAlso Not previewer._isMade Then _
+                                      AndAlso previewer.SelectedItems.Count > 0 Then _
                                 item = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
                         End Sub)
 
-                    If Not item Is Nothing Then
+                    If Not item Is Nothing AndAlso (previewer._previewItem Is Nothing OrElse Not item.FullPath?.Equals(previewer._previewItem?.FullPath)) Then
+                        hidePreview(previewer)
+                        _cancelTokenSource = New CancellationTokenSource()
+
                         If Not previewer._previewItem Is Nothing Then
                             RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
                         End If
@@ -295,6 +293,8 @@ Namespace Controls
                                 End If
                             End If
                         End If
+                    Else
+                        hidePreview(previewer)
                     End If
 
                     UIHelper.OnUIThread(
@@ -305,17 +305,17 @@ Namespace Controls
                 End Sub)
         End Sub
 
-        Private Shared Async Sub hidePreview(previewer As Previewer)
-            _cancelTokenSource.Cancel()
+        Private Shared Sub hidePreview(previewer As Previewer)
+            If _cancelTokenSource Is Nothing Then Return
 
-            Await Task.CompletedTask ' get rid the warning because it function is async. it is because we want to fire and forget it
+            _cancelTokenSource.Cancel()
 
             Dim iph As IPreviewHandler = previewer._handler
             previewer._handler = Nothing
             Dim s As IStream = previewer._stream
             previewer._stream = Nothing
 
-            _thread.Add(
+            Shell.GlobalThreadPool.Run(
                 Sub()
                     Try
                         If Not iph Is Nothing Then

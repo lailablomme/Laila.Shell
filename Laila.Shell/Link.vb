@@ -38,7 +38,7 @@ Public Class Link
         Shell.GlobalThreadPool.Run(
             Sub()
                 Try
-                    Me.ShellLink.Resolve(IntPtr.Zero, flags)
+                    Me.ShellLink?.Resolve(IntPtr.Zero, flags)
                 Catch ex As Exception
                 End Try
             End Sub,, _threadId)

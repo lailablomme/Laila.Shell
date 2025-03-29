@@ -977,10 +977,35 @@ Namespace Controls
 
         Protected Overridable Sub MakeBinding(folder As Folder)
             If Not Me.PART_ListBox Is Nothing Then
+                Me.PART_ListBox.Visibility = Visibility.Hidden
+
                 setGrouping(folder)
 
                 Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(folder.Items)
                 Me.PART_ListBox.ItemsSource = view
+
+                ' load items
+                Dim t As Task = folder.GetItemsAsync()
+
+                ' async because otherwise we're a tad too early
+                UIHelper.OnUIThreadAsync(
+                    Async Sub()
+                        If Not TypeOf folder Is SearchFolder Then
+                            Await t
+                            Await Task.Delay(50)
+
+                            If Not _scrollViewer Is Nothing Then
+                                ' restore folder scroll position
+                                Me.ScrollOffset = folder.LastScrollOffset
+                                _lastScrollSize = folder.LastScrollSize
+                                _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, Me.ScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
+                                _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, Me.ScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
+                            End If
+                        End If
+
+                        ' show listview
+                        Me.PART_ListBox.Visibility = Visibility.Visible
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
         End Sub
 
@@ -1108,29 +1133,6 @@ Namespace Controls
 
                 ' bind view
                 bfv.MakeBinding(newValue)
-
-                ' load items
-                Dim t As Task = newValue.GetItemsAsync()
-                If Not TypeOf bfv.Folder Is SearchFolder Then Await t
-
-                ' async because otherwise we're a tad too early
-                UIHelper.OnUIThreadAsync(
-                    Async Sub()
-                        If Not TypeOf newValue Is SearchFolder Then
-                            Await Task.Delay(50)
-
-                            If Not bfv._scrollViewer Is Nothing Then
-                                ' restore folder scroll position
-                                bfv.ScrollOffset = newValue.LastScrollOffset
-                                bfv._lastScrollSize = newValue.LastScrollSize
-                                bfv._scrollViewer.ScrollToHorizontalOffset(If(bfv._lastScrollSize.Width = 0, 0, bfv.ScrollOffset.X * bfv._scrollViewer.ScrollableWidth / bfv._lastScrollSize.Width))
-                                bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv.ScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
-                            End If
-                        End If
-
-                        ' show listview
-                        bfv.PART_ListBox.Visibility = Visibility.Visible
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
         End Sub
 
