@@ -446,72 +446,28 @@
     </Style>
     <Style TargetType="Expander" x:Key="lailaShell_GroupByExpanderStyle">
         <Setter Property="Margin" Value="0,0,-5,0" />
+        <Setter Property="Foreground" Value="Black" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Expander">
-                    <Grid x:Name="MainGrid">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition x:Name="ContentRow"  Height="Auto"/>
-                            <!--<RowDefinition.Resources>
-                                    <converters:MultiplyConverter x:Key="multiplyConverter"/>
-                                </RowDefinition.Resources>
-                                <RowDefinition.Tag>
-                                    <sys:Double>0.0</sys:Double>
-                                </RowDefinition.Tag>
-                                <RowDefinition.Height>
-                                    <MultiBinding Converter="{StaticResource multiplyConverter}">
-                                        <Binding Path="." ElementName="Content" />
-                                        <Binding Path="Tag" RelativeSource="{RelativeSource Self}" />
-                                        <Binding Path="ActualHeight" ElementName="CP" />
-                                    </MultiBinding>
-                                </RowDefinition.Height>
-                            </RowDefinition>-->
-                        </Grid.RowDefinitions>
-                        <Border BorderBrush="{TemplateBinding BorderBrush}"  
-                            BorderThickness="0">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}"  
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <StackPanel>
                             <DockPanel>
-                                <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0" x:Name="PART_ExpanderToggle"
+                                <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0"
                                               Style="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}" 
                                               IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
-                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                 </ToggleButton>
                             </DockPanel>
-                        </Border>
-                        <Border Grid.Row="1" x:Name="Content">
-                        <!--VerticalAlignment="Bottom"
-                            Height="{Binding ActualHeight, ElementName=MyContentContainer}"
-                            ClipToBounds="True">
-                            <ContentControl x:Name="MyContentContainer"
-                                VerticalAlignment="Bottom"
-                                Height="Auto">-->
-                        <!-- or auto -->
-                        <ContentPresenter VerticalAlignment="Bottom" x:Name="CP" />
-                        <!--</ContentControl>-->
-                        </Border>
-                    </Grid>
-                    <!--<ControlTemplate.Triggers>
-                        <EventTrigger SourceName="PART_ExpanderToggle" RoutedEvent="ToggleButton.Checked">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="ContentRow"
-                                     Storyboard.TargetProperty="Tag"
-                                     To="1"
-                                     Duration="0:0:0.3" />
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                        <EventTrigger SourceName="PART_ExpanderToggle" RoutedEvent="ToggleButton.Unchecked">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="ContentRow"
-                                     Storyboard.TargetProperty="Tag"
-                                     To="0"
-                                     Duration="0:0:0.3" />
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </ControlTemplate.Triggers>-->
+                            <ContentPresenter x:Name="ExpanderContent" Visibility="Collapsed" ContentSource="Content" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="True">
+                            <Setter TargetName="ExpanderContent" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

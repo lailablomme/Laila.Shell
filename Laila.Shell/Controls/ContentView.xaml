@@ -34,9 +34,7 @@
                                                     <ControlTemplate>
                                                         <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
                                                             <Expander.Header>
-                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                                                                    <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
-                                                                </StackPanel>
+                                                                <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" />
                                                             </Expander.Header>
                                                             <ItemsPresenter Margin="25,0,0,0" />
                                                         </Expander>

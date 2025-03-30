@@ -28,6 +28,8 @@ namespace WpfToolkit.Controls
         public static readonly DependencyProperty StretchItemsProperty = DependencyProperty.Register(nameof(StretchItems), typeof(bool), typeof(VirtualizingWrapPanel), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsArrange));
 
         public static readonly DependencyProperty IsGridLayoutEnabledProperty = DependencyProperty.Register(nameof(IsGridLayoutEnabled), typeof(bool), typeof(VirtualizingWrapPanel), new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsArrange));
+      
+        public static readonly DependencyProperty CustomHeaderHeightProperty = DependencyProperty.Register(nameof(CustomHeaderHeight), typeof(double?), typeof(VirtualizingWrapPanel), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsArrange));
 
         /// <summary>
         /// Gets or sets a value that specifies the orientation in which items are arranged before wrapping. The default value is <see cref="Orientation.Horizontal"/>.
@@ -77,6 +79,8 @@ namespace WpfToolkit.Controls
         /// arranged based on the number of items that are actually placed in the row.
         /// </remarks>
         public bool IsGridLayoutEnabled { get => (bool)GetValue(IsGridLayoutEnabledProperty); set => SetValue(IsGridLayoutEnabledProperty, value); }
+       
+        public double? CustomHeaderHeight { get => (double?)GetValue(CustomHeaderHeightProperty); set => SetValue(CustomHeaderHeightProperty, value); }
 
         /// <summary>
         /// Gets value that indicates whether the <see cref="VirtualizingPanel"/> can virtualize items 
@@ -348,13 +352,13 @@ namespace WpfToolkit.Controls
 
             if (Orientation == Orientation.Horizontal)
             {
-                viewportY = Math.Max(0, viewportY - groupItem.HeaderDesiredSizes.PixelSize.Height);
-                double visibleHeaderHeight = Math.Max(0, groupItem.HeaderDesiredSizes.PixelSize.Height - Math.Max(0, groupItem.Constraints.Viewport.Location.Y));
+                viewportY = Math.Max(0, viewportY - groupItem.HeaderDesiredSizes.PixelSize.Height - (this.CustomHeaderHeight ?? 0));
+                double visibleHeaderHeight = Math.Max(0, groupItem.HeaderDesiredSizes.PixelSize.Height + (this.CustomHeaderHeight ?? 0) - Math.Max(0, groupItem.Constraints.Viewport.Location.Y));
                 viewporteHeight = Math.Max(0, viewporteHeight - visibleHeaderHeight);
             }
             else
             {
-                viewporteHeight = Math.Max(0, viewporteHeight - groupItem.HeaderDesiredSizes.PixelSize.Height);
+                viewporteHeight = Math.Max(0, viewporteHeight - groupItem.HeaderDesiredSizes.PixelSize.Height - (this.CustomHeaderHeight ?? 0));
             }
 
             return new Rect(viewportX, viewportY, viewportWidth, viewporteHeight);
@@ -718,6 +722,9 @@ namespace WpfToolkit.Controls
                     }
                 }
             }
+
+            //if (!double.IsNaN(this.Width) && !double.IsPositiveInfinity(this.Width)) desiredWidth = Math.Min(this.Width, desiredWidth);
+            //if (!double.IsNaN(this.Height) && !double.IsPositiveInfinity(this.Height)) desiredHeight = Math.Min(this.Height, desiredHeight);
 
             return new Size(desiredWidth, desiredHeight);
         }
