@@ -1503,7 +1503,7 @@ Public Class Folder
                     End If
             End Select
 
-            If _isLoaded Then
+            If Not _notificationThreadPool Is Nothing Then
                 ' notify children
                 Dim list As List(Of IProcessNotifications) = Nothing
                 SyncLock _notificationSubscribersLock
