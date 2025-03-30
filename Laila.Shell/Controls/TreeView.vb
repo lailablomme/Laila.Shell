@@ -48,16 +48,20 @@ Namespace Controls
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
         Friend PART_DragInsertIndicator As Grid
-        Private _selectionHelper As SelectionHelper(Of Item) = Nothing
-        Private _isSettingSelectedFolder As Boolean
-        Private _mousePointDown As Point
-        Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
+        Private _isLoaded As Boolean
+        Private _isSettingSelectedFolder As Boolean
         Private _menu As RightClickMenu
-        Private disposedValue As Boolean
+        Private _mouseButton As MouseButton
+        Private _mouseButtonState As MouseButtonState
+        Private _mouseItemDown As Item
+        Private _mousePointDown As Point
+        Friend _scrollViewer As ScrollViewer
+        Private _selectionHelper As SelectionHelper(Of Item) = Nothing
+        Private _treeViewItemDown As ListBoxItem
         Private _typeToSearchTimer As Timer
         Private _typeToSearchString As String = ""
-        Private _isLoaded As Boolean
+        Private disposedValue As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(TreeView), New FrameworkPropertyMetadata(GetType(TreeView)))
@@ -68,6 +72,8 @@ Namespace Controls
 
             AddHandler Me.Loaded,
                 Sub(s As Object, e As RoutedEventArgs)
+                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
+
                     If Not Me.PART_ListBox Is Nothing AndAlso Not _isLoaded Then
                         _isLoaded = True
                         loadSections()
@@ -315,13 +321,12 @@ Namespace Controls
 
             _selectionHelper = New SelectionHelper(Of Item)(PART_ListBox)
 
-            AddHandler PART_ListBox.PreviewMouseMove, AddressOf OnTreeViewPreviewMouseMove
-            AddHandler PART_ListBox.PreviewMouseLeftButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
-            AddHandler PART_ListBox.PreviewMouseRightButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
-            AddHandler PART_ListBox.PreviewMouseUp, AddressOf OnTreeViewPreviewMouseButtonUp
-            AddHandler PART_ListBox.MouseLeave, AddressOf OnTreeViewMouseLeave
-            AddHandler Me.PreviewKeyDown, AddressOf OnTreeViewKeyDown
-            AddHandler Me.PreviewTextInput, AddressOf OnTreeViewTextInput
+            AddHandler PART_ListBox.PreviewMouseMove, AddressOf treeView_PreviewMouseMove
+            AddHandler PART_ListBox.PreviewMouseDown, AddressOf treeView_PreviewMouseDown
+            AddHandler PART_ListBox.PreviewMouseUp, AddressOf treeView_PreviewMouseButtonUp
+            AddHandler PART_ListBox.MouseLeave, AddressOf treeView_MouseLeave
+            AddHandler Me.PreviewKeyDown, AddressOf treeView_KeyDown
+            AddHandler Me.PreviewTextInput, AddressOf treeView_TextInput
         End Sub
 
         Public ReadOnly Property SelectedItem As Item
@@ -477,25 +482,32 @@ Namespace Controls
             End If
         End Function
 
-        Private Sub OnTreeViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
+        Private Sub treeView_PreviewMouseMove(sender As Object, e As MouseEventArgs)
             If Not _mouseItemDown Is Nothing AndAlso
                 (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(PART_ListBox)
                 If Math.Abs(currentPointDown.X - _mousePointDown.X) > 10 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 10 Then
+                    _mouseButtonState = MouseButtonState.Released
+                    If Not _treeViewItemDown Is Nothing Then _treeViewItemDown.Tag = "Released"
                     Drag.Start({_mouseItemDown}, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
                     e.Handled = True
                 End If
             End If
         End Sub
 
-        Private Sub OnTreeViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
+        Private Sub treeView_PreviewMouseDown(sender As Object, e As MouseButtonEventArgs)
+            _mouseButton = e.ChangedButton
+            _mouseButtonState = e.ButtonState
             _mousePointDown = e.GetPosition(Me.PART_ListBox)
 
-            If Not e.OriginalSource Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing Then
-                Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
+            Dim element As IInputElement = Me.PART_ListBox.InputHitTest(e.GetPosition(Me.PART_ListBox))
+            If Not element Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(element) Is Nothing Then
+                Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(element)
                 Dim clickedItem As Item = TryCast(treeViewItem?.DataContext, Item)
                 If Not TypeOf clickedItem Is DummyFolder Then
                     _mouseItemDown = clickedItem
+                    _treeViewItemDown = treeViewItem
+                    _treeViewItemDown.Tag = "Pressed"
                     Me.PART_ListBox.Focus()
                     If e.RightButton = MouseButtonState.Pressed Then
                         If Not clickedItem Is Nothing Then
@@ -511,12 +523,17 @@ Namespace Controls
                                     Select Case e2.Verb
                                         Case "open"
                                             If TypeOf clickedItem Is Folder Then
+                                                e2.IsHandled = True
+
+                                                If (If(clickedItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                        OrElse (clickedItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+
                                                 RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(clickedItem))
                                                 _selectionHelper.SetSelectedItems({clickedItem})
                                                 CType(clickedItem, Folder).LastScrollOffset = New Point()
                                                 Me.Folder = clickedItem
                                                 RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(clickedItem))
-                                                e2.IsHandled = True
                                             End If
                                         Case "rename"
                                             Dim getCoords As Menus.GetItemNameCoordinatesDelegate =
@@ -559,36 +576,6 @@ Namespace Controls
                                 End If
                             End Using
                         End If
-                    ElseIf e.LeftButton = MouseButtonState.Pressed Then
-                        If Not clickedItem Is Nothing Then
-                            Using Shell.OverrideCursor(Cursors.Wait)
-                                If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
-                                    CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
-                                Else
-                                    Using Shell.OverrideCursor(Cursors.Wait)
-                                        _selectionHelper.SetSelectedItems({clickedItem})
-
-                                        ' this allows for better reponse to double-clicking an unselected item
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
-                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(clickedItem))
-                                                    CType(clickedItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = clickedItem
-                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(clickedItem))
-                                                ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder _
-                                                    AndAlso Not If(Me.Folder?.Pidl?.Equals(CType(clickedItem, Link).TargetItem.Pidl), False) Then
-                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(clickedItem, Link).TargetItem))
-                                                    CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = CType(clickedItem, Link).TargetItem
-                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(clickedItem, Link).TargetItem))
-                                                End If
-                                            End Sub, Threading.DispatcherPriority.Background)
-                                    End Using
-                                End If
-                                e.Handled = True
-                            End Using
-                        End If
                     End If
 
                     ' this whole trickery to prevent the ListBox from selecting other items while dragging:
@@ -602,16 +589,66 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub OnTreeViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+        Public Sub treeView_PreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+            If Not _treeViewItemDown Is Nothing Then _treeViewItemDown.Tag = "Released"
+
+            Dim element As IInputElement = Me.PART_ListBox.InputHitTest(e.GetPosition(Me.PART_ListBox))
+            If Not element Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(element) Is Nothing Then
+                Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(element)
+                Dim clickedItem As Item = TryCast(treeViewItem?.DataContext, Item)
+                If Not TypeOf clickedItem Is DummyFolder Then
+                    If _mouseButton = MouseButton.Left AndAlso _mouseButtonState = MouseButtonState.Pressed Then
+                        If Not clickedItem Is Nothing Then
+                            Using Shell.OverrideCursor(Cursors.Wait)
+                                If Not UIHelper.GetParentOfType(Of ToggleButton)(element) Is Nothing Then
+                                    CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
+                                Else
+                                    Using Shell.OverrideCursor(Cursors.Wait)
+                                        _selectionHelper.SetSelectedItems({clickedItem})
+
+                                        ' this allows for better reponse to double-clicking an unselected item
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                If TypeOf clickedItem Is Folder Then
+                                                    If (If(clickedItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                        OrElse (clickedItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+
+                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(clickedItem))
+                                                    CType(clickedItem, Folder).LastScrollOffset = New Point()
+                                                    Me.Folder = clickedItem
+                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(clickedItem))
+                                                ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder Then
+                                                    If (If(CType(clickedItem, Link).TargetItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                        OrElse (CType(clickedItem, Link).TargetItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+
+                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(clickedItem, Link).TargetItem))
+                                                    CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
+                                                    Me.Folder = CType(clickedItem, Link).TargetItem
+                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(clickedItem, Link).TargetItem))
+                                                End If
+                                            End Sub, Threading.DispatcherPriority.Background)
+                                    End Using
+                                End If
+                                e.Handled = True
+                            End Using
+                        End If
+                    End If
+                Else
+                    e.Handled = True
+                End If
+            End If
+
             Me.PART_ListBox.ReleaseMouseCapture()
             _mouseItemDown = Nothing
         End Sub
 
-        Public Sub OnTreeViewMouseLeave(sender As Object, e As MouseEventArgs)
+        Public Sub treeView_MouseLeave(sender As Object, e As MouseEventArgs)
             _mouseItemDown = Nothing
         End Sub
 
-        Private Sub OnTreeViewKeyDown(sender As Object, e As KeyEventArgs)
+        Private Sub treeView_KeyDown(sender As Object, e As KeyEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox Then
                 If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
                              AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
@@ -624,6 +661,9 @@ Namespace Controls
                 ElseIf (e.Key = Key.Space OrElse e.Key = Key.Enter) AndAlso Keyboard.Modifiers = ModifierKeys.None _
                     AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
                     If TypeOf Me.SelectedItem Is Folder Then
+                        If (If(Me.SelectedItem.Pidl?.Equals(Me.Folder?.Pidl), False) OrElse (Me.SelectedItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                            AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+
                         RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
                         CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
                         Me.Folder = Me.SelectedItem
@@ -662,7 +702,7 @@ Namespace Controls
             End If
         End Sub
 
-        Private Sub OnTreeViewTextInput(sender As Object, e As TextCompositionEventArgs)
+        Private Sub treeView_TextInput(sender As Object, e As TextCompositionEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox Then
                 If Not _typeToSearchTimer Is Nothing Then
                     _typeToSearchTimer.Dispose()

@@ -2,6 +2,7 @@
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Controls.Primitives
 Imports System.Windows.Threading
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interfaces
@@ -53,7 +54,7 @@ Namespace Controls.Parts
             ' clean up
             If Not _files Is Nothing Then
                 For Each f In _files
-                    f.LogicalParent.Dispose()
+                    f.LogicalParent?.Dispose()
                     f.Dispose()
                 Next
             End If
@@ -166,7 +167,7 @@ Namespace Controls.Parts
             ' clean up
             If Not _files Is Nothing Then
                 For Each f In _files
-                    f.LogicalParent.Dispose()
+                    f.LogicalParent?.Dispose()
                     f.Dispose()
                 Next
             End If
@@ -270,12 +271,12 @@ Namespace Controls.Parts
                 ' check if we're about to insert and where
                 If _fileNameList?.Count > 0 Then
                     Dim ptItem As Point = UIHelper.WIN32POINTToUIElement(ptWIN32, overListBoxItem)
+                    Dim vs As ScrollBar = _treeView._scrollViewer.Template.FindName("PART_VerticalScrollBar", _treeView._scrollViewer)
                     If ptItem.Y <= 3 AndAlso Not TypeOf overItem Is SeparatorFolder _
                         AndAlso TypeOf If(overItem.TreeViewSection, If(overItem.LogicalParent, overItem.Parent)) Is ISupportDragInsert Then
                         _dragInsertParent = If(overItem.TreeViewSection, If(overItem.LogicalParent, overItem.Parent))
                         _treeView.PART_DragInsertIndicator.Margin =
-                            New Thickness(0, _treeView.PointFromScreen(overListBoxItem.PointToScreen(
-                                New Point(0, 0))).Y - 3, 0, 0)
+                            New Thickness(15, _treeView.PointFromScreen(overListBoxItem.PointToScreen(New Point(0, 0))).Y - 3, vs.ActualWidth + 5, 0)
                         insertIndex = _dragInsertParent.Items.Where(Function(i) i.IsVisibleInTree AndAlso Not TypeOf i Is DummyFolder) _
                             .OrderBy(Function(i) i.TreeSortKey).ToList().IndexOf(overItem)
                         Debug.WriteLine("* Drag: insert before item")
@@ -294,8 +295,7 @@ Namespace Controls.Parts
                             _dragInsertParent = dip
                             Debug.WriteLine("* Drag: insert after not expanded item")
                             _treeView.PART_DragInsertIndicator.Margin =
-                                New Thickness(0, _treeView.PointFromScreen(overListBoxItem.PointToScreen(
-                                    New Point(0, overListBoxItem.ActualHeight))).Y - 3, 0, 0)
+                                New Thickness(15, _treeView.PointFromScreen(overListBoxItem.PointToScreen(New Point(15, overListBoxItem.ActualHeight))).Y - 3, vs.ActualWidth + 5, 0)
                             insertIndex = _dragInsertParent.Items.Where(Function(i) i.IsVisibleInTree AndAlso Not TypeOf i Is DummyFolder) _
                                 .OrderBy(Function(i) i.TreeSortKey).ToList().IndexOf(child) + 1
                         Else
@@ -305,8 +305,7 @@ Namespace Controls.Parts
                         If TypeOf overItem Is Folder AndAlso TypeOf overItem Is ISupportDragInsert Then
                             Debug.WriteLine("* Drag: insert after expanded item")
                             _treeView.PART_DragInsertIndicator.Margin =
-                            New Thickness(0, _treeView.PointFromScreen(overListBoxItem.PointToScreen(
-                                New Point(0, overListBoxItem.ActualHeight))).Y - 3, 0, 0)
+                            New Thickness(15, _treeView.PointFromScreen(overListBoxItem.PointToScreen(New Point(0, overListBoxItem.ActualHeight))).Y - 3, vs.ActualWidth + 5, 0)
                             _dragInsertParent = overItem
                             insertIndex = 0
                         Else
@@ -422,6 +421,7 @@ Namespace Controls.Parts
                         Else
                             _treeView.SetSelectedItem(Nothing)
                             pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, "", "")
                             If Not _lastDropTarget Is Nothing Then
                                 Try
                                     _lastDropTarget.DragLeave()
@@ -445,7 +445,6 @@ Namespace Controls.Parts
                     Else
                         _insertIndex = insertIndex
                         pdwEffect = DROPEFFECT.DROPEFFECT_NONE
-                        _treeView.SetSelectedItem(Nothing)
                         WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, "", "")
                         Return HRESULT.S_OK
                     End If
@@ -469,6 +468,7 @@ Namespace Controls.Parts
                     Else
                         pdwEffect = DROPEFFECT.DROPEFFECT_NONE
                         _treeView.PART_DragInsertIndicator.Visibility = Visibility.Collapsed
+                        WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, "", "")
                     End If
 
                     _insertIndex = insertIndex
@@ -511,6 +511,8 @@ Namespace Controls.Parts
                 WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Create shortcut in %1", overItem.DisplayName)
             ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_OPEN AndAlso Not overItem Is Nothing Then
                 WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_COPY, "Open with %1", If(overItem.PropertiesByCanonicalName("System.FileDescription")?.Text, overItem.DisplayName))
+            Else
+                WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, "", "")
             End If
         End Sub
     End Class

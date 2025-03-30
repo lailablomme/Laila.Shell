@@ -1,8 +1,12 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:converters="clr-namespace:Laila.Shell.Converters"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <SolidColorBrush x:Key="Item.MouseOver.Background" Color="#1F26A0DA"/>
-    <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#a826A0Da"/>
+    <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#1F26A0DA"/>
+    <SolidColorBrush x:Key="Item.Pressed.Background" Color="#1F26A0DA"/>
+    <SolidColorBrush x:Key="Item.Pressed.Border" Color="#1F26A0DA"/>
     <SolidColorBrush x:Key="Item.SelectedInactive.Background" Color="#3DDADADA"/>
     <SolidColorBrush x:Key="Item.SelectedInactive.Border" Color="#FFDADADA"/>
     <SolidColorBrush x:Key="Item.SelectedActive.Background" Color="#3D26A0DA"/>
@@ -82,6 +86,10 @@
                             <Setter TargetName="contentPresenter" Property="Visibility" Value="Visible"/>
                             <Setter TargetName="rowPresenter" Property="Visibility" Value="Collapsed"/>
                         </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                        </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
                                 <Condition Property="Selector.IsSelectionActive" Value="False"/>
@@ -98,14 +106,116 @@
                             <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Background}"/>
                             <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
                         </MultiTrigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
-                        </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="lailaShell_TreeViewItemStyle" TargetType="ListBoxItem">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid MinHeight="20">
+                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
+                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                        </Trigger>
+                        <Trigger Property="Tag" Value="Pressed">
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.Pressed.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.Pressed.Border}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Border}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                <Condition Property="IsSelected" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="lailaShell_TreeViewSeparatorItemStyle" TargetType="ListBoxItem">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid Height="20">
+                        <Separator Width="{Binding ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}}">
+                        </Separator>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="lailaShell_TreeViewPlaceholderItemStyle" TargetType="ListBoxItem">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="LightYellow" Offset="0"/>
+                    <GradientStop Color="Gold" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="BorderBrush" Value="Goldenrod"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="2" 
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"
+                                Background="{TemplateBinding Background}" Padding="4"  
+                                SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="20" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Image Source="../Images/info16.png" Width="16" Height="16" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                                <TextBlock Grid.Column="1" TextWrapping="Wrap">
+                                    Here you will soon find your 5 most frequent used folders while 
+                                    you can also start pinning any number of items to this area right now 
+                                    by dragging them over here or choosing "Pin item" in it's context menu.
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -137,6 +247,10 @@
                         </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                        </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
                                 <Condition Property="Selector.IsSelectionActive" Value="False"/>
@@ -179,10 +293,6 @@
                             <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
                             <Setter Property="Background" TargetName="PART_RowIndicator" Value="{StaticResource Item.SelectedActive.Border}"/>
                         </MultiTrigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
-                        </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
                         </Trigger>
@@ -261,6 +371,7 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Geometry x:Key="ChevronGroupBy">M 0,0 L 5,6 L 10,0</Geometry>
     <Style TargetType="ToggleButton" x:Key="lailaShell_GroupByExpanderToggleButtonStyle">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
@@ -273,23 +384,60 @@
                                 BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" 
                                 Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                         <StackPanel Orientation="Horizontal">
-                            <Image Width="9" Height="5" x:Name="Arrow" VerticalAlignment="Center"
-                                       Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                            <Path x:Name="PART_Chevron" Data="{StaticResource ChevronGroupBy}" StrokeThickness="1" Margin="0" 
+                              Fill="Transparent" Stroke="DarkBlue" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="7"/>
                             <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="False">
-                            <Setter TargetName="Arrow" Property="RenderTransform">
+                            <Setter TargetName="PART_Chevron" Property="RenderTransform">
                                 <Setter.Value>
                                     <RotateTransform Angle="-90"/>
                                 </Setter.Value>
                             </Setter>
-                            <Setter TargetName="Arrow" Property="Margin" Value="2,13,-2,0" />
+                            <Setter TargetName="PART_Chevron" Property="Margin" Value="2,8,-2,-8" />
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
                             <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Geometry x:Key="ChevronGroupByHome">M 0,0 L 5,6 L 10,0</Geometry>
+    <Style TargetType="ToggleButton" x:Key="lailaShell_GroupByExpanderToggleButtonHomeStyle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="Black" />
+        <Setter Property="Height" Value="35" />
+        <Setter Property="Padding" Value="12,0,12,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="0,0,4,0" HorizontalAlignment="Left"
+                                BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="5" 
+                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                        <StackPanel Orientation="Horizontal">
+                            <Path x:Name="PART_Chevron" Data="{StaticResource ChevronGroupByHome}" StrokeThickness="1" Margin="0" 
+                              Fill="Transparent" Stroke="Black" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="7"/>
+                            <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter TargetName="PART_Chevron" Property="RenderTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="-90"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter TargetName="PART_Chevron" Property="Margin" Value="2,17,-2,0" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" TargetName="Bd" Value="#EEEEEE"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="#EEEEEE"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -301,14 +449,87 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Expander">
+                    <Grid x:Name="MainGrid">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition x:Name="ContentRow"  Height="Auto"/>
+                            <!--<RowDefinition.Resources>
+                                    <converters:MultiplyConverter x:Key="multiplyConverter"/>
+                                </RowDefinition.Resources>
+                                <RowDefinition.Tag>
+                                    <sys:Double>0.0</sys:Double>
+                                </RowDefinition.Tag>
+                                <RowDefinition.Height>
+                                    <MultiBinding Converter="{StaticResource multiplyConverter}">
+                                        <Binding Path="." ElementName="Content" />
+                                        <Binding Path="Tag" RelativeSource="{RelativeSource Self}" />
+                                        <Binding Path="ActualHeight" ElementName="CP" />
+                                    </MultiBinding>
+                                </RowDefinition.Height>
+                            </RowDefinition>-->
+                        </Grid.RowDefinitions>
+                        <Border BorderBrush="{TemplateBinding BorderBrush}"  
+                            BorderThickness="0">
+                            <DockPanel>
+                                <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0" x:Name="PART_ExpanderToggle"
+                                              Style="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}" 
+                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                                </ToggleButton>
+                            </DockPanel>
+                        </Border>
+                        <Border Grid.Row="1" x:Name="Content">
+                        <!--VerticalAlignment="Bottom"
+                            Height="{Binding ActualHeight, ElementName=MyContentContainer}"
+                            ClipToBounds="True">
+                            <ContentControl x:Name="MyContentContainer"
+                                VerticalAlignment="Bottom"
+                                Height="Auto">-->
+                        <!-- or auto -->
+                        <ContentPresenter VerticalAlignment="Bottom" x:Name="CP" />
+                        <!--</ContentControl>-->
+                        </Border>
+                    </Grid>
+                    <!--<ControlTemplate.Triggers>
+                        <EventTrigger SourceName="PART_ExpanderToggle" RoutedEvent="ToggleButton.Checked">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ContentRow"
+                                     Storyboard.TargetProperty="Tag"
+                                     To="1"
+                                     Duration="0:0:0.3" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger SourceName="PART_ExpanderToggle" RoutedEvent="ToggleButton.Unchecked">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ContentRow"
+                                     Storyboard.TargetProperty="Tag"
+                                     To="0"
+                                     Duration="0:0:0.3" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>-->
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="Expander" x:Key="lailaShell_GroupByExpanderHomeStyle">
+        <Setter Property="Margin" Value="0,0,-5,0" />
+        <Setter Property="Foreground" Value="Black" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Expander">
                     <Border BorderBrush="{TemplateBinding BorderBrush}"  
                             BorderThickness="{TemplateBinding BorderThickness}">
                         <StackPanel>
                             <DockPanel>
-                                <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0" 
-                                              Style="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}" 
+                                <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0"
+                                              Style="{StaticResource lailaShell_GroupByExpanderToggleButtonHomeStyle}" 
                                               IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
-                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                 </ToggleButton>
                             </DockPanel>
                             <ContentPresenter x:Name="ExpanderContent" Visibility="Collapsed" ContentSource="Content" />

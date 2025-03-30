@@ -29,13 +29,13 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
+                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderHomeStyle}">
                                                             <Expander.Resources>
                                                                 <converters:DoubleAdditionConverter x:Key="doubleAdditionConverter" />
                                                             </Expander.Resources>
                                                             <Expander.Header>
                                                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                                                                    <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
+                                                                    <TextBlock Text="{Binding Name}" Foreground="Black" FontWeight="Bold" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Expander.Header>
                                                             <Border Width="{Binding ActualWidth, ElementName=PART_ListView, Converter={StaticResource doubleAdditionConverter}, ConverterParameter=-20}">
