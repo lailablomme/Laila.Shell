@@ -649,7 +649,8 @@ Namespace Controls
         End Sub
 
         Private Sub treeView_KeyDown(sender As Object, e As KeyEventArgs)
-            If Not TypeOf e.OriginalSource Is TextBox Then
+            If Not TypeOf e.OriginalSource Is TextBox _
+                AndAlso (e.OriginalSource.Equals(Me.PART_ListBox) OrElse UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox)) Then
                 If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
                              AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
                     Clipboard.CopyFiles({Me.SelectedItem})

@@ -221,6 +221,7 @@ Namespace Controls
         End Sub
 
         Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
+            Debug.WriteLine(e.Key)
             If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
                 If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
                 AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
@@ -476,8 +477,9 @@ Namespace Controls
 
                     Me.PART_ListBox.ContextMenu = getMenu(Me.Folder, Me.SelectedItems, False)
                     e.Handled = True
-                ElseIf clickedItem Is Nothing AndAlso
-                        UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
+                ElseIf clickedItem Is Nothing _
+                        AndAlso UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing _
+                        AndAlso UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
                     Me.SelectedItems = Nothing
                 End If
             Else

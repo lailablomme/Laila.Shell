@@ -32,6 +32,7 @@ Namespace Controls
         Private _totalHeight As Double = 0
         Private _doIgnoreExpandCollapse As Boolean
         Private _vwp As VirtualizingWrapPanel
+        Private _lastExpandCollapse As DateTime = DateTime.Now
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
@@ -43,28 +44,20 @@ Namespace Controls
 
             _timer = New DispatcherTimer()
 
-            'AddHandler Me.PART_ToggleButton.PreviewMouseUp,
-            '    Sub(s As Object, e As MouseButtonEventArgs)
-            '        Dim element As IInputElement = Me.PART_ToggleButton.InputHitTest(e.GetPosition(Me.PART_ToggleButton))
-            '        If Not element Is Nothing AndAlso (element.Equals(Me.PART_Title) _
-            '            OrElse If(UIHelper.GetParentOfType(Of ContentPresenter)(element)?.Equals(Me.PART_Title), False) _
-            '            OrElse (UIHelper.FindVisualChildren(Of ContentPresenter)(element).Contains(Me.PART_Title) _
-            '                    AndAlso e.GetPosition(Me.PART_Title).X >= 0)) Then
-            '            UIHelper.OnUIThreadAsync(
-            '                Sub()
-            '                    getWrapPanel()
-            '                    Dim listBox As ListBox = _vwp.ItemsControl
-            '                    If _vwp.Items.Count > listBox.SelectedItems.Count Then
-            '                        listBox.SelectedItems.Clear()
-            '                        For Each item In _vwp.Items
-            '                            listBox.SelectedItems.Add(item)
-            '                        Next
-            '                        'listBox.Focus()
-            '                    End If
-            '                End Sub)
-            '            e.Handled = True
-            '        End If
-            '    End Sub
+            AddHandler Me.PART_Title.PreviewMouseDown,
+                Sub(s As Object, e As MouseButtonEventArgs)
+                    getWrapPanel()
+                    Dim listBox As ListBox = _vwp.ItemsControl
+                    If _vwp.Items.Count > listBox.SelectedItems.Count AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
+                        If Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then listBox.SelectedItems.Clear()
+                        For Each item In _vwp.Items
+                            If Not listBox.SelectedItems.Contains(item) Then
+                                listBox.SelectedItems.Add(item)
+                            End If
+                        Next
+                    End If
+                    Me.PART_ToggleButton.Focus()
+                End Sub
 
             AddHandler Me.PART_ToggleButton.Unchecked,
                 Sub(s As Object, e As RoutedEventArgs)
@@ -150,6 +143,7 @@ Namespace Controls
 
         Private Shared Sub IsExpandedChanged(d As DependencyObject, e As DependencyPropertyChangedEventArgs)
             Dim se As SlidingExpander = d
+            se._lastExpandCollapse = DateTime.Now
             If Not se._doIgnoreExpandCollapse AndAlso Not se.PART_ContentContainer Is Nothing Then
                 If e.NewValue Then
                     se.PART_ContentContainer.Height = Double.NaN
