@@ -5,16 +5,16 @@
 '<Setter Property= "Template" >
 '    <Setter.Value>
 '        <ControlTemplate TargetType="Expander">
-'            <Grid x:Name="MainGrid">
-'                <Grid.Tag>
-'                    <sys:Double>0</sys:Double>
-'                </Grid.Tag>
-'                <Grid.Resources>
-'                    <converters:MultiplyConverter x:Key="multiplyConverter"/>
-'                    <converters:MultiplyConverterGridLength x:Key="multiplyConverterGridLength"/>
+'<Grid x : Name = "MainGrid" >
+'    <Grid.Tag>
+'        <sys:Double>0</sys:Double>
+'    </Grid.Tag>
+'<Grid.Resources>
+'<Converters:MultiplyConverter x : Key = "multiplyConverter" />
+'<converters:MultiplyConverterGridLength x:Key="multiplyConverterGridLength"/>
 '                </Grid.Resources>
 '                <Grid.RowDefinitions>
-'                    <RowDefinition Height="Auto"/>
+'<RowDefinition Height = "Auto" />
 '                    <RowDefinition x:Name="ContentRow">
 '                        <RowDefinition.Tag>
 '                            <sys:Double>0</sys:Double>
@@ -28,26 +28,26 @@
 '                        </RowDefinition.Height>
 '                    </RowDefinition>
 '                </Grid.RowDefinitions>
-'                <Border BorderBrush="{TemplateBinding BorderBrush}"
-'                    BorderThickness="0">
-'                    <DockPanel>
-'                        <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0" x:Name="PART_ExpanderToggle"
-'                            Style="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}"
-'                            IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
-'                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
-'                        </ToggleButton>
-'                    </DockPanel>
+'                <Border BorderBrush = "{TemplateBinding BorderBrush}"
+'BorderThickness = "0" >
+'<DockPanel>
+'    <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0" x:Name="PART_ExpanderToggle"
+'        Style="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}"
+'        IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
+'        <ContentPresenter ContentSource="Header" VerticalAlignment="Center"/>
+'    </ToggleButton>
+'</DockPanel>
 '                </Border>
-'                <Border Grid.Row="1" x:Name="Content" Tag="1.0"
-'                    VerticalAlignment="Bottom" ClipToBounds="True">
+'                <Border Grid.Row="1" x:Name = "Content" Tag="1.0"
+'                    VerticalAlignment = "Bottom" ClipToBounds="True">
 '                    <Border.Height>
-'                        <MultiBinding Converter="{StaticResource multiplyConverter}">
+'<MultiBinding Converter = "{StaticResource multiplyConverter}" >
 '                            <Binding Path="ActualHeight" ElementName="contentPresenter"/>
-'                            <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
-'                            <Binding Path="ActualHeight" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}"/>
+'<Binding Path = "Tag" RelativeSource="{RelativeSource Self}"/>
+'                            <Binding Path = "ActualHeight" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}"/>
 '                        </MultiBinding>
 '                    </Border.Height>
-'                    <ContentControl Tag="1.0" VerticalAlignment="Bottom" x:Name="contentContainer">
+'                    <ContentControl Tag = "1.0" VerticalAlignment="Bottom" x:Name = "contentContainer" >
 '                        <ContentControl.Height>
 '                            <MultiBinding Converter="{StaticResource multiplyConverter}">
 '                                <Binding Path="ActualHeight" ElementName="contentPresenter"/>
@@ -55,7 +55,7 @@
 '                                <Binding Path="ActualHeight" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}"/>
 '                            </MultiBinding>
 '                        </ContentControl.Height>
-'                        <ContentPresenter VerticalAlignment="Bottom" x:Name="contentPresenter"/>
+'<ContentPresenter VerticalAlignment = "Bottom" x:Name = "contentPresenter" />
 '                    </ContentControl>
 '                </Border>
 '            </Grid>

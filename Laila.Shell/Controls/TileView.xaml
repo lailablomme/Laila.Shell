@@ -32,12 +32,12 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
+                                                        <local:SlidingExpander IsExpanded="True" ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}">
                                                             <Expander.Header>
                                                                 <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" x:Name="PART_ExpanderHeader" />
                                                             </Expander.Header>
                                                             <ItemsPresenter Margin="25,0,0,0" />
-                                                        </Expander>
+                                                        </local:SlidingExpander>
                                                     </ControlTemplate>
                                                 </Setter.Value>
                                             </Setter>

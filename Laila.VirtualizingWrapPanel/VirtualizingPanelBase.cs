@@ -90,7 +90,7 @@ namespace WpfToolkit.Controls
         }
         private DependencyObject? _itemsOwner;
 
-        protected ReadOnlyCollection<object> Items => ItemContainerGenerator.Items;
+        public ReadOnlyCollection<object> Items => ItemContainerGenerator.Items;
 
         protected IRecyclingItemContainerGenerator RecyclingItemContainerGenerator => ItemContainerGenerator;
 

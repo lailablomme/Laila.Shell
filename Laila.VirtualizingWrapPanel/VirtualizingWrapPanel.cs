@@ -159,7 +159,7 @@ namespace WpfToolkit.Controls
 
             Size newViewportSize;
 
-            if (ItemsOwner is IHierarchicalVirtualizationAndScrollInfo groupItem)
+            if (ItemsOwner is IHierarchicalVirtualizationAndScrollInfo groupItem && this.Orientation == Orientation.Vertical)
             {
                 Rect viewport = GetViewportFromGroupItem(groupItem);
                 ScrollOffset = viewport.Location;
@@ -182,7 +182,7 @@ namespace WpfToolkit.Controls
 
             const double Tolerance = 0.001;
 
-            if (ItemsOwner is not IHierarchicalVirtualizationAndScrollInfo
+            if (!(ItemsOwner is IHierarchicalVirtualizationAndScrollInfo && this.Orientation == Orientation.Vertical)
                 && GetY(ScrollOffset) != 0
                 && GetY(ScrollOffset) + GetHeight(ViewportSize) > GetHeight(Extent) + Tolerance)
             {
@@ -215,7 +215,7 @@ namespace WpfToolkit.Controls
             //    throw new InvalidOperationException("Items must be distinct");
             //}
 
-            bool hierarchical = ItemsOwner is IHierarchicalVirtualizationAndScrollInfo;
+            bool hierarchical = ItemsOwner is IHierarchicalVirtualizationAndScrollInfo && this.Orientation == Orientation.Vertical;
             double x = startItemOffsetX + GetX(ScrollOffset);
             double y = hierarchical ? startItemOffsetY : startItemOffsetY - GetY(ScrollOffset);
             double rowHeight = 0;
@@ -722,9 +722,6 @@ namespace WpfToolkit.Controls
                     }
                 }
             }
-
-            //if (!double.IsNaN(this.Width) && !double.IsPositiveInfinity(this.Width)) desiredWidth = Math.Min(this.Width, desiredWidth);
-            //if (!double.IsNaN(this.Height) && !double.IsPositiveInfinity(this.Height)) desiredHeight = Math.Min(this.Height, desiredHeight);
 
             return new Size(desiredWidth, desiredHeight);
         }

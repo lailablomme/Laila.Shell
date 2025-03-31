@@ -1,0 +1,59 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:Laila.Shell.Controls"
+                    xmlns:converters="clr-namespace:Laila.Shell.Converters"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <Style TargetType="local:SlidingExpander">
+        <Setter Property="Margin" Value="0,0,-5,0" />
+        <Setter Property="Foreground" Value="Black" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:SlidingExpander">
+                    <ControlTemplate.Resources>
+                        <converters:SubstractionConverter x:Key="substractionConverter" />
+                    </ControlTemplate.Resources>
+                    <Grid x:Name="PART_Grid" HorizontalAlignment="Stretch">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition x:Name="PART_ContentRow" Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <ToggleButton DockPanel.Dock="Left" x:Name="PART_ToggleButton" IsChecked="True" Focusable="False"
+                                          Style="{Binding ToggleButtonStyle, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ContentPresenter ContentSource="Header" VerticalAlignment="Center" x:Name="PART_Title" HorizontalAlignment="Stretch" Focusable="False" />
+                            </ToggleButton>
+                        </DockPanel>
+                        <Grid Grid.Row="1" x:Name="PART_Content" Tag="1.0" VerticalAlignment="Bottom" ClipToBounds="True" HorizontalAlignment="Stretch">
+                            <ScrollViewer x:Name="PART_ContentContainer" Focusable="False" 
+                                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden" HorizontalAlignment="Stretch">
+                                <ContentPresenter Focusable="False" VerticalAlignment="Bottom" x:Name="PART_ContentPresenter" ContentSource="Content" />
+                            </ScrollViewer>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Trigger.Setters>
+                                <Setter Property="MaxHeight" TargetName="PART_ContentContainer">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource substractionConverter}">
+                                            <Binding Path="ViewportHeight" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type ScrollViewer}}" />
+                                            <Binding Path="ActualHeight" ElementName="PART_ToggleButton" />
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger.Setters>
+                        </Trigger>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Trigger.Setters>
+                                <Setter Property="MaxWidth" TargetName="PART_ContentContainer" 
+                                        Value="{Binding ViewportWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ScrollViewer}}}" />
+                            </Trigger.Setters>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
