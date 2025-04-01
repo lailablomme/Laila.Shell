@@ -31,8 +31,6 @@ Namespace Controls
         Private _currentStep As Double = 0
         Private _totalHeight As Double = 0
         Private _doIgnoreExpandCollapse As Boolean
-        Private _vwp As VirtualizingWrapPanel
-        Private _lastExpandCollapse As DateTime = DateTime.Now
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
@@ -46,11 +44,11 @@ Namespace Controls
 
             AddHandler Me.PART_Title.PreviewMouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
-                    getWrapPanel()
-                    Dim listBox As ListBox = _vwp.ItemsControl
-                    If _vwp.Items.Count > listBox.SelectedItems.Count AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
+                    Dim vwp As VirtualizingWrapPanel = UIHelper.FindVisualChildren(Of VirtualizingWrapPanel)(Me.PART_ContentContainer).ToList()(0)
+                    Dim listBox As ListBox = vwp.ItemsControl
+                    If vwp.Items.Count > listBox.SelectedItems.Count AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
                         If Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then listBox.SelectedItems.Clear()
-                        For Each item In _vwp.Items
+                        For Each item In vwp.Items
                             If Not listBox.SelectedItems.Contains(item) Then
                                 listBox.SelectedItems.Add(item)
                             End If
@@ -61,7 +59,6 @@ Namespace Controls
 
             AddHandler Me.PART_ToggleButton.Unchecked,
                 Sub(s As Object, e As RoutedEventArgs)
-                    getWrapPanel()
                     _doIgnoreExpandCollapse = True
                     Me.IsExpanded = False
                     _doIgnoreExpandCollapse = False
@@ -75,7 +72,6 @@ Namespace Controls
                 End Sub
             AddHandler Me.PART_ToggleButton.Checked,
                 Sub(s As Object, e As RoutedEventArgs)
-                    getWrapPanel()
                     _doIgnoreExpandCollapse = True
                     Me.IsExpanded = True
                     _doIgnoreExpandCollapse = False
@@ -87,17 +83,6 @@ Namespace Controls
                     _timer.Interval = New TimeSpan(0, 0, 0, 0, ANIMATIONMS / ANIMATIONSTEPS)
                     _timer.Start()
                 End Sub
-        End Sub
-
-        Private Sub getWrapPanel()
-            If Not _vwp Is Nothing Then Return
-            _vwp = UIHelper.FindVisualChildren(Of VirtualizingWrapPanel)(Me.PART_ContentContainer).ToList()(0)
-            If Not _vwp Is Nothing Then
-                _vwp.Margin = CType(CType(Me.PART_ContentContainer.Content, ContentPresenter).Content, FrameworkElement).Margin
-                Me.PART_ContentContainer.Content = _vwp
-                Me.PART_ContentContainer.CanContentScroll = True
-                _vwp.ScrollOwner = Me.PART_ContentContainer
-            End If
         End Sub
 
         Private Sub timer_TickCollapse(s As Object, e As EventArgs)
@@ -143,7 +128,6 @@ Namespace Controls
 
         Private Shared Sub IsExpandedChanged(d As DependencyObject, e As DependencyPropertyChangedEventArgs)
             Dim se As SlidingExpander = d
-            se._lastExpandCollapse = DateTime.Now
             If Not se._doIgnoreExpandCollapse AndAlso Not se.PART_ContentContainer Is Nothing Then
                 If e.NewValue Then
                     se.PART_ContentContainer.Height = Double.NaN
