@@ -1569,6 +1569,12 @@ Public Class Item
                                 ' we're being disposed from the disposer thread, so try not to block the ui thread
                                 If Not _logicalParent Is Nothing Then
                                     _logicalParent._items.RemoveWithoutNotifying(Me)
+                                    If Not String.IsNullOrWhiteSpace(_fullPath) Then
+                                        _logicalParent._previousFullPaths.Remove(_fullPath)
+                                    End If
+                                    If Not _pidl Is Nothing Then
+                                        _logicalParent._previousFullPaths.Remove(_pidl.ToString())
+                                    End If
                                     _logicalParent._isEnumerated = False
                                     If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
                                     _logicalParent.IsEmpty = _logicalParent._items.Count = 0
@@ -1579,6 +1585,12 @@ Public Class Item
                                 Sub()
                                     If Not _logicalParent Is Nothing Then
                                         _logicalParent._items.Remove(Me)
+                                        If Not String.IsNullOrWhiteSpace(_fullPath) Then
+                                            _logicalParent._previousFullPaths.Remove(_fullPath)
+                                        End If
+                                        If Not _pidl Is Nothing Then
+                                            _logicalParent._previousFullPaths.Remove(_pidl.ToString())
+                                        End If
                                         _logicalParent._isEnumerated = False
                                         If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
                                         _logicalParent.IsEmpty = _logicalParent._items.Count = 0

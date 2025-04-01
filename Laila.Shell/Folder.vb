@@ -56,7 +56,7 @@ Public Class Folder
     Private _notificationSubscribers As List(Of IProcessNotifications) = New List(Of IProcessNotifications)()
     Private _notificationSubscribersLock As Object = New Object()
     Private _notificationThreadPool As Helpers.ThreadPool
-    Private _previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
+    Friend _previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
     Private _shellFolder As IShellFolder
     Protected _views As List(Of FolderViewRegistration)
     Friend _wasActivity As Boolean
