@@ -750,8 +750,8 @@ Public Class Item
         Get
             Dim hbitmap As IntPtr
             Try
-                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                    SyncLock _shellItemLock
+                SyncLock _shellItemLock
+                    If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                         Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource = Nothing
                         If Not Settings.IsWindows8_1OrLower Then
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
@@ -773,8 +773,8 @@ Public Class Item
                             End If
                         End If
                         Return result
-                    End SyncLock
-                End If
+                    End If
+                End SyncLock
             Finally
                 If Not IntPtr.Zero.Equals(hbitmap) Then
                     Functions.DeleteObject(hbitmap)
