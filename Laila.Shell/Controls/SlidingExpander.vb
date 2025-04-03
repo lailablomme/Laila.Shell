@@ -2,6 +2,7 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
+Imports System.Windows.Data
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Threading
@@ -44,11 +45,12 @@ Namespace Controls
 
             AddHandler Me.PART_Title.PreviewMouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
-                    Dim vwp As VirtualizingWrapPanel = UIHelper.FindVisualChildren(Of VirtualizingWrapPanel)(Me.PART_ContentContainer).ToList()(0)
-                    Dim listBox As ListBox = vwp.ItemsControl
-                    If vwp.Items.Count > listBox.SelectedItems.Count AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
+                    Dim vwp As VirtualizingPanel = UIHelper.FindVisualChildren(Of VirtualizingPanel)(Me.PART_ContentContainer).ToList()(0)
+                    Dim group As CollectionViewGroup = vwp.DataContext
+                    Dim listBox As ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
+                    If group.Items.Count > listBox.SelectedItems.Count AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
                         If Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then listBox.SelectedItems.Clear()
-                        For Each item In vwp.Items
+                        For Each item In group.Items
                             If Not listBox.SelectedItems.Contains(item) Then
                                 listBox.SelectedItems.Add(item)
                             End If

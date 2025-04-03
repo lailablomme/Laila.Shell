@@ -2,6 +2,7 @@
 Imports System.ComponentModel
 Imports System.Runtime.InteropServices
 Imports System.Text
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
@@ -40,6 +41,7 @@ Namespace Controls
         Private disposedValue As Boolean
 
         Public Sub New()
+            ' register us in the control cache so we get disposed when the app is shutting down
             Shell.AddToControlCache(Me)
 
             AddHandler Me.Loaded,
@@ -47,17 +49,21 @@ Namespace Controls
                     If Not _isLoaded Then
                         _isLoaded = True
 
+                        ' wait for everything to load
                         UIHelper.OnUIThread(
                             Sub()
                             End Sub, Threading.DispatcherPriority.Loaded)
 
+                        ' display any available folder
                         If Not Me.Folder Is Nothing Then
                             changeView(Me.Folder.ActiveView, Me.Folder)
                         End If
 
+                        ' register us as a drop target
                         _dropTarget = New ListViewDropTarget(Me)
                         WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
 
+                        ' when the window closes: dispose ourselves
                         AddHandler Window.GetWindow(Me).Closed,
                             Sub(s2 As Object, e2 As EventArgs)
                                 Me.Dispose()
@@ -65,23 +71,87 @@ Namespace Controls
                     End If
                 End Sub
 
+            ' subscribe to file and folder change notifications
             Shell.SubscribeToNotifications(Me)
         End Sub
 
         Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
             Select Case e.Event
-                Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                    Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
-                    UIHelper.OnUIThread(
-                        Sub()
-                            If Not f Is Nothing Then
-                                Me.Folder = f
-                            End If
-                        End Sub)
+                Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
+                    ' this is for supporting file operations within .zip files 
+                    ' from explorer or 7-zip
+                    Dim selectedItem As Item = Nothing
+                    If selectedItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                selectedItem = Me.Folder
+                            End Sub)
+                    End If
+                    ' is something is being renamed to the currently selected folder...
+                    If Not selectedItem Is Nothing _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso e.Item2.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
+                                AndAlso (If(e.Item2.FullPath?.Equals(selectedItem.FullPath), False) OrElse If(e.Item2.FullPath?.Equals(selectedItem.FullPath.Split("~")(0)), False)))) Then
+                        Shell.GlobalThreadPool.Add(
+                            Sub()
+                                ' get the first available parent in case the current folder disappears
+                                Dim f As Folder = Me.GetParentOfSelectionBefore(selectedItem)
+                                If Not f Is Nothing Then
+                                    Thread.Sleep(300) ' wait for .zip operations/folder refresh to complete
+
+                                    ' get the newly created .zip folder
+                                    Dim replacement As Item = f.Items.ToList().LastOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso ((Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso If(i.Pidl?.Equals(e.Item2.Pidl), False)) _
+                                            OrElse (i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
+                                                AndAlso If(i.FullPath?.Equals(e.Item2.FullPath), False)))
+                                    If Not replacement Is Nothing AndAlso TypeOf replacement Is Folder Then
+                                        ' new folder matching the current folder was found -- load it
+                                        CType(replacement, Folder).GetItems()
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                CType(replacement, Folder).LastScrollOffset = CType(selectedItem, Folder).LastScrollOffset
+                                                CType(replacement, Folder).LastScrollSize = CType(selectedItem, Folder).LastScrollSize
+                                                Me.Folder = replacement
+                                            End Sub)
+                                    Else
+                                        ' the current folder disappeared -- switch to parent
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Me.Folder = f
+                                            End Sub)
+                                    End If
+                                End If
+                            End Sub)
+                    End If
+                Case SHCNE.DELETE, SHCNE.RMDIR, SHCNE.DRIVEREMOVED
+                    ' this sets the current folder to the first available parent 
+                    ' when the current folder gets deleted
+                    Dim selectedItem As Item = Nothing
+                    If selectedItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                selectedItem = Me.Folder
+                            End Sub)
+                    End If
+                    ' if the current folder was deleted...
+                    If Not selectedItem Is Nothing _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
+                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                ' get the first available parent  
+                                Dim f As Folder = selectedItem.LogicalParent
+                                If Not f Is Nothing Then
+                                    Me.Folder = f ' load it
+                                End If
+                            End Sub)
+                    End If
             End Select
         End Sub
 
         Private Function GetParentOfSelectionBefore(folder As Item, Optional selectedItem As Folder = Nothing) As Folder
+            ' get current folder
             If selectedItem Is Nothing Then
                 UIHelper.OnUIThread(
                     Sub()
@@ -89,12 +159,16 @@ Namespace Controls
                     End Sub)
             End If
             If selectedItem Is Nothing Then
+                ' no current folder -- give up
                 Return Nothing
             ElseIf selectedItem?.Pidl?.Equals(folder.Pidl) OrElse selectedItem.FullPath?.Equals(folder.FullPath) Then
+                ' we found the current folder -- switch to it's parent
                 Return selectedItem.LogicalParent
             ElseIf Not selectedItem?.LogicalParent Is Nothing Then
+                ' keep moving up until we find the current folder
                 Return Me.GetParentOfSelectionBefore(folder, selectedItem.LogicalParent)
             Else
+                ' we're out of options
                 Return Nothing
             End If
         End Function

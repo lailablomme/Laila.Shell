@@ -374,7 +374,7 @@ Namespace Controls
                             If TypeOf folder Is SearchFolder Then
                                 folderPidl = Shell.Desktop.Pidl.Clone()
                             Else
-                                folderPidl = folder.Parent.Pidl?.Clone()
+                                folderPidl = folder.Parent?.Pidl?.Clone()
                             End If
                             If Not folder.Pidl Is Nothing Then itemPidls = {folder.Pidl?.Clone()}
                         End If
@@ -440,7 +440,7 @@ Namespace Controls
                     Finally
                         Shell.GlobalThreadPool.Run(
                             Sub()
-                                folderPidl.Dispose()
+                                folderPidl?.Dispose()
                                 If Not itemPidls Is Nothing Then
                                     For Each p In itemPidls.Where(Function(p2) Not p2 Is Nothing)
                                         p.Dispose()

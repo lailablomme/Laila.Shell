@@ -72,32 +72,34 @@ Namespace Controls
             d.Items = New List(Of GridViewColumn)()
             d.CanSort = folder.CanSort
 
-            For Each column In folder.Columns.Where(Function(c) Not String.IsNullOrWhiteSpace(c.DisplayName))
-                Dim [property] As [Property] = [Property].FromCanonicalName(column.CanonicalName)
+            If Not folder.Columns Is Nothing Then
+                For Each column In folder.Columns.Where(Function(c) Not String.IsNullOrWhiteSpace(c.DisplayName))
+                    Dim [property] As [Property] = [Property].FromCanonicalName(column.CanonicalName)
 
-                Dim gvc As GridViewColumn = New GridViewColumn()
-                gvc.Header = column.DisplayName
-                gvc.CellTemplate = getCellTemplate(column, [property])
-                gvc.SetValue(Behaviors.GridViewExtBehavior.IsVisibleProperty, column.IsVisible)
-                gvc.SetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
-                If column.CanonicalName = "System.ItemNameDisplay" Then
-                    gvc.SetValue(Behaviors.GridViewExtBehavior.SortPropertyNameProperty, "ItemNameDisplaySortValue")
-                    gvc.SetValue(Behaviors.GridViewExtBehavior.CanHideProperty, False)
-                End If
-                'If [property].HasIcon Then
-                '    gvc.SetValue(Behaviors.GridViewExtBehavior.ExtraAutoSizeMarginProperty, Convert.ToDouble(15))
-                'End If
-                gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].GroupByText", column.PROPERTYKEY.ToString()))
+                    Dim gvc As GridViewColumn = New GridViewColumn()
+                    gvc.Header = column.DisplayName
+                    gvc.CellTemplate = getCellTemplate(column, [property])
+                    gvc.SetValue(Behaviors.GridViewExtBehavior.IsVisibleProperty, column.IsVisible)
+                    gvc.SetValue(Behaviors.GridViewExtBehavior.PropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].Value", column.PROPERTYKEY.ToString()))
+                    If column.CanonicalName = "System.ItemNameDisplay" Then
+                        gvc.SetValue(Behaviors.GridViewExtBehavior.SortPropertyNameProperty, "ItemNameDisplaySortValue")
+                        gvc.SetValue(Behaviors.GridViewExtBehavior.CanHideProperty, False)
+                    End If
+                    'If [property].HasIcon Then
+                    '    gvc.SetValue(Behaviors.GridViewExtBehavior.ExtraAutoSizeMarginProperty, Convert.ToDouble(15))
+                    'End If
+                    gvc.SetValue(Behaviors.GridViewExtBehavior.GroupByPropertyNameProperty, String.Format("PropertiesByKeyAsText[{0}].GroupByText", column.PROPERTYKEY.ToString()))
 
-                Dim isVisibleDescriptor As DependencyPropertyDescriptor =
+                    Dim isVisibleDescriptor As DependencyPropertyDescriptor =
                     DependencyPropertyDescriptor.FromProperty(Behaviors.GridViewExtBehavior.IsVisibleProperty, gvc.GetType())
-                isVisibleDescriptor.AddValueChanged(gvc,
+                    isVisibleDescriptor.AddValueChanged(gvc,
                     Sub(s2 As Object, e2 As EventArgs)
                         column.IsVisible = gvc.GetValue(Behaviors.GridViewExtBehavior.IsVisibleProperty)
                     End Sub)
 
-                d.Items.Add(gvc)
-            Next
+                    d.Items.Add(gvc)
+                Next
+            End If
 
             Return d
         End Function

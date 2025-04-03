@@ -36,7 +36,7 @@
                                                                 <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" Background="Transparent" 
                                                                            VerticalAlignment="Center" x:Name="PART_ExpanderHeader" HorizontalAlignment="Stretch" />
                                                             </Expander.Header>
-                                                            <ItemsPresenter Margin="25,0,0,0" />
+                                                            <ItemsPresenter Margin="15,0,0,0" />
                                                         </local:SlidingExpander>
                                                     </ControlTemplate>
                                                 </Setter.Value>

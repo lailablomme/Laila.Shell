@@ -146,9 +146,9 @@ Public Class HomeFolder
         End If
     End Sub
 
-    Protected Overrides Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInteger, cancellationToken As CancellationToken,
+    Protected Overrides Function EnumerateItems(shellItem2 As IShellItem2, flags As UInteger, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
-        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action, threadId As Integer?, dupes As List(Of Item))
+        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action, threadId As Integer?, dupes As List(Of Item)) As Exception
 
         ' enumerate pinned items
         Dim count As UInt64 = UInt64.MaxValue
@@ -199,11 +199,11 @@ Public Class HomeFolder
 
         ' enumerate recent files
         _hookFolderFullPath = Shell.GetSpecialFolder(SpecialFolders.Recent).FullPath
-        MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone().ShellItem2, flags, cancellationToken, isSortPropertyByText,
+        Return MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone().ShellItem2, flags, cancellationToken, isSortPropertyByText,
             isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId, dupes)
-    End Sub
+    End Function
 
-    Protected Overrides Sub OnItemsChanged()
+    Friend Overrides Sub OnItemsChanged()
         MyBase.OnItemsChanged()
 
         UIHelper.OnUIThread(

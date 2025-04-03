@@ -135,7 +135,7 @@
                                                             <Expander.Header>
                                                                 <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" x:Name="PART_ExpanderHeader" />
                                                             </Expander.Header>
-                                                            <ItemsPresenter Margin="25,0,0,0" />
+                                                            <ItemsPresenter />
                                                         </local:SlidingExpander>
                                                     </ControlTemplate>
                                                 </Setter.Value>

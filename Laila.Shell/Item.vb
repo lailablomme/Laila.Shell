@@ -1,4 +1,5 @@
 Imports System.ComponentModel
+Imports System.DirectoryServices.ActiveDirectory
 Imports System.Drawing
 Imports System.IO
 Imports System.Runtime.InteropServices
@@ -112,7 +113,7 @@ Public Class Item
                                     Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True, Optional preservePidl As Boolean = False) As Item
         ' check input
         If pidl Is Nothing OrElse pidl.AbsolutePIDL.Equals(IntPtr.Zero) Then
-            Throw New ArgumentException("pidl must not be null")
+            Return Nothing
         End If
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId() ' get a random thread we're going to live on
         Return Shell.GlobalThreadPool.Run(
@@ -183,6 +184,7 @@ Public Class Item
         _objectId = _objectCount
         _fullPath = fullPath
         _displayName = IO.Path.GetFileName(_fullPath)
+        Shell.AddToItemsCache(Me)
     End Sub
 
     ''' <summary>
@@ -332,20 +334,22 @@ Public Class Item
                                    Optional newPidl As Pidl = Nothing,
                                    Optional newFullPath As String = Nothing,
                                    Optional doRefreshImage As Boolean = True)
+        Debug.WriteLine($"Refreshing {Me.FullPath}")
         Dim oldPropertiesByKey As Dictionary(Of String, [Property]) = Nothing
         Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property]) = Nothing
         Dim oldItemNameDisplaySortValue As String = Nothing
         Dim oldAttr As SFGAO = _attributes
+        Dim oldFullPath As String = Nothing
+        Dim oldPidl As Pidl = Nothing
 
         SyncLock _shellItemLock
             SyncLock _shellItemLock2
                 If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                     oldItemNameDisplaySortValue = Me.ItemNameDisplaySortValue
 
-                    If Not _pidl Is Nothing Then
-                        _pidl.Dispose()
-                        _pidl = Nothing
-                    End If
+                    oldFullPath = _fullPath
+                    oldPidl = _pidl
+
                     If Not newPidl Is Nothing Then
                         _pidl = newPidl
                     End If
@@ -356,43 +360,46 @@ Public Class Item
                     End If
 
                     Dim oldShellItem As IShellItem2 = _shellItem2
+                    If newShellItem Is Nothing Then
+                        newShellItem = Me.GetNewShellItem()
+                    End If
                     If Not newShellItem Is Nothing Then
                         _shellItem2 = newShellItem
-                    Else
-                        _shellItem2 = Me.GetNewShellItem()
-                    End If
-                    If Not oldShellItem Is Nothing Then
-                        Marshal.ReleaseComObject(oldShellItem)
-                        oldShellItem = Nothing
-                    End If
+                        If Not oldShellItem Is Nothing Then
+                            Marshal.ReleaseComObject(oldShellItem)
+                            oldShellItem = Nothing
+                        End If
 
-                    _propertiesLock.Wait()
-                    Try
-                        oldPropertiesByKey = _propertiesByKey
-                        oldPropertiesByCanonicalName = _propertiesByCanonicalName
-                        _propertiesByKey = New Dictionary(Of String, [Property])()
-                        _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
-                        _contentViewModeProperties = Nothing
-                        For Each [property] In oldPropertiesByKey.Values
-                            If Not [property].IsCustom Then
+                        _propertiesLock.Wait()
+                        Try
+                            oldPropertiesByKey = _propertiesByKey
+                            oldPropertiesByCanonicalName = _propertiesByCanonicalName
+                            _propertiesByKey = New Dictionary(Of String, [Property])()
+                            _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
+                            _contentViewModeProperties = Nothing
+                            For Each [property] In oldPropertiesByKey.Values
+                                If Not [property].IsCustom Then
+                                    [property].Dispose()
+                                Else
+                                    _propertiesByKey.Add([property].Key.ToString(), [property])
+                                End If
+                            Next
+                            For Each [property] In oldPropertiesByCanonicalName.Values
                                 [property].Dispose()
-                            Else
-                                _propertiesByKey.Add([property].Key.ToString(), [property])
-                            End If
-                        Next
-                        For Each [property] In oldPropertiesByCanonicalName.Values
-                            [property].Dispose()
-                        Next
-                    Finally
-                        _propertiesLock.Release()
-                    End Try
+                            Next
+                        Finally
+                            _propertiesLock.Release()
+                        End Try
 
-                    _displayName = Nothing
-
-                    If Not Me.ShellItem2 Is Nothing Then
+                        _displayName = Nothing
                         _fullPath = Me.FullPath
                         _attributes = 0
                         _attributes = Me.Attributes
+
+                        If Not oldPidl Is Nothing AndAlso Not newPidl Is Nothing Then
+                            oldPidl.Dispose()
+                            oldPidl = Nothing
+                        End If
 
                         ' preload System_StorageProviderUIStatus images
                         'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
@@ -410,71 +417,103 @@ Public Class Item
             End SyncLock
         End SyncLock
 
-        If Not _logicalParent Is Nothing _
-            AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> _attributes.HasFlag(SFGAO.FOLDER) _
-                     OrElse oldAttr.HasFlag(SFGAO.LINK) <> _attributes.HasFlag(SFGAO.LINK) _
-                     OrElse TypeOf Me Is Folder AndAlso Not _attributes.HasFlag(SFGAO.FOLDER) _
-                     OrElse Not TypeOf Me Is Folder AndAlso _attributes.HasFlag(SFGAO.FOLDER)) Then
-            Dim newItem As Item = Me.Clone()
-            newItem.LogicalParent = _logicalParent
-            If Not _logicalParent Is Nothing Then
-                _logicalParent.InitializeItem(newItem)
-                UIHelper.OnUIThread(
-                    Sub()
-                        Dim c As IComparer = New Helpers.ItemComparer(Me.LogicalParent.ItemsGroupByPropertyName, Me.LogicalParent.ItemsSortPropertyName, Me.LogicalParent.ItemsSortDirection)
-                        Me.LogicalParent._items.InsertSorted(newItem, c)
-                        Me.LogicalParent.IsEmpty = Me.LogicalParent._items.Count = 0
-                    End Sub)
-            End If
-            Me.Dispose()
-        End If
+        UIHelper.OnUIThread(
+            Sub()
+                If Not _logicalParent Is Nothing Then
+                    If Not oldPidl Is Nothing AndAlso _logicalParent._previousFullPaths.Contains(oldPidl.ToString()) Then
+                        _logicalParent._previousFullPaths.Remove(oldPidl.ToString())
+                        If Not disposedValue AndAlso Not _shellItem2 Is Nothing AndAlso Not _logicalParent._previousFullPaths.Contains(Me.Pidl.ToString()) Then
+                            _logicalParent._previousFullPaths.Add(Me.Pidl.ToString())
+                        End If
+                    Else
+                        _logicalParent._previousFullPaths.Remove(oldFullPath)
+                        If Not disposedValue AndAlso Not _shellItem2 Is Nothing AndAlso Not _logicalParent._previousFullPaths.Contains(_fullPath) Then
+                            _logicalParent._previousFullPaths.Add(_fullPath)
+                        End If
+                    End If
+                End If
+            End Sub)
 
         If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
-            Me.NotifyOfPropertyChange("DisplayName")
-            If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
-                Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
-            End If
-            If doRefreshImage Then
-                Me.NotifyOfPropertyChange("OverlayImageAsync")
-                Me.NotifyOfPropertyChange("IconAsync")
-                Me.NotifyOfPropertyChange("ImageAsync")
-                Me.NotifyOfPropertyChange("HasThumbnailAsync")
-                Me.NotifyOfPropertyChange("IsImage")
-            End If
-            Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
-            Me.NotifyOfPropertyChange("IsHidden")
-            Me.NotifyOfPropertyChange("IsCompressed")
-            Me.NotifyOfPropertyChange("IsEncrypted")
-            Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
-            Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIcon")
-            Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
-            Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
-            Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
-            Me.NotifyOfPropertyChange("ContentViewModeProperties")
-            Me.NotifyOfPropertyChange("TileViewProperties")
-            If Not oldPropertiesByKey Is Nothing Then
-                For Each prop In oldPropertiesByKey
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].GroupByText", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIconAsync", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
-                Next
-            End If
-            If Not oldPropertiesByCanonicalName Is Nothing Then
-                For Each prop In oldPropertiesByCanonicalName
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].GroupByText", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIconAsync", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
-                Next
-            End If
-        End If
+            Shell.UpdateFileSystemCache(oldFullPath, Me)
 
-        RaiseEvent Refreshed(Me, New EventArgs())
+            If Not _logicalParent Is Nothing _
+                AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> _attributes.HasFlag(SFGAO.FOLDER) _
+                OrElse oldAttr.HasFlag(SFGAO.LINK) <> _attributes.HasFlag(SFGAO.LINK) _
+                OrElse (TypeOf Me Is Folder AndAlso Not _attributes.HasFlag(SFGAO.FOLDER)) _
+                OrElse (Not TypeOf Me Is Folder AndAlso _attributes.HasFlag(SFGAO.FOLDER))) Then
+                Debug.WriteLine($"Cloning {Me.FullPath}")
+                Dim newItem As Item = Me.Clone()
+                If Not newItem Is Nothing Then
+                    Debug.WriteLine($"Re-adding {Me.FullPath}")
+                    newItem.LogicalParent = _logicalParent
+                    _logicalParent.InitializeItem(newItem)
+                    Dim lp As Folder = _logicalParent
+                    Me.Dispose()
+                    UIHelper.OnUIThread(
+                    Sub()
+                        Dim existing As Item = lp._items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                            AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
+                                OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
+                        If existing Is Nothing Then
+                            Dim c As IComparer = New Helpers.ItemComparer(lp.ItemsGroupByPropertyName, lp.ItemsSortPropertyName, lp.ItemsSortDirection)
+                            lp._items.InsertSorted(newItem, c)
+                            If Not lp._previousFullPaths.Contains(newItem.FullPath) Then
+                                lp._previousFullPaths.Add(newItem.FullPath)
+                            End If
+                            lp.OnItemsChanged()
+                        End If
+                    End Sub)
+                Else
+                    Me.Dispose()
+                End If
+
+                Me.NotifyOfPropertyChange("DisplayName")
+                If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
+                    Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
+                End If
+                If doRefreshImage Then
+                    Me.NotifyOfPropertyChange("OverlayImageAsync")
+                    Me.NotifyOfPropertyChange("IconAsync")
+                    Me.NotifyOfPropertyChange("ImageAsync")
+                    Me.NotifyOfPropertyChange("HasThumbnailAsync")
+                    Me.NotifyOfPropertyChange("IsImage")
+                End If
+                Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
+                Me.NotifyOfPropertyChange("IsHidden")
+                Me.NotifyOfPropertyChange("IsCompressed")
+                Me.NotifyOfPropertyChange("IsEncrypted")
+                Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
+                Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIcon")
+                Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
+                Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
+                Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
+                Me.NotifyOfPropertyChange("ContentViewModeProperties")
+                Me.NotifyOfPropertyChange("TileViewProperties")
+                If Not oldPropertiesByKey Is Nothing Then
+                    For Each prop In oldPropertiesByKey
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].GroupByText", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIconAsync", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
+                    Next
+                End If
+                If Not oldPropertiesByCanonicalName Is Nothing Then
+                    For Each prop In oldPropertiesByCanonicalName
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].GroupByText", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIconAsync", prop.Key))
+                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
+                    Next
+                End If
+            End If
+
+            RaiseEvent Refreshed(Me, New EventArgs())
+        End If
     End Sub
 
     ''' <summary>
@@ -484,7 +523,7 @@ Public Class Item
     Public Overridable ReadOnly Property FullPath As String
         Get
             If String.IsNullOrWhiteSpace(_fullPath) Then
-                SyncLock _shellItemLock
+                SyncLock _shellItemLock2
                     If Not disposedValue Then
                         Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
                     End If
@@ -901,7 +940,7 @@ Public Class Item
 
             ' get displayname?
             If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
-                SyncLock _shellItemLock
+                SyncLock _shellItemLock2
                     If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                         Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
                         isNew = True
@@ -1045,7 +1084,7 @@ Public Class Item
                                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                                 Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED Or SFGAO.STORAGEANCESTOR
                 SyncLock _shellItemLock
-                    ShellItem2.GetAttributes(_attributes, _attributes)
+                    ShellItem2?.GetAttributes(_attributes, _attributes)
                 End SyncLock
             End If
             Return _attributes
@@ -1291,7 +1330,9 @@ Public Class Item
 
     Public Overridable Property IsProcessingNotifications As Boolean Implements IProcessNotifications.IsProcessingNotifications
         Get
-            Return _isProcessingNotifications AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse If(Me._logicalParent?.IsActiveInFolderView, False))
+            Return _isProcessingNotifications AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree _
+                OrElse If(Me._logicalParent?.IsVisibleInAddressBar, False) OrElse If(Me._logicalParent?.IsVisibleInTree, False) _
+                OrElse If(Me._logicalParent?.IsActiveInFolderView, False))
         End Get
         Friend Set(value As Boolean)
             SetValue(_isProcessingNotifications, value)
@@ -1476,50 +1517,25 @@ Public Class Item
                     End If
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     ' all the following conditions are to support file operations in .zip folders
-                    If (Not e.Item1?.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _  ' if this is our pidl
-                        OrElse (Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) _   ' or our fullpath
-                        AndAlso Not (Me.IsFolder AndAlso Not Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _ ' and we're not a zip folder being renamed...
-                                     AndAlso e.Item1.Pidl Is Nothing AndAlso IO.Path.GetFileName(e.Item2?.FullPath)?.Contains("~") _ ' ..to...
-                                     AndAlso IO.Path.GetExtension(e.Item2?.FullPath?.ToLower())?.Equals(".tmp")) Then   ' ...a temp file
-                        Dim doRefresh As Boolean = True
-                        If (e.Event = SHCNE.RENAMEFOLDER AndAlso e.Item2.IsFolder AndAlso Not e.Item2.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
-                            AndAlso e.Item1.Pidl Is Nothing AndAlso Not _logicalParent Is Nothing) Then ' if we're being renamed to a .zip file
-                            Dim existing As Item = _logicalParent.Items.ToList().FirstOrDefault(Function(i) Not i.disposedValue _
-                                                AndAlso (i.Pidl?.Equals(e.Item2.Pidl) OrElse i.FullPath?.Equals(e.Item2.FullPath)))
-                            If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then ' the folder exists...
-                                doRefresh = False ' don't do regular refresh on rename
-                                Shell.GlobalThreadPool.Run(
-                                    Sub()
-                                        Dim existingFolder As Folder = existing
-                                        existingFolder.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath) ' refresh the folder itself
-                                        e.Item2._shellItem2 = Nothing
-                                        existingFolder._isEnumerated = False
-                                        existingFolder._isEnumeratedForTree = False
-                                        Dim __ = existingFolder.GetItemsAsync(True, True) ' refresh the contents
-                                    End Sub)
-                            End If
-                        End If
-
-                        ' regular refresh on rename
-                        If doRefresh Then
-                            Shell.GlobalThreadPool.Run(
-                                Sub()
-                                    Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
-                                    Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath) ' refresh this item
-                                    If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
-                                        ' rename pinned and frequent items with the same pidl
-                                        PinnedItems.RenameItem(oldPidl, Me.Pidl)
-                                        FrequentFolders.RenameItem(oldPidl, Me.Pidl)
-                                    End If
-                                    If Not oldPidl Is Nothing Then
-                                        oldPidl.Dispose() ' dispose of old pidl
-                                    End If
-                                    If Not e.Item2 Is Nothing Then
-                                        ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
-                                        e.Item2._shellItem2 = Nothing
-                                    End If
-                                End Sub)
-                        End If
+                    If (Not e.Item1?.Pidl Is Nothing AndAlso Not Me.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _  ' if this is our pidl
+                        OrElse ((e.Item1?.Pidl Is Nothing OrElse Me.Pidl Is Nothing) AndAlso Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) Then
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
+                                Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath) ' refresh this item
+                                If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                                    ' rename pinned and frequent items with the same pidl
+                                    PinnedItems.RenameItem(oldPidl, Me.Pidl)
+                                    FrequentFolders.RenameItem(oldPidl, Me.Pidl)
+                                End If
+                                If Not oldPidl Is Nothing Then
+                                    oldPidl.Dispose() ' dispose of old pidl
+                                End If
+                                If Not e.Item2 Is Nothing Then
+                                    ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
+                                    e.Item2._shellItem2 = Nothing
+                                End If
+                            End Sub)
                     End If
             End Select
         End If
@@ -1569,34 +1585,35 @@ Public Class Item
                                 ' we're being disposed from the disposer thread, so try not to block the ui thread
                                 If Not _logicalParent Is Nothing Then
                                     _logicalParent._items.RemoveWithoutNotifying(Me)
-                                    If Not String.IsNullOrWhiteSpace(_fullPath) Then
+                                    If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not _logicalParent._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
                                         _logicalParent._previousFullPaths.Remove(_fullPath)
                                     End If
-                                    If Not _pidl Is Nothing Then
+                                    If Not _pidl Is Nothing AndAlso Not _logicalParent._items.ToList().Exists(Function(i) If(i.Pidl?.Equals(_pidl), False)) Then
                                         _logicalParent._previousFullPaths.Remove(_pidl.ToString())
                                     End If
                                     _logicalParent._isEnumerated = False
                                     If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
-                                    _logicalParent.IsEmpty = _logicalParent._items.Count = 0
+                                    _logicalParent.OnItemsChanged()
                                     _logicalParent = Nothing
                                 End If
                             Else
                                 UIHelper.OnUIThreadAsync(
-                                Sub()
-                                    If Not _logicalParent Is Nothing Then
-                                        _logicalParent._items.Remove(Me)
-                                        If Not String.IsNullOrWhiteSpace(_fullPath) Then
-                                            _logicalParent._previousFullPaths.Remove(_fullPath)
+                                    Sub()
+                                        Dim lp As Folder = _logicalParent
+                                        If Not lp Is Nothing Then
+                                            lp._items.Remove(Me)
+                                            If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not lp._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
+                                                lp._previousFullPaths.Remove(_fullPath)
+                                            End If
+                                            If Not _pidl Is Nothing AndAlso Not lp._items.ToList().Exists(Function(i) If(i.Pidl?.Equals(_pidl), False)) Then
+                                                lp._previousFullPaths.Remove(_pidl.ToString())
+                                            End If
+                                            lp._isEnumerated = False
+                                            If Me.CanShowInTree Then lp._isEnumeratedForTree = False
+                                            lp.OnItemsChanged()
+                                            ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
                                         End If
-                                        If Not _pidl Is Nothing Then
-                                            _logicalParent._previousFullPaths.Remove(_pidl.ToString())
-                                        End If
-                                        _logicalParent._isEnumerated = False
-                                        If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
-                                        _logicalParent.IsEmpty = _logicalParent._items.Count = 0
-                                        ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
-                                    End If
-                                End Sub)
+                                    End Sub)
                             End If
 
                             ' dispose properties

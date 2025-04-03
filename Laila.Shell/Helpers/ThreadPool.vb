@@ -169,15 +169,6 @@ Namespace Helpers
                     ' TODO: dispose managed state (managed objects)
                     Me.Cancel()
 
-                    ' wait for threads to finish so we don't have memory issues on shutdown
-                    Dim count As Integer = -1
-                    Do
-                        SyncLock _threadsLock
-                            count = _threads.Count
-                        End SyncLock
-                        Thread.Sleep(1)
-                    Loop While count <> 0
-
                     Shell.RemoveFromThreadPoolCache(Me)
                 End If
 

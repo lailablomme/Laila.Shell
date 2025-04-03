@@ -48,8 +48,11 @@ Public Class Shell
     Private Shared _threadPoolCache As List(Of Helpers.ThreadPool) = New List(Of Helpers.ThreadPool)()
     Private Shared _menuCacheLock As Object = New Object()
     Private Shared _menuCache As List(Of BaseMenu) = New List(Of BaseMenu)()
-    Friend Shared _itemsCacheLock As Object = New Object()
+    Friend Shared _itemsCacheLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _itemsCache As List(Of Tuple(Of Item, DateTime)) = New List(Of Tuple(Of Item, DateTime))()
+    Private Shared _fileSystemCache As Hashtable = New Hashtable()
+    Private Shared _fileSystemCacheCount As Hashtable = New Hashtable()
+    Private Shared _fileSystemCacheLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _controlCacheLock As Object = New Object()
     Private Shared _controlCache As List(Of IDisposable) = New List(Of IDisposable)()
     Private Shared _isDebugVisible As Boolean = False
@@ -365,10 +368,13 @@ Public Class Shell
                                     End If
                             End Select
 
-                            Debug.Write(text)
-
                             ' notify children
-                            notifySubscribers(e)
+                            If e.Item1 Is Nothing OrElse (Not e.Event = SHCNE.MKDIR AndAlso Not e.Event = SHCNE.CREATE AndAlso Not e.Event = SHCNE.RMDIR _
+                                AndAlso Not e.Event = SHCNE.DELETE AndAlso Not e.Event = SHCNE.RENAMEFOLDER AndAlso Not e.Event = SHCNE.RENAMEITEM) _
+                                OrElse Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                                Debug.Write(text)
+                                notifySubscribers(e)
+                            End If
 
                             If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
                             If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
@@ -514,15 +520,69 @@ Public Class Shell
     End Property
 
     Friend Shared Sub AddToItemsCache(item As Item)
-        SyncLock _itemsCacheLock
-            '_itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
+        _itemsCacheLock.Wait()
+        Try
             _itemsCache.Add(New Tuple(Of Item, Date)(item, DateTime.Now))
-        End SyncLock
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                AddToFileSystemCache(item)
+            End If
+        Finally
+            _itemsCacheLock.Release()
+        End Try
     End Sub
 
     Friend Shared Sub RemoveFromItemsCache(item As Item)
-        SyncLock _itemsCacheLock
+        _itemsCacheLock.Wait()
+        Try
             _itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                RemoveFromFileSystemCache(item.FullPath)
+            End If
+        Finally
+            _itemsCacheLock.Release()
+        End Try
+    End Sub
+
+    Friend Shared Sub AddToFileSystemCache(item As Item)
+        _fileSystemCacheLock.Wait()
+        Try
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not String.IsNullOrWhiteSpace(item.FullPath) Then
+                If Not _fileSystemCache.ContainsKey(item.FullPath) Then
+                    _fileSystemCache.Add(item.FullPath, item)
+                    _fileSystemCacheCount.Add(item.FullPath, 1)
+                Else
+                    Dim count As Integer = _fileSystemCacheCount(item.FullPath)
+                    _fileSystemCacheCount(item.FullPath) = count + 1
+                End If
+            End If
+        Finally
+            _fileSystemCacheLock.Release()
+        End Try
+    End Sub
+
+    Friend Shared Sub RemoveFromFileSystemCache(fullPath As String)
+        _fileSystemCacheLock.Wait()
+        Try
+            If Not String.IsNullOrWhiteSpace(fullPath) Then
+                If _fileSystemCacheCount(fullPath) = 1 Then
+                    _fileSystemCache.Remove(fullPath)
+                    _fileSystemCacheCount.Remove(fullPath)
+                Else
+                    Dim count As Integer = _fileSystemCacheCount(fullPath)
+                    _fileSystemCacheCount(fullPath) = count - 1
+                End If
+            End If
+        Finally
+            _fileSystemCacheLock.Release()
+        End Try
+    End Sub
+
+    Friend Shared Sub UpdateFileSystemCache(oldFullPath As String, item As Item)
+        SyncLock _itemsCacheLock
+            RemoveFromFileSystemCache(oldFullPath)
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                AddToFileSystemCache(item)
+            End If
         End SyncLock
     End Sub
 
@@ -593,7 +653,7 @@ Public Class Shell
             ' start receiving notifications
             Dim entry(0) As SHChangeNotifyEntry
             entry(0).pIdl = folder.Pidl.AbsolutePIDL
-            entry(0).Recursively = folder.Pidl?.ToString.Equals("00-00")
+            entry(0).Recursively = True  ' folder.Pidl?.ToString.Equals("00-00")
 
             Dim fswNotify As Action(Of NotificationEventArgs) =
                 Sub(e As NotificationEventArgs)
@@ -641,7 +701,14 @@ Public Class Shell
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.DELETE
-                                e2.Item1 = New Item(e.FullPath)
+                                SyncLock _itemsCacheLock
+                                    If _fileSystemCache.ContainsKey(e.FullPath) Then
+                                        e2.Item1 = _fileSystemCache(e.FullPath)
+                                    End If
+                                End SyncLock
+                                If e2.Item1 Is Nothing Then
+                                    e2.Item1 = New Item(e.FullPath)
+                                End If
                                 fswNotify(e2)
                             End Sub)
                     End Sub
@@ -652,9 +719,20 @@ Public Class Shell
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.RENAMEITEM
-                                e2.Item1 = New Item(e.OldFullPath)
+                                SyncLock _itemsCacheLock
+                                    If _fileSystemCache.ContainsKey(e.OldFullPath) Then
+                                        e2.Item1 = _fileSystemCache(e.OldFullPath)
+                                    End If
+                                End SyncLock
                                 e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                                 If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
+                                'If e2.Item2 Is Nothing Then
+                                '    SyncLock _itemsCacheLock
+                                '        If _fileSystemCache.ContainsKey(e.FullPath) Then
+                                '            e2.Item2 = _fileSystemCache(e.FullPath)
+                                '        End If
+                                '    End SyncLock
+                                'End If
                                 If e2.Item2 Is Nothing Then
                                     e2.Item2 = New Item(e.FullPath)
                                 End If
@@ -662,6 +740,7 @@ Public Class Shell
                             End Sub)
                     End Sub
 
+                Debug.WriteLine($"Start monitoring by FSW {folder.FullPath}")
                 Try
                     fsw.EnableRaisingEvents = True
                 Catch ex As Exception

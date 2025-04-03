@@ -68,22 +68,31 @@ Namespace Controls
         End Sub
 
         Public Sub New()
+            ' add us to the control cache so we'll get disposed on app shutdown
             Shell.AddToControlCache(Me)
 
             AddHandler Me.Loaded,
                 Sub(s As Object, e As RoutedEventArgs)
+                    ' get scrollviewer
                     _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
 
                     If Not Me.PART_ListBox Is Nothing AndAlso Not _isLoaded Then
                         _isLoaded = True
+
+                        ' load sections
                         loadSections()
+
+                        ' dispose of ourselves when our parent window closes
                         AddHandler Window.GetWindow(Me).Closed,
                             Sub(s2 As Object, e2 As EventArgs)
                                 Me.Dispose()
                             End Sub
 
+                        ' create drop target
                         _dropTarget = New TreeViewDropTarget(Me)
                     End If
+
+                    ' register for drag/drop on every load (may be multiple times i.e. in drop down of combobox)
                     If Not Me.PART_ListBox Is Nothing Then
                         WpfDragTargetProxy.RegisterDragDrop(PART_ListBox, _dropTarget)
                     End If
@@ -135,14 +144,73 @@ Namespace Controls
             If Me.PART_ListBox Is Nothing Then Return
 
             Select Case e.Event
-                Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                    Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
-                    UIHelper.OnUIThread(
-                        Sub()
-                            If Not f Is Nothing Then
-                                Me.Folder = f
-                            End If
-                        End Sub)
+                Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
+                    ' this is for supporting file operations within .zip files 
+                    ' from explorer or 7-zip
+                    Dim selectedItem As Item = Nothing
+                    If selectedItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                selectedItem = Me.SelectedItem
+                            End Sub)
+                    End If
+                    ' is something is being renamed to the currently selected folder...
+                    If Not selectedItem Is Nothing _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso e.Item2.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
+                                AndAlso (If(e.Item2.FullPath?.Equals(selectedItem.FullPath), False) OrElse If(e.Item2.FullPath?.Equals(selectedItem.FullPath.Split("~")(0)), False)))) Then
+                        Shell.GlobalThreadPool.Add(
+                            Sub()
+                                ' get the first available parent in case the current folder disappears
+                                Dim f As Folder = selectedItem.LogicalParent
+                                If Not f Is Nothing Then
+                                    Thread.Sleep(300) ' wait for .zip operations/folder refresh to complete
+
+                                    ' get the newly created .zip folder
+                                    Dim replacement As Item = f.Items.ToList().LastOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso ((Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso If(i.Pidl?.Equals(e.Item2.Pidl), False)) _
+                                            OrElse (i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
+                                                AndAlso If(i.FullPath?.Equals(e.Item2.FullPath), False)))
+                                    If Not replacement Is Nothing AndAlso TypeOf replacement Is Folder Then
+                                        ' new folder matching the current folder was found -- select it
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Me.SetSelectedItem(replacement)
+                                            End Sub)
+                                    Else
+                                        ' the current folder disappeared -- switch to parent
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Me.SetSelectedItem(f)
+                                            End Sub)
+                                    End If
+                                End If
+                            End Sub)
+                    End If
+                Case SHCNE.DELETE, SHCNE.RMDIR, SHCNE.DRIVEREMOVED
+                    ' this sets the current folder to the first available parent 
+                    ' when the current folder gets deleted
+                    Dim selectedItem As Item = Nothing
+                    If selectedItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                selectedItem = Me.SelectedItem
+                            End Sub)
+                    End If
+                    ' if the current folder was deleted...
+                    If Not selectedItem Is Nothing _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
+                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                ' get the first available parent  
+                                Dim f As Folder = selectedItem.LogicalParent
+                                If Not f Is Nothing Then
+                                    Me.Folder = f ' load it
+                                End If
+                            End Sub)
+                    End If
             End Select
         End Sub
 
@@ -293,24 +361,6 @@ Namespace Controls
                 itemToMove.TreeRootIndex = rootIndex + 1
             End If
         End Sub
-
-        Private Function GetParentOfSelectionBefore(folder As Item, Optional selectedItem As Folder = Nothing) As Folder
-            If selectedItem Is Nothing Then
-                UIHelper.OnUIThread(
-                    Sub()
-                        selectedItem = Me.SelectedItem
-                    End Sub)
-            End If
-            If selectedItem Is Nothing Then
-                Return Nothing
-            ElseIf selectedItem?.Pidl?.Equals(folder.Pidl) OrElse selectedItem.FullPath?.Equals(folder.FullPath) Then
-                Return selectedItem.LogicalParent
-            ElseIf Not selectedItem?.LogicalParent Is Nothing Then
-                Return Me.GetParentOfSelectionBefore(folder, selectedItem.LogicalParent)
-            Else
-                Return Nothing
-            End If
-        End Function
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
@@ -799,35 +849,66 @@ Namespace Controls
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Remove
-                    For Each item In e.OldItems
-                        If CType(item, Item).CanShowInTree Then
-                            Me.Items.Remove(item)
-                        End If
-                    Next
+                    UIHelper.OnUIThreadAsync(
+                        Async Sub()
+                            ' give it some time before removing deleted items from the ui, so we get 
+                            ' to switch to the matching new folder if applicable (i.e. for .zip operations)
+                            Await Task.Delay(400)
+
+                            ' remove items
+                            For Each item In e.OldItems
+                                If CType(item, Item).CanShowInTree Then
+                                    Me.Items.Remove(item)
+                                End If
+                            Next
+                        End Sub)
                 Case NotifyCollectionChangedAction.Replace
-                    For Each item In e.NewItems
-                        If CType(item, Item).IsVisibleInTree Then
-                            Me.Items.Add(item)
-                        End If
-                    Next
-                    For Each item In e.OldItems
-                        If CType(item, Item).CanShowInTree Then
-                            Me.Items.Remove(item)
-                        End If
-                    Next
+                    UIHelper.OnUIThreadAsync(
+                        Async Sub()
+                            ' give it some time before removing deleted items from the ui, so we get 
+                            ' to switch to the matching new folder if applicable (i.e. for .zip operations)
+                            Await Task.Delay(400)
+
+                            ' replace items
+                            For Each item In e.NewItems
+                                If CType(item, Item).IsVisibleInTree Then
+                                    Me.Items.Add(item)
+                                End If
+                            Next
+                            For Each item In e.OldItems
+                                If CType(item, Item).CanShowInTree Then
+                                    Me.Items.Remove(item)
+                                End If
+                            Next
+                        End Sub)
                 Case NotifyCollectionChangedAction.Reset
                     Dim collection As ObservableCollection(Of Item) = s
                     Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
                     If Not folder Is Nothing Then
-                        For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
-                            AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
-                            Me.Items.Remove(item)
-                        Next
-                        For Each item In collection.Where(Function(i) _
-                            Not i.disposedValue AndAlso i.IsVisibleInTree)
-                            Me.Items.Add(item)
-                        Next
+                        UIHelper.OnUIThreadAsync(
+                            Async Sub()
+                                Dim selectedItem As Item = Nothing
+                                ' give it some time before removing deleted items from the ui, so we get 
+                                ' to switch to the matching new folder if applicable (i.e. for .zip operations)
+                                Await Task.Delay(400)
+
+                                ' refresh folder
+                                For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
+                                    AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
+                                    If Me.SelectedItem?.Equals(item) Then selectedItem = item
+                                    Me.Items.Remove(item)
+                                Next
+                                For Each item In collection.Where(Function(i) _
+                                    Not i.disposedValue AndAlso i.IsVisibleInTree).ToList()
+                                    Me.Items.Add(item)
+                                    If Not selectedItem Is Nothing _
+                                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not item.Pidl Is Nothing AndAlso If(item.Pidl?.Equals(selectedItem.Pidl), False)) _
+                                            OrElse ((selectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso If(item.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                                        Me.SetSelectedItem(item)
+                                    End If
+                                Next
+                            End Sub)
                     End If
             End Select
         End Sub
@@ -840,8 +921,9 @@ Namespace Controls
                     UIHelper.OnUIThread(
                         Sub()
                             If folder.IsExpanded Then
+                                ' when a folder is expanded, add it's children to the tree
                                 For Each item In folder.Items.ToList()
-                                    If TypeOf item Is Folder Then
+                                    If item.CanShowInTree Then
                                         If Not Me.Items.Contains(item) Then
                                             Me.Items.Add(item)
                                         End If
@@ -852,7 +934,8 @@ Namespace Controls
                                     End If
                                 Next
                             Else
-                                For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                ' when a folder is collapsed, remove it's items from the tree
+                                For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
                                     AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                                     If item.IsExpanded Then item.IsExpanded = False
                                     Me.Items.Remove(item)
@@ -860,10 +943,11 @@ Namespace Controls
                             End If
                         End Sub)
                 Case "TreeSortKey"
+                    ' when the tree sort order of an item is updated, also update it's children
                     Dim list As List(Of Item) = Nothing
                     UIHelper.OnUIThread(
                         Sub()
-                            list = Me.Items.Where(Function(i) TypeOf i Is Folder AndAlso Not TypeOf i Is DummyFolder _
+                            list = Me.Items.Where(Function(i) i.CanShowInTree AndAlso Not TypeOf i Is DummyFolder _
                                 AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                         End Sub)
                     For Each item2 In list
@@ -872,13 +956,21 @@ Namespace Controls
             End Select
         End Sub
 
+        ''' <summary>
+        ''' Only show items that are supposed to be visible.
+        ''' </summary>
+        ''' <param name="i">The item for which to evaluate visibility</param>
+        ''' <returns>True if the item will be visible</returns>
         Private Function filter(i As Object) As Boolean
             Dim item As Item = i
             Dim isVisibleInTree As Boolean? = item?.IsVisibleInTree
             Return If(isVisibleInTree.HasValue, isVisibleInTree.Value, False)
         End Function
 
-
+        ''' <summary>
+        ''' Gets/sets the current folder.
+        ''' </summary>
+        ''' <returns>The current Folder object</returns>
         Public Property Folder As Folder
             Get
                 Return GetValue(FolderProperty)
@@ -1117,28 +1209,24 @@ Namespace Controls
             End Set
         End Property
 
-        Public Enum TreeRootSection As Long
-            SYSTEM = 0
-            PINNED = 100
-            FREQUENT = Long.MaxValue - 100
-            ENVIRONMENT = Long.MaxValue - 10
-        End Enum
-
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then
                 If disposing Then
                     ' dispose managed state (managed objects)
                     Shell.UnsubscribeFromNotifications(Me)
 
+                    ' dispose of "type to search" timer
                     If Not _typeToSearchTimer Is Nothing Then
                         _typeToSearchTimer.Dispose()
                         _typeToSearchTimer = Nothing
                     End If
 
+                    ' dispose of sections
                     For Each section In Me.Sections
                         section.Dispose()
                     Next
 
+                    ' neutralize items
                     For Each item In Me.Items.ToList()
                         If Not TypeOf item Is SeparatorFolder Then
                             item.TreeRootIndex = -1
@@ -1147,10 +1235,12 @@ Namespace Controls
                         End If
                     Next
 
+                    ' unsubscribe as a drop target
                     If Not Me.PART_ListBox Is Nothing Then
                         WpfDragTargetProxy.RevokeDragDrop(PART_ListBox)
                     End If
 
+                    ' we don't need to be disposed on shutdown anymore, we're already disposed
                     Shell.RemoveFromControlCache(Me)
                 End If
 

@@ -92,7 +92,9 @@ Public Class Folder
     ''' <returns>An IShellFolder</returns>
     Friend Shared Function GetIShellFolderFromIShellItem2(shellItem2 As IShellItem2) As IShellFolder
         Dim result As IShellFolder = Nothing
-        shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, result)
+        If Not shellItem2 Is Nothing Then
+            shellItem2.BindToHandler(Nothing, Guids.BHID_SFObject, GetType(IShellFolder).GUID, result)
+        End If
         Return result
     End Function
 
@@ -140,7 +142,10 @@ Public Class Folder
     ''' <returns></returns>
     Public Overrides Property IsProcessingNotifications As Boolean
         Get
-            Return _isProcessingNotifications AndAlso (Me.IsVisibleInAddressBar OrElse Me.IsVisibleInTree OrElse If(Me._logicalParent?.IsActiveInFolderView, False) OrElse Me.IsActiveInFolderView)
+            Return _isProcessingNotifications _
+                AndAlso (If(Me._logicalParent?.IsVisibleInAddressBar, False) OrElse Me.IsVisibleInAddressBar _
+                OrElse If(Me._logicalParent?.IsVisibleInTree, False) OrElse Me.IsVisibleInTree _
+                OrElse If(Me._logicalParent?.IsActiveInFolderView, False) OrElse Me.IsActiveInFolderView)
         End Get
         Friend Set(value As Boolean)
             MyBase.IsProcessingNotifications = value
@@ -575,9 +580,13 @@ Public Class Folder
         Get
             Return Shell.GlobalThreadPool.Run(
                 Function() As IShellView
-                    Dim shellView As IShellView = Nothing
-                    Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
-                    Return shellView
+                    SyncLock _shellItemLock2
+                        Dim shellView As IShellView = Nothing
+                        If Not disposedValue AndAlso Not Me.ShellFolder Is Nothing Then
+                            Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
+                        End If
+                        Return shellView
+                    End SyncLock
                 End Function)
         End Get
     End Property
@@ -589,33 +598,35 @@ Public Class Folder
     Public ReadOnly Property Columns As IEnumerable(Of Column)
         Get
             If _columns Is Nothing Then
-                _columns = New List(Of Column)()
-
                 ' get columns from shell
                 Dim columnManager As IColumnManager = Nothing
                 Try
                     columnManager = Me.ColumnManager
-                    Dim count As Integer
-                    columnManager.GetColumnCount(CM_ENUM_FLAGS.CM_ENUM_ALL, count)
-                    Dim propertyKeys(count - 1) As PROPERTYKEY
-                    columnManager.GetColumns(CM_ENUM_FLAGS.CM_ENUM_ALL, propertyKeys, count)
-                    Dim index As Integer = 0
-                    For Each propertyKey In propertyKeys
-                        Dim info As CM_COLUMNINFO = New CM_COLUMNINFO()
-                        info.dwMask = CM_MASK.CM_MASK_NAME Or CM_MASK.CM_MASK_DEFAULTWIDTH Or CM_MASK.CM_MASK_IDEALWIDTH _
+                    If Not Me.ColumnManager Is Nothing Then
+                        _columns = New List(Of Column)()
+
+                        Dim count As Integer
+                        columnManager.GetColumnCount(CM_ENUM_FLAGS.CM_ENUM_ALL, count)
+                        Dim propertyKeys(count - 1) As PROPERTYKEY
+                        columnManager.GetColumns(CM_ENUM_FLAGS.CM_ENUM_ALL, propertyKeys, count)
+                        Dim index As Integer = 0
+                        For Each propertyKey In propertyKeys
+                            Dim info As CM_COLUMNINFO = New CM_COLUMNINFO()
+                            info.dwMask = CM_MASK.CM_MASK_NAME Or CM_MASK.CM_MASK_DEFAULTWIDTH Or CM_MASK.CM_MASK_IDEALWIDTH _
                                           Or CM_MASK.CM_MASK_STATE Or CM_MASK.CM_MASK_WIDTH
-                        info.cbSize = Marshal.SizeOf(Of CM_COLUMNINFO)
-                        columnManager.GetColumnInfo(propertyKey, info)
-                        Dim col As Column = New Column(propertyKey, info, index)
-                        If Not col._propertyDescription Is Nothing Then
-                            _columns.Add(col)
-                            index += 1
-                        End If
-                    Next
-                    If Not _columns.Any(Function(c) c.IsVisible) Then
-                        For Each col In _columns.Take(5)
-                            col.IsVisible = True
+                            info.cbSize = Marshal.SizeOf(Of CM_COLUMNINFO)
+                            columnManager.GetColumnInfo(propertyKey, info)
+                            Dim col As Column = New Column(propertyKey, info, index)
+                            If Not col._propertyDescription Is Nothing Then
+                                _columns.Add(col)
+                                index += 1
+                            End If
                         Next
+                        If Not _columns.Any(Function(c) c.IsVisible) Then
+                            For Each col In _columns.Take(5)
+                                col.IsVisible = True
+                            Next
+                        End If
                     End If
                 Finally
                     If Not columnManager Is Nothing Then
@@ -1027,9 +1038,16 @@ Public Class Folder
             End If
         End SyncLock
 
-        Me.EnumerateItems(Me.ShellItem2, flags, cancellationToken,
-            isSortPropertyByText, isSortPropertyDisplaySortValue, sortPropertyKey,
-            result, newFullPaths, addItems, threadId, dupes)
+        Dim enumEx As Exception = Nothing
+        Dim tries As Integer = 0
+        Do
+            tries = tries + 1
+            enumEx = Me.EnumerateItems(Me.ShellItem2, flags, cancellationToken,
+                isSortPropertyByText, isSortPropertyDisplaySortValue, sortPropertyKey,
+                result, newFullPaths, addItems, threadId, dupes)
+            If Not enumEx Is Nothing Then Thread.Sleep(150)
+        Loop While Not enumEx Is Nothing AndAlso tries < 3
+        Me.EnumerationException = enumEx
 
         If Not cancellationToken.IsCancellationRequested Then
             ' add new items
@@ -1043,10 +1061,10 @@ Public Class Folder
         End If
     End Sub
 
-    Protected Overridable Sub EnumerateItems(shellItem2 As IShellItem2, flags As UInt32, cancellationToken As CancellationToken,
+    Protected Overridable Function EnumerateItems(shellItem2 As IShellItem2, flags As UInt32, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
         result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action,
-        threadId As Integer?, dupes As List(Of Item))
+        threadId As Integer?, dupes As List(Of Item)) As Exception
 
         Dim isDebuggerAttached As Boolean = Debugger.IsAttached
         Dim isRootDesktop As Boolean = If(Me.Pidl?.Equals(Shell.Desktop.Pidl), False)
@@ -1065,8 +1083,10 @@ Public Class Folder
             propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
             SyncLock _shellItemLock
-                CType(shellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
-                    (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
+                If Not shellItem2 Is Nothing Then
+                    CType(shellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
+                        (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
+                End If
             End SyncLock
 
             If Not enumShellItems Is Nothing Then
@@ -1194,13 +1214,14 @@ Public Class Folder
                     End If
                 End If
             End If
-            Me.EnumerationException = Nothing
+            Return Nothing
         Catch ex As COMException
             If Not (ex.HResult = HRESULT.S_OK OrElse ex.HResult = HRESULT.S_FALSE OrElse ex.HResult = HRESULT.ERROR_INVALID_PARAMETER) Then
-                Me.EnumerationException = ex
+                Return ex
             End If
+            Return Nothing
         Catch ex As Exception
-            Me.EnumerationException = ex
+            Return ex
         Finally
             If Not enumShellItems Is Nothing Then
                 Marshal.ReleaseComObject(enumShellItems)
@@ -1216,7 +1237,7 @@ Public Class Folder
             End If
             var.Dispose()
         End Try
-    End Sub
+    End Function
 
     Protected Friend Overridable Function InitializeItem(item As Item) As Item
         Return item
@@ -1379,7 +1400,7 @@ Public Class Folder
         End SyncLock
     End Sub
 
-    Protected Overridable Sub OnItemsChanged()
+    Friend Overridable Sub OnItemsChanged()
         Me.IsEmpty = _items.Count = 0
         UIHelper.OnUIThread(
             Sub()
@@ -1414,7 +1435,8 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                        AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
+                                        AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                            OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                             If existing Is Nothing Then
                                 Me.InitializeItem(e.Item1)
                                 e.Item1.LogicalParent = Me
@@ -1424,6 +1446,9 @@ Public Class Folder
                                 UIHelper.OnUIThread(
                                     Sub()
                                         _items.InsertSorted(e.Item1, c)
+                                        If _previousFullPaths.Contains(e.Item1.FullPath) Then
+                                            _previousFullPaths.Add(e.Item1.FullPath)
+                                        End If
                                     End Sub)
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
@@ -1450,7 +1475,8 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                        AndAlso (i.Pidl?.Equals(e.Item1.Pidl) OrElse i.FullPath?.Equals(e.Item1.FullPath)))
+                                        AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                            OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                             If Not existing Is Nothing Then
                                 existing.Dispose()
                                 Me.OnItemsChanged()
@@ -1460,8 +1486,10 @@ Public Class Folder
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        If Not _items Is Nothing AndAlso _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                                                                            AndAlso i.Pidl?.Equals(e.Item1.Pidl)) Is Nothing Then
+                        Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                    AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                        OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
+                        If existing Is Nothing Then
                             Me.InitializeItem(e.Item1)
                             e.Item1.LogicalParent = Me
                             e.Item1.IsProcessingNotifications = True
@@ -1481,10 +1509,11 @@ Public Class Folder
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        Dim item As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                                                              AndAlso i.Pidl?.Equals(e.Item1.Pidl))
-                        If Not item Is Nothing AndAlso TypeOf item Is Folder Then
-                            item.Dispose()
+                        Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                            OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
+                        If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
+                            existing.Dispose()
                             Me.OnItemsChanged()
                         End If
                     End If
@@ -1492,7 +1521,7 @@ Public Class Folder
                     If _isLoaded Then
                         If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
                                 OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) _
-                                AndAlso (e.Event = SHCNE.UPDATEDIR OrElse _wasActivity) Then
+                                AndAlso (e.Event = SHCNE.UPDATEDIR OrElse _wasActivity OrElse Not _isEnumerated OrElse Not _isEnumeratedForTree) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False
@@ -1520,15 +1549,15 @@ Public Class Folder
                         Dim tcs As TaskCompletionSource = New TaskCompletionSource()
                         tcses.Add(tcs)
                         _notificationThreadPool.Add(
-                        Sub()
-                            ' Process tasks from the queue
-                            For Each item In chuncks(j)
-                                If Shell.ShuttingDownToken.IsCancellationRequested Then Exit For
-                                item.ProcessNotification(e)
-                            Next
+                            Sub()
+                                ' Process tasks from the queue
+                                For Each item In chuncks(j)
+                                    If Shell.ShuttingDownToken.IsCancellationRequested Then Exit For
+                                    item.ProcessNotification(e)
+                                Next
 
-                            tcs.SetResult()
-                        End Sub)
+                                tcs.SetResult()
+                            End Sub)
                     Next
 
                     Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
