@@ -51,29 +51,29 @@ Namespace Controls
         Public Shared ReadOnly ScrollOffsetProperty As DependencyProperty = DependencyProperty.Register("ScrollOffset", GetType(Point), GetType(BaseFolderView), New FrameworkPropertyMetadata(New Point(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend Host As FolderView
-        Friend PART_ListBox As System.Windows.Controls.ListBox
-        Protected PART_Grid As Grid
-        Protected PART_DragInsertIndicator As Grid
         Private PART_CheckBoxSelectAll As CheckBox
+        Protected PART_DragInsertIndicator As Grid
+        Protected PART_Grid As Grid
+        Friend PART_ListBox As ListBox
+        Private _canOpenWithSingleClick As Boolean
+        Private _dragViewStrategy As IDragViewStrategy
+        Private _ignoreSelection As Boolean
         Private _isInternallySettingSelectAll As Boolean
-        Protected _selectionHelper As SelectionHelper(Of Item) = Nothing
-        Private _mousePointDown As Point
+        Private _isLoaded As Boolean
+        Private _lastScrollSize As Size
+        Private _menu As RightClickMenu
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
         Private _mouseOriginalSourceDown As Object
-        Private _canOpenWithSingleClick As Boolean
+        Private _mouseOverTime As DateTime
+        Private _mousePointDown As Point
         Protected _scrollViewer As ScrollViewer
-        Private _lastScrollSize As Size
-        Private _isLoaded As Boolean
-        Private _typeToSearchTimer As Timer
-        Private _typeToSearchString As String = ""
-        Private _menu As RightClickMenu
-        Private _ignoreSelection As Boolean
+        Protected _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _toolTip As ToolTip
         Private _toolTipCancellationTokenSource As CancellationTokenSource
+        Private _typeToSearchString As String = ""
+        Private _typeToSearchTimer As Timer
         Private disposedValue As Boolean
-        Private _mouseOverTime As DateTime
-        Private _dragViewStrategy As IDragViewStrategy
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
@@ -154,12 +154,12 @@ Namespace Controls
                     End If
                 End Sub
 
-            AddHandler Me.PART_ListBox.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
-            AddHandler Me.PART_ListBox.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
-            AddHandler Me.PART_ListBox.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
-            AddHandler Me.PART_ListBox.MouseLeave, AddressOf OnListViewMouseLeave
-            AddHandler Me.PreviewKeyDown, AddressOf OnListViewKeyDown
-            AddHandler Me.PreviewTextInput, AddressOf OnListViewTextInput
+            AddHandler Me.PART_ListBox.PreviewMouseMove, AddressOf listBox_PreviewMouseMove
+            AddHandler Me.PART_ListBox.PreviewMouseDown, AddressOf listBox_PreviewMouseButtonDown
+            AddHandler Me.PART_ListBox.PreviewMouseUp, AddressOf listBox_PreviewMouseButtonUp
+            AddHandler Me.PART_ListBox.MouseLeave, AddressOf listBox_MouseLeave
+            AddHandler Me.PreviewKeyDown, AddressOf baseFolderView_KeyDown
+            AddHandler Me.PreviewTextInput, AddressOf baseFolderView_TextInput
         End Sub
 
         Protected Overridable Sub PART_ListBox_Loaded()
@@ -220,7 +220,7 @@ Namespace Controls
             _ignoreSelection = False
         End Sub
 
-        Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
+        Private Sub baseFolderView_KeyDown(sender As Object, e As KeyEventArgs)
             Debug.WriteLine(e.Key)
             If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
                 If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
@@ -246,7 +246,7 @@ Namespace Controls
             End If
         End Sub
 
-        Private Sub OnListViewTextInput(sender As Object, e As TextCompositionEventArgs)
+        Private Sub baseFolderView_TextInput(sender As Object, e As TextCompositionEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
                 If Me.DoTypeToSelect Then
                     If Not _typeToSearchTimer Is Nothing Then
@@ -327,7 +327,7 @@ Namespace Controls
             checkBox.IsChecked = Not checkBox.IsChecked
         End Sub
 
-        Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
+        Private Sub listBox_PreviewMouseMove(sender As Object, e As MouseEventArgs)
             Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
             Dim overItem As Item = TryCast(listBoxItem?.DataContext, Item)
             If Me.DoShowInfoTips AndAlso Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
@@ -422,7 +422,7 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
+        Public Sub listBox_PreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
             _mousePointDown = e.GetPosition(Me)
             _mouseOriginalSourceDown = e.OriginalSource
             _canOpenWithSingleClick = False
@@ -487,7 +487,7 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub OnListViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+        Public Sub listBox_PreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
             If _canOpenWithSingleClick _
                AndAlso Not _mouseItemDown Is Nothing AndAlso Not Me.IsDoubleClickToOpenItem Then
                 Using Shell.OverrideCursor(Cursors.Wait)
@@ -508,7 +508,7 @@ Namespace Controls
             _canOpenWithSingleClick = False
         End Sub
 
-        Public Sub OnListViewMouseLeave(sender As Object, e As MouseEventArgs)
+        Public Sub listBox_MouseLeave(sender As Object, e As MouseEventArgs)
             _mouseItemDown = Nothing
             _mouseItemOver = Nothing
             If Not _toolTip Is Nothing Then

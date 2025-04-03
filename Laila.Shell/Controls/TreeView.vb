@@ -371,10 +371,10 @@ Namespace Controls
 
             _selectionHelper = New SelectionHelper(Of Item)(PART_ListBox)
 
-            AddHandler PART_ListBox.PreviewMouseMove, AddressOf treeView_PreviewMouseMove
-            AddHandler PART_ListBox.PreviewMouseDown, AddressOf treeView_PreviewMouseDown
-            AddHandler PART_ListBox.PreviewMouseUp, AddressOf treeView_PreviewMouseButtonUp
-            AddHandler PART_ListBox.MouseLeave, AddressOf treeView_MouseLeave
+            AddHandler PART_ListBox.PreviewMouseMove, AddressOf listBox_PreviewMouseMove
+            AddHandler PART_ListBox.PreviewMouseDown, AddressOf listBox_PreviewMouseDown
+            AddHandler PART_ListBox.PreviewMouseUp, AddressOf listBox_PreviewMouseUp
+            AddHandler PART_ListBox.MouseLeave, AddressOf listBox_MouseLeave
             AddHandler Me.PreviewKeyDown, AddressOf treeView_KeyDown
             AddHandler Me.PreviewTextInput, AddressOf treeView_TextInput
         End Sub
@@ -532,7 +532,7 @@ Namespace Controls
             End If
         End Function
 
-        Private Sub treeView_PreviewMouseMove(sender As Object, e As MouseEventArgs)
+        Private Sub listBox_PreviewMouseMove(sender As Object, e As MouseEventArgs)
             If Not _mouseItemDown Is Nothing AndAlso
                 (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(PART_ListBox)
@@ -545,7 +545,7 @@ Namespace Controls
             End If
         End Sub
 
-        Private Sub treeView_PreviewMouseDown(sender As Object, e As MouseButtonEventArgs)
+        Private Sub listBox_PreviewMouseDown(sender As Object, e As MouseButtonEventArgs)
             _mouseButton = e.ChangedButton
             _mouseButtonState = e.ButtonState
             _mousePointDown = e.GetPosition(Me.PART_ListBox)
@@ -639,44 +639,42 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub treeView_PreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+        Public Sub listBox_PreviewMouseUp(sender As Object, e As MouseButtonEventArgs)
             If Not _treeViewItemDown Is Nothing Then _treeViewItemDown.Tag = "Released"
 
             Dim element As IInputElement = Me.PART_ListBox.InputHitTest(e.GetPosition(Me.PART_ListBox))
             If Not element Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(element) Is Nothing Then
-                Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(element)
-                Dim clickedItem As Item = TryCast(treeViewItem?.DataContext, Item)
-                If Not TypeOf clickedItem Is DummyFolder Then
+                If Not _mouseItemDown Is Nothing AndAlso Not TypeOf _mouseItemDown Is DummyFolder Then
                     If _mouseButton = MouseButton.Left AndAlso _mouseButtonState = MouseButtonState.Pressed Then
-                        If Not clickedItem Is Nothing Then
+                        If Not _mouseItemDown Is Nothing Then
                             Using Shell.OverrideCursor(Cursors.Wait)
                                 If Not UIHelper.GetParentOfType(Of ToggleButton)(element) Is Nothing Then
-                                    CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
+                                    CType(_mouseItemDown, Folder).IsExpanded = Not CType(_mouseItemDown, Folder).IsExpanded
                                 Else
                                     Using Shell.OverrideCursor(Cursors.Wait)
-                                        _selectionHelper.SetSelectedItems({clickedItem})
+                                        _selectionHelper.SetSelectedItems({_mouseItemDown})
 
                                         ' this allows for better reponse to double-clicking an unselected item
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                If TypeOf clickedItem Is Folder Then
-                                                    If (If(clickedItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
-                                                        OrElse (clickedItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                If TypeOf _mouseItemDown Is Folder Then
+                                                    If (If(_mouseItemDown.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                        OrElse (_mouseItemDown.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
                                                         AndAlso Not Me.Items.Contains(Me.Folder) Then Return
 
-                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(clickedItem))
-                                                    CType(clickedItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = clickedItem
-                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(clickedItem))
-                                                ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder Then
-                                                    If (If(CType(clickedItem, Link).TargetItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
-                                                        OrElse (CType(clickedItem, Link).TargetItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
+                                                    CType(_mouseItemDown, Folder).LastScrollOffset = New Point()
+                                                    Me.Folder = _mouseItemDown
+                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
+                                                ElseIf TypeOf _mouseItemDown Is Link AndAlso TypeOf CType(_mouseItemDown, Link).TargetItem Is Folder Then
+                                                    If (If(CType(_mouseItemDown, Link).TargetItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                        OrElse (CType(_mouseItemDown, Link).TargetItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
                                                         AndAlso Not Me.Items.Contains(Me.Folder) Then Return
 
-                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(clickedItem, Link).TargetItem))
-                                                    CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = CType(clickedItem, Link).TargetItem
-                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(clickedItem, Link).TargetItem))
+                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
+                                                    CType(CType(_mouseItemDown, Link).TargetItem, Folder).LastScrollOffset = New Point()
+                                                    Me.Folder = CType(_mouseItemDown, Link).TargetItem
+                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
                                                 End If
                                             End Sub, Threading.DispatcherPriority.Background)
                                     End Using
@@ -694,7 +692,7 @@ Namespace Controls
             _mouseItemDown = Nothing
         End Sub
 
-        Public Sub treeView_MouseLeave(sender As Object, e As MouseEventArgs)
+        Public Sub listBox_MouseLeave(sender As Object, e As MouseEventArgs)
             _mouseItemDown = Nothing
         End Sub
 
