@@ -131,8 +131,7 @@ Namespace Behaviors
                             .Select(Function(t) t.Item1).ToList()
                 Dim firstListView As ListView = listViewsSorted.FirstOrDefault(Function(lv) lv.SelectedItems.Count > 0)
                 Dim lastListView As ListView = listViewsSorted.LastOrDefault(Function(lv) lv.SelectedItems.Count > 0)
-                Dim el As IInputElement = firstListView.InputHitTest(Mouse.GetPosition(firstListView))
-                If el Is Nothing Then el = lastListView.InputHitTest(Mouse.GetPosition(lastListView))
+                Dim el As IInputElement = Keyboard.FocusedElement
                 If Not el Is Nothing Then
                     Dim clickedListViewItem As ListViewItem = Nothing
                     If TypeOf el Is ListViewItem Then

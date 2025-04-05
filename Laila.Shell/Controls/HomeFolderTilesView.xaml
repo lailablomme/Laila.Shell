@@ -42,7 +42,7 @@
                                                                 <ListView ItemsSource="{Binding Items}" Margin="25,0,0,0" SelectionMode="Extended"
                                                                           behaviors:SharedSelectedItemsBehavior.SyncedSelectedItemsWith="{Binding Tag, ElementName=PART_Grid}"
                                                                           behaviors:ScrollViewerFix.IsEnabled="True" BorderThickness="0"
-                                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False">
                                                                     <ListView.Resources>
                                                                         <!-- Default panel and template -->
                                                                         <ItemsPanelTemplate x:Key="GridPanel">
@@ -70,7 +70,7 @@
                                                                                         <helpers:ImageHelper x:Key="imageHelper" />
                                                                                     </Grid.Resources>
                                                                                     <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
-                                                                                              VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                                                              VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox" IsTabStop="False" Focusable="False"
                                                                                               Visibility="Collapsed" Style="{StaticResource lailaShell_CheckBoxHomeStyle}" />
                                                                                     <ItemsControl Grid.Column="1" Margin="0,0,2,0">
                                                                                         <ItemsControl.ItemTemplate>
@@ -297,7 +297,7 @@
                                                                                         <helpers:ImageHelper x:Key="imageHelper" />
                                                                                     </Grid.Resources>
                                                                                     <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
-                                                                                              VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
+                                                                                              VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox" IsTabStop="False" Focusable="False"
                                                                                               Visibility="Collapsed" Style="{StaticResource lailaShell_CheckBoxHomeStyle}" />
                                                                                     <ItemsControl Grid.Column="1" Margin="0,0,2,0">
                                                                                         <ItemsControl.ItemTemplate>

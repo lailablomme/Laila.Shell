@@ -103,9 +103,12 @@ Public Class Shell
                     While Not ShuttingDownToken.IsCancellationRequested
                         ' take a snapshot of the shellitem cache...
                         Dim list As List(Of Tuple(Of Item, DateTime))
-                        SyncLock _itemsCacheLock
+                        _itemsCacheLock.Wait()
+                        Try
                             list = Shell.ItemsCache.ToList()
-                        End SyncLock
+                        Finally
+                            _itemsCacheLock.Release()
+                        End Try
 
                         ' ...and go through it
                         For Each item In list
@@ -295,12 +298,15 @@ Public Class Shell
             ' items need not really be disposed of, because they have no managed resources,
             ' but we do it anyway, in case that changes in the future
             Dim c As Integer = 0
-            SyncLock _itemsCache
+            _itemsCacheLock.Wait()
+            Try
                 For Each item In _itemsCache.Select(Function(i) i.Item1).ToList()
                     item.Dispose()
                     c += 1
                 Next
-            End SyncLock
+            Finally
+                _itemsCacheLock.Release()
+            End Try
 
             SyncLock _threadPoolCacheLock
                 For Each item In Shell.ThreadPoolCache.ToList()
@@ -578,12 +584,15 @@ Public Class Shell
     End Sub
 
     Friend Shared Sub UpdateFileSystemCache(oldFullPath As String, item As Item)
-        SyncLock _itemsCacheLock
+        _itemsCacheLock.Wait()
+        Try
             RemoveFromFileSystemCache(oldFullPath)
             If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
                 AddToFileSystemCache(item)
             End If
-        End SyncLock
+        Finally
+            _itemsCacheLock.Release()
+        End Try
     End Sub
 
     Friend Shared Sub AddToControlCache(item As IDisposable)
@@ -593,7 +602,7 @@ Public Class Shell
     End Sub
 
     Friend Shared Sub RemoveFromControlCache(item As IDisposable)
-        SyncLock _itemsCacheLock
+        SyncLock _controlCacheLock
             _controlCache.Remove(item)
         End SyncLock
     End Sub
@@ -701,11 +710,14 @@ Public Class Shell
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.DELETE
-                                SyncLock _itemsCacheLock
+                                _itemsCacheLock.Wait()
+                                Try
                                     If _fileSystemCache.ContainsKey(e.FullPath) Then
                                         e2.Item1 = _fileSystemCache(e.FullPath)
                                     End If
-                                End SyncLock
+                                Finally
+                                    _itemsCacheLock.Release()
+                                End Try
                                 If e2.Item1 Is Nothing Then
                                     e2.Item1 = New Item(e.FullPath)
                                 End If
@@ -719,11 +731,14 @@ Public Class Shell
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.RENAMEITEM
-                                SyncLock _itemsCacheLock
+                                _itemsCacheLock.Wait()
+                                Try
                                     If _fileSystemCache.ContainsKey(e.OldFullPath) Then
                                         e2.Item1 = _fileSystemCache(e.OldFullPath)
                                     End If
-                                End SyncLock
+                                Finally
+                                    _itemsCacheLock.Release()
+                                End Try
                                 e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                                 If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
                                 'If e2.Item2 Is Nothing Then

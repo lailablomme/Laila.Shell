@@ -143,7 +143,7 @@
                                             </Grid.Resources>
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                       VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
-                                                      Visibility="Collapsed"/>
+                                                      Visibility="Collapsed" IsTabStop="False" Focusable="False"/>
                                             <ItemsControl Grid.Column="1" Margin="0,0,2,0">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>

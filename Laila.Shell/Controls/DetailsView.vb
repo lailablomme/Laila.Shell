@@ -16,12 +16,7 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(DetailsView), New FrameworkPropertyMetadata(GetType(DetailsView)))
         End Sub
 
-        Public Sub New()
-            EventManager.RegisterClassHandler(GetType(FrameworkElement), FrameworkElement.RequestBringIntoViewEvent,
-                                              New RequestBringIntoViewEventHandler(AddressOf OnRequestBringIntoView))
-        End Sub
-
-        Private Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
+        Protected Overrides Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
             If TypeOf e.OriginalSource Is ListViewItem AndAlso UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox) Then
                 Dim item As ListViewItem = e.OriginalSource
                 If Not item Is Nothing Then

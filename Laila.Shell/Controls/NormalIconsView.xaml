@@ -205,7 +205,7 @@
                                             </Border>
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                       VerticalAlignment="Top" HorizontalAlignment="Left" x:Name="SelectionCheckBox"
-                                                      Visibility="Collapsed" />
+                                                      Visibility="Collapsed" IsTabStop="False" Focusable="False" />
                                             <Grid Grid.Row="1" HorizontalAlignment="Center" MaxWidth="65">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
