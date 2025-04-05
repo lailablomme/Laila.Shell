@@ -350,7 +350,7 @@ Namespace Controls
                         scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset + 10))
                     ElseIf offsetX < 0 AndAlso orientation = Orientation.Horizontal Then
                         If pt.Y - listBoxItem.ActualHeight / 2 - 10 < 0 Then
-                            If _scrollViewer.VerticalOffset - 10 > 0 Then
+                            If _scrollViewer.VerticalOffset - 10 > 0 AndAlso _scrollViewer.ViewportHeight > listBoxItem.ActualHeight Then
                                 scrollTo(New Point(_scrollViewer.ScrollableWidth, _scrollViewer.VerticalOffset - 10))
                                 pt.Y -= listBoxItem.ActualHeight / 2 + 10
                                 pt.X = _scrollViewer.ViewportWidth - 3
@@ -366,7 +366,7 @@ Namespace Controls
                         doFindOnDifferentY = True
                     ElseIf offsetY < 0 AndAlso orientation = Orientation.Vertical Then
                         If pt.X - listBoxItem.ActualWidth / 2 - 25 < 0 Then
-                            If _scrollViewer.HorizontalOffset - 25 > 0 Then
+                            If _scrollViewer.HorizontalOffset - 25 > 0 AndAlso _scrollViewer.ViewportWidth > listBoxItem.ActualWidth Then
                                 scrollTo(New Point(_scrollViewer.HorizontalOffset - 25, _scrollViewer.ScrollableHeight))
                                 pt.X -= listBoxItem.ActualWidth / 2 + 25
                                 pt.Y = _scrollViewer.ViewportHeight - 3
@@ -382,7 +382,7 @@ Namespace Controls
                         doFindOnDifferentX = True
                     ElseIf offsetX > 0 AndAlso orientation = Orientation.Horizontal Then
                         If pt.Y + listBoxItem.ActualHeight / 2 + 10 > _scrollViewer.ViewportHeight Then
-                            If _scrollViewer.VerticalOffset + 10 < _scrollViewer.ScrollableHeight Then
+                            If _scrollViewer.VerticalOffset + 10 < _scrollViewer.ScrollableHeight AndAlso _scrollViewer.ViewportHeight > listBoxItem.ActualHeight Then
                                 scrollTo(New Point(0, _scrollViewer.VerticalOffset + 10))
                                 pt.Y += listBoxItem.ActualHeight / 2 + 10
                                 pt.X = 3
@@ -398,7 +398,7 @@ Namespace Controls
                         doFindOnDifferentY = True
                     ElseIf offsetY > 0 AndAlso orientation = Orientation.Vertical Then
                         If pt.X + listBoxItem.ActualWidth / 2 + 25 > _scrollViewer.ViewportWidth Then
-                            If _scrollViewer.HorizontalOffset + 25 < _scrollViewer.ScrollableWidth Then
+                            If _scrollViewer.HorizontalOffset + 25 < _scrollViewer.ScrollableWidth AndAlso _scrollViewer.ViewportWidth > listBoxItem.ActualWidth Then
                                 scrollTo(New Point(_scrollViewer.HorizontalOffset + 25, 0))
                                 pt.X += listBoxItem.ActualWidth / 2 + 25
                                 pt.Y = 3
