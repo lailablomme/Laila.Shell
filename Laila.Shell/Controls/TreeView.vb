@@ -884,29 +884,22 @@ Namespace Controls
                     Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
                     If Not folder Is Nothing Then
-                        UIHelper.OnUIThreadAsync(
-                            Async Sub()
-                                Dim selectedItem As Item = Nothing
-                                ' give it some time before removing deleted items from the ui, so we get 
-                                ' to switch to the matching new folder if applicable (i.e. for .zip operations)
-                                Await Task.Delay(400)
-
-                                ' refresh folder
-                                For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
+                        Dim selectedItem As Item = Nothing
+                        ' refresh folder
+                        For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
                                     AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
-                                    If Me.SelectedItem?.Equals(item) Then selectedItem = item
-                                    Me.Items.Remove(item)
-                                Next
-                                For Each item In collection.Where(Function(i) _
-                                    Not i.disposedValue AndAlso i.IsVisibleInTree).ToList()
-                                    Me.Items.Add(item)
-                                    If Not selectedItem Is Nothing _
-                                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not item.Pidl Is Nothing AndAlso If(item.Pidl?.Equals(selectedItem.Pidl), False)) _
-                                            OrElse ((selectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso If(item.FullPath?.Equals(selectedItem.FullPath), False))) Then
-                                        Me.SetSelectedItem(item)
-                                    End If
-                                Next
-                            End Sub)
+                            If Me.SelectedItem?.Equals(item) Then selectedItem = item
+                            Me.Items.Remove(item)
+                        Next
+                        For Each item In collection.Where(Function(i) _
+                            Not i.disposedValue AndAlso i.IsVisibleInTree).ToList()
+                            Me.Items.Add(item)
+                            If Not selectedItem Is Nothing _
+                                AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not item.Pidl Is Nothing AndAlso If(item.Pidl?.Equals(selectedItem.Pidl), False)) _
+                                    OrElse ((selectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso If(item.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                                Me.SetSelectedItem(item)
+                            End If
+                        Next
                     End If
             End Select
         End Sub
