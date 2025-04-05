@@ -312,7 +312,7 @@ Namespace Controls
                 Do
                     pt.X = Math.Min(Math.Max(2, pt.X), _scrollViewer.ViewportWidth - 2)
                     pt.Y = Math.Min(Math.Max(2 + If(headerRowPresenter?.ActualHeight, 0), pt.Y), _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0))
-                    For scanCount = 0 To 10
+                    For scanCount = 0 To If(offsetX <> 0, listBoxItem.ActualHeight, listBoxItem.ActualWidth) / 10
                         Dim ptScan As Point = New Point(pt.X + If(offsetY > 0, 5, If(offsetY < 0, -5, 0)) * scanCount, pt.Y + If(offsetX > 0, 5, If(offsetX < 0, -5, 0)) * scanCount)
                         Dim el As IInputElement = Me.PART_ListBox.InputHitTest(ptScan)
                         If Not el Is Nothing Then
