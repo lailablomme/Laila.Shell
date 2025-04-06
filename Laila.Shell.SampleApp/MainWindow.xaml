@@ -468,6 +468,6 @@
                 </DataTemplate>
             </controls:TabControl.ContentTemplate>
         </controls:TabControl>
-        <TextBlock FontSize="22" FontWeight="Bold" IsHitTestVisible="False" Text="Focus" x:Name="focusTextBlock" />
+        <TextBlock FontSize="22" FontWeight="Bold" IsHitTestVisible="False" Text="Focus" x:Name="focusTextBlock" Visibility="Collapsed" />
     </Grid>
 </metroWindow:MetroWindow>
