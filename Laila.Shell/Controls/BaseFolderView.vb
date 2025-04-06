@@ -196,6 +196,10 @@ Namespace Controls
             If Not Me.Folder Is Nothing Then
                 setGrouping(Me.Folder)
             End If
+
+            If Me.IsKeyboardFocusWithin Then
+                Me.PART_ListBox.Focus()
+            End If
         End Sub
 
         Public Function GetListBoxClientSize() As Size
@@ -271,6 +275,8 @@ Namespace Controls
             If _isKeyboardScrolling Then Return
 
             If TypeOf Keyboard.FocusedElement Is ListBoxItem Then
+                Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Folder.Items)
+
                 ' get listboxitem
                 Dim listBoxItem As ListBoxItem = Keyboard.FocusedElement
 
@@ -341,7 +347,7 @@ Namespace Controls
                     ElseIf offsetY <> 0 AndAlso pt.Y > 2 + If(headerRowPresenter?.ActualHeight, 0) AndAlso pt.Y < _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0) Then
                         pt.Y += offsetY
                     ElseIf offsetX < 0 AndAlso _scrollViewer.HorizontalOffset > 0 Then
-                        scrollTo(New Point(_scrollViewer.HorizontalOffset - 10, _scrollViewer.VerticalOffset))
+                        scrollTo(New Point(_scrollViewer.HorizontalOffset - 250, _scrollViewer.VerticalOffset))
                     ElseIf offsetY < 0 AndAlso _scrollViewer.VerticalOffset > 0 Then
                         scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset - 10))
                     ElseIf offsetX > 0 AndAlso _scrollViewer.HorizontalOffset < _scrollViewer.ScrollableWidth Then
@@ -358,10 +364,13 @@ Namespace Controls
                                 ' we're out of options
                                 doContinue = False
                             End If
-                        Else
+                        ElseIf Not listBoxItem.DataContext.Equals(view(0)) Then
                             scrollTo(New Point(_scrollViewer.ScrollableWidth, _scrollViewer.VerticalOffset))
                             pt.Y -= listBoxItem.ActualHeight / 2 + 10
                             pt.X = _scrollViewer.ViewportWidth - 3
+                        Else
+                            ' we're out of options
+                            doContinue = False
                         End If
                         doFindOnDifferentY = True
                     ElseIf offsetY < 0 AndAlso orientation = Orientation.Vertical Then
@@ -374,10 +383,13 @@ Namespace Controls
                                 ' we're out of options
                                 doContinue = False
                             End If
-                        Else
+                        ElseIf Not listBoxItem.DataContext.Equals(view(0)) Then
                             scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.ScrollableHeight))
                             pt.X -= listBoxItem.ActualWidth / 2 + 25
                             pt.Y = _scrollViewer.ViewportHeight - 3
+                        Else
+                            ' we're out of options
+                            doContinue = False
                         End If
                         doFindOnDifferentX = True
                     ElseIf offsetX > 0 AndAlso orientation = Orientation.Horizontal Then
@@ -390,10 +402,13 @@ Namespace Controls
                                 ' we're out of options
                                 doContinue = False
                             End If
-                        Else
+                        ElseIf Not listBoxItem.DataContext.Equals(view(view.Count - 1)) Then
                             scrollTo(New Point(0, _scrollViewer.VerticalOffset))
                             pt.Y += listBoxItem.ActualHeight / 2 + 10
                             pt.X = 3
+                        Else
+                            ' we're out of options
+                            doContinue = False
                         End If
                         doFindOnDifferentY = True
                     ElseIf offsetY > 0 AndAlso orientation = Orientation.Vertical Then
@@ -406,10 +421,13 @@ Namespace Controls
                                 ' we're out of options
                                 doContinue = False
                             End If
-                        Else
+                        ElseIf Not listBoxItem.DataContext.Equals(view(view.Count - 1)) Then
                             scrollTo(New Point(_scrollViewer.HorizontalOffset, 0))
                             pt.X += listBoxItem.ActualWidth / 2 + 25
                             pt.Y = 3
+                        Else
+                            ' we're out of options
+                            doContinue = False
                         End If
                         doFindOnDifferentX = True
                     Else
@@ -439,7 +457,7 @@ Namespace Controls
                     _scrollViewer.ScrollToHorizontalOffset(pt.X)
                     _scrollViewer.ScrollToVerticalOffset(pt.Y)
                 End Sub, Threading.DispatcherPriority.Input)
-            Do While Math.Abs(_scrollViewer.HorizontalOffset - pt.X) > 1 OrElse Math.Abs(_scrollViewer.VerticalOffset - pt.Y) > 1
+            Do While Math.Abs(_scrollViewer.HorizontalOffset - pt.X) > 0.5 OrElse Math.Abs(_scrollViewer.VerticalOffset - pt.Y) > 0.5
                 UIHelper.OnUIThread(
                     Sub()
                     End Sub, Threading.DispatcherPriority.Render)
@@ -660,7 +678,7 @@ Namespace Controls
                 Dim clickedItem As Item = TryCast(listBoxItem?.DataContext, Item)
                 _mouseItemDown = clickedItem
                 If clickedItem Is Nothing Then
-                    Me.PART_ListBox.Focus()
+                    'Me.PART_ListBox.Focus()
                 Else
                     listBoxItem.Focus()
                 End If

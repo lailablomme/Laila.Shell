@@ -370,6 +370,13 @@ Namespace Controls
             PART_DragInsertIndicator = Template.FindName("PART_DragInsertIndicator", Me)
 
             _selectionHelper = New SelectionHelper(Of Item)(PART_ListBox)
+            _selectionHelper.SelectionChanged =
+                Sub()
+                    If Me.PART_ListBox.IsKeyboardFocusWithin Then
+                        Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromItem(_selectionHelper.SelectedItems(0))
+                        If Not listBoxItem Is Nothing Then listBoxItem.Focus()
+                    End If
+                End Sub
 
             AddHandler PART_ListBox.PreviewMouseMove, AddressOf listBox_PreviewMouseMove
             AddHandler PART_ListBox.PreviewMouseDown, AddressOf listBox_PreviewMouseDown

@@ -7,8 +7,8 @@
     <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#1F26A0DA"/>
     <SolidColorBrush x:Key="Item.Pressed.Background" Color="#1F26A0DA"/>
     <SolidColorBrush x:Key="Item.Pressed.Border" Color="#1F26A0DA"/>
-    <SolidColorBrush x:Key="Item.SelectedInactive.Background" Color="#3DDADADA"/>
-    <SolidColorBrush x:Key="Item.SelectedInactive.Border" Color="#FFDADADA"/>
+    <SolidColorBrush x:Key="Item.SelectedInactive.Background" Color="#cfcfcf"/>
+    <SolidColorBrush x:Key="Item.SelectedInactive.Border" Color="#cfcfcf"/>
     <SolidColorBrush x:Key="Item.SelectedActive.Background" Color="#3D26A0DA"/>
     <SolidColorBrush x:Key="Item.SelectedActive.Border" Color="#FF26A0DA"/>
 

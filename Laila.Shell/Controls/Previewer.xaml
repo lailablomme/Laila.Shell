@@ -3,6 +3,7 @@
                     xmlns:local="clr-namespace:Laila.Shell.Controls">
 
     <Style TargetType="{x:Type local:Previewer}">
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:Previewer}">

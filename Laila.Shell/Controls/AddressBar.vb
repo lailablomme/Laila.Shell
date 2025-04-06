@@ -24,6 +24,7 @@ Namespace Controls
         Private PART_NavigationButtons As Border
         Private PART_ClickToEdit As Border
         Private disposedValue As Boolean
+        Private _dontFocusTextBox As Boolean = False
         Private _source As HwndSource
 
         Shared Sub New()
@@ -78,18 +79,39 @@ Namespace Controls
                 End Sub
             setDoShowEncryptedOrCompressedFilesInColor()
 
-            AddHandler Me.PART_ClickToEdit.MouseDown,
-                Sub(s As Object, e As MouseButtonEventArgs)
+            AddHandler Me.GotFocus,
+                Sub(s As Object, e As EventArgs)
+                    If Not _dontFocusTextBox Then
+                        Me.PART_TextBox.IsEnabled = True
+                        Me.PART_TextBox.Focus()
+                    End If
+                    _dontFocusTextBox = False
+                End Sub
+            AddHandler Me.LostFocus,
+                Sub(s As Object, e As EventArgs)
+                    UIHelper.OnUIThreadAsync(
+                        Async Sub()
+                            Await Task.Delay(50)
+                            If Not Keyboard.FocusedElement?.Equals(Me) Then
+                                _dontFocusTextBox = False
+                            End If
+                        End Sub)
+                End Sub
+            AddHandler Me.PART_TextBox.GotFocus,
+                Sub(s As Object, e As RoutedEventArgs)
                     _isSettingTextInternally = True
                     Me.SelectedItem = Me.Folder
                     Me.Text = Me.Folder.AddressBarDisplayPath
                     _isSettingTextInternally = False
                     PART_NavigationButtons.Visibility = Visibility.Hidden
-                    Me.PART_TextBox.IsEnabled = True
                     Me.PART_TextBox.SelectionStart = 0
                     Me.PART_TextBox.SelectionLength = Me.Text.Length
-                    Me.PART_TextBox.Focus()
                     Me.PART_DropDownButton.IsChecked = True
+                End Sub
+            AddHandler Me.PART_ClickToEdit.MouseDown,
+                Sub(s As Object, e As MouseButtonEventArgs)
+                    Me.PART_TextBox.IsEnabled = True
+                    Me.PART_TextBox.Focus()
                 End Sub
             AddHandler Me.PART_TextBox.PreviewKeyDown,
                 Sub(s As Object, e As KeyEventArgs)
@@ -121,6 +143,7 @@ Namespace Controls
 
         Protected Overrides Sub OnItemSelected()
             Using Shell.OverrideCursor(Cursors.Wait)
+                _dontFocusTextBox = True
                 Me.PART_TextBox.IsEnabled = False
 
                 If INVALID_VALUE.Equals(Me.SelectedValue) Then
@@ -143,7 +166,8 @@ Namespace Controls
                 ElseIf Not Me.SelectedItem Is Nothing Then
                     If TypeOf Me.SelectedItem Is Folder Then
                         Dim selectedItem As Folder = Me.SelectedItem
-                        If Not selectedItem.Pidl.Equals(Me.Folder.Pidl) Then
+                        If (Not selectedItem.Pidl Is Nothing AndAlso Not selectedItem.Pidl.Equals(Me.Folder?.Pidl)) _
+                            OrElse (selectedItem.Pidl Is Nothing AndAlso Not selectedItem.FullPath?.Equals(Me.Folder.FullPath)) Then
                             Dim folder As Folder = selectedItem.Clone()
                             Me.Folder = folder
                             AddressBarHistory.Track(folder)
@@ -166,6 +190,7 @@ Namespace Controls
         Protected Overrides Sub Cancel()
             MyBase.Cancel()
 
+            _dontFocusTextBox = True
             Me.PART_TextBox.IsEnabled = False
             Me.PART_NavigationButtons.Visibility = Visibility.Visible
 

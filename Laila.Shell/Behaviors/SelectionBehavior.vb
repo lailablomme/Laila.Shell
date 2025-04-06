@@ -32,7 +32,7 @@ Namespace Behaviors
             MyBase.OnAttached()
 
             _listBox = Me.AssociatedObject
-            _control = New Control() With {.Opacity = 0}
+            _control = New Control() With {.Opacity = 0, .Focusable = False}
 
             AddHandler _listBox.Loaded,
                 Sub(s As Object, e As EventArgs)

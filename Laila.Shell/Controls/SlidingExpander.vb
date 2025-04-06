@@ -15,6 +15,7 @@ Namespace Controls
 
         Public Shared ReadOnly ToggleButtonStyleProperty As DependencyProperty = DependencyProperty.Register("ToggleButtonStyle", GetType(Style), GetType(SlidingExpander), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly OrientationProperty As DependencyProperty = DependencyProperty.Register("Orientation", GetType(Orientation), GetType(SlidingExpander), New FrameworkPropertyMetadata(Orientation.Horizontal, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ToggleButtonVisibilityProperty As DependencyProperty = DependencyProperty.Register("ToggleButtonVisibility", GetType(Visibility), GetType(SlidingExpander), New FrameworkPropertyMetadata(Visibility.Visible, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(SlidingExpander), New FrameworkPropertyMetadata(GetType(SlidingExpander)))
@@ -27,6 +28,7 @@ Namespace Controls
         Private PART_ContentContainer As ScrollViewer
         Private PART_ContentPresenter As ContentPresenter
         Private PART_Title As ContentPresenter
+        Private PART_TitleLabel As Button
         Private PART_ToggleButton As ToggleButton
         Private _timer As DispatcherTimer
         Private _currentStep As Double = 0
@@ -39,12 +41,20 @@ Namespace Controls
             Me.PART_ContentContainer = Template.FindName("PART_ContentContainer", Me)
             Me.PART_ContentPresenter = Template.FindName("PART_ContentPresenter", Me)
             Me.PART_Title = Template.FindName("PART_Title", Me)
+            Me.PART_TitleLabel = Template.FindName("PART_TitleLabel", Me)
             Me.PART_ToggleButton = Template.FindName("PART_ToggleButton", Me)
 
             _timer = New DispatcherTimer()
 
-            AddHandler Me.PART_Title.PreviewMouseDown,
-                Sub(s As Object, e As MouseButtonEventArgs)
+            AddHandler Me.PART_TitleLabel.PreviewKeyDown,
+                Sub(s As Object, e As KeyEventArgs)
+                    If e.Key = Key.Space Then
+                        Me.PART_ToggleButton.IsChecked = Not Me.PART_ToggleButton.IsChecked
+                    End If
+                End Sub
+
+            AddHandler Me.PART_TitleLabel.PreviewMouseDown,
+                Sub(s As Object, e As MouseEventArgs)
                     Dim vwp As VirtualizingPanel = UIHelper.FindVisualChildren(Of VirtualizingPanel)(Me.PART_ContentContainer).ToList()(0)
                     Dim group As CollectionViewGroup = vwp.DataContext
                     Dim listBox As ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
@@ -56,7 +66,12 @@ Namespace Controls
                             End If
                         Next
                     End If
-                    Me.PART_ToggleButton.Focus()
+                    Me.PART_TitleLabel.Focus()
+                    e.Handled = True
+                End Sub
+
+            AddHandler Me.PART_Title.PreviewMouseDown,
+                Sub(s As Object, e As MouseButtonEventArgs)
                 End Sub
 
             AddHandler Me.PART_ToggleButton.Unchecked,
@@ -125,6 +140,15 @@ Namespace Controls
             End Get
             Set(value As Style)
                 SetValue(ToggleButtonStyleProperty, value)
+            End Set
+        End Property
+
+        Public Property ToggleButtonVisibility As Visibility
+            Get
+                Return GetValue(ToggleButtonVisibilityProperty)
+            End Get
+            Set(value As Visibility)
+                SetValue(ToggleButtonVisibilityProperty, value)
             End Set
         End Property
 

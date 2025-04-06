@@ -11,6 +11,7 @@
     </ResourceDictionary.MergedDictionaries>
 
     <Style TargetType="{x:Type local:DetailsView}">
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:DetailsView}">
@@ -20,7 +21,7 @@
                             <converters:PointToMarginLeftConverter x:Key="pointToMarginLeftConverter"/>
                         </Grid.Resources>
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
-                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" FocusVisualStyle="{x:Null}"  
+                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" 
                                   VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
                                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   VirtualizingPanel.ScrollUnit="Pixel">

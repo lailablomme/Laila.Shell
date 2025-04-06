@@ -10,7 +10,6 @@
     </ResourceDictionary.MergedDictionaries>
 
     <Style TargetType="local:SlidingExpander">
-        <Setter Property="Margin" Value="0,0,-5,0" />
         <Setter Property="Foreground" Value="Black" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Template">
@@ -24,14 +23,33 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition x:Name="PART_ContentRow" Height="Auto" />
                         </Grid.RowDefinitions>
-                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="2,0,6,0"
+                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" 
                                 BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" 
                                 Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                             <DockPanel>
-                                <ToggleButton DockPanel.Dock="Left" x:Name="PART_ToggleButton" IsChecked="True" Focusable="True" VerticalAlignment="Center"
-                                              Style="{Binding ToggleButtonStyle, RelativeSource={RelativeSource TemplatedParent}}" Margin="4,0,4,0">
+                                <ToggleButton DockPanel.Dock="Left" x:Name="PART_ToggleButton" IsChecked="True" Focusable="False" VerticalAlignment="Center"
+                                              Style="{Binding ToggleButtonStyle, RelativeSource={RelativeSource TemplatedParent}}" Margin="4,0,0,0"
+                                              Visibility="{TemplateBinding ToggleButtonVisibility}">
                                 </ToggleButton>
-                                <ContentPresenter ContentSource="Header" VerticalAlignment="Center" x:Name="PART_Title" HorizontalAlignment="Stretch" Focusable="False" Margin="0,0,0,1" />
+                                <Button x:Name="PART_TitleLabel" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Left" Margin="4,0,4,1"
+                                        FocusVisualStyle="{x:Null}">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
+                                                                BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                                            <ContentPresenter x:Name="Content" ContentSource="Content" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center" x:Name="PART_Title" HorizontalAlignment="Stretch" />
+                                </Button>
                             </DockPanel>
                         </Border>
                         <Grid Grid.Row="1" x:Name="PART_Content" Tag="1.0" VerticalAlignment="Bottom" ClipToBounds="True" HorizontalAlignment="Stretch">
@@ -64,7 +82,7 @@
                             <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
                             <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
                         </Trigger>
-                        <Trigger Property="IsKeyboardFocusWithin" SourceName="PART_ToggleButton" Value="True">
+                        <Trigger Property="IsFocused" SourceName="PART_TitleLabel" Value="True">
                             <Setter Property="BorderBrush" TargetName="Bd" Value="DarkBlue"/>
                         </Trigger>
                     </ControlTemplate.Triggers>

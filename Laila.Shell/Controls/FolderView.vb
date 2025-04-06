@@ -31,6 +31,23 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
         End Sub
 
+        Public Shared ReadOnly ViewActivatedEvent As RoutedEvent =
+            EventManager.RegisterRoutedEvent(
+                "ViewActivated", RoutingStrategy.Bubble,
+                GetType(RoutedEventHandler), GetType(FolderView))
+
+        Public Custom Event ViewActivated As RoutedEventHandler
+            AddHandler(value As RoutedEventHandler)
+                Me.AddHandler(ViewActivatedEvent, value)
+            End AddHandler
+            RemoveHandler(value As RoutedEventHandler)
+                Me.RemoveHandler(ViewActivatedEvent, value)
+            End RemoveHandler
+            RaiseEvent(sender As Object, e As EventArgs)
+
+            End RaiseEvent
+        End Event
+
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
         Private _views As Dictionary(Of Guid, Control)
@@ -371,6 +388,7 @@ Namespace Controls
                 BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
                 BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty, New Binding("IsSelecting") With {.Source = Me})
                 Me.SelectedItems = selectedItems
+                Me.RaiseEvent(New RoutedEventArgs(ViewActivatedEvent))
             End If
         End Sub
 
