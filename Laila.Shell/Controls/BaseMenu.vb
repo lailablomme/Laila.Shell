@@ -374,7 +374,7 @@ Namespace Controls
                             If TypeOf folder Is SearchFolder Then
                                 folderPidl = Shell.Desktop.Pidl.Clone()
                             Else
-                                folderPidl = folder.Parent.Pidl?.Clone()
+                                folderPidl = folder.Parent?.Pidl?.Clone()
                             End If
                             If Not folder.Pidl Is Nothing Then itemPidls = {folder.Pidl?.Clone()}
                         End If
@@ -389,7 +389,7 @@ Namespace Controls
 
                     SyncLock folder._shellItemLock
                         If Not folder.disposedValue Then
-                            shellFolder = folder.GetShellFolderOnCurrentThread()
+                            shellFolder = folder.MakeIShellFolderOnCurrentThread()
                         End If
                     End SyncLock
 
@@ -428,7 +428,7 @@ Namespace Controls
                                     Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
                                                      itemPidls.Select(Function(p) If(doUseAbsolutePidls, p.AbsolutePIDL, p.RelativePIDL)).ToArray(),
                                                      Nothing, GetType(IDataObject_PreserveSig).GUID, dataObject)
-                                    shellExtInit.Initialize(folder.Pidl?.AbsolutePIDL, dataObject, IntPtr.Zero)
+                                    shellExtInit.Initialize(If(folder.Pidl?.AbsolutePIDL, IntPtr.Zero), dataObject, IntPtr.Zero)
                                 End If
                             Finally
                                 If Not dataObject Is Nothing Then
@@ -440,7 +440,7 @@ Namespace Controls
                     Finally
                         Shell.GlobalThreadPool.Run(
                             Sub()
-                                folderPidl.Dispose()
+                                folderPidl?.Dispose()
                                 If Not itemPidls Is Nothing Then
                                     For Each p In itemPidls.Where(Function(p2) Not p2 Is Nothing)
                                         p.Dispose()
@@ -546,6 +546,8 @@ Namespace Controls
                                     End If
                                 End Try
                             Case Else
+                                folder._wasActivity = True
+
                                 Dim cmi As New CMInvokeCommandInfoEx
                                 Debug.WriteLine("InvokeCommand " & id.Item1 & ", " & id.Item2)
                                 If id.Item1 > 0 Then

@@ -32,6 +32,8 @@ Namespace Controls
 
             AddHandler Me.PART_TextBox.PreviewKeyUp,
                 Sub(s As Object, e As KeyEventArgs)
+                    If e.Key = Key.Tab Then Return
+
                     If Not _timer Is Nothing Then
                         _timer.Dispose()
                     End If

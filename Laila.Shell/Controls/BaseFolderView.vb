@@ -15,6 +15,7 @@ Imports Laila.Shell.Interfaces
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Application
 Imports Laila.Shell.Interop.Windows
+Imports WpfToolkit.Controls
 
 Namespace Controls
     Public MustInherit Class BaseFolderView
@@ -51,32 +52,40 @@ Namespace Controls
         Public Shared ReadOnly ScrollOffsetProperty As DependencyProperty = DependencyProperty.Register("ScrollOffset", GetType(Point), GetType(BaseFolderView), New FrameworkPropertyMetadata(New Point(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend Host As FolderView
-        Friend PART_ListBox As System.Windows.Controls.ListBox
-        Protected PART_Grid As Grid
-        Protected PART_DragInsertIndicator As Grid
         Private PART_CheckBoxSelectAll As CheckBox
+        Protected PART_DragInsertIndicator As Grid
+        Protected PART_Grid As Grid
+        Friend PART_ListBox As ListBox
+        Private _canOpenWithSingleClick As Boolean
+        Private _dragViewStrategy As IDragViewStrategy
+        Private _ignoreSelection As Boolean
         Private _isInternallySettingSelectAll As Boolean
-        Private _selectionHelper As SelectionHelper(Of Item) = Nothing
-        Private _mousePointDown As Point
+        Private _isKeyboardScrolling As Boolean
+        Private _isKeyboardSelecting As Boolean
+        Private _isLoaded As Boolean
+        Private _keyboardSelectingLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+        Private _lastScrollSize As Size
+        Private _menu As RightClickMenu
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
         Private _mouseOriginalSourceDown As Object
-        Private _canOpenWithSingleClick As Boolean
+        Private _mouseOverTime As DateTime
+        Private _mousePointDown As Point
         Protected _scrollViewer As ScrollViewer
-        Private _lastScrollSize As Size
-        Private _isLoaded As Boolean
-        Private _typeToSearchTimer As Timer
-        Private _typeToSearchString As String = ""
-        Private _menu As RightClickMenu
-        Private _ignoreSelection As Boolean
+        Protected _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _toolTip As ToolTip
         Private _toolTipCancellationTokenSource As CancellationTokenSource
+        Private _typeToSearchString As String = ""
+        Private _typeToSearchTimer As Timer
         Private disposedValue As Boolean
-        Private _mouseOverTime As DateTime
-        Private _dragViewStrategy As IDragViewStrategy
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseFolderView), New FrameworkPropertyMetadata(GetType(BaseFolderView)))
+        End Sub
+
+        Public Sub New()
+            EventManager.RegisterClassHandler(GetType(FrameworkElement), FrameworkElement.RequestBringIntoViewEvent,
+                                              New RequestBringIntoViewEventHandler(AddressOf OnRequestBringIntoView))
         End Sub
 
         Public Overrides Sub OnApplyTemplate()
@@ -154,12 +163,12 @@ Namespace Controls
                     End If
                 End Sub
 
-            AddHandler Me.PART_ListBox.PreviewMouseMove, AddressOf OnListViewPreviewMouseMove
-            AddHandler Me.PART_ListBox.PreviewMouseDown, AddressOf OnListViewPreviewMouseButtonDown
-            AddHandler Me.PART_ListBox.PreviewMouseUp, AddressOf OnListViewPreviewMouseButtonUp
-            AddHandler Me.PART_ListBox.MouseLeave, AddressOf OnListViewMouseLeave
-            AddHandler Me.PreviewKeyDown, AddressOf OnListViewKeyDown
-            AddHandler Me.PreviewTextInput, AddressOf OnListViewTextInput
+            AddHandler Me.PART_ListBox.PreviewMouseMove, AddressOf listBox_PreviewMouseMove
+            AddHandler Me.PART_ListBox.PreviewMouseDown, AddressOf listBox_PreviewMouseButtonDown
+            AddHandler Me.PART_ListBox.PreviewMouseUp, AddressOf listBox_PreviewMouseButtonUp
+            AddHandler Me.PART_ListBox.MouseLeave, AddressOf listBox_MouseLeave
+            AddHandler Me.PreviewKeyDown, AddressOf baseFolderView_KeyDown
+            AddHandler Me.PreviewTextInput, AddressOf baseFolderView_TextInput
         End Sub
 
         Protected Overridable Sub PART_ListBox_Loaded()
@@ -170,8 +179,8 @@ Namespace Controls
             _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListBox)
             _selectionHelper.SelectionChanged =
                 Sub()
-                    If Not Me.Folder Is Nothing AndAlso Not _ignoreSelection Then _
-                                    Me.SelectedItems = _selectionHelper.SelectedItems
+                    If Not _selectionHelper Is Nothing AndAlso Not Me.Folder Is Nothing AndAlso Not _ignoreSelection Then _
+                        Me.SelectedItems = _selectionHelper.SelectedItems
                 End Sub
             _selectionHelper.SetSelectedItems(Me.SelectedItems)
 
@@ -186,6 +195,10 @@ Namespace Controls
 
             If Not Me.Folder Is Nothing Then
                 setGrouping(Me.Folder)
+            End If
+
+            If Me.IsKeyboardFocusWithin Then
+                Me.PART_ListBox.Focus()
             End If
         End Sub
 
@@ -214,13 +227,14 @@ Namespace Controls
             Return New Size(Me.PART_ListBox.ActualWidth, Me.PART_ListBox.ActualHeight)
         End Function
 
-        Public Sub SetSelectedItemsSoft(items As IEnumerable(Of Item))
+        Public Overridable Sub SetSelectedItemsSoft(items As IEnumerable(Of Item))
             _ignoreSelection = True
             _selectionHelper.SetSelectedItems(items, False)
             _ignoreSelection = False
         End Sub
 
-        Private Sub OnListViewKeyDown(sender As Object, e As KeyEventArgs)
+        Private Sub baseFolderView_KeyDown(sender As Object, e As KeyEventArgs)
+            Debug.WriteLine(e.Key)
             If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
                 If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
                 AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
@@ -241,11 +255,243 @@ Namespace Controls
                         Me.Navigation.Back()
                         e.Handled = True
                     End If
+                ElseIf e.Key = Key.Up Then
+                    focusAdjecentItem(0, -10)
+                    e.Handled = True
+                ElseIf e.Key = Key.Down Then
+                    focusAdjecentItem(0, +10)
+                    e.Handled = True
+                ElseIf e.Key = Key.Left Then
+                    focusAdjecentItem(-10, 0)
+                    e.Handled = True
+                ElseIf e.Key = Key.Right Then
+                    focusAdjecentItem(10, 0)
+                    e.Handled = True
                 End If
             End If
         End Sub
 
-        Private Sub OnListViewTextInput(sender As Object, e As TextCompositionEventArgs)
+        Private Sub focusAdjecentItem(offsetX As Integer, offsetY As Integer)
+            If _isKeyboardScrolling Then Return
+
+            If TypeOf Keyboard.FocusedElement Is ListBoxItem Then
+                Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Folder.Items)
+
+                ' get listboxitem
+                Dim listBoxItem As ListBoxItem = Keyboard.FocusedElement
+
+                ' get orientation
+                Dim orientation As Orientation = Orientation.Vertical
+                Dim wrapPanel As WrapPanel = UIHelper.GetParentOfType(Of WrapPanel)(listBoxItem)
+                If Not wrapPanel Is Nothing Then
+                    orientation = wrapPanel.Orientation
+                Else
+                    Dim virtualizingWrapPanel As VirtualizingWrapPanel = UIHelper.GetParentOfType(Of VirtualizingWrapPanel)(listBoxItem)
+                    If Not virtualizingWrapPanel Is Nothing Then
+                        orientation = virtualizingWrapPanel.Orientation
+                    Else
+                        Dim stackPanel As StackPanel = UIHelper.GetParentOfType(Of StackPanel)(listBoxItem)
+                        If Not stackPanel Is Nothing Then
+                            orientation = stackPanel.Orientation
+                        Else
+                            Dim virtualizingStackPanel As VirtualizingStackPanel = UIHelper.GetParentOfType(Of VirtualizingStackPanel)(listBoxItem)
+                            If Not virtualizingStackPanel Is Nothing Then
+                                orientation = virtualizingStackPanel.Orientation
+                            End If
+                        End If
+                    End If
+                End If
+
+                ' get headerrowpresenter
+                Dim headerRowPresenter As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(Me.PART_ListBox)(0)
+
+                ' init
+                Dim ptListBoxItem As Point = listBoxItem.TranslatePoint(New Point(0, 0), Me.PART_ListBox)
+                Dim vp As VirtualizingPanel = UIHelper.GetParentOfType(Of VirtualizingPanel)(listBoxItem)
+                Dim doContinue As Boolean = True
+                Dim adjacentItem As ListBoxItem = Nothing
+                Dim pt As Point = New Point(ptListBoxItem.X + offsetX + If(offsetX = 0, listBoxItem.ActualWidth / 2, If(offsetX <= 0, 0, listBoxItem.ActualWidth)),
+                                            ptListBoxItem.Y + offsetY + If(offsetY = 0, listBoxItem.ActualHeight / 2, If(offsetY <= 0, 0, listBoxItem.ActualHeight)))
+
+                ' find adjacent item
+                Dim doFindOnDifferentX As Boolean = False, doFindOnDifferentY As Boolean = False
+                Do
+                    pt.X = Math.Min(Math.Max(2, pt.X), _scrollViewer.ViewportWidth - 2)
+                    pt.Y = Math.Min(Math.Max(2 + If(headerRowPresenter?.ActualHeight, 0), pt.Y), _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0))
+                    For scanCount = 0 To If(offsetX <> 0, listBoxItem.ActualHeight, listBoxItem.ActualWidth) / 10
+                        Dim ptScan As Point = New Point(pt.X + If(offsetY > 0, 5, If(offsetY < 0, -5, 0)) * scanCount, pt.Y + If(offsetX > 0, 5, If(offsetX < 0, -5, 0)) * scanCount)
+                        Dim el As IInputElement = Me.PART_ListBox.InputHitTest(ptScan)
+                        If Not el Is Nothing Then
+                            adjacentItem = UIHelper.GetParentOfType(Of ListBoxItem)(el)
+                        End If
+                        If Not adjacentItem Is Nothing Then Exit For
+                    Next
+                    Dim ptAdjacentItem As Point
+                    If Not adjacentItem Is Nothing Then
+                        ptAdjacentItem = adjacentItem.TranslatePoint(New Point(0, 0), Me.PART_ListBox)
+                    End If
+                    If doFindOnDifferentX AndAlso ptAdjacentItem.X = ptListBoxItem.X Then
+                        If pt.X < ptListBoxItem.X Then pt.X -= 10 Else pt.X += 10
+                        If pt.X <= 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset - 10, _scrollViewer.VerticalOffset))
+                        If pt.X >= _scrollViewer.ViewportWidth - 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset + 10, _scrollViewer.VerticalOffset))
+                    ElseIf doFindOnDifferentY AndAlso ptAdjacentItem.Y = ptListBoxItem.Y Then
+                        If pt.Y < ptListBoxItem.Y Then pt.Y -= 10 Else pt.Y += 10
+                        If pt.Y <= 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset - 10))
+                        If pt.Y >= _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0) Then
+                            scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset + 10))
+                        End If
+                    ElseIf Not adjacentItem Is Nothing AndAlso Not adjacentItem.Equals(listBoxItem) Then
+                        doContinue = False
+                    ElseIf offsetX <> 0 AndAlso pt.X > 2 AndAlso pt.X < _scrollViewer.ViewportWidth - 2 Then
+                        pt.X += offsetX
+                    ElseIf offsetY <> 0 AndAlso pt.Y > 2 + If(headerRowPresenter?.ActualHeight, 0) AndAlso pt.Y < _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0) Then
+                        pt.Y += offsetY
+                    ElseIf offsetX < 0 AndAlso _scrollViewer.HorizontalOffset > 0 Then
+                        scrollTo(New Point(_scrollViewer.HorizontalOffset - 250, _scrollViewer.VerticalOffset))
+                    ElseIf offsetY < 0 AndAlso _scrollViewer.VerticalOffset > 0 Then
+                        scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset - 10))
+                    ElseIf offsetX > 0 AndAlso _scrollViewer.HorizontalOffset < _scrollViewer.ScrollableWidth Then
+                        scrollTo(New Point(_scrollViewer.HorizontalOffset + 10, _scrollViewer.VerticalOffset))
+                    ElseIf offsetY > 0 AndAlso _scrollViewer.VerticalOffset < _scrollViewer.ScrollableHeight Then
+                        scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset + 10))
+                    ElseIf offsetX < 0 AndAlso orientation = Orientation.Horizontal Then
+                        If pt.Y - listBoxItem.ActualHeight / 2 - 10 < 0 Then
+                            If _scrollViewer.VerticalOffset - 10 > 0 AndAlso _scrollViewer.ViewportHeight > listBoxItem.ActualHeight Then
+                                scrollTo(New Point(_scrollViewer.ScrollableWidth, _scrollViewer.VerticalOffset - 10))
+                                pt.Y -= listBoxItem.ActualHeight / 2 + 10
+                                pt.X = _scrollViewer.ViewportWidth - 3
+                            Else
+                                ' we're out of options
+                                doContinue = False
+                            End If
+                        ElseIf Not listBoxItem.DataContext.Equals(view(0)) Then
+                            scrollTo(New Point(_scrollViewer.ScrollableWidth, _scrollViewer.VerticalOffset))
+                            pt.Y -= listBoxItem.ActualHeight / 2 + 10
+                            pt.X = _scrollViewer.ViewportWidth - 3
+                        Else
+                            ' we're out of options
+                            doContinue = False
+                        End If
+                        doFindOnDifferentY = True
+                    ElseIf offsetY < 0 AndAlso orientation = Orientation.Vertical Then
+                        If pt.X - listBoxItem.ActualWidth / 2 - 25 < 0 Then
+                            If _scrollViewer.HorizontalOffset - 25 > 0 AndAlso _scrollViewer.ViewportWidth > listBoxItem.ActualWidth Then
+                                scrollTo(New Point(_scrollViewer.HorizontalOffset - 25, _scrollViewer.ScrollableHeight))
+                                pt.X -= listBoxItem.ActualWidth / 2 + 25
+                                pt.Y = _scrollViewer.ViewportHeight - 3
+                            Else
+                                ' we're out of options
+                                doContinue = False
+                            End If
+                        ElseIf Not listBoxItem.DataContext.Equals(view(0)) Then
+                            scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.ScrollableHeight))
+                            pt.X -= listBoxItem.ActualWidth / 2 + 25
+                            pt.Y = _scrollViewer.ViewportHeight - 3
+                        Else
+                            ' we're out of options
+                            doContinue = False
+                        End If
+                        doFindOnDifferentX = True
+                    ElseIf offsetX > 0 AndAlso orientation = Orientation.Horizontal Then
+                        If pt.Y + listBoxItem.ActualHeight / 2 + 10 > _scrollViewer.ViewportHeight Then
+                            If _scrollViewer.VerticalOffset + 10 < _scrollViewer.ScrollableHeight AndAlso _scrollViewer.ViewportHeight > listBoxItem.ActualHeight Then
+                                scrollTo(New Point(0, _scrollViewer.VerticalOffset + 10))
+                                pt.Y += listBoxItem.ActualHeight / 2 + 10
+                                pt.X = 3
+                            Else
+                                ' we're out of options
+                                doContinue = False
+                            End If
+                        ElseIf Not listBoxItem.DataContext.Equals(view(view.Count - 1)) Then
+                            scrollTo(New Point(0, _scrollViewer.VerticalOffset))
+                            pt.Y += listBoxItem.ActualHeight / 2 + 10
+                            pt.X = 3
+                        Else
+                            ' we're out of options
+                            doContinue = False
+                        End If
+                        doFindOnDifferentY = True
+                    ElseIf offsetY > 0 AndAlso orientation = Orientation.Vertical Then
+                        If pt.X + listBoxItem.ActualWidth / 2 + 25 > _scrollViewer.ViewportWidth Then
+                            If _scrollViewer.HorizontalOffset + 25 < _scrollViewer.ScrollableWidth AndAlso _scrollViewer.ViewportWidth > listBoxItem.ActualWidth Then
+                                scrollTo(New Point(_scrollViewer.HorizontalOffset + 25, 0))
+                                pt.X += listBoxItem.ActualWidth / 2 + 25
+                                pt.Y = 3
+                            Else
+                                ' we're out of options
+                                doContinue = False
+                            End If
+                        ElseIf Not listBoxItem.DataContext.Equals(view(view.Count - 1)) Then
+                            scrollTo(New Point(_scrollViewer.HorizontalOffset, 0))
+                            pt.X += listBoxItem.ActualWidth / 2 + 25
+                            pt.Y = 3
+                        Else
+                            ' we're out of options
+                            doContinue = False
+                        End If
+                        doFindOnDifferentX = True
+                    Else
+                        ' we're out of options
+                        doContinue = False
+                    End If
+                Loop While doContinue
+
+                ' select
+                If Not adjacentItem Is Nothing Then
+                    adjacentItem.Focus()
+                    adjacentItem.BringIntoView(New Rect(0, 0, adjacentItem.ActualWidth, adjacentItem.ActualHeight))
+                    If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then
+                    ElseIf Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
+                        Me.SelectedItems = {adjacentItem.DataContext}
+                    End If
+                End If
+            End If
+        End Sub
+
+        Private Sub scrollTo(pt As Point)
+            _isKeyboardScrolling = True
+            pt.X = Math.Min(Math.Max(0, pt.X), _scrollViewer.ScrollableWidth)
+            pt.Y = Math.Min(Math.Max(0, pt.Y), _scrollViewer.ScrollableHeight)
+            UIHelper.OnUIThread(
+                Sub()
+                    _scrollViewer.ScrollToHorizontalOffset(pt.X)
+                    _scrollViewer.ScrollToVerticalOffset(pt.Y)
+                End Sub, Threading.DispatcherPriority.Input)
+            Do While Math.Abs(_scrollViewer.HorizontalOffset - pt.X) > 0.5 OrElse Math.Abs(_scrollViewer.VerticalOffset - pt.Y) > 0.5
+                UIHelper.OnUIThread(
+                    Sub()
+                    End Sub, Threading.DispatcherPriority.Render)
+            Loop
+            _isKeyboardScrolling = False
+        End Sub
+
+        Protected Overridable Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
+            If TypeOf e.OriginalSource Is ListBoxItem AndAlso Me.Folder?.Items?.Contains(CType(e.OriginalSource, ListBoxItem).DataContext) Then
+                Dim item As ListBoxItem = e.OriginalSource
+                If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                    Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
+
+                    ' Check if item is outside the viewport and adjust scrolling, but only vertically
+                    If itemRect.Top < 0 Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top)
+                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight))
+                    End If
+                    If itemRect.Left < 0 Then
+                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + itemRect.Left)
+                    ElseIf itemRect.Right > _scrollViewer.ViewportWidth Then
+                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + (itemRect.Right - _scrollViewer.ViewportWidth))
+                    End If
+                    e.Handled = True
+                End If
+            ElseIf Not If(TypeOf e.OriginalSource Is Expander, e.OriginalSource, UIHelper.GetParentOfType(Of Expander)(e.OriginalSource)) Is Nothing _
+                AndAlso UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox) Then
+                e.Handled = True
+            End If
+        End Sub
+
+        Private Sub baseFolderView_TextInput(sender As Object, e As TextCompositionEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
                 If Me.DoTypeToSelect Then
                     If Not _typeToSearchTimer Is Nothing Then
@@ -322,7 +568,11 @@ Namespace Controls
             Return Math.Abs(formattedText.Height - textBlock.DesiredSize.Height) > 0.5
         End Function
 
-        Private Sub OnListViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
+        Protected Overridable Sub ToggleCheckBox(checkBox As CheckBox)
+            checkBox.IsChecked = Not checkBox.IsChecked
+        End Sub
+
+        Private Sub listBox_PreviewMouseMove(sender As Object, e As MouseEventArgs)
             Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
             Dim overItem As Item = TryCast(listBoxItem?.DataContext, Item)
             If Me.DoShowInfoTips AndAlso Not overItem Is Nothing AndAlso Not overItem.Equals(_mouseItemOver) Then
@@ -417,7 +667,7 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub OnListViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
+        Public Sub listBox_PreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
             _mousePointDown = e.GetPosition(Me)
             _mouseOriginalSourceDown = e.OriginalSource
             _canOpenWithSingleClick = False
@@ -428,7 +678,7 @@ Namespace Controls
                 Dim clickedItem As Item = TryCast(listBoxItem?.DataContext, Item)
                 _mouseItemDown = clickedItem
                 If clickedItem Is Nothing Then
-                    Me.PART_ListBox.Focus()
+                    'Me.PART_ListBox.Focus()
                 Else
                     listBoxItem.Focus()
                 End If
@@ -451,9 +701,9 @@ Namespace Controls
                 ElseIf e.LeftButton = MouseButtonState.Pressed AndAlso Not clickedItem Is Nothing Then
                     Dim checkBox As CheckBox = UIHelper.FindVisualChildren(Of CheckBox)(listBoxItem)(0)
                     Dim p As Point = Mouse.GetPosition(checkBox)
-                    If checkBox.Visibility = Visibility.Visible AndAlso p.X > 0 AndAlso p.Y > 0 _
+                    If Not checkBox Is Nothing AndAlso checkBox.Visibility = Visibility.Visible AndAlso p.X > 0 AndAlso p.Y > 0 _
                         AndAlso p.X < checkBox.ActualWidth AndAlso p.Y < checkBox.ActualHeight Then
-                        checkBox.IsChecked = Not checkBox.IsChecked
+                        Me.ToggleCheckBox(checkBox)
                         e.Handled = True
                     ElseIf Keyboard.Modifiers = ModifierKeys.None Then
                         If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Contains(clickedItem) Then e.Handled = True
@@ -472,8 +722,9 @@ Namespace Controls
 
                     Me.PART_ListBox.ContextMenu = getMenu(Me.Folder, Me.SelectedItems, False)
                     e.Handled = True
-                ElseIf clickedItem Is Nothing AndAlso
-                        UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing Then
+                ElseIf clickedItem Is Nothing _
+                        AndAlso UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing _
+                        AndAlso UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
                     Me.SelectedItems = Nothing
                 End If
             Else
@@ -481,7 +732,7 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub OnListViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+        Public Sub listBox_PreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
             If _canOpenWithSingleClick _
                AndAlso Not _mouseItemDown Is Nothing AndAlso Not Me.IsDoubleClickToOpenItem Then
                 Using Shell.OverrideCursor(Cursors.Wait)
@@ -502,7 +753,7 @@ Namespace Controls
             _canOpenWithSingleClick = False
         End Sub
 
-        Public Sub OnListViewMouseLeave(sender As Object, e As MouseEventArgs)
+        Public Sub listBox_MouseLeave(sender As Object, e As MouseEventArgs)
             _mouseItemDown = Nothing
             _mouseItemOver = Nothing
             If Not _toolTip Is Nothing Then
@@ -973,10 +1224,35 @@ Namespace Controls
 
         Protected Overridable Sub MakeBinding(folder As Folder)
             If Not Me.PART_ListBox Is Nothing Then
+                Me.PART_ListBox.Visibility = Visibility.Hidden
+
                 setGrouping(folder)
 
                 Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(folder.Items)
                 Me.PART_ListBox.ItemsSource = view
+
+                ' load items
+                Dim t As Task = folder.GetItemsAsync()
+
+                ' async because otherwise we're a tad too early
+                UIHelper.OnUIThreadAsync(
+                    Async Sub()
+                        If Not TypeOf folder Is SearchFolder Then
+                            Await t
+                            Await Task.Delay(50)
+
+                            If Not _scrollViewer Is Nothing Then
+                                ' restore folder scroll position
+                                Me.ScrollOffset = folder.LastScrollOffset
+                                _lastScrollSize = folder.LastScrollSize
+                                _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, Me.ScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
+                                _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, Me.ScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
+                            End If
+                        End If
+
+                        ' show listview
+                        Me.PART_ListBox.Visibility = Visibility.Visible
+                    End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
         End Sub
 
@@ -985,7 +1261,7 @@ Namespace Controls
 
             Select Case e.PropertyName
                 Case "IsRefreshingItems"
-                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "View"
+                Case "ItemsSortPropertyName", "ItemsSortDirection", "ItemsGroupByPropertyName", "ActiveView"
                     UIHelper.OnUIThread(
                         Sub()
                             If e.PropertyName = "ItemsGroupByPropertyName" Then
@@ -997,7 +1273,7 @@ Namespace Controls
                                 folderViewState.SortPropertyName = folder.ItemsSortPropertyName
                                 folderViewState.SortDirection = folder.ItemsSortDirection
                                 folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
-                                folderViewState.View = folder.View
+                                folderViewState.ActiveView = folder.ActiveView
                                 folderViewState.Persist()
                             End If
                         End Sub)
@@ -1047,7 +1323,7 @@ Namespace Controls
             End If
         End Sub
 
-        Shared Async Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = TryCast(d, BaseFolderView)
 
             ' hide listview so no-one sees us binding to the new folder and restoring the scroll position
@@ -1104,29 +1380,6 @@ Namespace Controls
 
                 ' bind view
                 bfv.MakeBinding(newValue)
-
-                ' load items
-                Dim t As Task = newValue.GetItemsAsync()
-                If Not TypeOf bfv.Folder Is SearchFolder Then Await t
-
-                ' async because otherwise we're a tad too early
-                UIHelper.OnUIThreadAsync(
-                    Async Sub()
-                        If Not TypeOf newValue Is SearchFolder Then
-                            Await Task.Delay(50)
-
-                            If Not bfv._scrollViewer Is Nothing Then
-                                ' restore folder scroll position
-                                bfv.ScrollOffset = newValue.LastScrollOffset
-                                bfv._lastScrollSize = newValue.LastScrollSize
-                                bfv._scrollViewer.ScrollToHorizontalOffset(If(bfv._lastScrollSize.Width = 0, 0, bfv.ScrollOffset.X * bfv._scrollViewer.ScrollableWidth / bfv._lastScrollSize.Width))
-                                bfv._scrollViewer.ScrollToVerticalOffset(If(bfv._lastScrollSize.Height = 0, 0, bfv.ScrollOffset.Y * bfv._scrollViewer.ScrollableHeight / bfv._lastScrollSize.Height))
-                            End If
-                        End If
-
-                        ' show listview
-                        bfv.PART_ListBox.Visibility = Visibility.Visible
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
             End If
         End Sub
 

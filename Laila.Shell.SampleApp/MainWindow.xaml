@@ -140,331 +140,334 @@
             </Setter>
         </Style>
     </metroWindow:MetroWindow.Style>
-    <controls:TabControl x:Name="tabControl" ModelType="{x:Type data:TabData}">
-        <controls:TabControl.ItemTemplate>
-            <DataTemplate>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="20" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Image Source="{Binding Folder.Icon[16]}" HorizontalAlignment="Left" Width="16" Height="16"
-                           VerticalAlignment="Center" />
-                    <Image Source="{Binding Folder.OverlayImage[16]}" HorizontalAlignment="Left" Width="16" Height="16"
-                           VerticalAlignment="Center" />
-                    <Viewbox StretchDirection="Both" Stretch="Uniform" Width="16" Height="16">
-                        <Viewbox.Style>
-                            <Style>
-                                <Setter Property="Control.Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Folder.IsLoading}" Value="True">
-                                        <Setter Property="Control.Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Viewbox.Style>
-                        <controls:LoadingSpinner />
-                    </Viewbox>
-                    <TextBlock Grid.Column="1" Text="{Binding Folder.DisplayName}" VerticalAlignment="Center" 
-                               TextTrimming="CharacterEllipsis" />
-                </Grid>
-            </DataTemplate>
-        </controls:TabControl.ItemTemplate>
-        <controls:TabControl.ContentTemplate>
-            <DataTemplate>
-                <Grid Margin="-4" Background="White" SnapsToDevicePixels="True" UseLayoutRounding="True">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="250" />
-                        <ColumnDefinition Width="5" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="5" />
-                        <ColumnDefinition Width="250" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.Resources>
-                        <shell:Shell x:Key="shell" />
-                    </Grid.Resources>
-
-                    <controls:Navigation x:Name="navigation" Folder="{Binding Folder, Mode=TwoWay}" />
-                    <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Background="#eeeeee" Margin="-1" />
-                    <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Margin="5,5,0,3">
+    <Grid>
+        <controls:TabControl x:Name="tabControl" ModelType="{x:Type data:TabData}">
+            <controls:TabControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="20" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="300" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="BackButton" Margin="0,0,5,0" Click="BackButton_Click"
+                        <Image Source="{Binding Folder.Icon[16]}" HorizontalAlignment="Left" Width="16" Height="16"
+                           VerticalAlignment="Center" />
+                        <Image Source="{Binding Folder.OverlayImage[16]}" HorizontalAlignment="Left" Width="16" Height="16"
+                           VerticalAlignment="Center" />
+                        <Viewbox StretchDirection="Both" Stretch="Uniform" Width="16" Height="16">
+                            <Viewbox.Style>
+                                <Style>
+                                    <Setter Property="Control.Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Folder.IsLoading}" Value="True">
+                                            <Setter Property="Control.Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Viewbox.Style>
+                            <controls:LoadingSpinner />
+                        </Viewbox>
+                        <TextBlock Grid.Column="1" Text="{Binding Folder.DisplayName}" VerticalAlignment="Center" 
+                               TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </DataTemplate>
+            </controls:TabControl.ItemTemplate>
+            <controls:TabControl.ContentTemplate>
+                <DataTemplate>
+                    <Grid Margin="-4" Background="White" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="250" />
+                            <ColumnDefinition Width="5" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="5" />
+                            <ColumnDefinition Width="250" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.Resources>
+                            <shell:Shell x:Key="shell" />
+                        </Grid.Resources>
+
+                        <controls:Navigation x:Name="navigation" Folder="{Binding Folder, Mode=TwoWay}" />
+                        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Background="#eeeeee" Margin="-1" />
+                        <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Margin="5,5,0,3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="300" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="BackButton" Margin="0,0,5,0" Click="BackButton_Click"
                                     IsEnabled="{Binding CanBack, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}"
                                     ToolTip="{Binding BackText, ElementName=navigation, Mode=OneWay}">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_left16.png" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=BackButton}" Value="False">
-                                                    <Setter Property="Image.Opacity" Value="0.30" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="ForwardButton" Margin="0,0,5,0" Click="ForwardButton_Click"
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_left16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=BackButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="ForwardButton" Margin="0,0,5,0" Click="ForwardButton_Click"
                                     IsEnabled="{Binding CanForward, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}"
                                     ToolTip="{Binding ForwardText, ElementName=navigation, Mode=OneWay}">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_right16.png" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=ForwardButton}" Value="False">
-                                                    <Setter Property="Image.Opacity" Value="0.30" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="UpButton" Margin="0,0,5,0" Click="UpButton_Click"
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_right16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=ForwardButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="UpButton" Margin="0,0,5,0" Click="UpButton_Click"
                                     IsEnabled="{Binding CanUp, ElementName=navigation, Mode=OneWay}" Tag="{Binding ., ElementName=navigation}"
                                     ToolTip="{Binding UpText, ElementName=navigation, Mode=OneWay}">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_up16.png" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=UpButton}" Value="False">
-                                                    <Setter Property="Image.Opacity" Value="0.30" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="RefreshButton" Margin="0,0,5,0" Click="RefreshButton_Click"
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/arrow_up16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=UpButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="RefreshButton" Margin="0,0,5,0" Click="RefreshButton_Click"
                                     Tag="{Binding ., ElementName=navigation}">
-                                <Button.ToolTip>
-                                    <TextBlock>
+                                    <Button.ToolTip>
+                                        <TextBlock>
                                         <Run>Refresh</Run>
                                         <Run Text="{Binding Folder.DisplayName, Mode=OneWay}" />
-                                    </TextBlock>
-                                </Button.ToolTip>
-                                <Image Source="pack://application:,,,/Laila.Shell;component/Images/refresh16.png" Width="16" Height="16" />
-                            </Button>
-                        </StackPanel>
-                        <controls:AddressBar Grid.Column="1" Folder="{Binding Folder}" />
-                        <controls:SearchBox Grid.Column="2" Folder="{Binding Folder}" x:Name="searchBox"
+                                        </TextBlock>
+                                    </Button.ToolTip>
+                                    <Image Source="pack://application:,,,/Laila.Shell;component/Images/refresh16.png" Width="16" Height="16" />
+                                </Button>
+                            </StackPanel>
+                            <controls:AddressBar Grid.Column="1" Folder="{Binding Folder}" />
+                            <controls:SearchBox Grid.Column="2" Folder="{Binding Folder}" x:Name="searchBox"
                                             Navigation="{Binding ., ElementName=navigation}" Margin="5,0,5,0" />
-                    </Grid>
-                    <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" />
-                    <controls:Menus x:Name="menus" Folder="{Binding Folder}" 
+                        </Grid>
+                        <Separator Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5" />
+                        <controls:Menus x:Name="menus" Folder="{Binding Folder}" 
                                     SelectedItems="{Binding SelectedItems}"
                                     FolderView="{Binding ., ElementName=folderView}" />
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Background="White" Margin="-1" />
-                    <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Margin="5,0,0,1" Height="26">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <ToggleButton x:Name="NewItemMenuButton" Margin="0,0,5,0" Checked="NewItemMenuButton_Checked"
+                        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Background="White" Margin="-1" />
+                        <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Margin="5,0,0,1" Height="26">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <ToggleButton x:Name="NewItemMenuButton" Margin="0,0,5,0" Checked="NewItemMenuButton_Checked"
                                           Tag="{Binding ., ElementName=menus}" ToolTip="Make a new item in the current location.">
-                                <ToggleButton.Style>
-                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding NewItemMenu, ElementName=menus}" Value="{x:Null}">
-                                                <Setter Property="ToggleButton.IsEnabled" Value="False" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsEnabled, ElementName=NewItemMenuButton}" Value="False">
-                                                <Setter Property="ToggleButton.Opacity" Value="0.30" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ToggleButton.Style>
-                                <StackPanel Orientation="Horizontal">
-                                    <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/add16.png" />
-                                    <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">New</TextBlock>
-                                    <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
-                                </StackPanel>
-                            </ToggleButton>
-                            <Line X1="0" Y1="0" X2="0" Y2="32" Stroke="Gray" Margin="0,0,5,0" />
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="CutButton" Margin="0,0,5,0" Click="CutButton_Click" 
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding NewItemMenu, ElementName=menus}" Value="{x:Null}">
+                                                    <Setter Property="ToggleButton.IsEnabled" Value="False" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=NewItemMenuButton}" Value="False">
+                                                    <Setter Property="ToggleButton.Opacity" Value="0.30" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ToggleButton.Style>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/add16.png" />
+                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">New</TextBlock>
+                                        <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                    </StackPanel>
+                                </ToggleButton>
+                                <Line X1="0" Y1="0" X2="0" Y2="32" Stroke="Gray" Margin="0,0,5,0" />
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="CutButton" Margin="0,0,5,0" Click="CutButton_Click" 
                                     IsEnabled="{Binding CanCut, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
                                     ToolTip="Cut">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/cut16.png" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=CutButton}" Value="False">
-                                                    <Setter Property="Image.Opacity" Value="0.30" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="CopyButton" Margin="0,0,5,0" Click="CopyButton_Click"
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/cut16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=CutButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="CopyButton" Margin="0,0,5,0" Click="CopyButton_Click"
                                     IsEnabled="{Binding CanCopy, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
                                     ToolTip="Copy">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/copy16.png" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=CopyButton}" Value="False">
-                                                    <Setter Property="Image.Opacity" Value="0.30" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="PasteButton" Margin="0,0,5,0" Click="PasteButton_Click" 
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/copy16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=CopyButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="PasteButton" Margin="0,0,5,0" Click="PasteButton_Click" 
                                     IsEnabled="{Binding CanPaste, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
                                     ToolTip="Paste">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/paste16.png" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=PasteButton}" Value="False">
-                                                    <Setter Property="Image.Opacity" Value="0.30" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="RenameButton" Margin="0,0,5,0" Click="RenameButton_Click"
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/paste16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=PasteButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="RenameButton" Margin="0,0,5,0" Click="RenameButton_Click"
                                     IsEnabled="{Binding CanRename, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=folderView}"
                                     ToolTip="Rename">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/rename16.png" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=RenameButton}" Value="False">
-                                                    <Setter Property="Image.Opacity" Value="0.30" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="ShareButton" Margin="0,0,5,0" Click="ShareButton_Click"
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/rename16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=RenameButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="ShareButton" Margin="0,0,5,0" Click="ShareButton_Click"
                                     IsEnabled="{Binding CanShare, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
                                     ToolTip="Share">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/share16.png" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=ShareButton}" Value="False">
-                                                    <Setter Property="Image.Opacity" Value="0.30" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="DeleteButton" Margin="0,0,5,0" Click="DeleteButton_Click" 
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/share16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=ShareButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="DeleteButton" Margin="0,0,5,0" Click="DeleteButton_Click" 
                                     IsEnabled="{Binding CanDelete, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
                                     ToolTip="Delete">
-                                <Image Width="16" Height="16">
-                                    <Image.Style>
-                                        <Style>
-                                            <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/delete16.png" />
+                                    <Image Width="16" Height="16">
+                                        <Image.Style>
+                                            <Style>
+                                                <Setter Property="Image.Source" Value="pack://application:,,,/Laila.Shell;component/Images/delete16.png" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled, ElementName=DeleteButton}" Value="False">
+                                                        <Setter Property="Image.Opacity" Value="0.30" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Line X1="0" Y1="0" X2="0" Y2="32" Stroke="Gray" Margin="0,0,5,0" />
+                                <ToggleButton x:Name="SortMenuButton" Margin="0,0,5,0" Checked="SortMenuButton_Checked"
+                                          Tag="{Binding ., ElementName=menus}" ToolTip="Options for sorting and grouping.">
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
+                                            <Setter Property="ToggleButton.IsEnabled" Value="False" />
                                             <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=DeleteButton}" Value="False">
+                                                <DataTrigger Binding="{Binding Folder.CanSort}" Value="True">
+                                                    <Setter Property="ToggleButton.IsEnabled" Value="True" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Folder.CanGroupBy}" Value="True">
+                                                    <Setter Property="ToggleButton.IsEnabled" Value="True" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsEnabled, ElementName=SortMenuButton}" Value="False">
                                                     <Setter Property="Image.Opacity" Value="0.30" />
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
-                                    </Image.Style>
-                                </Image>
-                            </Button>
-                            <Line X1="0" Y1="0" X2="0" Y2="32" Stroke="Gray" Margin="0,0,5,0" />
-                            <ToggleButton x:Name="SortMenuButton" Margin="0,0,5,0" Checked="SortMenuButton_Checked"
-                                          Tag="{Binding ., ElementName=menus}" ToolTip="Options for sorting and grouping.">
-                                <ToggleButton.Style>
-                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
-                                        <Setter Property="ToggleButton.IsEnabled" Value="False" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Folder.CanSort}" Value="True">
-                                                <Setter Property="ToggleButton.IsEnabled" Value="True" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Folder.CanGroupBy}" Value="True">
-                                                <Setter Property="ToggleButton.IsEnabled" Value="True" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsEnabled, ElementName=SortMenuButton}" Value="False">
-                                                <Setter Property="Image.Opacity" Value="0.30" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ToggleButton.Style>
-                                <StackPanel Orientation="Horizontal">
-                                    <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/sort16.png" />
-                                    <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">Sorting</TextBlock>
-                                    <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
-                                </StackPanel>
-                            </ToggleButton>
-                            <ToggleButton x:Name="ViewMenuButton" Margin="0,0,5,0" Checked="ViewMenuButton_Checked"
+                                    </ToggleButton.Style>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/sort16.png" />
+                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">Sorting</TextBlock>
+                                        <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                    </StackPanel>
+                                </ToggleButton>
+                                <ToggleButton x:Name="ViewMenuButton" Margin="0,0,5,0" Checked="ViewMenuButton_Checked"
                                           Tag="{Binding ., ElementName=menus}" ToolTip="Layout and view options.">
-                                <ToggleButton.Style>
-                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
-                                    </Style>
-                                </ToggleButton.Style>
-                                <StackPanel Orientation="Horizontal">
-                                    <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/view16.png" />
-                                    <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">View</TextBlock>
-                                    <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
-                                </StackPanel>
-                            </ToggleButton>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <ToggleButton x:Name="PreviewMenuButton" Margin="0,0,5,0" Checked="PreviewMenuButton_Checked" Unchecked="PreviewMenuButton_Unchecked"
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
+                                        </Style>
+                                    </ToggleButton.Style>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/view16.png" />
+                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">View</TextBlock>
+                                        <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                    </StackPanel>
+                                </ToggleButton>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <ToggleButton x:Name="PreviewMenuButton" Margin="0,0,5,0" Checked="PreviewMenuButton_Checked" Unchecked="PreviewMenuButton_Unchecked"
                                           Tag="{Binding ., ElementName=previewer}" ToolTip="Show or hide the preview window." IsChecked="True"
                                           Style="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/preview16.png" />
-                                    <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">Preview</TextBlock>
-                                </StackPanel>
-                            </ToggleButton>
-                        </StackPanel>
-                    </Grid>
-                    <Separator Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" />
-                    <controls:TreeView Grid.Row="4" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
-                    <GridSplitter Grid.Row="4" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-                    <controls:FolderView Grid.Row="4" Grid.Column="2" x:Name="folderView" SearchBox="{Binding ., ElementName=searchBox}"
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/preview16.png" />
+                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">Preview</TextBlock>
+                                    </StackPanel>
+                                </ToggleButton>
+                            </StackPanel>
+                        </Grid>
+                        <Separator Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="5" />
+                        <controls:TreeView Grid.Row="4" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
+                        <GridSplitter Grid.Row="4" Grid.Column="1" ResizeDirection="Columns" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Focusable="False" />
+                        <controls:FolderView Grid.Row="4" Grid.Column="2" x:Name="folderView" SearchBox="{Binding ., ElementName=searchBox}"
                                          Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
                                          Navigation="{Binding ., ElementName=navigation}" />
-                    <GridSplitter Grid.Row="4" Grid.Column="3" ResizeDirection="Columns" Width="5" 
+                        <GridSplitter Grid.Row="4" Grid.Column="3" ResizeDirection="Columns" Width="5" Focusable="False" 
                                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="previewSplitter" />
-                    <controls:Previewer Grid.Row="4" Grid.Column="4" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
+                        <controls:Previewer Grid.Row="4" Grid.Column="4" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
                                         x:Name="previewer" Tag="{Binding ., ElementName=previewSplitter}" />
-                    <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5" Foreground="Gray"
+                        <TextBlock Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5" Foreground="Gray"
                                Text="{Binding StatusText, ElementName=folderView}" Margin="15,0,0,0">
-                        <TextBlock.Style>
-                            <Style>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Settings.DoShowStatusBar, Source={StaticResource shell}}" Value="False">
-                                        <Setter Property="TextBlock.Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Grid>
-            </DataTemplate>
-        </controls:TabControl.ContentTemplate>
-    </controls:TabControl>
+                            <TextBlock.Style>
+                                <Style>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.DoShowStatusBar, Source={StaticResource shell}}" Value="False">
+                                            <Setter Property="TextBlock.Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </DataTemplate>
+            </controls:TabControl.ContentTemplate>
+        </controls:TabControl>
+        <TextBlock FontSize="22" FontWeight="Bold" IsHitTestVisible="False" Text="Focus" x:Name="focusTextBlock" Visibility="Collapsed" />
+    </Grid>
 </metroWindow:MetroWindow>

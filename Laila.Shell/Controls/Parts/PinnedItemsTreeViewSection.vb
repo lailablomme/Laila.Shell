@@ -31,40 +31,45 @@ Namespace Controls.Parts
 
         Private Sub updatePinnedItems()
             Dim selectedPidl As Pidl = Nothing
-            If Me.Items.Contains(Me.TreeView.SelectedItem) Then
-                selectedPidl = Me.TreeView.SelectedItem.Pidl.Clone()
-            End If
-
-            If Me.Items.Count = 0 Then
-                Me.Items.Add(New SeparatorFolder())
-            End If
-
-            Dim items As IEnumerable(Of Item) = PinnedItems.GetPinnedItems()
-            For i = 0 To items.Count - 1
-                If i + 1 < Me.Items.Count Then
-                    If Not Me.Items(i + 1).Pidl.Equals(items(i).Pidl) Then
-                        If i + 2 < Me.Items.Count AndAlso Me.Items(i + 2).Pidl.Equals(items(i).Pidl) Then
-                            Me.Items.Remove(Me.Items(i + 1))
-                        Else
-                            Me.Items.Insert(i + 1, items(i))
-                        End If
-                        If items(i).Pidl.Equals(selectedPidl) Then Me.TreeView.SetSelectedItem(items(i))
+            UIHelper.OnUIThread(
+                Sub()
+                    If Me.Items.Contains(Me.TreeView.SelectedItem) Then
+                        selectedPidl = Me.TreeView.SelectedItem.Pidl.Clone()
                     End If
-                Else
-                    Me.Items.Add(items(i))
-                End If
-            Next
-            For i = items.Count To Me.Items.Count - 2
-                Me.Items.Remove(Me.Items.Last())
-            Next
 
-            If Not selectedPidl Is Nothing Then
-                selectedPidl.Dispose()
-            End If
+                    If Me.Items.Count = 0 Then
+                        Me.Items.Add(New SeparatorFolder())
+                    End If
 
-            If Me.Items.Count = 1 AndAlso Me.TreeView.DoShowPinnedAndFrequentItemsPlaceholder Then
-                Me.Items.Add(New PinnedItemsPlaceholderFolder())
-            End If
+                    Dim items As IEnumerable(Of Item) = PinnedItems.GetPinnedItems()
+                    For i = 0 To items.Count - 1
+                        If i + 1 < Me.Items.Count Then
+                            If Not Me.Items(i + 1).Pidl.Equals(items(i).Pidl) Then
+                                If i + 2 < Me.Items.Count AndAlso Me.Items(i + 2).Pidl.Equals(items(i).Pidl) Then
+                                    Me.Items.Remove(Me.Items(i + 1))
+                                Else
+                                    Me.Items.Insert(i + 1, items(i))
+                                End If
+                                If items(i).Pidl.Equals(selectedPidl) Then
+                                    Me.TreeView.SetSelectedItem(items(i))
+                                End If
+                            End If
+                        Else
+                            Me.Items.Add(items(i))
+                        End If
+                    Next
+                    For i = items.Count To Me.Items.Count - 2
+                        Me.Items.Remove(Me.Items.Last())
+                    Next
+
+                    If Not selectedPidl Is Nothing Then
+                        selectedPidl.Dispose()
+                    End If
+
+                    If Me.Items.Count = 1 AndAlso Me.TreeView.DoShowPinnedAndFrequentItemsPlaceholder Then
+                        Me.Items.Add(New PinnedItemsPlaceholderFolder())
+                    End If
+                End Sub)
         End Sub
 
         Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
@@ -112,7 +117,7 @@ Namespace Controls.Parts
                 OrElse (index + 1 > Me.Items.Count - 1 AndAlso Me.Items(Me.Items.Count - 1).IsPinned) _
                 OrElse Me.Items(index + 1).IsPinned
             If canPinItem Then
-                WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick access")
+                WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick launch")
                 Return HRESULT.S_OK
             Else
                 Return HRESULT.S_FALSE

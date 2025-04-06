@@ -26,6 +26,7 @@ Namespace Controls
         Private _items As ObservableCollection(Of Object) = New ObservableCollection(Of Object)()
         Private _dropTarget As IDropTarget
         Private _isLoaded As Boolean
+        Private _isOnce As Boolean = True
         Private disposedValue As Boolean
 
         Shared Sub New()
@@ -39,14 +40,15 @@ Namespace Controls
 
             AddHandler ItemContainerGenerator.StatusChanged, AddressOf ItemContainerGeneratorStatusChanged
 
+            EventManager.RegisterClassHandler(GetType(FolderView), FolderView.ViewActivatedEvent,
+                                              New RoutedEventHandler(AddressOf folderView_ViewActivated))
+
             AddHandler Me.Loaded,
                 Sub(s As Object, e As EventArgs)
                     If Not _isLoaded Then
                         _isLoaded = True
 
                         setDesiredTabWidth()
-
-                        focusChildren()
 
                         _dropTarget = New TabControlDropTarget(Me)
                         WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
@@ -57,6 +59,27 @@ Namespace Controls
                             End Sub
                     End If
                 End Sub
+        End Sub
+
+        Private Sub folderView_ViewActivated(s As Object, e As RoutedEventArgs)
+            If Not _isOnce Then Return
+            _isOnce = False
+
+            Dim item As TabItem = GetSelectedTabItem()
+            If Not item Is Nothing Then
+                Dim cp As ContentPresenter = findChildContentPresenter(item)
+                Dim folderView As FolderView = UIHelper.FindVisualChildren(Of FolderView)(cp)?(0)
+                If Not folderView Is Nothing _
+                    AndAlso Not folderView.ActiveView Is Nothing Then
+                    folderView.ActiveView.Focus()
+                Else
+                    Dim treeView As TreeView = UIHelper.FindVisualChildren(Of TreeView)(cp)?(0)
+                    If Not treeView Is Nothing _
+                        AndAlso Not treeView.PART_ListBox Is Nothing Then
+                        treeView.PART_ListBox.Focus()
+                    End If
+                End If
+            End If
         End Sub
 
         Protected Overrides Sub OnRenderSizeChanged(sizeInfo As SizeChangedInfo)
@@ -160,25 +183,6 @@ Namespace Controls
             End Select
         End Sub
 
-        Private Sub focusChildren()
-            Dim item As TabItem = GetSelectedTabItem()
-            If Not item Is Nothing Then
-                Dim cp As ContentPresenter = findChildContentPresenter(item)
-                Dim folderView As FolderView = UIHelper.FindVisualChildren(Of FolderView)(cp)?(0)
-                If Not folderView Is Nothing _
-                    AndAlso Not folderView.ActiveView Is Nothing _
-                    AndAlso Not folderView.ActiveView.PART_ListBox Is Nothing Then
-                    folderView.ActiveView.PART_ListBox.Focus()
-                Else
-                    Dim treeView As TreeView = UIHelper.FindVisualChildren(Of TreeView)(cp)?(0)
-                    If Not treeView Is Nothing _
-                        AndAlso Not treeView.PART_ListBox Is Nothing Then
-                        treeView.PART_ListBox.Focus()
-                    End If
-                End If
-            End If
-        End Sub
-
         Protected Overrides Sub OnSelectionChanged(e As SelectionChangedEventArgs)
             MyBase.OnSelectionChanged(e)
             updateSelectedItem()
@@ -197,8 +201,6 @@ Namespace Controls
             For Each child As ContentPresenter In PART_ItemsHolder.Children
                 child.Visibility = IIf(CType(child.Tag, TabItem).IsSelected, Visibility.Visible, Visibility.Hidden)
             Next
-
-            focusChildren()
         End Sub
 
         Private Function createChildContentPresenter(item As Object) As ContentPresenter

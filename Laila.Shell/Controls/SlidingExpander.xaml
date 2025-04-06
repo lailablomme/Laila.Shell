@@ -1,0 +1,93 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:Laila.Shell.Controls"
+                    xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
+                    xmlns:converters="clr-namespace:Laila.Shell.Converters"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <Style TargetType="local:SlidingExpander">
+        <Setter Property="Foreground" Value="Black" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:SlidingExpander">
+                    <ControlTemplate.Resources>
+                        <converters:SubstractionConverter x:Key="substractionConverter" />
+                    </ControlTemplate.Resources>
+                    <Grid x:Name="PART_Grid" HorizontalAlignment="Stretch">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition x:Name="PART_ContentRow" Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" 
+                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            <DockPanel>
+                                <ToggleButton DockPanel.Dock="Left" x:Name="PART_ToggleButton" IsChecked="True" Focusable="False" VerticalAlignment="Center"
+                                              Style="{Binding ToggleButtonStyle, RelativeSource={RelativeSource TemplatedParent}}" Margin="4,0,0,0"
+                                              Visibility="{TemplateBinding ToggleButtonVisibility}">
+                                </ToggleButton>
+                                <Button x:Name="PART_TitleLabel" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Left" Margin="4,0,4,1"
+                                        FocusVisualStyle="{x:Null}">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
+                                                                BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                                            <ContentPresenter x:Name="Content" ContentSource="Content" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center" x:Name="PART_Title" HorizontalAlignment="Stretch" />
+                                </Button>
+                            </DockPanel>
+                        </Border>
+                        <Grid Grid.Row="1" x:Name="PART_Content" Tag="1.0" VerticalAlignment="Bottom" ClipToBounds="True" HorizontalAlignment="Stretch">
+                            <ScrollViewer x:Name="PART_ContentContainer" IsTabStop="False" behaviors:ScrollViewerFix.IsEnabled="True" 
+                                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden" HorizontalAlignment="Stretch">
+                                <ContentPresenter VerticalAlignment="Bottom" x:Name="PART_ContentPresenter" ContentSource="Content" />
+                            </ScrollViewer>
+                        </Grid>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Trigger.Setters>
+                                <Setter Property="MaxHeight" TargetName="PART_ContentContainer">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource substractionConverter}">
+                                            <Binding Path="ViewportHeight" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type ScrollViewer}}" />
+                                            <Binding Path="ActualHeight" ElementName="PART_ToggleButton" />
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger.Setters>
+                        </Trigger>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Trigger.Setters>
+                                <Setter Property="MaxWidth" TargetName="PART_ContentContainer" 
+                                        Value="{Binding ViewportWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ScrollViewer}}}" />
+                            </Trigger.Setters>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" SourceName="Bd" Value="True">
+                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                        </Trigger>
+                        <Trigger Property="IsFocused" SourceName="PART_TitleLabel" Value="True">
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="DarkBlue"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

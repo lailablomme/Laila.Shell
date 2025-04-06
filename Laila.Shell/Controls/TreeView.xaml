@@ -5,117 +5,9 @@
                     xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers">
 
-    <SolidColorBrush x:Key="Item.MouseOver.Background" Color="#1F26A0DA"/>
-    <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#a826A0Da"/>
-    <SolidColorBrush x:Key="Item.SelectedInactive.Background" Color="#3DDADADA"/>
-    <SolidColorBrush x:Key="Item.SelectedInactive.Border" Color="#FFDADADA"/>
-    <SolidColorBrush x:Key="Item.SelectedActive.Background" Color="#3D26A0DA"/>
-    <SolidColorBrush x:Key="Item.SelectedActive.Border" Color="#FF26A0DA"/>
-
-    <Style x:Key="lailaShell_TreeViewItemStyle" TargetType="ListBoxItem">
-        <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderBrush" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Grid MinHeight="20">
-                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
-                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                        </Border>
-                    </Grid>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
-                        </Trigger>
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="Selector.IsSelectionActive" Value="False"/>
-                                <Condition Property="IsSelected" Value="True"/>
-                            </MultiTrigger.Conditions>
-                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Background}"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Border}"/>
-                        </MultiTrigger>
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
-                                <Condition Property="IsSelected" Value="True"/>
-                            </MultiTrigger.Conditions>
-                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Background}"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
-                        </MultiTrigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <Style x:Key="lailaShell_TreeViewSeparatorItemStyle" TargetType="ListBoxItem">
-        <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderBrush" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Grid Height="20">
-                        <Separator Width="{Binding ActualWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListBox}}}">
-                        </Separator>
-                    </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <Style x:Key="lailaShell_TreeViewPlaceholderItemStyle" TargetType="ListBoxItem">
-        <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <Setter Property="Background">
-            <Setter.Value>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="LightYellow" Offset="0"/>
-                    <GradientStop Color="Gold" Offset="1"/>
-                </LinearGradientBrush>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="BorderBrush" Value="Goldenrod"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Grid>
-                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="2" 
-                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"
-                                Background="{TemplateBinding Background}" Padding="4"  
-                                SnapsToDevicePixels="True" UseLayoutRounding="True">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="20" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Image Source="../Images/info16.png" Width="16" Height="16" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                                <TextBlock Grid.Column="1" TextWrapping="Wrap">
-                                    Here you will soon find your 5 most frequent used folders while 
-                                    you can also start pinning any number of items to this area right now 
-                                    by dragging them over here or choosing "Pin item" in it's context menu.
-                                </TextBlock>
-                            </Grid>
-                        </Border>
-                    </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
+    </ResourceDictionary.MergedDictionaries>
 
     <parts:TreeViewItemStyleSelector 
         x:Key="treeViewItemStyleSelector"
@@ -124,6 +16,7 @@
         TreeViewPlaceholderItemStyle="{StaticResource lailaShell_TreeViewPlaceholderItemStyle}" />
 
     <Style TargetType="{x:Type local:TreeView}">
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:TreeView}">
@@ -132,7 +25,7 @@
                         <ListBox ItemsSource="{TemplateBinding Items}" x:Name="PART_ListBox" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
                              VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
-                             ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" FocusVisualStyle="{x:Null}" 
+                             ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0"  
                              VirtualizingPanel.ScrollUnit="Pixel" ItemContainerStyleSelector="{StaticResource treeViewItemStyleSelector}">
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -163,7 +56,7 @@
                                             <Grid.Resources>
                                                 <helpers:ImageHelper x:Key="imageHelper" />
                                             </Grid.Resources>
-                                            <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" />
+                                            <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" Focusable="False" />
                                             <Image Grid.Column="1" Source="{Binding DefaultFileIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True" Margin="7,0,6,0">
                                                 <Image.Style>

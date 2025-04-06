@@ -149,7 +149,7 @@
 
                             <ScrollViewer Grid.Column="1" x:Name="TabScrollViewerTop" IsTabStop="False" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" 
                                                     BorderThickness="0" Padding="0,0,0,0" Margin="0,0,0,-3" >
-                                <TabPanel x:Name="HeaderPanel" IsItemsHost="true" KeyboardNavigation.TabIndex="1" />
+                                <TabPanel x:Name="HeaderPanel" IsItemsHost="true" />
                             </ScrollViewer>
 
                             <RepeatButton Grid.Column="2" x:Name="TabRightButtonTop"  

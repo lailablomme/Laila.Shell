@@ -12,13 +12,14 @@
     </ResourceDictionary.MergedDictionaries>
 
     <Style TargetType="{x:Type local:SmallIconsView}">
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:SmallIconsView}">
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True"
                           Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
-                                  FocusVisualStyle="{x:Null}" ScrollViewer.IsDeferredScrollingEnabled="False" 
+                                  ScrollViewer.IsDeferredScrollingEnabled="False" 
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
@@ -31,14 +32,12 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
+                                                        <local:SlidingExpander IsExpanded="True" ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}">
                                                             <Expander.Header>
-                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                                                                    <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
-                                                                </StackPanel>
+                                                                <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" x:Name="PART_ExpanderHeader" />
                                                             </Expander.Header>
-                                                            <ItemsPresenter Margin="25,0,0,0" />
-                                                        </Expander>
+                                                            <ItemsPresenter Margin="15,0,0,0" />
+                                                        </local:SlidingExpander>
                                                     </ControlTemplate>
                                                 </Setter.Value>
                                             </Setter>
@@ -57,6 +56,7 @@
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ListView}}}" Value="1">
                                                         <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="0,0,0,0" />
+                                                        <Setter Property="vwp:VirtualizingWrapPanel.CustomHeaderHeight" Value="{Binding ActualHeight, ElementName=PART_ExpanderHeader}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -96,7 +96,7 @@
                                             </Grid.Resources>
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                       VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
-                                                      Visibility="Collapsed"/>
+                                                      Visibility="Collapsed" IsTabStop="False" Focusable="False"/>
                                             <ItemsControl Grid.Column="1" Margin="0,0,2,0">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>

@@ -42,41 +42,57 @@ Namespace Controls
         Public Shared ReadOnly DoShowPinnedAndFrequentItemsPlaceholderProperty As DependencyProperty = DependencyProperty.Register("DoShowPinnedAndFrequentItemsPlaceholder", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
-        Public Event FolderChosen As EventHandler
+        Public Event BeforeFolderOpened As EventHandler(Of FolderEventArgs)
+        Public Event AfterFolderOpened As EventHandler(Of FolderEventArgs)
 
         Private PART_Grid As Grid
         Friend PART_ListBox As ListBox
         Friend PART_DragInsertIndicator As Grid
-        Private _selectionHelper As SelectionHelper(Of Item) = Nothing
-        Private _isSettingSelectedFolder As Boolean
-        Private _mousePointDown As Point
-        Private _mouseItemDown As Item
         Private _dropTarget As IDropTarget
+        Private _isLoaded As Boolean
+        Private _isSettingSelectedFolder As Boolean
         Private _menu As RightClickMenu
-        Private disposedValue As Boolean
+        Private _mouseButton As MouseButton
+        Private _mouseButtonState As MouseButtonState
+        Private _mouseItemDown As Item
+        Private _mousePointDown As Point
+        Friend _scrollViewer As ScrollViewer
+        Private _selectionHelper As SelectionHelper(Of Item) = Nothing
+        Private _treeViewItemDown As ListBoxItem
         Private _typeToSearchTimer As Timer
         Private _typeToSearchString As String = ""
-        Private _isLoaded As Boolean
+        Private disposedValue As Boolean
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(TreeView), New FrameworkPropertyMetadata(GetType(TreeView)))
         End Sub
 
         Public Sub New()
+            ' add us to the control cache so we'll get disposed on app shutdown
             Shell.AddToControlCache(Me)
 
             AddHandler Me.Loaded,
                 Sub(s As Object, e As RoutedEventArgs)
+                    ' get scrollviewer
+                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
+
                     If Not Me.PART_ListBox Is Nothing AndAlso Not _isLoaded Then
                         _isLoaded = True
+
+                        ' load sections
                         loadSections()
+
+                        ' dispose of ourselves when our parent window closes
                         AddHandler Window.GetWindow(Me).Closed,
                             Sub(s2 As Object, e2 As EventArgs)
                                 Me.Dispose()
                             End Sub
 
+                        ' create drop target
                         _dropTarget = New TreeViewDropTarget(Me)
                     End If
+
+                    ' register for drag/drop on every load (may be multiple times i.e. in drop down of combobox)
                     If Not Me.PART_ListBox Is Nothing Then
                         WpfDragTargetProxy.RegisterDragDrop(PART_ListBox, _dropTarget)
                     End If
@@ -128,14 +144,73 @@ Namespace Controls
             If Me.PART_ListBox Is Nothing Then Return
 
             Select Case e.Event
-                Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                    Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
-                    UIHelper.OnUIThread(
-                        Sub()
-                            If Not f Is Nothing Then
-                                Me.Folder = f
-                            End If
-                        End Sub)
+                Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
+                    ' this is for supporting file operations within .zip files 
+                    ' from explorer or 7-zip
+                    Dim selectedItem As Item = Nothing
+                    If selectedItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                selectedItem = Me.SelectedItem
+                            End Sub)
+                    End If
+                    ' is something is being renamed to the currently selected folder...
+                    If Not selectedItem Is Nothing _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso e.Item2.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
+                                AndAlso (If(e.Item2.FullPath?.Equals(selectedItem.FullPath), False) OrElse If(e.Item2.FullPath?.Equals(selectedItem.FullPath.Split("~")(0)), False)))) Then
+                        Shell.GlobalThreadPool.Add(
+                            Sub()
+                                ' get the first available parent in case the current folder disappears
+                                Dim f As Folder = selectedItem.LogicalParent
+                                If Not f Is Nothing Then
+                                    Thread.Sleep(300) ' wait for .zip operations/folder refresh to complete
+
+                                    ' get the newly created .zip folder
+                                    Dim replacement As Item = f.Items.ToList().LastOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso ((Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso If(i.Pidl?.Equals(e.Item2.Pidl), False)) _
+                                            OrElse (i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
+                                                AndAlso If(i.FullPath?.Equals(e.Item2.FullPath), False)))
+                                    If Not replacement Is Nothing AndAlso TypeOf replacement Is Folder Then
+                                        ' new folder matching the current folder was found -- select it
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Me.SetSelectedItem(replacement)
+                                            End Sub)
+                                    Else
+                                        ' the current folder disappeared -- switch to parent
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Me.SetSelectedItem(f)
+                                            End Sub)
+                                    End If
+                                End If
+                            End Sub)
+                    End If
+                Case SHCNE.DELETE, SHCNE.RMDIR, SHCNE.DRIVEREMOVED
+                    ' this sets the current folder to the first available parent 
+                    ' when the current folder gets deleted
+                    Dim selectedItem As Item = Nothing
+                    If selectedItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                selectedItem = Me.SelectedItem
+                            End Sub)
+                    End If
+                    ' if the current folder was deleted...
+                    If Not selectedItem Is Nothing _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
+                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                ' get the first available parent  
+                                Dim f As Folder = selectedItem.LogicalParent
+                                If Not f Is Nothing Then
+                                    Me.Folder = f ' load it
+                                End If
+                            End Sub)
+                    End If
             End Select
         End Sub
 
@@ -287,24 +362,6 @@ Namespace Controls
             End If
         End Sub
 
-        Private Function GetParentOfSelectionBefore(folder As Item, Optional selectedItem As Folder = Nothing) As Folder
-            If selectedItem Is Nothing Then
-                UIHelper.OnUIThread(
-                    Sub()
-                        selectedItem = Me.SelectedItem
-                    End Sub)
-            End If
-            If selectedItem Is Nothing Then
-                Return Nothing
-            ElseIf selectedItem?.Pidl?.Equals(folder.Pidl) OrElse selectedItem.FullPath?.Equals(folder.FullPath) Then
-                Return selectedItem.LogicalParent
-            ElseIf Not selectedItem?.LogicalParent Is Nothing Then
-                Return Me.GetParentOfSelectionBefore(folder, selectedItem.LogicalParent)
-            Else
-                Return Nothing
-            End If
-        End Function
-
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
@@ -313,14 +370,20 @@ Namespace Controls
             PART_DragInsertIndicator = Template.FindName("PART_DragInsertIndicator", Me)
 
             _selectionHelper = New SelectionHelper(Of Item)(PART_ListBox)
+            _selectionHelper.SelectionChanged =
+                Sub()
+                    If Me.PART_ListBox.IsKeyboardFocusWithin Then
+                        Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromItem(_selectionHelper.SelectedItems(0))
+                        If Not listBoxItem Is Nothing Then listBoxItem.Focus()
+                    End If
+                End Sub
 
-            AddHandler PART_ListBox.PreviewMouseMove, AddressOf OnTreeViewPreviewMouseMove
-            AddHandler PART_ListBox.PreviewMouseLeftButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
-            AddHandler PART_ListBox.PreviewMouseRightButtonDown, AddressOf OnTreeViewPreviewMouseButtonDown
-            AddHandler PART_ListBox.PreviewMouseUp, AddressOf OnTreeViewPreviewMouseButtonUp
-            AddHandler PART_ListBox.MouseLeave, AddressOf OnTreeViewMouseLeave
-            AddHandler Me.PreviewKeyDown, AddressOf OnTreeViewKeyDown
-            AddHandler Me.PreviewTextInput, AddressOf OnTreeViewTextInput
+            AddHandler PART_ListBox.PreviewMouseMove, AddressOf listBox_PreviewMouseMove
+            AddHandler PART_ListBox.PreviewMouseDown, AddressOf listBox_PreviewMouseDown
+            AddHandler PART_ListBox.PreviewMouseUp, AddressOf listBox_PreviewMouseUp
+            AddHandler PART_ListBox.MouseLeave, AddressOf listBox_MouseLeave
+            AddHandler Me.PreviewKeyDown, AddressOf treeView_KeyDown
+            AddHandler Me.PreviewTextInput, AddressOf treeView_TextInput
         End Sub
 
         Public ReadOnly Property SelectedItem As Item
@@ -476,25 +539,32 @@ Namespace Controls
             End If
         End Function
 
-        Private Sub OnTreeViewPreviewMouseMove(sender As Object, e As MouseEventArgs)
+        Private Sub listBox_PreviewMouseMove(sender As Object, e As MouseEventArgs)
             If Not _mouseItemDown Is Nothing AndAlso
                 (e.LeftButton = MouseButtonState.Pressed OrElse e.RightButton = MouseButtonState.Pressed) Then
                 Dim currentPointDown As Point = e.GetPosition(PART_ListBox)
                 If Math.Abs(currentPointDown.X - _mousePointDown.X) > 10 OrElse Math.Abs(currentPointDown.Y - _mousePointDown.Y) > 10 Then
+                    _mouseButtonState = MouseButtonState.Released
+                    If Not _treeViewItemDown Is Nothing Then _treeViewItemDown.Tag = "Released"
                     Drag.Start({_mouseItemDown}, If(e.LeftButton = MouseButtonState.Pressed, MK.MK_LBUTTON, MK.MK_RBUTTON))
                     e.Handled = True
                 End If
             End If
         End Sub
 
-        Private Sub OnTreeViewPreviewMouseButtonDown(sender As Object, e As MouseButtonEventArgs)
+        Private Sub listBox_PreviewMouseDown(sender As Object, e As MouseButtonEventArgs)
+            _mouseButton = e.ChangedButton
+            _mouseButtonState = e.ButtonState
             _mousePointDown = e.GetPosition(Me.PART_ListBox)
 
-            If Not e.OriginalSource Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing Then
-                Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
+            Dim element As IInputElement = Me.PART_ListBox.InputHitTest(e.GetPosition(Me.PART_ListBox))
+            If Not element Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(element) Is Nothing Then
+                Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(element)
                 Dim clickedItem As Item = TryCast(treeViewItem?.DataContext, Item)
                 If Not TypeOf clickedItem Is DummyFolder Then
                     _mouseItemDown = clickedItem
+                    _treeViewItemDown = treeViewItem
+                    _treeViewItemDown.Tag = "Pressed"
                     Me.PART_ListBox.Focus()
                     If e.RightButton = MouseButtonState.Pressed Then
                         If Not clickedItem Is Nothing Then
@@ -510,10 +580,17 @@ Namespace Controls
                                     Select Case e2.Verb
                                         Case "open"
                                             If TypeOf clickedItem Is Folder Then
-                                                _selectionHelper.SetSelectedItems({clickedItem})
-                                                Me.Folder = clickedItem
-                                                RaiseEvent FolderChosen(Me, New EventArgs())
                                                 e2.IsHandled = True
+
+                                                If (If(clickedItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                        OrElse (clickedItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+
+                                                RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(clickedItem))
+                                                _selectionHelper.SetSelectedItems({clickedItem})
+                                                CType(clickedItem, Folder).LastScrollOffset = New Point()
+                                                Me.Folder = clickedItem
+                                                RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(clickedItem))
                                             End If
                                         Case "rename"
                                             Dim getCoords As Menus.GetItemNameCoordinatesDelegate =
@@ -556,34 +633,6 @@ Namespace Controls
                                 End If
                             End Using
                         End If
-                    ElseIf e.LeftButton = MouseButtonState.Pressed Then
-                        If Not clickedItem Is Nothing Then
-                            Using Shell.OverrideCursor(Cursors.Wait)
-                                If Not UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
-                                    CType(clickedItem, Folder).IsExpanded = Not CType(clickedItem, Folder).IsExpanded
-                                Else
-                                    Using Shell.OverrideCursor(Cursors.Wait)
-                                        _selectionHelper.SetSelectedItems({clickedItem})
-
-                                        ' this allows for better reponse to double-clicking an unselected item
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If TypeOf clickedItem Is Folder AndAlso Not If(Me.Folder?.Pidl?.Equals(clickedItem.Pidl), False) Then
-                                                    CType(clickedItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = clickedItem
-                                                    RaiseEvent FolderChosen(Me, New EventArgs())
-                                                ElseIf TypeOf clickedItem Is Link AndAlso TypeOf CType(clickedItem, Link).TargetItem Is Folder _
-                                                    AndAlso Not If(Me.Folder?.Pidl?.Equals(CType(clickedItem, Link).TargetItem.Pidl), False) Then
-                                                    CType(CType(clickedItem, Link).TargetItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = CType(clickedItem, Link).TargetItem
-                                                    RaiseEvent FolderChosen(Me, New EventArgs())
-                                                End If
-                                            End Sub, Threading.DispatcherPriority.Background)
-                                    End Using
-                                End If
-                                e.Handled = True
-                            End Using
-                        End If
                     End If
 
                     ' this whole trickery to prevent the ListBox from selecting other items while dragging:
@@ -597,17 +646,66 @@ Namespace Controls
             End If
         End Sub
 
-        Public Sub OnTreeViewPreviewMouseButtonUp(sender As Object, e As MouseButtonEventArgs)
+        Public Sub listBox_PreviewMouseUp(sender As Object, e As MouseButtonEventArgs)
+            If Not _treeViewItemDown Is Nothing Then _treeViewItemDown.Tag = "Released"
+
+            Dim element As IInputElement = Me.PART_ListBox.InputHitTest(e.GetPosition(Me.PART_ListBox))
+            If Not element Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(element) Is Nothing Then
+                If Not _mouseItemDown Is Nothing AndAlso Not TypeOf _mouseItemDown Is DummyFolder Then
+                    If _mouseButton = MouseButton.Left AndAlso _mouseButtonState = MouseButtonState.Pressed Then
+                        If Not _mouseItemDown Is Nothing Then
+                            Using Shell.OverrideCursor(Cursors.Wait)
+                                If Not UIHelper.GetParentOfType(Of ToggleButton)(element) Is Nothing Then
+                                    CType(_mouseItemDown, Folder).IsExpanded = Not CType(_mouseItemDown, Folder).IsExpanded
+                                Else
+                                    Using Shell.OverrideCursor(Cursors.Wait)
+                                        _selectionHelper.SetSelectedItems({_mouseItemDown})
+
+                                        ' this allows for better reponse to double-clicking an unselected item
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                If TypeOf _mouseItemDown Is Folder Then
+                                                    If (If(_mouseItemDown.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                        OrElse (_mouseItemDown.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+
+                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
+                                                    CType(_mouseItemDown, Folder).LastScrollOffset = New Point()
+                                                    Me.Folder = _mouseItemDown
+                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
+                                                ElseIf TypeOf _mouseItemDown Is Link AndAlso TypeOf CType(_mouseItemDown, Link).TargetItem Is Folder Then
+                                                    If (If(CType(_mouseItemDown, Link).TargetItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                        OrElse (CType(_mouseItemDown, Link).TargetItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+
+                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
+                                                    CType(CType(_mouseItemDown, Link).TargetItem, Folder).LastScrollOffset = New Point()
+                                                    Me.Folder = CType(_mouseItemDown, Link).TargetItem
+                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
+                                                End If
+                                            End Sub, Threading.DispatcherPriority.Background)
+                                    End Using
+                                End If
+                                e.Handled = True
+                            End Using
+                        End If
+                    End If
+                Else
+                    e.Handled = True
+                End If
+            End If
+
             Me.PART_ListBox.ReleaseMouseCapture()
             _mouseItemDown = Nothing
         End Sub
 
-        Public Sub OnTreeViewMouseLeave(sender As Object, e As MouseEventArgs)
+        Public Sub listBox_MouseLeave(sender As Object, e As MouseEventArgs)
             _mouseItemDown = Nothing
         End Sub
 
-        Private Sub OnTreeViewKeyDown(sender As Object, e As KeyEventArgs)
-            If Not TypeOf e.OriginalSource Is TextBox Then
+        Private Sub treeView_KeyDown(sender As Object, e As KeyEventArgs)
+            If Not TypeOf e.OriginalSource Is TextBox _
+                AndAlso (e.OriginalSource.Equals(Me.PART_ListBox) OrElse UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox)) Then
                 If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
                              AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
                     Clipboard.CopyFiles({Me.SelectedItem})
@@ -619,8 +717,13 @@ Namespace Controls
                 ElseIf (e.Key = Key.Space OrElse e.Key = Key.Enter) AndAlso Keyboard.Modifiers = ModifierKeys.None _
                     AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
                     If TypeOf Me.SelectedItem Is Folder Then
+                        If (If(Me.SelectedItem.Pidl?.Equals(Me.Folder?.Pidl), False) OrElse (Me.SelectedItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                            AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+
+                        RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
+                        CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
                         Me.Folder = Me.SelectedItem
-                        RaiseEvent FolderChosen(Me, New EventArgs())
+                        RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
                     Else
                         Dim __ = invokeDefaultCommand(Me.SelectedItem)
                     End If
@@ -655,7 +758,7 @@ Namespace Controls
             End If
         End Sub
 
-        Private Sub OnTreeViewTextInput(sender As Object, e As TextCompositionEventArgs)
+        Private Sub treeView_TextInput(sender As Object, e As TextCompositionEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox Then
                 If Not _typeToSearchTimer Is Nothing Then
                     _typeToSearchTimer.Dispose()
@@ -751,34 +854,58 @@ Namespace Controls
                         End If
                     Next
                 Case NotifyCollectionChangedAction.Remove
-                    For Each item In e.OldItems
-                        If CType(item, Item).CanShowInTree Then
-                            Me.Items.Remove(item)
-                        End If
-                    Next
+                    UIHelper.OnUIThreadAsync(
+                        Async Sub()
+                            ' give it some time before removing deleted items from the ui, so we get 
+                            ' to switch to the matching new folder if applicable (i.e. for .zip operations)
+                            Await Task.Delay(400)
+
+                            ' remove items
+                            For Each item In e.OldItems
+                                If CType(item, Item).CanShowInTree Then
+                                    Me.Items.Remove(item)
+                                End If
+                            Next
+                        End Sub)
                 Case NotifyCollectionChangedAction.Replace
-                    For Each item In e.NewItems
-                        If CType(item, Item).IsVisibleInTree Then
-                            Me.Items.Add(item)
-                        End If
-                    Next
-                    For Each item In e.OldItems
-                        If CType(item, Item).CanShowInTree Then
-                            Me.Items.Remove(item)
-                        End If
-                    Next
+                    UIHelper.OnUIThreadAsync(
+                        Async Sub()
+                            ' give it some time before removing deleted items from the ui, so we get 
+                            ' to switch to the matching new folder if applicable (i.e. for .zip operations)
+                            Await Task.Delay(400)
+
+                            ' replace items
+                            For Each item In e.NewItems
+                                If CType(item, Item).IsVisibleInTree Then
+                                    Me.Items.Add(item)
+                                End If
+                            Next
+                            For Each item In e.OldItems
+                                If CType(item, Item).CanShowInTree Then
+                                    Me.Items.Remove(item)
+                                End If
+                            Next
+                        End Sub)
                 Case NotifyCollectionChangedAction.Reset
                     Dim collection As ObservableCollection(Of Item) = s
                     Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
                     If Not folder Is Nothing Then
+                        Dim selectedItem As Item = Nothing
+                        ' refresh folder
                         For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
-                            AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
+                                    AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
+                            If Me.SelectedItem?.Equals(item) Then selectedItem = item
                             Me.Items.Remove(item)
                         Next
                         For Each item In collection.Where(Function(i) _
-                            Not i.disposedValue AndAlso i.IsVisibleInTree)
+                            Not i.disposedValue AndAlso i.IsVisibleInTree).ToList()
                             Me.Items.Add(item)
+                            If Not selectedItem Is Nothing _
+                                AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not item.Pidl Is Nothing AndAlso If(item.Pidl?.Equals(selectedItem.Pidl), False)) _
+                                    OrElse ((selectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso If(item.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                                Me.SetSelectedItem(item)
+                            End If
                         Next
                     End If
             End Select
@@ -792,8 +919,9 @@ Namespace Controls
                     UIHelper.OnUIThread(
                         Sub()
                             If folder.IsExpanded Then
+                                ' when a folder is expanded, add it's children to the tree
                                 For Each item In folder.Items.ToList()
-                                    If TypeOf item Is Folder Then
+                                    If item.CanShowInTree Then
                                         If Not Me.Items.Contains(item) Then
                                             Me.Items.Add(item)
                                         End If
@@ -804,7 +932,8 @@ Namespace Controls
                                     End If
                                 Next
                             Else
-                                For Each item In Me.Items.Where(Function(i) TypeOf i Is Folder _
+                                ' when a folder is collapsed, remove it's items from the tree
+                                For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
                                     AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                                     If item.IsExpanded Then item.IsExpanded = False
                                     Me.Items.Remove(item)
@@ -812,10 +941,11 @@ Namespace Controls
                             End If
                         End Sub)
                 Case "TreeSortKey"
+                    ' when the tree sort order of an item is updated, also update it's children
                     Dim list As List(Of Item) = Nothing
                     UIHelper.OnUIThread(
                         Sub()
-                            list = Me.Items.Where(Function(i) TypeOf i Is Folder AndAlso Not TypeOf i Is DummyFolder _
+                            list = Me.Items.Where(Function(i) i.CanShowInTree AndAlso Not TypeOf i Is DummyFolder _
                                 AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                         End Sub)
                     For Each item2 In list
@@ -824,13 +954,21 @@ Namespace Controls
             End Select
         End Sub
 
+        ''' <summary>
+        ''' Only show items that are supposed to be visible.
+        ''' </summary>
+        ''' <param name="i">The item for which to evaluate visibility</param>
+        ''' <returns>True if the item will be visible</returns>
         Private Function filter(i As Object) As Boolean
             Dim item As Item = i
             Dim isVisibleInTree As Boolean? = item?.IsVisibleInTree
             Return If(isVisibleInTree.HasValue, isVisibleInTree.Value, False)
         End Function
 
-
+        ''' <summary>
+        ''' Gets/sets the current folder.
+        ''' </summary>
+        ''' <returns>The current Folder object</returns>
         Public Property Folder As Folder
             Get
                 Return GetValue(FolderProperty)
@@ -1069,28 +1207,24 @@ Namespace Controls
             End Set
         End Property
 
-        Public Enum TreeRootSection As Long
-            SYSTEM = 0
-            PINNED = 100
-            FREQUENT = Long.MaxValue - 100
-            ENVIRONMENT = Long.MaxValue - 10
-        End Enum
-
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then
                 If disposing Then
                     ' dispose managed state (managed objects)
                     Shell.UnsubscribeFromNotifications(Me)
 
+                    ' dispose of "type to search" timer
                     If Not _typeToSearchTimer Is Nothing Then
                         _typeToSearchTimer.Dispose()
                         _typeToSearchTimer = Nothing
                     End If
 
+                    ' dispose of sections
                     For Each section In Me.Sections
                         section.Dispose()
                     Next
 
+                    ' neutralize items
                     For Each item In Me.Items.ToList()
                         If Not TypeOf item Is SeparatorFolder Then
                             item.TreeRootIndex = -1
@@ -1099,10 +1233,12 @@ Namespace Controls
                         End If
                     Next
 
+                    ' unsubscribe as a drop target
                     If Not Me.PART_ListBox Is Nothing Then
                         WpfDragTargetProxy.RevokeDragDrop(PART_ListBox)
                     End If
 
+                    ' we don't need to be disposed on shutdown anymore, we're already disposed
                     Shell.RemoveFromControlCache(Me)
                 End If
 

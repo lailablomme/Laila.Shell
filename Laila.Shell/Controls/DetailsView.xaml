@@ -11,6 +11,7 @@
     </ResourceDictionary.MergedDictionaries>
 
     <Style TargetType="{x:Type local:DetailsView}">
+        <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:DetailsView}">
@@ -20,7 +21,7 @@
                             <converters:PointToMarginLeftConverter x:Key="pointToMarginLeftConverter"/>
                         </Grid.Resources>
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
-                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" FocusVisualStyle="{x:Null}"  
+                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" 
                                   VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
                                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   VirtualizingPanel.ScrollUnit="Pixel">
@@ -50,7 +51,7 @@
                                                             </Grid.ColumnDefinitions>
                                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                                       VerticalAlignment="Center" Margin="2,0,-2,0" x:Name="SelectionCheckBox"
-                                                                      Visibility="Collapsed" HorizontalAlignment="Left" />
+                                                                      Visibility="Collapsed" HorizontalAlignment="Left" IsTabStop="False" Focusable="False" />
                                                             <GridViewRowPresenter Grid.Column="1" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                                                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
                                                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}" 
@@ -92,28 +93,31 @@
                                                         <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
                                                         <Setter Property="Tag" TargetName="Bd" Value="MouseOver"/>
                                                     </Trigger>
-                                                    <MultiTrigger>
-                                                        <MultiTrigger.Conditions>
-                                                            <Condition Property="Selector.IsSelectionActive" Value="False"/>
-                                                            <Condition Property="IsSelected" Value="True"/>
-                                                        </MultiTrigger.Conditions>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="False"/>
+                                                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
                                                         <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Background}"/>
                                                         <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Border}"/>
-                                                    </MultiTrigger>
-                                                    <MultiTrigger>
-                                                        <MultiTrigger.Conditions>
-                                                            <Condition Property="Selector.IsSelectionActive" Value="True"/>
-                                                            <Condition Property="IsSelected" Value="True"/>
-                                                        </MultiTrigger.Conditions>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="True"/>
+                                                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
                                                         <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Background}"/>
                                                         <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
-                                                    </MultiTrigger>
+                                                    </MultiDataTrigger>
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
                                                     </Trigger>
                                                     <DataTrigger Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False">
                                                         <Setter Property="Margin" Value="0,4,0,4" />
                                                     </DataTrigger>
+                                                    <Trigger Property="IsKeyboardFocused" Value="True">
+                                                        <Setter Property="BorderBrush" TargetName="Bd" Value="Black"/>
+                                                    </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -131,14 +135,12 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
+                                                        <local:SlidingExpander IsExpanded="True" ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}">
                                                             <Expander.Header>
-                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                                                                    <TextBlock Text="{Binding Name}" Foreground="DarkBlue" VerticalAlignment="Center" />
-                                                                </StackPanel>
+                                                                <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" x:Name="PART_ExpanderHeader" />
                                                             </Expander.Header>
                                                             <ItemsPresenter />
-                                                        </Expander>
+                                                        </local:SlidingExpander>
                                                     </ControlTemplate>
                                                 </Setter.Value>
                                             </Setter>

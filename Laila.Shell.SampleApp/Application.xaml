@@ -161,6 +161,7 @@
                 </Setter>
             </Style>
             <Style TargetType="controls:TabItemCloseButton">
+                <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="Black"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>

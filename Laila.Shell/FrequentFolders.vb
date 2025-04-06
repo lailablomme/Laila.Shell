@@ -38,13 +38,15 @@ Public Class FrequentFolders
                                 Try
                                     pidl = New Pidl(folder.Pidl)
                                     Dim i As Item = Item.FromPidl(pidl, Nothing)
-                                    If Not i Is Nothing AndAlso TypeOf i Is Folder AndAlso Not CType(i, Folder).IsDrive AndAlso Not PinnedItems.GetIsPinned(i) Then
+                                    If Not i Is Nothing AndAlso i.IsExisting AndAlso TypeOf i Is Folder _
+                                        AndAlso Not CType(i, Folder).IsDrive _
+                                        AndAlso Not PinnedItems.GetIsPinned(i) Then
                                         mostFrequent2.Add(i)
                                         count += 1
                                         If count = 5 Then Exit For
-                                    ElseIf Not i Is Nothing Then
+                                    Else
                                         collection.Delete(folder.Id)
-                                        i.Dispose()
+                                        If Not i Is Nothing Then i.Dispose()
                                     End If
                                 Finally
                                     If Not pidl Is Nothing Then

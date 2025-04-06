@@ -1,16 +1,13 @@
 ﻿Imports System.Globalization
-Imports System.Windows
-Imports System.Windows.Controls
 Imports System.Windows.Data
 
 Namespace Converters
-    Public Class ListViewGroupingHeightConverter
+    Public Class EqualsConverter
         Implements IMultiValueConverter
 
         Public Function Convert(values() As Object, targetType As Type, parameter As Object, culture As CultureInfo) As Object Implements IMultiValueConverter.Convert
-            Dim stackPanel As StackPanel = values(0)
-            stackPanel.Measure(New Windows.Size(Double.PositiveInfinity, Double.PositiveInfinity))
-            Return System.Convert.ToDouble(values(1) - stackPanel.DesiredSize.Height - 45)
+            If values Is Nothing OrElse values.Length < 2 Then Return False
+            Return Object.Equals(values(0), values(1))
         End Function
 
         Public Function ConvertBack(value As Object, targetTypes() As Type, parameter As Object, culture As CultureInfo) As Object() Implements IMultiValueConverter.ConvertBack

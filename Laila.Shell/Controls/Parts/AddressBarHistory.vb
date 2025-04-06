@@ -42,6 +42,8 @@ Namespace Controls.Parts
         End Function
 
         Public Shared Sub Track(folder As Item)
+            If folder.Pidl Is Nothing Then Return
+
             Using db = New LiteDatabase(getDBFileName())
                 ' register in db
                 Dim collection As ILiteCollection(Of AddressBarHistoryItem) = db.GetCollection(Of AddressBarHistoryItem)("AddressBarHistoryItems")

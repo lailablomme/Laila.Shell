@@ -38,7 +38,6 @@ Public Class Shell
     Public Shared _hwnd As IntPtr
 
     Private Shared _specialFolders As Dictionary(Of SpecialFolders, Folder) = New Dictionary(Of SpecialFolders, Folder)()
-    Private Shared _folderViews As Dictionary(Of String, Tuple(Of String, Type)) = New Dictionary(Of String, Tuple(Of String, Type))()
     Private Shared _customFolders As List(Of CustomFolder) = New List(Of CustomFolder)()
     Private Shared _customPropertiesByCanonicalName As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
     Private Shared _customPropertiesByKey As Dictionary(Of String, Type) = New Dictionary(Of String, Type)()
@@ -49,8 +48,11 @@ Public Class Shell
     Private Shared _threadPoolCache As List(Of Helpers.ThreadPool) = New List(Of Helpers.ThreadPool)()
     Private Shared _menuCacheLock As Object = New Object()
     Private Shared _menuCache As List(Of BaseMenu) = New List(Of BaseMenu)()
-    Friend Shared _itemsCacheLock As Object = New Object()
+    Friend Shared _itemsCacheLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _itemsCache As List(Of Tuple(Of Item, DateTime)) = New List(Of Tuple(Of Item, DateTime))()
+    Private Shared _fileSystemCache As Hashtable = New Hashtable()
+    Private Shared _fileSystemCacheCount As Hashtable = New Hashtable()
+    Private Shared _fileSystemCacheLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Private Shared _controlCacheLock As Object = New Object()
     Private Shared _controlCache As List(Of IDisposable) = New List(Of IDisposable)()
     Private Shared _isDebugVisible As Boolean = False
@@ -101,9 +103,12 @@ Public Class Shell
                     While Not ShuttingDownToken.IsCancellationRequested
                         ' take a snapshot of the shellitem cache...
                         Dim list As List(Of Tuple(Of Item, DateTime))
-                        SyncLock _itemsCacheLock
+                        _itemsCacheLock.Wait()
+                        Try
                             list = Shell.ItemsCache.ToList()
-                        End SyncLock
+                        Finally
+                            _itemsCacheLock.Release()
+                        End Try
 
                         ' ...and go through it
                         For Each item In list
@@ -208,16 +213,6 @@ Public Class Shell
                 Shell.StartListening(Shell.Desktop)
             End Sub)
 
-        ' register folder views
-        FolderViews.Add("Extra large icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/extralargeicons16.png", GetType(ExtraLargeIconsView)))
-        FolderViews.Add("Large icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/largeicons16.png", GetType(LargeIconsView)))
-        FolderViews.Add("Normal icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/normalicons16.png", GetType(NormalIconsView)))
-        FolderViews.Add("Small icons", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/smallicons16.png", GetType(SmallIconsView)))
-        FolderViews.Add("List", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/list16.png", GetType(ListView)))
-        FolderViews.Add("Details", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/details16.png", GetType(DetailsView)))
-        FolderViews.Add("Tiles", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/tiles16.png", GetType(TileView)))
-        FolderViews.Add("Content", New Tuple(Of String, Type)("pack://application:,,,/Laila.Shell;component/Images/content16.png", GetType(ContentView)))
-
         ' show debug window?
         If _isDebugVisible Then
             _debugWindow = New DebugTools.DebugWindow()
@@ -303,12 +298,15 @@ Public Class Shell
             ' items need not really be disposed of, because they have no managed resources,
             ' but we do it anyway, in case that changes in the future
             Dim c As Integer = 0
-            SyncLock _itemsCache
+            _itemsCacheLock.Wait()
+            Try
                 For Each item In _itemsCache.Select(Function(i) i.Item1).ToList()
                     item.Dispose()
                     c += 1
                 Next
-            End SyncLock
+            Finally
+                _itemsCacheLock.Release()
+            End Try
 
             SyncLock _threadPoolCacheLock
                 For Each item In Shell.ThreadPoolCache.ToList()
@@ -376,10 +374,13 @@ Public Class Shell
                                     End If
                             End Select
 
-                            Debug.Write(text)
-
                             ' notify children
-                            notifySubscribers(e)
+                            If e.Item1 Is Nothing OrElse (Not e.Event = SHCNE.MKDIR AndAlso Not e.Event = SHCNE.CREATE AndAlso Not e.Event = SHCNE.RMDIR _
+                                AndAlso Not e.Event = SHCNE.DELETE AndAlso Not e.Event = SHCNE.RENAMEFOLDER AndAlso Not e.Event = SHCNE.RENAMEITEM) _
+                                OrElse Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                                Debug.Write(text)
+                                notifySubscribers(e)
+                            End If
 
                             If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
                             If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
@@ -486,16 +487,6 @@ Public Class Shell
     End Function
 
     ''' <summary>
-    ''' Gets a dictionary of the registered folder views.
-    ''' </summary>
-    ''' <returns>A dictionary containing the registered folder views</returns>
-    Public Shared ReadOnly Property FolderViews As Dictionary(Of String, Tuple(Of String, Type))
-        Get
-            Return _folderViews
-        End Get
-    End Property
-
-    ''' <summary>
     ''' Gets the desktop folder, the root.
     ''' </summary>
     ''' <returns>A Folder object for the desktop folder</returns>
@@ -535,16 +526,73 @@ Public Class Shell
     End Property
 
     Friend Shared Sub AddToItemsCache(item As Item)
-        SyncLock _itemsCacheLock
-            '_itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
+        _itemsCacheLock.Wait()
+        Try
             _itemsCache.Add(New Tuple(Of Item, Date)(item, DateTime.Now))
-        End SyncLock
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                AddToFileSystemCache(item)
+            End If
+        Finally
+            _itemsCacheLock.Release()
+        End Try
     End Sub
 
     Friend Shared Sub RemoveFromItemsCache(item As Item)
-        SyncLock _itemsCacheLock
+        _itemsCacheLock.Wait()
+        Try
             _itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
-        End SyncLock
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                RemoveFromFileSystemCache(item.FullPath)
+            End If
+        Finally
+            _itemsCacheLock.Release()
+        End Try
+    End Sub
+
+    Friend Shared Sub AddToFileSystemCache(item As Item)
+        _fileSystemCacheLock.Wait()
+        Try
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not String.IsNullOrWhiteSpace(item.FullPath) Then
+                If Not _fileSystemCache.ContainsKey(item.FullPath) Then
+                    _fileSystemCache.Add(item.FullPath, item)
+                    _fileSystemCacheCount.Add(item.FullPath, 1)
+                Else
+                    Dim count As Integer = _fileSystemCacheCount(item.FullPath)
+                    _fileSystemCacheCount(item.FullPath) = count + 1
+                End If
+            End If
+        Finally
+            _fileSystemCacheLock.Release()
+        End Try
+    End Sub
+
+    Friend Shared Sub RemoveFromFileSystemCache(fullPath As String)
+        _fileSystemCacheLock.Wait()
+        Try
+            If Not String.IsNullOrWhiteSpace(fullPath) Then
+                If _fileSystemCacheCount(fullPath) = 1 Then
+                    _fileSystemCache.Remove(fullPath)
+                    _fileSystemCacheCount.Remove(fullPath)
+                Else
+                    Dim count As Integer = _fileSystemCacheCount(fullPath)
+                    _fileSystemCacheCount(fullPath) = count - 1
+                End If
+            End If
+        Finally
+            _fileSystemCacheLock.Release()
+        End Try
+    End Sub
+
+    Friend Shared Sub UpdateFileSystemCache(oldFullPath As String, item As Item)
+        _itemsCacheLock.Wait()
+        Try
+            RemoveFromFileSystemCache(oldFullPath)
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                AddToFileSystemCache(item)
+            End If
+        Finally
+            _itemsCacheLock.Release()
+        End Try
     End Sub
 
     Friend Shared Sub AddToControlCache(item As IDisposable)
@@ -554,7 +602,7 @@ Public Class Shell
     End Sub
 
     Friend Shared Sub RemoveFromControlCache(item As IDisposable)
-        SyncLock _itemsCacheLock
+        SyncLock _controlCacheLock
             _controlCache.Remove(item)
         End SyncLock
     End Sub
@@ -614,7 +662,7 @@ Public Class Shell
             ' start receiving notifications
             Dim entry(0) As SHChangeNotifyEntry
             entry(0).pIdl = folder.Pidl.AbsolutePIDL
-            entry(0).Recursively = folder.Pidl?.ToString.Equals("00-00")
+            entry(0).Recursively = True  ' folder.Pidl?.ToString.Equals("00-00")
 
             Dim fswNotify As Action(Of NotificationEventArgs) =
                 Sub(e As NotificationEventArgs)
@@ -662,7 +710,17 @@ Public Class Shell
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.DELETE
-                                e2.Item1 = New Item(e.FullPath)
+                                _itemsCacheLock.Wait()
+                                Try
+                                    If _fileSystemCache.ContainsKey(e.FullPath) Then
+                                        e2.Item1 = _fileSystemCache(e.FullPath)
+                                    End If
+                                Finally
+                                    _itemsCacheLock.Release()
+                                End Try
+                                If e2.Item1 Is Nothing Then
+                                    e2.Item1 = New Item(e.FullPath)
+                                End If
                                 fswNotify(e2)
                             End Sub)
                     End Sub
@@ -673,9 +731,23 @@ Public Class Shell
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.RENAMEITEM
-                                e2.Item1 = New Item(e.OldFullPath)
+                                _itemsCacheLock.Wait()
+                                Try
+                                    If _fileSystemCache.ContainsKey(e.OldFullPath) Then
+                                        e2.Item1 = _fileSystemCache(e.OldFullPath)
+                                    End If
+                                Finally
+                                    _itemsCacheLock.Release()
+                                End Try
                                 e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                                 If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
+                                'If e2.Item2 Is Nothing Then
+                                '    SyncLock _itemsCacheLock
+                                '        If _fileSystemCache.ContainsKey(e.FullPath) Then
+                                '            e2.Item2 = _fileSystemCache(e.FullPath)
+                                '        End If
+                                '    End SyncLock
+                                'End If
                                 If e2.Item2 Is Nothing Then
                                     e2.Item2 = New Item(e.FullPath)
                                 End If
@@ -683,6 +755,7 @@ Public Class Shell
                             End Sub)
                     End Sub
 
+                Debug.WriteLine($"Start monitoring by FSW {folder.FullPath}")
                 Try
                     fsw.EnableRaisingEvents = True
                 Catch ex As Exception

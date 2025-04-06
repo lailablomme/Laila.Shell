@@ -2,6 +2,7 @@
 Imports System.ComponentModel
 Imports System.Runtime.InteropServices
 Imports System.Text
+Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Data
@@ -30,9 +31,26 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(FolderView), New FrameworkPropertyMetadata(GetType(FolderView)))
         End Sub
 
+        Public Shared ReadOnly ViewActivatedEvent As RoutedEvent =
+            EventManager.RegisterRoutedEvent(
+                "ViewActivated", RoutingStrategy.Bubble,
+                GetType(RoutedEventHandler), GetType(FolderView))
+
+        Public Custom Event ViewActivated As RoutedEventHandler
+            AddHandler(value As RoutedEventHandler)
+                Me.AddHandler(ViewActivatedEvent, value)
+            End AddHandler
+            RemoveHandler(value As RoutedEventHandler)
+                Me.RemoveHandler(ViewActivatedEvent, value)
+            End RemoveHandler
+            RaiseEvent(sender As Object, e As EventArgs)
+
+            End RaiseEvent
+        End Event
+
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
-        Private _views As Dictionary(Of String, Control)
+        Private _views As Dictionary(Of Guid, Control)
         Private _activeView As BaseFolderView
         Private _dropTarget As IDropTarget
         Private PART_Grid As Grid
@@ -40,6 +58,7 @@ Namespace Controls
         Private disposedValue As Boolean
 
         Public Sub New()
+            ' register us in the control cache so we get disposed when the app is shutting down
             Shell.AddToControlCache(Me)
 
             AddHandler Me.Loaded,
@@ -47,17 +66,21 @@ Namespace Controls
                     If Not _isLoaded Then
                         _isLoaded = True
 
+                        ' wait for everything to load
                         UIHelper.OnUIThread(
                             Sub()
                             End Sub, Threading.DispatcherPriority.Loaded)
 
+                        ' display any available folder
                         If Not Me.Folder Is Nothing Then
-                            changeView(Me.Folder.View, Me.Folder)
+                            changeView(Me.Folder.ActiveView, Me.Folder)
                         End If
 
+                        ' register us as a drop target
                         _dropTarget = New ListViewDropTarget(Me)
                         WpfDragTargetProxy.RegisterDragDrop(Me, _dropTarget)
 
+                        ' when the window closes: dispose ourselves
                         AddHandler Window.GetWindow(Me).Closed,
                             Sub(s2 As Object, e2 As EventArgs)
                                 Me.Dispose()
@@ -65,23 +88,87 @@ Namespace Controls
                     End If
                 End Sub
 
+            ' subscribe to file and folder change notifications
             Shell.SubscribeToNotifications(Me)
         End Sub
 
         Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
             Select Case e.Event
-                Case SHCNE.RMDIR, SHCNE.DELETE, SHCNE.DRIVEREMOVED
-                    Dim f As Folder = Me.GetParentOfSelectionBefore(e.Item1)
-                    UIHelper.OnUIThread(
-                        Sub()
-                            If Not f Is Nothing Then
-                                Me.Folder = f
-                            End If
-                        End Sub)
+                Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
+                    ' this is for supporting file operations within .zip files 
+                    ' from explorer or 7-zip
+                    Dim selectedItem As Item = Nothing
+                    If selectedItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                selectedItem = Me.Folder
+                            End Sub)
+                    End If
+                    ' is something is being renamed to the currently selected folder...
+                    If Not selectedItem Is Nothing _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso e.Item2.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
+                                AndAlso (If(e.Item2.FullPath?.Equals(selectedItem.FullPath), False) OrElse If(e.Item2.FullPath?.Equals(selectedItem.FullPath.Split("~")(0)), False)))) Then
+                        Shell.GlobalThreadPool.Add(
+                            Sub()
+                                ' get the first available parent in case the current folder disappears
+                                Dim f As Folder = Me.GetParentOfSelectionBefore(selectedItem)
+                                If Not f Is Nothing Then
+                                    Thread.Sleep(300) ' wait for .zip operations/folder refresh to complete
+
+                                    ' get the newly created .zip folder
+                                    Dim replacement As Item = f.Items.ToList().LastOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso ((Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso If(i.Pidl?.Equals(e.Item2.Pidl), False)) _
+                                            OrElse (i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
+                                                AndAlso If(i.FullPath?.Equals(e.Item2.FullPath), False)))
+                                    If Not replacement Is Nothing AndAlso TypeOf replacement Is Folder Then
+                                        ' new folder matching the current folder was found -- load it
+                                        CType(replacement, Folder).GetItems()
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                CType(replacement, Folder).LastScrollOffset = CType(selectedItem, Folder).LastScrollOffset
+                                                CType(replacement, Folder).LastScrollSize = CType(selectedItem, Folder).LastScrollSize
+                                                Me.Folder = replacement
+                                            End Sub)
+                                    Else
+                                        ' the current folder disappeared -- switch to parent
+                                        UIHelper.OnUIThread(
+                                            Sub()
+                                                Me.Folder = f
+                                            End Sub)
+                                    End If
+                                End If
+                            End Sub)
+                    End If
+                Case SHCNE.DELETE, SHCNE.RMDIR, SHCNE.DRIVEREMOVED
+                    ' this sets the current folder to the first available parent 
+                    ' when the current folder gets deleted
+                    Dim selectedItem As Item = Nothing
+                    If selectedItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                selectedItem = Me.Folder
+                            End Sub)
+                    End If
+                    ' if the current folder was deleted...
+                    If Not selectedItem Is Nothing _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
+                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                ' get the first available parent  
+                                Dim f As Folder = selectedItem.LogicalParent
+                                If Not f Is Nothing Then
+                                    Me.Folder = f ' load it
+                                End If
+                            End Sub)
+                    End If
             End Select
         End Sub
 
         Private Function GetParentOfSelectionBefore(folder As Item, Optional selectedItem As Folder = Nothing) As Folder
+            ' get current folder
             If selectedItem Is Nothing Then
                 UIHelper.OnUIThread(
                     Sub()
@@ -89,12 +176,16 @@ Namespace Controls
                     End Sub)
             End If
             If selectedItem Is Nothing Then
+                ' no current folder -- give up
                 Return Nothing
             ElseIf selectedItem?.Pidl?.Equals(folder.Pidl) OrElse selectedItem.FullPath?.Equals(folder.FullPath) Then
+                ' we found the current folder -- switch to it's parent
                 Return selectedItem.LogicalParent
             ElseIf Not selectedItem?.LogicalParent Is Nothing Then
+                ' keep moving up until we find the current folder
                 Return Me.GetParentOfSelectionBefore(folder, selectedItem.LogicalParent)
             Else
+                ' we're out of options
                 Return Nothing
             End If
         End Function
@@ -104,18 +195,7 @@ Namespace Controls
 
             Me.PART_Grid = Me.Template.FindName("PART_Grid", Me)
 
-            _views = New Dictionary(Of String, Control)()
-            For Each view In Shell.FolderViews
-                Me.ActiveView = Activator.CreateInstance(Shell.FolderViews(view.Key).Item2)
-                Me.ActiveView.Host = Me
-                Me.ActiveView.SearchBox = Me.SearchBox
-                Me.ActiveView.Navigation = Me.Navigation
-                Me.ActiveView.Visibility = Visibility.Hidden
-                _views.Add(view.Key, Me.ActiveView)
-                If Not Me.PART_Grid Is Nothing Then
-                    Me.PART_Grid.Children.Add(Me.ActiveView)
-                End If
-            Next
+            _views = New Dictionary(Of Guid, Control)()
         End Sub
 
         Public Sub DoRename(item As Item)
@@ -250,10 +330,10 @@ Namespace Controls
             If Not e.NewValue Is Nothing Then
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
                 Dim folderViewState As FolderViewState = FolderViewState.FromFolder(CType(e.NewValue, Folder))
-                If String.IsNullOrWhiteSpace(CType(e.NewValue, Folder).View) Then
-                    CType(e.NewValue, Folder).View = folderViewState.View
+                If Not CType(e.NewValue, Folder).ActiveView.HasValue Then
+                    CType(e.NewValue, Folder).ActiveView = folderViewState.ActiveView
                 End If
-                fv.changeView(CType(e.NewValue, Folder).View, e.NewValue)
+                fv.changeView(CType(e.NewValue, Folder).ActiveView, e.NewValue)
                 AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
                 AddHandler CType(e.NewValue, Folder).Items.CollectionChanged, AddressOf fv.folder_Items_CollectionChanged
             End If
@@ -269,12 +349,12 @@ Namespace Controls
 
         Private Sub folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName
-                Case "View"
-                    changeView(Me.Folder.View, Me.Folder)
+                Case "ActiveView"
+                    changeView(Me.Folder.ActiveView, Me.Folder)
             End Select
         End Sub
 
-        Private Sub changeView(newValue As String, folder As Folder)
+        Private Sub changeView(newValue As Guid, folder As Folder)
             If Not _views Is Nothing Then
                 Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
                 Dim hasFocus As Boolean = Me.IsKeyboardFocusWithin
@@ -286,17 +366,29 @@ Namespace Controls
                 For Each v In _views.Values
                     v.SetValue(Panel.ZIndexProperty, 0)
                 Next
+                If Not _views.ContainsKey(newValue) Then
+                    Me.ActiveView = Activator.CreateInstance(folder.Views.First(Function(v) v.Guid = newValue).Type)
+                    Me.ActiveView.Host = Me
+                    Me.ActiveView.SearchBox = Me.SearchBox
+                    Me.ActiveView.Navigation = Me.Navigation
+                    Me.ActiveView.Visibility = Visibility.Hidden
+                    _views.Add(newValue, Me.ActiveView)
+                    If Not Me.PART_Grid Is Nothing Then
+                        Me.PART_Grid.Children.Add(Me.ActiveView)
+                    End If
+                End If
                 Me.ActiveView = _views(newValue)
                 Me.ActiveView.Visibility = Visibility.Visible
                 Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
                 If hasFocus Then Me.ActiveView.Focus()
                 Me.ActiveView.Folder = folder
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
-                folderViewState.View = newValue
+                folderViewState.ActiveView = newValue
                 folderViewState.Persist()
                 BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
                 BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty, New Binding("IsSelecting") With {.Source = Me})
                 Me.SelectedItems = selectedItems
+                Me.RaiseEvent(New RoutedEventArgs(ViewActivatedEvent))
             End If
         End Sub
 

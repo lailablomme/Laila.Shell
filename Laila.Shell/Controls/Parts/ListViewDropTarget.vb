@@ -58,7 +58,7 @@ Namespace Controls.Parts
             Debug.WriteLine("DragLeave")
             If Not _files Is Nothing Then
                 For Each f In _files
-                    f.LogicalParent.Dispose()
+                    f.LogicalParent?.Dispose()
                     f.Dispose()
                 Next
             End If
@@ -158,7 +158,7 @@ Namespace Controls.Parts
 
             If Not _files Is Nothing Then
                 For Each f In _files
-                    f.LogicalParent.Dispose()
+                    f.LogicalParent?.Dispose()
                     f.Dispose()
                 Next
             End If
@@ -308,11 +308,11 @@ Namespace Controls.Parts
                                     Dim shellFolder As IShellFolder = Nothing
                                     Try
                                         If Not overItem.Parent Is Nothing Then
-                                            shellFolder = overItem.Parent.GetShellFolderOnCurrentThread()
+                                            shellFolder = overItem.Parent.MakeIShellFolderOnCurrentThread()
                                             shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                                         Else
                                             ' desktop
-                                            shellFolder = Shell.Desktop.GetShellFolderOnCurrentThread()
+                                            shellFolder = Shell.Desktop.MakeIShellFolderOnCurrentThread()
                                             shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {overItem.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                                         End If
                                     Finally
@@ -344,6 +344,7 @@ Namespace Controls.Parts
                             Debug.WriteLine("No dropTarget")
                             _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
                             pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                            WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, "", "")
                             If Not _lastDropTarget Is Nothing Then
                                 Try
                                     Debug.WriteLine("   Got _lastDropTarget")
@@ -394,6 +395,7 @@ Namespace Controls.Parts
                     Else
                         _folderView.ActiveView.SetSelectedItemsSoft(_prevSelectedItems)
                         pdwEffect = DROPEFFECT.DROPEFFECT_NONE
+                        WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, "", "")
                         _folderView.ActiveView.DragViewStrategy?.SetDragInsertIndicator(Nothing, Nothing, Visibility.Collapsed, -1)
                     End If
 
@@ -432,6 +434,8 @@ Namespace Controls.Parts
                 WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Create shortcut in %1", overItem.DisplayName)
             ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_OPEN AndAlso Not overItem Is Nothing Then
                 WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_COPY, "Open with %1", If(overItem.PropertiesByCanonicalName("System.FileDescription")?.Text, overItem.DisplayName))
+            Else
+                WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_INVALID, "", "")
             End If
         End Sub
     End Class

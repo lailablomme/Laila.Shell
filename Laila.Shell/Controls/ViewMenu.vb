@@ -22,19 +22,19 @@ Namespace Controls
         End Sub
 
         Public Sub AddItems(menu As ItemCollection)
-            For Each item In Shell.FolderViews
+            For Each item In Me.Folder.Views
                 Dim viewSubMenuItem As MenuItem = New MenuItem() With {
-                    .Header = item.Key,
-                    .Icon = New Image() With {.Source = New BitmapImage(New Uri(item.Value.Item1, UriKind.Absolute))},
-                    .Tag = "View:" & item.Key,
+                    .Header = item.Title,
+                    .Icon = New Image() With {.Source = New BitmapImage(item.IconUri)},
+                    .Tag = "View:" & item.Guid.ToString(),
                     .IsCheckable = True,
-                    .IsChecked = item.Key = Me.Folder.View
+                    .IsChecked = item.Guid = Me.Folder.ActiveView
                 }
                 AddHandler viewSubMenuItem.Checked,
                     Sub(s2 As Object, e2 As EventArgs)
                         If Not _isCheckingInternally Then
                             Using Shell.OverrideCursor(Cursors.Wait)
-                                Me.Folder.View = item.Key
+                                Me.Folder.ActiveView = item.Guid
                             End Using
                         End If
                     End Sub

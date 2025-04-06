@@ -14,6 +14,14 @@ Class MainWindow
         InitializeComponent()
 
         ' Add any initialization after the InitializeComponent() call.
+        AddHandler Me.PreviewKeyUp,
+            Sub(s As Object, e As KeyEventArgs)
+                focusTextBlock.Text = Keyboard.FocusedElement.ToString() & " " & If(TypeOf Keyboard.FocusedElement Is FrameworkElement, CType(Keyboard.FocusedElement, FrameworkElement).Name, "")
+            End Sub
+        AddHandler Me.PreviewKeyDown,
+            Sub(s As Object, e As KeyEventArgs)
+                focusTextBlock.Text = Keyboard.FocusedElement.ToString() & " " & If(TypeOf Keyboard.FocusedElement Is FrameworkElement, CType(Keyboard.FocusedElement, FrameworkElement).Name, "")
+            End Sub
     End Sub
 
     Public Overrides Sub OnLoadPosition()

@@ -25,6 +25,15 @@ Namespace Helpers
             End If
         End Function
 
+        Public Shared Function IsAncestor(ancestor As DependencyObject, child As DependencyObject) As Boolean
+            Dim current As DependencyObject = child
+            While current IsNot Nothing
+                If current Is ancestor Then Return True
+                current = VisualTreeHelper.GetParent(current)
+            End While
+            Return False
+        End Function
+
         Public Shared Sub OnUIThread(action As Action, Optional priority As DispatcherPriority = DispatcherPriority.Normal, Optional doForceInvoke As Boolean = False)
             Dim appl As System.Windows.Application = System.Windows.Application.Current
             If Not appl Is Nothing Then

@@ -11,14 +11,14 @@ Namespace Helpers
         Private Shared _cache As Dictionary(Of String, FolderViewState) = New Dictionary(Of String, FolderViewState)()
 
         Public Property ViewName As String
-        Public Property View As String
+        Public Property ActiveView As Guid?
 
         Public Sub New()
 
         End Sub
 
         Public Sub New(folder As Folder)
-            Me.View = If(folder?.View, "Details")
+            Me.ActiveView = If(folder?.ActiveView, folder.DefaultView)
             Me.SortPropertyName = If(folder?.ItemsSortPropertyName, "ItemNameDisplaySortValue")
             Me.SortDirection = If(folder?.ItemsSortDirection, ListSortDirection.Ascending)
             Me.GroupByPropertyName = If(folder?.ItemsGroupByPropertyName, Nothing)
@@ -42,7 +42,8 @@ Namespace Helpers
                         Dim s As XmlSerializer = New XmlSerializer(GetType(FolderViewState))
                         Try
                             result = s.Deserialize(stream)
-                            If String.IsNullOrWhiteSpace(result.View) Then result.View = "Details"
+                            If Not result.ActiveView.HasValue Then result.ActiveView = folder.DefaultView
+                            If Not folder.Views.Exists(Function(v) v.Guid.Equals(result.ActiveView)) Then result.ActiveView = folder.DefaultView
                         Catch ex As Exception
                         End Try
                     End Using
@@ -70,7 +71,7 @@ Namespace Helpers
         End Sub
 
         Private Shared Function getMD5Hash(input As String) As String
-            Using md5 As MD5 = MD5.Create()
+            Using md5 As MD5 = md5.Create()
                 ' Convert the input string to a byte array and compute the hash
                 Dim inputBytes As Byte() = Encoding.UTF8.GetBytes(input)
                 Dim hashBytes As Byte() = md5.ComputeHash(inputBytes)

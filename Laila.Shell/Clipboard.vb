@@ -86,11 +86,11 @@ Public Class Clipboard
                     Dim dropTarget As IDropTarget = Nothing, shellFolder As IShellFolder = Nothing
                     Try
                         If Not folder.Parent Is Nothing Then
-                            shellFolder = folder.Parent.GetShellFolderOnCurrentThread()
+                            shellFolder = folder.Parent.MakeIShellFolderOnCurrentThread()
                             shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.RelativePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                         Else
                             ' desktop
-                            shellFolder = Shell.Desktop.GetShellFolderOnCurrentThread()
+                            shellFolder = Shell.Desktop.MakeIShellFolderOnCurrentThread()
                             shellFolder.GetUIObjectOf(IntPtr.Zero, 1, {folder.Pidl.AbsolutePIDL}, GetType(IDropTarget).GUID, 0, dropTarget)
                         End If
 

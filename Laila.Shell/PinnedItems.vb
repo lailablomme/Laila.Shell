@@ -31,7 +31,7 @@ Public Class PinnedItems
                     Try
                         pidl = New Pidl(pinnedItem.Pidl)
                         Dim i As Item = Item.FromPidl(pidl, Nothing)
-                        If Not i Is Nothing Then
+                        If Not i Is Nothing AndAlso i.IsExisting Then
                             i.CanShowInTree = True
                             i.IsPinned = True
                             existingPinnedItems.Add(i)
