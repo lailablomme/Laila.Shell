@@ -1521,29 +1521,32 @@ Public Class Item
                         OrElse ((e.Item1?.Pidl Is Nothing OrElse Me.Pidl Is Nothing) AndAlso Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
+                                Dim newShellItem As IShellItem2 = Nothing
+                                Dim newPidl As Pidl = Nothing
+                                Dim newFullPath As String = Nothing
                                 SyncLock e.Item2._shellItemLock
                                     SyncLock e.Item2._shellItemLock2
                                         If Not e.Item2.disposedValue Then
-                                            Dim newShellItem As IShellItem2 = e.Item2.ShellItem2
-                                            Dim newPidl As Pidl = e.Item2.Pidl?.Clone()
-                                            Dim newFullPath As String = e.Item2.FullPath
+                                            newShellItem = e.Item2.ShellItem2
+                                            newPidl = e.Item2.Pidl?.Clone()
+                                            newFullPath = e.Item2.FullPath
                                             ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
                                             e.Item2._shellItem2 = Nothing
                                             e.Item2.Dispose()
-
-                                            Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
-                                            Me.Refresh(newShellItem, newPidl, newFullPath) ' refresh this item
-                                            If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
-                                                ' rename pinned and frequent items with the same pidl
-                                                PinnedItems.RenameItem(oldPidl, Me.Pidl)
-                                                FrequentFolders.RenameItem(oldPidl, Me.Pidl)
-                                            End If
-                                            If Not oldPidl Is Nothing Then
-                                                oldPidl.Dispose() ' dispose of old pidl
-                                            End If
                                         End If
                                     End SyncLock
                                 End SyncLock
+
+                                Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
+                                Me.Refresh(newShellItem, newPidl, newFullPath) ' refresh this item
+                                If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                                    ' rename pinned and frequent items with the same pidl
+                                    PinnedItems.RenameItem(oldPidl, Me.Pidl)
+                                    FrequentFolders.RenameItem(oldPidl, Me.Pidl)
+                                End If
+                                If Not oldPidl Is Nothing Then
+                                    oldPidl.Dispose() ' dispose of old pidl
+                                End If
                             End Sub)
                     End If
             End Select

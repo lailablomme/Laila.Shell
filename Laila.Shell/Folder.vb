@@ -992,28 +992,20 @@ Public Class Folder
                                             item.Item1._propertiesByKey.Add([property].Key, [property].Value)
                                         Next
 
+                                        Dim newShellItem As IShellItem2 = Nothing
                                         If Not item.Item2 Is Nothing Then
-                                            Dim isRefreshed As Boolean
                                             SyncLock item.Item2._shellItemLock
                                                 SyncLock item.Item2._shellItemLock2
                                                     If Not item.Item2.disposedValue Then
-                                                        Dim newShellItem As IShellItem2 = item.Item2.ShellItem2
+                                                        newShellItem = item.Item2.ShellItem2
                                                         ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
                                                         item.Item2._shellItem2 = Nothing
                                                         item.Item2.Dispose()
-
-                                                        item.Item1.Refresh(newShellItem)
-                                                        isRefreshed = True
                                                     End If
                                                 End SyncLock
                                             End SyncLock
-
-                                            If Not isRefreshed Then
-                                                item.Item1.Refresh()
-                                            End If
-                                        Else
-                                            item.Item1.Refresh()
                                         End If
+                                        item.Item1.Refresh(newShellItem)
 
                                         '' preload sort property
                                         'If isSortPropertyByText Then
@@ -1469,18 +1461,21 @@ Public Class Folder
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         Dim existingFolder As Folder = existing
+                                        Dim newShellItem As IShellItem2 = Nothing
+                                        Dim newPidl As Pidl = Nothing
+                                        Dim newFullPath As String = Nothing
                                         SyncLock e.Item1._shellItemLock
                                             SyncLock e.Item1._shellItemLock2
                                                 If Not e.Item1.disposedValue Then
-                                                    Dim newShellItem As IShellItem2 = e.Item1.ShellItem2
-                                                    Dim newPidl As Pidl = e.Item1.Pidl?.Clone()
-                                                    Dim newFullPath As String = e.Item1.FullPath
-                                                    existingFolder.Refresh(newShellItem, newPidl, newFullPath)
+                                                    newShellItem = e.Item1.ShellItem2
+                                                    newPidl = e.Item1.Pidl?.Clone()
+                                                    newFullPath = e.Item1.FullPath
                                                     e.Item1._shellItem2 = Nothing
                                                     e.Item1.Dispose()
                                                 End If
                                             End SyncLock
                                         End SyncLock
+                                        existingFolder.Refresh(newShellItem, newPidl, newFullPath)
                                         existingFolder._isEnumerated = False
                                         existingFolder._isEnumeratedForTree = False
                                         Dim __ = existingFolder.GetItemsAsync(True, True)
