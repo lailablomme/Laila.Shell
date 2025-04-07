@@ -14,15 +14,15 @@ Namespace Helpers
         Public Sub UpdateRange(itemsToAdd As IEnumerable(Of T), itemsToRemove As IEnumerable(Of T))
             Me.CheckReentrancy()
 
-            If Not itemsToAdd Is Nothing Then
-                For Each i In itemsToAdd
-                    Me.Items.Add(i)
-                Next
-            End If
-
             If Not itemsToRemove Is Nothing Then
                 For Each i In itemsToRemove
                     Me.Items.Remove(i)
+                Next
+            End If
+
+            If Not itemsToAdd Is Nothing Then
+                For Each i In itemsToAdd
+                    Me.Items.Add(i)
                 Next
             End If
 
