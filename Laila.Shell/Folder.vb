@@ -648,7 +648,7 @@ Public Class Folder
         Get
             Return Shell.GlobalThreadPool.Run(
                 Function() As Boolean
-                    If _hasSubFolders.HasValue Then
+                    If _hasSubFolders.HasValue AndAlso (_isEnumerated OrElse _hasSubFolders.Value) Then
                         Return _hasSubFolders.Value
                     ElseIf Not disposedValue Then
                         Dim attr As SFGAO = SFGAO.HASSUBFOLDER
@@ -993,11 +993,24 @@ Public Class Folder
                                         Next
 
                                         If Not item.Item2 Is Nothing Then
-                                            item.Item1.Refresh(item.Item2.ShellItem2)
+                                            Dim isRefreshed As Boolean
                                             SyncLock item.Item2._shellItemLock
-                                                item.Item2._shellItem2 = Nothing
+                                                SyncLock item.Item2._shellItemLock2
+                                                    If Not item.Item2.disposedValue Then
+                                                        Dim newShellItem As IShellItem2 = item.Item2.ShellItem2
+                                                        ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
+                                                        item.Item2._shellItem2 = Nothing
+                                                        item.Item2.Dispose()
+
+                                                        item.Item1.Refresh(newShellItem)
+                                                        isRefreshed = True
+                                                    End If
+                                                End SyncLock
                                             End SyncLock
-                                            item.Item2._parent = Nothing
+
+                                            If Not isRefreshed Then
+                                                item.Item1.Refresh()
+                                            End If
                                         Else
                                             item.Item1.Refresh()
                                         End If
@@ -1402,11 +1415,8 @@ Public Class Folder
 
     Friend Overridable Sub OnItemsChanged()
         Me.IsEmpty = _items.Count = 0
-        UIHelper.OnUIThread(
-            Sub()
-                ' set and update HasSubFolders property
-                Me.HasSubFolders = Not Me.Items.ToList().FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
-            End Sub)
+        ' set and update HasSubFolders property
+        Me.HasSubFolders = Not Me.Items.ToList().FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
     End Sub
 
     Protected Friend Overrides Sub ProcessNotification(e As NotificationEventArgs)
@@ -1459,8 +1469,18 @@ Public Class Folder
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         Dim existingFolder As Folder = existing
-                                        existingFolder.Refresh(e.Item1?.ShellItem2, e.Item1?.Pidl?.Clone(), e.Item1?.FullPath)
-                                        e.Item1._shellItem2 = Nothing
+                                        SyncLock e.Item1._shellItemLock
+                                            SyncLock e.Item1._shellItemLock2
+                                                If Not e.Item1.disposedValue Then
+                                                    Dim newShellItem As IShellItem2 = e.Item1.ShellItem2
+                                                    Dim newPidl As Pidl = e.Item1.Pidl?.Clone()
+                                                    Dim newFullPath As String = e.Item1.FullPath
+                                                    existingFolder.Refresh(newShellItem, newPidl, newFullPath)
+                                                    e.Item1._shellItem2 = Nothing
+                                                    e.Item1.Dispose()
+                                                End If
+                                            End SyncLock
+                                        End SyncLock
                                         existingFolder._isEnumerated = False
                                         existingFolder._isEnumeratedForTree = False
                                         Dim __ = existingFolder.GetItemsAsync(True, True)
