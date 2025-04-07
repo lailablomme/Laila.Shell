@@ -3,7 +3,7 @@ Supercharge your Windows applications with this powerful open-source library of 
 <ins>**Disclaimer:** This is alpha-level software.</ins>  
 While it is pretty stable already and I'm using it in professional projects myself, this is still a work in progress.
 
-![Schermafbeelding 2025-01-01 053759](https://github.com/user-attachments/assets/bc7bc7aa-9921-4e50-86e1-cf6cbaeee3ec)
+![Schermafbeelding 2025-01-01 053759](https://raw.githubusercontent.com/lailablomme/Laila.Shell/main/Screenshot_2025-01-01_053759.png)
 
 ## Do you like my work?
 💞️ Please donate to [Wakiso Dance Kids](https://gofund.me/ec6c7948).
