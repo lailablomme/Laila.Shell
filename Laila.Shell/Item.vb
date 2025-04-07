@@ -467,49 +467,49 @@ Public Class Item
                 Else
                     Me.Dispose()
                 End If
+            End If
 
-                Me.NotifyOfPropertyChange("DisplayName")
-                If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
-                    Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
-                End If
-                If doRefreshImage Then
-                    Me.NotifyOfPropertyChange("OverlayImageAsync")
-                    Me.NotifyOfPropertyChange("IconAsync")
-                    Me.NotifyOfPropertyChange("ImageAsync")
-                    Me.NotifyOfPropertyChange("HasThumbnailAsync")
-                    Me.NotifyOfPropertyChange("IsImage")
-                End If
-                Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
-                Me.NotifyOfPropertyChange("IsHidden")
-                Me.NotifyOfPropertyChange("IsCompressed")
-                Me.NotifyOfPropertyChange("IsEncrypted")
-                Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
-                Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIcon")
-                Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
-                Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
-                Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
-                Me.NotifyOfPropertyChange("ContentViewModeProperties")
-                Me.NotifyOfPropertyChange("TileViewProperties")
-                If Not oldPropertiesByKey Is Nothing Then
-                    For Each prop In oldPropertiesByKey
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].GroupByText", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIconAsync", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
-                    Next
-                End If
-                If Not oldPropertiesByCanonicalName Is Nothing Then
-                    For Each prop In oldPropertiesByCanonicalName
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].GroupByText", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIconAsync", prop.Key))
-                        Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
-                    Next
-                End If
+            Me.NotifyOfPropertyChange("DisplayName")
+            If Me.ItemNameDisplaySortValue <> oldItemNameDisplaySortValue Then
+                Me.NotifyOfPropertyChange("ItemNameDisplaySortValue")
+            End If
+            If doRefreshImage Then
+                Me.NotifyOfPropertyChange("OverlayImageAsync")
+                Me.NotifyOfPropertyChange("IconAsync")
+                Me.NotifyOfPropertyChange("ImageAsync")
+                Me.NotifyOfPropertyChange("HasThumbnailAsync")
+                Me.NotifyOfPropertyChange("IsImage")
+            End If
+            Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
+            Me.NotifyOfPropertyChange("IsHidden")
+            Me.NotifyOfPropertyChange("IsCompressed")
+            Me.NotifyOfPropertyChange("IsEncrypted")
+            Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
+            Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIcon")
+            Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
+            Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
+            Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
+            Me.NotifyOfPropertyChange("ContentViewModeProperties")
+            Me.NotifyOfPropertyChange("TileViewProperties")
+            If Not oldPropertiesByKey Is Nothing Then
+                For Each prop In oldPropertiesByKey
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].GroupByText", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIconAsync", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
+                Next
+            End If
+            If Not oldPropertiesByCanonicalName Is Nothing Then
+                For Each prop In oldPropertiesByCanonicalName
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].GroupByText", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIconAsync", prop.Key))
+                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
+                Next
             End If
 
             RaiseEvent Refreshed(Me, New EventArgs())
