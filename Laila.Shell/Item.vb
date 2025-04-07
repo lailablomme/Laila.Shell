@@ -341,6 +341,7 @@ Public Class Item
         Dim oldAttr As SFGAO = _attributes
         Dim oldFullPath As String = Nothing
         Dim oldPidl As Pidl = Nothing
+        Dim oldPidlAsString As String = Nothing
 
         SyncLock _shellItemLock
             SyncLock _shellItemLock2
@@ -349,6 +350,7 @@ Public Class Item
 
                     oldFullPath = _fullPath
                     oldPidl = _pidl
+                    oldPidlAsString = oldPidl?.ToString()
 
                     If Not newPidl Is Nothing Then
                         _pidl = newPidl
@@ -403,8 +405,6 @@ Public Class Item
                         '            AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
                         '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
                         'End If
-                    Else
-                        Me.Dispose()
                     End If
                 Else
                     Debug.WriteLine(Me.FullPath & "  " & disposedValue)
@@ -415,8 +415,8 @@ Public Class Item
         UIHelper.OnUIThread(
             Sub()
                 If Not _logicalParent Is Nothing Then
-                    If Not oldPidl Is Nothing AndAlso _logicalParent._previousFullPaths.Contains(oldPidl.ToString()) Then
-                        _logicalParent._previousFullPaths.Remove(oldPidl.ToString())
+                    If Not oldPidlAsString Is Nothing AndAlso _logicalParent._previousFullPaths.Contains(oldPidlAsString) Then
+                        _logicalParent._previousFullPaths.Remove(oldPidlAsString)
                         If Not disposedValue AndAlso Not _shellItem2 Is Nothing AndAlso Not _logicalParent._previousFullPaths.Contains(Me.Pidl.ToString()) Then
                             _logicalParent._previousFullPaths.Add(Me.Pidl.ToString())
                         End If
@@ -432,6 +432,10 @@ Public Class Item
         If Not oldPidl Is Nothing AndAlso Not newPidl Is Nothing Then
             oldPidl.Dispose()
             oldPidl = Nothing
+        End If
+
+        If _shellItem2 Is Nothing Then
+            Me.Dispose()
         End If
 
         If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
