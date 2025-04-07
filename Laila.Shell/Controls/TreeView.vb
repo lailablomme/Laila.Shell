@@ -819,6 +819,8 @@ Namespace Controls
                     For Each item In e.NewItems
                         If TypeOf item Is Folder Then
                             Dim folder As Folder = item
+                            RemoveHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
+                            RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             AddHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             AddHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             UIHelper.OnUIThreadAsync(
@@ -929,7 +931,18 @@ Namespace Controls
                                 AddHandler CType(item, Folder)._items.CollectionChanged, AddressOf folder_CollectionChanged
                             End If
                         Next
-                        Me.Items.UpdateRange(itemsToAdd, itemsToRemove)
+                        ' do this as flicker-free as possible
+                        If itemsToAdd.Count > 0 AndAlso itemsToRemove.Count > 0 Then
+                            Me.Items.UpdateRange(itemsToAdd, itemsToRemove)
+                        ElseIf itemsToRemove.Count > 0 Then
+                            For Each item In itemsToRemove
+                                Me.Items.Remove(item)
+                            Next
+                        ElseIf itemsToAdd.Count > 0 Then
+                            For Each item In itemsToAdd
+                                Me.Items.Add(item)
+                            Next
+                        End If
                         If Not selectedItem Is Nothing Then
                             Me.SetSelectedItem(selectedItem)
                         End If

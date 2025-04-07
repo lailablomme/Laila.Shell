@@ -710,14 +710,16 @@ Public Class Shell
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.DELETE
-                                _itemsCacheLock.Wait()
+                                Dim i As Item = Nothing
+                                _fileSystemCacheLock.Wait()
                                 Try
                                     If _fileSystemCache.ContainsKey(e.FullPath) Then
-                                        e2.Item1 = _fileSystemCache(e.FullPath)
+                                        i = _fileSystemCache(e.FullPath)
                                     End If
                                 Finally
-                                    _itemsCacheLock.Release()
+                                    _fileSystemCacheLock.Release()
                                 End Try
+                                e2.Item1 = i?.Clone()
                                 If e2.Item1 Is Nothing Then
                                     e2.Item1 = New Item(e.FullPath)
                                 End If
@@ -731,24 +733,22 @@ Public Class Shell
                                 ' make eventargs
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.RENAMEITEM
-                                _itemsCacheLock.Wait()
+                                Dim i As Item = Nothing
+                                _fileSystemCacheLock.Wait()
                                 Try
                                     If _fileSystemCache.ContainsKey(e.OldFullPath) Then
-                                        e2.Item1 = _fileSystemCache(e.OldFullPath)
+                                        i = _fileSystemCache(e.OldFullPath)
                                     End If
                                 Finally
-                                    _itemsCacheLock.Release()
+                                    _fileSystemCacheLock.Release()
                                 End Try
+                                e2.Item1 = i?.Clone()
+                                If e2.Item1 Is Nothing Then
+                                    e2.Item1 = New Item(e.OldFullPath)
+                                End If
                                 e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                                 If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
-                                'If e2.Item2 Is Nothing Then
-                                '    SyncLock _itemsCacheLock
-                                '        If _fileSystemCache.ContainsKey(e.FullPath) Then
-                                '            e2.Item2 = _fileSystemCache(e.FullPath)
-                                '        End If
-                                '    End SyncLock
-                                'End If
-                                If e2.Item2 Is Nothing Then
+                                If e2.Item1 Is Nothing Then
                                     e2.Item2 = New Item(e.FullPath)
                                 End If
                                 fswNotify(e2)
