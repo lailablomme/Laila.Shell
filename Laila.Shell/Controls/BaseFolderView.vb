@@ -466,7 +466,7 @@ Namespace Controls
         End Sub
 
         Protected Overridable Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
-            If TypeOf e.OriginalSource Is ListBoxItem AndAlso Me.Folder?.Items?.Contains(CType(e.OriginalSource, ListBoxItem).DataContext) Then
+            If TypeOf e.OriginalSource Is ListBoxItem AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
                 Dim item As ListBoxItem = e.OriginalSource
                 If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
                     Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)

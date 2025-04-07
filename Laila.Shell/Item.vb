@@ -353,11 +353,11 @@ Public Class Item
                     If Not newPidl Is Nothing Then
                         _pidl = newPidl
                     End If
-                    If Not newFullPath Is Nothing Then
-                        _fullPath = newFullPath
-                    Else
-                        _fullPath = Nothing
-                    End If
+                    'If Not newFullPath Is Nothing Then
+                    '    _fullPath = newFullPath
+                    'Else
+                    _fullPath = Nothing
+                    'End If
 
                     Dim oldShellItem As IShellItem2 = _shellItem2
                     If newShellItem Is Nothing Then
@@ -396,11 +396,6 @@ Public Class Item
                         _attributes = 0
                         _attributes = Me.Attributes
 
-                        If Not oldPidl Is Nothing AndAlso Not newPidl Is Nothing Then
-                            oldPidl.Dispose()
-                            oldPidl = Nothing
-                        End If
-
                         ' preload System_StorageProviderUIStatus images
                         'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
                         '    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
@@ -434,6 +429,11 @@ Public Class Item
                 End If
             End Sub)
 
+        If Not oldPidl Is Nothing AndAlso Not newPidl Is Nothing Then
+            oldPidl.Dispose()
+            oldPidl = Nothing
+        End If
+
         If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
             Shell.UpdateFileSystemCache(oldFullPath, Me)
 
@@ -453,7 +453,7 @@ Public Class Item
                     UIHelper.OnUIThread(
                     Sub()
                         Dim existing As Item = lp._items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                            AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
+                            AndAlso (Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
                                 OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
                         If existing Is Nothing Then
                             Dim c As IComparer = New Helpers.ItemComparer(lp.ItemsGroupByPropertyName, lp.ItemsSortPropertyName, lp.ItemsSortDirection)
@@ -1495,7 +1495,7 @@ Public Class Item
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR ' general update
-                    If Me.Pidl?.Equals(e.Item1?.Pidl) Then ' if this is us...
+                    If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower()) Then ' if this is us...
                         Shell.GlobalThreadPool.Run(
                             Sub()
                                 Me.Refresh() ' refresh
@@ -1521,20 +1521,29 @@ Public Class Item
                         OrElse ((e.Item1?.Pidl Is Nothing OrElse Me.Pidl Is Nothing) AndAlso Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
-                                Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
-                                Me.Refresh(e.Item2?.ShellItem2, e.Item2?.Pidl?.Clone(), e.Item2?.FullPath) ' refresh this item
-                                If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
-                                    ' rename pinned and frequent items with the same pidl
-                                    PinnedItems.RenameItem(oldPidl, Me.Pidl)
-                                    FrequentFolders.RenameItem(oldPidl, Me.Pidl)
-                                End If
-                                If Not oldPidl Is Nothing Then
-                                    oldPidl.Dispose() ' dispose of old pidl
-                                End If
-                                If Not e.Item2 Is Nothing Then
-                                    ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
-                                    e.Item2._shellItem2 = Nothing
-                                End If
+                                SyncLock e.Item2._shellItemLock
+                                    SyncLock e.Item2._shellItemLock2
+                                        If Not e.Item2.disposedValue Then
+                                            Dim newShellItem As IShellItem2 = e.Item2.ShellItem2
+                                            Dim newPidl As Pidl = e.Item2.Pidl?.Clone()
+                                            Dim newFullPath As String = e.Item2.FullPath
+                                            ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
+                                            e.Item2._shellItem2 = Nothing
+                                            e.Item2.Dispose()
+
+                                            Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
+                                            Me.Refresh(newShellItem, newPidl, newFullPath) ' refresh this item
+                                            If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
+                                                ' rename pinned and frequent items with the same pidl
+                                                PinnedItems.RenameItem(oldPidl, Me.Pidl)
+                                                FrequentFolders.RenameItem(oldPidl, Me.Pidl)
+                                            End If
+                                            If Not oldPidl Is Nothing Then
+                                                oldPidl.Dispose() ' dispose of old pidl
+                                            End If
+                                        End If
+                                    End SyncLock
+                                End SyncLock
                             End Sub)
                     End If
             End Select

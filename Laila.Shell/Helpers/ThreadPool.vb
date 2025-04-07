@@ -107,7 +107,7 @@ Namespace Helpers
         End Sub
 
         Public Sub Add(action As Action, Optional threadId As Integer? = Nothing)
-            If Not threadId.HasValue Then
+            If Not threadId.HasValue OrElse threadId.Value = -1 Then
                 threadId = GetNextFreeThreadId()
             End If
             Me.TaskQueues(threadId).Add(action)

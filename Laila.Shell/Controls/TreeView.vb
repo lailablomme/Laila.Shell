@@ -24,7 +24,7 @@ Namespace Controls
         Implements IDisposable, IProcessNotifications
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
-        Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ItemsCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SectionsProperty As DependencyProperty = DependencyProperty.Register("Sections", GetType(ObservableCollection(Of BaseTreeViewSection)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly RootsProperty As DependencyProperty = DependencyProperty.Register("Roots", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -98,7 +98,7 @@ Namespace Controls
                     End If
                 End Sub
 
-            Me.Items = New ObservableCollection(Of Item)()
+            Me.Items = New ItemsCollection(Of Item)()
 
             Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
             view.Filter = AddressOf filter
@@ -140,6 +140,7 @@ Namespace Controls
             CollectionViewSource.GetDefaultView(Me.Items).Refresh()
         End Sub
 
+        Private _deletedFullName As String
         Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
             If Me.PART_ListBox Is Nothing Then Return
 
@@ -159,6 +160,9 @@ Namespace Controls
                         AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso e.Item2.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
                                 AndAlso (If(e.Item2.FullPath?.Equals(selectedItem.FullPath), False) OrElse If(e.Item2.FullPath?.Equals(selectedItem.FullPath.Split("~")(0)), False)))) Then
+                        If _deletedFullName?.Equals(selectedItem.FullPath) Then
+                            _deletedFullName = Nothing
+                        End If
                         Shell.GlobalThreadPool.Add(
                             Sub()
                                 ' get the first available parent in case the current folder disappears
@@ -198,16 +202,20 @@ Namespace Controls
                             End Sub)
                     End If
                     ' if the current folder was deleted...
-                    If Not selectedItem Is Nothing _
+                    If Not selectedItem Is Nothing AndAlso Not (selectedItem.FullPath.ToLower().Contains(".zip~") AndAlso selectedItem.FullPath.ToLower().EndsWith(".tmp")) _
                         AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
                                 AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                        _deletedFullName = selectedItem.FullPath
                         UIHelper.OnUIThread(
-                            Sub()
+                            Async Sub()
                                 ' get the first available parent  
                                 Dim f As Folder = selectedItem.LogicalParent
                                 If Not f Is Nothing Then
-                                    Me.Folder = f ' load it
+                                    Await Task.Delay(300) ' wait for .zip operations/folder refresh to complete
+                                    If _deletedFullName?.Equals(selectedItem.FullPath) Then
+                                        Me.Folder = f ' load it
+                                    End If
                                 End If
                             End Sub)
                     End If
@@ -840,8 +848,8 @@ Namespace Controls
                                 End Sub)
                         End If
                     Next
-                Case NotifyCollectionChangedAction.Reset
-                    Throw New NotSupportedException()
+                    'Case NotifyCollectionChangedAction.Reset
+                    '    Throw New NotSupportedException()
             End Select
         End Sub
 
@@ -891,22 +899,33 @@ Namespace Controls
                     Dim folder As Folder = Me.Items.FirstOrDefault(Function(i) TypeOf i Is Folder _
                         AndAlso Not CType(i, Folder).Items Is Nothing AndAlso CType(i, Folder).Items.Equals(collection))
                     If Not folder Is Nothing Then
+                        'UIHelper.OnUIThreadAsync(
+                        '    Async Sub()
+                        '        Await Task.Delay(400)
+
                         Dim selectedItem As Item = Nothing
+                        Dim itemsToAdd As List(Of Item) = New List(Of Item)()
+                        Dim itemsToRemove As List(Of Item) = New List(Of Item)()
                         ' refresh folder
                         For Each item In Me.Items.Where(Function(i) i.CanShowInTree _
-                                    AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
+                            AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                             If Me.SelectedItem?.Equals(item) Then selectedItem = item
-                            Me.Items.Remove(item)
+                            itemsToRemove.Add(item)
                         Next
                         For Each item In collection.Where(Function(i) _
                             Not i.disposedValue AndAlso i.IsVisibleInTree).ToList()
-                            Me.Items.Add(item)
-                            If Not selectedItem Is Nothing _
-                                AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not item.Pidl Is Nothing AndAlso If(item.Pidl?.Equals(selectedItem.Pidl), False)) _
-                                    OrElse ((selectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso If(item.FullPath?.Equals(selectedItem.FullPath), False))) Then
-                                Me.SetSelectedItem(item)
+                            itemsToAdd.Add(item)
+                            If Not Me.SelectedItem Is Nothing _
+                                    AndAlso ((Not Me.SelectedItem.Pidl Is Nothing AndAlso Not item.Pidl Is Nothing AndAlso If(item.Pidl?.Equals(Me.SelectedItem.Pidl), False)) _
+                                        OrElse ((Me.SelectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso If(item.FullPath?.Equals(Me.SelectedItem.FullPath), False))) Then
+                                selectedItem = item
                             End If
                         Next
+                        Me.Items.UpdateRange(itemsToAdd, itemsToRemove)
+                        If Not selectedItem Is Nothing Then
+                            Me.SetSelectedItem(selectedItem)
+                        End If
+                        'End Sub)
                     End If
             End Select
         End Sub
@@ -983,11 +1002,11 @@ Namespace Controls
             Dim __ = tv.SetSelectedFolder(e.NewValue)
         End Sub
 
-        Public Property Items As ObservableCollection(Of Item)
+        Public Property Items As ItemsCollection(Of Item)
             Get
                 Return GetValue(ItemsProperty)
             End Get
-            Protected Set(ByVal value As ObservableCollection(Of Item))
+            Protected Set(ByVal value As ItemsCollection(Of Item))
                 SetCurrentValue(ItemsProperty, value)
             End Set
         End Property
