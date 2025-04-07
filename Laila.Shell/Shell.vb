@@ -121,7 +121,7 @@ Public Class Shell
                             End If
 
                             ' don't hog the process
-                            Thread.Sleep(25)
+                            Thread.Sleep(5)
                         Next
                         Thread.Sleep(5000)
                     End While

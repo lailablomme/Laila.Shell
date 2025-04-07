@@ -848,8 +848,6 @@ Namespace Controls
                                 End Sub)
                         End If
                     Next
-                    'Case NotifyCollectionChangedAction.Reset
-                    '    Throw New NotSupportedException()
             End Select
         End Sub
 
@@ -911,6 +909,10 @@ Namespace Controls
                             AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
                             If Me.SelectedItem?.Equals(item) Then selectedItem = item
                             itemsToRemove.Add(item)
+                            If TypeOf item Is Folder Then
+                                RemoveHandler item.PropertyChanged, AddressOf folder_PropertyChanged
+                                RemoveHandler CType(item, Folder)._items.CollectionChanged, AddressOf folder_CollectionChanged
+                            End If
                         Next
                         For Each item In collection.Where(Function(i) _
                             Not i.disposedValue AndAlso i.IsVisibleInTree).ToList()
@@ -919,6 +921,12 @@ Namespace Controls
                                     AndAlso ((Not Me.SelectedItem.Pidl Is Nothing AndAlso Not item.Pidl Is Nothing AndAlso If(item.Pidl?.Equals(Me.SelectedItem.Pidl), False)) _
                                         OrElse ((Me.SelectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso If(item.FullPath?.Equals(Me.SelectedItem.FullPath), False))) Then
                                 selectedItem = item
+                            End If
+                            If TypeOf item Is Folder Then
+                                RemoveHandler item.PropertyChanged, AddressOf folder_PropertyChanged
+                                RemoveHandler CType(item, Folder)._items.CollectionChanged, AddressOf folder_CollectionChanged
+                                AddHandler item.PropertyChanged, AddressOf folder_PropertyChanged
+                                AddHandler CType(item, Folder)._items.CollectionChanged, AddressOf folder_CollectionChanged
                             End If
                         Next
                         Me.Items.UpdateRange(itemsToAdd, itemsToRemove)

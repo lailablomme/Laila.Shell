@@ -1609,6 +1609,7 @@ Public Class Item
                                     _logicalParent = Nothing
                                 End If
                             Else
+                                Dim tempPidl As Pidl = _pidl?.Clone()
                                 UIHelper.OnUIThreadAsync(
                                     Sub()
                                         Dim lp As Folder = _logicalParent
@@ -1617,13 +1618,14 @@ Public Class Item
                                             If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not lp._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
                                                 lp._previousFullPaths.Remove(_fullPath)
                                             End If
-                                            If Not _pidl Is Nothing AndAlso Not lp._items.ToList().Exists(Function(i) If(i.Pidl?.Equals(_pidl), False)) Then
-                                                lp._previousFullPaths.Remove(_pidl.ToString())
+                                            If Not tempPidl Is Nothing AndAlso Not lp._items.ToList().Exists(Function(i) If(i.Pidl?.Equals(tempPidl), False)) Then
+                                                lp._previousFullPaths.Remove(tempPidl?.ToString())
                                             End If
                                             lp._isEnumerated = False
                                             If Me.CanShowInTree Then lp._isEnumeratedForTree = False
                                             lp.OnItemsChanged()
                                             ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
+                                            tempPidl?.Dispose()
                                         End If
                                     End Sub)
                             End If
