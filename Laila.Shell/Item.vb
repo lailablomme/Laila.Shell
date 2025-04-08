@@ -342,6 +342,7 @@ Public Class Item
         Dim oldFullPath As String = Nothing
         Dim oldPidl As Pidl = Nothing
         Dim oldPidlAsString As String = Nothing
+        Dim oldShellItem As IShellItem2 = Nothing
 
         SyncLock _shellItemLock
             SyncLock _shellItemLock2
@@ -361,16 +362,12 @@ Public Class Item
                     _fullPath = Nothing
                     'End If
 
-                    Dim oldShellItem As IShellItem2 = _shellItem2
+                    oldShellItem = _shellItem2
                     If newShellItem Is Nothing Then
                         newShellItem = Me.GetNewShellItem()
                     End If
                     If Not newShellItem Is Nothing Then
                         _shellItem2 = newShellItem
-                        If Not oldShellItem Is Nothing Then
-                            Marshal.ReleaseComObject(oldShellItem)
-                            oldShellItem = Nothing
-                        End If
 
                         _propertiesLock.Wait()
                         Try
@@ -432,6 +429,11 @@ Public Class Item
         If Not oldPidl Is Nothing AndAlso Not newPidl Is Nothing Then
             oldPidl.Dispose()
             oldPidl = Nothing
+        End If
+
+        If Not oldShellItem Is Nothing AndAlso Not newShellItem Is Nothing Then
+            Marshal.ReleaseComObject(oldShellItem)
+            oldShellItem = Nothing
         End If
 
         If _shellItem2 Is Nothing Then
