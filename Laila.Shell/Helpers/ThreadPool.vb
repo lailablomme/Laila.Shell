@@ -85,8 +85,13 @@ Namespace Helpers
                             _nextThreadId = 0
                             If _isThreadFree.All(Function(f) f = False) Then
                                 Thread.Sleep(250)
+                                If System.Windows.Application.Current.Dispatcher.CheckAccess Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                        End Sub, System.Windows.Threading.DispatcherPriority.ContextIdle)
+                                End If
                             End If
-                        End If
+                            End If
                     Loop Until _isThreadFree(_nextThreadId) AndAlso Not _isThreadLocked(_nextThreadId)
                     Return _nextThreadId
                 End SyncLock
