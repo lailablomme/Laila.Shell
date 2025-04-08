@@ -1463,19 +1463,17 @@ Public Class Folder
                                         Dim existingFolder As Folder = existing
                                         Dim newShellItem As IShellItem2 = Nothing
                                         Dim newPidl As Pidl = Nothing
-                                        Dim newFullPath As String = Nothing
                                         SyncLock e.Item1._shellItemLock
                                             SyncLock e.Item1._shellItemLock2
                                                 If Not e.Item1.disposedValue Then
                                                     newShellItem = e.Item1.ShellItem2
                                                     newPidl = e.Item1.Pidl?.Clone()
-                                                    newFullPath = e.Item1.FullPath
                                                     e.Item1._shellItem2 = Nothing
                                                     e.Item1.Dispose()
                                                 End If
                                             End SyncLock
                                         End SyncLock
-                                        existingFolder.Refresh(newShellItem, newPidl, newFullPath)
+                                        existingFolder.Refresh(newShellItem, newPidl)
                                         existingFolder._isEnumerated = False
                                         existingFolder._isEnumeratedForTree = False
                                         Dim __ = existingFolder.GetItemsAsync(True, True)

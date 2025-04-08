@@ -332,7 +332,6 @@ Public Class Item
 
     Public Overridable Sub Refresh(Optional newShellItem As IShellItem2 = Nothing,
                                    Optional newPidl As Pidl = Nothing,
-                                   Optional newFullPath As String = Nothing,
                                    Optional doRefreshImage As Boolean = True)
         Debug.WriteLine($"Refreshing {Me.FullPath}")
         Dim oldPropertiesByKey As Dictionary(Of String, [Property]) = Nothing
@@ -356,11 +355,7 @@ Public Class Item
                     If Not newPidl Is Nothing Then
                         _pidl = newPidl
                     End If
-                    'If Not newFullPath Is Nothing Then
-                    '    _fullPath = newFullPath
-                    'Else
                     _fullPath = Nothing
-                    'End If
 
                     oldShellItem = _shellItem2
                     If newShellItem Is Nothing Then
@@ -377,14 +372,9 @@ Public Class Item
                             _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
                             _contentViewModeProperties = Nothing
                             For Each [property] In oldPropertiesByKey.Values
-                                If Not [property].IsCustom Then
-                                    [property].Dispose()
-                                Else
+                                If [property].IsCustom Then
                                     _propertiesByKey.Add([property].Key.ToString(), [property])
                                 End If
-                            Next
-                            For Each [property] In oldPropertiesByCanonicalName.Values
-                                [property].Dispose()
                             Next
                         Finally
                             _propertiesLock.Release()
@@ -425,6 +415,15 @@ Public Class Item
                     End If
                 End If
             End Sub)
+
+        For Each [property] In oldPropertiesByKey.Values
+            If Not [property].IsCustom Then
+                [property].Dispose()
+            End If
+        Next
+        For Each [property] In oldPropertiesByCanonicalName.Values
+            [property].Dispose()
+        Next
 
         If Not oldPidl Is Nothing AndAlso Not newPidl Is Nothing Then
             oldPidl.Dispose()
@@ -1511,7 +1510,7 @@ Public Class Item
                     If Me.IsDrive Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
-                                Me.Refresh(,,, False) ' don't refresh image because there's times when it does this a lot and we want to avoid flicker
+                                Me.Refresh(,, False) ' don't refresh image because there's times when it does this a lot and we want to avoid flicker
                             End Sub)
                     End If
                 Case SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED ' cdrom has been inserted or removed
@@ -1529,13 +1528,11 @@ Public Class Item
                             Sub()
                                 Dim newShellItem As IShellItem2 = Nothing
                                 Dim newPidl As Pidl = Nothing
-                                Dim newFullPath As String = Nothing
                                 SyncLock e.Item2._shellItemLock
                                     SyncLock e.Item2._shellItemLock2
                                         If Not e.Item2.disposedValue Then
                                             newShellItem = e.Item2.ShellItem2
                                             newPidl = e.Item2.Pidl?.Clone()
-                                            newFullPath = e.Item2.FullPath
                                             ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
                                             e.Item2._shellItem2 = Nothing
                                             e.Item2.Dispose()
@@ -1544,7 +1541,7 @@ Public Class Item
                                 End SyncLock
 
                                 Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
-                                Me.Refresh(newShellItem, newPidl, newFullPath) ' refresh this item
+                                Me.Refresh(newShellItem, newPidl) ' refresh this item
                                 If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
                                     ' rename pinned and frequent items with the same pidl
                                     PinnedItems.RenameItem(oldPidl, Me.Pidl)
