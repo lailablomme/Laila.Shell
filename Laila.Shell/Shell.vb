@@ -374,11 +374,20 @@ Public Class Shell
                                     End If
                             End Select
 
-                            ' notify children
-                            If e.Item1 Is Nothing OrElse (Not e.Event = SHCNE.MKDIR AndAlso Not e.Event = SHCNE.CREATE AndAlso Not e.Event = SHCNE.RMDIR _
-                                AndAlso Not e.Event = SHCNE.DELETE AndAlso Not e.Event = SHCNE.RENAMEFOLDER AndAlso Not e.Event = SHCNE.RENAMEITEM) _
-                                OrElse Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                            ' notify children?
+                            Dim isFileSystemNotification As Boolean =
+                                e.Event = SHCNE.MKDIR OrElse e.Event = SHCNE.CREATE OrElse e.Event = SHCNE.RMDIR _
+                                OrElse e.Event = SHCNE.DELETE OrElse e.Event = SHCNE.RENAMEFOLDER OrElse e.Event = SHCNE.RENAMEITEM
+                            Dim isFileSystemItem As Boolean = True
+                            Dim parent As Item = e.Item1
+                            While Not parent Is Nothing AndAlso isFileSystemItem
+                                isFileSystemItem = isFileSystemItem AndAlso parent.Attributes.HasFlag(SFGAO.FILESYSTEM)
+                                parent = parent.Parent
+                            End While
+                            If e.Item1 Is Nothing OrElse Not isFileSystemNotification OrElse Not isFileSystemItem Then
                                 Debug.Write(text)
+
+                                ' notify children
                                 notifySubscribers(e)
                             End If
 
