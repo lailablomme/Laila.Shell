@@ -1548,12 +1548,14 @@ Public Class Folder
                                                     OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                 If existing Is Nothing Then
                                     newItem = Me.InitializeItem(e.Item1)
-                                    newItem.LogicalParent = Me
-                                    newItem.IsProcessingNotifications = True
-                                    e.IsHandled1 = True
-                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                    _items.InsertSorted(newItem, c)
-                                    Me.OnItemsChanged()
+                                    If Not newItem Is Nothing Then
+                                        newItem.LogicalParent = Me
+                                        newItem.IsProcessingNotifications = True
+                                        e.IsHandled1 = True
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(newItem, c)
+                                        Me.OnItemsChanged()
+                                    End If
                                 End If
                             End Sub)
                         If Not newItem Is Nothing Then
