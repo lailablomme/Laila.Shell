@@ -108,7 +108,7 @@ Public Class Link
             End If
         End SyncLock
 
-        Shell.GlobalThreadPool.Add(
+        Shell.DisposerThreadPool.Add(
             Sub()
                 If Not _shellLinkW Is Nothing Then
                     Marshal.ReleaseComObject(_shellLinkW)
@@ -119,6 +119,6 @@ Public Class Link
                     _targetPidl.Dispose()
                     _targetPidl = Nothing
                 End If
-            End Sub, _threadId)
+            End Sub)
     End Sub
 End Class
