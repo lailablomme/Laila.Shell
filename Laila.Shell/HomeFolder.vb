@@ -237,6 +237,8 @@ Public Class HomeFolder
             End If
         End If
 
+        item._logicalParent = Nothing
+
         Return Nothing
     End Function
 
