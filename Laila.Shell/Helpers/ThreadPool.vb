@@ -189,5 +189,19 @@ Namespace Helpers
             Dispose(disposing:=True)
             GC.SuppressFinalize(Me)
         End Sub
+
+        Public Sub DisposeAndWait()
+            Me.Cancel()
+            Dim list As List(Of Thread) = Nothing
+            SyncLock _threadsLock
+                list = _threads.ToList()
+            End SyncLock
+            For Each thread In list
+                If thread.IsAlive Then
+                    thread.Join()
+                End If
+            Next
+            Me.Dispose()
+        End Sub
     End Class
 End Namespace

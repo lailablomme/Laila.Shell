@@ -267,10 +267,14 @@ Public Class Shell
                     _listenerhNotifies.Remove(item.Key)
                     _listenerCount.Remove(item.Key)
                 Next
+                For Each item In _listenerFileSystemWatchers.ToList()
+                    item.Value.Dispose()
+                    _listenerFileSystemWatchers.Remove(item.Key)
+                Next
             End SyncLock
 
-            Shell.NotificationMainThread.Dispose()
-            Shell.NotificationThreadPool.Dispose()
+            Shell.NotificationMainThread.DisposeAndWait()
+            Shell.NotificationThreadPool.DisposeAndWait()
 
             ' stop monitoring changes to settings so we can properly close the registry keys
             Shell.Settings.StopMonitoring()
@@ -310,11 +314,13 @@ Public Class Shell
                 _itemsCacheLock.Release()
             End Try
 
+            Dim poolList As List(Of Helpers.ThreadPool) = Nothing
             SyncLock _threadPoolCacheLock
-                For Each item In Shell.ThreadPoolCache.ToList()
-                    item.Dispose()
-                Next
+                poolList = Shell.ThreadPoolCache.ToList()
             End SyncLock
+            For Each item In poolList
+                item.DisposeAndWait()
+            Next
 
             ' uninitialize ole
             Functions.OleUninitialize()
