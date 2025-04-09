@@ -672,7 +672,7 @@ Public Class Item
                 If Not String.IsNullOrWhiteSpace(app) Then
                     Dim hBitmap As IntPtr
                     Try
-                        Using icon As System.Drawing.Icon = icon.ExtractAssociatedIcon(app.Trim(vbNullChar))
+                        Using icon As System.Drawing.Icon = Icon.ExtractAssociatedIcon(app.Trim(vbNullChar))
                             Using bitmap = icon.ToBitmap()
                                 hBitmap = bitmap.GetHbitmap()
                                 Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
@@ -1260,7 +1260,7 @@ Public Class Item
                     _propertiesLock.Release()
                     SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [property].FromKey(key, Me.ShellItem2)
+                            [property] = [Property].FromKey(key, Me.ShellItem2)
                         Else
                             [property] = Nothing
                         End If
@@ -1293,7 +1293,7 @@ Public Class Item
                     _propertiesLock.Release()
                     SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [property].FromKey(propertyKey, Me.ShellItem2)
+                            [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                         Else
                             [property] = Nothing
                         End If
@@ -1326,7 +1326,7 @@ Public Class Item
                     _propertiesLock.Release()
                     SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                            [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                         Else
                             [property] = Nothing
                         End If
