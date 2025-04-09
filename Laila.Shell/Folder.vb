@@ -1444,18 +1444,20 @@ Public Class Folder
                                         OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item2.FullPath))))
                                 If existing Is Nothing Then
                                     Dim newItem As Item = e.Item2.Clone()
-                                    Me.InitializeItem(newItem)
-                                    newItem.LogicalParent = Me
-                                    newItem.IsProcessingNotifications = True
-                                    e.IsHandled2 = True
-                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                    _items.InsertSorted(newItem, c)
-                                    SyncLock _previousFullPathsLock
-                                        If Not _previousFullPaths.Contains(newItem.FullPath) Then
-                                            _previousFullPaths.Add(newItem.FullPath)
-                                        End If
-                                    End SyncLock
-                                    Me.OnItemsChanged()
+                                    newItem = Me.InitializeItem(newItem)
+                                    If Not newItem Is Nothing Then
+                                        newItem.LogicalParent = Me
+                                        newItem.IsProcessingNotifications = True
+                                        e.IsHandled2 = True
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        _items.InsertSorted(newItem, c)
+                                        SyncLock _previousFullPathsLock
+                                            If Not _previousFullPaths.Contains(newItem.FullPath) Then
+                                                _previousFullPaths.Add(newItem.FullPath)
+                                            End If
+                                        End SyncLock
+                                        Me.OnItemsChanged()
+                                    End If
                                 End If
                             End Sub)
                     End If
@@ -1486,31 +1488,33 @@ Public Class Folder
                             OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            Dim existing As Item = Nothing
+                            Dim existing As Item = Nothing, newItem As Item = Nothing
                             UIHelper.OnUIThread(
                                 Sub()
                                     existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                         AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
                                             OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                     If existing Is Nothing Then
-                                        Me.InitializeItem(e.Item1)
-                                        e.Item1.LogicalParent = Me
-                                        e.Item1.IsProcessingNotifications = True
-                                        e.IsHandled1 = True
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                        _items.InsertSorted(e.Item1, c)
-                                        SyncLock _previousFullPathsLock
-                                            If Not _previousFullPaths.Contains(e.Item1.FullPath) Then
-                                                _previousFullPaths.Add(e.Item1.FullPath)
-                                            End If
-                                        End SyncLock
-                                        Me.OnItemsChanged()
+                                        newItem = Me.InitializeItem(e.Item1)
+                                        If Not newItem Is Nothing Then
+                                            newItem.LogicalParent = Me
+                                            newItem.IsProcessingNotifications = True
+                                            e.IsHandled1 = True
+                                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                            _items.InsertSorted(newItem, c)
+                                            SyncLock _previousFullPathsLock
+                                                If Not _previousFullPaths.Contains(newItem.FullPath) Then
+                                                    _previousFullPaths.Add(newItem.FullPath)
+                                                End If
+                                            End SyncLock
+                                            Me.OnItemsChanged()
+                                        End If
                                     End If
                                 End Sub)
-                            If existing Is Nothing Then
+                            If Not newItem Is Nothing Then
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
-                                        e.Item1.Refresh()
+                                        newItem.Refresh()
                                     End Sub)
                             End If
                         End If
@@ -1536,25 +1540,28 @@ Public Class Folder
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
+                        Dim newItem As Item = Nothing
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                                 AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
                                                     OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                 If existing Is Nothing Then
-                                    Me.InitializeItem(e.Item1)
-                                    e.Item1.LogicalParent = Me
-                                    e.Item1.IsProcessingNotifications = True
+                                    newItem = Me.InitializeItem(e.Item1)
+                                    newItem.LogicalParent = Me
+                                    newItem.IsProcessingNotifications = True
                                     e.IsHandled1 = True
                                     Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                    _items.InsertSorted(e.Item1, c)
+                                    _items.InsertSorted(newItem, c)
                                     Me.OnItemsChanged()
                                 End If
                             End Sub)
-                        Shell.GlobalThreadPool.Run(
-                            Sub()
-                                e.Item1.Refresh()
-                            End Sub)
+                        If Not newItem Is Nothing Then
+                            Shell.GlobalThreadPool.Run(
+                                Sub()
+                                    newItem.Refresh()
+                                End Sub)
+                        End If
                     End If
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then

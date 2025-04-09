@@ -460,25 +460,27 @@ Public Class Item
                 If Not newItem Is Nothing Then
                     Debug.WriteLine($"Re-adding {Me.FullPath}")
                     newItem.LogicalParent = _logicalParent
-                    _logicalParent.InitializeItem(newItem)
+                    newItem = _logicalParent.InitializeItem(newItem)
                     Dim lp As Folder = _logicalParent
                     Me.Dispose()
-                    UIHelper.OnUIThread(
-                        Sub()
-                            Dim existing As Item = lp._items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                    If Not newItem Is Nothing Then
+                        UIHelper.OnUIThread(
+                            Sub()
+                                Dim existing As Item = lp._items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                             AndAlso (Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
                                 OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
-                            If existing Is Nothing Then
-                                Dim c As IComparer = New Helpers.ItemComparer(lp.ItemsGroupByPropertyName, lp.ItemsSortPropertyName, lp.ItemsSortDirection)
-                                lp._items.InsertSorted(newItem, c)
-                                SyncLock lp._previousFullPathsLock
-                                    If Not lp._previousFullPaths.Contains(newItem.FullPath) Then
-                                        lp._previousFullPaths.Add(newItem.FullPath)
-                                    End If
-                                End SyncLock
-                                lp.OnItemsChanged()
-                            End If
-                        End Sub)
+                                If existing Is Nothing Then
+                                    Dim c As IComparer = New Helpers.ItemComparer(lp.ItemsGroupByPropertyName, lp.ItemsSortPropertyName, lp.ItemsSortDirection)
+                                    lp._items.InsertSorted(newItem, c)
+                                    SyncLock lp._previousFullPathsLock
+                                        If Not lp._previousFullPaths.Contains(newItem.FullPath) Then
+                                            lp._previousFullPaths.Add(newItem.FullPath)
+                                        End If
+                                    End SyncLock
+                                    lp.OnItemsChanged()
+                                End If
+                            End Sub)
+                    End If
                 Else
                     Me.Dispose()
                 End If
