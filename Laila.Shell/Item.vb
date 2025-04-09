@@ -1616,37 +1616,33 @@ Public Class Item
                                     SyncLock _logicalParent._previousFullPathsLock
                                         If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not _logicalParent._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
                                             _logicalParent._previousFullPaths.Remove(_fullPath)
-                                        End If
-                                        If Not _pidl Is Nothing AndAlso Not _logicalParent._items.ToList().Exists(Function(i) If(i.Pidl?.Equals(_pidl), False)) Then
+                                        ElseIf Not _pidl Is Nothing AndAlso Not _logicalParent._items.ToList().Where(Function(i) Not _logicalParent._previousFullPaths.Contains(i.FullPath)).ToList().Exists(Function(i) If(i._pidl?.Equals(_pidl), False)) Then
                                             _logicalParent._previousFullPaths.Remove(_pidl.ToString())
                                         End If
                                     End SyncLock
                                     _logicalParent._isEnumerated = False
                                     If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
-                                    _logicalParent.OnItemsChanged()
+                                    _logicalParent.OnItemsChanged(Me)
                                     _logicalParent = Nothing
                                 End If
                             Else
                                 Dim tempPidl As Pidl = _pidl?.Clone()
                                 Dim lp As Folder = _logicalParent
-                                UIHelper.OnUIThread(
-                                    Sub()
-                                        If Not lp Is Nothing Then
-                                            lp._items.Remove(Me)
-                                        End If
-                                    End Sub)
                                 If Not lp Is Nothing Then
+                                    UIHelper.OnUIThread(
+                                        Sub()
+                                            lp._items.Remove(Me)
+                                        End Sub)
                                     SyncLock lp._previousFullPathsLock
                                         If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not lp._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
                                             lp._previousFullPaths.Remove(_fullPath)
-                                        End If
-                                        If Not tempPidl Is Nothing AndAlso Not lp._items.ToList().Exists(Function(i) If(i.Pidl?.Equals(tempPidl), False)) Then
+                                        ElseIf Not tempPidl Is Nothing AndAlso Not lp._items.ToList().Where(Function(i) Not lp._previousFullPaths.Contains(i.FullPath)).ToList().Exists(Function(i) If(i.Pidl?.Equals(tempPidl), False)) Then
                                             lp._previousFullPaths.Remove(tempPidl?.ToString())
                                         End If
                                     End SyncLock
                                     lp._isEnumerated = False
                                     If Me.CanShowInTree Then lp._isEnumeratedForTree = False
-                                    lp.OnItemsChanged()
+                                    lp.OnItemsChanged(Me)
                                 End If
                                 ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
                                 tempPidl?.Dispose()

@@ -1420,10 +1420,12 @@ Public Class Folder
         End SyncLock
     End Sub
 
-    Friend Overridable Sub OnItemsChanged()
+    Friend Overridable Sub OnItemsChanged(Optional item As Item = Nothing)
         Me.IsEmpty = _items.Count = 0
         ' set and update HasSubFolders property
-        Me.HasSubFolders = Not Me.Items.ToList().FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
+        If item Is Nothing OrElse item.CanShowInTree Then
+            Me.HasSubFolders = Not Me.Items.ToList().FirstOrDefault(Function(i) i.CanShowInTree) Is Nothing
+        End If
     End Sub
 
     Protected Friend Overrides Sub ProcessNotification(e As NotificationEventArgs)

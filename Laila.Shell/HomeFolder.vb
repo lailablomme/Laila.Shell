@@ -205,7 +205,7 @@ Public Class HomeFolder
             isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId, dupes)
     End Function
 
-    Friend Overrides Sub OnItemsChanged()
+    Friend Overrides Sub OnItemsChanged(Optional item As Item = Nothing)
         MyBase.OnItemsChanged()
 
         UIHelper.OnUIThread(
