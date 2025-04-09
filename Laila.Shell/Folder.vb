@@ -57,6 +57,7 @@ Public Class Folder
     Private _notificationSubscribersLock As Object = New Object()
     Private _notificationThreadPool As Helpers.ThreadPool
     Friend _previousFullPaths As HashSet(Of String) = New HashSet(Of String)()
+    Friend _previousFullPathsLock As Object = New Object()
     Private _shellFolder As IShellFolder
     Protected _views As List(Of FolderViewRegistration)
     Friend _wasActivity As Boolean
@@ -766,9 +767,7 @@ Public Class Folder
     Public Async Function RefreshItemsAsync() As Task
         Using Shell.OverrideCursor(Cursors.AppStarting)
             Me.IsRefreshingItems = True
-            If Me.IsLoading Then
-                Me.CancelEnumeration()
-            End If
+            Me.CancelEnumeration()
             _isEnumerated = False
             _isEnumeratedForTree = False
             Await GetItemsAsync()
@@ -778,8 +777,10 @@ Public Class Folder
 
     Public Overridable Function GetItems(Optional doRefreshAllExistingItems As Boolean = True, Optional isForTree As Boolean = False) As List(Of Item)
         _enumerationLock.Wait()
+        Dim doStartLoading As Boolean =
+            (Not _isEnumerated AndAlso Not isForTree) OrElse (Not _isEnumeratedForTree AndAlso isForTree)
         Try
-            If (Not _isEnumerated AndAlso Not isForTree) OrElse (Not _isEnumeratedForTree AndAlso isForTree) Then
+            If doStartLoading Then
                 Me.IsLoading = True
                 Dim prevEnumerationCancellationTokenSource As CancellationTokenSource _
                     = _enumerationCancellationTokenSource
@@ -797,9 +798,9 @@ Public Class Folder
             Return _items.ToList()
         Finally
             If _enumerationLock.CurrentCount = 0 Then
+                Me.IsLoading = False
                 _enumerationLock.Release()
             End If
-            Me.IsLoading = False
         End Try
     End Function
 
@@ -812,10 +813,14 @@ Public Class Folder
         Shell.GlobalThreadPool.Add(
             Sub()
                 _enumerationLock.Wait()
+                Dim doStartLoading As Boolean =
+                    (Not _isEnumerated AndAlso Not isForTree) OrElse (Not _isEnumeratedForTree AndAlso isForTree)
+                Dim originalCancellationTokenSource As CancellationTokenSource = Nothing
                 Try
-                    If (Not _isEnumerated AndAlso Not isForTree) OrElse (Not _isEnumeratedForTree AndAlso isForTree) Then
+                    If doStartLoading Then
                         Me.IsLoading = True
                         _enumerationCancellationTokenSource = New CancellationTokenSource()
+                        originalCancellationTokenSource = _enumerationCancellationTokenSource
                         enumerateItems(True, _enumerationCancellationTokenSource.Token, threadId, doRefreshAllExistingItems, doRecursive)
                     End If
                     tcs.SetResult(_items.ToList())
@@ -823,9 +828,11 @@ Public Class Folder
                     tcs.SetException(ex)
                 Finally
                     If _enumerationLock.CurrentCount = 0 Then
+                        If _enumerationCancellationTokenSource.Equals(originalCancellationTokenSource) Then
+                            Me.IsLoading = False
+                        End If
                         _enumerationLock.Release()
                     End If
-                    Me.IsLoading = False
                 End Try
             End Sub, threadId)
 
@@ -905,52 +912,54 @@ Public Class Folder
 
                         If Not cancellationToken.IsCancellationRequested _
                                 AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                            If Not TypeOf Me Is SearchFolder Then
-                                If _items.Count = 0 Then
-                                    ' this happens the first time a folder is loaded
-                                    _items.UpdateRange(result.Values, Nothing)
+                            SyncLock _previousFullPathsLock
+                                If Not TypeOf Me Is SearchFolder Then
+                                    If _items.Count = 0 Then
+                                        ' this happens the first time a folder is loaded
+                                        _items.UpdateRange(result.Values, Nothing)
+                                        For Each item In result.Values
+                                            item.IsProcessingNotifications = True
+                                        Next
+                                    Else
+                                        ' this happens when a folder is refreshed
+                                        Dim dupeFullPaths As HashSet(Of String) = New HashSet(Of String)
+                                        For Each i In dupes
+                                            dupeFullPaths.Add(i.FullPath)
+                                        Next
+                                        Dim newItems As Item() = result.Where(Function(i) Not _previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
+                                        Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
+                                        existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
+                                                .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
+
+                                        Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
+                                        For Each item In existingItems
+                                            If Not seq.Equals(item.Item1.TreeSortPrefix, item.Item2.TreeSortPrefix) Then
+                                                item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
+                                            End If
+                                            If Not seq.Equals(item.Item1.ItemNameDisplaySortValuePrefix, item.Item2.ItemNameDisplaySortValuePrefix) Then
+                                                item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
+                                            End If
+                                        Next
+
+                                        ' add/remove items
+                                        _items.UpdateRange(newItems, removedItems)
+                                        For Each item In newItems
+                                            item.IsProcessingNotifications = True
+                                        Next
+                                    End If
+                                Else
+                                    ' this is for search folders
+                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                    For Each item In result.Values
+                                        _items.InsertSorted(item, c)
+                                    Next
                                     For Each item In result.Values
                                         item.IsProcessingNotifications = True
                                     Next
-                                Else
-                                    ' this happens when a folder is refreshed
-                                    Dim dupeFullPaths As HashSet(Of String) = New HashSet(Of String)
-                                    For Each i In dupes
-                                        dupeFullPaths.Add(i.FullPath)
-                                    Next
-                                    Dim newItems As Item() = result.Where(Function(i) Not _previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
-                                    Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
-                                    existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
-                                            .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
-
-                                    Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
-                                    For Each item In existingItems
-                                        If Not seq.Equals(item.Item1.TreeSortPrefix, item.Item2.TreeSortPrefix) Then
-                                            item.Item1.TreeSortPrefix = item.Item2.TreeSortPrefix
-                                        End If
-                                        If Not seq.Equals(item.Item1.ItemNameDisplaySortValuePrefix, item.Item2.ItemNameDisplaySortValuePrefix) Then
-                                            item.Item1.ItemNameDisplaySortValuePrefix = item.Item2.ItemNameDisplaySortValuePrefix
-                                        End If
-                                    Next
-
-                                    ' add/remove items
-                                    _items.UpdateRange(newItems, removedItems)
-                                    For Each item In newItems
-                                        item.IsProcessingNotifications = True
-                                    Next
                                 End If
-                            Else
-                                ' this is for search folders
-                                Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                For Each item In result.Values
-                                    _items.InsertSorted(item, c)
-                                Next
-                                For Each item In result.Values
-                                    item.IsProcessingNotifications = True
-                                Next
-                            End If
 
-                            _previousFullPaths = newFullPaths
+                                _previousFullPaths = newFullPaths
+                            End SyncLock
                         End If
                     End Sub)
 
@@ -970,9 +979,12 @@ Public Class Folder
                         Dim j As Integer = i
                         Dim tcs As TaskCompletionSource = New TaskCompletionSource()
                         tcses.Add(tcs)
-                        Shell.GlobalThreadPool.Add(
-                            Sub()
-                                'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
+
+                        Dim t As Thread = New Thread(New ParameterizedThreadStart(
+                            Sub(tcsObj As Object)
+                                Dim tcs2 As TaskCompletionSource = tcsObj
+
+                                Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") started for " & Me.FullPath)
                                 Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
 
                                 ' Process tasks from the queue
@@ -985,12 +997,12 @@ Public Class Folder
                                     Try
                                         If item.Item1.IsPinned <> item.Item2.IsPinned Then item.Item1.IsPinned = item.Item2.IsPinned
                                         If item.Item1.CanShowInTree <> item.Item2.CanShowInTree Then item.Item1.CanShowInTree = item.Item2.CanShowInTree
-                                        For Each [property] In item.Item1._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
-                                            item.Item1._propertiesByKey.Remove([property].Key)
-                                        Next
-                                        For Each [property] In item.Item2._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
-                                            item.Item1._propertiesByKey.Add([property].Key, [property].Value)
-                                        Next
+                                        If item.Item2._hasCustomProperties Then
+                                            For Each [property] In item.Item2._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
+                                                item.Item1._propertiesByKey.Remove([property].Key)
+                                                item.Item1._propertiesByKey.Add([property].Key, [property].Value)
+                                            Next
+                                        End If
 
                                         Dim newShellItem As IShellItem2 = Nothing
                                         If Not item.Item2 Is Nothing Then
@@ -999,20 +1011,21 @@ Public Class Folder
                                                     If Not item.Item2.disposedValue Then
                                                         newShellItem = item.Item2.ShellItem2
                                                         ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
+                                                        'Debug.WriteLine(item.Item1.FullPath)
                                                         item.Item2._shellItem2 = Nothing
-                                                        item.Item2.Dispose()
+                                                        'item.Item2.Dispose()
                                                     End If
                                                 End SyncLock
                                             End SyncLock
                                         End If
-                                        item.Item1.Refresh(newShellItem)
+                                        item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
 
-                                        '' preload sort property
-                                        'If isSortPropertyByText Then
-                                        '    Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(sortPropertyKey)?.Value
-                                        'ElseIf isSortPropertyDisplaySortValue Then
-                                        '    Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
-                                        'End If
+                                        ' preload sort property
+                                        If isSortPropertyByText Then
+                                            Dim sortValue As Object = item.Item1.PropertiesByKeyAsText(sortPropertyKey)?.Value
+                                        ElseIf isSortPropertyDisplaySortValue Then
+                                            Dim sortValue As Object = item.Item1.ItemNameDisplaySortValue
+                                        End If
 
                                         If doRecursive AndAlso TypeOf item.Item1 Is Folder Then
                                             Dim recursiveFolder As Folder = item.Item1
@@ -1026,13 +1039,15 @@ Public Class Folder
                                         Debug.WriteLine("Exception refreshing " & item.Item1.FullPath & ": " & ex.Message)
                                     End Try
                                 Next
-                                'Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") finished for " & Me.FullPath)
+                                Debug.WriteLine("Folder refresh thread (" & j + 1 & "/" & chuncks.Count & ") finished for " & Me.FullPath)
 
-                                tcs.SetResult()
-                            End Sub)
+                                tcs2.SetResult()
+                            End Sub))
+                        t.SetApartmentState(ApartmentState.STA)
+                        t.Start(tcs)
                     Next
 
-                    'Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), cancellationToken)
+                    Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), cancellationToken)
                 End If
             End Sub
 
@@ -1433,30 +1448,34 @@ Public Class Folder
                 Case SHCNE.CREATE, SHCNE.MKDIR
                     If _isLoaded Then
                         If e.Item1.Parent?.Pidl?.Equals(Me.Pidl) _
-                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                            Dim existing As Item = Nothing
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                         AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                            OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
-                            If existing Is Nothing Then
-                                Me.InitializeItem(e.Item1)
-                                e.Item1.LogicalParent = Me
-                                e.Item1.IsProcessingNotifications = True
-                                e.IsHandled1 = True
-                                Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                                UIHelper.OnUIThread(
-                                    Sub()
+                                            OrElse (i.FullPath?.Equals(e.Item1.FullPath))))
+                                    If existing Is Nothing Then
+                                        Me.InitializeItem(e.Item1)
+                                        e.Item1.LogicalParent = Me
+                                        e.Item1.IsProcessingNotifications = True
+                                        e.IsHandled1 = True
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(e.Item1, c)
-                                        If _previousFullPaths.Contains(e.Item1.FullPath) Then
-                                            _previousFullPaths.Add(e.Item1.FullPath)
-                                        End If
-                                    End Sub)
+                                        SyncLock _previousFullPathsLock
+                                            If Not _previousFullPaths.Contains(e.Item1.FullPath) Then
+                                                _previousFullPaths.Add(e.Item1.FullPath)
+                                            End If
+                                        End SyncLock
+                                        Me.OnItemsChanged()
+                                    End If
+                                End Sub)
+                            If existing Is Nothing Then
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         e.Item1.Refresh()
                                     End Sub)
-                                Me.OnItemsChanged()
                             ElseIf TypeOf existing Is Folder Then
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
@@ -1475,7 +1494,7 @@ Public Class Folder
                                                 End If
                                             End SyncLock
                                         End SyncLock
-                                        existingFolder.Refresh(newShellItem, newPidl, newFullPath)
+                                        existingFolder.Refresh(newShellItem, newPidl,, e.Item1._livesOnThreadId)
                                         existingFolder._isEnumerated = False
                                         existingFolder._isEnumeratedForTree = False
                                         Dim __ = existingFolder.GetItemsAsync(True, True)
@@ -1486,36 +1505,38 @@ Public Class Folder
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
                         If e.Item1.Parent?.Pidl?.Equals(Me.Pidl) _
-                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
-                            Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                        AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                            OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
-                            If Not existing Is Nothing Then
-                                existing.Dispose()
-                                Me.OnItemsChanged()
-                            End If
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                                AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                                    OrElse (i.FullPath?.Equals(e.Item1.FullPath))))
+                                    If Not existing Is Nothing Then
+                                        existing.Dispose()
+                                        Me.OnItemsChanged()
+                                    End If
+                                End Sub)
                         End If
                     End If
                 Case SHCNE.DRIVEADD
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                    AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                        OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
-                        If existing Is Nothing Then
-                            Me.InitializeItem(e.Item1)
-                            e.Item1.LogicalParent = Me
-                            e.Item1.IsProcessingNotifications = True
-                            e.IsHandled1 = True
-                            Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
-                            UIHelper.OnUIThread(
-                                Sub()
+                        UIHelper.OnUIThread(
+                            Sub()
+                                Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                                AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                                    OrElse (i.FullPath?.Equals(e.Item1.FullPath))))
+                                If existing Is Nothing Then
+                                    Me.InitializeItem(e.Item1)
+                                    e.Item1.LogicalParent = Me
+                                    e.Item1.IsProcessingNotifications = True
+                                    e.IsHandled1 = True
+                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                     _items.InsertSorted(e.Item1, c)
-                                End Sub)
-                            Me.OnItemsChanged()
-                        End If
+                                    Me.OnItemsChanged()
+                                End If
+                            End Sub)
                         Shell.GlobalThreadPool.Run(
                             Sub()
                                 e.Item1.Refresh()
@@ -1524,13 +1545,16 @@ Public Class Folder
                 Case SHCNE.DRIVEREMOVED
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
-                        Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                        AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                            OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
-                        If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
-                            existing.Dispose()
-                            Me.OnItemsChanged()
-                        End If
+                        UIHelper.OnUIThread(
+                            Sub()
+                                Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                                                     AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                                                         OrElse (i.FullPath?.Equals(e.Item1.FullPath))))
+                                If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
+                                    existing.Dispose()
+                                    Me.OnItemsChanged()
+                                End If
+                            End Sub)
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
@@ -1646,7 +1670,7 @@ Public Class Folder
 
         If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso Not wasDisposed Then
             ' dispose outside of the lock because it can take a while
-            Shell.GlobalThreadPool.Add(
+            Shell.DisposerThreadPool.Add(
                 Sub()
                     ' dispose of children
                     For Each item In _items.ToList()
@@ -1658,7 +1682,7 @@ Public Class Folder
                         Marshal.ReleaseComObject(oldShellFolder)
                         oldShellFolder = Nothing
                     End If
-                End Sub, _livesOnThreadId)
+                End Sub)
         End If
     End Sub
 

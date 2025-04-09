@@ -157,6 +157,7 @@ Public Class HomeFolder
                 item.LogicalParent = Me
                 item.TreeSortPrefix = String.Format("{0:00000000000000000000}", UInt64.MaxValue - count)
                 item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
+                item._hasCustomProperties = True
 
                 Dim systemLastAccessedProperty As [Property] = item.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
                 Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
@@ -180,6 +181,7 @@ Public Class HomeFolder
             item.LogicalParent = Me
             item.TreeSortPrefix = String.Format("{0:00000000000000000000}", UInt64.MaxValue - count)
             item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
+            item._hasCustomProperties = True
 
             Dim systemLastAccessedProperty As [Property] = item.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
             Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
@@ -221,6 +223,7 @@ Public Class HomeFolder
                 If Not TypeOf target Is Folder AndAlso target.IsExisting _
                     AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
                     target.LogicalParent = Me
+                    target._hasCustomProperties = True
 
                     Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
                     target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)

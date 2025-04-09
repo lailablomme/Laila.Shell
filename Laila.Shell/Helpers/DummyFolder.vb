@@ -17,8 +17,8 @@ Namespace Helpers
 
         Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing,
                                      Optional newPidl As Pidl = Nothing,
-                                     Optional newFullPath As String = Nothing,
-                                     Optional doRefreshImage As Boolean = True)
+                                     Optional doRefreshImage As Boolean = True,
+                                     Optional threadId As Integer? = Nothing)
         End Sub
 
         Public Overrides ReadOnly Property DisplayName As String

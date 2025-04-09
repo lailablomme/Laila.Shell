@@ -25,8 +25,9 @@ Public Class Shell
     Public Shared NotificationMainThread As Helpers.ThreadPool
     Public Shared NotificationThreadPool As Helpers.ThreadPool
     Public Shared GlobalThreadPool As Helpers.ThreadPool
+    Public Shared DisposerThreadPool As Helpers.ThreadPool
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
-    Private Shared _disposeThread As Thread
+    Private Shared _disposerLoopThread As Thread
     Private Shared _unhookUpdatesThread As Thread
 
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
@@ -94,9 +95,10 @@ Public Class Shell
         Shell.NotificationMainThread = New Helpers.ThreadPool(1)
         Shell.NotificationThreadPool = New Helpers.ThreadPool(75)
         Shell.GlobalThreadPool = New Helpers.ThreadPool(100)
+        Shell.DisposerThreadPool = New Helpers.ThreadPool(10)
 
         ' thread for disposing items
-        _disposeThread = New Thread(
+        _disposerLoopThread = New Thread(
             Sub()
                 Try
                     ' while we're not shutting down...
@@ -129,10 +131,10 @@ Public Class Shell
                     Debug.WriteLine("Disposing thread was canceled.")
                 End Try
             End Sub)
-        _disposeThread.IsBackground = True
-        _disposeThread.SetApartmentState(ApartmentState.MTA)
-        _disposeThread.Start()
-        _threads.Add(_disposeThread)
+        _disposerLoopThread.IsBackground = True
+        _disposerLoopThread.SetApartmentState(ApartmentState.MTA)
+        _disposerLoopThread.Start()
+        _threads.Add(_disposerLoopThread)
 
         ' make window to receive SHChangeNotify messages and for building
         ' the drag and drop image
@@ -382,7 +384,7 @@ Public Class Shell
                             Dim parent As Item = e.Item1
                             While Not parent Is Nothing AndAlso isFileSystemItem
                                 isFileSystemItem = isFileSystemItem AndAlso parent.Attributes.HasFlag(SFGAO.FILESYSTEM)
-                                parent = parent.Parent
+                                If isFileSystemItem Then parent = parent.Parent
                             End While
                             If e.Item1 Is Nothing OrElse Not isFileSystemNotification OrElse Not isFileSystemItem Then
                                 Debug.Write(text)

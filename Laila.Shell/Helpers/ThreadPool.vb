@@ -17,6 +17,7 @@ Namespace Helpers
         Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
         Private _disposeToken As CancellationToken = _disposeTokensSource.Token
         Private disposedValue As Boolean
+        Private _rand As New Random()
 
         Public Sub New(size As Integer)
             Me.TaskQueues = New List(Of BlockingCollection(Of Action))
@@ -113,7 +114,7 @@ Namespace Helpers
 
         Public Sub Add(action As Action, Optional threadId As Integer? = Nothing)
             If Not threadId.HasValue OrElse threadId.Value = -1 Then
-                threadId = GetNextFreeThreadId()
+                threadId = _rand.Next(0, _size)
             End If
             Me.TaskQueues(threadId).Add(action)
         End Sub
