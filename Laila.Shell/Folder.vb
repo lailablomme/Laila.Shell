@@ -1018,7 +1018,7 @@ Public Class Folder
                                                 End SyncLock
                                             End SyncLock
                                         End If
-                                        'item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
+                                        item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
 
                                         ' preload sort property
                                         If isSortPropertyByText Then
