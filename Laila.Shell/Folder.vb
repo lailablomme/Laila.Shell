@@ -690,7 +690,7 @@ Public Class Folder
                 Case Else
                     Dim isNotDoubleSeparator As Boolean = Not (TypeOf item Is Separator AndAlso
                                 (Not lastMenuItem Is Nothing AndAlso TypeOf lastMenuItem Is Separator))
-                    Dim isNotInitialSeparator As Boolean = Not (TypeOf item Is Separator AndAlso Me.Items.Count = 0)
+                    Dim isNotInitialSeparator As Boolean = Not (TypeOf item Is Separator AndAlso menu.Items.Count = 0)
                     Dim isNotDoubleOneDriveItem As Boolean = verb Is Nothing OrElse
                                 Not (isWindows11 AndAlso
                                     (verb.StartsWith("{5250E46F-BB09-D602-5891-F476DC89B70") _
@@ -1560,7 +1560,8 @@ Public Class Folder
                     If _isLoaded Then
                         If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
                                 OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) _
-                                AndAlso (e.Event = SHCNE.UPDATEDIR OrElse _wasActivity OrElse Not _isEnumerated OrElse Not _isEnumeratedForTree) Then
+                                AndAlso (e.Event = SHCNE.UPDATEDIR OrElse Not Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
+                                    OrElse _wasActivity OrElse Not _isEnumerated OrElse Not _isEnumeratedForTree) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False

@@ -711,7 +711,7 @@ Public Class Shell
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.CREATE
                                 e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
-                                fswNotify(e2)
+                                If If(e2.Item1?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then fswNotify(e2)
                             End Sub)
                     End Sub
                 AddHandler fsw.Deleted,
@@ -734,7 +734,7 @@ Public Class Shell
                                 If e2.Item1 Is Nothing Then
                                     e2.Item1 = New Item(e.FullPath)
                                 End If
-                                fswNotify(e2)
+                                If If(e2.Item1?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then fswNotify(e2)
                             End Sub)
                     End Sub
                 AddHandler fsw.Renamed,
@@ -759,8 +759,9 @@ Public Class Shell
                                 End If
                                 e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                                 If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
-                                If e2.Item2 Is Nothing Then e2.Event = SHCNE.DELETE 
-                                fswNotify(e2)
+                                If e2.Item2 Is Nothing Then e2.Event = SHCNE.DELETE
+                                If If(e2.Item1?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) _
+                                    AndAlso (e2.Event = SHCNE.DELETE OrElse If(e2.Item2?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False)) Then fswNotify(e2)
                             End Sub)
                     End Sub
 

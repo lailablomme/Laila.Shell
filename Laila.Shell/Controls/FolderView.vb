@@ -92,12 +92,11 @@ Namespace Controls
             Shell.SubscribeToNotifications(Me)
         End Sub
 
-        Private _deletedFullName As String
         Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
             Select Case e.Event
-                Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER, SHCNE.DELETE, SHCNE.RMDIR, SHCNE.DRIVEREMOVED
-                    ' this is for supporting file operations within .zip files 
-                    ' from explorer or 7-zip
+                Case SHCNE.DELETE, SHCNE.RMDIR, SHCNE.DRIVEREMOVED
+                    ' this sets the current folder to the first available parent 
+                    ' when the current folder gets deleted
                     Dim selectedItem As Item = Nothing
                     If selectedItem Is Nothing Then
                         UIHelper.OnUIThread(
@@ -105,75 +104,20 @@ Namespace Controls
                                 selectedItem = Me.Folder
                             End Sub)
                     End If
-                    ' is something is being renamed to the currently selected folder...
-                    If Not selectedItem Is Nothing AndAlso
-                        ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
-                         OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
-                        If _deletedFullName?.Equals(selectedItem.FullPath) Then
-                            _deletedFullName = Nothing
-                        End If
-                        Shell.GlobalThreadPool.Add(
+                    ' if the current folder was deleted...
+                    If Not selectedItem Is Nothing AndAlso Not (selectedItem.FullPath.ToLower().Contains(".zip~") AndAlso selectedItem.FullPath.ToLower().EndsWith(".tmp")) _
+                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
+                            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
+                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                        UIHelper.OnUIThread(
                             Sub()
-                                ' get the first available parent in case the current folder disappears
-                                Dim f As Folder = Me.GetParentOfSelectionBefore(selectedItem)
+                                ' get the first available parent  
+                                Dim f As Folder = selectedItem.LogicalParent
                                 If Not f Is Nothing Then
-                                    Thread.Sleep(300) ' wait for .zip operations/folder refresh to complete
-
-                                    ' get the newly created .zip folder
-                                    Dim replacement As Item = f.Items.ToList().LastOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not i.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
-                                        OrElse ((selectedItem.Pidl Is Nothing OrElse i.Pidl Is Nothing) AndAlso If(i.FullPath?.Equals(selectedItem.FullPath), False))))
-                                    If Not replacement Is Nothing AndAlso TypeOf replacement Is Folder Then
-                                        ' new folder matching the current folder was found -- load it
-                                        Dim func As Func(Of Task) =
-                                            Async Function() As Task
-                                                Await CType(replacement, Folder).GetItemsAsync()
-                                                UIHelper.OnUIThread(
-                                                    Sub()
-                                                        CType(replacement, Folder).LastScrollOffset = CType(selectedItem, Folder).LastScrollOffset
-                                                        CType(replacement, Folder).LastScrollSize = CType(selectedItem, Folder).LastScrollSize
-                                                        Me.Folder = replacement
-                                                    End Sub)
-                                            End Function
-                                        func()
-                                    Else
-                                        ' the current folder disappeared -- switch to parent
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                Me.Folder = f
-                                            End Sub)
-                                    End If
+                                    Me.Folder = f ' load it
                                 End If
                             End Sub)
                     End If
-                    'Case SHCNE.DELETE, SHCNE.RMDIR, SHCNE.DRIVEREMOVED
-                    '    ' this sets the current folder to the first available parent 
-                    '    ' when the current folder gets deleted
-                    '    Dim selectedItem As Item = Nothing
-                    '    If selectedItem Is Nothing Then
-                    '        UIHelper.OnUIThread(
-                    '            Sub()
-                    '                selectedItem = Me.Folder
-                    '            End Sub)
-                    '    End If
-                    '    ' if the current folder was deleted...
-                    '    If Not selectedItem Is Nothing AndAlso Not (selectedItem.FullPath.ToLower().Contains(".zip~") AndAlso selectedItem.FullPath.ToLower().EndsWith(".tmp")) _
-                    '        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
-                    '            OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
-                    '                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
-                    '        _deletedFullName = selectedItem.FullPath
-                    '        UIHelper.OnUIThread(
-                    '            Async Sub()
-                    '                ' get the first available parent  
-                    '                Dim f As Folder = selectedItem.LogicalParent
-                    '                If Not f Is Nothing Then
-                    '                    Await Task.Delay(300) ' wait for .zip operations/folder refresh to complete
-                    '                    If _deletedFullName?.Equals(selectedItem.FullPath) Then
-                    '                        Me.Folder = f ' load it
-                    '                    End If
-                    '                End If
-                    '            End Sub)
-                    '    End If
             End Select
         End Sub
 

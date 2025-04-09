@@ -26,7 +26,7 @@ Namespace Helpers
                 Next
             End If
 
-            If itemsToAdd.Count > 0 OrElse itemsToRemove.Count > 0 Then
+            If If(itemsToAdd?.Count > 0, False) OrElse If(itemsToRemove?.Count > 0, False) Then
                 Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
             End If
         End Sub
