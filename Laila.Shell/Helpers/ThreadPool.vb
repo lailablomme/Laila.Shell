@@ -92,7 +92,7 @@ Namespace Helpers
                                         End Sub, System.Windows.Threading.DispatcherPriority.ContextIdle)
                                 End If
                             End If
-                            End If
+                        End If
                     Loop Until _isThreadFree(_nextThreadId) AndAlso Not _isThreadLocked(_nextThreadId)
                     Return _nextThreadId
                 End SyncLock

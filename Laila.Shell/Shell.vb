@@ -759,9 +759,7 @@ Public Class Shell
                                 End If
                                 e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                                 If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
-                                If e2.Item1 Is Nothing Then
-                                    e2.Item2 = New Item(e.FullPath)
-                                End If
+                                If e2.Item2 Is Nothing Then e2.Event = SHCNE.DELETE 
                                 fswNotify(e2)
                             End Sub)
                     End Sub

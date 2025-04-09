@@ -927,9 +927,9 @@ Public Class Folder
                                             dupeFullPaths.Add(i.FullPath)
                                         Next
                                         Dim newItems As Item() = result.Where(Function(i) Not _previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
-                                        Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))).ToArray()
-                                        existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey))) _
-                                                .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl.ToString() & i.DeDupeKey)))).ToArray()
+                                        Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey))).ToArray()
+                                        existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey))) _
+                                                .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey)))).ToArray()
 
                                         Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
                                         For Each item In existingItems
@@ -1018,7 +1018,7 @@ Public Class Folder
                                                 End SyncLock
                                             End SyncLock
                                         End If
-                                        item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
+                                        'item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
 
                                         ' preload sort property
                                         If isSortPropertyByText Then
@@ -1447,15 +1447,16 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.CREATE, SHCNE.MKDIR
                     If _isLoaded Then
-                        If e.Item1.Parent?.Pidl?.Equals(Me.Pidl) _
+                        If (Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
+                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             Dim existing As Item = Nothing
                             UIHelper.OnUIThread(
                                 Sub()
                                     existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                        AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                            OrElse (i.FullPath?.Equals(e.Item1.FullPath))))
+                                        AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                     If existing Is Nothing Then
                                         Me.InitializeItem(e.Item1)
                                         e.Item1.LogicalParent = Me
@@ -1476,40 +1477,41 @@ Public Class Folder
                                     Sub()
                                         e.Item1.Refresh()
                                     End Sub)
-                            ElseIf TypeOf existing Is Folder Then
-                                Shell.GlobalThreadPool.Run(
-                                    Sub()
-                                        Dim existingFolder As Folder = existing
-                                        Dim newShellItem As IShellItem2 = Nothing
-                                        Dim newPidl As Pidl = Nothing
-                                        SyncLock e.Item1._shellItemLock
-                                            SyncLock e.Item1._shellItemLock2
-                                                If Not e.Item1.disposedValue Then
-                                                    newShellItem = e.Item1.ShellItem2
-                                                    newPidl = e.Item1.Pidl?.Clone()
-                                                    e.Item1._shellItem2 = Nothing
-                                                    e.Item1.Dispose()
-                                                End If
-                                            End SyncLock
-                                        End SyncLock
-                                        existingFolder.Refresh(newShellItem, newPidl,, e.Item1._livesOnThreadId)
-                                        existingFolder._isEnumerated = False
-                                        existingFolder._isEnumeratedForTree = False
-                                        Dim __ = existingFolder.GetItemsAsync(True, True)
-                                    End Sub)
+                                'ElseIf TypeOf existing Is Folder Then
+                                '    Shell.GlobalThreadPool.Run(
+                                '        Sub()
+                                '            Dim existingFolder As Folder = existing
+                                '            Dim newShellItem As IShellItem2 = Nothing
+                                '            Dim newPidl As Pidl = Nothing
+                                '            SyncLock e.Item1._shellItemLock
+                                '                SyncLock e.Item1._shellItemLock2
+                                '                    If Not e.Item1.disposedValue Then
+                                '                        newShellItem = e.Item1.ShellItem2
+                                '                        newPidl = e.Item1.Pidl?.Clone()
+                                '                        e.Item1._shellItem2 = Nothing
+                                '                        e.Item1.Dispose()
+                                '                    End If
+                                '                End SyncLock
+                                '            End SyncLock
+                                '            existingFolder.Refresh(newShellItem, newPidl,, e.Item1._livesOnThreadId)
+                                '            existingFolder._isEnumerated = False
+                                '            existingFolder._isEnumeratedForTree = False
+                                '            Dim __ = existingFolder.GetItemsAsync(True, True)
+                                '        End Sub)
                             End If
                         End If
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
-                        If e.Item1.Parent?.Pidl?.Equals(Me.Pidl) _
+                        If (Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
+                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             UIHelper.OnUIThread(
                                 Sub()
                                     Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                                AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                                    OrElse (i.FullPath?.Equals(e.Item1.FullPath))))
+                                        AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                     If Not existing Is Nothing Then
                                         existing.Dispose()
                                         Me.OnItemsChanged()
@@ -1524,7 +1526,7 @@ Public Class Folder
                             Sub()
                                 Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                                 AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                                    OrElse (i.FullPath?.Equals(e.Item1.FullPath))))
+                                                    OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                 If existing Is Nothing Then
                                     Me.InitializeItem(e.Item1)
                                     e.Item1.LogicalParent = Me
@@ -1546,8 +1548,8 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                                                     AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                                                         OrElse (i.FullPath?.Equals(e.Item1.FullPath))))
+                                    AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                        OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                 If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
                                     existing.Dispose()
                                     Me.OnItemsChanged()
