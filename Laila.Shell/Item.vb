@@ -358,11 +358,7 @@ Public Class Item
                     If Not newPidl Is Nothing Then
                         _pidl = newPidl
                     End If
-                    'If Not newFullPath Is Nothing Then
-                    '    _fullPath = newFullPath
-                    'Else
                     _fullPath = Nothing
-                    'End If
 
                     oldShellItem = _shellItem2
                     If newShellItem Is Nothing Then
@@ -672,7 +668,7 @@ Public Class Item
                 If Not String.IsNullOrWhiteSpace(app) Then
                     Dim hBitmap As IntPtr
                     Try
-                        Using icon As System.Drawing.Icon = Icon.ExtractAssociatedIcon(app.Trim(vbNullChar))
+                        Using icon As System.Drawing.Icon = icon.ExtractAssociatedIcon(app.Trim(vbNullChar))
                             Using bitmap = icon.ToBitmap()
                                 hBitmap = bitmap.GetHbitmap()
                                 Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
@@ -1260,7 +1256,7 @@ Public Class Item
                     _propertiesLock.Release()
                     SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [Property].FromKey(key, Me.ShellItem2)
+                            [property] = [property].FromKey(key, Me.ShellItem2)
                         Else
                             [property] = Nothing
                         End If
@@ -1293,7 +1289,7 @@ Public Class Item
                     _propertiesLock.Release()
                     SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
+                            [property] = [property].FromKey(propertyKey, Me.ShellItem2)
                         Else
                             [property] = Nothing
                         End If
@@ -1326,7 +1322,7 @@ Public Class Item
                     _propertiesLock.Release()
                     SyncLock _shellItemLock2
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                            [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
+                            [property] = [property].FromCanonicalName(canonicalName, Me.ShellItem2)
                         Else
                             [property] = Nothing
                         End If
@@ -1527,7 +1523,7 @@ Public Class Item
                     If Me.IsDrive Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
-                                Me.Refresh(,,, False) ' don't refresh image because there's times when it does this a lot and we want to avoid flicker
+                                Me.Refresh(,, False) ' don't refresh image because there's times when it does this a lot and we want to avoid flicker
                             End Sub)
                     End If
                 Case SHCNE.MEDIAINSERTED, SHCNE.MEDIAREMOVED ' cdrom has been inserted or removed
@@ -1545,13 +1541,11 @@ Public Class Item
                             Sub()
                                 Dim newShellItem As IShellItem2 = Nothing
                                 Dim newPidl As Pidl = Nothing
-                                Dim newFullPath As String = Nothing
                                 SyncLock e.Item2._shellItemLock
                                     SyncLock e.Item2._shellItemLock2
                                         If Not e.Item2.disposedValue Then
                                             newShellItem = e.Item2.ShellItem2
                                             newPidl = e.Item2.Pidl?.Clone()
-                                            newFullPath = e.Item2.FullPath
                                             ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
                                             e.Item2._shellItem2 = Nothing
                                             e.Item2.Dispose()
