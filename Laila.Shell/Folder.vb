@@ -1427,6 +1427,39 @@ Public Class Folder
     End Sub
 
     Protected Friend Overrides Sub ProcessNotification(e As NotificationEventArgs)
+        If Not disposedValue Then
+            Select Case e.Event
+                Case SHCNE.RENAMEFOLDER, SHCNE.RENAMEITEM
+                    If (Not e.Item2.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso e.Item2.Parent?.Pidl?.Equals(Me.Pidl)) _
+                        OrElse (e.Item2.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item2.FullPath)?.Equals(Me.FullPath)) _
+                        OrElse IO.Path.GetDirectoryName(e.Item2.FullPath)?.Equals(_hookFolderFullPath) Then
+                        _wasActivity = True
+                        Dim existing As Item = Nothing
+                        UIHelper.OnUIThread(
+                            Sub()
+                                existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                    AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item2.Pidl) _
+                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item2.FullPath))))
+                                If existing Is Nothing Then
+                                    Dim newItem As Item = e.Item2.Clone()
+                                    Me.InitializeItem(newItem)
+                                    newItem.LogicalParent = Me
+                                    newItem.IsProcessingNotifications = True
+                                    e.IsHandled2 = True
+                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                    _items.InsertSorted(newItem, c)
+                                    SyncLock _previousFullPathsLock
+                                        If Not _previousFullPaths.Contains(newItem.FullPath) Then
+                                            _previousFullPaths.Add(newItem.FullPath)
+                                        End If
+                                    End SyncLock
+                                    Me.OnItemsChanged()
+                                End If
+                            End Sub)
+                    End If
+            End Select
+        End If
+
         MyBase.ProcessNotification(e)
 
         If Not disposedValue Then
@@ -1477,27 +1510,6 @@ Public Class Folder
                                     Sub()
                                         e.Item1.Refresh()
                                     End Sub)
-                                'ElseIf TypeOf existing Is Folder Then
-                                '    Shell.GlobalThreadPool.Run(
-                                '        Sub()
-                                '            Dim existingFolder As Folder = existing
-                                '            Dim newShellItem As IShellItem2 = Nothing
-                                '            Dim newPidl As Pidl = Nothing
-                                '            SyncLock e.Item1._shellItemLock
-                                '                SyncLock e.Item1._shellItemLock2
-                                '                    If Not e.Item1.disposedValue Then
-                                '                        newShellItem = e.Item1.ShellItem2
-                                '                        newPidl = e.Item1.Pidl?.Clone()
-                                '                        e.Item1._shellItem2 = Nothing
-                                '                        e.Item1.Dispose()
-                                '                    End If
-                                '                End SyncLock
-                                '            End SyncLock
-                                '            existingFolder.Refresh(newShellItem, newPidl,, e.Item1._livesOnThreadId)
-                                '            existingFolder._isEnumerated = False
-                                '            existingFolder._isEnumeratedForTree = False
-                                '            Dim __ = existingFolder.GetItemsAsync(True, True)
-                                '        End Sub)
                             End If
                         End If
                     End If

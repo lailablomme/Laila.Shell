@@ -1725,6 +1725,8 @@ Public Class Item
     End Sub
 
     Public Overridable Function Clone() As Item
-        Return Item.FromPidl(Me.Pidl, Nothing, _doKeepAlive)
+        Dim item As Item = Item.FromPidl(Me.Pidl, Nothing, _doKeepAlive)
+        If item Is Nothing Then item = Item.FromParsingName(Me.FullPath, Nothing, _doKeepAlive)
+        Return item
     End Function
 End Class
