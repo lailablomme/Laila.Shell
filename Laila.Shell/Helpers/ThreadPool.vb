@@ -17,6 +17,7 @@ Namespace Helpers
         Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
         Private _disposeToken As CancellationToken = _disposeTokensSource.Token
         Private disposedValue As Boolean
+        Private _rand As New Random()
 
         Public Sub New(size As Integer)
             Me.TaskQueues = New List(Of BlockingCollection(Of Action))
@@ -91,7 +92,7 @@ Namespace Helpers
                                         End Sub, System.Windows.Threading.DispatcherPriority.ContextIdle)
                                 End If
                             End If
-                            End If
+                        End If
                     Loop Until _isThreadFree(_nextThreadId) AndAlso Not _isThreadLocked(_nextThreadId)
                     Return _nextThreadId
                 End SyncLock
@@ -113,7 +114,7 @@ Namespace Helpers
 
         Public Sub Add(action As Action, Optional threadId As Integer? = Nothing)
             If Not threadId.HasValue OrElse threadId.Value = -1 Then
-                threadId = GetNextFreeThreadId()
+                threadId = _rand.Next(0, _size)
             End If
             Me.TaskQueues(threadId).Add(action)
         End Sub
@@ -187,6 +188,20 @@ Namespace Helpers
             ' Do not change this code. Put cleanup code in 'Dispose(disposing As Boolean)' method
             Dispose(disposing:=True)
             GC.SuppressFinalize(Me)
+        End Sub
+
+        Public Sub DisposeAndWait()
+            Me.Cancel()
+            Dim list As List(Of Thread) = Nothing
+            SyncLock _threadsLock
+                list = _threads.ToList()
+            End SyncLock
+            For Each thread In list
+                If thread.IsAlive Then
+                    thread.Join()
+                End If
+            Next
+            Me.Dispose()
         End Sub
     End Class
 End Namespace

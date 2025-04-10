@@ -28,5 +28,9 @@ Namespace Data
                 SetValue(_selectedItems, value)
             End Set
         End Property
+
+        Public Overrides Function ToString() As String
+            Return Me.Folder?.DisplayName
+        End Function
     End Class
 End Namespace

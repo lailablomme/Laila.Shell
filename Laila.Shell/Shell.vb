@@ -25,8 +25,9 @@ Public Class Shell
     Public Shared NotificationMainThread As Helpers.ThreadPool
     Public Shared NotificationThreadPool As Helpers.ThreadPool
     Public Shared GlobalThreadPool As Helpers.ThreadPool
+    Public Shared DisposerThreadPool As Helpers.ThreadPool
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
-    Private Shared _disposeThread As Thread
+    Private Shared _disposerLoopThread As Thread
     Private Shared _unhookUpdatesThread As Thread
 
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
@@ -94,9 +95,10 @@ Public Class Shell
         Shell.NotificationMainThread = New Helpers.ThreadPool(1)
         Shell.NotificationThreadPool = New Helpers.ThreadPool(75)
         Shell.GlobalThreadPool = New Helpers.ThreadPool(100)
+        Shell.DisposerThreadPool = New Helpers.ThreadPool(10)
 
         ' thread for disposing items
-        _disposeThread = New Thread(
+        _disposerLoopThread = New Thread(
             Sub()
                 Try
                     ' while we're not shutting down...
@@ -110,6 +112,7 @@ Public Class Shell
                             _itemsCacheLock.Release()
                         End Try
 
+                        Dim i As Long = 0
                         ' ...and go through it
                         For Each item In list
                             If ShuttingDownToken.IsCancellationRequested Then Exit For
@@ -121,7 +124,10 @@ Public Class Shell
                             End If
 
                             ' don't hog the process
-                            Thread.Sleep(5)
+                            i += 1
+                            If i Mod 25 = 0 Then
+                                Thread.Sleep(250)
+                            End If
                         Next
                         Thread.Sleep(5000)
                     End While
@@ -129,10 +135,10 @@ Public Class Shell
                     Debug.WriteLine("Disposing thread was canceled.")
                 End Try
             End Sub)
-        _disposeThread.IsBackground = True
-        _disposeThread.SetApartmentState(ApartmentState.MTA)
-        _disposeThread.Start()
-        _threads.Add(_disposeThread)
+        _disposerLoopThread.IsBackground = True
+        _disposerLoopThread.SetApartmentState(ApartmentState.MTA)
+        _disposerLoopThread.Start()
+        _threads.Add(_disposerLoopThread)
 
         ' make window to receive SHChangeNotify messages and for building
         ' the drag and drop image
@@ -265,10 +271,14 @@ Public Class Shell
                     _listenerhNotifies.Remove(item.Key)
                     _listenerCount.Remove(item.Key)
                 Next
+                For Each item In _listenerFileSystemWatchers.ToList()
+                    item.Value.Dispose()
+                    _listenerFileSystemWatchers.Remove(item.Key)
+                Next
             End SyncLock
 
-            Shell.NotificationMainThread.Dispose()
-            Shell.NotificationThreadPool.Dispose()
+            Shell.NotificationMainThread.DisposeAndWait()
+            Shell.NotificationThreadPool.DisposeAndWait()
 
             ' stop monitoring changes to settings so we can properly close the registry keys
             Shell.Settings.StopMonitoring()
@@ -308,11 +318,13 @@ Public Class Shell
                 _itemsCacheLock.Release()
             End Try
 
+            Dim poolList As List(Of Helpers.ThreadPool) = Nothing
             SyncLock _threadPoolCacheLock
-                For Each item In Shell.ThreadPoolCache.ToList()
-                    item.Dispose()
-                Next
+                poolList = Shell.ThreadPoolCache.ToList()
             End SyncLock
+            For Each item In poolList
+                item.DisposeAndWait()
+            Next
 
             ' uninitialize ole
             Functions.OleUninitialize()
@@ -378,12 +390,17 @@ Public Class Shell
                             Dim isFileSystemNotification As Boolean =
                                 e.Event = SHCNE.MKDIR OrElse e.Event = SHCNE.CREATE OrElse e.Event = SHCNE.RMDIR _
                                 OrElse e.Event = SHCNE.DELETE OrElse e.Event = SHCNE.RENAMEFOLDER OrElse e.Event = SHCNE.RENAMEITEM
+
                             Dim isFileSystemItem As Boolean = True
-                            Dim parent As Item = e.Item1
-                            While Not parent Is Nothing AndAlso isFileSystemItem
-                                isFileSystemItem = isFileSystemItem AndAlso parent.Attributes.HasFlag(SFGAO.FILESYSTEM)
-                                parent = parent.Parent
-                            End While
+                            If isFileSystemNotification Then
+                                Dim parent As Item = e.Item1
+                                While Not parent Is Nothing AndAlso isFileSystemItem
+                                    isFileSystemItem = isFileSystemItem _
+                                        AndAlso parent.Attributes.HasFlag(SFGAO.FILESYSTEM) _
+                                        AndAlso e.Item1.Attributes.HasFlag(SFGAO.STORAGEANCESTOR)
+                                    If isFileSystemItem Then parent = parent.Parent
+                                End While
+                            End If
                             If e.Item1 Is Nothing OrElse Not isFileSystemNotification OrElse Not isFileSystemItem Then
                                 Debug.Write(text)
 
@@ -538,7 +555,7 @@ Public Class Shell
         _itemsCacheLock.Wait()
         Try
             _itemsCache.Add(New Tuple(Of Item, Date)(item, DateTime.Now))
-            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso item.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
                 AddToFileSystemCache(item)
             End If
         Finally
@@ -550,7 +567,7 @@ Public Class Shell
         _itemsCacheLock.Wait()
         Try
             _itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
-            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso item.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
                 RemoveFromFileSystemCache(item.FullPath)
             End If
         Finally
@@ -561,13 +578,15 @@ Public Class Shell
     Friend Shared Sub AddToFileSystemCache(item As Item)
         _fileSystemCacheLock.Wait()
         Try
-            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not String.IsNullOrWhiteSpace(item.FullPath) Then
-                If Not _fileSystemCache.ContainsKey(item.FullPath) Then
-                    _fileSystemCache.Add(item.FullPath, item)
-                    _fileSystemCacheCount.Add(item.FullPath, 1)
+            Dim fullPath As String = item?.FullPath
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso item.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
+                AndAlso Not String.IsNullOrWhiteSpace(fullPath) Then
+                If Not _fileSystemCache.ContainsKey(fullPath) Then
+                    _fileSystemCache.Add(fullPath, item)
+                    _fileSystemCacheCount.Add(fullPath, 1)
                 Else
-                    Dim count As Integer = _fileSystemCacheCount(item.FullPath)
-                    _fileSystemCacheCount(item.FullPath) = count + 1
+                    Dim count As Integer = _fileSystemCacheCount(fullPath)
+                    _fileSystemCacheCount(fullPath) = count + 1
                 End If
             End If
         Finally
@@ -582,7 +601,7 @@ Public Class Shell
                 If _fileSystemCacheCount(fullPath) = 1 Then
                     _fileSystemCache.Remove(fullPath)
                     _fileSystemCacheCount.Remove(fullPath)
-                Else
+                ElseIf _fileSystemCacheCount.Contains(fullPath) Then
                     Dim count As Integer = _fileSystemCacheCount(fullPath)
                     _fileSystemCacheCount(fullPath) = count - 1
                 End If
@@ -596,7 +615,7 @@ Public Class Shell
         _itemsCacheLock.Wait()
         Try
             RemoveFromFileSystemCache(oldFullPath)
-            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso item.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
                 AddToFileSystemCache(item)
             End If
         Finally
@@ -709,7 +728,7 @@ Public Class Shell
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.CREATE
                                 e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
-                                fswNotify(e2)
+                                If If(e2.Item1?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then fswNotify(e2)
                             End Sub)
                     End Sub
                 AddHandler fsw.Deleted,
@@ -728,11 +747,13 @@ Public Class Shell
                                 Finally
                                     _fileSystemCacheLock.Release()
                                 End Try
-                                e2.Item1 = i?.Clone()
-                                If e2.Item1 Is Nothing Then
-                                    e2.Item1 = New Item(e.FullPath)
+                                If If(i?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then
+                                    e2.Item1 = i?.Clone()
+                                    If e2.Item1 Is Nothing Then
+                                        e2.Item1 = New Item(e.FullPath)
+                                    End If
+                                    fswNotify(e2)
                                 End If
-                                fswNotify(e2)
                             End Sub)
                     End Sub
                 AddHandler fsw.Renamed,
@@ -751,16 +772,18 @@ Public Class Shell
                                 Finally
                                     _fileSystemCacheLock.Release()
                                 End Try
-                                e2.Item1 = i?.Clone()
-                                If e2.Item1 Is Nothing Then
-                                    e2.Item1 = New Item(e.OldFullPath)
+                                If If(i?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then
+                                    e2.Item1 = i?.Clone()
+                                    If e2.Item1 Is Nothing Then
+                                        e2.Item1 = New Item(e.OldFullPath)
+                                    End If
+                                    e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
+                                    If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
+                                    If e2.Item2 Is Nothing Then e2.Event = SHCNE.DELETE
+                                    If e2.Event = SHCNE.DELETE OrElse If(e2.Item2?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then
+                                        fswNotify(e2)
+                                    End If
                                 End If
-                                e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
-                                If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
-                                If e2.Item1 Is Nothing Then
-                                    e2.Item2 = New Item(e.FullPath)
-                                End If
-                                fswNotify(e2)
                             End Sub)
                     End Sub
 

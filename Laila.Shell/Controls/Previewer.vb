@@ -86,9 +86,13 @@ Namespace Controls
 
             PART_Message = Me.Template.FindName("PART_Message", Me)
             PART_Thumbnail = Me.Template.FindName("PART_Thumbnail", Me)
+
+            setMessage()
         End Sub
 
         Private Sub setMessage()
+            If Me.PART_Message Is Nothing Then Return
+
             If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
                 PART_Message.Text = "Select the file for which you want to display a preview."
                 PART_Message.Visibility = Visibility.Visible

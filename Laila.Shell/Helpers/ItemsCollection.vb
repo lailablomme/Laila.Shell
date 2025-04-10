@@ -26,7 +26,9 @@ Namespace Helpers
                 Next
             End If
 
-            Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
+            If If(itemsToAdd?.Count > 0, False) OrElse If(itemsToRemove?.Count > 0, False) Then
+                Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
+            End If
         End Sub
 
         Public Sub InsertSorted(newItem As T, comparer As IComparer)

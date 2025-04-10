@@ -116,8 +116,9 @@ Namespace Controls
                         Shell.GlobalThreadPool.Add(
                             Sub()
                                 ' get the first available parent in case the current folder disappears
-                                Dim f As Folder = Me.GetParentOfSelectionBefore(selectedItem)
+                                Dim f As Folder = selectedItem.LogicalParent
                                 If Not f Is Nothing Then
+                                    Debug.WriteLine("waiting for .zip operations")
                                     Thread.Sleep(300) ' wait for .zip operations/folder refresh to complete
 
                                     ' get the newly created .zip folder
@@ -126,16 +127,15 @@ Namespace Controls
                                             OrElse (i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
                                                 AndAlso If(i.FullPath?.Equals(e.Item2.FullPath), False)))
                                     If Not replacement Is Nothing AndAlso TypeOf replacement Is Folder Then
-                                        ' new folder matching the current folder was found -- load it
-                                        CType(replacement, Folder).GetItems()
+                                        ' new folder matching the current folder was found -- select it
+                                        Debug.WriteLine("replacement found")
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                CType(replacement, Folder).LastScrollOffset = CType(selectedItem, Folder).LastScrollOffset
-                                                CType(replacement, Folder).LastScrollSize = CType(selectedItem, Folder).LastScrollSize
                                                 Me.Folder = replacement
                                             End Sub)
                                     Else
                                         ' the current folder disappeared -- switch to parent
+                                        Debug.WriteLine("replacement not found")
                                         UIHelper.OnUIThread(
                                             Sub()
                                                 Me.Folder = f
@@ -155,7 +155,7 @@ Namespace Controls
                             End Sub)
                     End If
                     ' if the current folder was deleted...
-                    If Not selectedItem Is Nothing AndAlso Not (selectedItem.FullPath.ToLower().Contains(".zip~") AndAlso selectedItem.FullPath.ToLower().EndsWith(".tmp")) _
+                    If Not selectedItem Is Nothing _
                         AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
                                 AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
@@ -167,6 +167,7 @@ Namespace Controls
                                 If Not f Is Nothing Then
                                     Await Task.Delay(300) ' wait for .zip operations/folder refresh to complete
                                     If _deletedFullName?.Equals(selectedItem.FullPath) Then
+                                        Debug.WriteLine("item was deleted")
                                         Me.Folder = f ' load it
                                     End If
                                 End If

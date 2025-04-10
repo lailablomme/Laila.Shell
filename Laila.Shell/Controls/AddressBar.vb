@@ -232,11 +232,13 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim ab As AddressBar = TryCast(d, AddressBar)
-            Dim f As Folder = e.NewValue
-            ab.SelectedItem = f
-            f.AddressBarRoot = Nothing
-            f.AddressBarDisplayName = Nothing
-            ab.IsLoading = False
+            If Not e.NewValue Is Nothing Then
+                Dim f As Folder = e.NewValue
+                ab.SelectedItem = f
+                f.AddressBarRoot = Nothing
+                f.AddressBarDisplayName = Nothing
+                ab.IsLoading = False
+            End If
         End Sub
 
         Public Property IsLoading As Boolean

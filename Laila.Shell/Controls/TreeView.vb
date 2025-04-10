@@ -202,7 +202,7 @@ Namespace Controls
                             End Sub)
                     End If
                     ' if the current folder was deleted...
-                    If Not selectedItem Is Nothing AndAlso Not (selectedItem.FullPath.ToLower().Contains(".zip~") AndAlso selectedItem.FullPath.ToLower().EndsWith(".tmp")) _
+                    If Not selectedItem Is Nothing _
                         AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
                                 AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
@@ -392,6 +392,10 @@ Namespace Controls
             AddHandler PART_ListBox.MouseLeave, AddressOf listBox_MouseLeave
             AddHandler Me.PreviewKeyDown, AddressOf treeView_KeyDown
             AddHandler Me.PreviewTextInput, AddressOf treeView_TextInput
+
+            If Not Me.Folder Is Nothing Then
+                Dim __ = Me.SetSelectedFolder(Me.Folder)
+            End If
         End Sub
 
         Public ReadOnly Property SelectedItem As Item
@@ -1020,7 +1024,9 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim tv As TreeView = TryCast(d, TreeView)
-            Dim __ = tv.SetSelectedFolder(e.NewValue)
+            If Not tv._selectionHelper Is Nothing Then
+                Dim __ = tv.SetSelectedFolder(e.NewValue)
+            End If
         End Sub
 
         Public Property Items As ItemsCollection(Of Item)
