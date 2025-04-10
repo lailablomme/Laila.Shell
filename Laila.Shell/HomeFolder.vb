@@ -216,32 +216,28 @@ Public Class HomeFolder
     End Sub
 
     Protected Friend Overrides Function InitializeItem(item As Item) As Item
-        Try
-            If TypeOf item Is Link Then
-                CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
-                Dim target As Item = CType(item, Link).TargetItem
-                If Not TypeOf target Is Folder AndAlso target.IsExisting _
-                    AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
-                    target.LogicalParent = Me
-                    target._hasCustomProperties = True
+        If TypeOf item Is Link Then
+            CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
+            Dim target As Item = CType(item, Link).TargetItem
+            If Not TypeOf target Is Folder AndAlso target.IsExisting _
+                AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
+                target.LogicalParent = Me
+                target._hasCustomProperties = True
 
-                    Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
-                    target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
+                Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
+                target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
-                    Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(modifiedProperty.Value)
-                    target._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
+                Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(modifiedProperty.Value)
+                target._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
 
-                    Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
-                    target._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
+                Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
+                target._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
-                    Return target
-                Else
-                    target.Dispose()
-                End If
+                Return target
             End If
-        Finally
-            item.Dispose()
-        End Try
+        End If
+
+        item._logicalParent = Nothing
 
         Return Nothing
     End Function

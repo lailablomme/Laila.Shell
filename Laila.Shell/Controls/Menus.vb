@@ -459,8 +459,8 @@ Namespace Controls
             Dim icm As Menus = TryCast(d, Menus)
             If Not e.NewValue Is Nothing AndAlso Not TypeOf e.NewValue Is DummyFolder Then
                 Await icm.UpdateNewItemMenu()
+                icm.UpdateButtons()
             End If
-            icm.UpdateButtons()
         End Sub
 
         Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)

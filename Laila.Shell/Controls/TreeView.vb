@@ -392,6 +392,10 @@ Namespace Controls
             AddHandler PART_ListBox.MouseLeave, AddressOf listBox_MouseLeave
             AddHandler Me.PreviewKeyDown, AddressOf treeView_KeyDown
             AddHandler Me.PreviewTextInput, AddressOf treeView_TextInput
+
+            If Not Me.Folder Is Nothing Then
+                Dim __ = Me.SetSelectedFolder(Me.Folder)
+            End If
         End Sub
 
         Public ReadOnly Property SelectedItem As Item
@@ -1020,7 +1024,9 @@ Namespace Controls
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim tv As TreeView = TryCast(d, TreeView)
-            Dim __ = tv.SetSelectedFolder(e.NewValue)
+            If Not tv._selectionHelper Is Nothing Then
+                Dim __ = tv.SetSelectedFolder(e.NewValue)
+            End If
         End Sub
 
         Public Property Items As ItemsCollection(Of Item)
