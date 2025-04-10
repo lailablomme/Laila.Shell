@@ -1,5 +1,6 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Windows
+Imports System.Windows.Automation.Peers
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Input
@@ -67,7 +68,7 @@ Namespace Controls
 
             Dim item As TabItem = GetSelectedTabItem()
             If Not item Is Nothing Then
-                Dim cp As ContentPresenter = findChildContentPresenter(item)
+                Dim cp As Grid = findChildContentPresenter(item)
                 Dim folderView As FolderView = UIHelper.FindVisualChildren(Of FolderView)(cp)?(0)
                 If Not folderView Is Nothing _
                     AndAlso Not folderView.ActiveView Is Nothing Then
@@ -161,7 +162,7 @@ Namespace Controls
                 Case Specialized.NotifyCollectionChangedAction.Add, Specialized.NotifyCollectionChangedAction.Remove
                     If Not e.OldItems Is Nothing Then
                         For Each item In e.OldItems
-                            Dim cp As ContentPresenter = findChildContentPresenter(item)
+                            Dim cp As Grid = findChildContentPresenter(item)
                             If Not cp Is Nothing Then
                                 For Each treeView In UIHelper.FindVisualChildren(Of TreeView)(cp)
                                     treeView.Dispose()
@@ -198,32 +199,56 @@ Namespace Controls
                 createChildContentPresenter(item)
             End If
 
-            For Each child As ContentPresenter In PART_ItemsHolder.Children
-                child.Visibility = IIf(CType(child.Tag, TabItem).IsSelected, Visibility.Visible, Visibility.Hidden)
+            For Each child As Grid In PART_ItemsHolder.Children
+                child.Visibility = IIf(child.Tag.Equals(Me.SelectedItem), Visibility.Visible, Visibility.Hidden)
             Next
         End Sub
 
-        Private Function createChildContentPresenter(item As Object) As ContentPresenter
-            If item Is Nothing Then
-                Return Nothing
-            End If
+        Class DummyContentPresenter
+            Inherits ContentPresenter
 
-            Dim cp As ContentPresenter = findChildContentPresenter(item)
+            Public Sub RemoveVisualChildPublic(child As UIElement)
+                Me.RemoveVisualChild(child)
+            End Sub
+        End Class
 
-            If Not cp Is Nothing Then
-                Return cp
-            End If
+        Private Function createChildContentPresenter(item As Object) As Grid
+            If item Is Nothing Then Return Nothing
+            If PART_ItemsHolder Is Nothing Then Return Nothing
 
-            Dim tabItem As TabItem = item
-            cp = New ContentPresenter() With {
-                .Content = IIf(Not tabItem Is Nothing, tabItem.Content, item),
+            Dim cp As Grid = findChildContentPresenter(item)
+            If Not cp Is Nothing Then Return cp
+
+            Dim tabItem As TabItem = TryCast(item, TabItem)
+            Dim data As Object = If(tabItem IsNot Nothing, tabItem.Content, item)
+
+            ' Step 1: create a dummy ContentPresenter to apply the template
+            Dim dummyPresenter As New DummyContentPresenter() With {
+                .Content = data,
                 .ContentTemplate = Me.SelectedContentTemplate,
                 .ContentTemplateSelector = Me.SelectedContentTemplateSelector,
-                .ContentStringFormat = Me.SelectedContentStringFormat,
-                .Visibility = Visibility.Hidden,
-                .Tag = IIf(Not tabItem Is Nothing, tabItem, Me.ItemContainerGenerator.ContainerFromItem(item))
+                .ContentStringFormat = Me.SelectedContentStringFormat
             }
-            PART_ItemsHolder.Children.Add(cp)
+
+            dummyPresenter.ApplyTemplate()
+            dummyPresenter.UpdateLayout()
+
+            ' Step 2: Extract the generated visuals from the template
+            Dim visuals As List(Of UIElement) = UIHelper.FindVisualChildren(Of UIElement)(dummyPresenter, False).ToList()
+
+            ' Step 3: Rehost them in a Grid
+            Dim grid As New Grid()
+            For Each child As UIElement In visuals
+                dummyPresenter.RemoveVisualChildPublic(child)
+                grid.Children.Add(child)
+            Next
+
+            ' Step 4: Create final ContentPresenter (or better: a ContentControl or your own wrapper)
+            grid.Visibility = Visibility.Hidden
+            grid.Tag = data
+            grid.DataContext = data
+
+            PART_ItemsHolder.Children.Add(grid)
 
             AddHandler tabItem.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -233,7 +258,11 @@ Namespace Controls
             Return cp
         End Function
 
-        Private Function findChildContentPresenter(data As Object) As ContentPresenter
+        Protected Overrides Function OnCreateAutomationPeer() As AutomationPeer
+            Return New TabControlAutomationPeer(Me)
+        End Function
+
+        Friend Function findChildContentPresenter(data As Object) As Grid
             If TypeOf data Is TabItem Then
                 data = CType(data, TabItem).Content
             End If
@@ -246,8 +275,8 @@ Namespace Controls
                 Return Nothing
             End If
 
-            For Each cp As ContentPresenter In PART_ItemsHolder.Children
-                If cp.Content.Equals(data) Then
+            For Each cp As Grid In PART_ItemsHolder.Children
+                If cp.Tag.Equals(data) Then
                     Return cp
                 End If
             Next
@@ -372,5 +401,79 @@ Namespace Controls
             Dispose(disposing:=True)
             GC.SuppressFinalize(Me)
         End Sub
+
+        Public Class TabControlAutomationPeer
+            Inherits System.Windows.Automation.Peers.TabControlAutomationPeer
+
+            Public Sub New(owner As Laila.Shell.Controls.TabControl)
+                MyBase.New(owner)
+            End Sub
+
+            Protected Overrides Function GetChildrenCore() As List(Of AutomationPeer)
+                Dim ownerControl = CType(Me.Owner, Laila.Shell.Controls.TabControl)
+                Dim peers As New List(Of AutomationPeer)
+
+                For Each item In ownerControl.Items
+                    Dim tabItem = CType(ownerControl.ItemContainerGenerator.ContainerFromItem(item), TabItem)
+                    If tabItem IsNot Nothing Then
+                        Dim tabItemPeer = New TabItemAutomationPeer(tabItem, Me)
+                        If Not tabItemPeer Is Nothing Then
+                            peers.Add(tabItemPeer)
+
+                            ' Get content presenter inside your PART_ItemsHolder
+                            Dim cp = ownerControl.findChildContentPresenter(item)
+                            If Not cp Is Nothing Then
+                                Dim gridPeer = New GridAutomationPeer(cp)
+                                If Not gridPeer Is Nothing Then
+                                    tabItemPeer.Children = gridPeer.GetChildren()
+                                End If
+                            End If
+                        End If
+                    End If
+                Next
+
+                Return peers
+            End Function
+
+            Public Class GridAutomationPeer
+                Inherits FrameworkElementAutomationPeer
+
+                Public Property Children As List(Of AutomationPeer) = New List(Of AutomationPeer)()
+                Public Property Name As String
+
+                Public Sub New(owner As Grid)
+                    MyBase.New(owner)
+                End Sub
+
+                Protected Overrides Function GetAutomationControlTypeCore() As AutomationControlType
+                    Return AutomationControlType.Pane
+                End Function
+
+                Protected Overrides Function GetChildrenCore() As List(Of AutomationPeer)
+                    Return If(MyBase.GetChildrenCore(), New List(Of AutomationPeer)).Union(Me.Children).ToList()
+                End Function
+
+                Protected Overrides Function GetNameCore() As String
+                    Return Me.Name
+                End Function
+            End Class
+
+            Public Class TabItemAutomationPeer
+                Inherits System.Windows.Automation.Peers.TabItemAutomationPeer
+
+                Public Property Children As List(Of AutomationPeer) = New List(Of AutomationPeer)()
+
+                Public Sub New(owner As TabItem, parent As TabControlAutomationPeer)
+                    MyBase.New(owner, parent)
+                End Sub
+
+                Protected Overrides Function GetChildrenCore() As List(Of AutomationPeer)
+                    Return New List(Of AutomationPeer) From {
+                    New GridAutomationPeer(New Grid()) With {.Name = "Tab", .Children = If(MyBase.GetChildrenCore(), New List(Of AutomationPeer))},
+                    New GridAutomationPeer(New Grid()) With {.Name = "Content", .Children = Me.Children}
+                }
+                End Function
+            End Class
+        End Class
     End Class
 End Namespace
