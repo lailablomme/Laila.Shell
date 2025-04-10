@@ -1608,56 +1608,6 @@ Public Class Item
                             End If
                             RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
 
-                            ' remove from parent collection
-                            If Me.IsReadyForDispose Then
-                                ' we're being disposed from the disposer thread, so try not to block the ui thread
-                                If Not _logicalParent Is Nothing Then
-                                    _logicalParent._items.RemoveWithoutNotifying(Me)
-                                    SyncLock _logicalParent._previousFullPathsLock
-                                        If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not _logicalParent._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
-                                            _logicalParent._previousFullPaths.Remove(_fullPath)
-                                        ElseIf Not _pidl Is Nothing AndAlso Not _logicalParent._items.ToList().Where(Function(i) Not _logicalParent._previousFullPaths.Contains(i.FullPath)).ToList().Exists(Function(i) If(i._pidl?.Equals(_pidl), False)) Then
-                                            _logicalParent._previousFullPaths.Remove(_pidl.ToString())
-                                        End If
-                                    End SyncLock
-                                    _logicalParent._isEnumerated = False
-                                    If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
-                                    _logicalParent.OnItemsChanged(Me)
-                                    _logicalParent = Nothing
-                                End If
-                            Else
-                                Dim tempPidl As Pidl = _pidl?.Clone()
-                                Dim lp As Folder = _logicalParent
-                                If Not lp Is Nothing Then
-                                    UIHelper.OnUIThread(
-                                        Sub()
-                                            lp._items.Remove(Me)
-                                        End Sub)
-                                    SyncLock lp._previousFullPathsLock
-                                        If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not lp._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
-                                            lp._previousFullPaths.Remove(_fullPath)
-                                        ElseIf Not tempPidl Is Nothing AndAlso Not lp._items.ToList().Where(Function(i) Not lp._previousFullPaths.Contains(i.FullPath)).ToList().Exists(Function(i) If(i.Pidl?.Equals(tempPidl), False)) Then
-                                            lp._previousFullPaths.Remove(tempPidl?.ToString())
-                                        End If
-                                    End SyncLock
-                                    lp._isEnumerated = False
-                                    If Me.CanShowInTree Then lp._isEnumeratedForTree = False
-                                    lp.OnItemsChanged(Me)
-                                End If
-                                ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
-                                tempPidl?.Dispose()
-                            End If
-
-                            ' dispose properties
-                            For Each [property] In _propertiesByKey.ToList()
-                                [property].Value.Dispose()
-                            Next
-                            _propertiesByKey.Clear()
-                            For Each [property] In _propertiesByCanonicalName.ToList()
-                                [property].Value.Dispose()
-                            Next
-                            _propertiesByCanonicalName.Clear()
-
                             ' switch shellitem, we'll release it later
                             oldShellItem = _shellItem2
                             _shellItem2 = Nothing
@@ -1672,20 +1622,6 @@ Public Class Item
                                 Marshal.ReleaseComObject(_shellItem2)
                                 _shellItem2 = Nothing
                             End If
-
-                            ' dispose properties
-                            For Each [property] In _propertiesByKey.ToList()
-                                [property].Value.Dispose()
-                            Next
-                            For Each [property] In _propertiesByCanonicalName.ToList()
-                                [property].Value.Dispose()
-                            Next
-                        End If
-
-                        ' dispose pidl
-                        If Not _pidl Is Nothing Then
-                            _pidl.Dispose()
-                            _pidl = Nothing
                         End If
 
                         ' free unmanaged resources (unmanaged objects) and override finalizer
@@ -1693,6 +1629,64 @@ Public Class Item
                 End If
             End SyncLock
         End SyncLock
+
+        If Not wasDisposed Then
+            ' remove from parent collection
+            If Me.IsReadyForDispose Then
+                ' we're being disposed from the disposer thread, so try not to block the ui thread
+                If Not _logicalParent Is Nothing Then
+                    _logicalParent._items.RemoveWithoutNotifying(Me)
+                    SyncLock _logicalParent._previousFullPathsLock
+                        If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not _logicalParent._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
+                            _logicalParent._previousFullPaths.Remove(_fullPath)
+                        ElseIf Not _pidl Is Nothing AndAlso Not _logicalParent._items.ToList().Where(Function(i) Not _logicalParent._previousFullPaths.Contains(i.FullPath)).ToList().Exists(Function(i) If(i._pidl?.Equals(_pidl), False)) Then
+                            _logicalParent._previousFullPaths.Remove(_pidl.ToString())
+                        End If
+                    End SyncLock
+                    _logicalParent._isEnumerated = False
+                    If Me.CanShowInTree Then _logicalParent._isEnumeratedForTree = False
+                    _logicalParent.OnItemsChanged(Me)
+                    _logicalParent = Nothing
+                End If
+            Else
+                Dim tempPidl As Pidl = _pidl?.Clone()
+                Dim lp As Folder = _logicalParent
+                If Not lp Is Nothing Then
+                    UIHelper.OnUIThread(
+                        Sub()
+                            lp._items.Remove(Me)
+                        End Sub)
+                    SyncLock lp._previousFullPathsLock
+                        If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not lp._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
+                            lp._previousFullPaths.Remove(_fullPath)
+                        ElseIf Not tempPidl Is Nothing AndAlso Not lp._items.ToList().Where(Function(i) Not lp._previousFullPaths.Contains(i.FullPath)).ToList().Exists(Function(i) If(i.Pidl?.Equals(tempPidl), False)) Then
+                            lp._previousFullPaths.Remove(tempPidl?.ToString())
+                        End If
+                    End SyncLock
+                    lp._isEnumerated = False
+                    If Me.CanShowInTree Then lp._isEnumeratedForTree = False
+                    lp.OnItemsChanged(Me)
+                    ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
+                    tempPidl?.Dispose()
+                End If
+            End If
+
+            ' dispose pidl
+            If Not _pidl Is Nothing Then
+                _pidl.Dispose()
+                _pidl = Nothing
+            End If
+
+            ' dispose properties
+            For Each [property] In _propertiesByKey.ToList()
+                [property].Value.Dispose()
+            Next
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then _propertiesByKey.Clear()
+            For Each [property] In _propertiesByCanonicalName.ToList()
+                [property].Value.Dispose()
+            Next
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then _propertiesByCanonicalName.Clear()
+        End If
 
         If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso Not wasDisposed Then
             ' dispose outside of the lock because it can take a while
