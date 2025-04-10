@@ -675,6 +675,8 @@ Public Class Item
                                 Return image
                             End Using
                         End Using
+                    Catch ex As Exception
+                        ' ignore
                     Finally
                         If Not IntPtr.Zero.Equals(hBitmap) Then
                             Functions.DeleteObject(hBitmap)
