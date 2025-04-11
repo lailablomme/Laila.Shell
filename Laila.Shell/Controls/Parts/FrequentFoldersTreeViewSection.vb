@@ -53,7 +53,7 @@ Namespace Controls.Parts
 
                         For i = 0 To folders.Count - 1
                             If i < Me.Items.Count Then
-                                If Not Me.Items(i).Pidl.Equals(folders(i).Pidl) Then
+                                If Not If(Me.Items(i).Pidl?.Equals(folders(i).Pidl), False) Then
                                     If i + 1 < Me.Items.Count AndAlso Me.Items(i + 1).Pidl.Equals(folders(i).Pidl) Then
                                         Me.Items.Remove(Me.Items(i))
                                     Else

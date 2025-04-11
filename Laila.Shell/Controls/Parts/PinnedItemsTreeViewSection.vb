@@ -44,7 +44,7 @@ Namespace Controls.Parts
                     Dim items As IEnumerable(Of Item) = PinnedItems.GetPinnedItems()
                     For i = 0 To items.Count - 1
                         If i + 1 < Me.Items.Count Then
-                            If Not Me.Items(i + 1).Pidl.Equals(items(i).Pidl) Then
+                            If Not If(Me.Items(i + 1).Pidl?.Equals(items(i).Pidl), False) Then
                                 If i + 2 < Me.Items.Count AndAlso Me.Items(i + 2).Pidl.Equals(items(i).Pidl) Then
                                     Me.Items.Remove(Me.Items(i + 1))
                                 Else
