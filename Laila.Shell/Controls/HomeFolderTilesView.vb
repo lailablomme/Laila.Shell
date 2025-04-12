@@ -3,6 +3,7 @@ Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Data
 Imports System.Windows.Input
 
 Namespace Controls
@@ -13,7 +14,7 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(HomeFolderTilesView), New FrameworkPropertyMetadata(GetType(HomeFolderTilesView)))
         End Sub
 
-        Private _oldFocusedElement As UIElement = Nothing
+        Private _oldFocusedElement As ListBoxItem = Nothing
         Private _isWorkingFocus As Boolean
 
         Protected Overrides Sub PART_ListBox_Loaded()
@@ -26,12 +27,12 @@ Namespace Controls
                 Sub(s As Object, e As KeyboardFocusChangedEventArgs)
                     If Not _isWorkingFocus Then
                         If (e.OldFocus Is Nothing OrElse Not e.OldFocus.Equals(_oldFocusedElement)) _
-                            AndAlso Not _oldFocusedElement Is Nothing Then
+                            AndAlso Not _oldFocusedElement Is Nothing AndAlso Not Object.ReferenceEquals(_oldFocusedElement.DataContext, BindingOperations.DisconnectedSource) Then
                             _isWorkingFocus = True
                             _oldFocusedElement.Focus()
                             e.Handled = True
                             _isWorkingFocus = False
-                        Else
+                        ElseIf TypeOf e.NewFocus Is ListBoxItem Then
                             _oldFocusedElement = e.NewFocus
                         End If
                     End If
