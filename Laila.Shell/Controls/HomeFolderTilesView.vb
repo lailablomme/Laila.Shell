@@ -3,6 +3,7 @@ Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Input
 
 Namespace Controls
     Public Class HomeFolderTilesView
@@ -12,11 +13,29 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(HomeFolderTilesView), New FrameworkPropertyMetadata(GetType(HomeFolderTilesView)))
         End Sub
 
+        Private _oldFocusedElement As UIElement = Nothing
+        Private _isWorkingFocus As Boolean
+
         Protected Overrides Sub PART_ListBox_Loaded()
             MyBase.PART_ListBox_Loaded()
 
             _selectionHelper.Unhook()
             _selectionHelper = Nothing
+
+            AddHandler Me.PreviewGotKeyboardFocus,
+                Sub(s As Object, e As KeyboardFocusChangedEventArgs)
+                    If Not _isWorkingFocus Then
+                        If (e.OldFocus Is Nothing OrElse Not e.OldFocus.Equals(_oldFocusedElement)) _
+                            AndAlso Not _oldFocusedElement Is Nothing Then
+                            _isWorkingFocus = True
+                            _oldFocusedElement.Focus()
+                            e.Handled = True
+                            _isWorkingFocus = False
+                        Else
+                            _oldFocusedElement = e.NewFocus
+                        End If
+                    End If
+                End Sub
         End Sub
 
         Public Overrides Sub OnApplyTemplate()

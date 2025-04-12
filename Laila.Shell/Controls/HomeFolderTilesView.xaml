@@ -30,7 +30,7 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderHomeStyle}">
+                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderHomeStyle}" IsTabStop="False">
                                                             <Expander.Resources>
                                                                 <converters:DoubleAdditionConverter x:Key="doubleAdditionConverter" />
                                                             </Expander.Resources>
@@ -42,7 +42,7 @@
                                                             <Border Width="{Binding ActualWidth, ElementName=PART_ListView, Converter={StaticResource doubleAdditionConverter}, ConverterParameter=-20}">
                                                                 <ListView ItemsSource="{Binding Items}" Margin="25,0,0,0" SelectionMode="Extended"
                                                                           behaviors:SharedSelectedItemsBehavior.SyncedSelectedItemsWith="{Binding Tag, ElementName=PART_Grid}"
-                                                                          behaviors:ScrollViewerFix.IsEnabled="True" BorderThickness="0"
+                                                                          behaviors:ScrollViewerFix.IsEnabled="True" BorderThickness="0" IsTabStop="False" Focusable="False"
                                                                           ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False">
                                                                     <ListView.Resources>
                                                                         <!-- Default panel and template -->

@@ -486,7 +486,7 @@
                             BorderThickness="{TemplateBinding BorderThickness}">
                         <StackPanel>
                             <DockPanel>
-                                <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0"
+                                <ToggleButton DockPanel.Dock="Left" Margin="12,0,0,0" IsTabStop="False"
                                               Style="{StaticResource lailaShell_GroupByExpanderToggleButtonHomeStyle}" 
                                               IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}">
                                     <ContentPresenter ContentSource="Header" VerticalAlignment="Center" Margin="10,0,0,0"/>
