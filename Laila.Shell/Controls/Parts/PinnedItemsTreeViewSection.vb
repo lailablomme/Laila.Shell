@@ -34,7 +34,7 @@ Namespace Controls.Parts
             UIHelper.OnUIThread(
                 Sub()
                     If Me.Items.Contains(Me.TreeView.SelectedItem) Then
-                        selectedPidl = Me.TreeView.SelectedItem.Pidl.Clone()
+                        selectedPidl = Me.TreeView.SelectedItem.Pidl?.Clone()
                     End If
 
                     If Me.Items.Count = 0 Then
@@ -44,13 +44,13 @@ Namespace Controls.Parts
                     Dim items As IEnumerable(Of Item) = PinnedItems.GetPinnedItems()
                     For i = 0 To items.Count - 1
                         If i + 1 < Me.Items.Count Then
-                            If Not Me.Items(i + 1).Pidl.Equals(items(i).Pidl) Then
-                                If i + 2 < Me.Items.Count AndAlso Me.Items(i + 2).Pidl.Equals(items(i).Pidl) Then
+                            If Not If(Me.Items(i + 1).Pidl?.Equals(items(i).Pidl), False) Then
+                                If i + 2 < Me.Items.Count AndAlso If(Me.Items(i + 2).Pidl?.Equals(items(i).Pidl), False) Then
                                     Me.Items.Remove(Me.Items(i + 1))
                                 Else
                                     Me.Items.Insert(i + 1, items(i))
                                 End If
-                                If items(i).Pidl.Equals(selectedPidl) Then
+                                If items(i).Pidl?.Equals(selectedPidl) Then
                                     Me.TreeView.SetSelectedItem(items(i))
                                 End If
                             End If

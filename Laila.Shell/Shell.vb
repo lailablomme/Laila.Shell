@@ -112,6 +112,7 @@ Public Class Shell
                             _itemsCacheLock.Release()
                         End Try
 
+                        Dim i As Long = 0
                         ' ...and go through it
                         For Each item In list
                             If ShuttingDownToken.IsCancellationRequested Then Exit For
@@ -123,7 +124,10 @@ Public Class Shell
                             End If
 
                             ' don't hog the process
-                            Thread.Sleep(15)
+                            i += 1
+                            If i Mod 25 = 0 Then
+                                Thread.Sleep(250)
+                            End If
                         Next
                         Thread.Sleep(5000)
                     End While

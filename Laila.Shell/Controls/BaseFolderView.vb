@@ -767,6 +767,8 @@ Namespace Controls
         End Sub
 
         Private Function getMenu(folder As Folder, selectedItems As IEnumerable(Of Item), isDefaultOnly As Boolean) As RightClickMenu
+            If folder Is Nothing Then Return Nothing
+
             If Not _menu Is Nothing Then
                 _menu.Dispose()
             End If
