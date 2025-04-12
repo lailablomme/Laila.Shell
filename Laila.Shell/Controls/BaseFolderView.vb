@@ -97,7 +97,9 @@ Namespace Controls
             Me.PART_Grid = Template.FindName("PART_Grid", Me)
             Me.PART_CheckBoxSelectAll = Template.FindName("PART_CheckBoxSelectAll", Me)
             Me.PART_DragInsertIndicator = Template.FindName("PART_DragInsertIndicator", Me)
+
             Dim b = Shell.Settings.DoShowTypeOverlay
+
             If Not Me.PART_CheckBoxSelectAll Is Nothing Then
                 AddHandler Me.PART_CheckBoxSelectAll.Checked,
                     Sub(s As Object, e As RoutedEventArgs)
@@ -161,6 +163,10 @@ Namespace Controls
                         _isLoaded = True
                         Me.PART_ListBox_Loaded()
                     End If
+                End Sub
+
+            AddHandler Me.PreviewGotKeyboardFocus,
+                Sub(s As Object, e As KeyboardFocusChangedEventArgs)
                 End Sub
 
             AddHandler Me.PART_ListBox.PreviewMouseMove, AddressOf listBox_PreviewMouseMove

@@ -47,11 +47,11 @@
                                                                     <ListView.Resources>
                                                                         <!-- Default panel and template -->
                                                                         <ItemsPanelTemplate x:Key="GridPanel">
-                                                                            <StackPanel />
+                                                                            <StackPanel Margin="0,2,0,2" />
                                                                         </ItemsPanelTemplate>
 
                                                                         <ItemsPanelTemplate x:Key="TilePanel">
-                                                                            <WrapPanel />
+                                                                            <WrapPanel Margin="0,2,0,2" />
                                                                         </ItemsPanelTemplate>
 
                                                                         <!-- Grid Item Template -->

@@ -27,12 +27,24 @@
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="2"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="FocusVisualStyle">
+            <Setter.Value>
+                <Style>
+                    <Setter Property="Control.Template">
+                        <Setter.Value>
+                            <ControlTemplate>
+                                <Border BorderBrush="Black" BorderThickness="2" Background="Transparent" CornerRadius="5" Margin="0,-2,10,-2" SnapsToDevicePixels="true"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListViewItem">
                     <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"
-                            Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True" Margin="0,1,10,1"
+                            Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True" Margin="3,1,13,1"
                             HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}">
                         <Grid HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}">
                             <GridViewRowPresenter VerticalAlignment="{TemplateBinding VerticalContentAlignment}" x:Name="rowPresenter" />
@@ -55,9 +67,6 @@
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
-                        </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="Black"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
