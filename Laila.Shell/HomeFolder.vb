@@ -27,6 +27,7 @@ Public Class HomeFolder
         MyBase.New(Nothing, parent, doKeepAlive, True, Nothing)
 
         _hasSubFolders = True
+        _hasShellItem = False ' prevent getting disposed on refresh because we ain't got a shellitem
         Me.ItemsGroupByPropertyName = "PropertiesByKeyAsText[" & Home_CategoryProperty.Key.ToString() & "].GroupByText"
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
 
