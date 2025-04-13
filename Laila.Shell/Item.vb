@@ -25,38 +25,39 @@ Public Class Item
 
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
-    Friend _propertiesByKey As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
-    Protected _propertiesByCanonicalName As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
-    Friend _fullPath As String
-    Friend disposedValue As Boolean
-    Friend _parent As Folder
-    Friend _displayName As String
-    Private _isPinned As Boolean
-    Private _isCut As Boolean
     Private _attributes As SFGAO
+    Protected _canShowInTree As Boolean
+    Private _contentViewModeProperties() As [Property]
+    Friend _displayName As String
+    Protected _doKeepAlive As Boolean
+    Friend _fullPath As String
+    Friend _hasCustomProperties As Boolean
+    Protected _hasShellItem As Boolean = True
+    Private _isCut As Boolean
+    Private _isImage As Boolean?
+    Private _isInstantiated As Boolean
+    Private _isPinned As Boolean
+    Protected _isProcessingNotifications As Boolean
+    Private _isVisibleInAddressBar As Boolean
+    Private _itemNameDisplaySortValuePrefix As String
+    Friend _livesOnThreadId As Integer?
+    Friend _logicalParent As Folder
+    Private _notifier As INotify
+    Private Shared _objectCount As Long = 0
+    Friend _objectId As Long = -1
+    Friend _parent As Folder
+    Friend _pidl As Pidl
     Friend _preloadedAttributes As SFGAO
     Private _preloadedAttributesMask As SFGAO = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANRENAME Or SFGAO.CANDELETE
-    Private _treeRootIndex As Long = -1
-    Friend _shellItem2 As IShellItem2
-    Friend _objectId As Long = -1
-    Private Shared _objectCount As Long = 0
-    Friend _pidl As Pidl
-    Private _isImage As Boolean?
+    Protected _propertiesByCanonicalName As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
+    Friend _propertiesByKey As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+    Friend _shellItem2 As IShellItem2
     Friend _shellItemLock As Object = New Object()
     Friend _shellItemLock2 As Object = New Object()
-    Protected _doKeepAlive As Boolean
-    Private _contentViewModeProperties() As [Property]
-    Private _isVisibleInAddressBar As Boolean
+    Private _treeRootIndex As Long = -1
     Private _treeSortPrefix As String = String.Empty
-    Friend _logicalParent As Folder
-    Private _itemNameDisplaySortValuePrefix As String
-    Protected _canShowInTree As Boolean
-    Friend _livesOnThreadId As Integer?
-    Protected _isProcessingNotifications As Boolean
-    Private _notifier As INotify
-    Private _isInstantiated As Boolean
-    Friend _hasCustomProperties As Boolean
+    Friend disposedValue As Boolean
 
     ''' <summary>
     ''' Makes a new Folder/Item/Link object from a parsing name.
@@ -446,7 +447,7 @@ Public Class Item
             End SyncLock
         End If
 
-        If _shellItem2 Is Nothing Then
+        If _hasShellItem AndAlso _shellItem2 Is Nothing Then
             Me.Dispose()
         End If
 
@@ -955,27 +956,24 @@ Public Class Item
 
     Public Overridable ReadOnly Property DisplayName As String
         Get
-            Dim isNew As Boolean
-
             ' get displayname?
             If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                 SyncLock _shellItemLock2
                     If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                         Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
-                        isNew = True
+
+                        ' strip root name from displayname
+                        If Me.FullPath?.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then
+                            Dim idx As Integer = Me.FullPath.IndexOf(IO.Path.DirectorySeparatorChar, 2)
+                            If idx >= 0 Then
+                                Dim rootDisplayName As String = Me.FullPath.Substring(2, idx - 2)
+                                If _displayName.ToLower().EndsWith(String.Format("({0}{0}{1})", IO.Path.DirectorySeparatorChar, rootDisplayName.ToLower())) Then
+                                    _displayName = _displayName.Substring(0, _displayName.Length - rootDisplayName.Length - 5)
+                                End If
+                            End If
+                        End If
                     End If
                 End SyncLock
-            End If
-
-            ' strip root name from displayname
-            If isNew AndAlso Me.FullPath?.StartsWith(IO.Path.DirectorySeparatorChar & IO.Path.DirectorySeparatorChar) Then
-                Dim idx As Integer = Me.FullPath.IndexOf(IO.Path.DirectorySeparatorChar, 2)
-                If idx >= 0 Then
-                    Dim rootDisplayName As String = Me.FullPath.Substring(2, idx - 2)
-                    If _displayName.ToLower().EndsWith(String.Format("({0}{0}{1})", IO.Path.DirectorySeparatorChar, rootDisplayName.ToLower())) Then
-                        _displayName = _displayName.Substring(0, _displayName.Length - rootDisplayName.Length - 5)
-                    End If
-                End If
             End If
 
             Return _displayName
@@ -1008,6 +1006,8 @@ Public Class Item
                         If parent.IsDrive Then
                             path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
                                                           parent.FullPath, parent.AddressBarDisplayName), path)
+                        ElseIf If(parent.Pidl?.Equals(Shell.GetSpecialFolder(SpecialFolders.Network).pidl), False) Then
+                            path = "\\" & path
                         Else
                             path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
                                                           parent.DisplayName, parent.AddressBarDisplayName), path)

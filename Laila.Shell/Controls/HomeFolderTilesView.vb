@@ -3,6 +3,9 @@ Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 Imports System.Windows
 Imports System.Windows.Controls
+Imports System.Windows.Data
+Imports System.Windows.Input
+Imports System.Windows.Media
 
 Namespace Controls
     Public Class HomeFolderTilesView
@@ -12,11 +15,29 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(HomeFolderTilesView), New FrameworkPropertyMetadata(GetType(HomeFolderTilesView)))
         End Sub
 
+        Private _oldFocusedElement As ListBoxItem = Nothing
+        Private _isWorkingFocus As Boolean
+
         Protected Overrides Sub PART_ListBox_Loaded()
             MyBase.PART_ListBox_Loaded()
 
             _selectionHelper.Unhook()
             _selectionHelper = Nothing
+
+            AddHandler Me.PreviewGotKeyboardFocus,
+                Sub(s As Object, e As KeyboardFocusChangedEventArgs)
+                    If Not _isWorkingFocus Then
+                        If (e.OldFocus Is Nothing OrElse Not e.OldFocus.Equals(_oldFocusedElement)) _
+                            AndAlso Not _oldFocusedElement Is Nothing AndAlso Not Object.ReferenceEquals(_oldFocusedElement.DataContext, BindingOperations.DisconnectedSource) Then
+                            _isWorkingFocus = True
+                            _oldFocusedElement.Focus()
+                            e.Handled = True
+                            _isWorkingFocus = False
+                        ElseIf TypeOf e.NewFocus Is ListBoxItem Then
+                            _oldFocusedElement = e.NewFocus
+                        End If
+                    End If
+                End Sub
         End Sub
 
         Public Overrides Sub OnApplyTemplate()
@@ -40,6 +61,32 @@ Namespace Controls
                 Return "Quick launch"
             End Get
         End Property
+
+        Protected Overrides Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
+            If TypeOf e.OriginalSource Is ListBoxItem AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
+                Dim item As ListBoxItem = e.OriginalSource
+                If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                    Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
+
+                    ' Check if item is outside the viewport and adjust scrolling, but only vertically
+                    If itemRect.Top < 0 Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top - 2)
+                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight) + 2)
+                    End If
+                    If itemRect.Left < 0 Then
+                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + itemRect.Left)
+                    ElseIf itemRect.Right > _scrollViewer.ViewportWidth Then
+                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + (itemRect.Right - _scrollViewer.ViewportWidth))
+                    End If
+                    e.Handled = True
+                End If
+            ElseIf Not If(TypeOf e.OriginalSource Is Expander, e.OriginalSource, UIHelper.GetParentOfType(Of Expander)(e.OriginalSource)) Is Nothing _
+                AndAlso UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox) Then
+                e.Handled = True
+            End If
+        End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                        ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)

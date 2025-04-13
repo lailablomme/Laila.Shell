@@ -48,18 +48,18 @@ Namespace Controls.Parts
                     Sub()
                         Dim selectedPidl As Pidl = Nothing
                         If Me.Items.Contains(Me.TreeView.SelectedItem) Then
-                            selectedPidl = Me.TreeView.SelectedItem.Pidl.Clone()
+                            selectedPidl = Me.TreeView.SelectedItem.Pidl?.Clone()
                         End If
 
                         For i = 0 To folders.Count - 1
                             If i < Me.Items.Count Then
-                                If Not Me.Items(i).Pidl.Equals(folders(i).Pidl) Then
-                                    If i + 1 < Me.Items.Count AndAlso Me.Items(i + 1).Pidl.Equals(folders(i).Pidl) Then
+                                If Not If(Me.Items(i).Pidl?.Equals(folders(i).Pidl), False) Then
+                                    If i + 1 < Me.Items.Count AndAlso If(Me.Items(i + 1).Pidl?.Equals(folders(i).Pidl), False) Then
                                         Me.Items.Remove(Me.Items(i))
                                     Else
                                         Me.Items.Insert(i, folders(i))
                                     End If
-                                    If folders(i).Pidl.Equals(selectedPidl) Then Me.TreeView.SetSelectedItem(folders(i))
+                                    If folders(i).Pidl?.Equals(selectedPidl) Then Me.TreeView.SetSelectedItem(folders(i))
                                 End If
                             Else
                                 Me.Items.Add(folders(i))
