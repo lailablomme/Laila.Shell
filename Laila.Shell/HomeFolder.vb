@@ -23,6 +23,8 @@ Public Class HomeFolder
     Inherits Folder
     Implements ISupportDragInsert
 
+    Private _cachedHasSubFolders As Boolean?
+
     Public Sub New(parent As Folder, doKeepAlive As Boolean)
         MyBase.New(Nothing, parent, doKeepAlive, True, Nothing)
 
@@ -82,6 +84,22 @@ Public Class HomeFolder
     Friend Overrides Function MakeIShellFolderOnCurrentThread() As IShellFolderForIContextMenu
         Return Nothing
     End Function
+
+    Public Overrides Property HasSubFolders As Boolean
+        Get
+            If _hasSubFolders.HasValue AndAlso (_isEnumerated OrElse _hasSubFolders.Value) Then
+                _cachedHasSubFolders = _hasSubFolders
+                Return _hasSubFolders.Value
+            ElseIf _cachedHasSubFolders.HasValue Then
+                Return _cachedHasSubFolders.Value
+            Else
+                Return False
+            End If
+        End Get
+        Set(value As Boolean)
+            MyBase.HasSubFolders = value
+        End Set
+    End Property
 
     Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
         Get

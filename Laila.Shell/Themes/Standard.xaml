@@ -624,7 +624,7 @@
                         </Image>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <DataTrigger Binding="{Binding HasSubFolders, IsAsync=True}" Value="True">
+                        <DataTrigger Binding="{Binding HasSubFolders}" Value="True">
                             <Setter Property="ToggleButton.Visibility" Value="Visible" />
                         </DataTrigger>
                         <Trigger Property="IsChecked" Value="True">
