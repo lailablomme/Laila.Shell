@@ -1440,7 +1440,9 @@ Public Class Folder
                         UIHelper.OnUIThread(
                             Sub()
                                 existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                    AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item2.Pidl) _
+                                    AndAlso ((Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
+                                        OrElse (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item2.Pidl)) _
+                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath)) _
                                         OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item2.FullPath))))
                                 If existing Is Nothing Then
                                     Dim newItem As Item = e.Item2.Clone()
