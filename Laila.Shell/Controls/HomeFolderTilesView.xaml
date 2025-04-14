@@ -30,7 +30,7 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderHomeStyle}" IsTabStop="False">
+                                                        <local:SlidingExpander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderHomeStyle}" IsTabStop="False">
                                                             <Expander.Resources>
                                                                 <converters:DoubleAdditionConverter x:Key="doubleAdditionConverter" />
                                                             </Expander.Resources>
@@ -39,7 +39,7 @@
                                                                     <TextBlock Text="{Binding Name}" Foreground="Black" FontWeight="Bold" VerticalAlignment="Center" />
                                                                 </StackPanel>
                                                             </Expander.Header>
-                                                            <Border Width="{Binding ActualWidth, ElementName=PART_ListView, Converter={StaticResource doubleAdditionConverter}, ConverterParameter=-20}">
+                                                            <Border Width="{Binding ActualWidth, ElementName=PART_ListView, Converter={StaticResource doubleAdditionConverter}, ConverterParameter=-40}">
                                                                 <ListView ItemsSource="{Binding Items}" Margin="25,0,0,0" SelectionMode="Extended"
                                                                           behaviors:SharedSelectedItemsBehavior.SyncedSelectedItemsWith="{Binding Tag, ElementName=PART_Grid}"
                                                                           behaviors:ScrollViewerFix.IsEnabled="True" BorderThickness="0" IsTabStop="False" Focusable="False"
@@ -600,7 +600,7 @@
                                                                     </ListView.Style>
                                                                 </ListView>
                                                             </Border>
-                                                        </Expander>
+                                                        </local:SlidingExpander>
                                                     </ControlTemplate>
                                                 </Setter.Value>
                                             </Setter>

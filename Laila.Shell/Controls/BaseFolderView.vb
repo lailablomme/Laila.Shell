@@ -57,6 +57,7 @@ Namespace Controls
         Protected PART_Grid As Grid
         Friend PART_ListBox As ListBox
         Private _canOpenWithSingleClick As Boolean
+        Private _doCancelScroll As Boolean = False
         Private _dragViewStrategy As IDragViewStrategy
         Private _ignoreSelection As Boolean
         Private _isInternallySettingSelectAll As Boolean
@@ -193,6 +194,7 @@ Namespace Controls
             _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
             AddHandler _scrollViewer.ScrollChanged,
                 Sub(s2 As Object, e2 As ScrollChangedEventArgs)
+                    _doCancelScroll = True
                     If Not Me.Folder Is Nothing Then
                         Me.ScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
                         _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
@@ -268,39 +270,59 @@ Namespace Controls
                     focusAdjecentItem(0, +10)
                     e.Handled = True
                 ElseIf e.Key = Key.Left Then
-                    focusAdjecentItem(-10, 0)
-                    e.Handled = True
+                    e.Handled = focusAdjecentItem(-10, 0)
                 ElseIf e.Key = Key.Right Then
-                    focusAdjecentItem(10, 0)
-                    e.Handled = True
+                    e.Handled = focusAdjecentItem(10, 0)
                 End If
             End If
         End Sub
 
-        Private Sub focusAdjecentItem(offsetX As Integer, offsetY As Integer)
-            If _isKeyboardScrolling Then Return
+        Private Function focusAdjecentItem(offsetX As Integer, offsetY As Integer) As Boolean
+            If _isKeyboardScrolling Then Return False
 
-            If TypeOf Keyboard.FocusedElement Is ListBoxItem Then
+            If TypeOf Keyboard.FocusedElement Is ListBoxItem OrElse TypeOf Keyboard.FocusedElement Is Button Then
                 Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Folder.Items)
 
+                Dim isFirstItem As Func(Of FrameworkElement, Boolean) =
+                    Function(item As FrameworkElement) As Boolean
+                        If TypeOf item Is ListBoxItem Then
+                            Return item.DataContext.Equals(view(0))
+                        Else
+                            Dim exp As SlidingExpander = UIHelper.GetParentOfType(Of SlidingExpander)(item)
+                            Dim group As CollectionViewGroup = exp.DataContext
+                            Return group.Items.Contains(view(0))
+                        End If
+                    End Function
+                Dim isLastItem As Func(Of FrameworkElement, Boolean) =
+                    Function(item As FrameworkElement) As Boolean
+                        If TypeOf item Is ListBoxItem Then
+                            Return item.DataContext.Equals(view(view.Count - 1))
+                        Else
+                            Dim exp As SlidingExpander = UIHelper.GetParentOfType(Of SlidingExpander)(item)
+                            Dim group As CollectionViewGroup = exp.DataContext
+                            Return group.Items.Contains(view(view.Count - 1))
+                        End If
+                    End Function
+
                 ' get listboxitem
-                Dim listBoxItem As ListBoxItem = Keyboard.FocusedElement
+                Dim currentItem As FrameworkElement = Keyboard.FocusedElement
+                currentItem.BringIntoView(New Rect(0, 0, currentItem.ActualWidth, currentItem.ActualHeight))
 
                 ' get orientation
                 Dim orientation As Orientation = Orientation.Vertical
-                Dim wrapPanel As WrapPanel = UIHelper.GetParentOfType(Of WrapPanel)(listBoxItem)
+                Dim wrapPanel As WrapPanel = UIHelper.GetParentOfType(Of WrapPanel)(currentItem)
                 If Not wrapPanel Is Nothing Then
                     orientation = wrapPanel.Orientation
                 Else
-                    Dim virtualizingWrapPanel As VirtualizingWrapPanel = UIHelper.GetParentOfType(Of VirtualizingWrapPanel)(listBoxItem)
+                    Dim virtualizingWrapPanel As VirtualizingWrapPanel = UIHelper.GetParentOfType(Of VirtualizingWrapPanel)(currentItem)
                     If Not virtualizingWrapPanel Is Nothing Then
                         orientation = virtualizingWrapPanel.Orientation
                     Else
-                        Dim stackPanel As StackPanel = UIHelper.GetParentOfType(Of StackPanel)(listBoxItem)
+                        Dim stackPanel As StackPanel = UIHelper.GetParentOfType(Of StackPanel)(currentItem)
                         If Not stackPanel Is Nothing Then
                             orientation = stackPanel.Orientation
                         Else
-                            Dim virtualizingStackPanel As VirtualizingStackPanel = UIHelper.GetParentOfType(Of VirtualizingStackPanel)(listBoxItem)
+                            Dim virtualizingStackPanel As VirtualizingStackPanel = UIHelper.GetParentOfType(Of VirtualizingStackPanel)(currentItem)
                             If Not virtualizingStackPanel Is Nothing Then
                                 orientation = virtualizingStackPanel.Orientation
                             End If
@@ -312,41 +334,63 @@ Namespace Controls
                 Dim headerRowPresenter As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(Me.PART_ListBox)(0)
 
                 ' init
-                Dim ptListBoxItem As Point = listBoxItem.TranslatePoint(New Point(0, 0), Me.PART_ListBox)
-                Dim vp As VirtualizingPanel = UIHelper.GetParentOfType(Of VirtualizingPanel)(listBoxItem)
+                Dim ptCurrentItem As Point = currentItem.TranslatePoint(New Point(0, 0), Me.PART_ListBox)
+                Dim vp As VirtualizingPanel = UIHelper.GetParentOfType(Of VirtualizingPanel)(currentItem)
                 Dim doContinue As Boolean = True
-                Dim adjacentItem As ListBoxItem = Nothing
-                Dim pt As Point = New Point(ptListBoxItem.X + offsetX + If(offsetX = 0, listBoxItem.ActualWidth / 2, If(offsetX <= 0, 0, listBoxItem.ActualWidth)),
-                                            ptListBoxItem.Y + offsetY + If(offsetY = 0, listBoxItem.ActualHeight / 2, If(offsetY <= 0, 0, listBoxItem.ActualHeight)))
+                Dim adjacentItem As FrameworkElement = Nothing
+                Dim pt As Point = New Point(ptCurrentItem.X + offsetX + If(offsetX = 0, If(TypeOf currentItem Is ListBoxItem, 5, 25), If(offsetX <= 0, 0, currentItem.ActualWidth)),
+                                            ptCurrentItem.Y + offsetY + If(offsetY = 0, currentItem.ActualHeight / 2, If(offsetY <= 0, 0, currentItem.ActualHeight)))
 
                 ' find adjacent item
                 Dim doFindOnDifferentX As Boolean = False, doFindOnDifferentY As Boolean = False
                 Do
-                    pt.X = Math.Min(Math.Max(2, pt.X), _scrollViewer.ViewportWidth - 2)
-                    pt.Y = Math.Min(Math.Max(2 + If(headerRowPresenter?.ActualHeight, 0), pt.Y), _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0))
-                    For scanCount = 0 To If(offsetX <> 0, listBoxItem.ActualHeight, listBoxItem.ActualWidth) / 10
+                    'pt.X = Math.Min(Math.Max(2, pt.X), _scrollViewer.ViewportWidth - 2)
+                    'pt.Y = Math.Min(Math.Max(2 + If(headerRowPresenter?.ActualHeight, 0), pt.Y), _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0))
+                    For scanCount = 0 To If(offsetX <> 0, currentItem.ActualHeight, currentItem.ActualWidth) / 10
                         Dim ptScan As Point = New Point(pt.X + If(offsetY > 0, 5, If(offsetY < 0, -5, 0)) * scanCount, pt.Y + If(offsetX > 0, 5, If(offsetX < 0, -5, 0)) * scanCount)
                         Dim el As IInputElement = Me.PART_ListBox.InputHitTest(ptScan)
                         If Not el Is Nothing Then
                             adjacentItem = UIHelper.GetParentOfType(Of ListBoxItem)(el)
+                            If adjacentItem Is Nothing AndAlso (offsetX = 0 OrElse (TypeOf currentItem Is Button AndAlso orientation = Orientation.Horizontal)) Then
+                                adjacentItem = UIHelper.GetParentOfType(Of SlidingExpander)(el)
+                                If Not adjacentItem Is Nothing Then
+                                    Dim transform As GeneralTransform = Me.PART_ListBox.TransformToDescendant(adjacentItem)
+                                    Dim itemPoint As Point = transform.Transform(ptScan)
+                                    If itemPoint.X > 25 AndAlso orientation = Orientation.Vertical Then
+                                        adjacentItem = Nothing
+                                    Else
+                                        Dim button As Button = UIHelper.FindVisualChildren(Of Button)(adjacentItem)?(0)
+                                        If Not button Is Nothing Then
+                                            If itemPoint.Y > button.ActualHeight Then
+                                                adjacentItem = Nothing
+                                            End If
+                                        End If
+                                    End If
+                                    If Not adjacentItem Is Nothing Then
+                                        adjacentItem = UIHelper.FindVisualChildren(Of Button)(adjacentItem)?(0)
+                                    End If
+                                End If
+                            End If
                         End If
+                        If currentItem.Equals(adjacentItem) Then adjacentItem = Nothing
+                        If Not UIHelper.IsAncestor(Me.PART_ListBox, adjacentItem) Then adjacentItem = Nothing
                         If Not adjacentItem Is Nothing Then Exit For
                     Next
-                    Dim ptAdjacentItem As Point
+                    Dim ptAdjacentItem As Point = New Point(0, 0)
                     If Not adjacentItem Is Nothing Then
                         ptAdjacentItem = adjacentItem.TranslatePoint(New Point(0, 0), Me.PART_ListBox)
                     End If
-                    If doFindOnDifferentX AndAlso ptAdjacentItem.X = ptListBoxItem.X Then
-                        If pt.X < ptListBoxItem.X Then pt.X -= 10 Else pt.X += 10
+                    If doFindOnDifferentX AndAlso ptAdjacentItem.X = ptCurrentItem.X Then
+                        If pt.X < ptCurrentItem.X Then pt.X -= 10 Else pt.X += 10
                         If pt.X <= 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset - 10, _scrollViewer.VerticalOffset))
                         If pt.X >= _scrollViewer.ViewportWidth - 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset + 10, _scrollViewer.VerticalOffset))
-                    ElseIf doFindOnDifferentY AndAlso ptAdjacentItem.Y = ptListBoxItem.Y Then
-                        If pt.Y < ptListBoxItem.Y Then pt.Y -= 10 Else pt.Y += 10
+                    ElseIf doFindOnDifferentY AndAlso ptAdjacentItem.Y = ptCurrentItem.Y Then
+                        If pt.Y < ptCurrentItem.Y Then pt.Y -= 10 Else pt.Y += 10
                         If pt.Y <= 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset - 10))
                         If pt.Y >= _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0) Then
                             scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset + 10))
                         End If
-                    ElseIf Not adjacentItem Is Nothing AndAlso Not adjacentItem.Equals(listBoxItem) Then
+                    ElseIf Not adjacentItem Is Nothing AndAlso Not adjacentItem.Equals(currentItem) Then
                         doContinue = False
                     ElseIf offsetX <> 0 AndAlso pt.X > 2 AndAlso pt.X < _scrollViewer.ViewportWidth - 2 Then
                         pt.X += offsetX
@@ -361,37 +405,37 @@ Namespace Controls
                     ElseIf offsetY > 0 AndAlso _scrollViewer.VerticalOffset < _scrollViewer.ScrollableHeight Then
                         scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset + 10))
                     ElseIf offsetX < 0 AndAlso orientation = Orientation.Horizontal Then
-                        If pt.Y - listBoxItem.ActualHeight / 2 - 10 < 0 Then
-                            If _scrollViewer.VerticalOffset - 10 > 0 AndAlso _scrollViewer.ViewportHeight > listBoxItem.ActualHeight Then
+                        If pt.Y - currentItem.ActualHeight < 0 Then
+                            If _scrollViewer.VerticalOffset - 10 > 0 AndAlso _scrollViewer.ViewportHeight > currentItem.ActualHeight Then
                                 scrollTo(New Point(_scrollViewer.ScrollableWidth, _scrollViewer.VerticalOffset - 10))
-                                pt.Y -= listBoxItem.ActualHeight / 2 + 10
+                                pt.Y -= currentItem.ActualHeight
                                 pt.X = _scrollViewer.ViewportWidth - 3
                             Else
                                 ' we're out of options
                                 doContinue = False
                             End If
-                        ElseIf Not listBoxItem.DataContext.Equals(view(0)) Then
+                        ElseIf Not isFirstItem(currentItem) Then
                             scrollTo(New Point(_scrollViewer.ScrollableWidth, _scrollViewer.VerticalOffset))
-                            pt.Y -= listBoxItem.ActualHeight / 2 + 10
+                            pt.Y -= currentItem.ActualHeight
                             pt.X = _scrollViewer.ViewportWidth - 3
                         Else
                             ' we're out of options
                             doContinue = False
                         End If
                         doFindOnDifferentY = True
-                    ElseIf offsetY < 0 AndAlso orientation = Orientation.Vertical Then
-                        If pt.X - listBoxItem.ActualWidth / 2 - 25 < 0 Then
-                            If _scrollViewer.HorizontalOffset - 25 > 0 AndAlso _scrollViewer.ViewportWidth > listBoxItem.ActualWidth Then
-                                scrollTo(New Point(_scrollViewer.HorizontalOffset - 25, _scrollViewer.ScrollableHeight))
-                                pt.X -= listBoxItem.ActualWidth / 2 + 25
+                    ElseIf offsetY < 0 Then
+                        If pt.X - 35 < 0 Then
+                            If _scrollViewer.HorizontalOffset - 35 > 0 AndAlso _scrollViewer.ViewportWidth > currentItem.ActualWidth Then
+                                scrollTo(New Point(_scrollViewer.HorizontalOffset - 35, _scrollViewer.ScrollableHeight))
+                                pt.X -= 35
                                 pt.Y = _scrollViewer.ViewportHeight - 3
                             Else
                                 ' we're out of options
                                 doContinue = False
                             End If
-                        ElseIf Not listBoxItem.DataContext.Equals(view(0)) Then
+                        ElseIf Not isFirstItem(currentItem) Then
                             scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.ScrollableHeight))
-                            pt.X -= listBoxItem.ActualWidth / 2 + 25
+                            pt.X -= 35
                             pt.Y = _scrollViewer.ViewportHeight - 3
                         Else
                             ' we're out of options
@@ -399,18 +443,18 @@ Namespace Controls
                         End If
                         doFindOnDifferentX = True
                     ElseIf offsetX > 0 AndAlso orientation = Orientation.Horizontal Then
-                        If pt.Y + listBoxItem.ActualHeight / 2 + 10 > _scrollViewer.ViewportHeight Then
-                            If _scrollViewer.VerticalOffset + 10 < _scrollViewer.ScrollableHeight AndAlso _scrollViewer.ViewportHeight > listBoxItem.ActualHeight Then
+                        If pt.Y + currentItem.ActualHeight > _scrollViewer.ViewportHeight Then
+                            If _scrollViewer.VerticalOffset + 10 < _scrollViewer.ScrollableHeight AndAlso _scrollViewer.ViewportHeight > currentItem.ActualHeight Then
                                 scrollTo(New Point(0, _scrollViewer.VerticalOffset + 10))
-                                pt.Y += listBoxItem.ActualHeight / 2 + 10
+                                pt.Y += currentItem.ActualHeight
                                 pt.X = 3
                             Else
                                 ' we're out of options
                                 doContinue = False
                             End If
-                        ElseIf Not listBoxItem.DataContext.Equals(view(view.Count - 1)) Then
+                        ElseIf Not isLastItem(currentItem) Then
                             scrollTo(New Point(0, _scrollViewer.VerticalOffset))
-                            pt.Y += listBoxItem.ActualHeight / 2 + 10
+                            pt.Y += currentItem.ActualHeight
                             pt.X = 3
                         Else
                             ' we're out of options
@@ -418,18 +462,18 @@ Namespace Controls
                         End If
                         doFindOnDifferentY = True
                     ElseIf offsetY > 0 AndAlso orientation = Orientation.Vertical Then
-                        If pt.X + listBoxItem.ActualWidth / 2 + 25 > _scrollViewer.ViewportWidth Then
-                            If _scrollViewer.HorizontalOffset + 25 < _scrollViewer.ScrollableWidth AndAlso _scrollViewer.ViewportWidth > listBoxItem.ActualWidth Then
+                        If pt.X + currentItem.ActualWidth > _scrollViewer.ViewportWidth Then
+                            If _scrollViewer.HorizontalOffset + 25 < _scrollViewer.ScrollableWidth AndAlso _scrollViewer.ViewportWidth > currentItem.ActualWidth Then
                                 scrollTo(New Point(_scrollViewer.HorizontalOffset + 25, 0))
-                                pt.X += listBoxItem.ActualWidth / 2 + 25
+                                pt.X += currentItem.ActualWidth
                                 pt.Y = 3
                             Else
                                 ' we're out of options
                                 doContinue = False
                             End If
-                        ElseIf Not listBoxItem.DataContext.Equals(view(view.Count - 1)) Then
+                        ElseIf Not isLastItem(currentItem) Then
                             scrollTo(New Point(_scrollViewer.HorizontalOffset, 0))
-                            pt.X += listBoxItem.ActualWidth / 2 + 25
+                            pt.X += currentItem.ActualWidth
                             pt.Y = 3
                         Else
                             ' we're out of options
@@ -440,34 +484,50 @@ Namespace Controls
                         ' we're out of options
                         doContinue = False
                     End If
+                    pt.X = Math.Min(Math.Max(2, pt.X), _scrollViewer.ViewportWidth - 2)
+                    pt.Y = Math.Min(Math.Max(2 + If(headerRowPresenter?.ActualHeight, 0), pt.Y), _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0))
                 Loop While doContinue
 
                 ' select
                 If Not adjacentItem Is Nothing Then
-                    adjacentItem.Focus()
-                    adjacentItem.BringIntoView(New Rect(0, 0, adjacentItem.ActualWidth, adjacentItem.ActualHeight))
+                    If TypeOf adjacentItem Is ListBoxItem Then
+                        adjacentItem.Focus()
+                        If Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
+                            adjacentItem.BringIntoView(New Rect(0, 0, adjacentItem.ActualWidth, adjacentItem.ActualHeight))
+                        End If
+                    Else
+                        Dim parentItem As SlidingExpander = UIHelper.GetParentOfType(Of SlidingExpander)(adjacentItem)
+                        If Not parentItem Is Nothing Then
+                            parentItem.Focus()
+                            parentItem.BringIntoView(New Rect(0, 0, adjacentItem.ActualWidth, adjacentItem.ActualHeight))
+                        End If
+                    End If
                     If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then
                     ElseIf Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
-                        Me.SelectedItems = {adjacentItem.DataContext}
+                        If TypeOf adjacentItem Is ListBoxItem Then Me.SelectedItems = {adjacentItem.DataContext}
                     End If
+                    Return Not adjacentItem.Equals(currentItem)
+                Else
+                    Return False
                 End If
             End If
-        End Sub
+        End Function
 
-        Private Sub scrollTo(pt As Point)
+        Protected Sub scrollTo(pt As Point)
             _isKeyboardScrolling = True
             pt.X = Math.Min(Math.Max(0, pt.X), _scrollViewer.ScrollableWidth)
             pt.Y = Math.Min(Math.Max(0, pt.Y), _scrollViewer.ScrollableHeight)
             UIHelper.OnUIThread(
                 Sub()
+                    _doCancelScroll = False
                     _scrollViewer.ScrollToHorizontalOffset(pt.X)
                     _scrollViewer.ScrollToVerticalOffset(pt.Y)
                 End Sub, Threading.DispatcherPriority.Input)
-            Do While Math.Abs(_scrollViewer.HorizontalOffset - pt.X) > 0.5 OrElse Math.Abs(_scrollViewer.VerticalOffset - pt.Y) > 0.5
-                UIHelper.OnUIThread(
-                    Sub()
-                    End Sub, Threading.DispatcherPriority.Render)
-            Loop
+            'Do While Not _doCancelScroll AndAlso (Math.Abs(_scrollViewer.HorizontalOffset - pt.X) > 0.5 OrElse Math.Abs(_scrollViewer.VerticalOffset - pt.Y) > 0.5)
+            UIHelper.OnUIThread(
+                Sub()
+                End Sub, Threading.DispatcherPriority.Render)
+            'Loop
             _isKeyboardScrolling = False
         End Sub
 
@@ -478,7 +538,27 @@ Namespace Controls
                     Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
                     Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
 
-                    ' Check if item is outside the viewport and adjust scrolling, but only vertically
+                    ' Check if item is outside the viewport and adjust scrolling 
+                    If itemRect.Top < 0 Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top)
+                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight))
+                    End If
+                    If itemRect.Left < 0 Then
+                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + itemRect.Left)
+                    ElseIf itemRect.Right > _scrollViewer.ViewportWidth Then
+                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + (itemRect.Right - _scrollViewer.ViewportWidth))
+                    End If
+                    e.Handled = True
+                End If
+            ElseIf TypeOf e.OriginalSource Is SlidingExpander AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
+                Dim parentItem As SlidingExpander = e.OriginalSource
+                Dim buttonItem As Button = UIHelper.FindVisualChildren(Of Button)(parentItem)?(0)
+                Dim item As Border = UIHelper.GetParentOfType(Of Border)(buttonItem)
+                If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                    Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
+                    ' Check if item is outside the viewport and adjust scrolling 
                     If itemRect.Top < 0 Then
                         _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top)
                     ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
@@ -682,7 +762,6 @@ Namespace Controls
             If Not e.OriginalSource Is Nothing Then
                 Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
                 Dim clickedItem As Item = TryCast(listBoxItem?.DataContext, Item)
-                _mouseItemDown = clickedItem
                 If clickedItem Is Nothing Then
                     'Me.PART_ListBox.Focus()
                 Else
@@ -714,6 +793,7 @@ Namespace Controls
                     ElseIf Keyboard.Modifiers = ModifierKeys.None Then
                         If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Contains(clickedItem) Then e.Handled = True
                         _canOpenWithSingleClick = True
+                        _mouseItemDown = clickedItem
                     End If
                 ElseIf e.RightButton = MouseButtonState.Pressed AndAlso
                         UIHelper.GetParentOfType(Of Primitives.ScrollBar)(e.OriginalSource) Is Nothing AndAlso
@@ -730,7 +810,7 @@ Namespace Controls
                     e.Handled = True
                 ElseIf clickedItem Is Nothing _
                         AndAlso UIHelper.GetParentOfType(Of System.Windows.Controls.Primitives.ScrollBar)(e.OriginalSource) Is Nothing _
-                        AndAlso UIHelper.GetParentOfType(Of ToggleButton)(e.OriginalSource) Is Nothing Then
+                        AndAlso TypeOf e.OriginalSource Is ScrollViewer Then
                     Me.SelectedItems = Nothing
                 End If
             Else
@@ -753,6 +833,8 @@ Namespace Controls
                         Dim __ = invokeDefaultCommand(_mouseItemDown)
                     End If
                 End Using
+            ElseIf Not _mouseItemDown Is Nothing AndAlso Me.IsDoubleClickToOpenItem Then
+                Me.SelectedItems = {_mouseItemDown}
             End If
 
             _mouseItemDown = Nothing

@@ -137,7 +137,8 @@
                                                     <ControlTemplate>
                                                         <local:SlidingExpander IsExpanded="True" ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}">
                                                             <Expander.Header>
-                                                                <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" x:Name="PART_ExpanderHeader" />
+                                                                <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" 
+                                                                           VerticalAlignment="Center" HorizontalAlignment="Stretch" x:Name="PART_ExpanderHeader" />
                                                             </Expander.Header>
                                                             <ItemsPresenter />
                                                         </local:SlidingExpander>

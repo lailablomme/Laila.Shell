@@ -16,6 +16,7 @@ Namespace Controls
         Public Shared ReadOnly ToggleButtonStyleProperty As DependencyProperty = DependencyProperty.Register("ToggleButtonStyle", GetType(Style), GetType(SlidingExpander), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly OrientationProperty As DependencyProperty = DependencyProperty.Register("Orientation", GetType(Orientation), GetType(SlidingExpander), New FrameworkPropertyMetadata(Orientation.Horizontal, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ToggleButtonVisibilityProperty As DependencyProperty = DependencyProperty.Register("ToggleButtonVisibility", GetType(Visibility), GetType(SlidingExpander), New FrameworkPropertyMetadata(Visibility.Visible, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoSelectAllBehaviorProperty As DependencyProperty = DependencyProperty.Register("DoSelectAllBehavior", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(SlidingExpander), New FrameworkPropertyMetadata(GetType(SlidingExpander)))
@@ -34,6 +35,7 @@ Namespace Controls
         Private _currentStep As Double = 0
         Private _totalHeight As Double = 0
         Private _doIgnoreExpandCollapse As Boolean
+        Private _doFocus As Boolean = False
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
@@ -50,23 +52,32 @@ Namespace Controls
                 Sub(s As Object, e As KeyEventArgs)
                     If e.Key = Key.Space Then
                         Me.PART_ToggleButton.IsChecked = Not Me.PART_ToggleButton.IsChecked
+                    ElseIf e.Key = Key.Left Then
+                        Me.PART_ToggleButton.IsChecked = False
+                    ElseIf e.Key = Key.Right Then
+                        Me.PART_ToggleButton.IsChecked = True
                     End If
                 End Sub
 
             AddHandler Me.PART_TitleLabel.PreviewMouseDown,
-                Sub(s As Object, e As MouseEventArgs)
-                    Dim vwp As VirtualizingPanel = UIHelper.FindVisualChildren(Of VirtualizingPanel)(Me.PART_ContentContainer).ToList()(0)
-                    Dim group As CollectionViewGroup = vwp.DataContext
-                    Dim listBox As ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
-                    If group.Items.Count > listBox.SelectedItems.Count AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
-                        If Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then listBox.SelectedItems.Clear()
-                        For Each item In group.Items
-                            If Not listBox.SelectedItems.Contains(item) Then
-                                listBox.SelectedItems.Add(item)
-                            End If
-                        Next
+                Sub(s As Object, e As MouseButtonEventArgs)
+                    If e.ClickCount = 2 Then
+                        _doFocus = False
+                        Me.PART_ToggleButton.IsChecked = Not Me.PART_ToggleButton.IsChecked
+                        Me.PART_TitleLabel.Focus()
+                    Else
+                        _doFocus = True
+                        Dim f As Func(Of Task) =
+                            Async Function() As Task
+                                Await Task.Delay(200)
+                                If Not _doFocus OrElse _timer.IsEnabled Then Return
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        Me.Focus()
+                                    End Sub)
+                            End Function
+                        Task.Run(f)
                     End If
-                    Me.PART_TitleLabel.Focus()
                     e.Handled = True
                 End Sub
 
@@ -125,6 +136,21 @@ Namespace Controls
             End If
         End Sub
 
+        Public Overloads Sub Focus()
+            'Dim vwp As VirtualizingPanel = UIHelper.FindVisualChildren(Of VirtualizingPanel)(Me.PART_ContentContainer).ToList()(0)
+            Dim group As CollectionViewGroup = Me.DataContext
+            Dim listBox As ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
+            If Me.DoSelectAllBehavior AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
+                If Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then listBox.SelectedItems.Clear()
+                For Each item In group.Items
+                    If Not listBox.SelectedItems.Contains(item) Then
+                        listBox.SelectedItems.Add(item)
+                    End If
+                Next
+            End If
+            Me.PART_TitleLabel.Focus()
+        End Sub
+
         Public Property Orientation As Orientation
             Get
                 Return GetValue(OrientationProperty)
@@ -149,6 +175,15 @@ Namespace Controls
             End Get
             Set(value As Visibility)
                 SetValue(ToggleButtonVisibilityProperty, value)
+            End Set
+        End Property
+
+        Public Property DoSelectAllBehavior As Boolean
+            Get
+                Return GetValue(DoSelectAllBehaviorProperty)
+            End Get
+            Set(value As Boolean)
+                SetValue(DoSelectAllBehaviorProperty, value)
             End Set
         End Property
 

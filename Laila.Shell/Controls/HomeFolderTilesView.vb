@@ -15,7 +15,7 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(HomeFolderTilesView), New FrameworkPropertyMetadata(GetType(HomeFolderTilesView)))
         End Sub
 
-        Private _oldFocusedElement As ListBoxItem = Nothing
+        Private _oldFocusedElement As FrameworkElement = Nothing
         Private _isWorkingFocus As Boolean
 
         Protected Overrides Sub PART_ListBox_Loaded()
@@ -23,6 +23,13 @@ Namespace Controls
 
             _selectionHelper.Unhook()
             _selectionHelper = Nothing
+
+            AddHandler Me.PART_ListBox.SelectionChanged,
+                Sub(s As Object, e As SelectionChangedEventArgs)
+                    If e.OriginalSource.Equals(Me.PART_ListBox) Then
+                        Me.SelectedItems = Me.PART_ListBox.SelectedItems.Cast(Of Item).ToList()
+                    End If
+                End Sub
 
             AddHandler Me.PreviewGotKeyboardFocus,
                 Sub(s As Object, e As KeyboardFocusChangedEventArgs)
@@ -33,7 +40,7 @@ Namespace Controls
                             _oldFocusedElement.Focus()
                             e.Handled = True
                             _isWorkingFocus = False
-                        ElseIf TypeOf e.NewFocus Is ListBoxItem Then
+                        ElseIf TypeOf e.NewFocus Is ListBoxItem OrElse TypeOf e.NewFocus Is button Then
                             _oldFocusedElement = e.NewFocus
                         End If
                     End If

@@ -32,6 +32,23 @@ Namespace Controls
                     End If
                     e.Handled = True
                 End If
+            ElseIf TypeOf e.OriginalSource Is SlidingExpander AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
+                Dim parentItem As SlidingExpander = e.OriginalSource
+                Dim buttonItem As Button = UIHelper.FindVisualChildren(Of Button)(parentItem)?(0)
+                Dim item As Border = UIHelper.GetParentOfType(Of Border)(buttonItem)
+                If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                    Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
+                    Dim headerRowPresenter As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(Me.PART_ListBox)(0)
+
+                    ' Check if item is outside the viewport and adjust scrolling, but only vertically
+                    If itemRect.Top < 0 Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top - headerRowPresenter.ActualHeight)
+                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
+                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight - headerRowPresenter.ActualHeight))
+                    End If
+                    e.Handled = True
+                End If
             ElseIf Not If(TypeOf e.OriginalSource Is Expander, e.OriginalSource, UIHelper.GetParentOfType(Of Expander)(e.OriginalSource)) Is Nothing _
                 AndAlso UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox) Then
                 e.Handled = True
