@@ -70,6 +70,7 @@
                             </i:Interaction.Behaviors>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem" BasedOn="{StaticResource lailaShell_ListViewItem}">
+                                    <Setter Property="Margin" Value="2" />
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>

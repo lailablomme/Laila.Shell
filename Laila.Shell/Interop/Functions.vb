@@ -41,6 +41,18 @@ Namespace Interop
     <Out> ByRef ppcm As IntPtr _                    ' Output: IContextMenu
 ) As Integer                                        ' Returns HRESULT
         End Function
+        <DllImport("kernel32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+        Public Shared Function GetVolumeInformation(
+        lpRootPathName As String,
+        lpVolumeNameBuffer As StringBuilder,
+        nVolumeNameSize As Integer,
+        ByRef lpVolumeSerialNumber As UInteger,
+        ByRef lpMaximumComponentLength As UInteger,
+        ByRef lpFileSystemFlags As UInteger,
+        lpFileSystemNameBuffer As StringBuilder,
+        nFileSystemNameSize As Integer
+    ) As Boolean
+        End Function
 
         <DllImport("shell32.dll", CharSet:=CharSet.Unicode, SetLastError:=False)>
         Public Shared Function SHGetIconOverlayIndex(
