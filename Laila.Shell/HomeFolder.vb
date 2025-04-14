@@ -220,7 +220,9 @@ Public Class HomeFolder
         If TypeOf item Is Link Then
             CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
             Dim target As Item = CType(item, Link).TargetItem
-            If Not TypeOf target Is Folder AndAlso target.IsExisting _
+            If Not target Is Nothing _
+                AndAlso (Not TypeOf target Is Folder OrElse Not target.Attributes.HasFlag(SFGAO.STORAGEANCESTOR)) _
+                AndAlso target.IsExisting _
                 AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
                 target.LogicalParent = Me
                 target._hasCustomProperties = True
