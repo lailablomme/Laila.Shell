@@ -50,6 +50,7 @@ Namespace Controls
         Public Shared ReadOnly SearchBoxProperty As DependencyProperty = DependencyProperty.Register("SearchBox", GetType(SearchBox), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ScrollOffsetProperty As DependencyProperty = DependencyProperty.Register("ScrollOffset", GetType(Point), GetType(BaseFolderView), New FrameworkPropertyMetadata(New Point(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ExpandCollapseAllStateProperty As DependencyProperty = DependencyProperty.Register("ExpandCollapseAllState", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend Host As FolderView
         Private PART_CheckBoxSelectAll As CheckBox
@@ -1297,6 +1298,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property ExpandCollapseAllState As Boolean
+            Get
+                Return GetValue(ExpandCollapseAllStateProperty)
+            End Get
+            Set(value As Boolean)
+                SetValue(ExpandCollapseAllStateProperty, value)
+            End Set
+        End Property
+
         Public Property DragViewStrategy As IDragViewStrategy
             Get
                 Return _dragViewStrategy
@@ -1379,13 +1389,15 @@ Namespace Controls
         End Sub
 
         Public Sub ExpandCollapseAllGroups(isExpanded As Boolean)
-            Dim groups As IEnumerable(Of GroupItem) = UIHelper.FindVisualChildren(Of GroupItem)(PART_ListBox)
-            For Each group In groups
-                Dim toggleButtons As IEnumerable(Of ToggleButton) = UIHelper.FindVisualChildren(Of ToggleButton)(group)
-                If toggleButtons.Count > 0 Then
-                    toggleButtons(0).IsChecked = isExpanded
-                End If
-            Next
+            Me.ExpandCollapseAllState = Not isExpanded
+            Me.ExpandCollapseAllState = isExpanded
+            'Dim groups As IEnumerable(Of GroupItem) = UIHelper.FindVisualChildren(Of GroupItem)(PART_ListBox)
+            'For Each group In groups
+            '    Dim toggleButtons As IEnumerable(Of ToggleButton) = UIHelper.FindVisualChildren(Of ToggleButton)(group)
+            '    If toggleButtons.Count > 0 Then
+            '        toggleButtons(0).IsChecked = isExpanded
+            '    End If
+            'Next
         End Sub
 
         Private Sub folder_Items_CollectionChanged(s As Object, e As NotifyCollectionChangedEventArgs)

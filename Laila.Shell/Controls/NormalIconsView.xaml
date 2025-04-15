@@ -32,7 +32,8 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <local:SlidingExpander IsExpanded="True" ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}">
+                                                        <local:SlidingExpander IsExpanded="True" ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}"
+                                                                               ExpandCollapseAllState="{Binding Tag.ExpandCollapseAllState, ElementName=PART_Grid}">
                                                             <Expander.Header>
                                                                 <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" Background="Transparent" 
                                                                            VerticalAlignment="Center" x:Name="PART_ExpanderHeader" HorizontalAlignment="Stretch" />

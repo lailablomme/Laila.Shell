@@ -45,7 +45,8 @@
                                                             <ItemsPresenter Margin="25,0,0,0" />
                                                         </Expander>-->
                                                         <local:SlidingExpander IsExpanded="True" Orientation="Vertical" ToggleButtonVisibility="Collapsed" 
-                                                                               ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}">
+                                                                               ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}"
+                                                                               ExpandCollapseAllState="{Binding Tag.ExpandCollapseAllState, ElementName=PART_Grid}">
                                                             <Expander.Header>
                                                                 <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" 
                                                                            x:Name="PART_ExpanderHeader" />

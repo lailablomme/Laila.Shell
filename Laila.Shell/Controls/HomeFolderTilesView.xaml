@@ -30,7 +30,8 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <local:SlidingExpander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderHomeStyle}" IsTabStop="False">
+                                                        <local:SlidingExpander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderHomeStyle}" IsTabStop="False"
+                                                                               ExpandCollapseAllState="{Binding Tag.ExpandCollapseAllState, ElementName=PART_Grid}">
                                                             <Expander.Resources>
                                                                 <converters:DoubleAdditionConverter x:Key="doubleAdditionConverter" />
                                                             </Expander.Resources>
