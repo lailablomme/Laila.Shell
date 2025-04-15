@@ -14,7 +14,12 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Interop
     Public Class Functions
-
+        <DllImport("shell32.dll", SetLastError:=True)>
+        Public Shared Function SHMultiFileProperties(
+    <[In]> pdtobj As IDataObject,
+    dwFlags As UInteger
+) As Integer
+        End Function
         <StructLayout(LayoutKind.Sequential)>
         Public Structure SHQUERYRBINFO
             Public cbSize As Integer

@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
+Imports System.Windows.Forms.PropertyGridInternal
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
@@ -519,6 +520,11 @@ Namespace Controls
                     Sub()
                         Select Case id.Item2
                             Case "Windows.ModernShare"
+                            Case "properties"
+                                Dim dataObject As IDataObject_PreserveSig
+                                dataObject = Clipboard.GetDataObjectFor(Nothing, selectedItems)
+                                Functions.SHMultiFileProperties(dataObject, 0)
+                                Marshal.ReleaseComObject(dataObject)
                             Case "copy"
                             Case "cut"
                             Case "paste"
