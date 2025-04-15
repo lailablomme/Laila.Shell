@@ -387,6 +387,7 @@ Namespace Controls
                     End If
                 End If
                 Me.ActiveView = _views(newValue)
+                Me.ActiveView.ExpandCollapseAllState = True
                 Me.ActiveView.Visibility = Visibility.Visible
                 Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
                 If hasFocus Then Me.ActiveView.Focus()

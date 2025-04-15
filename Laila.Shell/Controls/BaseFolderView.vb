@@ -1,6 +1,7 @@
 ﻿Imports System.Collections.Specialized
 Imports System.ComponentModel
 Imports System.Media
+Imports System.Security.AccessControl
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
@@ -57,6 +58,7 @@ Namespace Controls
         Protected PART_DragInsertIndicator As Grid
         Protected PART_Grid As Grid
         Friend PART_ListBox As ListBox
+        Public PART_ScrollViewer As ScrollViewer
         Private _canOpenWithSingleClick As Boolean
         Private _doCancelScroll As Boolean = False
         Private _dragViewStrategy As IDragViewStrategy
@@ -73,7 +75,6 @@ Namespace Controls
         Private _mouseOriginalSourceDown As Object
         Private _mouseOverTime As DateTime
         Private _mousePointDown As Point
-        Protected _scrollViewer As ScrollViewer
         Protected _selectionHelper As SelectionHelper(Of Item) = Nothing
         Private _toolTip As ToolTip
         Private _toolTipCancellationTokenSource As CancellationTokenSource
@@ -192,13 +193,13 @@ Namespace Controls
                 End Sub
             _selectionHelper.SetSelectedItems(Me.SelectedItems)
 
-            _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
-            AddHandler _scrollViewer.ScrollChanged,
+            Me.PART_ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
+            AddHandler Me.PART_ScrollViewer.ScrollChanged,
                 Sub(s2 As Object, e2 As ScrollChangedEventArgs)
                     _doCancelScroll = True
                     If Not Me.Folder Is Nothing Then
-                        Me.ScrollOffset = New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset)
-                        _lastScrollSize = New Size(_scrollViewer.ScrollableWidth, _scrollViewer.ScrollableHeight)
+                        Me.ScrollOffset = New Point(PART_ScrollViewer.HorizontalOffset, PART_ScrollViewer.VerticalOffset)
+                        _lastScrollSize = New Size(PART_ScrollViewer.ScrollableWidth, PART_ScrollViewer.ScrollableHeight)
                     End If
                 End Sub
 
@@ -212,12 +213,12 @@ Namespace Controls
         End Sub
 
         Public Function GetListBoxClientSize() As Size
-            If Not _scrollViewer Is Nothing Then
+            If Not PART_ScrollViewer Is Nothing Then
                 Dim widthWithoutScroll As Double = Me.PART_ListBox.ActualWidth
                 Dim heightWithoutScroll As Double = Me.PART_ListBox.ActualHeight
 
-                Dim vs As ScrollBar = _scrollViewer.Template.FindName("PART_VerticalScrollBar", _scrollViewer)
-                Dim hs As ScrollBar = _scrollViewer.Template.FindName("PART_HorizontalScrollBar", _scrollViewer)
+                Dim vs As ScrollBar = PART_ScrollViewer.Template.FindName("PART_VerticalScrollBar", PART_ScrollViewer)
+                Dim hs As ScrollBar = PART_ScrollViewer.Template.FindName("PART_HorizontalScrollBar", PART_ScrollViewer)
 
                 ' Check visibility of vertical scrollbar
                 If vs IsNot Nothing AndAlso vs.Visibility = Visibility.Visible Then
@@ -339,7 +340,7 @@ Namespace Controls
                 Dim vp As VirtualizingPanel = UIHelper.GetParentOfType(Of VirtualizingPanel)(currentItem)
                 Dim doContinue As Boolean = True
                 Dim adjacentItem As FrameworkElement = Nothing
-                Dim pt As Point = New Point(ptCurrentItem.X + offsetX + If(offsetX = 0, If(TypeOf currentItem Is ListBoxItem, 5, 25), If(offsetX <= 0, 0, currentItem.ActualWidth)),
+                Dim pt As Point = New Point(ptCurrentItem.X + offsetX + If(offsetX = 0, 5, If(offsetX <= 0, 0, currentItem.ActualWidth)),
                                             ptCurrentItem.Y + offsetY + If(offsetY = 0, currentItem.ActualHeight / 2, If(offsetY <= 0, 0, currentItem.ActualHeight)))
 
                 ' find adjacent item
@@ -357,7 +358,7 @@ Namespace Controls
                                 If Not adjacentItem Is Nothing Then
                                     Dim transform As GeneralTransform = Me.PART_ListBox.TransformToDescendant(adjacentItem)
                                     Dim itemPoint As Point = transform.Transform(ptScan)
-                                    If itemPoint.X > 25 AndAlso orientation = Orientation.Vertical Then
+                                    If itemPoint.X > 30 AndAlso orientation = Orientation.Vertical Then
                                         adjacentItem = Nothing
                                     Else
                                         Dim button As Button = UIHelper.FindVisualChildren(Of Button)(adjacentItem)?(0)
@@ -383,42 +384,42 @@ Namespace Controls
                     End If
                     If doFindOnDifferentX AndAlso ptAdjacentItem.X = ptCurrentItem.X Then
                         If pt.X < ptCurrentItem.X Then pt.X -= 10 Else pt.X += 10
-                        If pt.X <= 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset - 10, _scrollViewer.VerticalOffset))
-                        If pt.X >= _scrollViewer.ViewportWidth - 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset + 10, _scrollViewer.VerticalOffset))
+                        If pt.X <= 2 Then scrollTo(New Point(PART_ScrollViewer.HorizontalOffset - 10, PART_ScrollViewer.VerticalOffset))
+                        If pt.X >= PART_ScrollViewer.ViewportWidth - 2 Then scrollTo(New Point(PART_ScrollViewer.HorizontalOffset + 10, PART_ScrollViewer.VerticalOffset))
                     ElseIf doFindOnDifferentY AndAlso ptAdjacentItem.Y = ptCurrentItem.Y Then
                         If pt.Y < ptCurrentItem.Y Then pt.Y -= 10 Else pt.Y += 10
-                        If pt.Y <= 2 Then scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset - 10))
-                        If pt.Y >= _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0) Then
-                            scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset + 10))
+                        If pt.Y <= 2 Then scrollTo(New Point(PART_ScrollViewer.HorizontalOffset, PART_ScrollViewer.VerticalOffset - 10))
+                        If pt.Y >= PART_ScrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0) Then
+                            scrollTo(New Point(PART_ScrollViewer.HorizontalOffset, PART_ScrollViewer.VerticalOffset + 10))
                         End If
                     ElseIf Not adjacentItem Is Nothing AndAlso Not adjacentItem.Equals(currentItem) Then
                         doContinue = False
-                    ElseIf offsetX <> 0 AndAlso pt.X > 2 AndAlso pt.X < _scrollViewer.ViewportWidth - 2 Then
+                    ElseIf offsetX <> 0 AndAlso pt.X > 2 AndAlso pt.X < PART_ScrollViewer.ViewportWidth - 2 Then
                         pt.X += offsetX
-                    ElseIf offsetY <> 0 AndAlso pt.Y > 2 + If(headerRowPresenter?.ActualHeight, 0) AndAlso pt.Y < _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0) Then
+                    ElseIf offsetY <> 0 AndAlso pt.Y > 2 + If(headerRowPresenter?.ActualHeight, 0) AndAlso pt.Y < PART_ScrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0) Then
                         pt.Y += offsetY
-                    ElseIf offsetX < 0 AndAlso _scrollViewer.HorizontalOffset > 0 Then
-                        scrollTo(New Point(_scrollViewer.HorizontalOffset - 250, _scrollViewer.VerticalOffset))
-                    ElseIf offsetY < 0 AndAlso _scrollViewer.VerticalOffset > 0 Then
-                        scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset - 10))
-                    ElseIf offsetX > 0 AndAlso _scrollViewer.HorizontalOffset < _scrollViewer.ScrollableWidth Then
-                        scrollTo(New Point(_scrollViewer.HorizontalOffset + 10, _scrollViewer.VerticalOffset))
-                    ElseIf offsetY > 0 AndAlso _scrollViewer.VerticalOffset < _scrollViewer.ScrollableHeight Then
-                        scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.VerticalOffset + 10))
+                    ElseIf offsetX < 0 AndAlso PART_ScrollViewer.HorizontalOffset > 0 Then
+                        scrollTo(New Point(PART_ScrollViewer.HorizontalOffset - 250, PART_ScrollViewer.VerticalOffset))
+                    ElseIf offsetY < 0 AndAlso PART_ScrollViewer.VerticalOffset > 0 AndAlso Not Me.PART_ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled Then
+                        scrollTo(New Point(PART_ScrollViewer.HorizontalOffset, PART_ScrollViewer.VerticalOffset - 10))
+                    ElseIf offsetX > 0 AndAlso PART_ScrollViewer.HorizontalOffset < PART_ScrollViewer.ScrollableWidth Then
+                        scrollTo(New Point(PART_ScrollViewer.HorizontalOffset + 10, PART_ScrollViewer.VerticalOffset))
+                    ElseIf offsetY > 0 AndAlso PART_ScrollViewer.VerticalOffset < PART_ScrollViewer.ScrollableHeight AndAlso Not Me.PART_ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled Then
+                        scrollTo(New Point(PART_ScrollViewer.HorizontalOffset, PART_ScrollViewer.VerticalOffset + 10))
                     ElseIf offsetX < 0 AndAlso orientation = Orientation.Horizontal Then
                         If pt.Y - currentItem.ActualHeight < 0 Then
-                            If _scrollViewer.VerticalOffset - 10 > 0 AndAlso _scrollViewer.ViewportHeight > currentItem.ActualHeight Then
-                                scrollTo(New Point(_scrollViewer.ScrollableWidth, _scrollViewer.VerticalOffset - 10))
+                            If PART_ScrollViewer.VerticalOffset - 10 > 0 AndAlso PART_ScrollViewer.ViewportHeight > currentItem.ActualHeight Then
+                                scrollTo(New Point(PART_ScrollViewer.ScrollableWidth, PART_ScrollViewer.VerticalOffset - 10))
                                 pt.Y -= currentItem.ActualHeight
-                                pt.X = _scrollViewer.ViewportWidth - 3
+                                pt.X = If(Me.PART_ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, 0, PART_ScrollViewer.ViewportWidth - 3)
                             Else
                                 ' we're out of options
                                 doContinue = False
                             End If
                         ElseIf Not isFirstItem(currentItem) Then
-                            scrollTo(New Point(_scrollViewer.ScrollableWidth, _scrollViewer.VerticalOffset))
+                            scrollTo(New Point(PART_ScrollViewer.ScrollableWidth, PART_ScrollViewer.VerticalOffset))
                             pt.Y -= currentItem.ActualHeight
-                            pt.X = _scrollViewer.ViewportWidth - 3
+                            pt.X = If(Me.PART_ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, 0, PART_ScrollViewer.ViewportWidth - 3)
                         Else
                             ' we're out of options
                             doContinue = False
@@ -426,27 +427,28 @@ Namespace Controls
                         doFindOnDifferentY = True
                     ElseIf offsetY < 0 Then
                         If pt.X - 35 < 0 Then
-                            If _scrollViewer.HorizontalOffset - 35 > 0 AndAlso _scrollViewer.ViewportWidth > currentItem.ActualWidth Then
-                                scrollTo(New Point(_scrollViewer.HorizontalOffset - 35, _scrollViewer.ScrollableHeight))
+                            If PART_ScrollViewer.HorizontalOffset - 35 > 0 AndAlso PART_ScrollViewer.ViewportWidth > currentItem.ActualWidth Then
+                                scrollTo(New Point(PART_ScrollViewer.HorizontalOffset - 35, PART_ScrollViewer.ScrollableHeight))
                                 pt.X -= 35
-                                pt.Y = _scrollViewer.ViewportHeight - 3
+                                pt.Y = PART_ScrollViewer.ViewportHeight - 3
                             Else
                                 ' we're out of options
                                 doContinue = False
                             End If
                         ElseIf Not isFirstItem(currentItem) Then
-                            scrollTo(New Point(_scrollViewer.HorizontalOffset, _scrollViewer.ScrollableHeight))
+                            scrollTo(New Point(PART_ScrollViewer.HorizontalOffset, PART_ScrollViewer.ScrollableHeight))
                             pt.X -= 35
-                            pt.Y = _scrollViewer.ViewportHeight - 3
+                            pt.Y = PART_ScrollViewer.ViewportHeight - 3
                         Else
                             ' we're out of options
                             doContinue = False
                         End If
                         doFindOnDifferentX = True
                     ElseIf offsetX > 0 AndAlso orientation = Orientation.Horizontal Then
-                        If pt.Y + currentItem.ActualHeight > _scrollViewer.ViewportHeight Then
-                            If _scrollViewer.VerticalOffset + 10 < _scrollViewer.ScrollableHeight AndAlso _scrollViewer.ViewportHeight > currentItem.ActualHeight Then
-                                scrollTo(New Point(0, _scrollViewer.VerticalOffset + 10))
+                        If pt.Y + currentItem.ActualHeight > PART_ScrollViewer.ViewportHeight AndAlso Not Me.PART_ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled Then
+                            If PART_ScrollViewer.VerticalOffset + 10 < PART_ScrollViewer.ScrollableHeight AndAlso PART_ScrollViewer.ViewportHeight > currentItem.ActualHeight _
+                                AndAlso Not Me.PART_ScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled Then
+                                scrollTo(New Point(0, PART_ScrollViewer.VerticalOffset + 10))
                                 pt.Y += currentItem.ActualHeight
                                 pt.X = 3
                             Else
@@ -454,7 +456,7 @@ Namespace Controls
                                 doContinue = False
                             End If
                         ElseIf Not isLastItem(currentItem) Then
-                            scrollTo(New Point(0, _scrollViewer.VerticalOffset))
+                            scrollTo(New Point(0, PART_ScrollViewer.VerticalOffset))
                             pt.Y += currentItem.ActualHeight
                             pt.X = 3
                         Else
@@ -463,9 +465,9 @@ Namespace Controls
                         End If
                         doFindOnDifferentY = True
                     ElseIf offsetY > 0 AndAlso orientation = Orientation.Vertical Then
-                        If pt.X + currentItem.ActualWidth > _scrollViewer.ViewportWidth Then
-                            If _scrollViewer.HorizontalOffset + 25 < _scrollViewer.ScrollableWidth AndAlso _scrollViewer.ViewportWidth > currentItem.ActualWidth Then
-                                scrollTo(New Point(_scrollViewer.HorizontalOffset + 25, 0))
+                        If pt.X + currentItem.ActualWidth > PART_ScrollViewer.ViewportWidth Then
+                            If PART_ScrollViewer.HorizontalOffset + 25 < PART_ScrollViewer.ScrollableWidth AndAlso PART_ScrollViewer.ViewportWidth > currentItem.ActualWidth Then
+                                scrollTo(New Point(PART_ScrollViewer.HorizontalOffset + 25, 0))
                                 pt.X += currentItem.ActualWidth
                                 pt.Y = 3
                             Else
@@ -473,7 +475,7 @@ Namespace Controls
                                 doContinue = False
                             End If
                         ElseIf Not isLastItem(currentItem) Then
-                            scrollTo(New Point(_scrollViewer.HorizontalOffset, 0))
+                            scrollTo(New Point(PART_ScrollViewer.HorizontalOffset, 0))
                             pt.X += currentItem.ActualWidth
                             pt.Y = 3
                         Else
@@ -485,8 +487,8 @@ Namespace Controls
                         ' we're out of options
                         doContinue = False
                     End If
-                    pt.X = Math.Min(Math.Max(2, pt.X), _scrollViewer.ViewportWidth - 2)
-                    pt.Y = Math.Min(Math.Max(2 + If(headerRowPresenter?.ActualHeight, 0), pt.Y), _scrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0))
+                    pt.X = Math.Min(Math.Max(2, pt.X), PART_ScrollViewer.ViewportWidth - 2)
+                    pt.Y = Math.Min(Math.Max(2 + If(headerRowPresenter?.ActualHeight, 0), pt.Y), PART_ScrollViewer.ViewportHeight - 2 + If(headerRowPresenter?.ActualHeight, 0))
                 Loop While doContinue
 
                 ' select
@@ -516,13 +518,13 @@ Namespace Controls
 
         Protected Sub scrollTo(pt As Point)
             _isKeyboardScrolling = True
-            pt.X = Math.Min(Math.Max(0, pt.X), _scrollViewer.ScrollableWidth)
-            pt.Y = Math.Min(Math.Max(0, pt.Y), _scrollViewer.ScrollableHeight)
+            pt.X = Math.Min(Math.Max(0, pt.X), PART_ScrollViewer.ScrollableWidth)
+            pt.Y = Math.Min(Math.Max(0, pt.Y), PART_ScrollViewer.ScrollableHeight)
             UIHelper.OnUIThread(
                 Sub()
                     _doCancelScroll = False
-                    _scrollViewer.ScrollToHorizontalOffset(pt.X)
-                    _scrollViewer.ScrollToVerticalOffset(pt.Y)
+                    PART_ScrollViewer.ScrollToHorizontalOffset(pt.X)
+                    PART_ScrollViewer.ScrollToVerticalOffset(pt.Y)
                 End Sub, Threading.DispatcherPriority.Input)
             'Do While Not _doCancelScroll AndAlso (Math.Abs(_scrollViewer.HorizontalOffset - pt.X) > 0.5 OrElse Math.Abs(_scrollViewer.VerticalOffset - pt.Y) > 0.5)
             UIHelper.OnUIThread(
@@ -535,20 +537,20 @@ Namespace Controls
         Protected Overridable Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
             If TypeOf e.OriginalSource Is ListBoxItem AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
                 Dim item As ListBoxItem = e.OriginalSource
-                If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
-                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                If Not item Is Nothing AndAlso UIHelper.IsAncestor(PART_ScrollViewer, item) Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(PART_ScrollViewer)
                     Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
 
                     ' Check if item is outside the viewport and adjust scrolling 
                     If itemRect.Top < 0 Then
-                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top)
-                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
-                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight))
+                        PART_ScrollViewer.ScrollToVerticalOffset(PART_ScrollViewer.VerticalOffset + itemRect.Top)
+                    ElseIf itemRect.Bottom > PART_ScrollViewer.ViewportHeight Then
+                        PART_ScrollViewer.ScrollToVerticalOffset(PART_ScrollViewer.VerticalOffset + (itemRect.Bottom - PART_ScrollViewer.ViewportHeight))
                     End If
                     If itemRect.Left < 0 Then
-                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + itemRect.Left)
-                    ElseIf itemRect.Right > _scrollViewer.ViewportWidth Then
-                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + (itemRect.Right - _scrollViewer.ViewportWidth))
+                        PART_ScrollViewer.ScrollToHorizontalOffset(PART_ScrollViewer.HorizontalOffset + itemRect.Left)
+                    ElseIf itemRect.Right > PART_ScrollViewer.ViewportWidth Then
+                        PART_ScrollViewer.ScrollToHorizontalOffset(PART_ScrollViewer.HorizontalOffset + (itemRect.Right - PART_ScrollViewer.ViewportWidth))
                     End If
                     e.Handled = True
                 End If
@@ -556,19 +558,19 @@ Namespace Controls
                 Dim parentItem As SlidingExpander = e.OriginalSource
                 Dim buttonItem As Button = UIHelper.FindVisualChildren(Of Button)(parentItem)?(0)
                 Dim item As Border = UIHelper.GetParentOfType(Of Border)(buttonItem)
-                If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
-                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                If Not item Is Nothing AndAlso UIHelper.IsAncestor(PART_ScrollViewer, item) Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(PART_ScrollViewer)
                     Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
                     ' Check if item is outside the viewport and adjust scrolling 
                     If itemRect.Top < 0 Then
-                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top)
-                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
-                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight))
+                        PART_ScrollViewer.ScrollToVerticalOffset(PART_ScrollViewer.VerticalOffset + itemRect.Top)
+                    ElseIf itemRect.Bottom > PART_ScrollViewer.ViewportHeight Then
+                        PART_ScrollViewer.ScrollToVerticalOffset(PART_ScrollViewer.VerticalOffset + (itemRect.Bottom - PART_ScrollViewer.ViewportHeight))
                     End If
                     If itemRect.Left < 0 Then
-                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + itemRect.Left)
-                    ElseIf itemRect.Right > _scrollViewer.ViewportWidth Then
-                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + (itemRect.Right - _scrollViewer.ViewportWidth))
+                        PART_ScrollViewer.ScrollToHorizontalOffset(PART_ScrollViewer.HorizontalOffset + itemRect.Left)
+                    ElseIf itemRect.Right > PART_ScrollViewer.ViewportWidth Then
+                        PART_ScrollViewer.ScrollToHorizontalOffset(PART_ScrollViewer.HorizontalOffset + (itemRect.Right - PART_ScrollViewer.ViewportWidth))
                     End If
                     e.Handled = True
                 End If
@@ -1341,12 +1343,12 @@ Namespace Controls
                             Await t
                             Await Task.Delay(50)
 
-                            If Not _scrollViewer Is Nothing Then
+                            If Not PART_ScrollViewer Is Nothing Then
                                 ' restore folder scroll position
                                 Me.ScrollOffset = folder.LastScrollOffset
                                 _lastScrollSize = folder.LastScrollSize
-                                _scrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, Me.ScrollOffset.X * _scrollViewer.ScrollableWidth / _lastScrollSize.Width))
-                                _scrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, Me.ScrollOffset.Y * _scrollViewer.ScrollableHeight / _lastScrollSize.Height))
+                                PART_ScrollViewer.ScrollToHorizontalOffset(If(_lastScrollSize.Width = 0, 0, Me.ScrollOffset.X * PART_ScrollViewer.ScrollableWidth / _lastScrollSize.Width))
+                                PART_ScrollViewer.ScrollToVerticalOffset(If(_lastScrollSize.Height = 0, 0, Me.ScrollOffset.Y * PART_ScrollViewer.ScrollableHeight / _lastScrollSize.Height))
                             End If
                         End If
 
@@ -1445,9 +1447,9 @@ Namespace Controls
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = bfv.ScrollOffset
                 oldValue.LastScrollSize = bfv._lastScrollSize
-                If Not bfv._scrollViewer Is Nothing Then
-                    bfv._scrollViewer.ScrollToHorizontalOffset(0)
-                    bfv._scrollViewer.ScrollToVerticalOffset(0)
+                If Not bfv.PART_ScrollViewer Is Nothing Then
+                    bfv.PART_ScrollViewer.ScrollToHorizontalOffset(0)
+                    bfv.PART_ScrollViewer.ScrollToVerticalOffset(0)
                 End If
 
                 ' clear view binding

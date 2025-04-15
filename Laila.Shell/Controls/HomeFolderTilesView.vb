@@ -72,20 +72,20 @@ Namespace Controls
         Protected Overrides Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
             If TypeOf e.OriginalSource Is ListBoxItem AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
                 Dim item As ListBoxItem = e.OriginalSource
-                If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
-                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                If Not item Is Nothing AndAlso UIHelper.IsAncestor(PART_ScrollViewer, item) Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(PART_ScrollViewer)
                     Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
 
                     ' Check if item is outside the viewport and adjust scrolling, but only vertically
                     If itemRect.Top < 0 Then
-                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top - 2)
-                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
-                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight) + 2)
+                        PART_ScrollViewer.ScrollToVerticalOffset(PART_ScrollViewer.VerticalOffset + itemRect.Top - 2)
+                    ElseIf itemRect.Bottom > PART_ScrollViewer.ViewportHeight Then
+                        PART_ScrollViewer.ScrollToVerticalOffset(PART_ScrollViewer.VerticalOffset + (itemRect.Bottom - PART_ScrollViewer.ViewportHeight) + 2)
                     End If
                     If itemRect.Left < 0 Then
-                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + itemRect.Left)
-                    ElseIf itemRect.Right > _scrollViewer.ViewportWidth Then
-                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + (itemRect.Right - _scrollViewer.ViewportWidth))
+                        PART_ScrollViewer.ScrollToHorizontalOffset(PART_ScrollViewer.HorizontalOffset + itemRect.Left)
+                    ElseIf itemRect.Right > PART_ScrollViewer.ViewportWidth Then
+                        PART_ScrollViewer.ScrollToHorizontalOffset(PART_ScrollViewer.HorizontalOffset + (itemRect.Right - PART_ScrollViewer.ViewportWidth))
                     End If
                     e.Handled = True
                 End If
