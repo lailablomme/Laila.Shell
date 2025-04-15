@@ -518,9 +518,13 @@ Namespace Controls
             If Not e.IsHandled Then
                 _thread.Add(
                     Sub()
+                        If id.Item2 = "properties" AndAlso selectedItems.Count > 1 Then
+                            id = New Tuple(Of Integer, String)(0, "Laila_Shell_MultiFileProperties")
+                        End If
+
                         Select Case id.Item2
                             Case "Windows.ModernShare"
-                            Case "properties"
+                            Case "Laila_Shell_MultiFileProperties"
                                 Dim dataObject As IDataObject_PreserveSig
                                 dataObject = Clipboard.GetDataObjectFor(Nothing, selectedItems)
                                 Functions.SHMultiFileProperties(dataObject, 0)
