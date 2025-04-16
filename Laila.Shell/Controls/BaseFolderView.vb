@@ -266,20 +266,20 @@ Namespace Controls
                         e.Handled = True
                     End If
                 ElseIf e.Key = Key.Up Then
-                    focusAdjecentItem(0, -10)
+                    focusAdjacentItem(0, -10)
                     e.Handled = True
                 ElseIf e.Key = Key.Down Then
-                    focusAdjecentItem(0, +10)
+                    focusAdjacentItem(0, +10)
                     e.Handled = True
                 ElseIf e.Key = Key.Left Then
-                    e.Handled = focusAdjecentItem(-10, 0)
+                    e.Handled = focusAdjacentItem(-10, 0)
                 ElseIf e.Key = Key.Right Then
-                    e.Handled = focusAdjecentItem(10, 0)
+                    e.Handled = focusAdjacentItem(10, 0)
                 End If
             End If
         End Sub
 
-        Private Function focusAdjecentItem(offsetX As Integer, offsetY As Integer) As Boolean
+        Private Function focusAdjacentItem(offsetX As Integer, offsetY As Integer) As Boolean
             If _isKeyboardScrolling Then Return False
 
             If TypeOf Keyboard.FocusedElement Is ListBoxItem OrElse TypeOf Keyboard.FocusedElement Is Button Then
@@ -510,10 +510,10 @@ Namespace Controls
                         If TypeOf adjacentItem Is ListBoxItem Then Me.SelectedItems = {adjacentItem.DataContext}
                     End If
                     Return Not adjacentItem.Equals(currentItem)
-                Else
-                    Return False
                 End If
             End If
+
+            Return False
         End Function
 
         Protected Sub scrollTo(pt As Point)
