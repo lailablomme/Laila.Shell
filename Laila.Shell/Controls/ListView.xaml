@@ -20,7 +20,7 @@
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True"
                           Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
-                                  ScrollViewer.IsDeferredScrollingEnabled="False" 
+                                  ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.VerticalScrollBarVisibility="Disabled" 
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
@@ -38,14 +38,14 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <!--<Expander IsExpanded="True" Style="{StaticResource lailaShell_GroupByExpanderStyle}">
-                                                            <Expander.Header>
-                                                                <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" x:Name="PART_ExpanderHeader" />
-                                                            </Expander.Header>
-                                                            <ItemsPresenter Margin="25,0,0,0" />
-                                                        </Expander>-->
+                                                        <ControlTemplate.Resources>
+                                                            <converters:DoubleAdditionConverter x:Key="doubleAdditionConverter" />
+                                                        </ControlTemplate.Resources>
                                                         <local:SlidingExpander IsExpanded="True" Orientation="Vertical" ToggleButtonVisibility="Collapsed" 
-                                                                               ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}">
+                                                                               ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}"
+                                                                               ExpandCollapseAllState="{Binding Tag.ExpandCollapseAllState, ElementName=PART_Grid}"
+                                                                               MaxHeight="{Binding Tag.PART_ScrollViewer.ViewportHeight, ElementName=PART_Grid}"
+                                                                               CanExpandCollapse="False">
                                                             <Expander.Header>
                                                                 <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" 
                                                                            x:Name="PART_ExpanderHeader" />

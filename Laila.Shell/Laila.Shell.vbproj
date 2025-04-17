@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.59-alpha</Version>
+	<Version>0.0.60-alpha</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
@@ -102,7 +102,7 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Laila.AutoCompleteTextBox" Version="2.0.15" />
+    <PackageReference Include="Laila.AutoCompleteTextBox" Version="2.0.16" />
     <PackageReference Include="Laila.BalloonTip" Version="1.0.4" />
     <PackageReference Include="LiteDB" Version="5.0.21" />
 	  <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />

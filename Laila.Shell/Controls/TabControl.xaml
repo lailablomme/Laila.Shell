@@ -12,6 +12,21 @@
         <Setter Property="Width"  Value="24"/>
         <Setter Property="Height" Value="24"/>
         <Setter Property="Margin" Value="0,0,0,-3"/>
+        <Setter Property="Focusable" Value="True"/>
+        <Setter Property="IsTabStop" Value="True"/>
+        <Setter Property="FocusVisualStyle">
+            <Setter.Value>
+                <Style>
+                    <Setter Property="Control.Template">
+                        <Setter.Value>
+                            <ControlTemplate>
+                                <Border BorderBrush="Black" BorderThickness="2" Background="Transparent" CornerRadius="5" Margin="-2" SnapsToDevicePixels="true"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -126,41 +141,43 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:TabControl}">
-                    <Grid ClipToBounds="true" SnapsToDevicePixels="true" KeyboardNavigation.TabNavigation="Local" UseLayoutRounding="True">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition x:Name="ColumnDefinition0"/>
-                            <ColumnDefinition x:Name="ColumnDefinition1" Width="0"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition x:Name="RowDefinition0" Height="Auto"/>
-                            <RowDefinition x:Name="RowDefinition1" Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Grid Grid.Column="0" Grid.Row="0" Panel.ZIndex="1" x:Name="PART_TabGrid" Margin="7,0,2,0">
+                    <AdornerDecorator>
+                        <Grid ClipToBounds="true" SnapsToDevicePixels="true" KeyboardNavigation.TabNavigation="Local" UseLayoutRounding="True">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto" x:Name="PART_TabColumn" />
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*" MinWidth="175" />
+                                <ColumnDefinition x:Name="ColumnDefinition0"/>
+                                <ColumnDefinition x:Name="ColumnDefinition1" Width="0"/>
                             </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition x:Name="RowDefinition0" Height="Auto"/>
+                                <RowDefinition x:Name="RowDefinition1" Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Column="0" Grid.Row="0" Panel.ZIndex="1" x:Name="PART_TabGrid" Margin="7,0,2,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto" x:Name="PART_TabColumn" />
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*" MinWidth="175" />
+                                </Grid.ColumnDefinitions>
 
-                            <RepeatButton Grid.Column="0" x:Name="TabLeftButtonTop" 
+                                <RepeatButton Grid.Column="0" x:Name="TabLeftButtonTop" 
                                           Style="{StaticResource lailaShell_TabScrollLeftButtonStyle}" />
 
-                            <ScrollViewer Grid.Column="1" x:Name="TabScrollViewerTop" IsTabStop="False" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" 
+                                <ScrollViewer Grid.Column="1" x:Name="TabScrollViewerTop" IsTabStop="False" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" 
                                                     BorderThickness="0" Padding="0,0,0,0" Margin="0,0,0,-3" >
-                                <TabPanel x:Name="HeaderPanel" IsItemsHost="true" />
-                            </ScrollViewer>
+                                    <TabPanel x:Name="HeaderPanel" IsItemsHost="true" />
+                                </ScrollViewer>
 
-                            <RepeatButton Grid.Column="2" x:Name="TabRightButtonTop"  
+                                <RepeatButton Grid.Column="2" x:Name="TabRightButtonTop"  
                                           Style="{StaticResource lailaShell_TabScrollRightButtonStyle}" />
 
-                            <Button Grid.Column="3" x:Name="PART_AddTabButton" Style="{StaticResource lailaShell_AddTabButtonStyle}" />
+                                <Button Grid.Column="3" x:Name="PART_AddTabButton" Style="{StaticResource lailaShell_AddTabButtonStyle}" />
+                            </Grid>
+                            <Border x:Name="ContentPanel" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Grid.Column="0" KeyboardNavigation.DirectionalNavigation="Contained" Grid.Row="1" KeyboardNavigation.TabIndex="2" KeyboardNavigation.TabNavigation="Local">
+                                <Grid x:Name="PART_ItemsHolder" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                            </Border>
                         </Grid>
-                        <Border x:Name="ContentPanel" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Grid.Column="0" KeyboardNavigation.DirectionalNavigation="Contained" Grid.Row="1" KeyboardNavigation.TabIndex="2" KeyboardNavigation.TabNavigation="Local">
-                            <Grid x:Name="PART_ItemsHolder" Margin="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
-                        </Border>
-                    </Grid>
+                    </AdornerDecorator>
                     <ControlTemplate.Triggers>
                         <Trigger Property="TabStripPlacement" Value="Bottom">
                             <Setter Property="Grid.Row" TargetName="HeaderPanel" Value="1"/>

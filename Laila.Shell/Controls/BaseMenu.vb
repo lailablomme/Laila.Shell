@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
+Imports System.Windows.Forms.PropertyGridInternal
 Imports System.Windows.Input
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
@@ -517,8 +518,17 @@ Namespace Controls
             If Not e.IsHandled Then
                 _thread.Add(
                     Sub()
+                        If id.Item2 = "properties" AndAlso selectedItems.Count > 1 Then
+                            id = New Tuple(Of Integer, String)(0, "Laila_Shell_MultiFileProperties")
+                        End If
+
                         Select Case id.Item2
                             Case "Windows.ModernShare"
+                            Case "Laila_Shell_MultiFileProperties"
+                                Dim dataObject As IDataObject_PreserveSig
+                                dataObject = Clipboard.GetDataObjectFor(Nothing, selectedItems)
+                                Functions.SHMultiFileProperties(dataObject, 0)
+                                Marshal.ReleaseComObject(dataObject)
                             Case "copy"
                             Case "cut"
                             Case "paste"

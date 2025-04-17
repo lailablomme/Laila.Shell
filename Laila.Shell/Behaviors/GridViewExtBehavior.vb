@@ -41,6 +41,17 @@ Namespace Behaviors
             End If
         End Sub
 
+        Public Shared ReadOnly TotalColumnWidthProperty As DependencyProperty = DependencyProperty.Register("TotalColumnWidth", GetType(Double), GetType(GridViewExtBehavior), New FrameworkPropertyMetadata(Convert.ToDouble(100)))
+
+        Public Property TotalColumnWidth() As Double
+            Get
+                Return GetValue(TotalColumnWidthProperty)
+            End Get
+            Set(ByVal value As Double)
+                SetValue(TotalColumnWidthProperty, value)
+            End Set
+        End Property
+
         Public Shared ReadOnly LeftMarginProperty As DependencyProperty = DependencyProperty.Register("LeftMargin", GetType(Double), GetType(GridViewExtBehavior), New FrameworkPropertyMetadata(Convert.ToDouble(0), AddressOf OnLeftMarginChanged))
 
         Public Property LeftMargin() As Double
@@ -735,13 +746,9 @@ Namespace Behaviors
                 For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
                     headers.Remove(header)
                 Next
-                For Each item In rows.Select(Function(r) r.DataContext).ToList()
-                    Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
-                    If Not lvi Is Nothing Then
-                        lvi.HorizontalAlignment = HorizontalAlignment.Left
-                        lvi.Width = headers.Sum(Function(h) h.Width)
-                    End If
-                Next
+
+                Dim tcw As Double = headers.Sum(Function(h) h.actualWidth)
+                If Me.TotalColumnWidth <> tcw Then Me.TotalColumnWidth = tcw
             End If
         End Sub
 

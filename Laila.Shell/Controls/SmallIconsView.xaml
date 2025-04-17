@@ -58,6 +58,42 @@
                                                         <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="0,0,0,0" />
                                                         <Setter Property="vwp:VirtualizingWrapPanel.CustomHeaderHeight" Value="{Binding ActualHeight, ElementName=PART_ExpanderHeader}" />
                                                     </DataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                            <Condition Binding="{Binding IsCompactMode, ElementName=PART_Grid}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,20" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding IsCompactMode, ElementName=PART_Grid}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,20" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                            <Condition Binding="{Binding IsCompactMode, ElementName=PART_Grid}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,28" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding IsCompactMode, ElementName=PART_Grid}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,28" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </vwp:VirtualizingWrapPanel.Style>
@@ -89,7 +125,7 @@
                                                 <ColumnDefinition Width="30" />
                                                 <ColumnDefinition Width="16" />
                                                 <ColumnDefinition Width="4" />
-                                                <ColumnDefinition Width="Auto" SharedSizeGroup="A" />
+                                                <ColumnDefinition Width="200" SharedSizeGroup="A" />
                                             </Grid.ColumnDefinitions>
                                             <Grid.Resources>
                                                 <helpers:ImageHelper x:Key="imageHelper" />

@@ -19,12 +19,12 @@ Namespace Controls
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
+        Public Shared Shadows ReadOnly IsTabStopProperty As DependencyProperty = DependencyProperty.Register("IsTabStop", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private PART_NavigationButtonsPanel As SelectedFolderControl
         Private PART_NavigationButtons As Border
         Private PART_ClickToEdit As Border
         Private disposedValue As Boolean
-        Private _dontFocusTextBox As Boolean = False
         Private _source As HwndSource
 
         Shared Sub New()
@@ -33,6 +33,8 @@ Namespace Controls
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
+
+            MyBase.IsTabStop = False
 
             Shell.AddToControlCache(Me)
 
@@ -79,26 +81,8 @@ Namespace Controls
                 End Sub
             setDoShowEncryptedOrCompressedFilesInColor()
 
-            AddHandler Me.GotFocus,
-                Sub(s As Object, e As EventArgs)
-                    If Not _dontFocusTextBox Then
-                        Me.PART_TextBox.IsEnabled = True
-                        Me.PART_TextBox.Focus()
-                    End If
-                    _dontFocusTextBox = False
-                End Sub
-            AddHandler Me.LostFocus,
-                Sub(s As Object, e As EventArgs)
-                    UIHelper.OnUIThreadAsync(
-                        Async Sub()
-                            Await Task.Delay(50)
-                            If Not Keyboard.FocusedElement?.Equals(Me) Then
-                                _dontFocusTextBox = False
-                            End If
-                        End Sub)
-                End Sub
-            AddHandler Me.PART_TextBox.GotFocus,
-                Sub(s As Object, e As RoutedEventArgs)
+            AddHandler Me.PART_TextBox.PreviewGotKeyboardFocus,
+                Sub(s As Object, e As KeyboardFocusChangedEventArgs)
                     _isSettingTextInternally = True
                     Me.SelectedItem = Me.Folder
                     Me.Text = Me.Folder.AddressBarDisplayPath
@@ -110,7 +94,6 @@ Namespace Controls
                 End Sub
             AddHandler Me.PART_ClickToEdit.MouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
-                    Me.PART_TextBox.IsEnabled = True
                     Me.PART_TextBox.Focus()
                 End Sub
             AddHandler Me.PART_TextBox.PreviewKeyDown,
@@ -143,9 +126,6 @@ Namespace Controls
 
         Protected Overrides Sub OnItemSelected()
             Using Shell.OverrideCursor(Cursors.Wait)
-                _dontFocusTextBox = True
-                Me.PART_TextBox.IsEnabled = False
-
                 If INVALID_VALUE.Equals(Me.SelectedValue) Then
                     Dim text As String = Me.PART_TextBox.Text
                     Dim item As Item = Item.FromParsingName(text, Nothing, False)
@@ -189,11 +169,7 @@ Namespace Controls
 
         Protected Overrides Sub Cancel()
             MyBase.Cancel()
-
-            _dontFocusTextBox = True
-            Me.PART_TextBox.IsEnabled = False
             Me.PART_NavigationButtons.Visibility = Visibility.Visible
-
             releaseItems()
         End Sub
 
@@ -281,6 +257,15 @@ Namespace Controls
             Dim ab As AddressBar = d
             ab.setDoShowEncryptedOrCompressedFilesInColor()
         End Sub
+
+        Public Overloads Property IsTabStop As Boolean
+            Get
+                Return GetValue(IsTabStopProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(IsTabStopProperty, value)
+            End Set
+        End Property
 
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then

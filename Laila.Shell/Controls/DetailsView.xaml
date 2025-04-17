@@ -38,6 +38,7 @@
                                     <Setter Property="BorderThickness" Value="1"/>
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                     <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                    <Setter Property="HorizontalAlignment" Value="Left"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="ListViewItem">
@@ -47,7 +48,7 @@
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="Auto" />
-                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="{Binding TotalColumnWidth, ElementName=ext}" />
                                                             </Grid.ColumnDefinitions>
                                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                                       VerticalAlignment="Center" Margin="2,0,-2,0" x:Name="SelectionCheckBox"
@@ -135,9 +136,11 @@
                                             <Setter Property="Template">
                                                 <Setter.Value>
                                                     <ControlTemplate>
-                                                        <local:SlidingExpander IsExpanded="True" ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}">
+                                                        <local:SlidingExpander IsExpanded="True" ToggleButtonStyle="{StaticResource lailaShell_GroupByExpanderToggleButtonStyle}"
+                                                                               ExpandCollapseAllState="{Binding Tag.ExpandCollapseAllState, ElementName=PART_Grid}">
                                                             <Expander.Header>
-                                                                <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" VerticalAlignment="Center" x:Name="PART_ExpanderHeader" />
+                                                                <TextBlock Text="{Binding Name}" FontSize="16" Foreground="DarkBlue" 
+                                                                           VerticalAlignment="Center" HorizontalAlignment="Stretch" x:Name="PART_ExpanderHeader" />
                                                             </Expander.Header>
                                                             <ItemsPresenter />
                                                         </local:SlidingExpander>

@@ -2,6 +2,7 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
+Imports Laila.AutoCompleteTextBox
 Imports Laila.Shell.Helpers
 
 Namespace Controls
@@ -10,6 +11,7 @@ Namespace Controls
 
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(SearchBox), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(SearchBox), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared Shadows ReadOnly IsTabStopProperty As DependencyProperty = DependencyProperty.Register("IsTabStop", GetType(Boolean), GetType(SearchBox), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private PART_TextBox As TextBox
         Private PART_CancelButton As Button
@@ -22,17 +24,17 @@ Namespace Controls
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
+            MyBase.IsTabStop = False
+
             PART_TextBox = Me.Template.FindName("PART_TextBox", Me)
             PART_CancelButton = Me.Template.FindName("PART_CancelButton", Me)
 
-            AddHandler Me.GotFocus,
-                Sub(s As Object, e As RoutedEventArgs)
-                    Me.PART_TextBox.Focus()
-                End Sub
-
             AddHandler Me.PART_TextBox.PreviewKeyUp,
                 Sub(s As Object, e As KeyEventArgs)
-                    If e.Key = Key.Tab Then Return
+                    If e.Key = Key.Tab _
+                    OrElse e.Key = Key.LeftCtrl OrElse e.Key = Key.RightCtrl _
+                    OrElse e.Key = Key.LeftShift OrElse e.Key = Key.RightShift _
+                    OrElse e.Key = Key.LeftAlt OrElse e.Key = Key.RightAlt Then Return
 
                     If Not _timer Is Nothing Then
                         _timer.Dispose()
@@ -80,6 +82,15 @@ Namespace Controls
             End Get
             Set(value As Navigation)
                 SetValue(NavigationProperty, value)
+            End Set
+        End Property
+
+        Public Overloads Property IsTabStop As Boolean
+            Get
+                Return GetValue(IsTabStopProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(IsTabStopProperty, value)
             End Set
         End Property
 

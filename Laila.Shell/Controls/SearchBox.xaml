@@ -38,6 +38,7 @@
     <Style TargetType="{x:Type local:SearchBox}">
         <Setter Property="Background" Value="White" />
         <Setter Property="Foreground" Value="Black" />
+        <Setter Property="IsTabStop" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:SearchBox}">
@@ -53,9 +54,9 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBox Grid.Column="0" x:Name="PART_TextBox" HorizontalAlignment="Stretch" VerticalAlignment="Center" 
-                                             BorderThickness="0" Background="Transparent" Padding="0,1,0,1"
+                                             BorderThickness="0" Background="Transparent" Padding="0,1,0,1" 
                                              Foreground="{TemplateBinding Foreground}" Style="{x:Null}"  
-                                             IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                             IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}"
                                              MaxLength="260" />
                                         <TextBlock Grid.Column="0" x:Name="PART_Watermark1" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"
                                                    VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" Foreground="Gray" Margin="3,0">

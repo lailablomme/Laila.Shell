@@ -14,7 +14,12 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Interop
     Public Class Functions
-
+        <DllImport("shell32.dll", SetLastError:=True)>
+        Public Shared Function SHMultiFileProperties(
+    <[In]> pdtobj As IDataObject,
+    dwFlags As UInteger
+) As Integer
+        End Function
         <StructLayout(LayoutKind.Sequential)>
         Public Structure SHQUERYRBINFO
             Public cbSize As Integer
@@ -40,6 +45,18 @@ Namespace Interop
     ByVal ahkeys As IntPtr(), _                     ' Array of registry keys (optional)
     <Out> ByRef ppcm As IntPtr _                    ' Output: IContextMenu
 ) As Integer                                        ' Returns HRESULT
+        End Function
+        <DllImport("kernel32.dll", CharSet:=CharSet.Unicode, SetLastError:=True)>
+        Public Shared Function GetVolumeInformation(
+        lpRootPathName As String,
+        lpVolumeNameBuffer As StringBuilder,
+        nVolumeNameSize As Integer,
+        ByRef lpVolumeSerialNumber As UInteger,
+        ByRef lpMaximumComponentLength As UInteger,
+        ByRef lpFileSystemFlags As UInteger,
+        lpFileSystemNameBuffer As StringBuilder,
+        nFileSystemNameSize As Integer
+    ) As Boolean
         End Function
 
         <DllImport("shell32.dll", CharSet:=CharSet.Unicode, SetLastError:=False)>

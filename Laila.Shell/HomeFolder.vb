@@ -23,6 +23,8 @@ Public Class HomeFolder
     Inherits Folder
     Implements ISupportDragInsert
 
+    Private _cachedHasSubFolders As Boolean?
+
     Public Sub New(parent As Folder, doKeepAlive As Boolean)
         MyBase.New(Nothing, parent, doKeepAlive, True, Nothing)
 
@@ -55,6 +57,15 @@ Public Class HomeFolder
             End Sub
     End Sub
 
+    Public Overrides ReadOnly Property Pidl As Pidl
+        Get
+            If _pidl Is Nothing Then
+                _pidl = Shell.GetSpecialFolder(SpecialFolders.Recent).Pidl.Clone()
+            End If
+            Return _pidl
+        End Get
+    End Property
+
     Public Overrides ReadOnly Property DisplayName As String
         Get
             Return "Home"
@@ -82,6 +93,22 @@ Public Class HomeFolder
     Friend Overrides Function MakeIShellFolderOnCurrentThread() As IShellFolderForIContextMenu
         Return Nothing
     End Function
+
+    Public Overrides Property HasSubFolders As Boolean
+        Get
+            If _hasSubFolders.HasValue AndAlso (_isEnumerated OrElse _hasSubFolders.Value) Then
+                _cachedHasSubFolders = _hasSubFolders
+                Return _hasSubFolders.Value
+            ElseIf _cachedHasSubFolders.HasValue Then
+                Return _cachedHasSubFolders.Value
+            Else
+                Return False
+            End If
+        End Get
+        Set(value As Boolean)
+            MyBase.HasSubFolders = value
+        End Set
+    End Property
 
     Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
         Get
@@ -220,7 +247,9 @@ Public Class HomeFolder
         If TypeOf item Is Link Then
             CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
             Dim target As Item = CType(item, Link).TargetItem
-            If Not TypeOf target Is Folder AndAlso target.IsExisting _
+            If Not target Is Nothing _
+                AndAlso (Not TypeOf target Is Folder OrElse Not target.Attributes.HasFlag(SFGAO.STORAGEANCESTOR)) _
+                AndAlso target.IsExisting _
                 AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
                 target.LogicalParent = Me
                 target._hasCustomProperties = True

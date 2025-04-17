@@ -16,6 +16,9 @@ Namespace Controls
         Public Shared ReadOnly ToggleButtonStyleProperty As DependencyProperty = DependencyProperty.Register("ToggleButtonStyle", GetType(Style), GetType(SlidingExpander), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly OrientationProperty As DependencyProperty = DependencyProperty.Register("Orientation", GetType(Orientation), GetType(SlidingExpander), New FrameworkPropertyMetadata(Orientation.Horizontal, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ToggleButtonVisibilityProperty As DependencyProperty = DependencyProperty.Register("ToggleButtonVisibility", GetType(Visibility), GetType(SlidingExpander), New FrameworkPropertyMetadata(Visibility.Visible, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoSelectAllBehaviorProperty As DependencyProperty = DependencyProperty.Register("DoSelectAllBehavior", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ExpandCollapseAllStateProperty As DependencyProperty = DependencyProperty.Register("ExpandCollapseAllState", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf ExpandCollapseAllStateChanged))
+        Public Shared ReadOnly CanExpandCollapseProperty As DependencyProperty = DependencyProperty.Register("CanExpandCollapse", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(SlidingExpander), New FrameworkPropertyMetadata(GetType(SlidingExpander)))
@@ -34,6 +37,7 @@ Namespace Controls
         Private _currentStep As Double = 0
         Private _totalHeight As Double = 0
         Private _doIgnoreExpandCollapse As Boolean
+        Private _doFocus As Boolean = False
 
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
@@ -44,29 +48,42 @@ Namespace Controls
             Me.PART_TitleLabel = Template.FindName("PART_TitleLabel", Me)
             Me.PART_ToggleButton = Template.FindName("PART_ToggleButton", Me)
 
+            Me.IsExpanded = Me.ExpandCollapseAllState
+
             _timer = New DispatcherTimer()
 
             AddHandler Me.PART_TitleLabel.PreviewKeyDown,
                 Sub(s As Object, e As KeyEventArgs)
+                    If Not Me.CanExpandCollapse Then Return
+
                     If e.Key = Key.Space Then
                         Me.PART_ToggleButton.IsChecked = Not Me.PART_ToggleButton.IsChecked
+                    ElseIf e.Key = Key.Left Then
+                        Me.PART_ToggleButton.IsChecked = False
+                    ElseIf e.Key = Key.Right Then
+                        Me.PART_ToggleButton.IsChecked = True
                     End If
                 End Sub
 
             AddHandler Me.PART_TitleLabel.PreviewMouseDown,
-                Sub(s As Object, e As MouseEventArgs)
-                    Dim vwp As VirtualizingPanel = UIHelper.FindVisualChildren(Of VirtualizingPanel)(Me.PART_ContentContainer).ToList()(0)
-                    Dim group As CollectionViewGroup = vwp.DataContext
-                    Dim listBox As ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
-                    If group.Items.Count > listBox.SelectedItems.Count AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
-                        If Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then listBox.SelectedItems.Clear()
-                        For Each item In group.Items
-                            If Not listBox.SelectedItems.Contains(item) Then
-                                listBox.SelectedItems.Add(item)
-                            End If
-                        Next
+                Sub(s As Object, e As MouseButtonEventArgs)
+                    If e.ClickCount = 2 Then
+                        _doFocus = False
+                        If Me.CanExpandCollapse Then Me.PART_ToggleButton.IsChecked = Not Me.PART_ToggleButton.IsChecked
+                        Me.PART_TitleLabel.Focus()
+                    Else
+                        _doFocus = True
+                        Dim f As Func(Of Task) =
+                            Async Function() As Task
+                                Await Task.Delay(200)
+                                If Not _doFocus OrElse _timer.IsEnabled Then Return
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        Me.Focus()
+                                    End Sub)
+                            End Function
+                        Task.Run(f)
                     End If
-                    Me.PART_TitleLabel.Focus()
                     e.Handled = True
                 End Sub
 
@@ -76,29 +93,37 @@ Namespace Controls
 
             AddHandler Me.PART_ToggleButton.Unchecked,
                 Sub(s As Object, e As RoutedEventArgs)
-                    _doIgnoreExpandCollapse = True
-                    Me.IsExpanded = False
-                    _doIgnoreExpandCollapse = False
-                    _totalHeight = Me.PART_ContentPresenter.ActualHeight
-                    _currentStep = 1.0
-                    RemoveHandler _timer.Tick, AddressOf timer_TickExpand
-                    RemoveHandler _timer.Tick, AddressOf timer_TickCollapse
-                    AddHandler _timer.Tick, AddressOf timer_TickCollapse
-                    _timer.Interval = New TimeSpan(0, 0, 0, 0, ANIMATIONMS / ANIMATIONSTEPS)
-                    _timer.Start()
+                    If Me.IsExpanded Then
+                        _doIgnoreExpandCollapse = True
+                        Me.IsExpanded = False
+                        _doIgnoreExpandCollapse = False
+                        _totalHeight = Me.PART_ContentPresenter.ActualHeight
+                        _currentStep = 1.0
+                        RemoveHandler _timer.Tick, AddressOf timer_TickExpand
+                        RemoveHandler _timer.Tick, AddressOf timer_TickCollapse
+                        AddHandler _timer.Tick, AddressOf timer_TickCollapse
+                        _timer.Interval = New TimeSpan(0, 0, 0, 0, ANIMATIONMS / ANIMATIONSTEPS)
+                        _timer.Start()
+                    End If
                 End Sub
             AddHandler Me.PART_ToggleButton.Checked,
                 Sub(s As Object, e As RoutedEventArgs)
-                    _doIgnoreExpandCollapse = True
-                    Me.IsExpanded = True
-                    _doIgnoreExpandCollapse = False
-                    _totalHeight = Me.PART_ContentPresenter.ActualHeight
-                    _currentStep = 0.0
-                    RemoveHandler _timer.Tick, AddressOf timer_TickExpand
-                    RemoveHandler _timer.Tick, AddressOf timer_TickCollapse
-                    AddHandler _timer.Tick, AddressOf timer_TickExpand
-                    _timer.Interval = New TimeSpan(0, 0, 0, 0, ANIMATIONMS / ANIMATIONSTEPS)
-                    _timer.Start()
+                    If Not Me.IsExpanded Then
+                        _doIgnoreExpandCollapse = True
+                        Me.IsExpanded = True
+                        _doIgnoreExpandCollapse = False
+                        Me.PART_ContentContainer.Visibility = Visibility.Visible
+                        UIHelper.OnUIThread(
+                            Sub()
+                            End Sub, DispatcherPriority.Render)
+                        _totalHeight = Me.PART_ContentPresenter.ActualHeight
+                        _currentStep = 0.0
+                        RemoveHandler _timer.Tick, AddressOf timer_TickExpand
+                        RemoveHandler _timer.Tick, AddressOf timer_TickCollapse
+                        AddHandler _timer.Tick, AddressOf timer_TickExpand
+                        _timer.Interval = New TimeSpan(0, 0, 0, 0, ANIMATIONMS / ANIMATIONSTEPS)
+                        _timer.Start()
+                    End If
                 End Sub
         End Sub
 
@@ -114,7 +139,6 @@ Namespace Controls
         End Sub
 
         Private Sub timer_TickExpand(s As Object, e As EventArgs)
-            Me.PART_ContentContainer.Visibility = Visibility.Visible
             _currentStep += 1.0 / ANIMATIONSTEPS
             If _currentStep >= 1.0 Then
                 _timer.Stop()
@@ -123,6 +147,21 @@ Namespace Controls
                 Me.PART_ContentContainer.Height = Math.Min(_totalHeight, _totalHeight * _currentStep)
                 Me.PART_ContentContainer.ScrollToBottom()
             End If
+        End Sub
+
+        Public Overloads Sub Focus()
+            'Dim vwp As VirtualizingPanel = UIHelper.FindVisualChildren(Of VirtualizingPanel)(Me.PART_ContentContainer).ToList()(0)
+            Dim group As CollectionViewGroup = Me.DataContext
+            Dim listBox As ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
+            If Me.DoSelectAllBehavior AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
+                If Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then listBox.SelectedItems.Clear()
+                For Each item In group.Items
+                    If Not listBox.SelectedItems.Contains(item) Then
+                        listBox.SelectedItems.Add(item)
+                    End If
+                Next
+            End If
+            Me.PART_TitleLabel.Focus()
         End Sub
 
         Public Property Orientation As Orientation
@@ -152,6 +191,38 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property DoSelectAllBehavior As Boolean
+            Get
+                Return GetValue(DoSelectAllBehaviorProperty)
+            End Get
+            Set(value As Boolean)
+                SetValue(DoSelectAllBehaviorProperty, value)
+            End Set
+        End Property
+
+        Public Property ExpandCollapseAllState As Boolean
+            Get
+                Return GetValue(ExpandCollapseAllStateProperty)
+            End Get
+            Set(value As Boolean)
+                SetValue(ExpandCollapseAllStateProperty, value)
+            End Set
+        End Property
+
+        Public Property CanExpandCollapse As Boolean
+            Get
+                Return GetValue(CanExpandCollapseProperty)
+            End Get
+            Set(value As Boolean)
+                SetValue(CanExpandCollapseProperty, value)
+            End Set
+        End Property
+
+        Private Shared Sub ExpandCollapseAllStateChanged(d As DependencyObject, e As DependencyPropertyChangedEventArgs)
+            Dim se As SlidingExpander = d
+            se.IsExpanded = e.NewValue
+        End Sub
+
         Private Shared Sub IsExpandedChanged(d As DependencyObject, e As DependencyPropertyChangedEventArgs)
             Dim se As SlidingExpander = d
             If Not se._doIgnoreExpandCollapse AndAlso Not se.PART_ContentContainer Is Nothing Then
@@ -162,6 +233,7 @@ Namespace Controls
                     se.PART_ContentContainer.Height = 0
                     se.PART_ContentContainer.Visibility = Visibility.Collapsed
                 End If
+                se.PART_ToggleButton.IsChecked = e.NewValue
             End If
         End Sub
     End Class

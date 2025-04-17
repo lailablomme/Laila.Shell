@@ -15,7 +15,7 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(HomeFolderTilesView), New FrameworkPropertyMetadata(GetType(HomeFolderTilesView)))
         End Sub
 
-        Private _oldFocusedElement As ListBoxItem = Nothing
+        Private _oldFocusedElement As FrameworkElement = Nothing
         Private _isWorkingFocus As Boolean
 
         Protected Overrides Sub PART_ListBox_Loaded()
@@ -23,6 +23,13 @@ Namespace Controls
 
             _selectionHelper.Unhook()
             _selectionHelper = Nothing
+
+            AddHandler Me.PART_ListBox.SelectionChanged,
+                Sub(s As Object, e As SelectionChangedEventArgs)
+                    If e.OriginalSource.Equals(Me.PART_ListBox) Then
+                        Me.SelectedItems = Me.PART_ListBox.SelectedItems.Cast(Of Item).ToList()
+                    End If
+                End Sub
 
             AddHandler Me.PreviewGotKeyboardFocus,
                 Sub(s As Object, e As KeyboardFocusChangedEventArgs)
@@ -33,7 +40,7 @@ Namespace Controls
                             _oldFocusedElement.Focus()
                             e.Handled = True
                             _isWorkingFocus = False
-                        ElseIf TypeOf e.NewFocus Is ListBoxItem Then
+                        ElseIf TypeOf e.NewFocus Is ListBoxItem OrElse TypeOf e.NewFocus Is button Then
                             _oldFocusedElement = e.NewFocus
                         End If
                     End If
@@ -65,20 +72,20 @@ Namespace Controls
         Protected Overrides Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
             If TypeOf e.OriginalSource Is ListBoxItem AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
                 Dim item As ListBoxItem = e.OriginalSource
-                If Not item Is Nothing AndAlso UIHelper.IsAncestor(_scrollViewer, item) Then
-                    Dim transform As GeneralTransform = item.TransformToAncestor(_scrollViewer)
+                If Not item Is Nothing AndAlso UIHelper.IsAncestor(PART_ScrollViewer, item) Then
+                    Dim transform As GeneralTransform = item.TransformToAncestor(PART_ScrollViewer)
                     Dim itemRect As Rect = transform.TransformBounds(New Rect(0, 0, item.ActualWidth, item.ActualHeight))
 
                     ' Check if item is outside the viewport and adjust scrolling, but only vertically
                     If itemRect.Top < 0 Then
-                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + itemRect.Top - 2)
-                    ElseIf itemRect.Bottom > _scrollViewer.ViewportHeight Then
-                        _scrollViewer.ScrollToVerticalOffset(_scrollViewer.VerticalOffset + (itemRect.Bottom - _scrollViewer.ViewportHeight) + 2)
+                        PART_ScrollViewer.ScrollToVerticalOffset(PART_ScrollViewer.VerticalOffset + itemRect.Top - 2)
+                    ElseIf itemRect.Bottom > PART_ScrollViewer.ViewportHeight Then
+                        PART_ScrollViewer.ScrollToVerticalOffset(PART_ScrollViewer.VerticalOffset + (itemRect.Bottom - PART_ScrollViewer.ViewportHeight) + 2)
                     End If
                     If itemRect.Left < 0 Then
-                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + itemRect.Left)
-                    ElseIf itemRect.Right > _scrollViewer.ViewportWidth Then
-                        _scrollViewer.ScrollToHorizontalOffset(_scrollViewer.HorizontalOffset + (itemRect.Right - _scrollViewer.ViewportWidth))
+                        PART_ScrollViewer.ScrollToHorizontalOffset(PART_ScrollViewer.HorizontalOffset + itemRect.Left)
+                    ElseIf itemRect.Right > PART_ScrollViewer.ViewportWidth Then
+                        PART_ScrollViewer.ScrollToHorizontalOffset(PART_ScrollViewer.HorizontalOffset + (itemRect.Right - PART_ScrollViewer.ViewportWidth))
                     End If
                     e.Handled = True
                 End If
