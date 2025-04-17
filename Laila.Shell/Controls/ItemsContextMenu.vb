@@ -19,6 +19,12 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ItemsContextMenu), New FrameworkPropertyMetadata(GetType(ItemsContextMenu)))
         End Sub
 
+        Protected Overrides Sub OnOpened(e As RoutedEventArgs)
+            MyBase.OnOpened(e)
+
+            Me.PART_ListBox.Focus()
+        End Sub
+
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
 
