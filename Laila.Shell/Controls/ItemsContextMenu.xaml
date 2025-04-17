@@ -55,7 +55,7 @@
                                         <Setter Property="BorderBrush" Value="Transparent"/>
                                         <Setter Property="BorderThickness" Value="1"/>
                                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="ListBoxItem">
@@ -70,6 +70,14 @@
                                                             <Setter Property="Background" TargetName="Bd" Value="{StaticResource MenuItem.Highlighted.Background}"/>
                                                             <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource MenuItem.Highlighted.BorderBrush}"/>
                                                         </Trigger>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Self}}" Value="True"/>
+                                                                <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListBox}}" Value="False"/>
+                                                            </MultiDataTrigger.Conditions>
+                                                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource MenuItem.Highlighted.Background}"/>
+                                                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource MenuItem.Highlighted.BorderBrush}"/>
+                                                        </MultiDataTrigger>
                                                         <Trigger Property="IsEnabled" Value="False">
                                                             <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
                                                         </Trigger>

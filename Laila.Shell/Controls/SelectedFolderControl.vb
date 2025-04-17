@@ -15,6 +15,7 @@ Namespace Controls
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(SelectedFolderControl), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(SelectedFolderControl), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(SelectedFolderControl), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
+        Public Shared ReadOnly IsTabStopProperty As DependencyProperty = DependencyProperty.Register("IsTabStop", GetType(Boolean), GetType(SelectedFolderControl), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private ReadOnly _lock As New SemaphoreSlim(1, 1)
         Private _visibleFolders As List(Of Folder) = New List(Of Folder)
@@ -75,11 +76,12 @@ Namespace Controls
 
                 folder.IsVisibleInAddressBar = True
 
-                Dim buttons As List(Of StackPanel) = New List(Of StackPanel)()
+                Dim panels As List(Of StackPanel) = New List(Of StackPanel)()
                 Dim totalWidth As Double = 0
                 Dim buttonStyle As Style = TryFindResource("lailaShell_AddressBarButtonStyle")
                 Dim chevronButtonStyle As Style = TryFindResource("lailaShell_AddressBarChevronButtonStyle")
                 Dim moreButtonStyle As Style = TryFindResource("lailaShell_AddressBarMoreButtonStyle")
+                Dim panelStyle As Style = TryFindResource("lailaShell_AddressBarPanelContainerStyle")
 
                 Dim standardPanel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal, .Focusable = False}
                 Dim computerImage As Image = New Image() With {.Width = 16, .Height = 16, .VerticalAlignment = VerticalAlignment.Center, .Margin = New Thickness(4, 0, 4, 0)}
@@ -214,7 +216,7 @@ Namespace Controls
                     panel.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
                     If totalWidth + panel.DesiredSize.Width < Me.MaxWidth Then
                         totalWidth += panel.DesiredSize.Width
-                        buttons.Add(panel)
+                        panels.Add(panel)
                     Else
                         Exit While
                     End If
@@ -230,10 +232,10 @@ Namespace Controls
                     End If
                 End While
 
+                Dim hasMoreButton As Boolean = False
                 If Not currentFolder Is Nothing Then
                     moreButton.Tag = currentFolder
-                    standardPanel.Children.Add(moreButton)
-                    standardPanel.Measure(New Size(1000, 1000))
+                    hasMoreButton = True
 
                     Dim moreContextMenu As ContextMenu = New ContextMenu()
                     moreContextMenu.PlacementTarget = moreButton
@@ -258,6 +260,7 @@ Namespace Controls
                                 End Sub
                         moreContextMenu.Items.Add(moreMenuItem)
                         If TypeOf currentFolder Is SearchFolder OrElse currentFolder.LogicalParent Is Nothing OrElse currentFolder.LogicalParent.FullPath = Shell.Desktop.FullPath Then
+                            computerImage.Source = currentFolder.Icon(16)
                             currentFolder = Nothing
                         End If
                         If Not currentFolder Is Nothing Then
@@ -274,13 +277,47 @@ Namespace Controls
                         End Sub
                 End If
 
-                buttons.Add(standardPanel)
-                buttons.Reverse()
+                If hasMoreButton Then
+                    Dim morePanel As StackPanel = New StackPanel() With {.Orientation = Orientation.Horizontal}
+                    morePanel.Children.Add(moreButton)
+                    panels.Add(morePanel)
+                End If
+                panels.Add(standardPanel)
+                panels.Reverse()
                 If (folder Is Nothing AndAlso Me.Folder Is Nothing) OrElse (Not folder Is Nothing AndAlso folder.Equals(Me.Folder)) Then ' if we're not too late with this async
                     Me.Children.Clear()
-                    For Each button In buttons
-                        Me.Children.Add(button)
+                    For Each panel In panels
+                        Dim container As Button = New Button() With {.Content = panel, .Style = panelStyle, .IsTabStop = False}
+                        Me.Children.Add(container)
+                        AddHandler container.PreviewKeyDown,
+                            Sub(s As Object, e As KeyEventArgs)
+                                Select Case e.Key
+                                    Case Key.Left
+                                        Dim idx As Integer = Me.Children.IndexOf(container)
+                                        If idx > 0 Then
+                                            CType(Me.Children(idx - 1), Button).Focus()
+                                        End If
+                                        e.Handled = True
+                                    Case Key.Right
+                                        Dim idx As Integer = Me.Children.IndexOf(container)
+                                        If idx < Me.Children.Count - 1 Then
+                                            CType(Me.Children(idx + 1), Button).Focus()
+                                        End If
+                                        e.Handled = True
+                                    Case Key.Space, Key.Enter
+                                        If TypeOf panel.Children(0) Is Button Then
+                                            CType(panel.Children(0), Button).RaiseEvent(New RoutedEventArgs(System.Windows.Controls.Button.ClickEvent))
+                                        End If
+                                        e.Handled = True
+                                    Case Key.Down
+                                        If TypeOf panel.Children(panel.Children.Count - 1) Is ToggleButton Then
+                                            CType(panel.Children(panel.Children.Count - 1), ToggleButton).IsChecked = True
+                                        End If
+                                        e.Handled = True
+                                End Select
+                            End Sub
                     Next
+                    If Me.Children.Count > 0 Then CType(Me.Children(0), Button).IsTabStop = Me.IsTabStop
                 End If
 
                 For Each f In previousVisibleFolders.Where(Function(f2) Not _visibleFolders.Contains(f2))
@@ -341,6 +378,15 @@ Namespace Controls
             Dim sfc As SelectedFolderControl = TryCast(d, SelectedFolderControl)
             sfc.setDoShowEncryptedOrCompressedFilesInColor()
         End Sub
+
+        Public Overloads Property IsTabStop As Boolean
+            Get
+                Return GetValue(IsTabStopProperty)
+            End Get
+            Set(value As Boolean)
+                SetCurrentValue(IsTabStopProperty, value)
+            End Set
+        End Property
 
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then

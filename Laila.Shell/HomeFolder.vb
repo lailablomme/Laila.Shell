@@ -57,6 +57,15 @@ Public Class HomeFolder
             End Sub
     End Sub
 
+    Public Overrides ReadOnly Property Pidl As Pidl
+        Get
+            If _pidl Is Nothing Then
+                _pidl = Shell.GetSpecialFolder(SpecialFolders.Recent).Pidl.Clone()
+            End If
+            Return _pidl
+        End Get
+    End Property
+
     Public Overrides ReadOnly Property DisplayName As String
         Get
             Return "Home"

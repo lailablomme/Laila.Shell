@@ -58,6 +58,7 @@
         <Setter Property="ToolTipService.IsEnabled" Value="False" />
         <Setter Property="Background" Value="White" />
         <Setter Property="Foreground" Value="Black" />
+        <Setter Property="Focusable" Value="True" />
         <Setter Property="IsTabStop" Value="True" />
         <Setter Property="LoadingContent">
             <Setter.Value>
@@ -110,7 +111,7 @@
                                         <TextBox Grid.Column="1" x:Name="PART_TextBox" HorizontalAlignment="Stretch" VerticalAlignment="Center" 
                                              BorderThickness="0" Background="Transparent" Padding="0,1,0,1"
                                              Foreground="{TemplateBinding Foreground}" Style="{x:Null}"  
-                                             IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                             IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}"
                                              IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource Mode=TemplatedParent}}"
                                              MaxLength="{Binding MaxLength, RelativeSource={RelativeSource Mode=TemplatedParent}}"
                                              Text="{Binding Text, RelativeSource={RelativeSource Mode=TemplatedParent}, UpdateSourceTrigger=PropertyChanged}" />
@@ -252,7 +253,8 @@
                                         </Grid.ColumnDefinitions>
                                         <local:SelectedFolderControl UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                                      Folder="{Binding Folder, RelativeSource={RelativeSource Mode=TemplatedParent}}"
-                                                                     x:Name="PART_NavigationButtonsPanel" HorizontalAlignment="Stretch" />
+                                                                     x:Name="PART_NavigationButtonsPanel" HorizontalAlignment="Stretch"
+                                                                     IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}" />
                                         <Border Grid.Column="1" Cursor="IBeam" Background="White" x:Name="PART_ClickToEdit" />
                                     </Grid>
                                 </Grid>

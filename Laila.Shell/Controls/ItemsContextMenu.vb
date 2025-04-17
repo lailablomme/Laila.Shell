@@ -22,7 +22,11 @@ Namespace Controls
         Protected Overrides Sub OnOpened(e As RoutedEventArgs)
             MyBase.OnOpened(e)
 
-            Me.PART_ListBox.Focus()
+            UIHelper.OnUIThreadAsync(
+                Sub()
+                    Me.Focus()
+                    Me.PART_ListBox.Focus()
+                End Sub, Threading.DispatcherPriority.ContextIdle)
         End Sub
 
         Public Overrides Sub OnApplyTemplate()
@@ -31,6 +35,7 @@ Namespace Controls
             Me.PART_ListBox = Me.Template.FindName("PART_ListBox", Me)
 
             AddHandler Me.PART_ListBox.PreviewMouseUp, AddressOf onListBoxPreviewMouseUp
+            AddHandler Me.PART_ListBox.PreviewKeyDown, AddressOf onListBoxPreviewKeyDown
 
             AddHandler Shell.Settings.PropertyChanged,
                 Sub(s As Object, e As PropertyChangedEventArgs)
@@ -42,14 +47,50 @@ Namespace Controls
             setDoShowEncryptedOrCompressedFilesInColor()
         End Sub
 
+        Private Sub onListBoxPreviewKeyDown(sender As Object, e As KeyEventArgs)
+            Select Case e.Key
+                Case Key.Up
+                    If Me.PART_ListBox.Equals(Keyboard.FocusedElement) Then
+                        Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromIndex(Me.PART_ListBox.Items.Count - 1)
+                        If Not listBoxItem Is Nothing Then
+                            listBoxItem.Focus()
+                            e.Handled = True
+                        End If
+                    End If
+                Case Key.Down
+                    If Me.PART_ListBox.Equals(Keyboard.FocusedElement) Then
+                        Dim listBoxItem As ListBoxItem = Me.PART_ListBox.ItemContainerGenerator.ContainerFromIndex(0)
+                        If Not listBoxItem Is Nothing Then
+                            listBoxItem.Focus()
+                            e.Handled = True
+                        End If
+                    End If
+                Case Key.Space, Key.Enter
+                    If Not Keyboard.FocusedElement Is Nothing AndAlso TypeOf Keyboard.FocusedElement Is ListBoxItem Then
+                        Using Shell.OverrideCursor(Cursors.Wait)
+                            Dim listBoxItem As ListBoxItem = Keyboard.FocusedElement
+                            Dim clickedItem As Item = TryCast(listBoxItem?.DataContext, Item)
+                            If Not clickedItem Is Nothing Then
+                                RaiseEvent ItemClicked(clickedItem, New EventArgs())
+                                Me.IsOpen = False
+                                e.Handled = True
+                            End If
+                        End Using
+                    End If
+            End Select
+        End Sub
+
         Private Sub onListBoxPreviewMouseUp(sender As Object, e As MouseButtonEventArgs)
             If Not e.OriginalSource Is Nothing Then
-                Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
-                Dim clickedItem As Item = TryCast(listBoxItem?.DataContext, Item)
-                If Not clickedItem Is Nothing Then
-                    RaiseEvent ItemClicked(clickedItem, New EventArgs())
-                    Me.IsOpen = False
-                End If
+                Using Shell.OverrideCursor(Cursors.Wait)
+                    Dim listBoxItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(e.OriginalSource)
+                    Dim clickedItem As Item = TryCast(listBoxItem?.DataContext, Item)
+                    If Not clickedItem Is Nothing Then
+                        RaiseEvent ItemClicked(clickedItem, New EventArgs())
+                        Me.IsOpen = False
+                        e.Handled = True
+                    End If
+                End Using
             End If
         End Sub
 

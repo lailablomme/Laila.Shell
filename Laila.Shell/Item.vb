@@ -203,7 +203,7 @@ Public Class Item
     ''' Returns the PIDL for this item, or null if this item is disposed.
     ''' </summary>
     ''' <returns>The PIDL for this item, or null if this item is disposed</returns>
-    Public ReadOnly Property Pidl As Pidl
+    Public Overridable ReadOnly Property Pidl As Pidl
         Get
             If _pidl Is Nothing Then
                 SyncLock _shellItemLock
