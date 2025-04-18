@@ -418,7 +418,8 @@ Namespace Controls
 
                         If Not _contextMenu Is Nothing Then
                             _hMenu = Functions.CreatePopupMenu()
-                            flags = flags Or CMF.CMF_EXTENDEDVERBS Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
+                            flags = flags Or CMF.CMF_EXPLORE Or CMF.CMF_CANRENAME
+                            If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then flags = flags Or CMF.CMF_EXTENDEDVERBS
                             If isDefaultOnly Then flags = flags Or CMF.CMF_DEFAULTONLY
                             _contextMenu.QueryContextMenu(_hMenu, 0, 1, 99999, flags)
 
