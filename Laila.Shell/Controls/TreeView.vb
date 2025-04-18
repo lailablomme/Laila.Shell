@@ -573,7 +573,7 @@ Namespace Controls
             If Not element Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(element) Is Nothing Then
                 Dim treeViewItem As ListBoxItem = UIHelper.GetParentOfType(Of ListBoxItem)(element)
                 Dim clickedItem As Item = TryCast(treeViewItem?.DataContext, Item)
-                If Not TypeOf clickedItem Is DummyFolder Then
+                If Not treeViewItem Is Nothing AndAlso Not TypeOf clickedItem Is DummyFolder Then
                     _mouseItemDown = clickedItem
                     _treeViewItemDown = treeViewItem
                     _treeViewItemDown.Tag = "Pressed"
@@ -646,9 +646,6 @@ Namespace Controls
                             End Using
                         End If
                     End If
-
-                    ' this whole trickery to prevent the ListBox from selecting other items while dragging:
-                    Mouse.Capture(Me.PART_ListBox)
                 Else
                     _mouseItemDown = Nothing
                     e.Handled = True
@@ -664,6 +661,7 @@ Namespace Controls
             Dim element As IInputElement = Me.PART_ListBox.InputHitTest(e.GetPosition(Me.PART_ListBox))
             If Not element Is Nothing AndAlso UIHelper.GetParentOfType(Of ScrollBar)(element) Is Nothing Then
                 If Not _mouseItemDown Is Nothing AndAlso Not TypeOf _mouseItemDown Is DummyFolder Then
+                    Me.PART_ListBox.Focus()
                     If _mouseButton = MouseButton.Left AndAlso _mouseButtonState = MouseButtonState.Pressed Then
                         If Not _mouseItemDown Is Nothing Then
                             Using Shell.OverrideCursor(Cursors.Wait)
@@ -707,7 +705,6 @@ Namespace Controls
                 End If
             End If
 
-            Me.PART_ListBox.ReleaseMouseCapture()
             _mouseItemDown = Nothing
         End Sub
 

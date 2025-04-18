@@ -385,7 +385,7 @@ Namespace Controls
             Dim tcs As TaskCompletionSource = New TaskCompletionSource()
             _thread.Run(
                 Sub()
-                    Dim flags As Integer = CMF.CMF_NORMAL
+                    Dim flags As CMF = CMF.CMF_NORMAL
                     Dim shellFolder As IShellFolder = Nothing
 
                     SyncLock folder._shellItemLock
