@@ -1,7 +1,7 @@
 ﻿Imports System.Runtime.InteropServices
 
 <ComImport>
-<Guid("1DF0D7F1-5EBE-4F8F-B86D-AD26CFD9E1D1")>
+<Guid("1DF0D7F1-B267-4D28-8B10-12E23202A5C4")>
 <InterfaceType(ComInterfaceType.InterfaceIsIUnknown)>
 Public Interface IItemNameLimits
     ' HRESULT GetValidCharacters(
