@@ -2,7 +2,7 @@
 
 Namespace Controls
     Public Class NewItemMenu
-        Inherits BaseMenu
+        Inherits BaseContextMenu
 
         Protected Overrides Function AddItems() As Task
             Dim menuItems As List(Of Control) = GetMenuItems()

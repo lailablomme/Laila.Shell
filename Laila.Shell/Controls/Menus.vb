@@ -1,11 +1,9 @@
 ﻿Imports System.Reflection
 Imports System.Runtime.InteropServices
-Imports System.Text
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
-Imports System.Windows.Media
 Imports Laila.BalloonTip
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -72,7 +70,7 @@ Namespace Controls
             Dim balloonTip As BalloonTip.BalloonTip = Nothing
             Dim scrollViewer As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(listBox)(0)
             Dim validChars As String = Nothing
-            Dim invalidChars As String = Nothing
+            Dim invalidChars As String = String.Join("", IO.Path.GetInvalidFileNameChars())
 
             ' make sure we get the latest values according to the DoHideKnownFileExtensions setting
             item._fullPath = Nothing
@@ -136,31 +134,9 @@ Namespace Controls
 
             Dim maxLen As UInteger = 260
             Dim itemNameLimits As IItemNameLimits = TryCast(item.Parent.ShellFolder, IItemNameLimits)
-            If itemNameLimits Is Nothing OrElse item.IsDrive Then
-                Dim volumeName = New StringBuilder(261)
-                Dim fileSystem = New StringBuilder(261)
-                Dim serial As UInteger
-                Dim maxCompLen As UInteger
-                Dim fsFlags As UInteger
-
-                If Functions.GetVolumeInformation(IO.Path.GetPathRoot(item.FullPath), volumeName, volumeName.Capacity, serial, maxCompLen, fsFlags, fileSystem, fileSystem.Capacity) Then
-                    maxLen = maxCompLen
-                Else
-                    Select Case item.PropertiesByCanonicalName("System.Volume.FileSystem").Text
-                        Case "NTFS" : maxLen = 32
-                        Case "exFAT" : maxLen = 11
-                        Case "FAT32" : maxLen = 11
-                        Case "FAT16" : maxLen = 11
-                        Case "CDFS" : maxLen = 32
-                        Case "UDF" : maxLen = 32
-                    End Select
-                End If
-            ElseIf Not itemNameLimits Is Nothing Then
-                itemNameLimits.GetMaxLength(Nothing, maxLen)
+            If Not itemNameLimits Is Nothing Then
+                itemNameLimits.GetMaxLength(item.FullPath, maxLen)
                 itemNameLimits.GetValidCharacters(validChars, invalidChars)
-            End If
-            If String.IsNullOrWhiteSpace(invalidChars) Then
-                invalidChars = String.Join("", IO.Path.GetInvalidFileNameChars())
             End If
 
             ' get coords
@@ -259,14 +235,18 @@ Namespace Controls
                         Case Else
                             Dim c As Char? = KeyboardHelper.KeyToChar(e2.Key)
                             If Not isDrive AndAlso c.HasValue _
-                                AndAlso (invalidChars.Contains(c.Value) OrElse (Not String.IsNullOrWhiteSpace(validChars) AndAlso Not validChars.Contains(c.Value))) Then
+                                AndAlso ((Not String.IsNullOrWhiteSpace(invalidChars) AndAlso invalidChars.Contains(c.Value)) _
+                                    OrElse (Not String.IsNullOrWhiteSpace(validChars) AndAlso Not validChars.Contains(c.Value))) Then
                                 If balloonTip Is Nothing Then
                                     balloonTip = New BalloonTip.BalloonTip() With {
                                             .PlacementTarget = textBox,
                                             .Placement = BalloonPlacementMode.Bottom,
                                             .PopupAnimation = Primitives.PopupAnimation.Fade,
-                                            .Text = "The following characters can not appear in filenames:" & vbCrLf _
-                                                  & "     " & String.Join("   ", invalidChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32)),
+                                            .Text = If(Not String.IsNullOrWhiteSpace(invalidChars),
+                                                        "The following characters can not appear in filenames:" & vbCrLf _
+                                                      & "     " & String.Join("   ", invalidChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32)),
+                                                        "Only the following characters can appear in filenames:" & vbCrLf _
+                                                      & "     " & String.Join("   ", validChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32))),
                                             .Timeout = 9000
                                         }
                                     grid.Children.Add(balloonTip)

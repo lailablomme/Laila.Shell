@@ -4,7 +4,7 @@ Imports Laila.Shell.Interop.Items
 
 Namespace Controls
     Public Class RightClickMenu
-        Inherits BaseMenu
+        Inherits BaseContextMenu
 
         Protected Overrides Function AddItems() As Task
             ' add right click menu items

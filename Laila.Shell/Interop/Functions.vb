@@ -14,6 +14,13 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Interop
     Public Class Functions
+        <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
+        Public Shared Function SHLoadIndirectString(
+    pszSource As String,
+    pszOutBuf As StringBuilder,
+    cchOutBuf As UInteger,
+    pvReserved As IntPtr) As Integer
+        End Function
         <DllImport("shell32.dll", SetLastError:=True)>
         Public Shared Function SHMultiFileProperties(
     <[In]> pdtobj As IDataObject,

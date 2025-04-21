@@ -2,7 +2,11 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="clr-namespace:Laila.Shell.Controls">
 
-    <Style TargetType="{x:Type controls:ContextMenu}">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+    <Style TargetType="{x:Type controls:ContextMenu}" BasedOn="{StaticResource lailaShell_ContextMenuStyle}">
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="Grid.IsSharedSizeScope" Value="true" />
         <Setter Property="Foreground" Value="Black" />
