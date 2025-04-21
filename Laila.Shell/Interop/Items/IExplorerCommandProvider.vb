@@ -1,4 +1,5 @@
 ﻿Imports System.Runtime.InteropServices
+Imports Laila.Shell.Interop.Windows
 
 Namespace Interop.Items
     <Guid("64961751-0835-43C0-8FFE-D57686530E64")>
@@ -43,19 +44,18 @@ Namespace Interop.Items
     Public Interface IExplorerCommand
         <PreserveSig>
         Function GetTitle(
-        <[In]> ppsiItemArray As IntPtr, ' Usually IShellItemArray
-        <[In]> ByRef flags As UInt32,
+        <[In], MarshalAs(UnmanagedType.Interface)> ppsiItemArray As IShellItemArray,
         <Out> <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszName As String) As Integer
 
         <PreserveSig>
         Function GetIcon(
-        <[In]> ppsiItemArray As IntPtr,
+        <[In], MarshalAs(UnmanagedType.Interface)> ppsiItemArray As IShellItemArray,
         <[In]> ByRef flags As UInt32,
         <Out> <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszIcon As String) As Integer
 
         <PreserveSig>
         Function GetToolTip(
-        <[In]> ppsiItemArray As IntPtr,
+        <[In], MarshalAs(UnmanagedType.Interface)> ppsiItemArray As IShellItemArray,
         <Out> <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszInfotip As String) As Integer
 
         <PreserveSig>
@@ -64,13 +64,13 @@ Namespace Interop.Items
 
         <PreserveSig>
         Function GetState(
-        <[In]> ppsiItemArray As IntPtr,
-        <[In]> ByRef grfKeyState As UInt32,
+        <[In], MarshalAs(UnmanagedType.Interface)> ppsiItemArray As IShellItemArray,
+        <[In]> ByRef grfKeyState As MK,
         <Out> ByRef pCmdState As EXPCMDSTATE) As Integer
 
         <PreserveSig>
         Function Invoke(
-        <[In]> ppsiItemArray As IntPtr,
+        <[In], MarshalAs(UnmanagedType.Interface)> ppsiItemArray As IShellItemArray,
         <[In]> ByRef pbc As IntPtr) As Integer
 
         <PreserveSig>

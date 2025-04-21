@@ -69,7 +69,7 @@ Namespace Controls
         Private _isLoaded As Boolean
         Private _keyboardSelectingLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
         Private _lastScrollSize As Size
-        Private _menu As RightClickMenu
+        Private _menu As BaseMenu
         Private _mouseItemDown As Item
         Private _mouseItemOver As Item
         Private _mouseOriginalSourceDown As Object
@@ -857,14 +857,14 @@ Namespace Controls
             End If
         End Sub
 
-        Private Function getMenu(folder As Folder, selectedItems As IEnumerable(Of Item), isDefaultOnly As Boolean) As RightClickMenu
+        Private Function getMenu(folder As Folder, selectedItems As IEnumerable(Of Item), isDefaultOnly As Boolean) As BaseMenu
             If folder Is Nothing Then Return Nothing
 
             If Not _menu Is Nothing Then
                 _menu.Dispose()
             End If
 
-            _menu = New RightClickMenu()
+            _menu = New RightClickMenu() ' New ExplorerMenu() '
             _menu.Folder = folder
             _menu.SelectedItems = selectedItems
             _menu.IsDefaultOnly = isDefaultOnly

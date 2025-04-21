@@ -1,11 +1,9 @@
 ﻿Imports System.Reflection
 Imports System.Runtime.InteropServices
-Imports System.Text
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
-Imports System.Windows.Media
 Imports Laila.BalloonTip
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers

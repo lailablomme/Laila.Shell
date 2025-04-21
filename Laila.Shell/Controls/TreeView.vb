@@ -667,6 +667,7 @@ Namespace Controls
                             Using Shell.OverrideCursor(Cursors.Wait)
                                 If Not UIHelper.GetParentOfType(Of ToggleButton)(element) Is Nothing Then
                                     CType(_mouseItemDown, Folder).IsExpanded = Not CType(_mouseItemDown, Folder).IsExpanded
+                                    UIHelper.GetParentOfType(Of ToggleButton)(element).ReleaseMouseCapture()
                                 Else
                                     Using Shell.OverrideCursor(Cursors.Wait)
                                         _selectionHelper.SetSelectedItems({_mouseItemDown})
