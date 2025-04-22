@@ -1441,16 +1441,15 @@ Public Class Folder
                         Dim existing As Item = Nothing
                         UIHelper.OnUIThread(
                             Sub()
-                                existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                    AndAlso ((Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
-                                        OrElse (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item2.Pidl)) _
-                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath)) _
-                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item2.FullPath))))
-                                If existing Is Nothing Then
-                                    Dim newItem As Item = e.Item2.Clone()
-                                    newItem = Me.InitializeItem(newItem)
-                                    If Not newItem Is Nothing Then
-                                        newItem.LogicalParent = Me
+                                Dim newItem As Item = e.Item2.Clone()
+                                newItem = Me.InitializeItem(newItem)
+                                If Not newItem Is Nothing Then
+                                    existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso ((Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
+                                            OrElse (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl)) _
+                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath)) _
+                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
+                                    If existing Is Nothing Then
                                         newItem.IsProcessingNotifications = True
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(newItem, c)
@@ -1492,15 +1491,14 @@ Public Class Folder
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             Dim existing As Item = Nothing, newItem As Item = Nothing
-                            UIHelper.OnUIThread(
-                                Sub()
-                                    existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                        AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
-                                    If existing Is Nothing Then
-                                        newItem = Me.InitializeItem(e.Item1.Clone())
-                                        If Not newItem Is Nothing Then
-                                            newItem.LogicalParent = Me
+                            newItem = Me.InitializeItem(e.Item1.Clone())
+                            If Not newItem Is Nothing Then
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                            AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
+                                                OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
+                                        If existing Is Nothing Then
                                             newItem.IsProcessingNotifications = True
                                             Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                             _items.InsertSorted(newItem, c)
@@ -1511,9 +1509,7 @@ Public Class Folder
                                             End SyncLock
                                             Me.OnItemsChanged()
                                         End If
-                                    End If
-                                End Sub)
-                            If Not newItem Is Nothing Then
+                                    End Sub)
                                 Shell.GlobalThreadPool.Run(
                                     Sub()
                                         newItem.Refresh()
@@ -1543,23 +1539,20 @@ Public Class Folder
                     If Me.FullPath.Equals("::{20D04FE0-3AEA-1069-A2D8-08002B30309D}") AndAlso _isLoaded Then
                         _wasActivity = True
                         Dim newItem As Item = Nothing
-                        UIHelper.OnUIThread(
-                            Sub()
-                                Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                                AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                                    OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
-                                If existing Is Nothing Then
-                                    newItem = Me.InitializeItem(e.Item1.Clone())
-                                    If Not newItem Is Nothing Then
-                                        newItem.LogicalParent = Me
+                        newItem = Me.InitializeItem(e.Item1.Clone())
+                        If Not newItem Is Nothing Then
+                            UIHelper.OnUIThread(
+                                Sub()
+                                    Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                                        AndAlso (Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
+                                            OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
+                                    If existing Is Nothing Then
                                         newItem.IsProcessingNotifications = True
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(newItem, c)
                                         Me.OnItemsChanged()
                                     End If
-                                End If
-                            End Sub)
-                        If Not newItem Is Nothing Then
+                                End Sub)
                             Shell.GlobalThreadPool.Run(
                                 Sub()
                                     newItem.Refresh()

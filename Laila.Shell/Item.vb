@@ -1006,7 +1006,7 @@ Public Class Item
                         If parent.IsDrive Then
                             path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
                                                           parent.FullPath, parent.AddressBarDisplayName), path)
-                        ElseIf If(parent.Pidl?.Equals(Shell.GetSpecialFolder(SpecialFolders.Network).pidl), False) Then
+                        ElseIf If(parent.Pidl?.Equals(Shell.GetSpecialFolder(SpecialFolders.Network).Pidl), False) Then
                             path = "\\" & path
                         Else
                             path = IO.Path.Combine(If(String.IsNullOrWhiteSpace(parent.AddressBarDisplayName),
