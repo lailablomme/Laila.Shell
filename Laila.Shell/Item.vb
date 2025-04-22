@@ -336,7 +336,7 @@ Public Class Item
                                    Optional newPidl As Pidl = Nothing,
                                    Optional doRefreshImage As Boolean = True,
                                    Optional threadId As Integer? = Nothing)
-        'Debug.WriteLine($"Refreshing {Me.FullPath}")
+        'Debug.WriteLine($"Refreshing {Me.FullPath} & {_objectId}")
         Dim oldPropertiesByKey As Dictionary(Of String, [Property]) = Nothing
         Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property]) = Nothing
         Dim oldItemNameDisplaySortValue As String = Nothing
@@ -349,7 +349,7 @@ Public Class Item
 
         SyncLock _shellItemLock
             SyncLock _shellItemLock2
-                If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
+                If Not disposedValue Then
                     'oldItemNameDisplaySortValue = Me.ItemNameDisplaySortValue
 
                     oldFullPath = _fullPath
@@ -367,9 +367,9 @@ Public Class Item
                     Else
                         _livesOnThreadId = threadId.Value
                     End If
-                    If Not newShellItem Is Nothing Then
-                        _shellItem2 = newShellItem
+                    _shellItem2 = newShellItem
 
+                    If Not newShellItem Is Nothing Then
                         _propertiesLock.Wait()
                         Try
                             oldPropertiesByKey = _propertiesByKey
@@ -405,6 +405,11 @@ Public Class Item
                 Else
                     Debug.WriteLine(Me.FullPath & "  " & disposedValue)
                 End If
+
+                If Not oldShellItem Is Nothing AndAlso Not oldShellItem.Equals(newShellItem) Then
+                    Marshal.ReleaseComObject(oldShellItem)
+                    oldShellItem = Nothing
+                End If
             End SyncLock
         End SyncLock
 
@@ -424,11 +429,6 @@ Public Class Item
         If Not oldPidl Is Nothing AndAlso Not newPidl Is Nothing Then
             oldPidl.Dispose()
             oldPidl = Nothing
-        End If
-
-        If Not oldShellItem Is Nothing AndAlso Not newShellItem Is Nothing Then
-            Marshal.ReleaseComObject(oldShellItem)
-            oldShellItem = Nothing
         End If
 
         If Not _logicalParent Is Nothing AndAlso Not oldFullPath?.Equals(Me.FullPath) Then
@@ -910,15 +910,15 @@ Public Class Item
         Get
             Dim hbitmap As IntPtr
             Try
-                If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                    Dim h As HRESULT
-                    SyncLock _shellItemLock
+                SyncLock _shellItemLock
+                    If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
+                        Dim h As HRESULT
                         h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(1, 1), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
-                    End SyncLock
-                    If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
-                        Return True
+                        If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
+                            Return True
+                        End If
                     End If
-                End If
+                End SyncLock
             Catch ex As Exception
             Finally
                 If Not IntPtr.Zero.Equals(hbitmap) Then
@@ -1514,6 +1514,8 @@ Public Class Item
 
     Protected Friend Overridable Sub ProcessNotification(e As NotificationEventArgs) Implements IProcessNotifications.ProcessNotification
         If Not disposedValue Then
+            If Me.Equals(e.Item1) OrElse Me.Equals(e.Item2) Then Return
+
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR ' general update
                     If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower()) Then ' if this is us...
@@ -1542,6 +1544,7 @@ Public Class Item
                         OrElse ((e.Item1?.Pidl Is Nothing OrElse Me.Pidl Is Nothing) AndAlso Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
+                                Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
                                 Dim newShellItem As IShellItem2 = Nothing
                                 Dim newPidl As Pidl = Nothing
                                 SyncLock e.Item2._shellItemLock
@@ -1552,12 +1555,11 @@ Public Class Item
                                             ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
                                             e.Item2._shellItem2 = Nothing
                                             e.Item2.Dispose()
+                                            Me.Refresh(newShellItem, newPidl,, e.Item1._livesOnThreadId) ' refresh this item
                                         End If
                                     End SyncLock
                                 End SyncLock
 
-                                Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
-                                Me.Refresh(newShellItem, newPidl,, e.Item1._livesOnThreadId) ' refresh this item
                                 If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
                                     ' rename pinned and frequent items with the same pidl
                                     PinnedItems.RenameItem(oldPidl, Me.Pidl)
@@ -1656,20 +1658,20 @@ Public Class Item
                 Dim tempPidl As Pidl = _pidl?.Clone()
                 Dim lp As Folder = _logicalParent
                 If Not lp Is Nothing Then
-                    UIHelper.OnUIThread(
+                    UIHelper.OnUIThreadAsync(
                         Sub()
                             lp._items.Remove(Me)
+                            lp._isEnumerated = False
+                            If Me.CanShowInTree Then lp._isEnumeratedForTree = False
+                            lp.OnItemsChanged(Me)
                         End Sub)
                     SyncLock lp._previousFullPathsLock
-                        If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not lp._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) Then
+                        If Not String.IsNullOrWhiteSpace(_fullPath) AndAlso Not lp._items.ToList().Exists(Function(i) Not Me.Equals(i) AndAlso If(i.FullPath?.Equals(_fullPath), False)) Then
                             lp._previousFullPaths.Remove(_fullPath)
-                        ElseIf Not tempPidl Is Nothing AndAlso Not lp._items.ToList().Where(Function(i) Not lp._previousFullPaths.Contains(i.FullPath)).ToList().Exists(Function(i) If(i.Pidl?.Equals(tempPidl), False)) Then
+                        ElseIf Not tempPidl Is Nothing AndAlso Not lp._items.ToList().Where(Function(i) Not lp._previousFullPaths.Contains(i.FullPath)).ToList().Exists(Function(i) Not Me.Equals(i) AndAlso If(i.Pidl?.Equals(tempPidl), False)) Then
                             lp._previousFullPaths.Remove(tempPidl?.ToString())
                         End If
                     End SyncLock
-                    lp._isEnumerated = False
-                    If Me.CanShowInTree Then lp._isEnumeratedForTree = False
-                    lp.OnItemsChanged(Me)
                     ' don't set logicalparent to nothing, because we might still need it when the treeview removes folder's children
                     tempPidl?.Dispose()
                 End If

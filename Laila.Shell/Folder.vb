@@ -771,6 +771,8 @@ Public Class Folder
             _isEnumerated = False
             _isEnumeratedForTree = False
             Await GetItemsAsync()
+            Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+            view.Refresh()
             Me.IsRefreshingItems = False
         End Using
     End Function
@@ -1013,12 +1015,12 @@ Public Class Folder
                                                         ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
                                                         'Debug.WriteLine(item.Item1.FullPath)
                                                         item.Item2._shellItem2 = Nothing
-                                                        'item.Item2.Dispose()
+                                                        item.Item2.Dispose()
+                                                        item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
                                                     End If
                                                 End SyncLock
                                             End SyncLock
                                         End If
-                                        item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
 
                                         ' preload sort property
                                         If isSortPropertyByText Then
@@ -1450,7 +1452,6 @@ Public Class Folder
                                     If Not newItem Is Nothing Then
                                         newItem.LogicalParent = Me
                                         newItem.IsProcessingNotifications = True
-                                        e.IsHandled2 = True
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(newItem, c)
                                         SyncLock _previousFullPathsLock
@@ -1497,11 +1498,10 @@ Public Class Folder
                                         AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
                                             OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                     If existing Is Nothing Then
-                                        newItem = Me.InitializeItem(e.Item1)
+                                        newItem = Me.InitializeItem(e.Item1.Clone())
                                         If Not newItem Is Nothing Then
                                             newItem.LogicalParent = Me
                                             newItem.IsProcessingNotifications = True
-                                            e.IsHandled1 = True
                                             Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                             _items.InsertSorted(newItem, c)
                                             SyncLock _previousFullPathsLock
@@ -1549,11 +1549,10 @@ Public Class Folder
                                                 AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
                                                     OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
                                 If existing Is Nothing Then
-                                    newItem = Me.InitializeItem(e.Item1)
+                                    newItem = Me.InitializeItem(e.Item1.Clone())
                                     If Not newItem Is Nothing Then
                                         newItem.LogicalParent = Me
                                         newItem.IsProcessingNotifications = True
-                                        e.IsHandled1 = True
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(newItem, c)
                                         Me.OnItemsChanged()
