@@ -1062,7 +1062,7 @@ Public Class Item
         Get
             Dim attr As SFGAO = SFGAO.VALIDATE
             SyncLock _shellItemLock
-                Return ShellItem2.GetAttributes(attr, attr) = HRESULT.S_FALSE
+                Return If(ShellItem2?.GetAttributes(attr, attr), HRESULT.S_FALSE) = HRESULT.S_FALSE
             End SyncLock
         End Get
     End Property
