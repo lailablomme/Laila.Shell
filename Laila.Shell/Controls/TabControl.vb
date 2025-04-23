@@ -450,7 +450,8 @@ Namespace Controls
                 End Function
 
                 Protected Overrides Function GetChildrenCore() As List(Of AutomationPeer)
-                    Return If(MyBase.GetChildrenCore(), New List(Of AutomationPeer)).Union(Me.Children).ToList()
+                    Return If(MyBase.GetChildrenCore(), New List(Of AutomationPeer)) _
+                        .Union(If(Me.Children, New List(Of AutomationPeer)())).ToList()
                 End Function
 
                 Protected Overrides Function GetNameCore() As String
