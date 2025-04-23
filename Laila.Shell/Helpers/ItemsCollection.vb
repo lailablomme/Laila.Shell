@@ -30,11 +30,11 @@ Namespace Helpers
                         Me.Items.Add(i)
                     Next
                 End If
-
-                If If(itemsToAdd?.Count > 0, False) OrElse If(itemsToRemove?.Count > 0, False) Then
-                    Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
-                End If
             End SyncLock
+
+            If If(itemsToAdd?.Count > 0, False) OrElse If(itemsToRemove?.Count > 0, False) Then
+                Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
+            End If
         End Sub
 
         Public Sub InsertSorted(newItem As T, comparer As IComparer)
@@ -45,8 +45,8 @@ Namespace Helpers
             If index >= 0 AndAlso index <= Me.Items.Count Then
                 SyncLock Me.Lock
                     Me.Items.Insert(index, newItem)
-                    Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newItem, index))
                 End SyncLock
+                Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newItem, index))
             End If
         End Sub
 

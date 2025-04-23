@@ -341,4 +341,8 @@ Public Class HomeFolder
             PinnedItems.NotifyReset()
         End Try
     End Function
+
+    Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing, Optional newPidl As Pidl = Nothing, Optional doRefreshImage As Boolean = True, Optional threadId As Integer? = Nothing)
+
+    End Sub
 End Class
