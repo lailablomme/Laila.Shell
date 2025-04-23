@@ -57,7 +57,7 @@ Namespace Helpers
             Return Task.FromResult(New List(Of Item))
         End Function
 
-        Public Overrides ReadOnly Property Items As ObservableCollection(Of Item)
+        Public Overrides ReadOnly Property Items As ItemsCollection(Of Item)
             Get
                 Return Nothing
             End Get

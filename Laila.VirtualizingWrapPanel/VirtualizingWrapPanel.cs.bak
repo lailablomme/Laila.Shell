@@ -1,4 +1,5 @@
 ﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
@@ -117,7 +118,6 @@ namespace WpfToolkit.Controls
         /// The cache length before and after the viewport. 
         /// </summary>
         private VirtualizationCacheLength cacheLength;
-
         /// <summary>
         /// The Unit of the cache length. Can be Pixel, Item or Page. 
         /// When the ItemsOwner is a group item it can only be pixel or item.
@@ -148,8 +148,6 @@ namespace WpfToolkit.Controls
 
         protected override Size MeasureOverride(Size availableSize)
         {
-            VerifyItemsControl();
-
             if (ShouldIgnoreMeasure())
             {
                 return DesiredSize;
@@ -161,7 +159,7 @@ namespace WpfToolkit.Controls
 
             Size newViewportSize;
 
-            if (ItemsOwner is IHierarchicalVirtualizationAndScrollInfo groupItem)
+            if (ItemsOwner is IHierarchicalVirtualizationAndScrollInfo groupItem && this.Orientation == Orientation.Vertical)
             {
                 Rect viewport = GetViewportFromGroupItem(groupItem);
                 ScrollOffset = viewport.Location;
@@ -184,7 +182,7 @@ namespace WpfToolkit.Controls
 
             const double Tolerance = 0.001;
 
-            if (ItemsOwner is not IHierarchicalVirtualizationAndScrollInfo
+            if (!(ItemsOwner is IHierarchicalVirtualizationAndScrollInfo && this.Orientation == Orientation.Vertical)
                 && GetY(ScrollOffset) != 0
                 && GetY(ScrollOffset) + GetHeight(ViewportSize) > GetHeight(Extent) + Tolerance)
             {
@@ -217,7 +215,7 @@ namespace WpfToolkit.Controls
             //    throw new InvalidOperationException("Items must be distinct");
             //}
 
-            bool hierarchical = ItemsOwner is IHierarchicalVirtualizationAndScrollInfo;
+            bool hierarchical = ItemsOwner is IHierarchicalVirtualizationAndScrollInfo && this.Orientation == Orientation.Vertical;
             double x = startItemOffsetX + GetX(ScrollOffset);
             double y = hierarchical ? startItemOffsetY : startItemOffsetY - GetY(ScrollOffset);
             double rowHeight = 0;
@@ -227,26 +225,29 @@ namespace WpfToolkit.Controls
             for (int i = startItemIndex; i <= endItemIndex; i++)
             {
                 var item = Items[i];
-                var child = ItemContainerManager.RealizedContainers[item];
-
-                Size? upfrontKnownItemSize = GetUpfrontKnownItemSize(item);
-
-                Size childSize = upfrontKnownItemSize ?? itemSizesCache[item];
-
-                if (rowChilds.Count > 0 && x + GetWidth(childSize) > GetWidth(finalSize))
+                if (item != null && ItemContainerManager.RealizedContainers.ContainsKey(item))
                 {
-                    ArrangeRow(GetWidth(finalSize), rowChilds, childSizes, y, hierarchical);
-                    x = 0;
-                    y += rowHeight;
-                    rowHeight = 0;
-                    rowChilds.Clear();
-                    childSizes.Clear();
-                }
+                    var child = ItemContainerManager.RealizedContainers[item];
 
-                x += GetWidth(childSize);
-                rowHeight = Math.Max(rowHeight, GetHeight(childSize));
-                rowChilds.Add(child);
-                childSizes.Add(childSize);
+                    Size? upfrontKnownItemSize = GetUpfrontKnownItemSize(item);
+
+                    Size childSize = upfrontKnownItemSize ?? itemSizesCache[item];
+
+                    if (rowChilds.Count > 0 && x + GetWidth(childSize) > GetWidth(finalSize))
+                    {
+                        ArrangeRow(GetWidth(finalSize), rowChilds, childSizes, y, hierarchical);
+                        x = 0;
+                        y += rowHeight;
+                        rowHeight = 0;
+                        rowChilds.Clear();
+                        childSizes.Clear();
+                    }
+
+                    x += GetWidth(childSize);
+                    rowHeight = Math.Max(rowHeight, GetHeight(childSize));
+                    rowChilds.Add(child);
+                    childSizes.Add(childSize);
+                }
             }
 
             if (rowChilds.Any())
@@ -274,12 +275,6 @@ namespace WpfToolkit.Controls
             UpdateLayout();
 
             container.BringIntoView();
-        }
-
-        protected override void OnClearChildren()
-        {
-            ItemContainerManager.OnClearChildren();
-            base.OnClearChildren();
         }
 
         private void ItemContainerManager_ItemsChanged(object? sender, ItemContainerManagerItemsChangedEventArgs e)

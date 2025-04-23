@@ -161,10 +161,7 @@ Public Class SearchFolder
             Me.CancelEnumeration()
         End If
 
-        UIHelper.OnUIThread(
-            Sub()
-                _items.Clear()
-            End Sub)
+        _items.Clear()
 
         ' set new terms
         Me.Terms = terms

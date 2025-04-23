@@ -236,11 +236,13 @@ Public Class HomeFolder
     Friend Overrides Sub OnItemsChanged(Optional item As Item = Nothing)
         MyBase.OnItemsChanged()
 
-        UIHelper.OnUIThread(
-            Sub()
-                Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                view.Refresh()
-            End Sub)
+        If Me.IsActiveInFolderView Then
+            UIHelper.OnUIThread(
+                Sub()
+                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                    view.Refresh()
+                End Sub)
+        End If
     End Sub
 
     Protected Friend Overrides Function InitializeItem(item As Item) As Item

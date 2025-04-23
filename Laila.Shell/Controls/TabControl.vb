@@ -425,7 +425,7 @@ Namespace Controls
                             If Not cp Is Nothing Then
                                 Dim gridPeer = New GridAutomationPeer(cp)
                                 If Not gridPeer Is Nothing Then
-                                    tabItemPeer.Children = gridPeer.GetChildren()
+                                    tabItemPeer.GridPeer = gridPeer
                                 End If
                             End If
                         End If
@@ -461,7 +461,13 @@ Namespace Controls
             Public Class TabItemAutomationPeer
                 Inherits System.Windows.Automation.Peers.TabItemAutomationPeer
 
-                Public Property Children As List(Of AutomationPeer) = New List(Of AutomationPeer)()
+                Public Property GridPeer As GridAutomationPeer
+
+                Public ReadOnly Property Children As List(Of AutomationPeer)
+                    Get
+                        Return GridPeer?.GetChildren()
+                    End Get
+                End Property
 
                 Public Sub New(owner As TabItem, parent As TabControlAutomationPeer)
                     MyBase.New(owner, parent)
