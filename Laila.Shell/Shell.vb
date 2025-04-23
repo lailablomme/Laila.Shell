@@ -29,6 +29,8 @@ Public Class Shell
     Private Shared _threads As List(Of Thread) = New List(Of Thread)()
     Private Shared _disposerLoopThread As Thread
     Private Shared _unhookUpdatesThread As Thread
+    Private Shared _disposerBlockLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+    Private Shared _disposerBlock As Integer = 0
 
     Public Shared IsSpecialFoldersReady As ManualResetEvent = New ManualResetEvent(False)
     Private Shared _shutDownTokensSource As CancellationTokenSource = New CancellationTokenSource()
@@ -105,30 +107,33 @@ Public Class Shell
                     While Not ShuttingDownToken.IsCancellationRequested
                         ' take a snapshot of the shellitem cache...
                         Dim list As List(Of Tuple(Of Item, DateTime))
-                        _itemsCacheLock.Wait()
-                        Try
-                            list = Shell.ItemsCache.ToList()
-                        Finally
-                            _itemsCacheLock.Release()
-                        End Try
+                        If _disposerBlock = 0 Then
+                            _itemsCacheLock.Wait()
+                            Try
+                                list = Shell.ItemsCache.ToList()
+                            Finally
+                                _itemsCacheLock.Release()
+                            End Try
 
-                        Dim i As Long = 0
-                        ' ...and go through it
-                        For Each item In list
-                            If ShuttingDownToken.IsCancellationRequested Then Exit For
+                            Dim i As Long = 0
+                            ' ...and go through it
+                            For Each item In list
+                                If _disposerBlock OrElse ShuttingDownToken.IsCancellationRequested Then Exit For
 
-                            ' try to dispose the item
-                            If Not item Is Nothing AndAlso Not item.Item1 Is Nothing _
-                                AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
-                                item.Item1.MaybeDispose()
-                            End If
+                                ' try to dispose the item
+                                If Not item Is Nothing AndAlso Not item.Item1 Is Nothing _
+                                    AndAlso DateTime.Now.Subtract(item.Item2).TotalMilliseconds > 10000 Then
+                                    item.Item1.MaybeDispose()
+                                End If
 
-                            ' don't hog the process
-                            i += 1
-                            If i Mod 25 = 0 Then
-                                Thread.Sleep(250)
-                            End If
-                        Next
+                                ' don't hog the process
+                                i += 1
+                                If i Mod 25 = 0 Then
+                                    Thread.Sleep(250)
+                                End If
+                            Next
+                        End If
+
                         Thread.Sleep(5000)
                     End While
                 Catch ex As OperationCanceledException
@@ -457,6 +462,20 @@ Public Class Shell
 
             Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
         End If
+    End Sub
+
+    Public Shared Sub BlockDisposer(value As Boolean)
+        _disposerBlockLock.Wait()
+        Try
+            If value Then
+                _disposerBlock += 1
+            Else
+                _disposerBlock -= 1
+            End If
+            If _disposerBlock < 0 Then _disposerBlock = 0
+        Finally
+            _disposerBlockLock.Release()
+        End Try
     End Sub
 
     Public Shared Sub AddSpecialFolder(specialFolder As SpecialFolders, item As Item)

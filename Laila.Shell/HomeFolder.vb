@@ -236,11 +236,13 @@ Public Class HomeFolder
     Friend Overrides Sub OnItemsChanged(Optional item As Item = Nothing)
         MyBase.OnItemsChanged()
 
-        UIHelper.OnUIThread(
-            Sub()
-                Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                view.Refresh()
-            End Sub)
+        If Me.IsActiveInFolderView Then
+            UIHelper.OnUIThread(
+                Sub()
+                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                    view.Refresh()
+                End Sub)
+        End If
     End Sub
 
     Protected Friend Overrides Function InitializeItem(item As Item) As Item
@@ -253,6 +255,7 @@ Public Class HomeFolder
                 AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
                 target.LogicalParent = Me
                 target._hasCustomProperties = True
+                target.CanShowInTree = False
 
                 Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
                 target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
@@ -338,4 +341,8 @@ Public Class HomeFolder
             PinnedItems.NotifyReset()
         End Try
     End Function
+
+    Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing, Optional newPidl As Pidl = Nothing, Optional doRefreshImage As Boolean = True, Optional threadId As Integer? = Nothing)
+
+    End Sub
 End Class

@@ -65,13 +65,13 @@ Namespace Interop.Items
         <PreserveSig>
         Function GetState(
         <[In], MarshalAs(UnmanagedType.Interface)> ppsiItemArray As IShellItemArray,
-        <[In]> ByRef grfKeyState As MK,
+        <[In]> fOkToBeSlow As Boolean,
         <Out> ByRef pCmdState As EXPCMDSTATE) As Integer
 
         <PreserveSig>
         Function Invoke(
         <[In], MarshalAs(UnmanagedType.Interface)> ppsiItemArray As IShellItemArray,
-        <[In]> ByRef pbc As IntPtr) As Integer
+        <[In]> pbc As IntPtr) As Integer
 
         <PreserveSig>
         Function GetFlags(<Out> ByRef pFlags As UInt32) As Integer

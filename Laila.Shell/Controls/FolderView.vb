@@ -138,7 +138,7 @@ Namespace Controls
                                         Debug.WriteLine("replacement not found")
                                         UIHelper.OnUIThread(
                                             Sub()
-                                                Me.Folder = f
+                                                If f.IsExisting Then Me.Folder = f
                                             End Sub)
                                     End If
                                 End If
@@ -154,11 +154,15 @@ Namespace Controls
                                 selectedItem = Me.Folder
                             End Sub)
                     End If
-                    ' if the current folder was deleted...
-                    If Not selectedItem Is Nothing _
-                        AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
+                    ' if the current folder or one of it's logical parents was deleted...
+                    Dim isDeleted As Boolean = False
+                    While Not selectedItem Is Nothing AndAlso Not isDeleted
+                        isDeleted = ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
-                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False))) Then
+                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False)))
+                        If Not isDeleted Then selectedItem = selectedItem.LogicalParent
+                    End While
+                    If isDeleted Then
                         _deletedFullName = selectedItem.FullPath
                         UIHelper.OnUIThread(
                             Async Sub()
@@ -168,7 +172,7 @@ Namespace Controls
                                     Await Task.Delay(300) ' wait for .zip operations/folder refresh to complete
                                     If _deletedFullName?.Equals(selectedItem.FullPath) Then
                                         Debug.WriteLine("item was deleted")
-                                        Me.Folder = f ' load it
+                                        If f.IsExisting Then Me.Folder = f ' load it
                                     End If
                                 End If
                             End Sub)

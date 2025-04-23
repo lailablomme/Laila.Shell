@@ -30,6 +30,7 @@ Namespace Controls
 
         Private PART_ContentContainer As ScrollViewer
         Private PART_ContentPresenter As ContentPresenter
+        Private PART_ListBox As ListBox
         Private PART_Title As ContentPresenter
         Private PART_TitleLabel As Button
         Private PART_ToggleButton As ToggleButton
@@ -49,6 +50,8 @@ Namespace Controls
             Me.PART_ToggleButton = Template.FindName("PART_ToggleButton", Me)
 
             Me.IsExpanded = Me.ExpandCollapseAllState
+
+            Me.PART_ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
 
             _timer = New DispatcherTimer()
 
@@ -94,6 +97,7 @@ Namespace Controls
             AddHandler Me.PART_ToggleButton.Unchecked,
                 Sub(s As Object, e As RoutedEventArgs)
                     If Me.IsExpanded Then
+                        VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(3))
                         _doIgnoreExpandCollapse = True
                         Me.IsExpanded = False
                         _doIgnoreExpandCollapse = False
@@ -109,6 +113,7 @@ Namespace Controls
             AddHandler Me.PART_ToggleButton.Checked,
                 Sub(s As Object, e As RoutedEventArgs)
                     If Not Me.IsExpanded Then
+                        VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(3))
                         _doIgnoreExpandCollapse = True
                         Me.IsExpanded = True
                         _doIgnoreExpandCollapse = False
@@ -132,6 +137,7 @@ Namespace Controls
             If _currentStep <= 0.0 Then
                 _timer.Stop()
                 Me.PART_ContentContainer.Visibility = Visibility.Collapsed
+                VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(0))
             Else
                 Me.PART_ContentContainer.Height = Math.Max(0, _totalHeight * _currentStep)
                 Me.PART_ContentContainer.ScrollToBottom()
@@ -143,6 +149,7 @@ Namespace Controls
             If _currentStep >= 1.0 Then
                 _timer.Stop()
                 Me.PART_ContentContainer.Height = Double.NaN
+                VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(0))
             Else
                 Me.PART_ContentContainer.Height = Math.Min(_totalHeight, _totalHeight * _currentStep)
                 Me.PART_ContentContainer.ScrollToBottom()

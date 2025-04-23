@@ -283,6 +283,7 @@ Namespace Controls
                     .Mode = BindingMode.OneWay,
                     .IsAsync = True
                 })
+                itemsControlFactory.SetValue(ItemsControl.MinWidthProperty, Convert.ToDouble(16))
                 itemsControlFactory.SetValue(ItemsControl.ItemsSourceProperty, New Binding() With {
                     .Path = New PropertyPath(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", column.PROPERTYKEY.ToString())),
                     .Mode = BindingMode.OneWay,

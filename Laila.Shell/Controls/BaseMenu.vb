@@ -116,7 +116,7 @@ Namespace Controls
 
         Protected MustOverride Overloads Sub Make(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
 
-        Private Sub menuItem_Click(c As Control, e2 As EventArgs)
+        Protected Overridable Sub menuItem_Click(c As Control, e2 As EventArgs)
             invokeCommandDelayed(c.Tag)
             Me.IsOpen = False
         End Sub

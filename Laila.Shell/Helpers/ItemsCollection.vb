@@ -7,24 +7,30 @@ Namespace Helpers
     Public Class ItemsCollection(Of T)
         Inherits ObservableCollection(Of T)
 
+        Public Property Lock As Object = New Object()
+
         Public Sub RemoveWithoutNotifying(item As T)
-            Me.Items.Remove(item)
+            SyncLock Me.Lock
+                Me.Items.Remove(item)
+            End SyncLock
         End Sub
 
         Public Sub UpdateRange(itemsToAdd As IEnumerable(Of T), itemsToRemove As IEnumerable(Of T))
             Me.CheckReentrancy()
 
-            If Not itemsToRemove Is Nothing Then
-                For Each i In itemsToRemove
-                    Me.Items.Remove(i)
-                Next
-            End If
+            SyncLock Me.Lock
+                If Not itemsToRemove Is Nothing Then
+                    For Each i In itemsToRemove
+                        Me.Items.Remove(i)
+                    Next
+                End If
 
-            If Not itemsToAdd Is Nothing Then
-                For Each i In itemsToAdd
-                    Me.Items.Add(i)
-                Next
-            End If
+                If Not itemsToAdd Is Nothing Then
+                    For Each i In itemsToAdd
+                        Me.Items.Add(i)
+                    Next
+                End If
+            End SyncLock
 
             If If(itemsToAdd?.Count > 0, False) OrElse If(itemsToRemove?.Count > 0, False) Then
                 Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset))
@@ -37,7 +43,9 @@ Namespace Helpers
 
             ' Insert the item at the correct position
             If index >= 0 AndAlso index <= Me.Items.Count Then
-                Me.Items.Insert(index, newItem)
+                SyncLock Me.Lock
+                    Me.Items.Insert(index, newItem)
+                End SyncLock
                 Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newItem, index))
             End If
         End Sub
@@ -63,5 +71,18 @@ Namespace Helpers
             Return low ' Return the insertion index where the item should be inserted
         End Function
 
+        Protected Overrides Sub OnCollectionChanged(e As NotifyCollectionChangedEventArgs)
+            UIHelper.OnUIThread(
+                Sub()
+                    MyBase.OnCollectionChanged(e)
+                End Sub)
+        End Sub
+
+        Protected Overrides Sub OnPropertyChanged(e As PropertyChangedEventArgs)
+            UIHelper.OnUIThread(
+                Sub()
+                    MyBase.OnPropertyChanged(e)
+                End Sub)
+        End Sub
     End Class
 End Namespace

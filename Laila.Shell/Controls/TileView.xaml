@@ -24,10 +24,15 @@
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                  VirtualizingPanel.VirtualizationMode="Recycling" VirtualizingPanel.CacheLength="0" 
+                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" 
                                   VirtualizingPanel.CacheLengthUnit="Page">
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
+                                    <GroupStyle.Panel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Vertical" />
+                                        </ItemsPanelTemplate>
+                                    </GroupStyle.Panel>
                                     <GroupStyle.ContainerStyle>
                                         <Style TargetType="{x:Type GroupItem}">
                                             <Setter Property="Template">
@@ -49,7 +54,7 @@
                             </ListView.Resources>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel SpacingMode="None">
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None" AllowDifferentSizedItems="False">
                                         <vwp:VirtualizingWrapPanel.Style>
                                             <Style>
                                                 <Style.Triggers>
@@ -60,6 +65,42 @@
                                                         <Setter Property="vwp:VirtualizingWrapPanel.Margin" Value="0,0,0,0" />
                                                         <Setter Property="vwp:VirtualizingWrapPanel.CustomHeaderHeight" Value="{Binding ActualHeight, ElementName=PART_ExpanderHeader}" />
                                                     </DataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                            <Condition Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="300,56" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="315,56" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                            <Condition Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="300,56" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                            <Condition Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="315,56" />
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </vwp:VirtualizingWrapPanel.Style>
@@ -83,7 +124,7 @@
                                                 <ColumnDefinition Width="Auto" SharedSizeGroup="B" />
                                                 <ColumnDefinition Width="48" />
                                                 <ColumnDefinition Width="4" />
-                                                <ColumnDefinition Width="Auto" SharedSizeGroup="A" />
+                                                <ColumnDefinition Width="*" SharedSizeGroup="A" />
                                             </Grid.ColumnDefinitions>
                                             <Grid.Resources>
                                                 <helpers:ImageHelper x:Key="imageHelper" />
@@ -221,7 +262,83 @@
                                                     </Image.Style>
                                                 </Image>
                                             </Border>
-                                            <Grid Grid.Column="4" VerticalAlignment="Center" MaxHeight="51">
+                                            <Grid Grid.Column="4" VerticalAlignment="Center" MaxHeight="51" HorizontalAlignment="Stretch" x:Name="PART_TextGrid">
+                                                <Grid.Style>
+                                                    <Style>
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Grid.MaxWidth" Value="194" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                                    <Condition Binding="{Binding StorageProviderUIStatusIconWidth16}" Value="32" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Grid.MaxWidth" Value="210" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                                    <Condition Binding="{Binding StorageProviderUIStatusIconWidth16}" Value="16" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Grid.MaxWidth" Value="226" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="False" />
+                                                                    <Condition Binding="{Binding StorageProviderUIStatusIconWidth16}" Value="0" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Grid.MaxWidth" Value="342" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Grid.MaxWidth" Value="188" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                    <Condition Binding="{Binding StorageProviderUIStatusIconWidth16}" Value="32" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Grid.MaxWidth" Value="194" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                    <Condition Binding="{Binding StorageProviderUIStatusIconWidth16}" Value="16" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Grid.MaxWidth" Value="210" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Tag.DoShowCheckBoxesToSelect, ElementName=PART_Grid}" Value="True" />
+                                                                    <Condition Binding="{Binding StorageProviderUIStatusIconWidth16}" Value="0" />
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Grid.MaxWidth" Value="226" />
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Grid.Style> 
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto" />
                                                     <RowDefinition Height="Auto" />
@@ -230,8 +347,8 @@
                                                 <Grid.Resources>
                                                     <converters:DoubleConverter x:Key="doubleConverter" />
                                                 </Grid.Resources>
-                                                <TextBlock Grid.Row="0" TextWrapping="Wrap" MaxWidth="200" MaxHeight="34" 
-                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
+                                                <TextBlock Grid.Row="0" TextWrapping="Wrap" HorizontalAlignment="Left" MaxHeight="34"  
+                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" MaxWidth="{Binding MaxWidth, ElementName=PART_TextGrid}"
                                                            x:Name="PART_DisplayName">
                                                     <TextBlock.Style>
                                                         <Style>
@@ -258,7 +375,7 @@
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
-                                                <ProgressBar Grid.Row="1" Maximum="100" Width="200" Height="14" Margin="0,2,0,2"
+                                                <ProgressBar Grid.Row="1" Maximum="100" HorizontalAlignment="Stretch" Height="14" Margin="0,2,0,2"
                                                              Value="{Binding PropertiesByCanonicalName[System.PercentFull].Value, 
                                                                 Mode=OneWay, Converter={StaticResource doubleConverter}}">
                                                     <ProgressBar.Style>
@@ -274,7 +391,7 @@
                                                 </ProgressBar>
                                                 <TextBlock Grid.Row="2" TextWrapping="Wrap" Foreground="Gray" 
                                                            Text="{Binding TileViewProperties}" TextTrimming="CharacterEllipsis"
-                                                           MaxWidth="200">
+                                                           HorizontalAlignment="Stretch">
                                                 </TextBlock>
                                             </Grid> 
                                         </Grid>

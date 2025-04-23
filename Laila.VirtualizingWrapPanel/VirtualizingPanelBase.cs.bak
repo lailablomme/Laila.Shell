@@ -90,7 +90,7 @@ namespace WpfToolkit.Controls
         }
         private DependencyObject? _itemsOwner;
 
-        protected ReadOnlyCollection<object> Items => ItemContainerGenerator.Items;
+        public ReadOnlyCollection<object> Items => ItemContainerGenerator.Items;
 
         protected IRecyclingItemContainerGenerator RecyclingItemContainerGenerator => ItemContainerGenerator;
 
@@ -102,14 +102,6 @@ namespace WpfToolkit.Controls
                 {
                     // The ItemContainerGenerator is null until InternalChildren is accessed at least one time.
                     _ = InternalChildren;
-
-                    if (base.ItemContainerGenerator is null)
-                    {
-                        throw new InvalidOperationException($"ItemContainerGenerator is null. Make sure that"
-                            + $" the {GetType().Name} is used as the ItemsPanel of an ItemsControl such as a ListView"
-                            + $" or the GridView and VirtualizingItemsControl that are part of this package.");
-                    }
-
                     _itemContainerGenerator = base.ItemContainerGenerator.GetItemContainerGeneratorForPanel(this);
 
                 }
@@ -170,27 +162,6 @@ namespace WpfToolkit.Controls
                 }
             }
             return false;
-        }
-
-        protected void VerifyItemsControl() 
-        {
-            if (GetIsVirtualizing(ItemsControl) == false)
-            {
-                throw new InvalidOperationException("VirtualizingPanel.IsVirtualizing must be true." +
-                    " Make sure VirtualizingPanel.IsVirtualizing=\"True\" is set on the ItemsControl.");
-            }
-
-            if (ItemsOwner is IHierarchicalVirtualizationAndScrollInfo && GetIsVirtualizingWhenGrouping(ItemsControl) == false)
-            {
-                throw new InvalidOperationException("VirtualizingPanel.IsVirtualizingWhenGrouping must be true." +
-                    " Make sure VirtualizingPanel.IsVirtualizingWhenGrouping=\"True\" is set on the ItemsControl.");
-            }
-
-            if (ScrollViewer.GetCanContentScroll(ItemsControl) == false)
-            {
-                throw new InvalidOperationException("ScrollViewer.CanContentScroll must be true." +
-                    " Make sure ScrollViewer.CanContentScroll=\"True\" is set on the ItemsControl.");
-            }
         }
 
         public virtual Rect MakeVisible(Visual visual, Rect rectangle)
