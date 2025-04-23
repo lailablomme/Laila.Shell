@@ -1454,6 +1454,7 @@ Public Class Folder
                                         OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath)) _
                                         OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
                                 If existing Is Nothing Then
+                                    newItem.LogicalParent = Me
                                     newItem.IsProcessingNotifications = True
                                     Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                     _items.InsertSorted(newItem, c)
@@ -1502,6 +1503,7 @@ Public Class Folder
                                         AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
                                             OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
                                     If existing Is Nothing Then
+                                        newItem.LogicalParent = Me
                                         newItem.IsProcessingNotifications = True
                                         Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                         _items.InsertSorted(newItem, c)
@@ -1548,6 +1550,7 @@ Public Class Folder
                                     AndAlso (Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
                                         OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
                                 If existing Is Nothing Then
+                                    newItem.LogicalParent = Me
                                     newItem.IsProcessingNotifications = True
                                     Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
                                     _items.InsertSorted(newItem, c)
