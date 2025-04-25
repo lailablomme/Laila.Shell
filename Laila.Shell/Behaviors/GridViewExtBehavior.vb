@@ -230,7 +230,7 @@ Namespace Behaviors
                     Sub()
                         _isInitialResize = True
                         _skipResize = False
-                        resizeVisibleRows()
+                        resizeColumns()
                         UpdateSortGlyphs()
 
                         If Not _listView.ItemsSource Is Nothing AndAlso TypeOf _listView.ItemsSource Is INotifyCollectionChanged Then
@@ -467,7 +467,7 @@ Namespace Behaviors
             Next
 
             _skipResize = False
-            resizeVisibleRows()
+            resizeColumns()
         End Sub
 
         Public Sub UpdateSortGlyphs()
@@ -720,39 +720,38 @@ Namespace Behaviors
 
         Private Sub icgStatusChanged(sender As Object, e As EventArgs)
             If _listView.ItemContainerGenerator.Status = Primitives.GeneratorStatus.ContainersGenerated Then
-                UIHelper.OnUIThreadAsync(
-                    Sub()
-                        resizeVisibleRows()
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                resizeColumns()
             End If
         End Sub
 
-        Private Sub resizeVisibleRows()
-            If Not _headerRowPresenter Is Nothing Then
-                Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
+        Private Sub calculateTotalColumnWidth(headers As List(Of GridViewColumnHeader))
+            UIHelper.OnUIThreadAsync(
+                Sub()
+                    For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
+                        headers.Remove(header)
+                    Next
 
+                    Dim tcw As Double = headers.Sum(Function(h) h.ActualWidth)
+                    If Me.TotalColumnWidth <> tcw Then Me.TotalColumnWidth = tcw
+                End Sub, Threading.DispatcherPriority.DataBind)
+        End Sub
+
+        Private Sub resizeColumns()
+            If Not _headerRowPresenter Is Nothing Then
                 If Not _skipResize Then
+                    Dim rows As List(Of GridViewRowPresenter) = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(_listView).ToList()
                     Dim isFullGrid As Boolean = rows.Sum(Function(r) r.DesiredSize.Height) <= _listView.ActualHeight
                     If (rows.Count > 0 OrElse _listView.Items.Count = 0) AndAlso (_isInitialResize OrElse isFullGrid) Then
-                        resizeForRows(rows.Select(Function(r) r.DataContext).ToList(), False)
+                        resizeColumns(rows, False)
 
                         If (isFullGrid OrElse rows.Count = _listView.Items.Count) AndAlso rows.Count > 0 Then _isInitialResize = False
                         _skipResize = True
                     End If
                 End If
-
-                Dim headers As List(Of GridViewColumnHeader) =
-                                            UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
-                For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
-                    headers.Remove(header)
-                Next
-
-                Dim tcw As Double = headers.Sum(Function(h) h.actualWidth)
-                If Me.TotalColumnWidth <> tcw Then Me.TotalColumnWidth = tcw
             End If
         End Sub
 
-        Private Sub resizeForRows(list As List(Of Object), minimum As Boolean)
+        Private Sub resizeColumns(rows As List(Of GridViewRowPresenter), minimum As Boolean)
             If Not _headerRowPresenter Is Nothing Then
                 Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
 
@@ -775,19 +774,15 @@ Namespace Behaviors
                             extraAutoSizeMargin = GetExtraAutoSizeMargin(hc.Column)
                         End If
 
-                        If list.Count > 0 Then
+                        If rows.Count > 0 Then
                             ' measure available rows
-                            For Each item In list
-                                Dim lvi As ListViewItem = _listView.ItemContainerGenerator.ContainerFromItem(item)
-                                If Not lvi Is Nothing Then
-                                    Dim rp As GridViewRowPresenter = UIHelper.FindVisualChildren(Of GridViewRowPresenter)(lvi).FirstOrDefault()
-                                    If Not rp Is Nothing Then
-                                        Dim c As GridViewColumn = activeCol.Column
-                                        Dim el As UIElement = VisualTreeHelper.GetChild(rp, activeCol.OriginalIndex)
-                                        el.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
-                                        If Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN + extraAutoSizeMargin) > width Then
-                                            width = Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN + extraAutoSizeMargin)
-                                        End If
+                            For Each rp In rows
+                                If Not rp Is Nothing Then
+                                    Dim c As GridViewColumn = activeCol.Column
+                                    Dim el As UIElement = VisualTreeHelper.GetChild(rp, activeCol.OriginalIndex)
+                                    el.Measure(New Size(Double.PositiveInfinity, Double.PositiveInfinity))
+                                    If Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN + extraAutoSizeMargin) > width Then
+                                        width = Math.Ceiling(el.DesiredSize.Width + COLUMN_MARGIN + extraAutoSizeMargin)
                                     End If
                                 End If
                             Next
@@ -807,6 +802,8 @@ Namespace Behaviors
 
                         activeCol.Column.Width = width
                     Next
+
+                    calculateTotalColumnWidth(hcs)
                 End If
                 _dontWrite = False
             End If
@@ -834,11 +831,10 @@ Namespace Behaviors
         End Sub
 
         Protected Overridable Function readState(viewName As String) As GridViewStateData
-            Return FolderViewState.FromViewName(viewName)
+            Return New GridViewStateData()
         End Function
 
         Protected Overridable Sub WriteState(viewName As String, state As GridViewStateData)
-            CType(state, FolderViewState).Persist()
         End Sub
 
         Private Function getColumnName(column As GridViewColumn) As String

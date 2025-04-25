@@ -1,5 +1,6 @@
 ﻿Imports Laila.Shell.Adorners
 Imports Laila.Shell.Controls
+Imports Laila.Shell.Helpers
 Imports System.ComponentModel
 Imports System.Windows
 Imports System.Windows.Controls
@@ -85,6 +86,14 @@ Namespace Behaviors
             If Not Me.Folder Is Nothing Then
                 Me.Folder.ItemsGroupByPropertyName = propertyName
             End If
+        End Sub
+
+        Protected Overrides Function readState(viewName As String) As GridViewStateData
+            Return FolderViewState.FromViewName(Me.Folder)
+        End Function
+
+        Protected Overrides Sub WriteState(viewName As String, state As GridViewStateData)
+            CType(state, FolderViewState).Persist()
         End Sub
 
         Public Property Folder As Folder

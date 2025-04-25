@@ -864,7 +864,7 @@ Namespace Controls
                 _menu.Dispose()
             End If
 
-            _menu = New RightClickMenu() ' New ExplorerMenu() '
+            _menu = New RightClickMenu() 'New ExplorerMenu() ' 
             _menu.Folder = folder
             _menu.SelectedItems = selectedItems
             _menu.IsDefaultOnly = isDefaultOnly
@@ -1341,7 +1341,7 @@ Namespace Controls
                     Async Sub()
                         If Not TypeOf folder Is SearchFolder Then
                             Await t
-                            Await Task.Delay(50)
+                            'Await Task.Delay(50)
 
                             If Not PART_ScrollViewer Is Nothing Then
                                 ' restore folder scroll position
@@ -1371,7 +1371,7 @@ Namespace Controls
                             End If
 
                             If Not folder.IsRefreshingItems AndAlso Not Me.Folder Is Nothing AndAlso Not TypeOf folder Is SearchFolder Then
-                                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+                                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder)
                                 folderViewState.SortPropertyName = folder.ItemsSortPropertyName
                                 folderViewState.SortDirection = folder.ItemsSortDirection
                                 folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName

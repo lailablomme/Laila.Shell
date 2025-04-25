@@ -12,6 +12,7 @@ Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
 Imports Laila.Shell.Interop.Windows
 Imports Microsoft.Win32
+Imports SHDocVw
 
 Namespace Controls
     Public Class ExplorerMenu
@@ -83,7 +84,9 @@ Namespace Controls
                                                 End If
                                                 Dim a As Action =
                                                     Sub()
-                                                        command.Invoke(array, IntPtr.Zero)
+                                                        Dim bindCtx As ComTypes.IBindCtx = Nothing
+                                                        Functions.CreateBindCtx(0, bindCtx)
+                                                        command.Invoke(array, Marshal.GetIUnknownForObject(bindCtx))
                                                     End Sub
                                                 menuItem.Tag = a
                                                 _menuItems.Add(menuItem)
@@ -249,6 +252,19 @@ Namespace Controls
                     Debug.WriteLine("QueryServiceOK " & guidService.ToString() & " " & riid.ToString())
                     Return HRESULT.S_OK
                 End If
+                'Dim shellWindows As New ShellWindows()
+                'Dim sp As IServiceProvider = Nothing
+                '' Loop through all windows
+                'For i As Integer = 0 To shellWindows.Count - 1
+                '    Dim window As Object = shellWindows.Item(i)
+
+                '    ' Try to cast to IServiceProvider
+                '    sp = TryCast(window, IServiceProvider)
+                '    If sp IsNot Nothing Then
+                '        Exit For
+                '    End If
+                'Next
+                'Return sp.QueryService(guidService, riid, ppvObject)
                 ppvObject = IntPtr.Zero
                 Debug.WriteLine("QueryService " & guidService.ToString() & " " & riid.ToString())
                 Return HRESULT.E_NOINTERFACE

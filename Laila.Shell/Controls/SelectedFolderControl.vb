@@ -67,7 +67,7 @@ Namespace Controls
                 Me.Children.Add(dummyButton)
                 Return
             End If
-            If isWithDelay Then Await Task.Delay(150)
+            'If isWithDelay Then Await Task.Delay(150)
 
             Await _lock.WaitAsync()
             Try

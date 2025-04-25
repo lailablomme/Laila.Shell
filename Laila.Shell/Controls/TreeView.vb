@@ -425,7 +425,7 @@ Namespace Controls
                 _isSettingSelectedFolder = True
 
                 If Me.DoExpandTreeViewToCurrentFolder Then
-                    Await Task.Delay(100)
+                    'Await Task.Delay(100)
 
                     Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
                     Dim list As List(Of Folder) = New List(Of Folder)()

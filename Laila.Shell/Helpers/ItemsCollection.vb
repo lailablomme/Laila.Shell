@@ -75,7 +75,7 @@ Namespace Helpers
             UIHelper.OnUIThread(
                 Sub()
                     MyBase.OnCollectionChanged(e)
-                End Sub)
+                End Sub, Windows.Threading.DispatcherPriority.Send)
         End Sub
 
         Protected Overrides Sub OnPropertyChanged(e As PropertyChangedEventArgs)

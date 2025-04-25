@@ -14,6 +14,7 @@ Namespace Helpers
         Private _isThreadFree As Boolean()
         Private _isThreadLocked As Boolean()
         Private _nextThreadId As Integer = 0
+        Private _nextThreadLock As Object = New Object()
         Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
         Private _disposeToken As CancellationToken = _disposeTokensSource.Token
         Private disposedValue As Boolean
@@ -79,20 +80,22 @@ Namespace Helpers
 
         Public Function GetNextFreeThreadId() As Integer
             If _isThreadFree.Count > 1 Then
-                Do
-                    _nextThreadId += 1
-                    If _nextThreadId >= _isThreadFree.Length Then
-                        _nextThreadId = 0
-                        If _isThreadFree.All(Function(f) f = False) Then
-                            Thread.Sleep(250)
-                            If System.Windows.Application.Current.Dispatcher.CheckAccess Then
-                                UIHelper.OnUIThread(
+                SyncLock _nextThreadLock
+                    Do
+                        _nextThreadId += 1
+                        If _nextThreadId >= _isThreadFree.Length Then
+                            _nextThreadId = 0
+                            If _isThreadFree.All(Function(f) f = False) Then
+                                Thread.Sleep(250)
+                                If System.Windows.Application.Current.Dispatcher.CheckAccess Then
+                                    UIHelper.OnUIThread(
                                     Sub()
                                     End Sub, System.Windows.Threading.DispatcherPriority.ContextIdle)
+                                End If
                             End If
                         End If
-                    End If
-                Loop Until _isThreadFree(_nextThreadId) AndAlso Not _isThreadLocked(_nextThreadId)
+                    Loop Until _isThreadFree(_nextThreadId) AndAlso Not _isThreadLocked(_nextThreadId)
+                End SyncLock
                 Return _nextThreadId
             Else
                 Return 0

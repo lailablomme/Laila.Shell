@@ -150,6 +150,8 @@ Namespace Controls
                 Return
             End If
 
+            _automationPeer = Nothing
+
             Select Case e.Action
                 Case Specialized.NotifyCollectionChangedAction.Reset
                     PART_ItemsHolder.Children.Clear()
@@ -258,8 +260,13 @@ Namespace Controls
             Return cp
         End Function
 
+        Private _automationPeer As AutomationPeer = Nothing
+
         Protected Overrides Function OnCreateAutomationPeer() As AutomationPeer
-            Return New TabControlAutomationPeer(Me)
+            If _automationPeer Is Nothing Then
+                _automationPeer = New TabControlAutomationPeer(Me)
+            End If
+            Return _automationPeer
         End Function
 
         Friend Function findChildContentPresenter(data As Object) As Grid

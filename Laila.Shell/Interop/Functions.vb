@@ -14,6 +14,13 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Interop
     Public Class Functions
+        <DllImport("oleacc.dll")>
+        Public Shared Function ObjectFromLresult(lResult As IntPtr, ByRef riid As Guid, wParam As IntPtr, <Out> ByRef ppvObject As Object) As Integer
+        End Function
+
+        <DllImport("user32.dll")>
+        Public Shared Function RegisterWindowMessage(lpString As String) As UInteger
+        End Function
         <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
         Public Shared Function SHLoadIndirectString(
     pszSource As String,

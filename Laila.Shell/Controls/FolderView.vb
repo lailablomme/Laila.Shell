@@ -283,7 +283,7 @@ Namespace Controls
         End Property
 
         Private Async Sub updateStatusText()
-            Await Task.Delay(100)
+            'Await Task.Delay(100)
             If Not Me.Folder Is Nothing Then
                 Dim text As String = String.Format("{0} {1}", Me.Folder.Items.Count, If(Me.Folder.Items.Count = 1, "item", "items"))
                 If Not Me.SelectedItems Is Nothing AndAlso Not Me.SelectedItems.Count = 0 Then
@@ -396,7 +396,7 @@ Namespace Controls
                 Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
                 If hasFocus Then Me.ActiveView.Focus()
                 Me.ActiveView.Folder = folder
-                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder)
                 folderViewState.ActiveView = newValue
                 folderViewState.Persist()
                 BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})
