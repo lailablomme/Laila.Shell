@@ -242,6 +242,7 @@ Namespace Controls
         End Sub
 
         Protected Class MenuItemData
+            Public Property ApplicationName As String
             Public Property Header As String
             Public Property Icon As BitmapSource
             Public Property Tag As Object

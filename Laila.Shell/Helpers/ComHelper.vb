@@ -50,6 +50,10 @@ Namespace Helpers
         Private disposedValue As Boolean
 
         Public Function MakeComObject(dllPath As String, clsid As Guid, interfaceId As Guid) As Object
+            Dim ptr As IntPtr = IntPtr.Zero
+            Functions.CoCreateInstance(clsid, IntPtr.Zero, ClassContext.LocalServer, interfaceId, ptr)
+            Return Marshal.GetObjectForIUnknown(ptr)
+
             Dim hModule As IntPtr = LoadLibrary(dllPath)
             _modules.Add(hModule)
             If hModule = IntPtr.Zero Then

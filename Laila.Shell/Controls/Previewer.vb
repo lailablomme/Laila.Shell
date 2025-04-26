@@ -190,7 +190,7 @@ Namespace Controls
                                 Debug.WriteLine("IPreviewHandler=" & clsid.ToString())
                                 Dim h As HRESULT
                                 Dim cc As ClassContext = ClassContext.LocalServer
-                                If Debugger.IsAttached Then cc = cc Or ClassContext.InProcServer
+                                If Debugger.IsAttached Then cc = ClassContext.InProcServer
                                 If _cancelTokenSource.IsCancellationRequested Then Return
                                 h = Functions.CoCreateInstance(clsid, IntPtr.Zero, cc, GetType(IPreviewHandler).GUID, previewer._handler)
                                 If _cancelTokenSource.IsCancellationRequested Then Return
