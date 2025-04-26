@@ -50,7 +50,6 @@ Namespace Interop.Items
         <PreserveSig>
         Function GetIcon(
         <[In], MarshalAs(UnmanagedType.Interface)> ppsiItemArray As IShellItemArray,
-        <[In]> ByRef flags As UInt32,
         <Out> <MarshalAs(UnmanagedType.LPWStr)> ByRef ppszIcon As String) As Integer
 
         <PreserveSig>
@@ -74,7 +73,7 @@ Namespace Interop.Items
         <[In]> pbc As IntPtr) As Integer
 
         <PreserveSig>
-        Function GetFlags(<Out> ByRef pFlags As UInt32) As Integer
+        Function GetFlags(<Out> ByRef pFlags As EXPCMDFLAGS) As Integer
 
         <PreserveSig>
         Function EnumSubCommands(<Out> ByRef ppenum As IEnumExplorerCommand) As Integer
@@ -94,4 +93,18 @@ Namespace Interop.Items
     Public Interface IExplorerCommandArray
         <PreserveSig> Function GetCommands(<Out> ByRef ppEnum As IntPtr) As Integer
     End Interface
+    <Flags>
+    Public Enum EXPCMDFLAGS As Integer
+        ECF_DEFAULT = &H0 ' No command flags set
+        ECF_HASSUBCOMMANDS = &H1 ' The command has subcommands
+        ECF_HASSPLITBUTTON = &H2 ' A split button is displayed
+        ECF_HIDELABEL = &H4 ' The label is hidden
+        ECF_ISSEPARATOR = &H8 ' The command is a separator
+        ECF_HASLUASHIELD = &H10 ' A UAC shield is displayed
+        ECF_SEPARATORBEFORE = &H20 ' The command is located immediately below a separator
+        ECF_SEPARATORAFTER = &H40 ' The command is located immediately above a separator
+        ECF_ISDROPDOWN = &H80 ' Selecting the command opens a drop-down submenu
+        ECF_TOGGLEABLE = &H100 ' Toggleable command (introduced in Windows 8)
+        ECF_AUTOMENUICONS = &H200 ' Automatically show menu icons (introduced in Windows 8)
+    End Enum
 End Namespace

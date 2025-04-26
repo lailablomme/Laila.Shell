@@ -219,6 +219,7 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Laila.Shell.WinRT.Interface\Laila.Shell.WinRT.Interface.csproj" />
 	  <ProjectReference Include="..\Laila.VirtualizingWrapPanel\Laila.VirtualizingWrapPanel.csproj" />
 	</ItemGroup>
 	

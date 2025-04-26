@@ -864,7 +864,7 @@ Namespace Controls
                 _menu.Dispose()
             End If
 
-            _menu = New RightClickMenu() 'New ExplorerMenu() ' 
+            _menu = New RightClickMenu() ' New ExplorerMenu() '
             _menu.Folder = folder
             _menu.SelectedItems = selectedItems
             _menu.IsDefaultOnly = isDefaultOnly
@@ -1354,7 +1354,7 @@ Namespace Controls
 
                         ' show listview
                         Me.PART_ListBox.Visibility = Visibility.Visible
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                    End Sub, Threading.DispatcherPriority.Send)
             End If
         End Sub
 

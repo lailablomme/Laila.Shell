@@ -306,7 +306,7 @@ Namespace Controls
                         .IsDefaultOnly = True
                     }
                     Await _rightClickMenu.Make()
-                    Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}"))
+                    Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String, Object)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}", Nothing))
                 Else
                     Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
                     Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
@@ -329,6 +329,7 @@ Namespace Controls
                 Me.NewItemMenu = Nothing
             End If
 
+            Await Task.Delay(250) ' wait for the UI to be ready
             Dim newItemMenu As NewItemMenu = New NewItemMenu() With {.Folder = Me.Folder}
             Await newItemMenu.Make()
             If newItemMenu.Items.Count > 0 Then

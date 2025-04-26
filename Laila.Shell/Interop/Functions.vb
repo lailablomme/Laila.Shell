@@ -14,13 +14,6 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Interop
     Public Class Functions
-        <DllImport("oleacc.dll")>
-        Public Shared Function ObjectFromLresult(lResult As IntPtr, ByRef riid As Guid, wParam As IntPtr, <Out> ByRef ppvObject As Object) As Integer
-        End Function
-
-        <DllImport("user32.dll")>
-        Public Shared Function RegisterWindowMessage(lpString As String) As UInteger
-        End Function
         <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
         Public Shared Function SHLoadIndirectString(
     pszSource As String,
@@ -477,6 +470,13 @@ Namespace Interop
         ByVal dwClsContext As UInteger,
         ByRef riid As Guid,
         <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IShellFolder) As Integer
+        End Function
+        <DllImport("ole32.dll")>
+        Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
+        ByRef riid As Guid, ByRef ppv As IntPtr) As Integer
         End Function
         <DllImport("ole32.dll")>
         Public Shared Function CoCreateInstance(

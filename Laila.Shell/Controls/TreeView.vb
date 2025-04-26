@@ -677,28 +677,28 @@ Namespace Controls
                                         _selectionHelper.SetSelectedItems({_mouseItemDown})
 
                                         ' this allows for better reponse to double-clicking an unselected item
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If TypeOf _mouseItemDown Is Folder Then
-                                                    If (If(_mouseItemDown.Pidl?.Equals(Me.Folder?.Pidl), False) _
-                                                        OrElse (_mouseItemDown.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
-                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+                                        'UIHelper.OnUIThread(
+                                        '    Sub()
+                                        If TypeOf _mouseItemDown Is Folder Then
+                                            If (If(_mouseItemDown.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                OrElse (_mouseItemDown.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                AndAlso Not Me.Items.Contains(Me.Folder) Then Return
 
-                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
-                                                    CType(_mouseItemDown, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = _mouseItemDown
-                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
-                                                ElseIf TypeOf _mouseItemDown Is Link AndAlso TypeOf CType(_mouseItemDown, Link).TargetItem Is Folder Then
-                                                    If (If(CType(_mouseItemDown, Link).TargetItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
-                                                        OrElse (CType(_mouseItemDown, Link).TargetItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
-                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+                                            RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
+                                            CType(_mouseItemDown, Folder).LastScrollOffset = New Point()
+                                            Me.Folder = _mouseItemDown
+                                            RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
+                                        ElseIf TypeOf _mouseItemDown Is Link AndAlso TypeOf CType(_mouseItemDown, Link).TargetItem Is Folder Then
+                                            If (If(CType(_mouseItemDown, Link).TargetItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                OrElse (CType(_mouseItemDown, Link).TargetItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                AndAlso Not Me.Items.Contains(Me.Folder) Then Return
 
-                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
-                                                    CType(CType(_mouseItemDown, Link).TargetItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = CType(_mouseItemDown, Link).TargetItem
-                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
-                                                End If
-                                            End Sub, Threading.DispatcherPriority.Background)
+                                            RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
+                                            CType(CType(_mouseItemDown, Link).TargetItem, Folder).LastScrollOffset = New Point()
+                                            Me.Folder = CType(_mouseItemDown, Link).TargetItem
+                                            RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
+                                        End If
+                                        'End Sub, Threading.DispatcherPriority.Send)
                                     End Using
                                 End If
                                 e.Handled = True

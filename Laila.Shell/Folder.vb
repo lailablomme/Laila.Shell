@@ -687,7 +687,7 @@ Public Class Folder
         Dim menuItems As List(Of Control) = menu.GetMenuItems()
         Dim lastMenuItem As Control = Nothing
         For Each item In menuItems
-            Dim verb As String = If(Not item.Tag Is Nothing, CType(item.Tag, Tuple(Of Integer, String)).Item2, Nothing)
+            Dim verb As String = If(Not item.Tag Is Nothing, CType(item.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing)
             Select Case verb
                 Case "copy", "cut", "paste", "delete", "pintohome", "rename"
                     ' don't add these
@@ -714,21 +714,21 @@ Public Class Folder
                 AndAlso (menu.SelectedItems Is Nothing OrElse menu.SelectedItems.Count = 0) _
                 AndAlso Clipboard.CanPaste(Me)
 
-        Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "cut")
+        Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "cut")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "copy")
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "copy")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "paste")
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "paste")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
-                Else If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String)(-1, "paste"), "Paste"))
-        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "rename")
+                Else If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "paste", Nothing), "Paste"))
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "rename")
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 AndAlso menu.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME)) Then _
-                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String)(-1, "rename"), "Rename"))
-        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "delete")
+                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "rename", Nothing), "Rename"))
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "delete")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 Then
             Dim isPinned As Boolean = PinnedItems.GetIsPinned(menu.SelectedItems(0))
-            menu.Buttons.Add(menu.MakeToggleButton(New Tuple(Of Integer, String)(-1, "laila.shell.(un)pin"),
+            menu.Buttons.Add(menu.MakeToggleButton(New Tuple(Of Integer, String, Object)(-1, "laila.shell.(un)pin", Nothing),
                                                         If(isPinned, "Unpin item", "Pin item"), isPinned))
         End If
     End Sub
