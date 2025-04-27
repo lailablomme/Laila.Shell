@@ -1354,7 +1354,7 @@ Namespace Controls
 
                         ' show listview
                         Me.PART_ListBox.Visibility = Visibility.Visible
-                    End Sub, Threading.DispatcherPriority.Send)
+                    End Sub)
             End If
         End Sub
 
