@@ -25,7 +25,7 @@ Namespace Interop.Items
         <PreserveSig>
         Function [Next](
         <[In]> celt As UInteger,
-        <Out> <MarshalAs(UnmanagedType.Interface)> ByRef pUICommand As IExplorerCommand,
+        <Out> <MarshalAs(UnmanagedType.LPArray)> pUICommand() As IExplorerCommand,
         <Out> ByRef pceltFetched As UInteger) As Integer
 
         <PreserveSig>

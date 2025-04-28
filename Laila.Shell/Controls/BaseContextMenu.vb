@@ -28,7 +28,7 @@ Namespace Controls
         Private _contextMenu As IContextMenu
         Private _contextMenu2 As IContextMenu2
         Private _contextMenu3 As IContextMenu3
-        Private _hMenu As IntPtr
+        Protected _hMenu As IntPtr
 
         Protected Overrides Function DoRenameAfter(Tag As Tuple(Of Integer, String, Object)) As Boolean
             Dim newMenuItem As MenuItem = Me.Items.Cast(Of Control) _
@@ -111,7 +111,7 @@ Namespace Controls
             Return result
         End Function
 
-        Private Function getMenuItemData(hMenu2 As IntPtr, parentIndex As Integer) As List(Of MenuItemData)
+        Protected Function getMenuItemData(hMenu2 As IntPtr, parentIndex As Integer) As List(Of MenuItemData)
             Dim result As List(Of MenuItemData) = New List(Of MenuItemData)()
 
             If Not _contextMenu Is Nothing AndAlso Not IntPtr.Zero.Equals(hMenu2) Then

@@ -16,13 +16,13 @@ using Windows.ApplicationModel;
 
 namespace Laila.Shell.WinRT
 {
-    public class ExplorerMenuHelper
+    public sealed class ExplorerMenuHelper
     {
         public async Task<Tuple<string?, string?, List<ExplorerCommandVerbInfo>?>?> GetCloudVerbs(string? folderPath)
         {
             try
             {
-                if (folderPath == null)
+                if (folderPath == null || !System.IO.Directory.Exists(folderPath))
                     return null; // cannot get verbs for files in multiple different folders
 
                 // get sync root info
@@ -123,7 +123,7 @@ namespace Laila.Shell.WinRT
                                             else if (!string.IsNullOrWhiteSpace(System.IO.Path.GetDirectoryName(application.Item1))
                                                 && System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(application.Item1)!, verb.ComServerPath)))
                                                 verb.ComServerPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(application.Item1)!, verb.ComServerPath);
-                                        verb.PackageId = package.Id.FamilyName;
+                                        verb.PackageId = package.Id.Name;
                                         verb.ApplicationName = application.Item4;
                                         verb.ApplicationIconPath = application.Item5;
                                     }
@@ -185,11 +185,11 @@ namespace Laila.Shell.WinRT
             string? displayName = app.Element(nsUap + "VisualElements")?.Attribute("DisplayName")?.Value;
             displayName = app.Element(nsUap + "VisualElements")?.Attribute("DisplayName")?.Value;
             if (!string.IsNullOrWhiteSpace(displayName))
-                displayName = resolveMsResourceFromPackage(displayName, package.Id.FamilyName);
+                displayName = ResolveMsResourceFromPackage(displayName, package.Id.FullName);
             string? logoPath = app.Element(nsUap + "VisualElements")?.Attribute("Square44x44Logo")?.Value;
             if (!string.IsNullOrWhiteSpace(logoPath))
             {
-                logoPath = resolveMsResourceFromPackage(logoPath, package.Id.FamilyName);
+                logoPath = ResolveMsResourceFromPackage(logoPath, package.Id.FullName);
                 if (System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(manifestPath)!, logoPath)))
                     logoPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(manifestPath)!, logoPath);
                 else if (System.IO.File.Exists(System.IO.Path.Combine(package.EffectivePath, logoPath)))
@@ -246,7 +246,7 @@ namespace Laila.Shell.WinRT
         /// <param name="resourceReference">The ms-resource reference (e.g., "ms-resource:MyDisplayName").</param>
         /// <param name="packageFamilyName">The full PackageFamilyName to load from (e.g., "DropboxInc.Dropbox_abcdefg123456").</param>
         /// <returns>The resolved localized string, or null if not found.</returns>
-        static string resolveMsResourceFromPackage(string resourceReference, string packageName)
+        public static string ResolveMsResourceFromPackage(string resourceReference, string packageName)
         {
             const string prefix = "ms-resource:";
             string result = resourceReference;
@@ -264,7 +264,7 @@ namespace Laila.Shell.WinRT
                     if (candidate != null && candidate.IsMatch)
                         result = candidate.ValueAsString;
 
-                    resourceManager.UnloadPriFiles(priFiles);
+                    //resourceManager.UnloadPriFiles(priFiles);
                 }
                 catch
                 {
@@ -273,7 +273,7 @@ namespace Laila.Shell.WinRT
             }
 
             // Not a ms-resource: string, return as-is
-            return resourceReference;
+            return result;
         }
 
         static List<ExplorerCommandVerbInfo>? parseCloudVerbs(string manifestPath, string? applicationId)

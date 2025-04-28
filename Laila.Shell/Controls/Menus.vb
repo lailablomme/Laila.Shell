@@ -308,7 +308,7 @@ Namespace Controls
                     Await _rightClickMenu.Make()
                     Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String, Object)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}", Nothing))
                 Else
-                    Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
+                    Dim assembly As Assembly = Assembly.LoadFrom(IO.Path.Combine(IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Laila.Shell.WinRT.dll"))
                     Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
                     Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
                     Dim instance As Object = Activator.CreateInstance(type)
