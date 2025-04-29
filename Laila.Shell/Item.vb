@@ -365,7 +365,7 @@ Public Class Item
                     If newShellItem Is Nothing Then
                         newShellItem = Me.GetNewShellItem()
                     Else
-                        _livesOnThreadId = threadId.Value
+                        _livesOnThreadId = threadId
                     End If
                     _shellItem2 = newShellItem
 
@@ -1553,7 +1553,7 @@ Public Class Item
                                             newPidl = e.Item2.Pidl?.Clone()
                                             ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
                                             e.Item2._shellItem2 = Nothing
-                                            Me.Refresh(newShellItem, newPidl,, e.Item1._livesOnThreadId) ' refresh this item
+                                            Me.Refresh(newShellItem, newPidl,, e.Item2._livesOnThreadId) ' refresh this item
                                         End If
                                     End SyncLock
                                 End SyncLock
