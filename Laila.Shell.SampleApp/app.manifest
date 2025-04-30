@@ -7,7 +7,7 @@
 			<!-- RegFree COM - CoreCLR Shim -->
 			<assemblyIdentity
                 name="Laila.Shell"
-                version="0.0.63.0" />
+                version="0.0.64.0" />
 		</dependentAssembly>
 	</dependency>
 	
