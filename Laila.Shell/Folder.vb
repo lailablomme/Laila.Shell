@@ -1493,8 +1493,8 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.CREATE, SHCNE.MKDIR
                     If _isLoaded Then
-                        If (Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
+                        If ((Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM)) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
+                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Me.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             Dim existing As Item = Nothing, newItem As Item = Nothing
@@ -1526,8 +1526,8 @@ Public Class Folder
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
-                        If (Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
+                        If ((Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM)) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
+                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Me.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             SyncLock _items.Lock
