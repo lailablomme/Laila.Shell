@@ -831,13 +831,14 @@ Namespace Controls
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             AddHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             AddHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
-                            UIHelper.OnUIThreadAsync(
+                            UIHelper.OnUIThread(
                                 Sub()
                                     For Each item2 In folder._items.ToList().Where(Function(i) i.IsVisibleInTree).ToList()
                                         If Not Me.Items.Contains(item2) Then
                                             Me.Items.Add(item2)
                                         End If
                                     Next
+                                    prune()
                                 End Sub)
                         End If
                     Next
@@ -847,17 +848,18 @@ Namespace Controls
                             Dim folder As Folder = item
                             RemoveHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
-                            UIHelper.OnUIThreadAsync(
+                            UIHelper.OnUIThread(
                                 Sub()
                                     For Each item2 In Me.Items.Where(Function(i) i.CanShowInTree _
                                         AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
-                                        If Me.Items.Contains(item2) Then
-                                            Me.Items.Remove(item2)
-                                        End If
+                                        Me.Items.Remove(item2)
                                     Next
+                                    prune()
                                 End Sub)
                         End If
                     Next
+                Case Else
+                    prune()
             End Select
         End Sub
 
@@ -1000,6 +1002,17 @@ Namespace Controls
                         item2.NotifyOfPropertyChange("TreeSortKey")
                     Next
             End Select
+        End Sub
+
+        Private Sub prune()
+            UIHelper.OnUIThread(
+                Sub()
+                    For Each item2 In Me.Items.Where(Function(i) i.CanShowInTree _
+                                        AndAlso ((Not i._logicalParent Is Nothing AndAlso Not Me.Items.Contains(i._logicalParent)) _
+                                                 OrElse (i._logicalParent Is Nothing AndAlso Not Me.Roots.Contains(i)))).ToList()
+                        Me.Items.Remove(item2)
+                    Next
+                End Sub)
         End Sub
 
         ''' <summary>
