@@ -68,9 +68,11 @@ Public Class [Property]
     End Function
 
     Protected Sub New(cachedPropertyDescription As CachedPropertyDescription)
-        _propertyKey = cachedPropertyDescription.PropertyKey
-        _canonicalName = cachedPropertyDescription.CanonicalName
-        _propertyDescription = cachedPropertyDescription.PropertyDescription
+        If Not cachedPropertyDescription Is Nothing Then
+            _propertyKey = cachedPropertyDescription.PropertyKey
+            _canonicalName = cachedPropertyDescription.CanonicalName
+            _propertyDescription = cachedPropertyDescription.PropertyDescription
+        End If
     End Sub
 
     Protected Sub New(cachedPropertyDescription As CachedPropertyDescription, Optional propertyStore As IPropertyStore = Nothing)
