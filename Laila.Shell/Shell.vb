@@ -128,8 +128,8 @@ Public Class Shell
 
                                 ' don't hog the process
                                 i += 1
-                                If i Mod 25 = 0 Then
-                                    Thread.Sleep(250)
+                                If i Mod 10 = 0 Then
+                                    Thread.Sleep(150)
                                 End If
                             Next
                         End If

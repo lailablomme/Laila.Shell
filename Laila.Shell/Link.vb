@@ -23,7 +23,7 @@ Public Class Link
     Protected ReadOnly Property ShellLink As IShellLinkW
         Get
             If _shellLinkW Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                SyncLock _shellItemLock
+                SyncLock _shellItemLockShellLink
                     If _shellLinkW Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                         CType(ShellItem2, IShellItem2ForShellLink).BindToHandler(Nothing, Guids.BHID_SFUIObject, GetType(IShellLinkW).GUID, _shellLinkW)
                     End If
@@ -80,7 +80,7 @@ Public Class Link
         Get
             If Not disposedValue Then
                 If Not _targetItem Is Nothing Then
-                    SyncLock _targetItem._shellItemLock
+                    SyncLock _targetItem._shellItemLockShellLink
                         ' if still alive...
                         If Not _targetItem.disposedValue Then
                             ' extend lifetime
@@ -102,11 +102,9 @@ Public Class Link
     End Property
 
     Protected Overrides Sub Dispose(disposing As Boolean)
-        SyncLock _shellItemLock
-            If Not disposedValue Then
-                MyBase.Dispose(disposing)
-            End If
-        End SyncLock
+        If Not disposedValue Then
+            MyBase.Dispose(disposing)
+        End If
 
         Shell.DisposerThreadPool.Add(
             Sub()

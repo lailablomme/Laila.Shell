@@ -193,7 +193,7 @@ Public Class SearchFolder
             ' clear collection
             For Each item In _items.ToList()
                 item._parent = Nothing
-                SyncLock item._shellItemLock
+                SyncLock item._shellItemLockSearchFolder
                     Dim si2 As IShellItem2 = item.ShellItem2
                     If Not si2 Is Nothing Then
                         item._shellItem2 = Nothing

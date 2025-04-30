@@ -183,10 +183,12 @@ Namespace Controls
                                             End Sub)
                                     Else
                                         ' the current folder disappeared -- switch to parent
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If f.IsExisting Then Me.SetSelectedItem(f)
-                                            End Sub)
+                                        If f.IsExisting Then
+                                            UIHelper.OnUIThread(
+                                                Sub()
+                                                    Me.SetSelectedItem(f)
+                                                End Sub)
+                                        End If
                                     End If
                                 End If
                             End Sub)
@@ -211,17 +213,17 @@ Namespace Controls
                     End While
                     If isDeleted Then
                         _deletedFullName = selectedItem.FullPath
-                        UIHelper.OnUIThread(
-                            Async Sub()
-                                ' get the first available parent  
-                                Dim f As Folder = selectedItem.LogicalParent
-                                If Not f Is Nothing Then
+                        ' get the first available parent  
+                        Dim f As Folder = selectedItem.LogicalParent
+                        If Not f Is Nothing Then
+                            UIHelper.OnUIThread(
+                                Async Sub()
                                     Await Task.Delay(300) ' wait for .zip operations/folder refresh to complete
-                                    If _deletedFullName?.Equals(selectedItem.FullPath) Then
-                                        If f.IsExisting Then Me.SetSelectedItem(f) ' load it
+                                    If _deletedFullName?.Equals(selectedItem._fullPath) Then
+                                        Me.SetSelectedItem(f) ' load it
                                     End If
-                                End If
-                            End Sub)
+                                End Sub)
+                        End If
                     End If
             End Select
         End Sub
@@ -973,7 +975,7 @@ Namespace Controls
                                         End If
                                     End If
                                     If Me.SelectedItem Is Nothing AndAlso Not Me.Folder Is Nothing _
-                                        AndAlso item.Pidl?.Equals(Me.Folder.Pidl) Then
+                                        AndAlso item._pidl?.Equals(Me.Folder.Pidl) Then
                                         Me.SetSelectedItem(item)
                                     End If
                                 Next

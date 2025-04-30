@@ -430,7 +430,7 @@ Namespace Controls
             End If
         End Sub
 
-        Protected Overrides Sub MakeBinding(folder As Folder)
+        Protected Overrides Async Function MakeBinding(folder As Folder) As Task
             If Not Me.PART_Ext Is Nothing Then
                 Me.PART_Ext.Folder = folder
             End If
@@ -438,8 +438,8 @@ Namespace Controls
                 Me.ColumnsIn = buildColumnsIn(folder)
             End If
 
-            MyBase.MakeBinding(folder)
-        End Sub
+            Await MyBase.MakeBinding(folder)
+        End Function
 
         Protected Overrides Sub Folder_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
             Select Case e.PropertyName

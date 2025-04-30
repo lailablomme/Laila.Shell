@@ -283,11 +283,7 @@ Namespace Controls
                     Dim flags As CMF = CMF.CMF_NORMAL
                     Dim shellFolder As IShellFolder = Nothing
 
-                    SyncLock folder._shellItemLock
-                        If Not folder.disposedValue Then
-                            shellFolder = folder.MakeIShellFolderOnCurrentThread()
-                        End If
-                    End SyncLock
+                    shellFolder = folder.MakeIShellFolderOnCurrentThread()
 
                     Try
                         If Not shellFolder Is Nothing Then
