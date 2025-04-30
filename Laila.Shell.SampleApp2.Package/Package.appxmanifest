@@ -9,7 +9,7 @@
   <Identity
     Name="ea8a7c68-b2d7-42eb-a994-af9adbab63f4"
     Publisher="CN=laila"
-    Version="0.0.62.0" />
+    Version="0.0.63.0" />
 
   <Properties>
     <DisplayName>Laila.Shell SampleApp 2 Package</DisplayName>
