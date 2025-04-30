@@ -92,12 +92,12 @@ Public Class Shell
         ' initialize com & ole
         Functions.OleInitialize(IntPtr.Zero)
 
-        ImageHelper.Load()
-
         Shell.NotificationMainThread = New Helpers.ThreadPool(1)
         Shell.NotificationThreadPool = New Helpers.ThreadPool(75)
         Shell.GlobalThreadPool = New Helpers.ThreadPool(100)
         Shell.DisposerThreadPool = New Helpers.ThreadPool(10)
+
+        ImageHelper.Load()
 
         ' thread for disposing items
         _disposerLoopThread = New Thread(
@@ -128,8 +128,8 @@ Public Class Shell
 
                                 ' don't hog the process
                                 i += 1
-                                If i Mod 25 = 0 Then
-                                    Thread.Sleep(250)
+                                If i Mod 10 = 0 Then
+                                    Thread.Sleep(150)
                                 End If
                             Next
                         End If

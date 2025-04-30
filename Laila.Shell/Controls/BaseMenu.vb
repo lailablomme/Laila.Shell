@@ -23,12 +23,12 @@ Namespace Controls
         Public Event CommandInvoked(sender As Object, e As CommandInvokedEventArgs)
         Public Event RenameRequest(sender As Object, e As RenameRequestEventArgs)
 
-        Public Property DefaultId As Tuple(Of Integer, String)
+        Public Property DefaultId As Tuple(Of Integer, String, Object)
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
         Protected _activeItems As List(Of Item)
         Protected _hbitmapsToDispose As HashSet(Of IntPtr) = New HashSet(Of IntPtr)()
-        Protected _invokedId As Tuple(Of Integer, String)
+        Protected _invokedId As Tuple(Of Integer, String, Object)
         Protected _isWaitingForCreate As Boolean
         Protected _renameRequestTimer As Timer
         Protected _thread As Helpers.ThreadPool
@@ -61,7 +61,7 @@ Namespace Controls
             End Using
         End Sub
 
-        Protected MustOverride Function DoRenameAfter(Tag As Tuple(Of Integer, String)) As Boolean
+        Protected MustOverride Function DoRenameAfter(Tag As Tuple(Of Integer, String, Object)) As Boolean
 
         Public Overrides Async Function Make() As Task
             If _wasMade Then Return
@@ -94,7 +94,7 @@ Namespace Controls
                     For Each c As Control In wireItems
                         If (TypeOf c Is MenuItem AndAlso CType(c, MenuItem).Items.Count = 0) _
                         OrElse TypeOf c Is ButtonBase Then
-                            If TypeOf c.Tag Is Tuple(Of Integer, String) Then
+                            If TypeOf c.Tag Is Tuple(Of Integer, String, Object) Then
                                 If TypeOf c Is System.Windows.Controls.Button Then
                                     AddHandler CType(c, System.Windows.Controls.Button).Click, AddressOf menuItem_Click
                                 ElseIf TypeOf c Is ToggleButton Then
@@ -121,11 +121,13 @@ Namespace Controls
             Me.IsOpen = False
         End Sub
 
-        Protected Sub invokeCommandDelayed(id As Tuple(Of Integer, String))
-            _invokedId = id
+        Protected Sub invokeCommandDelayed(id As Tuple(Of Integer, String, Object))
+            If _invokedId Is Nothing Then
+                _invokedId = id
+            End If
         End Sub
 
-        Public MustOverride Async Function InvokeCommand(id As Tuple(Of Integer, String)) As Task
+        Public MustOverride Async Function InvokeCommand(id As Tuple(Of Integer, String, Object)) As Task
 
         Protected Sub RaiseCommandInvoked(e As CommandInvokedEventArgs)
             RaiseEvent CommandInvoked(Me, e)
@@ -240,6 +242,7 @@ Namespace Controls
         End Sub
 
         Protected Class MenuItemData
+            Public Property ApplicationName As String
             Public Property Header As String
             Public Property Icon As BitmapSource
             Public Property Tag As Object

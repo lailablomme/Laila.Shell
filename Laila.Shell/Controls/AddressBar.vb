@@ -113,6 +113,9 @@ Namespace Controls
                 End Sub
         End Sub
 
+        Public Overrides Sub FocusChild()
+        End Sub
+
         Private Function HwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
             Select Case CType(msg, WM)
                 Case WM.NCLBUTTONDOWN, WM.NCMBUTTONDOWN, WM.NCRBUTTONDOWN

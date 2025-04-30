@@ -476,8 +476,23 @@ Namespace Interop
         ByRef clsid As Guid,
         ByVal pUnkOuter As IntPtr,
         ByVal dwClsContext As UInteger,
+        ByRef riid As Guid, ByRef ppv As IntPtr) As Integer
+        End Function
+        <DllImport("ole32.dll")>
+        Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
         ByRef riid As Guid,
         <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IGlobalInterfaceTable) As Integer
+        End Function
+        <DllImport("ole32.dll")>
+        Public Shared Function CoCreateInstance(
+        ByRef clsid As Guid,
+        ByVal pUnkOuter As IntPtr,
+        ByVal dwClsContext As UInteger,
+        ByRef riid As Guid,
+        <MarshalAs(UnmanagedType.Interface)> ByRef ppv As IExplorerCommand) As Integer
         End Function
         <DllImport("ole32.dll")>
         Public Shared Function CoCreateInstance(

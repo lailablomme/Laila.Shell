@@ -95,9 +95,10 @@ Namespace Controls
                 End Sub
 
             AddHandler Me.PART_ToggleButton.Unchecked,
-                Sub(s As Object, e As RoutedEventArgs)
+                Async Sub(s As Object, e As RoutedEventArgs)
                     If Me.IsExpanded Then
                         VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(3))
+                        Await Task.Delay(5)
                         _doIgnoreExpandCollapse = True
                         Me.IsExpanded = False
                         _doIgnoreExpandCollapse = False
@@ -111,9 +112,10 @@ Namespace Controls
                     End If
                 End Sub
             AddHandler Me.PART_ToggleButton.Checked,
-                Sub(s As Object, e As RoutedEventArgs)
+                Async Sub(s As Object, e As RoutedEventArgs)
                     If Not Me.IsExpanded Then
                         VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(3))
+                        Await Task.Delay(5)
                         _doIgnoreExpandCollapse = True
                         Me.IsExpanded = True
                         _doIgnoreExpandCollapse = False

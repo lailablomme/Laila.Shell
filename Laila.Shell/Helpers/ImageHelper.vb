@@ -15,6 +15,7 @@ Namespace Helpers
         Private Shared _icons As Dictionary(Of String, BitmapSource) = New Dictionary(Of String, BitmapSource)()
         Private Shared _icons2 As Dictionary(Of String, BitmapSource) = New Dictionary(Of String, BitmapSource)()
         Private Shared _overlayIconIndexes As Dictionary(Of Byte, Integer) = New Dictionary(Of Byte, Integer)()
+        Private Shared _overlayIconLock As Object = New Object()
         Private Shared _imageListSmall As IImageList
         Private Shared _imageListLarge As IImageList
         Private Shared _imageListExtraLarge As IImageList
@@ -88,11 +89,13 @@ Namespace Helpers
                 Dim index As Integer
                 UIHelper.OnUIThread(
                     Sub()
-                        If Not _overlayIconIndexes.ContainsKey(overlayIconIndex) Then
-                            _imageListSmall.GetOverlayImage(overlayIconIndex, index)
-                            _overlayIconIndexes.Add(overlayIconIndex, index)
-                        End If
-                    End Sub, Threading.DispatcherPriority.Send)
+                        SyncLock _overlayIconLock
+                            If Not _overlayIconIndexes.ContainsKey(overlayIconIndex) Then
+                                _imageListSmall.GetOverlayImage(overlayIconIndex, index)
+                                _overlayIconIndexes.Add(overlayIconIndex, index)
+                            End If
+                        End SyncLock
+                    End Sub)
             End If
 
             Return ImageHelper.GetIcon(_overlayIconIndexes(overlayIconIndex), size)
@@ -100,44 +103,46 @@ Namespace Helpers
 
         Public Shared Function GetIcon(index As Integer, size As Integer) As BitmapSource
             If Not _icons2.ContainsKey(String.Format("{0}_{1}", index, size)) Then
+                Dim hIcon As IntPtr
                 UIHelper.OnUIThread(
                     Sub()
-                        If Not _icons2.ContainsKey(String.Format("{0}_{1}", index, size)) Then
-                            Dim hIcon As IntPtr
+                        If size <= 16 Then
+                            _imageListSmall.GetIcon(index, 0, hIcon)
+                        ElseIf size <= 32 Then
+                            _imageListLarge.GetIcon(index, 0, hIcon)
+                        ElseIf size <= 48 Then
+                            _imageListExtraLarge.GetIcon(index, 0, hIcon)
+                        Else
+                            _imageListJumbo.GetIcon(index, 0, hIcon)
+                        End If
+                    End Sub)
+                Try
+                    Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
+                        Using bitmap = icon.ToBitmap()
+                            Dim hBitmap As IntPtr
                             Try
-                                If size <= 16 Then
-                                    _imageListSmall.GetIcon(index, 0, hIcon)
-                                ElseIf size <= 32 Then
-                                    _imageListLarge.GetIcon(index, 0, hIcon)
-                                ElseIf size <= 48 Then
-                                    _imageListExtraLarge.GetIcon(index, 0, hIcon)
-                                Else
-                                    _imageListJumbo.GetIcon(index, 0, hIcon)
-                                End If
-                                Using icon As System.Drawing.Icon = System.Drawing.Icon.FromHandle(hIcon)
-                                    Using bitmap = icon.ToBitmap()
-                                        Dim hBitmap As IntPtr
-                                        Try
-                                            hBitmap = bitmap.GetHbitmap()
-                                            Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                            image.Freeze()
-                                            _icons2.Add(String.Format("{0}_{1}", index, size), image)
-                                        Finally
-                                            If Not IntPtr.Zero.Equals(hBitmap) Then
-                                                Functions.DeleteObject(hBitmap)
-                                                hBitmap = IntPtr.Zero
-                                            End If
-                                        End Try
-                                    End Using
-                                End Using
+                                hBitmap = bitmap.GetHbitmap()
+                                Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                image.Freeze()
+                                SyncLock _overlayIconLock
+                                    If Not _icons2.ContainsKey(String.Format("{0}_{1}", index, size)) Then
+                                        _icons2.Add(String.Format("{0}_{1}", index, size), image)
+                                    End If
+                                End SyncLock
                             Finally
-                                If Not IntPtr.Zero.Equals(hIcon) Then
-                                    Functions.DestroyIcon(hIcon)
-                                    hIcon = IntPtr.Zero
+                                If Not IntPtr.Zero.Equals(hBitmap) Then
+                                    Functions.DeleteObject(hBitmap)
+                                    hBitmap = IntPtr.Zero
                                 End If
                             End Try
-                        End If
-                    End Sub, Threading.DispatcherPriority.Send)
+                        End Using
+                    End Using
+                Finally
+                    If Not IntPtr.Zero.Equals(hIcon) Then
+                        Functions.DestroyIcon(hIcon)
+                        hIcon = IntPtr.Zero
+                    End If
+                End Try
             End If
 
             Return _icons2(String.Format("{0}_{1}", index, size))

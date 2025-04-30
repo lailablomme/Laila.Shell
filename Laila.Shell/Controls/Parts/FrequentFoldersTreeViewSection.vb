@@ -81,28 +81,22 @@ Namespace Controls.Parts
 
             Select Case e.Event
                 Case SHCNE.RMDIR, SHCNE.DELETE
-                    UIHelper.OnUIThread(
-                        Sub()
-                            mustUpdate = Not Me.Items.FirstOrDefault(Function(i) _
-                                Not i.disposedValue _
-                                AndAlso Not i.FullPath Is Nothing _
-                                AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing
-                        End Sub)
+                    mustUpdate = Not Me.Items.ToList().FirstOrDefault(Function(i) _
+                        Not i.disposedValue _
+                        AndAlso Not i.FullPath Is Nothing _
+                        AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing
                 Case SHCNE.UPDATEDIR
-                    UIHelper.OnUIThread(
-                        Sub()
-                            mustUpdate = (Not Me.Items.FirstOrDefault(
-                                    Function(i)
-                                        If Not i.disposedValue Then
-                                            Return (Not i.Parent Is Nothing _
-                                                AndAlso Not i.Parent.FullPath Is Nothing _
-                                                AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
-                                        Else
-                                            Return False
-                                        End If
-                                    End Function) Is Nothing _
-                                OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath))
-                        End Sub)
+                    mustUpdate = (Not Me.Items.ToList().FirstOrDefault(
+                            Function(i)
+                                If Not i.disposedValue Then
+                                    Return (Not i.Parent Is Nothing _
+                                        AndAlso Not i.Parent.FullPath Is Nothing _
+                                        AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
+                                Else
+                                    Return False
+                                End If
+                            End Function) Is Nothing _
+                        OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath))
             End Select
 
             If mustUpdate Then

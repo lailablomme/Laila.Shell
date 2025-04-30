@@ -16,7 +16,8 @@ Namespace Behaviors
                 GetType(SharedSelectedItemsBehavior),
                 New PropertyMetadata(Nothing, AddressOf onSyncedSelectedItemsWithChanged))
 
-        Private Shared _listViews As List(Of Tuple(Of ListView, Point)) = New List(Of Tuple(Of ListView, Point))()
+        Public Shared Property ListViews As List(Of Tuple(Of ListView, Point)) = New List(Of Tuple(Of ListView, Point))()
+
         Private Shared _isWorking As Boolean
         Friend Shared Property IsSetInternally As Boolean
 
@@ -37,9 +38,9 @@ Namespace Behaviors
         End Function
 
         Private Shared Sub onSyncedSelectedItemsWithChanged(d As ListView, e As DependencyPropertyChangedEventArgs)
-            If Not _listViews.Exists(Function(i) i.Item1.Equals(d)) Then
-                If Not _listViews.Exists(Function(i) i.Item1.Equals(d)) Then
-                    _listViews.Add(New Tuple(Of ListView, Point)(d, New Point()))
+            If Not ListViews.Exists(Function(i) i.Item1.Equals(d)) Then
+                If Not ListViews.Exists(Function(i) i.Item1.Equals(d)) Then
+                    ListViews.Add(New Tuple(Of ListView, Point)(d, New Point()))
                     RemoveHandler d.SelectionChanged, AddressOf listView_OnSelectionChanged
                     AddHandler d.SelectionChanged, AddressOf listView_OnSelectionChanged
                     RemoveHandler d.RequestBringIntoView, AddressOf listView_RequestBringIntoView
@@ -73,7 +74,7 @@ Namespace Behaviors
 
             _isWorking = True
             If Not sharedSelectedItems Is Nothing Then
-                For Each lv In _listViews
+                For Each lv In ListViews
                     For Each item In lv.Item1.SelectedItems.Cast(Of Object).ToList()
                         If Not sharedSelectedItems.Contains(item) Then
                             lv.Item1.SelectedItems.Remove(item)
@@ -86,7 +87,7 @@ Namespace Behaviors
                     Next
                 Next
             Else
-                For Each lv In _listViews
+                For Each lv In ListViews
                     lv.Item1.SelectedItems.Clear()
                 Next
             End If
@@ -95,19 +96,19 @@ Namespace Behaviors
 
         Private Shared Sub listView_OnSelectionChanged(sender As Object, e As SelectionChangedEventArgs)
             If _isWorking Then Return
-            If _listViews.Count = 0 Then Return
+            If ListViews.Count = 0 Then Return
 
-            If _listViews.Exists(Function(t) t.Item2.X = 0 And t.Item2.Y = 0) Then
+            If ListViews.Exists(Function(t) t.Item2.X = 0 And t.Item2.Y = 0) Then
                 Dim parent As ListView = UIHelper.GetParentOfType(Of ListView)(sender)
                 If Not parent Is Nothing Then
                     For Each lv In UIHelper.FindVisualChildren(Of ListView)(parent)
-                        Dim t As Tuple(Of ListView, Point) = _listViews.FirstOrDefault(Function(i) i.Item1.Equals(lv))
-                        _listViews.Remove(t)
-                        _listViews.Add(New Tuple(Of ListView, Point)(lv, lv.TransformToAncestor(UIHelper.GetParentOfType(Of ListView)(lv)).Transform(New Point(0, 0))))
+                        Dim t As Tuple(Of ListView, Point) = ListViews.FirstOrDefault(Function(i) i.Item1.Equals(lv))
+                        ListViews.Remove(t)
+                        ListViews.Add(New Tuple(Of ListView, Point)(lv, lv.TransformToAncestor(UIHelper.GetParentOfType(Of ListView)(lv)).Transform(New Point(0, 0))))
                     Next
                 End If
-                For Each item In _listViews.Where(Function(t) UIHelper.GetParentOfType(Of ListView)(t.Item1) Is Nothing).ToList()
-                    _listViews.Remove(item)
+                For Each item In ListViews.Where(Function(t) UIHelper.GetParentOfType(Of ListView)(t.Item1) Is Nothing).ToList()
+                    ListViews.Remove(item)
                 Next
             End If
 
@@ -117,7 +118,7 @@ Namespace Behaviors
                         OrElse GetSyncedSelectedItemsWith(sender).IsSelecting _
                         OrElse IsSetInternally Then
                 ' handle CTRL-click to select multiple items
-                For Each lv In _listViews
+                For Each lv In ListViews
                     For Each item In lv.Item1.SelectedItems
                         If Not result.Contains(item) Then
                             result.Add(item)
@@ -126,7 +127,7 @@ Namespace Behaviors
                 Next
             ElseIf Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then
                 ' handle SHIFT-click to select multiple items
-                Dim listViewsSorted As List(Of ListView) = _listViews _
+                Dim listViewsSorted As List(Of ListView) = ListViews _
                             .OrderBy(Function(t) t.Item2.Y) _
                             .Select(Function(t) t.Item1).ToList()
                 Dim firstListView As ListView = listViewsSorted.FirstOrDefault(Function(lv) lv.SelectedItems.Count > 0)

@@ -107,5 +107,18 @@ Namespace Controls
             textAlignment = textAlignment.Left
             fontSize = textBlock.FontSize
         End Sub
+
+        Public Overrides Sub DoRename(item As Item)
+            Me.PART_ListBox.ScrollIntoView(item)
+            UIHelper.OnUIThread(
+                Sub()
+                End Sub, Threading.DispatcherPriority.ContextIdle)
+            Dim listBoxItem As ListBoxItem = Nothing
+            For Each listView In SharedSelectedItemsBehavior.ListViews
+                listBoxItem = listView.Item1.ItemContainerGenerator.ContainerFromItem(item)
+                If Not listBoxItem Is Nothing Then Exit For
+            Next
+            DoRename(listBoxItem)
+        End Sub
     End Class
 End Namespace

@@ -348,7 +348,7 @@
                                                     <converters:DoubleConverter x:Key="doubleConverter" />
                                                 </Grid.Resources>
                                                 <TextBlock Grid.Row="0" TextWrapping="Wrap" HorizontalAlignment="Left" MaxHeight="34"  
-                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" MaxWidth="{Binding MaxWidth, ElementName=PART_TextGrid}"
+                                                           Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" Width="{Binding MaxWidth, ElementName=PART_TextGrid}"
                                                            x:Name="PART_DisplayName">
                                                     <TextBlock.Style>
                                                         <Style>

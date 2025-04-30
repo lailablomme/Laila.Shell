@@ -28,20 +28,20 @@ Namespace Controls
         Private _contextMenu As IContextMenu
         Private _contextMenu2 As IContextMenu2
         Private _contextMenu3 As IContextMenu3
-        Private _hMenu As IntPtr
+        Protected _hMenu As IntPtr
 
-        Protected Overrides Function DoRenameAfter(Tag As Tuple(Of Integer, String)) As Boolean
+        Protected Overrides Function DoRenameAfter(Tag As Tuple(Of Integer, String, Object)) As Boolean
             Dim newMenuItem As MenuItem = Me.Items.Cast(Of Control) _
                 .FirstOrDefault(Function(c) TypeOf c Is MenuItem _
                     AndAlso Not c.Tag Is Nothing _
-                    AndAlso CType(c.Tag, Tuple(Of Integer, String)).Item2 = "New")
+                    AndAlso CType(c.Tag, Tuple(Of Integer, String, Object)).Item2 = "New")
 
             Return Not newMenuItem Is Nothing AndAlso
                 Not newMenuItem.Items.Cast(Of Control).FirstOrDefault(
                     Function(c) _invokedId.Equals(c.Tag)) Is Nothing
         End Function
 
-        Public Function MakeButton(tag As Tuple(Of Integer, String), toolTip As String) As Button
+        Public Function MakeButton(tag As Tuple(Of Integer, String, Object), toolTip As String) As Button
             Dim button As Button = New Button()
             Dim image As Image = New Image()
             image.Width = 16
@@ -60,7 +60,7 @@ Namespace Controls
             Return button
         End Function
 
-        Public Function MakeToggleButton(tag As Tuple(Of Integer, String), toolTip As String, isChecked As Boolean) As ToggleButton
+        Public Function MakeToggleButton(tag As Tuple(Of Integer, String, Object), toolTip As String, isChecked As Boolean) As ToggleButton
             Dim button As ToggleButton = New ToggleButton()
             Dim image As Image = New Image()
             image.Width = 16
@@ -111,7 +111,7 @@ Namespace Controls
             Return result
         End Function
 
-        Private Function getMenuItemData(hMenu2 As IntPtr, parentIndex As Integer) As List(Of MenuItemData)
+        Protected Function getMenuItemData(hMenu2 As IntPtr, parentIndex As Integer) As List(Of MenuItemData)
             Dim result As List(Of MenuItemData) = New List(Of MenuItemData)()
 
             If Not _contextMenu Is Nothing AndAlso Not IntPtr.Zero.Equals(hMenu2) Then
@@ -215,7 +215,7 @@ Namespace Controls
                         Dim menuItem As MenuItemData = New MenuItemData() With {
                             .Header = header.Replace("&", "_"),
                             .Icon = bitmapSource,
-                            .Tag = New Tuple(Of Integer, String)(id, verb),
+                            .Tag = New Tuple(Of Integer, String, Object)(id, verb, Nothing),
                             .IsEnabled = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DISABLED), False, True),
                             .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
                         }
@@ -283,11 +283,7 @@ Namespace Controls
                     Dim flags As CMF = CMF.CMF_NORMAL
                     Dim shellFolder As IShellFolder = Nothing
 
-                    SyncLock folder._shellItemLock
-                        If Not folder.disposedValue Then
-                            shellFolder = folder.MakeIShellFolderOnCurrentThread()
-                        End If
-                    End SyncLock
+                    shellFolder = folder.MakeIShellFolderOnCurrentThread()
 
                     Try
                         If Not shellFolder Is Nothing Then
@@ -354,7 +350,7 @@ Namespace Controls
             tcs.Task.Wait()
         End Sub
 
-        Public Overrides Async Function InvokeCommand(id As Tuple(Of Integer, String)) As Task
+        Public Overrides Async Function InvokeCommand(id As Tuple(Of Integer, String, Object)) As Task
             If id Is Nothing Then Return
 
             Await Make()
@@ -406,7 +402,7 @@ Namespace Controls
                 _thread.Add(
                     Sub()
                         If id.Item2 = "properties" AndAlso selectedItems.Count > 1 Then
-                            id = New Tuple(Of Integer, String)(0, "Laila_Shell_MultiFileProperties")
+                            id = New Tuple(Of Integer, String, Object)(0, "Laila_Shell_MultiFileProperties", Nothing)
                         End If
 
                         Select Case id.Item2

@@ -136,10 +136,12 @@ Namespace Controls
                                     Else
                                         ' the current folder disappeared -- switch to parent
                                         Debug.WriteLine("replacement not found")
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If f.IsExisting Then Me.Folder = f
-                                            End Sub)
+                                        If f.IsExisting Then
+                                            UIHelper.OnUIThread(
+                                                Sub()
+                                                    Me.Folder = f
+                                                End Sub)
+                                        End If
                                     End If
                                 End If
                             End Sub)
@@ -164,18 +166,18 @@ Namespace Controls
                     End While
                     If isDeleted Then
                         _deletedFullName = selectedItem.FullPath
-                        UIHelper.OnUIThread(
-                            Async Sub()
-                                ' get the first available parent  
-                                Dim f As Folder = selectedItem.LogicalParent
-                                If Not f Is Nothing Then
+                        ' get the first available parent  
+                        Dim f As Folder = selectedItem.LogicalParent
+                        If Not f Is Nothing Then
+                            UIHelper.OnUIThread(
+                                Async Sub()
                                     Await Task.Delay(300) ' wait for .zip operations/folder refresh to complete
-                                    If _deletedFullName?.Equals(selectedItem.FullPath) Then
+                                    If _deletedFullName?.Equals(selectedItem._fullPath) Then
                                         Debug.WriteLine("item was deleted")
-                                        If f.IsExisting Then Me.Folder = f ' load it
+                                        Me.Folder = f ' load it
                                     End If
-                                End If
-                            End Sub)
+                                End Sub)
+                        End If
                     End If
             End Select
         End Sub
@@ -283,7 +285,7 @@ Namespace Controls
         End Property
 
         Private Async Sub updateStatusText()
-            Await Task.Delay(100)
+            'Await Task.Delay(100)
             If Not Me.Folder Is Nothing Then
                 Dim text As String = String.Format("{0} {1}", Me.Folder.Items.Count, If(Me.Folder.Items.Count = 1, "item", "items"))
                 If Not Me.SelectedItems Is Nothing AndAlso Not Me.SelectedItems.Count = 0 Then
@@ -396,7 +398,7 @@ Namespace Controls
                 Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
                 If hasFocus Then Me.ActiveView.Focus()
                 Me.ActiveView.Folder = folder
-                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder)
                 folderViewState.ActiveView = newValue
                 folderViewState.Persist()
                 BindingOperations.SetBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty, New Binding("SelectedItems") With {.Source = Me})

@@ -53,8 +53,27 @@ Public Class Item
     Friend _propertiesByKey As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Friend _shellItem2 As IShellItem2
-    Friend _shellItemLock As Object = New Object()
-    Friend _shellItemLock2 As Object = New Object()
+    Protected _shellItemLockMakeIShellFolderOnCurrentThread As Object = New Object()
+    Friend _shellItemLockDisplayName As Object = New Object()
+    Friend _shellItemLockRenameItem As Object = New Object()
+    Friend _shellItemLockPreviewer As Object = New Object()
+    Protected _shellItemLockShellFolder As Object = New Object()
+    Friend _shellItemLockEnumShellItems As Object = New Object()
+    Protected _shellItemLockHasSubFolders As Object = New Object()
+    Friend _shellItemLockEnumRefresh As Object = New Object()
+    Private _shellItemLockPidl As Object = New Object()
+    Private _shellItemLockParent As Object = New Object()
+    Private _shellItemLockIcon As Object = New Object()
+    Private _shellItemLockImage As Object = New Object()
+    Private _shellItemLockHasThumbnail As Object = New Object()
+    Private _shellItemLockIsExisting As Object = New Object()
+    Private _shellItemLockRenameUpdate As Object = New Object()
+    Private _shellItemLockAttributes As Object = New Object()
+    Friend _shellItemLockShellLink As Object = New Object()
+    Friend _shellItemLockSearchFolder As Object = New Object()
+    Protected _shellItemLockColumnManager As Object = New Object()
+    Private _shellItemLockFullPath As Object = New Object()
+    Private _shellItemLockProperties As Object = New Object()
     Private _treeRootIndex As Long = -1
     Private _treeSortPrefix As String = String.Empty
     Friend disposedValue As Boolean
@@ -206,7 +225,7 @@ Public Class Item
     Public Overridable ReadOnly Property Pidl As Pidl
         Get
             If _pidl Is Nothing Then
-                SyncLock _shellItemLock
+                SyncLock _shellItemLockPidl
                     If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
                         Dim pidlptr As IntPtr
                         Functions.SHGetIDListFromObject(_shellItem2, pidlptr)
@@ -340,76 +359,116 @@ Public Class Item
         Dim oldPropertiesByKey As Dictionary(Of String, [Property]) = Nothing
         Dim oldPropertiesByCanonicalName As Dictionary(Of String, [Property]) = Nothing
         Dim oldItemNameDisplaySortValue As String = Nothing
-        Dim oldAttr As SFGAO = _attributes
+        Dim oldAttr As SFGAO = Me.Attributes
         Dim oldFullPath As String = Nothing
         Dim oldPidl As Pidl = Nothing
         Dim oldPidlAsString As String = Nothing
         Dim oldShellItem As IShellItem2 = Nothing
         Dim attr As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
+        Dim didRefresh As Boolean = False
 
-        SyncLock _shellItemLock
-            SyncLock _shellItemLock2
-                If Not disposedValue Then
-                    'oldItemNameDisplaySortValue = Me.ItemNameDisplaySortValue
+        SyncLock _shellItemLockMakeIShellFolderOnCurrentThread
+            SyncLock _shellItemLockDisplayName
+                SyncLock _shellItemLockRenameItem
+                    SyncLock _shellItemLockPreviewer
+                        SyncLock _shellItemLockShellFolder
+                            SyncLock _shellItemLockEnumShellItems
+                                SyncLock _shellItemLockHasSubFolders
+                                    SyncLock _shellItemLockEnumRefresh
+                                        SyncLock _shellItemLockPidl
+                                            SyncLock _shellItemLockParent
+                                                SyncLock _shellItemLockIcon
+                                                    SyncLock _shellItemLockImage
+                                                        SyncLock _shellItemLockHasThumbnail
+                                                            SyncLock _shellItemLockIsExisting
+                                                                SyncLock _shellItemLockAttributes
+                                                                    SyncLock _shellItemLockRenameUpdate
+                                                                        SyncLock _shellItemLockShellLink
+                                                                            SyncLock _shellItemLockSearchFolder
+                                                                                SyncLock _shellItemLockColumnManager
+                                                                                    SyncLock _shellItemLockFullPath
+                                                                                        SyncLock _shellItemLockProperties
+                                                                                            If Not disposedValue Then
+                                                                                                'oldItemNameDisplaySortValue = Me.ItemNameDisplaySortValue
 
-                    oldFullPath = _fullPath
-                    oldPidl = _pidl
-                    oldPidlAsString = oldPidl?.ToString()
+                                                                                                oldFullPath = _fullPath
+                                                                                                oldPidl = _pidl
+                                                                                                oldPidlAsString = oldPidl?.ToString()
 
-                    If Not newPidl Is Nothing Then
-                        _pidl = newPidl
-                    End If
-                    _fullPath = Nothing
+                                                                                                If Not newPidl Is Nothing Then
+                                                                                                    _pidl = newPidl
+                                                                                                End If
+                                                                                                _fullPath = Nothing
 
-                    oldShellItem = _shellItem2
-                    If newShellItem Is Nothing Then
-                        newShellItem = Me.GetNewShellItem()
-                    Else
-                        _livesOnThreadId = threadId.Value
-                    End If
-                    _shellItem2 = newShellItem
+                                                                                                oldShellItem = _shellItem2
+                                                                                                If newShellItem Is Nothing Then
+                                                                                                    newShellItem = Me.GetNewShellItem()
+                                                                                                Else
+                                                                                                    _livesOnThreadId = threadId
+                                                                                                End If
+                                                                                                _shellItem2 = newShellItem
 
-                    If Not newShellItem Is Nothing Then
-                        _propertiesLock.Wait()
-                        Try
-                            oldPropertiesByKey = _propertiesByKey
-                            oldPropertiesByCanonicalName = _propertiesByCanonicalName
-                            _propertiesByKey = New Dictionary(Of String, [Property])()
-                            _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
-                            _contentViewModeProperties = Nothing
-                            If _hasCustomProperties Then
-                                For Each [property] In oldPropertiesByKey.Values
-                                    If [property].IsCustom Then
-                                        _propertiesByKey.Add([property].Key.ToString(), [property])
-                                    End If
-                                Next
-                            End If
-                        Finally
-                            _propertiesLock.Release()
-                        End Try
+                                                                                                If Not newShellItem Is Nothing Then
+                                                                                                    _propertiesLock.Wait()
+                                                                                                    Try
+                                                                                                        oldPropertiesByKey = _propertiesByKey
+                                                                                                        oldPropertiesByCanonicalName = _propertiesByCanonicalName
+                                                                                                        _propertiesByKey = New Dictionary(Of String, [Property])()
+                                                                                                        _propertiesByCanonicalName = New Dictionary(Of String, [Property])()
+                                                                                                        _contentViewModeProperties = Nothing
+                                                                                                        If _hasCustomProperties Then
+                                                                                                            For Each [property] In oldPropertiesByKey.Values
+                                                                                                                If [property].IsCustom Then
+                                                                                                                    _propertiesByKey.Add([property].Key.ToString(), [property])
+                                                                                                                End If
+                                                                                                            Next
+                                                                                                        End If
+                                                                                                    Finally
+                                                                                                        _propertiesLock.Release()
+                                                                                                    End Try
 
-                        _displayName = Nothing
-                        _fullPath = Me.FullPath
-                        _attributes = 0
-                        _shellItem2.GetAttributes(attr, attr)
-                        '_attributes = Me.Attributes
+                                                                                                    _displayName = Nothing
+                                                                                                    _fullPath = Me.FullPath
+                                                                                                    _attributes = 0
+                                                                                                    _shellItem2.GetAttributes(attr, attr)
+                                                                                                    didRefresh = True
+                                                                                                    '_attributes = Me.Attributes
 
-                        ' preload System_StorageProviderUIStatus images
-                        'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
-                        '    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
-                        'If Not System_StorageProviderUIStatus Is Nothing _
-                        '            AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
-                        '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
-                        'End If
-                    End If
-                Else
-                    Debug.WriteLine(Me.FullPath & "  " & disposedValue)
-                End If
+                                                                                                    ' preload System_StorageProviderUIStatus images
+                                                                                                    'Dim System_StorageProviderUIStatus As System_StorageProviderUIStatusProperty _
+                                                                                                    '    = Me.PropertiesByKey(System_StorageProviderUIStatusProperty.System_StorageProviderUIStatusKey)
+                                                                                                    'If Not System_StorageProviderUIStatus Is Nothing _
+                                                                                                    '            AndAlso System_StorageProviderUIStatus.RawValue.vt <> 0 Then
+                                                                                                    '    Dim imgrefs As String() = System_StorageProviderUIStatus.ImageReferences16
+                                                                                                    'End If
+                                                                                                End If
+                                                                                            Else
+                                                                                                Debug.WriteLine(Me.FullPath & "  " & disposedValue)
+                                                                                            End If
 
-                If Not oldShellItem Is Nothing AndAlso Not oldShellItem.Equals(newShellItem) Then
-                    Marshal.ReleaseComObject(oldShellItem)
-                    oldShellItem = Nothing
-                End If
+                                                                                            If Not oldShellItem Is Nothing AndAlso Not oldShellItem.Equals(newShellItem) Then
+                                                                                                Marshal.ReleaseComObject(oldShellItem)
+                                                                                                oldShellItem = Nothing
+                                                                                            End If
+                                                                                        End SyncLock
+                                                                                    End SyncLock
+                                                                                End SyncLock
+                                                                            End SyncLock
+                                                                        End SyncLock
+                                                                    End SyncLock
+                                                                End SyncLock
+                                                            End SyncLock
+                                                        End SyncLock
+                                                    End SyncLock
+                                                End SyncLock
+                                            End SyncLock
+                                        End SyncLock
+                                    End SyncLock
+                                End SyncLock
+                            End SyncLock
+                        End SyncLock
+                    End SyncLock
+                End SyncLock
             End SyncLock
         End SyncLock
 
@@ -430,6 +489,8 @@ Public Class Item
             oldPidl.Dispose()
             oldPidl = Nothing
         End If
+
+        If Not didRefresh Then Return
 
         If Not _logicalParent Is Nothing AndAlso Not oldFullPath?.Equals(Me.FullPath) Then
             SyncLock _logicalParent._previousFullPathsLock
@@ -457,6 +518,8 @@ Public Class Item
                 AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> attr.HasFlag(SFGAO.FOLDER) _
                 OrElse oldAttr.HasFlag(SFGAO.LINK) <> attr.HasFlag(SFGAO.LINK)) Then
                 Debug.WriteLine($"Cloning {Me.FullPath}")
+                Debug.WriteLine($"(FOLDER={oldAttr.HasFlag(SFGAO.FOLDER)} vs {attr.HasFlag(SFGAO.FOLDER)})")
+                Debug.WriteLine($"(LINK={oldAttr.HasFlag(SFGAO.LINK)} vs {attr.HasFlag(SFGAO.LINK)})")
                 Dim newItem As Item = Me.Clone()
                 If Not newItem Is Nothing Then
                     Debug.WriteLine($"Re-adding {Me.FullPath}")
@@ -540,7 +603,7 @@ Public Class Item
     Public Overridable ReadOnly Property FullPath As String
         Get
             If String.IsNullOrWhiteSpace(_fullPath) Then
-                SyncLock _shellItemLock2
+                SyncLock _shellItemLockFullPath
                     If Not disposedValue Then
                         Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
                     End If
@@ -588,7 +651,7 @@ Public Class Item
             ' if we're not disposed and we're not the desktop...
             If Not disposedValue AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
                 If Not _parent Is Nothing Then ' we've still got a parent object
-                    SyncLock _parent._shellItemLock
+                    SyncLock _parent._shellItemLockParent
                         ' if still alive...
                         If Not _parent.disposedValue Then
                             ' extend lifetime
@@ -607,7 +670,7 @@ Public Class Item
                     Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId() ' get an availble thread for this parent object
                     _parent = Shell.GlobalThreadPool.Run(
                         Function() As Folder
-                            SyncLock _shellItemLock
+                            SyncLock _shellItemLockParent
                                 If Not Me.ShellItem2 Is Nothing Then
                                     Me.ShellItem2.GetParent(parentShellItem2) ' get our parent folder, all objects must be created on a STA thread
                                 End If
@@ -757,7 +820,7 @@ Public Class Item
         Get
             Dim hbitmap As IntPtr
             Try
-                SyncLock _shellItemLock
+                SyncLock _shellItemLockIcon
                     If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                         Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource = Nothing
                         If Not Settings.IsWindows8_1OrLower Then
@@ -808,7 +871,7 @@ Public Class Item
         Get
             Dim hbitmap As IntPtr
             Try
-                SyncLock _shellItemLock
+                SyncLock _shellItemLockImage
                     If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                         Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource = Nothing
                         If Not Settings.IsWindows8_1OrLower Then
@@ -909,7 +972,7 @@ Public Class Item
         Get
             Dim hbitmap As IntPtr
             Try
-                SyncLock _shellItemLock
+                SyncLock _shellItemLockHasThumbnail
                     If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                         Dim h As HRESULT
                         h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(1, 1), SIIGBF.SIIGBF_THUMBNAILONLY, hbitmap)
@@ -957,7 +1020,7 @@ Public Class Item
         Get
             ' get displayname?
             If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
-                SyncLock _shellItemLock2
+                SyncLock _shellItemLockDisplayName
                     If String.IsNullOrWhiteSpace(_displayName) AndAlso Not disposedValue Then
                         Me.ShellItem2.GetDisplayName(SHGDN.NORMAL, _displayName)
 
@@ -1061,7 +1124,7 @@ Public Class Item
     Public ReadOnly Property IsExisting As Boolean
         Get
             Dim attr As SFGAO = SFGAO.VALIDATE
-            SyncLock _shellItemLock
+            SyncLock _shellItemLockIsExisting
                 Return If(ShellItem2?.GetAttributes(attr, attr), HRESULT.S_FALSE) = HRESULT.S_FALSE
             End SyncLock
         End Get
@@ -1097,13 +1160,13 @@ Public Class Item
     Public Overridable ReadOnly Property Attributes As SFGAO
         Get
             If _attributes = 0 AndAlso Not disposedValue Then
-                SyncLock _shellItemLock
+                SyncLock _shellItemLockAttributes
                     If Not disposedValue Then
-                        _attributes = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
+                        Dim attr As SFGAO = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANLINK Or SFGAO.CANRENAME _
                                 Or SFGAO.CANDELETE Or SFGAO.DROPTARGET Or SFGAO.ENCRYPTED Or SFGAO.ISSLOW _
                                 Or SFGAO.LINK Or SFGAO.SHARE Or SFGAO.RDONLY Or SFGAO.HIDDEN Or SFGAO.FOLDER _
                                 Or SFGAO.FILESYSTEM Or SFGAO.COMPRESSED Or SFGAO.STORAGEANCESTOR
-                        Me.ShellItem2?.GetAttributes(_attributes, _attributes)
+                        Me.ShellItem2?.GetAttributes(attr, _attributes)
                     End If
                 End SyncLock
             End If
@@ -1256,7 +1319,7 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(key.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock2
+                    SyncLock _shellItemLockProperties
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                             [property] = [Property].FromKey(key, Me.ShellItem2)
                         Else
@@ -1289,7 +1352,7 @@ Public Class Item
             Try
                 If Not _propertiesByKey.TryGetValue(propertyKey.ToString(), [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock2
+                    SyncLock _shellItemLockProperties
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                             [property] = [Property].FromKey(propertyKey, Me.ShellItem2)
                         Else
@@ -1322,7 +1385,7 @@ Public Class Item
             Try
                 If Not _propertiesByCanonicalName.TryGetValue(canonicalName, [property]) AndAlso Not disposedValue Then
                     _propertiesLock.Release()
-                    SyncLock _shellItemLock2
+                    SyncLock _shellItemLockProperties
                         If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                             [property] = [Property].FromCanonicalName(canonicalName, Me.ShellItem2)
                         Else
@@ -1546,16 +1609,14 @@ Public Class Item
                                 Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
                                 Dim newShellItem As IShellItem2 = Nothing
                                 Dim newPidl As Pidl = Nothing
-                                SyncLock e.Item2._shellItemLock
-                                    SyncLock e.Item2._shellItemLock2
-                                        If Not e.Item2.disposedValue Then
-                                            newShellItem = e.Item2.ShellItem2
-                                            newPidl = e.Item2.Pidl?.Clone()
-                                            ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
-                                            e.Item2._shellItem2 = Nothing
-                                            Me.Refresh(newShellItem, newPidl,, e.Item1._livesOnThreadId) ' refresh this item
-                                        End If
-                                    End SyncLock
+                                SyncLock e.Item2._shellItemLockRenameUpdate
+                                    If Not e.Item2.disposedValue Then
+                                        newShellItem = e.Item2.ShellItem2
+                                        newPidl = e.Item2.Pidl?.Clone()
+                                        ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
+                                        e.Item2._shellItem2 = Nothing
+                                        Me.Refresh(newShellItem, newPidl,, e.Item2._livesOnThreadId) ' refresh this item
+                                    End If
                                 End SyncLock
 
                                 If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
@@ -1591,46 +1652,84 @@ Public Class Item
         Dim oldShellItem As IShellItem2 = Nothing
         Dim wasDisposed As Boolean = disposedValue
 
-        SyncLock _shellItemLock
-            SyncLock _shellItemLock2
-                If Not disposedValue Then
-                    disposedValue = True
-                    Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
-                    'Debug.WriteLine((New System.Diagnostics.StackTrace).ToString())
+        SyncLock _shellItemLockMakeIShellFolderOnCurrentThread
+            SyncLock _shellItemLockDisplayName
+                SyncLock _shellItemLockRenameItem
+                    SyncLock _shellItemLockPreviewer
+                        SyncLock _shellItemLockShellFolder
+                            SyncLock _shellItemLockEnumShellItems
+                                SyncLock _shellItemLockHasSubFolders
+                                    SyncLock _shellItemLockEnumRefresh
+                                        SyncLock _shellItemLockPidl
+                                            SyncLock _shellItemLockParent
+                                                SyncLock _shellItemLockIcon
+                                                    SyncLock _shellItemLockImage
+                                                        SyncLock _shellItemLockHasThumbnail
+                                                            SyncLock _shellItemLockIsExisting
+                                                                SyncLock _shellItemLockAttributes
+                                                                    SyncLock _shellItemLockRenameUpdate
+                                                                        SyncLock _shellItemLockShellLink
+                                                                            SyncLock _shellItemLockSearchFolder
+                                                                                SyncLock _shellItemLockColumnManager
+                                                                                    SyncLock _shellItemLockFullPath
+                                                                                        SyncLock _shellItemLockProperties
+                                                                                            If Not disposedValue Then
+                                                                                                disposedValue = True
+                                                                                                Debug.WriteLine("Disposing " & _objectId & ": " & Me.FullPath)
+                                                                                                'Debug.WriteLine((New System.Diagnostics.StackTrace).ToString())
 
-                    If disposing Then
-                        ' dispose managed state (managed objects):
+                                                                                                If disposing Then
+                                                                                                    ' dispose managed state (managed objects):
 
-                        If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                            ' extensive cleanup, because we're still live:
+                                                                                                    If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                                                                                                        ' extensive cleanup, because we're still live:
 
-                            ' unsubscribe from notifications
-                            If Not _notifier Is Nothing Then
-                                _notifier.UnsubscribeFromNotifications(Me)
-                            Else
-                                Shell.UnsubscribeFromNotifications(Me)
-                            End If
-                            RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
+                                                                                                        ' unsubscribe from notifications
+                                                                                                        If Not _notifier Is Nothing Then
+                                                                                                            _notifier.UnsubscribeFromNotifications(Me)
+                                                                                                        Else
+                                                                                                            Shell.UnsubscribeFromNotifications(Me)
+                                                                                                        End If
+                                                                                                        RemoveHandler Shell.Settings.PropertyChanged, AddressOf Settings_PropertyChanged
 
-                            ' switch shellitem, we'll release it later
-                            oldShellItem = _shellItem2
-                            _shellItem2 = Nothing
+                                                                                                        ' switch shellitem, we'll release it later
+                                                                                                        oldShellItem = _shellItem2
+                                                                                                        _shellItem2 = Nothing
 
-                            ' remove from cache
-                            Shell.RemoveFromItemsCache(Me)
-                        Else
-                            ' quick cleanup, because we're shutting down anyway and it has to go fast:
+                                                                                                        ' remove from cache
+                                                                                                        Shell.RemoveFromItemsCache(Me)
+                                                                                                    Else
+                                                                                                        ' quick cleanup, because we're shutting down anyway and it has to go fast:
 
-                            ' release shellitem
-                            If Not _shellItem2 Is Nothing Then
-                                Marshal.ReleaseComObject(_shellItem2)
-                                _shellItem2 = Nothing
-                            End If
-                        End If
+                                                                                                        ' release shellitem
+                                                                                                        If Not _shellItem2 Is Nothing Then
+                                                                                                            Marshal.ReleaseComObject(_shellItem2)
+                                                                                                            _shellItem2 = Nothing
+                                                                                                        End If
+                                                                                                    End If
 
-                        ' free unmanaged resources (unmanaged objects) and override finalizer
-                    End If
-                End If
+                                                                                                    ' free unmanaged resources (unmanaged objects) and override finalizer
+                                                                                                End If
+                                                                                            End If
+                                                                                        End SyncLock
+                                                                                    End SyncLock
+                                                                                End SyncLock
+                                                                            End SyncLock
+                                                                        End SyncLock
+                                                                    End SyncLock
+                                                                End SyncLock
+                                                            End SyncLock
+                                                        End SyncLock
+                                                    End SyncLock
+                                                End SyncLock
+                                            End SyncLock
+                                        End SyncLock
+                                    End SyncLock
+                                End SyncLock
+                            End SyncLock
+                        End SyncLock
+                    End SyncLock
+                End SyncLock
             End SyncLock
         End SyncLock
 
@@ -1642,9 +1741,9 @@ Public Class Item
                 If Me.IsReadyForDispose Then
                     _logicalParent._items.RemoveWithoutNotifying(Me)
                 Else
-                    SyncLock _logicalParent._items.Lock
-                        _logicalParent._items.Remove(Me)
-                    End SyncLock
+                    'SyncLock _logicalParent._items.Lock
+                    _logicalParent._items.Remove(Me)
+                    'End SyncLock
                 End If
                 SyncLock _logicalParent._previousFullPathsLock
                     If Not String.IsNullOrWhiteSpace(_fullPath) _

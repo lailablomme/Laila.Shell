@@ -92,6 +92,15 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
       <Isolated>false</Isolated>
       <EmbedInteropTypes>true</EmbedInteropTypes>
     </COMReference>
+    <COMReference Include="SHDocVw">
+      <WrapperTool>tlbimp</WrapperTool>
+      <VersionMinor>1</VersionMinor>
+      <VersionMajor>1</VersionMajor>
+      <Guid>eab22ac0-30c1-11cf-a7eb-0000c05bae0b</Guid>
+      <Lcid>0</Lcid>
+      <Isolated>false</Isolated>
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -102,7 +111,7 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Laila.AutoCompleteTextBox" Version="2.0.16" />
+    <PackageReference Include="Laila.AutoCompleteTextBox" Version="2.0.21" />
     <PackageReference Include="Laila.BalloonTip" Version="1.0.4" />
     <PackageReference Include="LiteDB" Version="5.0.21" />
 	  <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
@@ -183,9 +192,10 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
 			<PackagePath>runtimes/win-x64/native/</PackagePath>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Include="$(OutputPath)Laila.Shell.WinRT.dll">
+		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\Laila.Shell.WinRT.dll">
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Include="$(OutputPath)Laila.Shell.comhost.dll">
 			<Pack>true</Pack>
@@ -199,17 +209,20 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
 		</None>
-		<None Include="$(OutputPath)Microsoft.Windows.SDK.NET.dll">
+		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\Microsoft.Windows.SDK.NET.dll">
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Include="$(OutputPath)WinRT.Runtime.dll">
+		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\WinRT.Runtime.dll">
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Laila.Shell.WinRT.Interface\Laila.Shell.WinRT.Interface.csproj" />
 	  <ProjectReference Include="..\Laila.VirtualizingWrapPanel\Laila.VirtualizingWrapPanel.csproj" />
 	</ItemGroup>
 	

@@ -5,7 +5,7 @@ using Windows.Storage;
 
 namespace Laila.Shell.WinRT
 {
-    public class ModernShare
+    public sealed class ModernShare
     {
         public void ShowShareUI(IEnumerable<string> filePaths, Window window)
         {

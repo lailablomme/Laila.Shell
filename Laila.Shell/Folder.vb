@@ -162,7 +162,11 @@ Public Class Folder
     ''' </summary>
     ''' <returns>A new IShellFolder, created on the calling thread</returns>
     Friend Overridable Function MakeIShellFolderOnCurrentThread() As IShellFolderForIContextMenu
-        Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+        SyncLock _shellItemLockMakeIShellFolderOnCurrentThread
+            If Not disposedValue Then
+                Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
+            End If
+        End SyncLock
     End Function
 
     ''' <summary>
@@ -174,7 +178,7 @@ Public Class Folder
             If _shellFolder Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                 Shell.GlobalThreadPool.Run(
                     Sub()
-                        SyncLock _shellItemLock
+                        SyncLock _shellItemLockShellFolder
                             If _shellFolder Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                                 _shellFolder = Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
                             End If
@@ -417,7 +421,7 @@ Public Class Folder
             propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
             If shellItem2 Is Nothing Then
-                SyncLock _shellItemLock
+                SyncLock _shellItemLockEnumShellItems
                     If Not Me.ShellItem2 Is Nothing Then
                         CType(Me.ShellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
                             (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
@@ -524,7 +528,7 @@ Public Class Folder
             var.union.uintVal = flags
             propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
-            SyncLock _shellItemLock
+            SyncLock _shellItemLockEnumShellItems
                 If Not Me.ShellItem2 Is Nothing Then
                     CType(Me.ShellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
                         (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
@@ -585,7 +589,7 @@ Public Class Folder
         Get
             Return Shell.GlobalThreadPool.Run(
                 Function() As IShellView
-                    SyncLock _shellItemLock2
+                    SyncLock _shellItemLockColumnManager
                         Dim shellView As IShellView = Nothing
                         If Not disposedValue AndAlso Not Me.ShellFolder Is Nothing Then
                             Me.ShellFolder.CreateViewObject(IntPtr.Zero, Guids.IID_IShellView, shellView)
@@ -657,7 +661,7 @@ Public Class Folder
                         Return _hasSubFolders.Value
                     ElseIf Not disposedValue Then
                         Dim attr As SFGAO = SFGAO.HASSUBFOLDER
-                        SyncLock _shellItemLock
+                        SyncLock _shellItemLockHasSubFolders
                             If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                                 Me.ShellItem2.GetAttributes(attr, attr)
                             Else
@@ -687,7 +691,7 @@ Public Class Folder
         Dim menuItems As List(Of Control) = menu.GetMenuItems()
         Dim lastMenuItem As Control = Nothing
         For Each item In menuItems
-            Dim verb As String = If(Not item.Tag Is Nothing, CType(item.Tag, Tuple(Of Integer, String)).Item2, Nothing)
+            Dim verb As String = If(Not item.Tag Is Nothing, CType(item.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing)
             Select Case verb
                 Case "copy", "cut", "paste", "delete", "pintohome", "rename"
                     ' don't add these
@@ -714,21 +718,21 @@ Public Class Folder
                 AndAlso (menu.SelectedItems Is Nothing OrElse menu.SelectedItems.Count = 0) _
                 AndAlso Clipboard.CanPaste(Me)
 
-        Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "cut")
+        Dim menuItem As MenuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "cut")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "copy")
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "copy")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
-        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "paste")
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "paste")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
-                Else If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String)(-1, "paste"), "Paste"))
-        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "rename")
+                Else If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "paste", Nothing), "Paste"))
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "rename")
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 AndAlso menu.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME)) Then _
-                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String)(-1, "rename"), "Rename"))
-        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String)).Item2, Nothing) = "delete")
+                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "rename", Nothing), "Rename"))
+        menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "delete")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 Then
             Dim isPinned As Boolean = PinnedItems.GetIsPinned(menu.SelectedItems(0))
-            menu.Buttons.Add(menu.MakeToggleButton(New Tuple(Of Integer, String)(-1, "laila.shell.(un)pin"),
+            menu.Buttons.Add(menu.MakeToggleButton(New Tuple(Of Integer, String, Object)(-1, "laila.shell.(un)pin", Nothing),
                                                         If(isPinned, "Unpin item", "Pin item"), isPinned))
         End If
     End Sub
@@ -1013,17 +1017,15 @@ Public Class Folder
 
                                         Dim newShellItem As IShellItem2 = Nothing
                                         If Not item.Item2 Is Nothing Then
-                                            SyncLock item.Item2._shellItemLock
-                                                SyncLock item.Item2._shellItemLock2
-                                                    If Not item.Item2.disposedValue Then
-                                                        newShellItem = item.Item2.ShellItem2
-                                                        ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
-                                                        'Debug.WriteLine(item.Item1.FullPath)
-                                                        item.Item2._shellItem2 = Nothing
-                                                        item.Item2.LogicalParent = Nothing
-                                                        item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
-                                                    End If
-                                                End SyncLock
+                                            SyncLock item.Item2._shellItemLockEnumRefresh
+                                                If Not item.Item2.disposedValue Then
+                                                    newShellItem = item.Item2.ShellItem2
+                                                    ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
+                                                    'Debug.WriteLine(item.Item1.FullPath)
+                                                    item.Item2._shellItem2 = Nothing
+                                                    item.Item2.LogicalParent = Nothing
+                                                    item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
+                                                End If
                                             End SyncLock
                                         End If
 
@@ -1109,7 +1111,7 @@ Public Class Folder
             var.union.uintVal = flags
             propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
-            SyncLock _shellItemLock
+            SyncLock _shellItemLockEnumShellItems
                 If Not shellItem2 Is Nothing Then
                     CType(shellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
                         (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
@@ -1656,38 +1658,36 @@ Public Class Folder
         Dim oldShellFolder As IShellFolder = Nothing
         Dim wasDisposed As Boolean = disposedValue
 
-        SyncLock _shellItemLock
-            If Not disposedValue Then
-                MyBase.Dispose(disposing)
+        If Not disposedValue Then
+            MyBase.Dispose(disposing)
 
-                SyncLock _listeningLock
-                    If _isListening Then
-                        Shell.StopListening(Me)
-                    End If
-                End SyncLock
+            SyncLock _listeningLock
+                If _isListening Then
+                    Shell.StopListening(Me)
+                End If
+            End SyncLock
 
-                Me.CancelEnumeration()
+            Me.CancelEnumeration()
 
-                _notificationThreadPool?.Dispose()
-                _notificationThreadPool = Nothing
+            _notificationThreadPool?.Dispose()
+            _notificationThreadPool = Nothing
 
-                If Not Shell.ShuttingDownToken.IsCancellationRequested Then
-                    ' extensive cleanup, because we're still live:
+            If Not Shell.ShuttingDownToken.IsCancellationRequested Then
+                ' extensive cleanup, because we're still live:
 
-                    ' switch shellfolder, we'll release it later
-                    oldShellFolder = _shellFolder
+                ' switch shellfolder, we'll release it later
+                oldShellFolder = _shellFolder
+                _shellFolder = Nothing
+            Else
+                ' quick cleanup, because we're shutting down anyway and it has to go fast:
+
+                ' release shellfolder
+                If Not _shellFolder Is Nothing Then
+                    Marshal.ReleaseComObject(_shellFolder)
                     _shellFolder = Nothing
-                Else
-                    ' quick cleanup, because we're shutting down anyway and it has to go fast:
-
-                    ' release shellfolder
-                    If Not _shellFolder Is Nothing Then
-                        Marshal.ReleaseComObject(_shellFolder)
-                        _shellFolder = Nothing
-                    End If
                 End If
             End If
-        End SyncLock
+        End If
 
         If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso Not wasDisposed Then
             ' dispose outside of the lock because it can take a while

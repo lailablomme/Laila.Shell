@@ -190,7 +190,7 @@ Namespace Controls
                                 Debug.WriteLine("IPreviewHandler=" & clsid.ToString())
                                 Dim h As HRESULT
                                 Dim cc As ClassContext = ClassContext.LocalServer
-                                If Debugger.IsAttached Then cc = cc Or ClassContext.InProcServer
+                                If Debugger.IsAttached Then cc = ClassContext.InProcServer
                                 If _cancelTokenSource.IsCancellationRequested Then Return
                                 h = Functions.CoCreateInstance(clsid, IntPtr.Zero, cc, GetType(IPreviewHandler).GUID, previewer._handler)
                                 If _cancelTokenSource.IsCancellationRequested Then Return
@@ -207,7 +207,7 @@ Namespace Controls
                                                     Debug.WriteLine("SHCreateStreamOnFileEx=" & h.ToString())
                                                 Else
                                                     If _cancelTokenSource.IsCancellationRequested Then Return
-                                                    SyncLock previewer._previewItem._shellItemLock
+                                                    SyncLock previewer._previewItem._shellItemLockPreviewer
                                                         If _cancelTokenSource.IsCancellationRequested Then Return
                                                         h = CType(previewer._previewItem.ShellItem2, IShellItem2ForIStream) _
                                                             .BindToHandler(Nothing, Guids.BHID_Stream, GetType(IStream).GUID, previewer._stream)
@@ -466,11 +466,8 @@ Namespace Controls
         End Function
 
         Protected Overridable Sub OnItemRefreshed(sender As Object, e As EventArgs)
-            UIHelper.OnUIThread(
-                Sub()
-                    hidePreview(Me)
-                    showPreview(Me)
-                End Sub)
+            hidePreview(Me)
+            showPreview(Me)
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)

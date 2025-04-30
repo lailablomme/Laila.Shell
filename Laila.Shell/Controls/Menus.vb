@@ -79,7 +79,7 @@ Namespace Controls
             ' get name and extension
             If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
                 isDrive = True
-                SyncLock item._shellItemLock
+                SyncLock item._shellItemLockDisplayName
                     item.ShellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)
                 End SyncLock
                 ext = ""
@@ -116,7 +116,7 @@ Namespace Controls
                             Dim fileOperation As IFileOperation = Nothing
                             Try
                                 Dim h As HRESULT = Functions.CoCreateInstance(Guids.CLSID_FileOperation, IntPtr.Zero, 1, GetType(IFileOperation).GUID, fileOperation)
-                                SyncLock item._shellItemLock
+                                SyncLock item._shellItemLockRenameItem
                                     h = fileOperation.RenameItem(item.ShellItem2, composedFullName, Nothing)
                                 End SyncLock
                                 Debug.WriteLine("RenameItem returned " & h)
@@ -199,6 +199,7 @@ Namespace Controls
             Else
                 textBox.SelectionLength = textBox.Text.Length
             End If
+            textBox.Focus()
 
             Dim windowMouseDown As MouseButtonEventHandler =
                 Sub(s2 As Object, e2 As MouseButtonEventArgs)
@@ -219,6 +220,34 @@ Namespace Controls
                         doRename(textBox.Text)
                     End If
                 End Sub
+            AddHandler textBox.PreviewTextInput,
+                Sub(s2 As Object, e2 As TextCompositionEventArgs)
+                    Dim c As Char? = e2.Text.ToCharArray()(0)
+                    If Not isDrive AndAlso c.HasValue _
+                                AndAlso ((Not String.IsNullOrWhiteSpace(invalidChars) AndAlso invalidChars.Contains(c.Value)) _
+                                    OrElse (Not String.IsNullOrWhiteSpace(validChars) AndAlso Not validChars.Contains(c.Value))) Then
+                        If balloonTip Is Nothing Then
+                            balloonTip = New BalloonTip.BalloonTip() With {
+                                            .PlacementTarget = textBox,
+                                            .Placement = BalloonPlacementMode.Bottom,
+                                            .PopupAnimation = Primitives.PopupAnimation.Fade,
+                                            .Text = If(Not String.IsNullOrWhiteSpace(invalidChars),
+                                                        "The following characters can not appear in filenames:" & vbCrLf _
+                                                      & "     " & String.Join("   ", invalidChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32)),
+                                                        "Only the following characters can appear in filenames:" & vbCrLf _
+                                                      & "     " & String.Join("   ", validChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32))),
+                                            .Timeout = 9000
+                                        }
+                            grid.Children.Add(balloonTip)
+                        Else
+                            balloonTip.IsOpen = False
+                        End If
+                        balloonTip.IsOpen = True
+                        e2.Handled = True
+                    ElseIf Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
+                        balloonTip.IsOpen = False
+                    End If
+                End Sub
             AddHandler textBox.PreviewKeyDown,
                 Sub(s2 As Object, e2 As KeyEventArgs)
                     Select Case e2.Key
@@ -232,32 +261,6 @@ Namespace Controls
                             doCancel()
                             e2.Handled = True
                         Case Key.Back
-                        Case Else
-                            Dim c As Char? = KeyboardHelper.KeyToChar(e2.Key)
-                            If Not isDrive AndAlso c.HasValue _
-                                AndAlso ((Not String.IsNullOrWhiteSpace(invalidChars) AndAlso invalidChars.Contains(c.Value)) _
-                                    OrElse (Not String.IsNullOrWhiteSpace(validChars) AndAlso Not validChars.Contains(c.Value))) Then
-                                If balloonTip Is Nothing Then
-                                    balloonTip = New BalloonTip.BalloonTip() With {
-                                            .PlacementTarget = textBox,
-                                            .Placement = BalloonPlacementMode.Bottom,
-                                            .PopupAnimation = Primitives.PopupAnimation.Fade,
-                                            .Text = If(Not String.IsNullOrWhiteSpace(invalidChars),
-                                                        "The following characters can not appear in filenames:" & vbCrLf _
-                                                      & "     " & String.Join("   ", invalidChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32)),
-                                                        "Only the following characters can appear in filenames:" & vbCrLf _
-                                                      & "     " & String.Join("   ", validChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32))),
-                                            .Timeout = 9000
-                                        }
-                                    grid.Children.Add(balloonTip)
-                                Else
-                                    balloonTip.IsOpen = False
-                                End If
-                                balloonTip.IsOpen = True
-                                e2.Handled = True
-                            ElseIf Not balloonTip Is Nothing AndAlso balloonTip.IsOpen Then
-                                balloonTip.IsOpen = False
-                            End If
                     End Select
                 End Sub
         End Sub
@@ -306,9 +309,9 @@ Namespace Controls
                         .IsDefaultOnly = True
                     }
                     Await _rightClickMenu.Make()
-                    Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}"))
+                    Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String, Object)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}", Nothing))
                 Else
-                    Dim assembly As Assembly = Assembly.LoadFrom("Laila.Shell.WinRT.dll")
+                    Dim assembly As Assembly = Assembly.LoadFrom(IO.Path.Combine(IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Laila.Shell.WinRT.dll"))
                     Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
                     Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
                     Dim instance As Object = Activator.CreateInstance(type)
@@ -329,6 +332,7 @@ Namespace Controls
                 Me.NewItemMenu = Nothing
             End If
 
+            Await Task.Delay(250) ' wait for the UI to be ready
             Dim newItemMenu As NewItemMenu = New NewItemMenu() With {.Folder = Me.Folder}
             Await newItemMenu.Make()
             If newItemMenu.Items.Count > 0 Then

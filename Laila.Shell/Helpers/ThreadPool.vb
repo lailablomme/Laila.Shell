@@ -14,6 +14,7 @@ Namespace Helpers
         Private _isThreadFree As Boolean()
         Private _isThreadLocked As Boolean()
         Private _nextThreadId As Integer = 0
+        Private _nextThreadLock As Object = New Object()
         Private _disposeTokensSource As CancellationTokenSource = New CancellationTokenSource()
         Private _disposeToken As CancellationToken = _disposeTokensSource.Token
         Private disposedValue As Boolean
@@ -79,10 +80,14 @@ Namespace Helpers
 
         Public Function GetNextFreeThreadId() As Integer
             If _isThreadFree.Count > 1 Then
+                Dim ntid As Integer = 0
+                SyncLock _nextThreadLock
+                    ntid = _nextThreadId
+                End SyncLock
                 Do
-                    _nextThreadId += 1
-                    If _nextThreadId >= _isThreadFree.Length Then
-                        _nextThreadId = 0
+                    ntid += 1
+                    If ntid >= _isThreadFree.Length Then
+                        ntid = 0
                         If _isThreadFree.All(Function(f) f = False) Then
                             Thread.Sleep(250)
                             If System.Windows.Application.Current.Dispatcher.CheckAccess Then
@@ -92,8 +97,11 @@ Namespace Helpers
                             End If
                         End If
                     End If
-                Loop Until _isThreadFree(_nextThreadId) AndAlso Not _isThreadLocked(_nextThreadId)
-                Return _nextThreadId
+                Loop Until _isThreadFree(ntid) AndAlso Not _isThreadLocked(ntid)
+                SyncLock _nextThreadLock
+                    _nextThreadId = ntid
+                    Return _nextThreadId
+                End SyncLock
             Else
                 Return 0
             End If

@@ -183,10 +183,12 @@ Namespace Controls
                                             End Sub)
                                     Else
                                         ' the current folder disappeared -- switch to parent
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If f.IsExisting Then Me.SetSelectedItem(f)
-                                            End Sub)
+                                        If f.IsExisting Then
+                                            UIHelper.OnUIThread(
+                                                Sub()
+                                                    Me.SetSelectedItem(f)
+                                                End Sub)
+                                        End If
                                     End If
                                 End If
                             End Sub)
@@ -211,17 +213,17 @@ Namespace Controls
                     End While
                     If isDeleted Then
                         _deletedFullName = selectedItem.FullPath
-                        UIHelper.OnUIThread(
-                            Async Sub()
-                                ' get the first available parent  
-                                Dim f As Folder = selectedItem.LogicalParent
-                                If Not f Is Nothing Then
+                        ' get the first available parent  
+                        Dim f As Folder = selectedItem.LogicalParent
+                        If Not f Is Nothing Then
+                            UIHelper.OnUIThread(
+                                Async Sub()
                                     Await Task.Delay(300) ' wait for .zip operations/folder refresh to complete
-                                    If _deletedFullName?.Equals(selectedItem.FullPath) Then
-                                        If f.IsExisting Then Me.SetSelectedItem(f) ' load it
+                                    If _deletedFullName?.Equals(selectedItem._fullPath) Then
+                                        Me.SetSelectedItem(f) ' load it
                                     End If
-                                End If
-                            End Sub)
+                                End Sub)
+                        End If
                     End If
             End Select
         End Sub
@@ -425,7 +427,7 @@ Namespace Controls
                 _isSettingSelectedFolder = True
 
                 If Me.DoExpandTreeViewToCurrentFolder Then
-                    Await Task.Delay(100)
+                    'Await Task.Delay(100)
 
                     Debug.WriteLine("SetSelectedFolder " & folder?.FullPath)
                     Dim list As List(Of Folder) = New List(Of Folder)()
@@ -677,28 +679,28 @@ Namespace Controls
                                         _selectionHelper.SetSelectedItems({_mouseItemDown})
 
                                         ' this allows for better reponse to double-clicking an unselected item
-                                        UIHelper.OnUIThread(
-                                            Sub()
-                                                If TypeOf _mouseItemDown Is Folder Then
-                                                    If (If(_mouseItemDown.Pidl?.Equals(Me.Folder?.Pidl), False) _
-                                                        OrElse (_mouseItemDown.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
-                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+                                        'UIHelper.OnUIThread(
+                                        '    Sub()
+                                        If TypeOf _mouseItemDown Is Folder Then
+                                            If (If(_mouseItemDown.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                OrElse (_mouseItemDown.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                AndAlso Not Me.Items.Contains(Me.Folder) Then Return
 
-                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
-                                                    CType(_mouseItemDown, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = _mouseItemDown
-                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
-                                                ElseIf TypeOf _mouseItemDown Is Link AndAlso TypeOf CType(_mouseItemDown, Link).TargetItem Is Folder Then
-                                                    If (If(CType(_mouseItemDown, Link).TargetItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
-                                                        OrElse (CType(_mouseItemDown, Link).TargetItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
-                                                        AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+                                            RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
+                                            CType(_mouseItemDown, Folder).LastScrollOffset = New Point()
+                                            Me.Folder = _mouseItemDown
+                                            RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(_mouseItemDown))
+                                        ElseIf TypeOf _mouseItemDown Is Link AndAlso TypeOf CType(_mouseItemDown, Link).TargetItem Is Folder Then
+                                            If (If(CType(_mouseItemDown, Link).TargetItem.Pidl?.Equals(Me.Folder?.Pidl), False) _
+                                                OrElse (CType(_mouseItemDown, Link).TargetItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                                AndAlso Not Me.Items.Contains(Me.Folder) Then Return
 
-                                                    RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
-                                                    CType(CType(_mouseItemDown, Link).TargetItem, Folder).LastScrollOffset = New Point()
-                                                    Me.Folder = CType(_mouseItemDown, Link).TargetItem
-                                                    RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
-                                                End If
-                                            End Sub, Threading.DispatcherPriority.Background)
+                                            RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
+                                            CType(CType(_mouseItemDown, Link).TargetItem, Folder).LastScrollOffset = New Point()
+                                            Me.Folder = CType(_mouseItemDown, Link).TargetItem
+                                            RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(CType(_mouseItemDown, Link).TargetItem))
+                                        End If
+                                        'End Sub, Threading.DispatcherPriority.Send)
                                     End Using
                                 End If
                                 e.Handled = True
@@ -973,7 +975,7 @@ Namespace Controls
                                         End If
                                     End If
                                     If Me.SelectedItem Is Nothing AndAlso Not Me.Folder Is Nothing _
-                                        AndAlso item.Pidl?.Equals(Me.Folder.Pidl) Then
+                                        AndAlso item._pidl?.Equals(Me.Folder.Pidl) Then
                                         Me.SetSelectedItem(item)
                                     End If
                                 Next

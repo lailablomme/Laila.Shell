@@ -182,7 +182,7 @@ Namespace Controls
 
         Protected Overridable Sub PART_ListBox_Loaded()
             If Not Me.Folder Is Nothing Then
-                Me.MakeBinding(Me.Folder)
+                Dim __ = Me.MakeBinding(Me.Folder)
             End If
 
             _selectionHelper = New SelectionHelper(Of Item)(Me.PART_ListBox)
@@ -914,7 +914,7 @@ Namespace Controls
             Return False
         End Function
 
-        Public Sub DoRename(item As Item)
+        Public Overridable Sub DoRename(item As Item)
             Me.PART_ListBox.ScrollIntoView(item)
             UIHelper.OnUIThread(
                 Sub()
@@ -1324,7 +1324,7 @@ Namespace Controls
             End If
         End Sub
 
-        Protected Overridable Sub MakeBinding(folder As Folder)
+        Protected Overridable Async Function MakeBinding(folder As Folder) As Task
             If Not Me.PART_ListBox Is Nothing Then
                 Me.PART_ListBox.Visibility = Visibility.Hidden
 
@@ -1335,14 +1335,14 @@ Namespace Controls
 
                 ' load items
                 Dim t As Task = folder.GetItemsAsync()
+                If Not TypeOf folder Is SearchFolder Then
+                    Await t
+                End If
 
-                ' async because otherwise we're a tad too early
                 UIHelper.OnUIThreadAsync(
-                    Async Sub()
+                    Sub()
+                        ' async because otherwise we're a tad too early
                         If Not TypeOf folder Is SearchFolder Then
-                            Await t
-                            Await Task.Delay(50)
-
                             If Not PART_ScrollViewer Is Nothing Then
                                 ' restore folder scroll position
                                 Me.ScrollOffset = folder.LastScrollOffset
@@ -1354,9 +1354,9 @@ Namespace Controls
 
                         ' show listview
                         Me.PART_ListBox.Visibility = Visibility.Visible
-                    End Sub, Threading.DispatcherPriority.ContextIdle)
+                    End Sub, Threading.DispatcherPriority.Loaded)
             End If
-        End Sub
+        End Function
 
         Protected Overridable Sub Folder_PropertyChanged(sender As Object, e As PropertyChangedEventArgs)
             Dim folder As Folder = CType(sender, Folder)
@@ -1371,7 +1371,7 @@ Namespace Controls
                             End If
 
                             If Not folder.IsRefreshingItems AndAlso Not Me.Folder Is Nothing AndAlso Not TypeOf folder Is SearchFolder Then
-                                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder.FullPath)
+                                Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder)
                                 folderViewState.SortPropertyName = folder.ItemsSortPropertyName
                                 folderViewState.SortDirection = folder.ItemsSortDirection
                                 folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
@@ -1483,7 +1483,7 @@ Namespace Controls
                 AddHandler newValue.Items.CollectionChanged, AddressOf bfv.folder_Items_CollectionChanged
 
                 ' bind view
-                bfv.MakeBinding(newValue)
+                Dim ___ = bfv.MakeBinding(newValue)
             End If
         End Sub
 
