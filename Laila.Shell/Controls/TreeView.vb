@@ -39,6 +39,8 @@ Namespace Controls
         Public Shared ReadOnly DoExpandTreeViewToCurrentFolderOverrideProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolderOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoExpandTreeViewToCurrentFolderOverrideChanged))
         Public Shared ReadOnly DoShowLibrariesInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowLibrariesInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowLibrariesInTreeViewOverrideChanged))
+        Public Shared ReadOnly DoUseWindows11ExplorerMenuProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenu", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoUseWindows11ExplorerMenuOverrideProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenuOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoUseWindows11ExplorerMenuOverrideChanged))
         Public Shared ReadOnly DoShowPinnedAndFrequentItemsPlaceholderProperty As DependencyProperty = DependencyProperty.Register("DoShowPinnedAndFrequentItemsPlaceholder", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
@@ -51,7 +53,7 @@ Namespace Controls
         Private _dropTarget As IDropTarget
         Private _isLoaded As Boolean
         Private _isSettingSelectedFolder As Boolean
-        Private _menu As RightClickMenu
+        Private _menu As BaseMenu
         Private _mouseButton As MouseButton
         Private _mouseButtonState As MouseButtonState
         Private _mouseItemDown As Item
@@ -134,6 +136,7 @@ Namespace Controls
             setDoShowAvailabilityStatusInTreeView()
             setDoExpandTreeViewToCurrentFolder()
             setDoShowLibrariesInTreeView()
+            setDoUseWindows11ExplorerMenu()
 
             Shell.SubscribeToNotifications(Me)
 
@@ -589,10 +592,9 @@ Namespace Controls
                             If Not _menu Is Nothing Then
                                 _menu.Dispose()
                             End If
-                            _menu = New RightClickMenu() With {
-                                .Folder = If(clickedItem.Parent Is Nothing, Shell.Desktop, clickedItem.Parent),
-                                .SelectedItems = {clickedItem}
-                            }
+                            _menu = If(Me.DoUseWindows11ExplorerMenu AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), New ExplorerMenu(), New RightClickMenu())
+                            _menu.Folder = If(clickedItem.Parent Is Nothing, Shell.Desktop, clickedItem.Parent)
+                            _menu.SelectedItems = {clickedItem}
                             AddHandler _menu.CommandInvoked,
                                 Sub(s As Object, e2 As CommandInvokedEventArgs)
                                     Select Case e2.Verb
@@ -812,11 +814,10 @@ Namespace Controls
             If Not _menu Is Nothing Then
                 _menu.Dispose()
             End If
-            _menu = New RightClickMenu() With {
-                .Folder = Me.Folder,
-                .SelectedItems = {item},
-                .IsDefaultOnly = True
-            }
+            _menu = If(Me.DoUseWindows11ExplorerMenu AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), New ExplorerMenu(), New RightClickMenu())
+            _menu.Folder = Me.Folder
+            _menu.SelectedItems = {item}
+            _menu.IsDefaultOnly = True
             Await _menu.Make()
             Await _menu.InvokeCommand(_menu.DefaultId)
         End Function
@@ -1007,11 +1008,16 @@ Namespace Controls
         Private Sub prune()
             UIHelper.OnUIThread(
                 Sub()
-                    For Each item2 In Me.Items.Where(Function(i) i.CanShowInTree _
+                    Dim doContinue As Boolean = True
+                    While doContinue
+                        doContinue = False
+                        For Each item2 In Me.Items.Where(Function(i) i.CanShowInTree _
                                         AndAlso ((Not i._logicalParent Is Nothing AndAlso Not Me.Items.Contains(i._logicalParent)) _
                                                  OrElse (i._logicalParent Is Nothing AndAlso Not Me.Roots.Contains(i)))).ToList()
-                        Me.Items.Remove(item2)
-                    Next
+                            Me.Items.Remove(item2)
+                            doContinue = True
+                        Next
+                    End While
                 End Sub)
         End Sub
 
@@ -1259,6 +1265,37 @@ Namespace Controls
         Public Shared Sub OnDoShowLibrariesInTreeViewOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As TreeView = d
             bfv.setDoShowLibrariesInTreeView()
+        End Sub
+
+        Public Property DoUseWindows11ExplorerMenu As Boolean
+            Get
+                Return GetValue(DoUseWindows11ExplorerMenuProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoUseWindows11ExplorerMenuProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoUseWindows11ExplorerMenu()
+            If Me.DoUseWindows11ExplorerMenuOverride.HasValue Then
+                Me.DoUseWindows11ExplorerMenu = Me.DoUseWindows11ExplorerMenuOverride.Value
+            Else
+                Me.DoUseWindows11ExplorerMenu = Shell.Settings.DoUseWindows11ExplorerMenu
+            End If
+        End Sub
+
+        Public Property DoUseWindows11ExplorerMenuOverride As Boolean?
+            Get
+                Return GetValue(DoUseWindows11ExplorerMenuOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoUseWindows11ExplorerMenuOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoUseWindows11ExplorerMenuOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As TreeView = d
+            bfv.setDoUseWindows11ExplorerMenu()
         End Sub
 
         Public Property DoShowPinnedAndFrequentItemsPlaceholder As Boolean

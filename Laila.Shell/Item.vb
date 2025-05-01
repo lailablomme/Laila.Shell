@@ -728,24 +728,7 @@ Public Class Item
             If Not disposedValue AndAlso (IO.File.Exists(Me.FullPath) OrElse IO.Directory.Exists(Me.FullPath)) Then
                 Dim app As String = Me.GetAssociatedApplication()
                 If Not String.IsNullOrWhiteSpace(app) Then
-                    Dim hBitmap As IntPtr
-                    Try
-                        Using icon As System.Drawing.Icon = Icon.ExtractAssociatedIcon(app.Trim(vbNullChar))
-                            Using bitmap = icon.ToBitmap()
-                                hBitmap = bitmap.GetHbitmap()
-                                Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                                image.Freeze()
-                                Return image
-                            End Using
-                        End Using
-                    Catch ex As Exception
-                        ' ignore
-                    Finally
-                        If Not IntPtr.Zero.Equals(hBitmap) Then
-                            Functions.DeleteObject(hBitmap)
-                            hBitmap = IntPtr.Zero
-                        End If
-                    End Try
+                    Return ImageHelper.GetApplicationIcon(app.Trim(vbNullChar))
                 End If
             End If
             Return Nothing
@@ -823,7 +806,7 @@ Public Class Item
                 SyncLock _shellItemLockIcon
                     If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                         Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource = Nothing
-                        If Not Settings.IsWindows8_1OrLower Then
+                        If Not Helpers.OSVersionHelper.IsWindows81OrLower Then
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY Or SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                             If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                                 result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
@@ -874,7 +857,7 @@ Public Class Item
                 SyncLock _shellItemLockImage
                     If Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
                         Dim h As HRESULT = HRESULT.S_FALSE, result As ImageSource = Nothing
-                        If Not Settings.IsWindows8_1OrLower Then
+                        If Not Helpers.OSVersionHelper.IsWindows81OrLower Then
                             h = CType(Me.ShellItem2, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_INCACHEONLY, hbitmap)
                             If h = HRESULT.S_OK AndAlso Not IntPtr.Zero.Equals(hbitmap) Then
                                 result = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())

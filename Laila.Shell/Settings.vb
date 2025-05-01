@@ -1,4 +1,5 @@
-﻿Imports System.Runtime.InteropServices
+﻿Imports System.Reflection
+Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Input
 Imports Laila.Shell.Helpers
@@ -52,11 +53,12 @@ Public Class Settings
     Private _doShowAvailabilityStatusInTreeView As Boolean = True
     Private _doExpandTreeViewToCurrentFolder As Boolean = True
     Private _doShowLibrariesInTreeView As Boolean = False
+    Private _doUseWindows11ExplorerMenu As Boolean
 
     Public Sub New()
         Me.StartMonitoring()
 
-        If Not Settings.IsWindows7OrLower Then
+        If Not Helpers.OSVersionHelper.IsWindows7OrLower Then
             Dim maxDpiX As UInteger = 96
             Dim maxDpiY As UInteger = 96
             For Each s In System.Windows.Forms.Screen.AllScreens
@@ -72,6 +74,15 @@ Public Class Settings
             Next
             Settings.DpiScaleX = maxDpiX / 96
             Settings.DpiScaleY = maxDpiY / 96
+        End If
+
+        If Helpers.OSVersionHelper.IsWindows11_21H2OrGreater Then
+            ' instantiate the helper
+            Dim assembly As Assembly = assembly.LoadFrom(IO.Path.Combine(IO.Path.GetDirectoryName(assembly.GetExecutingAssembly().Location), "Laila.Shell.WinRT.dll"))
+            Dim type As Type = assembly.GetType("Laila.Shell.WinRT.PackageHelper")
+            Dim instance As Object = Activator.CreateInstance(type)
+            Dim methodInfo As MethodInfo = type.GetMethod("IsRunningPackaged")
+            _doUseWindows11ExplorerMenu = methodInfo.Invoke(instance, Nothing)
         End If
     End Sub
 
@@ -451,7 +462,7 @@ Public Class Settings
     End Property
 
     Private Function readDoShowStatusBar() As Boolean
-        If Not Settings.IsWindows7OrLower Then
+        If Not Helpers.OSVersionHelper.IsWindows7OrLower Then
             Dim mask As SSF = SSF.SSF_SHOWSTATUSBAR
             Dim val As SHELLSTATE
             Functions.SHGetSetSettings(val, mask, False)
@@ -466,7 +477,7 @@ Public Class Settings
             Return _doShowStatusBar
         End Get
         Set(value As Boolean)
-            If Not Settings.IsWindows7OrLower Then
+            If Not Helpers.OSVersionHelper.IsWindows7OrLower Then
                 Dim mask As SSF = SSF.SSF_SHOWSTATUSBAR
                 Dim val As SHELLSTATE
                 val.Data10 = If(value, 64, 0)
@@ -542,6 +553,15 @@ Public Class Settings
         Set(value As Boolean)
             SetRegistryBoolean(LIBRARIES_KEYPATH, SHOWLIBRARIES_VALUENAME, value)
             Me.Touch()
+        End Set
+    End Property
+
+    Public Property DoUseWindows11ExplorerMenu As Boolean
+        Get
+            Return _doUseWindows11ExplorerMenu
+        End Get
+        Set(value As Boolean)
+            _doUseWindows11ExplorerMenu = value
         End Set
     End Property
 
@@ -675,29 +695,4 @@ Public Class Settings
             End If
         End Try
     End Sub
-
-    Private Shared _isWin8_1OrLower As Boolean?
-    Private Shared _isWin7OrLower As Boolean?
-
-    Public Shared ReadOnly Property IsWindows8_1OrLower() As Boolean
-        Get
-            If Not _isWin8_1OrLower.HasValue Then
-                ' Windows 8.1 has version number 6.3
-                Dim osVersion As Version = Environment.OSVersion.Version
-                _isWin8_1OrLower = osVersion.Major < 6 OrElse (osVersion.Major = 6 AndAlso osVersion.Minor <= 3)
-            End If
-            Return _isWin8_1OrLower
-        End Get
-    End Property
-
-    Public Shared ReadOnly Property IsWindows7OrLower() As Boolean
-        Get
-            If Not _isWin7OrLower.HasValue Then
-                ' Windows 7 has version number 6.1
-                Dim osVersion As Version = Environment.OSVersion.Version
-                _isWin7OrLower = osVersion.Major < 6 OrElse (osVersion.Major = 6 AndAlso osVersion.Minor <= 1)
-            End If
-            Return _isWin7OrLower
-        End Get
-    End Property
 End Class

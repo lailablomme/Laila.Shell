@@ -26,7 +26,7 @@ Namespace Controls.Parts
             Next
 
             If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.ThisPc) Then Me.Items.Add(Shell.GetSpecialFolder(SpecialFolders.ThisPc).Clone())
-            If Not Settings.IsWindows7OrLower AndAlso Me.TreeView.DoShowLibrariesInTreeView Then
+            If Not Helpers.OSVersionHelper.IsWindows7OrLower AndAlso Me.TreeView.DoShowLibrariesInTreeView Then
                 If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Libraries) Then Me.Items.Add(Shell.GetSpecialFolder(SpecialFolders.Libraries).Clone())
             End If
             If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Network) Then Me.Items.Add(Shell.GetSpecialFolder(SpecialFolders.Network).Clone())

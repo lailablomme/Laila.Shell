@@ -52,6 +52,8 @@ Namespace Controls
         Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ScrollOffsetProperty As DependencyProperty = DependencyProperty.Register("ScrollOffset", GetType(Point), GetType(BaseFolderView), New FrameworkPropertyMetadata(New Point(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ExpandCollapseAllStateProperty As DependencyProperty = DependencyProperty.Register("ExpandCollapseAllState", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoUseWindows11ExplorerMenuProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenu", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoUseWindows11ExplorerMenuOverrideProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenuOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoUseWindows11ExplorerMenuOverrideChanged))
 
         Friend Host As FolderView
         Private PART_CheckBoxSelectAll As CheckBox
@@ -159,6 +161,7 @@ Namespace Controls
             setDoShowInfoTips()
             setIsCompactMode()
             setDoTypeToSelect()
+            setDoUseWindows11ExplorerMenu()
 
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -864,7 +867,7 @@ Namespace Controls
                 _menu.Dispose()
             End If
 
-            _menu = New RightClickMenu() ' New ExplorerMenu() '
+            _menu = If(Me.DoUseWindows11ExplorerMenu AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), New ExplorerMenu(), New RightClickMenu())
             _menu.Folder = folder
             _menu.SelectedItems = selectedItems
             _menu.IsDefaultOnly = isDefaultOnly
@@ -1271,6 +1274,37 @@ Namespace Controls
         Public Shared Sub OnDoTypeToSelectOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = d
             bfv.setDoTypeToSelect()
+        End Sub
+
+        Public Property DoUseWindows11ExplorerMenu As Boolean
+            Get
+                Return GetValue(DoUseWindows11ExplorerMenuProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoUseWindows11ExplorerMenuProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoUseWindows11ExplorerMenu()
+            If Me.DoUseWindows11ExplorerMenuOverride.HasValue Then
+                Me.DoUseWindows11ExplorerMenu = Me.DoUseWindows11ExplorerMenuOverride.Value
+            Else
+                Me.DoUseWindows11ExplorerMenu = Shell.Settings.DoUseWindows11ExplorerMenu
+            End If
+        End Sub
+
+        Public Property DoUseWindows11ExplorerMenuOverride As Boolean?
+            Get
+                Return GetValue(DoUseWindows11ExplorerMenuOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoUseWindows11ExplorerMenuOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoUseWindows11ExplorerMenuOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoUseWindows11ExplorerMenu()
         End Sub
 
         Public Property ScrollOffset As Point

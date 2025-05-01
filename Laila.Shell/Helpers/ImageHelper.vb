@@ -80,6 +80,27 @@ Namespace Helpers
             DefaultFolderIconJumbo = getFileIcon(&H10, 128)
         End Sub
 
+        Public Shared Function GetApplicationIcon(path As String) As ImageSource
+            Dim hBitmap As IntPtr
+            Try
+                Using icon As System.Drawing.Icon = Icon.ExtractAssociatedIcon(path)
+                    Using bitmap = icon.ToBitmap()
+                        hBitmap = bitmap.GetHbitmap()
+                        Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        image.Freeze()
+                        Return image
+                    End Using
+                End Using
+            Catch ex As Exception
+                ' ignore
+            Finally
+                If Not IntPtr.Zero.Equals(hBitmap) Then
+                    Functions.DeleteObject(hBitmap)
+                    hBitmap = IntPtr.Zero
+                End If
+            End Try
+        End Function
+
         Public Shared Function IsImage(fullPath As String) As Boolean
             Return _imageFileExtensions.Contains(IO.Path.GetExtension(fullPath)?.ToLower())
         End Function
