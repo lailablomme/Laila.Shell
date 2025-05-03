@@ -89,6 +89,10 @@ Namespace Controls
                 ext = IO.Path.GetFileName(item.FullPath) _
                     .Substring(IO.Path.GetFileNameWithoutExtension(item.FullPath).Length)
                 isWithExt = originalName = IO.Path.GetFileName(item.FullPath)
+            ElseIf Not item.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+                originalName = item.DisplayName
+                ext = Nothing
+                isWithExt = False
             ElseIf doHideKnownFileExtensions Then
                 originalName = IO.Path.GetFileNameWithoutExtension(item.FullPath)
                 ext = IO.Path.GetExtension(item.FullPath)
@@ -304,17 +308,18 @@ Namespace Controls
 
         Public Shared Async Function DoShare(items As IEnumerable(Of Item)) As Task
             Using Shell.OverrideCursor(Cursors.Wait)
-                If (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
+                If ((Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
                     AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar)) _
                     OrElse (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) _
-                        AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).FullPath & IO.Path.DirectorySeparatorChar)) Then
+                        AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).FullPath & IO.Path.DirectorySeparatorChar))) _
+                    AndAlso Not items Is Nothing AndAlso items.Count = 1 Then
                     If Not _rightClickMenu Is Nothing Then
                         _rightClickMenu.Dispose()
                     End If
                     _rightClickMenu = New RightClickMenu() With {
                         .Folder = items(0).Parent,
                         .SelectedItems = items,
-                        .IsDefaultOnly = True
+                        .IsDefaultOnly = False
                     }
                     Await _rightClickMenu.Make()
                     Await _rightClickMenu.InvokeCommand(New Tuple(Of Integer, String, Object)(0, "{5250E46F-BB09-D602-5891-F476DC89B701}", Nothing))

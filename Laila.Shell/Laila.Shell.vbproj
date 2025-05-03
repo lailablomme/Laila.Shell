@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.65-alpha</Version>
+	<Version>0.0.66-alpha</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
@@ -65,6 +65,8 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <None Remove="Images\largeicons16.png" />
     <None Remove="Images\list16.png" />
     <None Remove="Images\monitor16.png" />
+    <None Remove="Images\more_options16.png" />
+    <None Remove="Images\more_options32.png" />
     <None Remove="Images\normalicons16.png" />
     <None Remove="Images\paste16.png" />
     <None Remove="Images\pin16.png" />
@@ -79,6 +81,8 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <None Remove="Images\sortdesc.png" />
     <None Remove="Images\tiles16.png" />
     <None Remove="Images\view16.png" />
+    <None Remove="Images\Windows.CompressTo16.png" />
+    <None Remove="Images\Windows.CompressTo32.png" />
     <None Remove="Interop\7z\7z.dll" />
   </ItemGroup>
 
@@ -144,6 +148,8 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <Resource Include="Images\largeicons16.png" />
     <Resource Include="Images\list16.png" />
     <Resource Include="Images\monitor16.png" />
+    <Resource Include="Images\more_options16.png" />
+    <Resource Include="Images\more_options32.png" />
     <Resource Include="Images\normalicons16.png" />
     <Resource Include="Images\paste16.png" />
     <Resource Include="Images\pin16.png" />
@@ -158,6 +164,8 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <Resource Include="Images\sortdesc.png" />
     <Resource Include="Images\tiles16.png" />
     <Resource Include="Images\view16.png" />
+    <Resource Include="Images\Windows.CompressTo16.png" />
+    <Resource Include="Images\Windows.CompressTo32.png" />
   </ItemGroup>
 
   <ItemGroup>

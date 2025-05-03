@@ -3,7 +3,7 @@
         Inherits BaseTreeViewSection
 
         Friend Overrides Sub Initialize()
-            If Not Settings.IsWindows8_1OrLower Then
+            If Not Helpers.OSVersionHelper.IsWindows81OrLower Then
                 If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Home) Then Me.Items.Add(Shell.GetSpecialFolder(SpecialFolders.Home).Clone())
                 If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Gallery) Then Me.Items.Add(Shell.GetSpecialFolder(SpecialFolders.Gallery).Clone())
             Else

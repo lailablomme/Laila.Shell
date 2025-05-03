@@ -3,10 +3,12 @@ Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Security.Claims
 Imports System.Text
+Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports System.Windows.Input
+Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
 Imports Laila.Shell.Helpers
@@ -55,66 +57,94 @@ Namespace Controls
                 Sub()
                     ' instantiate the helper
                     Dim assembly As Assembly = Assembly.LoadFrom(IO.Path.Combine(IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Laila.Shell.WinRT.dll"))
-                    Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ExplorerMenuHelper")
-                    Dim instance As Object = Activator.CreateInstance(type)
+                    Dim explorerMenuHelperType As Type = assembly.GetType("Laila.Shell.WinRT.ExplorerMenuHelper")
+                    Dim explorerMenuHelper As Object = Activator.CreateInstance(explorerMenuHelperType)
 
                     ' provide easy access to ResolveMsResourceFromPackage function in helper
-                    Dim methodInfo As MethodInfo = type.GetMethod("ResolveMsResourceFromPackage")
-                    Dim resolveMsResourceFromPackage As Func(Of String, String, String) =
-                        Function(resourceReference As String, packageName As String) As String
-                            Return methodInfo.Invoke(instance, {resourceReference, packageName})
+                    Dim methodInfo As MethodInfo = explorerMenuHelperType.GetMethod("ResolveMsResourceFromPackage")
+                    Dim resolveMsResourceFromPackage As Func(Of String, String, String, String) =
+                        Function(resourceReference As String, packageFullName As String, packageName As String) As String
+                            Return methodInfo.Invoke(explorerMenuHelper, {resourceReference, packageFullName, packageName})
                         End Function
 
                     ' get shell item array
                     Dim array As IShellItemArray = Nothing
-                    If items.Count > 0 Then
+                    If Not items Is Nothing AndAlso items.Count > 0 Then
                         Dim pidls As List(Of Pidl) = items.Select(Function(i) i.Pidl.Clone()).ToList()
                         Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), array)
                     End If
 
                     ' add standard commands
-                    addFromContextMenu("open", Nothing)
+                    Dim isBackground As Boolean = (items Is Nothing OrElse items.Count = 0) AndAlso folder.Attributes.HasFlag(SFGAO.FILESYSTEM)
+                    If Not isBackground _
+                        AndAlso (items?.ToList().All(Function(i) TypeOf i Is Folder) _
+                                 OrElse items?.ToList().All(Function(i) i.IsDrive) _
+                                 OrElse items?.ToList().All(Function(i) IO.Path.GetExtension(items(0).FullPath).ToLower().Equals(IO.Path.GetExtension(i.FullPath).ToLower()))) Then
+                        addFromContextMenu("open", Nothing, "Enter")
+                        If _menuItems.Count > 0 Then
+                            If TypeOf items(0) Is Folder Or items(0).IsDrive Then
+                                _menuItems(0).Icon = ImageHelper.GetApplicationIcon(Assembly.GetEntryAssembly().Location)
+                            Else
+                                addFromCommandStore("Windows.OpenWith", folder, items, array, resolveMsResourceFromPackage)
+                                If _menuItems.Count > 1 Then
+                                    _menuItems(0).Icon = _menuItems(1).Items(0).Icon
+                                    _menuItems.RemoveAt(1)
+                                End If
+                                If _menuItems(0).Icon Is Nothing Then
+                                    _menuItems(0).Icon = items(0).AssociatedApplicationIcon(48)
+                                End If
+                            End If
+                        End If
+                    End If
                     addFromContextMenu("openas", "Windows.OpenWith")
                     addFromContextMenu("empty", "Windows.RecycleBin.Empty")
-                    addFromCommandStore("Windows.ModernShare", folder, items, array, resolveMsResourceFromPackage)
+                    addFromContextMenu("Windows.ModernShare", "Windows.ModernShare")
+                    addFromContextMenu("setdesktopwallpaper", "Windows.setdesktopwallpaper")
+                    addFromContextMenu("rotate90", "Windows.rotate90")
+                    addFromContextMenu("rotate270", "Windows.rotate270")
                     addFromContextMenu("undelete", "Windows.RecycleBin.RestoreItems")
                     addFromCommandStore("Windows.CompressTo", folder, items, array, resolveMsResourceFromPackage)
-                    addFromContextMenu("copyaspath", "Windows.copyaspath")
+                    addFromContextMenu("copyaspath", "Windows.copyaspath", "Ctrl-Shift-C")
                     addFromContextMenu("format", "Windows.DiskFormat")
                     addFromContextMenu("PinToStartScreen", "Windows.pintostartscreen")
                     addFromContextMenu("New", "Windows.newitem")
-                    addFromContextMenu("properties", "Windows.properties")
+                    addFromContextMenu("properties", "Windows.properties", "Alt+Enter")
 
                     ' add cloud menu item
-                    addCloudMenuItem(type, instance, folder, array, resolveMsResourceFromPackage)
+                    addCloudMenuItem(explorerMenuHelperType, explorerMenuHelper, folder, array, resolveMsResourceFromPackage)
 
                     ' add file explorer context menu items
-                    addFileExplorerContextMenuItems(type, instance, folder, items, array, resolveMsResourceFromPackage)
+                    addFileExplorerContextMenuItems(explorerMenuHelperType, explorerMenuHelper, folder, items, array, resolveMsResourceFromPackage)
 
                     ' add show more options command
-                    If _menuItems.Count > 0 Then
-                        _menuItems.Add(New MenuItemData() With {.Header = "-----"})
-                    End If
-                    Dim showMoreOptionsMenuItem As New MenuItemData() With {
-                        .Header = "Show more options...",
-                        .IsEnabled = True
-                    }
-                    Dim action As Action =
+                    If _contextMenuItems.Count > 0 Then
+                        If _menuItems.Count > 0 Then
+                            _menuItems.Add(New MenuItemData() With {.Header = "-----"})
+                        End If
+                        Dim icon As BitmapSource = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/more_options16.png", UriKind.Absolute))
+                        icon.Freeze()
+                        Dim showMoreOptionsMenuItem As New MenuItemData() With {
+                            .Header = "Show more options...",
+                            .IsEnabled = True,
+                            .Icon = icon
+                        }
+                        Dim action As Action =
                         Sub()
                             UIHelper.OnUIThread(
-                                        Sub()
-                                            Dim rightClickMenu As RightClickMenu = New RightClickMenu()  ' 
-                                            rightClickMenu.Folder = folder
-                                            rightClickMenu.SelectedItems = items
-                                            rightClickMenu.IsOpen = True
-                                        End Sub)
+                                Sub()
+                                    Dim rightClickMenu As RightClickMenu = New RightClickMenu()  ' 
+                                    rightClickMenu.Folder = folder
+                                    rightClickMenu.SelectedItems = items
+                                    rightClickMenu.IsOpen = True
+                                End Sub)
                         End Sub
-                    showMoreOptionsMenuItem.Tag = New Tuple(Of Integer, String, Object)(-1, Guid.NewGuid().ToString(), action)
-                    _menuItems.Add(showMoreOptionsMenuItem)
+                        showMoreOptionsMenuItem.Tag = New Tuple(Of Integer, String, Object)(-1, Guid.NewGuid().ToString(), action)
+                        _menuItems.Add(showMoreOptionsMenuItem)
+                    End If
                 End Sub)
         End Sub
 
-        Private Sub addFromContextMenu(verb As String, commandForIcon As String)
+        Private Sub addFromContextMenu(verb As String, commandForIcon As String, Optional shortcutKeyText As String = Nothing)
             Dim menuItem As MenuItemData = _contextMenuItems.FirstOrDefault(Function(i) Not i.Tag Is Nothing AndAlso CType(i.Tag, Tuple(Of Integer, String, Object)).Item2 = verb)
             If Not menuItem Is Nothing Then
                 If Not commandForIcon Is Nothing Then
@@ -124,19 +154,21 @@ Namespace Controls
                                 ' get icon  
                                 Dim icon As String = CType(subKey.GetValue("Icon"), String)
                                 If Not icon Is Nothing Then
-                                    menuItem.Icon = ImageHelper.ExtractIcon(icon)
+                                    menuItem.Icon = ImageHelper.ExtractIcon(icon, True)
                                 End If
                             End If
                         End Using
                     End Using
                 End If
 
+                menuItem.FontWeight = FontWeights.Regular
+                menuItem.ShortcutKeyText = shortcutKeyText
                 _menuItems.Add(menuItem)
             End If
         End Sub
 
         Private Sub addFromCommandStore(name As String, folder As Folder, items As IEnumerable(Of Item), array As IShellItemArray,
-                                        resolveMsResourceFromPackage As Func(Of String, String, String))
+                                        resolveMsResourceFromPackage As Func(Of String, String, String, String))
             Using commandStoreKey As RegistryKey = Registry.LocalMachine.OpenSubKey(COMMANDSTORE_PATH)
                 Using subKey As RegistryKey = commandStoreKey.OpenSubKey(name)
                     If Not subKey Is Nothing Then
@@ -168,7 +200,7 @@ Namespace Controls
                                 ' set site?
                                 Dim s As IObjectWithSite = TryCast(command, IObjectWithSite)
                                 If Not s Is Nothing Then
-                                    Dim sp As MockShellSite = New MockShellSite()
+                                    Dim sp As MockServiceProvider = New MockServiceProvider()
                                     Dim h As HRESULT = s.SetSite(sp)
                                 End If
 
@@ -182,7 +214,11 @@ Namespace Controls
                                         End If
                                         menuItem.Header = menuItem.Header
                                         If menuItem.Icon Is Nothing AndAlso Not icon Is Nothing Then
-                                            menuItem.Icon = ImageHelper.ExtractIcon(icon)
+                                            menuItem.Icon = ImageHelper.ExtractIcon(icon, True)
+                                        End If
+                                        If menuItem.Icon Is Nothing Then
+                                            menuItem.Icon = New BitmapImage(New Uri($"pack://application:,,,/Laila.Shell;component/Images/{name}16.png", UriKind.Absolute))
+                                            menuItem.Icon.Freeze()
                                         End If
                                         _menuItems.Add(menuItem)
                                     End If
@@ -233,7 +269,7 @@ Namespace Controls
                                             End Sub
                                     _menuItems(_menuItems.Count - 1).Tag = a
                                     If Not icon Is Nothing Then
-                                        _menuItems(_menuItems.Count - 1).Icon = ImageHelper.ExtractIcon(icon)
+                                        _menuItems(_menuItems.Count - 1).Icon = ImageHelper.ExtractIcon(icon, True)
                                     End If
                                 End If
                             End If
@@ -244,7 +280,7 @@ Namespace Controls
         End Sub
 
         Private Sub addCloudMenuItem(type As Type, instance As Object, folder As Folder, array As IShellItemArray,
-                                     resolveMsResourceFromPackage As Func(Of String, String, String))
+                                     resolveMsResourceFromPackage As Func(Of String, String, String, String))
             ' get cloud verbs
             Dim methodInfo As MethodInfo = type.GetMethod("GetCloudVerbs")
             Dim t As Task(Of Tuple(Of String, String, List(Of ExplorerCommandVerbInfo))) =
@@ -289,7 +325,7 @@ Namespace Controls
         End Sub
 
         Private Sub addFileExplorerContextMenuItems(type As Type, instance As Object, folder As Folder, items As IEnumerable(Of Item), array As IShellItemArray,
-                                                    resolveMsResourceFromPackage As Func(Of String, String, String))
+                                                    resolveMsResourceFromPackage As Func(Of String, String, String, String))
             ' get file explorer verbs
             Dim methodInfo As MethodInfo = type.GetMethod("GetFileExplorerVerbs")
             Dim t As Task(Of List(Of ExplorerCommandVerbInfo)) = methodInfo.Invoke(instance, {})
@@ -301,10 +337,10 @@ Namespace Controls
                 Dim filtered As List(Of ExplorerCommandVerbInfo) = New List(Of ExplorerCommandVerbInfo)()
                 For Each item In result
                     If (item.ItemType = "Directory\Background" AndAlso isBackground) _
-                        OrElse (item.ItemType = "*" AndAlso items.ToList().Exists(Function(i) Not TypeOf i Is Folder)) _
-                        OrElse (item.ItemType = "Directory" AndAlso items.ToList().Exists(Function(i) TypeOf i Is Folder AndAlso i.Attributes.HasFlag(SFGAO.FILESYSTEM))) _
-                        OrElse (item.ItemType = "Drive" AndAlso items.ToList().Exists(Function(i) i.IsDrive)) _
-                        OrElse (items.ToList().Exists(Function(i) item.ItemType.Equals(IO.Path.GetExtension(i.FullPath).ToLower()))) Then
+                        OrElse (item.ItemType = "*" AndAlso items?.ToList().Exists(Function(i) Not TypeOf i Is Folder)) _
+                        OrElse (item.ItemType = "Directory" AndAlso items?.ToList().Exists(Function(i) TypeOf i Is Folder AndAlso i.Attributes.HasFlag(SFGAO.FILESYSTEM))) _
+                        OrElse (item.ItemType = "Drive" AndAlso items?.ToList().Exists(Function(i) i.IsDrive)) _
+                        OrElse (items?.ToList().Exists(Function(i) item.ItemType.Equals(IO.Path.GetExtension(i.FullPath).ToLower()))) Then
                         If Not filtered.Exists(Function(f) f.ClsId = item.ClsId AndAlso f.ComServerPath = item.ComServerPath) Then
                             filtered.Add(item)
                         End If
@@ -363,7 +399,7 @@ Namespace Controls
         End Sub
 
         Private Function getMenuItem(command As IExplorerCommand, array As IShellItemArray, ByRef flags As EXPCMDFLAGS,
-                                     resolveMsResourceFromPackage As Func(Of String, String, String)) As MenuItemData
+                                     resolveMsResourceFromPackage As Func(Of String, String, String, String)) As MenuItemData
             Dim state As EXPCMDSTATE = 0
             Dim h As HRESULT = command.GetState(array, True, state)
             If state <> EXPCMDSTATE.ECS_HIDDEN Then
@@ -381,12 +417,12 @@ Namespace Controls
                             Dim cleaned As String = iconResource.Substring(iconResource.IndexOf("{") + 1)
                             cleaned = cleaned.Substring(0, cleaned.IndexOf("}"))
                             Dim parts() As String = cleaned.Split("?")
-                            Dim iconFileName As String = resolveMsResourceFromPackage(parts(1), parts(0))
+                            Dim iconFileName As String = resolveMsResourceFromPackage(parts(1), parts(0), Nothing)
                             If IO.File.Exists(iconFileName) Then
-                                menuItem.Icon = New BitmapImage(New Uri(iconFileName, UriKind.Absolute))
+                                menuItem.Icon = trimTransparentBorders(New BitmapImage(New Uri(iconFileName, UriKind.Absolute)))
                             End If
                         Else
-                            menuItem.Icon = ImageHelper.ExtractIcon(iconResource)
+                            menuItem.Icon = ImageHelper.ExtractIcon(iconResource, True)
                         End If
                         If Not menuItem.Icon Is Nothing Then
                             menuItem.Icon.Freeze()
@@ -429,6 +465,48 @@ Namespace Controls
             End If
         End Function
 
+        Private Function trimTransparentBorders(source As BitmapSource) As BitmapSource
+            If source.Format <> PixelFormats.Bgra32 Then
+                source = New FormatConvertedBitmap(source, PixelFormats.Bgra32, Nothing, 0)
+            End If
+
+            Dim width = source.PixelWidth
+            Dim height = source.PixelHeight
+            Dim stride = width * 4
+            Dim pixels(width * height * 4 - 1) As Byte
+
+            source.CopyPixels(pixels, stride, 0)
+
+            Dim minX = width
+            Dim minY = height
+            Dim maxX = 0
+            Dim maxY = 0
+            Dim foundPixel = False
+
+            For y = 0 To height - 1
+                For x = 0 To width - 1
+                    Dim index = y * stride + x * 4
+                    Dim alpha = pixels(index + 3)
+
+                    If alpha <> 0 Then
+                        foundPixel = True
+                        If x < minX Then minX = x
+                        If y < minY Then minY = y
+                        If x > maxX Then maxX = x
+                        If y > maxY Then maxY = y
+                    End If
+                Next
+            Next
+
+            If Not foundPixel Then
+                ' Entire image is transparent – return a 1x1 transparent pixel
+                Return New CroppedBitmap(source, New Int32Rect(0, 0, 1, 1))
+            End If
+
+            Dim cropRect = New Int32Rect(minX, minY, maxX - minX + 1, maxY - minY + 1)
+            Return New CroppedBitmap(source, cropRect)
+        End Function
+
         Public Overrides Async Function InvokeCommand(id As Tuple(Of Integer, String, Object)) As Task
             If Not id.Item3 Is Nothing Then
                 Dim e As CommandInvokedEventArgs = Nothing
@@ -459,34 +537,63 @@ Namespace Controls
         End Function
 
         Protected Overrides Function AddItems() As Task
-            For Each item In _menuItems
-                Me.Items.Add(getMenuItem(item))
-            Next
+            ' add right click menu items
+            If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso TypeOf Me.SelectedItems(0) Is Folder Then
+                CType(Me.SelectedItems(0), Folder).AddExplorerMenuItems(Me)
+            Else
+                Me.Folder.AddExplorerMenuItems(Me)
+            End If
+
+            ' add view, sort and group by menus
+            If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
+                Dim insertIndex As Integer = 0
+
+                Dim viewMenu As ViewMenu = New ViewMenu() With {.Folder = Me.Folder, .MenuStyle = ViewMenuStyle.RightClickMenu}
+                Dim viewMenuItem As MenuItem = New MenuItem() With {
+                    .Header = "View",
+                    .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/view16.png", UriKind.Absolute))}
+                }
+                viewMenu.AddItems(viewMenuItem.Items)
+                Me.Items.Insert(0, viewMenuItem)
+                insertIndex += 1
+
+                If Not Me.Folder.ShellItem2 Is Nothing Then
+                    Dim sortMenu As SortMenu = New SortMenu() With {.Folder = Me.Folder}
+
+                    If Me.Folder.CanSort Then
+                        Dim sortMenuItem As MenuItem = New MenuItem() With {
+                            .Header = "Sort",
+                            .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/sort16.png", UriKind.Absolute))}
+                        }
+                        sortMenu.AddSortItems(sortMenuItem.Items)
+                        Me.Items.Insert(insertIndex, sortMenuItem)
+                        insertIndex += 1
+                    End If
+
+                    If Me.Folder.CanGroupBy Then
+                        Dim groupByMenuItem As MenuItem = New MenuItem() With {
+                            .Header = "Group by"
+                        }
+                        sortMenu.AddGroupByItems(groupByMenuItem.Items)
+                        Me.Items.Insert(insertIndex, groupByMenuItem)
+                        insertIndex += 1
+                    End If
+                End If
+
+                If insertIndex > 0 Then
+                    Me.Items.Insert(insertIndex, New Separator())
+                End If
+            End If
+
             Return Task.CompletedTask
         End Function
 
-        Private Function getMenuItem(item As MenuItemData) As Control
-            If item.Header = "-----" Then
-                Return New Separator()
-            Else
-                Dim menuItem As New MenuItem() With {
-                    .Header = item.Header,
-                    .IsEnabled = item.IsEnabled,
-                    .Icon = New Image() With {.Source = item.Icon},
-                    .Tag = item.Tag
-                }
-                If Not item.Items Is Nothing Then
-                    For Each subItem In item.Items
-                        menuItem.Items.Add(getMenuItem(subItem))
-                    Next
-                End If
-                AddHandler menuItem.Click, AddressOf menuItem_Click
-                Return menuItem
-            End If
+        Public Overrides Function GetMenuItems() As List(Of Control)
+            Return MyBase.getMenuItems(_menuItems)
         End Function
 
-        Protected Overrides Function DoRenameAfter(Tag As Tuple(Of Integer, String, Object)) As Boolean
-            Return True
+        Protected Overrides Function DoRenameAfter(tag As Tuple(Of Integer, String, Object)) As Boolean
+            Return tag.Item2 <> "paste"
         End Function
 
         <ComImport>
@@ -499,23 +606,21 @@ Namespace Controls
             <PreserveSig>
             Function ContextSensitiveHelp(<[In]> fEnterMode As Boolean) As Integer
         End Interface
+
         <ComImport>
         <Guid("831D1DFF-7F57-4720-87E4-CB57D6214428")>
         <InterfaceType(ComInterfaceType.InterfaceIsIUnknown)>
         Public Interface IInvocationLocation
-            ' HRESULT Proc3([out] int* p0);
             <PreserveSig>
             Function GetInvocationType(<Out> ByRef result As Integer) As Integer
 
-            ' HRESULT Proc4([in] int p0);
             <PreserveSig>
             Function SetInvocationType(<[In]> value As Integer) As Integer
         End Interface
 
-
-        <ComVisible(True), Guid("a985d29a-81ef-41b2-8440-457c38ef959c"), ProgId("Laila.Shell.Helpers.WpfDragTargetProxyc")>
+        <ComVisible(True), Guid("2c62e9b0-cc2e-4c95-8717-e7b46340983f"), ProgId("Laila.Shell.Controls.ExplorerMenu.MockInvocationLocation")>
         <ClassInterface(ClassInterfaceType.None)>
-        Public Class MockIL
+        Public Class MockInvocationLocation
             Implements IInvocationLocation
 
             Public Function GetInvocationType(<Out> ByRef result As Integer) As Integer Implements IInvocationLocation.GetInvocationType
@@ -523,13 +628,13 @@ Namespace Controls
             End Function
 
             Public Function SetInvocationType(<[In]> value As Integer) As Integer Implements IInvocationLocation.SetInvocationType
-                'Throw New NotImplementedException()
+                Return HRESULT.S_OK
             End Function
         End Class
 
-        <ComVisible(True), Guid("a985d29a-81ef-41b2-8440-457c38ef959c"), ProgId("Laila.Shell.Helpers.WpfDragTargetProxyc")>
+        <ComVisible(True), Guid("bb07f6f9-2573-4be5-9f14-7a4fa6a90f48"), ProgId("Laila.Shell.Controls.ExplorerMenu.MockOleWindow")>
         <ClassInterface(ClassInterfaceType.None)>
-        Public Class Mockow
+        Public Class MockOleWindow
             Implements IOleWindow
 
             Public Function GetWindow(<Out> ByRef phwnd As IntPtr) As Integer Implements IOleWindow.GetWindow
@@ -537,43 +642,29 @@ Namespace Controls
             End Function
 
             Public Function ContextSensitiveHelp(<[In]> fEnterMode As Boolean) As Integer Implements IOleWindow.ContextSensitiveHelp
-                ' Throw New NotImplementedException()
+                Return HRESULT.S_OK
             End Function
         End Class
 
-
-        <ComVisible(True), Guid("a985d29a-81ef-41b2-8440-457c38ef959c"), ProgId("Laila.Shell.Helpers.WpfDragTargetProxyc")>
+        <ComVisible(True), Guid("6e6c5e4a-08f3-43cf-84d2-0df5ae6f6d88"), ProgId("Laila.Shell.Controls.ExplorerMenu.MockServiceProvider")>
         <ClassInterface(ClassInterfaceType.None)>
-        Public Class MockShellSite
+        Public Class MockServiceProvider
             Implements Interop.Items.IServiceProvider
 
             Public Function QueryService(ByRef guidService As Guid, ByRef riid As Guid, ByRef ppvObject As IntPtr) As Integer Implements IServiceProvider.QueryService
-                ' You can return your own IShellItemArray, IShellView, etc. here
                 If riid = New Guid("831D1DFF-7F57-4720-87E4-CB57D6214428") Then
-                    ppvObject = Marshal.GetComInterfaceForObject(New MockIL(), GetType(IInvocationLocation))
+                    ppvObject = Marshal.GetComInterfaceForObject(New MockInvocationLocation(), GetType(IInvocationLocation))
                     Debug.WriteLine("QueryServiceOK " & guidService.ToString() & " " & riid.ToString())
                     Return HRESULT.S_OK
                 End If
                 If riid = New Guid("00000114-0000-0000-C000-000000000046") Then
-                    ppvObject = Marshal.GetComInterfaceForObject(New Mockow(), GetType(IOleWindow))
+                    ppvObject = Marshal.GetComInterfaceForObject(New MockOleWindow(), GetType(IOleWindow))
                     Debug.WriteLine("QueryServiceOK " & guidService.ToString() & " " & riid.ToString())
                     Return HRESULT.S_OK
                 End If
-                'Dim shellWindows As New ShellWindows()
-                'Dim sp As IServiceProvider = Nothing
-                '' Loop through all windows
-                'For i As Integer = 0 To shellWindows.Count - 1
-                '    Dim window As Object = shellWindows.Item(i)
 
-                '    ' Try to cast to IServiceProvider
-                '    sp = TryCast(window, IServiceProvider)
-                '    If sp IsNot Nothing Then
-                '        Exit For
-                '    End If
-                'Next
-                'Return sp.QueryService(guidService, riid, ppvObject)
                 ppvObject = IntPtr.Zero
-                Debug.WriteLine("QueryService " & guidService.ToString() & " " & riid.ToString())
+                Debug.WriteLine("MockServiceProvider.QueryService " & guidService.ToString() & " " & riid.ToString())
                 Return HRESULT.E_NOINTERFACE
             End Function
         End Class

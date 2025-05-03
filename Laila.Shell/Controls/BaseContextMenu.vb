@@ -76,7 +76,7 @@ Namespace Controls
             Return button
         End Function
 
-        Public Function GetMenuItems() As List(Of Control)
+        Public Overridable Function GetMenuItems() As List(Of Control)
             Dim tcs4 As New TaskCompletionSource(Of List(Of MenuItemData))
             _thread.Run(
                 Sub()
@@ -85,7 +85,7 @@ Namespace Controls
             Return getMenuItems(tcs4.Task.Result)
         End Function
 
-        Private Function getMenuItems(data As List(Of MenuItemData)) As List(Of Control)
+        Protected Function getMenuItems(data As List(Of MenuItemData)) As List(Of Control)
             Dim result As List(Of Control) = New List(Of Control)()
 
             For Each item In data
@@ -94,10 +94,11 @@ Namespace Controls
                 Else
                     Dim menuItem As MenuItem = New MenuItem() With {
                         .Header = item.Header,
-                        .Icon = New Image() With {.Source = item.Icon},
+                        .Icon = If(Not item.Icon Is Nothing, New Image() With {.Source = item.Icon}, Nothing),
                         .Tag = item.Tag,
                         .IsEnabled = item.IsEnabled,
-                        .FontWeight = item.FontWeight
+                        .FontWeight = item.FontWeight,
+                        .InputGestureText = item.ShortcutKeyText
                     }
                     If Not item.Items Is Nothing Then
                         For Each subItem In getMenuItems(item.Items)
@@ -126,15 +127,17 @@ Namespace Controls
                         _contextMenu2.HandleMenuMsg(WM.MENUSELECT, hMenu2, lParam)
                     End If
 
-                    ' wait for menu to populate
-                    Shell.GlobalThreadPool.Run(
-                        Sub()
-                            Dim initialCount As Integer
-                            Do
-                                initialCount = Functions.GetMenuItemCount(hMenu2)
-                                Thread.Sleep(50)
-                            Loop While Functions.GetMenuItemCount(hMenu2) <> initialCount
-                        End Sub)
+                    If Functions.GetMenuItemCount(hMenu2) = 0 Then
+                        ' wait for menu to populate
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                Dim initialCount As Integer
+                                Do
+                                    initialCount = Functions.GetMenuItemCount(hMenu2)
+                                    Thread.Sleep(50)
+                                Loop While Functions.GetMenuItemCount(hMenu2) <> initialCount
+                            End Sub)
+                    End If
                 End If
 
                 For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
@@ -395,6 +398,14 @@ Namespace Controls
                             Clipboard.CopyFiles(selectedItems)
                         Case "cut"
                             Clipboard.CutFiles(selectedItems)
+                        Case "paste"
+                            If selectedItems Is Nothing OrElse selectedItems.Count = 0 Then
+                                Clipboard.PasteFiles(folder)
+                            ElseIf selectedItems?.Count = 1 AndAlso TypeOf selectedItems(0) Is Folder Then
+                                Clipboard.PasteFiles(selectedItems(0))
+                            End If
+                        Case "delete"
+                            Menus.DoDelete(selectedItems)
                     End Select
                 End Sub)
 
@@ -415,29 +426,7 @@ Namespace Controls
                             Case "copy"
                             Case "cut"
                             Case "paste"
-                                If selectedItems Is Nothing OrElse selectedItems.Count = 0 Then
-                                    Clipboard.PasteFiles(folder)
-                                ElseIf selectedItems?.Count = 1 AndAlso TypeOf selectedItems(0) Is Folder Then
-                                    Clipboard.PasteFiles(selectedItems(0))
-                                End If
                             Case "delete"
-                                Dim dataObject As IDataObject_PreserveSig = Nothing, fo As IFileOperation = Nothing
-                                Try
-                                    dataObject = Clipboard.GetDataObjectFor(folder, selectedItems.ToList())
-                                    fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                                    If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
-                                    fo.DeleteItems(dataObject)
-                                    fo.PerformOperations()
-                                Finally
-                                    If Not fo Is Nothing Then
-                                        Marshal.ReleaseComObject(fo)
-                                        fo = Nothing
-                                    End If
-                                    If Not dataObject Is Nothing Then
-                                        Marshal.ReleaseComObject(dataObject)
-                                        dataObject = Nothing
-                                    End If
-                                End Try
                             Case Else
                                 folder._wasActivity = True
 

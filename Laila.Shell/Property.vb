@@ -412,7 +412,7 @@ Public Class [Property]
 
     Public Overridable ReadOnly Property Icons16 As ImageSource()
         Get
-            Return Me.ImageReferences16?.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
+            Return Me.ImageReferences16?.Select(Function(i) ImageHelper.ExtractIcon(i, True)).ToArray()
         End Get
     End Property
 
@@ -424,7 +424,7 @@ Public Class [Property]
                 End Function)
 
             If Not imageReferences16 Is Nothing Then
-                Return imageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i)).ToArray()
+                Return imageReferences16.Select(Function(i) ImageHelper.ExtractIcon(i, True)).ToArray()
             End If
             Return Nothing
         End Get

@@ -18,6 +18,8 @@ namespace Laila.Shell.WinRT
 {
     public sealed class ExplorerMenuHelper
     {
+        private static List<ExplorerCommandVerbInfo>? _cachedFileExplorerVerbs = null;
+            
         public async Task<Tuple<string?, string?, List<ExplorerCommandVerbInfo>?>?> GetCloudVerbs(string? folderPath)
         {
             try
@@ -85,61 +87,67 @@ namespace Laila.Shell.WinRT
 
         public Task<List<ExplorerCommandVerbInfo>> GetFileExplorerVerbs()
         {
-            var verbs = new List<ExplorerCommandVerbInfo>();
-
-            var packageManager = new PackageManager();
-            var packages = packageManager.FindPackagesForUser("");
-
-            foreach (var package in packages)
+            if (PackageHelper.IsPackagesUpdated() || _cachedFileExplorerVerbs == null)
             {
-                try
+                var verbs = new List<ExplorerCommandVerbInfo>();
+
+                var packageManager = new PackageManager();
+                var packages = packageManager.FindPackagesForUser("");
+
+                foreach (var package in packages)
                 {
-                    var manifestPath = System.IO.Path.Combine(package.InstalledLocation.Path, "AppxManifest.xml");
-
-                    if (System.IO.File.Exists(manifestPath))
+                    try
                     {
-                        XDocument doc = XDocument.Load(manifestPath);
-                        if (doc != null && doc.Root != null)
+                        var manifestPath = System.IO.Path.Combine(package.InstalledLocation.Path, "AppxManifest.xml");
+
+                        if (System.IO.File.Exists(manifestPath))
                         {
-                            XNamespace ns = doc.Root.Name.Namespace;
-                            var appElements = doc.Descendants(ns + "Application");
-
-                            foreach (XElement app in appElements)
+                            XDocument doc = XDocument.Load(manifestPath);
+                            if (doc != null && doc.Root != null)
                             {
-                                // get application
-                                Tuple<string, string?, string, string?, string?>? application = getApplication(package, manifestPath, app.Attribute("Id"), app);
+                                XNamespace ns = doc.Root.Name.Namespace;
+                                var appElements = doc.Descendants(ns + "Application");
 
-                                // get verbs
-                                List<ExplorerCommandVerbInfo>? explorerCommandVerbs = parseFileExplorerVerbs(application.Item1, application.Item2);
-
-                                // add items
-                                if (explorerCommandVerbs != null && explorerCommandVerbs.Count > 0)
+                                foreach (XElement app in appElements)
                                 {
-                                    foreach (var verb in explorerCommandVerbs)
+                                    // get application
+                                    Tuple<string, string?, string, string?, string?>? application = getApplication(package, manifestPath, app.Attribute("Id"), app);
+
+                                    // get verbs
+                                    List<ExplorerCommandVerbInfo>? explorerCommandVerbs = parseFileExplorerVerbs(application.Item1, application.Item2);
+
+                                    // add items
+                                    if (explorerCommandVerbs != null && explorerCommandVerbs.Count > 0)
                                     {
-                                        if (verb.ComServerPath != null && !System.IO.File.Exists(verb.ComServerPath))
-                                            if (System.IO.File.Exists(System.IO.Path.Combine(application.Item3, verb.ComServerPath)))
-                                                verb.ComServerPath = System.IO.Path.Combine(application.Item3, verb.ComServerPath);
-                                            else if (!string.IsNullOrWhiteSpace(System.IO.Path.GetDirectoryName(application.Item1))
-                                                && System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(application.Item1)!, verb.ComServerPath)))
-                                                verb.ComServerPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(application.Item1)!, verb.ComServerPath);
-                                        verb.PackageId = package.Id.Name;
-                                        verb.ApplicationName = application.Item4;
-                                        verb.ApplicationIconPath = application.Item5;
+                                        foreach (var verb in explorerCommandVerbs)
+                                        {
+                                            if (verb.ComServerPath != null && !System.IO.File.Exists(verb.ComServerPath))
+                                                if (System.IO.File.Exists(System.IO.Path.Combine(application.Item3, verb.ComServerPath)))
+                                                    verb.ComServerPath = System.IO.Path.Combine(application.Item3, verb.ComServerPath);
+                                                else if (!string.IsNullOrWhiteSpace(System.IO.Path.GetDirectoryName(application.Item1))
+                                                    && System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(application.Item1)!, verb.ComServerPath)))
+                                                    verb.ComServerPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(application.Item1)!, verb.ComServerPath);
+                                            verb.PackageId = package.Id.Name;
+                                            verb.ApplicationName = application.Item4;
+                                            verb.ApplicationIconPath = application.Item5;
+                                        }
+                                        verbs.AddRange(explorerCommandVerbs);
                                     }
-                                    verbs.AddRange(explorerCommandVerbs);
                                 }
                             }
                         }
                     }
+                    catch
+                    {
+                        // Some packages are protected (Access Denied), skip them
+                    }
                 }
-                catch
-                {
-                    // Some packages are protected (Access Denied), skip them
-                }
-            }
 
-            return Task.FromResult(verbs);
+                _cachedFileExplorerVerbs = verbs;
+                return Task.FromResult(verbs);
+            }
+            else
+                return Task.FromResult(_cachedFileExplorerVerbs);
         }
 
         static Tuple<string, string?, string, string?, string?>? findApplication(string applicationId)
@@ -185,11 +193,11 @@ namespace Laila.Shell.WinRT
             string? displayName = app.Element(nsUap + "VisualElements")?.Attribute("DisplayName")?.Value;
             displayName = app.Element(nsUap + "VisualElements")?.Attribute("DisplayName")?.Value;
             if (!string.IsNullOrWhiteSpace(displayName))
-                displayName = ResolveMsResourceFromPackage(displayName, package.Id.FullName);
+                displayName = ResolveMsResourceFromPackage(displayName, package.Id.FullName, package.Id.Name);
             string? logoPath = app.Element(nsUap + "VisualElements")?.Attribute("Square44x44Logo")?.Value;
             if (!string.IsNullOrWhiteSpace(logoPath))
             {
-                logoPath = ResolveMsResourceFromPackage(logoPath, package.Id.FullName);
+                logoPath = ResolveMsResourceFromPackage(logoPath, package.Id.FullName, package.Id.Name);
                 if (System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(manifestPath)!, logoPath)))
                     logoPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(manifestPath)!, logoPath);
                 else if (System.IO.File.Exists(System.IO.Path.Combine(package.EffectivePath, logoPath)))
@@ -246,7 +254,7 @@ namespace Laila.Shell.WinRT
         /// <param name="resourceReference">The ms-resource reference (e.g., "ms-resource:MyDisplayName").</param>
         /// <param name="packageFamilyName">The full PackageFamilyName to load from (e.g., "DropboxInc.Dropbox_abcdefg123456").</param>
         /// <returns>The resolved localized string, or null if not found.</returns>
-        public static string ResolveMsResourceFromPackage(string resourceReference, string packageName)
+        public static string ResolveMsResourceFromPackage(string resourceReference, string packageFullName, string packageName)
         {
             const string prefix = "ms-resource:";
             string result = resourceReference;
@@ -255,14 +263,23 @@ namespace Laila.Shell.WinRT
             {
                 try
                 {
-                    List<IStorageFile> priFiles = new List<IStorageFile>() { StorageFile.GetFileFromPathAsync(ResourceLoader.GetDefaultPriPath(packageName)).Get() };
+                    if (packageName == null)
+                        packageName = packageFullName.Split('_')[0];
+
+                    List<IStorageFile> priFiles = new List<IStorageFile>() { StorageFile.GetFileFromPathAsync(ResourceLoader.GetDefaultPriPath(packageFullName)).Get() };
 
                     var resourceManager = ResourceManager.Current;
                     resourceManager.LoadPriFiles(priFiles);
 
-                    var candidate = resourceManager.MainResourceMap.GetValue(resourceReference);
+                    var candidate = resourceManager.AllResourceMaps[packageName]?.GetValue(resourceReference);
                     if (candidate != null && candidate.IsMatch)
                         result = candidate.ValueAsString;
+                    else
+                    {
+                       candidate = resourceManager.AllResourceMaps[packageName]?.GetValue(resourceManager.AllResourceMaps[packageName]?.Uri.AbsoluteUri + "Resources/" + resourceReference.Substring(prefix.Length));
+                        if (candidate != null && candidate.IsMatch)
+                            result = candidate.ValueAsString;
+                    }
 
                     //resourceManager.UnloadPriFiles(priFiles);
                 }

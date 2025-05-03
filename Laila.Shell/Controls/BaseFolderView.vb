@@ -52,6 +52,8 @@ Namespace Controls
         Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ScrollOffsetProperty As DependencyProperty = DependencyProperty.Register("ScrollOffset", GetType(Point), GetType(BaseFolderView), New FrameworkPropertyMetadata(New Point(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ExpandCollapseAllStateProperty As DependencyProperty = DependencyProperty.Register("ExpandCollapseAllState", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoUseWindows11ExplorerMenuProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenu", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoUseWindows11ExplorerMenuOverrideProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenuOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoUseWindows11ExplorerMenuOverrideChanged))
 
         Friend Host As FolderView
         Private PART_CheckBoxSelectAll As CheckBox
@@ -159,6 +161,7 @@ Namespace Controls
             setDoShowInfoTips()
             setIsCompactMode()
             setDoTypeToSelect()
+            setDoUseWindows11ExplorerMenu()
 
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -246,36 +249,46 @@ Namespace Controls
         Private Sub baseFolderView_KeyDown(sender As Object, e As KeyEventArgs)
             Debug.WriteLine(e.Key)
             If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
-                If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
-                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
-                    Clipboard.CopyFiles(Me.SelectedItems)
-                ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
-                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
-                    Clipboard.CutFiles(Me.SelectedItems)
-                ElseIf e.Key = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.None _
-                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
-                    If TypeOf Me.SelectedItems(0) Is Folder Then
-                        Me.Host.Folder = Me.SelectedItems(0)
-                    Else
-                        Dim __ = invokeDefaultCommand(Me.SelectedItems(0))
-                    End If
-                    e.Handled = True
-                ElseIf e.Key = Key.Back AndAlso Keyboard.Modifiers = ModifierKeys.None Then
-                    If Not Me.Navigation Is Nothing AndAlso Me.Navigation.CanBack Then
-                        Me.Navigation.Back()
+                Using Shell.OverrideCursor(Cursors.Wait)
+                    If e.Key = Key.C AndAlso Keyboard.Modifiers = ModifierKeys.Control _
+                    AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
+                        Clipboard.CopyFiles(Me.SelectedItems)
+                    ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers = ModifierKeys.Control _
+                    AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
+                        Clipboard.CutFiles(Me.SelectedItems)
+                    ElseIf e.Key = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                    AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
+                        If TypeOf Me.SelectedItems(0) Is Folder Then
+                            Me.Host.Folder = Me.SelectedItems(0)
+                        Else
+                            Dim __ = invokeDefaultCommand(Me.SelectedItems(0))
+                        End If
                         e.Handled = True
+                    ElseIf e.SystemKey = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.Alt Then
+                        getMenu(Me.Folder, Me.SelectedItems, False)
+                        Dim __ = _menu.InvokeCommand(New Tuple(Of Integer, String, Object)(-1, "properties", Nothing))
+                        e.Handled = True
+                    ElseIf e.Key = Key.C AndAlso (Keyboard.Modifiers = (ModifierKeys.Control Or ModifierKeys.Shift)) Then
+                        getMenu(Me.Folder, Me.SelectedItems, False)
+                        Dim __ = _menu.InvokeCommand(New Tuple(Of Integer, String, Object)(-1, "copyaspath", Nothing))
+                        e.Handled = True
+                    ElseIf e.Key = Key.Back AndAlso Keyboard.Modifiers = ModifierKeys.None Then
+                        If Not Me.Navigation Is Nothing AndAlso Me.Navigation.CanBack Then
+                            Me.Navigation.Back()
+                            e.Handled = True
+                        End If
+                    ElseIf e.Key = Key.Up Then
+                        focusAdjacentItem(0, -10)
+                        e.Handled = True
+                    ElseIf e.Key = Key.Down Then
+                        focusAdjacentItem(0, +10)
+                        e.Handled = True
+                    ElseIf e.Key = Key.Left Then
+                        e.Handled = focusAdjacentItem(-10, 0)
+                    ElseIf e.Key = Key.Right Then
+                        e.Handled = focusAdjacentItem(10, 0)
                     End If
-                ElseIf e.Key = Key.Up Then
-                    focusAdjacentItem(0, -10)
-                    e.Handled = True
-                ElseIf e.Key = Key.Down Then
-                    focusAdjacentItem(0, +10)
-                    e.Handled = True
-                ElseIf e.Key = Key.Left Then
-                    e.Handled = focusAdjacentItem(-10, 0)
-                ElseIf e.Key = Key.Right Then
-                    e.Handled = focusAdjacentItem(10, 0)
-                End If
+                End Using
             End If
         End Sub
 
@@ -864,7 +877,7 @@ Namespace Controls
                 _menu.Dispose()
             End If
 
-            _menu = New RightClickMenu() ' New ExplorerMenu() '
+            _menu = If(Me.DoUseWindows11ExplorerMenu AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), New ExplorerMenu(), New RightClickMenu())
             _menu.Folder = folder
             _menu.SelectedItems = selectedItems
             _menu.IsDefaultOnly = isDefaultOnly
@@ -1271,6 +1284,37 @@ Namespace Controls
         Public Shared Sub OnDoTypeToSelectOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As BaseFolderView = d
             bfv.setDoTypeToSelect()
+        End Sub
+
+        Public Property DoUseWindows11ExplorerMenu As Boolean
+            Get
+                Return GetValue(DoUseWindows11ExplorerMenuProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoUseWindows11ExplorerMenuProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoUseWindows11ExplorerMenu()
+            If Me.DoUseWindows11ExplorerMenuOverride.HasValue Then
+                Me.DoUseWindows11ExplorerMenu = Me.DoUseWindows11ExplorerMenuOverride.Value
+            Else
+                Me.DoUseWindows11ExplorerMenu = Shell.Settings.DoUseWindows11ExplorerMenu
+            End If
+        End Sub
+
+        Public Property DoUseWindows11ExplorerMenuOverride As Boolean?
+            Get
+                Return GetValue(DoUseWindows11ExplorerMenuOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoUseWindows11ExplorerMenuOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoUseWindows11ExplorerMenuOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As BaseFolderView = d
+            bfv.setDoUseWindows11ExplorerMenu()
         End Sub
 
         Public Property ScrollOffset As Point

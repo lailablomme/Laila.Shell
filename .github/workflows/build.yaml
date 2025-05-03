@@ -42,7 +42,7 @@ jobs:
 
       - name: Build Laila.Shell.SampleApp2
         run: |
-          msbuild Laila.Shell.SampleApp/Laila.Shell.SampleApp2.vbproj /t:"Build" /p:Configuration=Release /p:Platform="x64" 
+          msbuild Laila.Shell.SampleApp2/Laila.Shell.SampleApp2.vbproj /t:"Build" /p:Configuration=Release /p:Platform="x64" 
 
       - name: Package SampleApp1
         run: |
@@ -52,7 +52,7 @@ jobs:
 
       - name: Package SampleApp2
         run: |
-          $outputDir = "./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0"
+          $outputDir = "./Laila.Shell.SampleApp2/bin/x64/Release/net6.0-windows7.0"
           $zipFile = "Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip"
           Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
 
@@ -66,7 +66,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}
-          path: ./Laila.Shell.SampleApp/bin/x64/Release/net6.0-windows7.0/*
+          path: ./Laila.Shell.SampleApp2/bin/x64/Release/net6.0-windows7.0/*
 
       - name: Upload Laila.Shell NuGet Artifact
         uses: actions/upload-artifact@v4

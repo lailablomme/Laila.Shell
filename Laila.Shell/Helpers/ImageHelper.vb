@@ -80,6 +80,27 @@ Namespace Helpers
             DefaultFolderIconJumbo = getFileIcon(&H10, 128)
         End Sub
 
+        Public Shared Function GetApplicationIcon(path As String) As ImageSource
+            Dim hBitmap As IntPtr
+            Try
+                Using icon As System.Drawing.Icon = Icon.ExtractAssociatedIcon(path)
+                    Using bitmap = icon.ToBitmap()
+                        hBitmap = bitmap.GetHbitmap()
+                        Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        image.Freeze()
+                        Return image
+                    End Using
+                End Using
+            Catch ex As Exception
+                ' ignore
+            Finally
+                If Not IntPtr.Zero.Equals(hBitmap) Then
+                    Functions.DeleteObject(hBitmap)
+                    hBitmap = IntPtr.Zero
+                End If
+            End Try
+        End Function
+
         Public Shared Function IsImage(fullPath As String) As Boolean
             Return _imageFileExtensions.Contains(IO.Path.GetExtension(fullPath)?.ToLower())
         End Function
@@ -148,13 +169,13 @@ Namespace Helpers
             Return _icons2(String.Format("{0}_{1}", index, size))
         End Function
 
-        Public Shared Function ExtractIcon(ref As String) As BitmapSource
+        Public Shared Function ExtractIcon(ref As String, isSmall As Boolean) As BitmapSource
             If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
                 Dim s() As String = Split(ref, ","), icon As IntPtr, iconl As IntPtr
                 Try
                     Functions.ExtractIconEx(s(0), s(1), iconl, icon, 1)
                     If Not IntPtr.Zero.Equals(icon) Then
-                        Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(If(isSmall, icon, iconl), Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                         img.Freeze()
                         _iconsLock.Wait()
                         Try
