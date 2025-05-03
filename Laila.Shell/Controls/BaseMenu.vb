@@ -249,6 +249,7 @@ Namespace Controls
             Public Property IsEnabled As Boolean
             Public Property FontWeight As FontWeight
             Public Property Items As List(Of MenuItemData)
+            Public Property ShortcutKeyText As String
         End Class
     End Class
 End Namespace

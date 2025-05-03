@@ -8,8 +8,8 @@
 
   <Identity
     Name="ea8a7c68-b2d7-42eb-a994-af9adbab63f4"
-    Publisher="CN=laila"
-    Version="0.0.65.0" />
+    Publisher="CN=Laïla Software BV"
+    Version="0.0.66.0" />
 
   <Properties>
     <DisplayName>Laila.Shell SampleApp 2 Package</DisplayName>
@@ -36,7 +36,7 @@
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" />
+        <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png"  Square71x71Logo="Images\SmallTile.png" Square310x310Logo="Images\LargeTile.png"/>
         <uap:SplashScreen Image="Images\SplashScreen.png" />
       </uap:VisualElements>
     </Application>

@@ -94,10 +94,11 @@ Namespace Controls
                 Else
                     Dim menuItem As MenuItem = New MenuItem() With {
                         .Header = item.Header,
-                        .Icon = New Image() With {.Source = item.Icon},
+                        .Icon = If(Not item.Icon Is Nothing, New Image() With {.Source = item.Icon}, Nothing),
                         .Tag = item.Tag,
                         .IsEnabled = item.IsEnabled,
-                        .FontWeight = item.FontWeight
+                        .FontWeight = item.FontWeight,
+                        .InputGestureText = item.ShortcutKeyText
                     }
                     If Not item.Items Is Nothing Then
                         For Each subItem In getMenuItems(item.Items)
@@ -126,15 +127,17 @@ Namespace Controls
                         _contextMenu2.HandleMenuMsg(WM.MENUSELECT, hMenu2, lParam)
                     End If
 
-                    ' wait for menu to populate
-                    Shell.GlobalThreadPool.Run(
-                        Sub()
-                            Dim initialCount As Integer
-                            Do
-                                initialCount = Functions.GetMenuItemCount(hMenu2)
-                                Thread.Sleep(50)
-                            Loop While Functions.GetMenuItemCount(hMenu2) <> initialCount
-                        End Sub)
+                    If Functions.GetMenuItemCount(hMenu2) = 0 Then
+                        ' wait for menu to populate
+                        Shell.GlobalThreadPool.Run(
+                            Sub()
+                                Dim initialCount As Integer
+                                Do
+                                    initialCount = Functions.GetMenuItemCount(hMenu2)
+                                    Thread.Sleep(50)
+                                Loop While Functions.GetMenuItemCount(hMenu2) <> initialCount
+                            End Sub)
+                    End If
                 End If
 
                 For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1

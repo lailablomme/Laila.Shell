@@ -249,36 +249,46 @@ Namespace Controls
         Private Sub baseFolderView_KeyDown(sender As Object, e As KeyEventArgs)
             Debug.WriteLine(e.Key)
             If Not TypeOf e.OriginalSource Is TextBox AndAlso Not Me.Folder Is Nothing Then
-                If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
-                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
-                    Clipboard.CopyFiles(Me.SelectedItems)
-                ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
-                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
-                    Clipboard.CutFiles(Me.SelectedItems)
-                ElseIf e.Key = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.None _
-                AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
-                    If TypeOf Me.SelectedItems(0) Is Folder Then
-                        Me.Host.Folder = Me.SelectedItems(0)
-                    Else
-                        Dim __ = invokeDefaultCommand(Me.SelectedItems(0))
-                    End If
-                    e.Handled = True
-                ElseIf e.Key = Key.Back AndAlso Keyboard.Modifiers = ModifierKeys.None Then
-                    If Not Me.Navigation Is Nothing AndAlso Me.Navigation.CanBack Then
-                        Me.Navigation.Back()
+                Using Shell.OverrideCursor(Cursors.Wait)
+                    If e.Key = Key.C AndAlso Keyboard.Modifiers = ModifierKeys.Control _
+                    AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
+                        Clipboard.CopyFiles(Me.SelectedItems)
+                    ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers = ModifierKeys.Control _
+                    AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 Then
+                        Clipboard.CutFiles(Me.SelectedItems)
+                    ElseIf e.Key = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                    AndAlso Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
+                        If TypeOf Me.SelectedItems(0) Is Folder Then
+                            Me.Host.Folder = Me.SelectedItems(0)
+                        Else
+                            Dim __ = invokeDefaultCommand(Me.SelectedItems(0))
+                        End If
                         e.Handled = True
+                    ElseIf e.SystemKey = Key.Enter AndAlso Keyboard.Modifiers = ModifierKeys.Alt Then
+                        getMenu(Me.Folder, Me.SelectedItems, False)
+                        Dim __ = _menu.InvokeCommand(New Tuple(Of Integer, String, Object)(-1, "properties", Nothing))
+                        e.Handled = True
+                    ElseIf e.Key = Key.C AndAlso (Keyboard.Modifiers = (ModifierKeys.Control Or ModifierKeys.Shift)) Then
+                        getMenu(Me.Folder, Me.SelectedItems, False)
+                        Dim __ = _menu.InvokeCommand(New Tuple(Of Integer, String, Object)(-1, "copyaspath", Nothing))
+                        e.Handled = True
+                    ElseIf e.Key = Key.Back AndAlso Keyboard.Modifiers = ModifierKeys.None Then
+                        If Not Me.Navigation Is Nothing AndAlso Me.Navigation.CanBack Then
+                            Me.Navigation.Back()
+                            e.Handled = True
+                        End If
+                    ElseIf e.Key = Key.Up Then
+                        focusAdjacentItem(0, -10)
+                        e.Handled = True
+                    ElseIf e.Key = Key.Down Then
+                        focusAdjacentItem(0, +10)
+                        e.Handled = True
+                    ElseIf e.Key = Key.Left Then
+                        e.Handled = focusAdjacentItem(-10, 0)
+                    ElseIf e.Key = Key.Right Then
+                        e.Handled = focusAdjacentItem(10, 0)
                     End If
-                ElseIf e.Key = Key.Up Then
-                    focusAdjacentItem(0, -10)
-                    e.Handled = True
-                ElseIf e.Key = Key.Down Then
-                    focusAdjacentItem(0, +10)
-                    e.Handled = True
-                ElseIf e.Key = Key.Left Then
-                    e.Handled = focusAdjacentItem(-10, 0)
-                ElseIf e.Key = Key.Right Then
-                    e.Handled = focusAdjacentItem(10, 0)
-                End If
+                End Using
             End If
         End Sub
 

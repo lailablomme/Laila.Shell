@@ -75,11 +75,11 @@ Namespace Controls
 
             AddHandler Me.Loaded,
                 Sub(s As Object, e As RoutedEventArgs)
-                    ' get scrollviewer
-                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
-
                     If Not Me.PART_ListBox Is Nothing AndAlso Not _isLoaded Then
                         _isLoaded = True
+
+                        ' get scrollviewer
+                        _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
 
                         ' load sections
                         loadSections()
@@ -724,55 +724,57 @@ Namespace Controls
         Private Sub treeView_KeyDown(sender As Object, e As KeyEventArgs)
             If Not TypeOf e.OriginalSource Is TextBox _
                 AndAlso (e.OriginalSource.Equals(Me.PART_ListBox) OrElse UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox)) Then
-                If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
-                             AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                    Clipboard.CopyFiles({Me.SelectedItem})
-                    e.Handled = True
-                ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
-                    AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                    Clipboard.CutFiles({Me.SelectedItem})
-                    e.Handled = True
-                ElseIf (e.Key = Key.Space OrElse e.Key = Key.Enter) AndAlso Keyboard.Modifiers = ModifierKeys.None _
-                    AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                    If TypeOf Me.SelectedItem Is Folder Then
-                        If (If(Me.SelectedItem.Pidl?.Equals(Me.Folder?.Pidl), False) OrElse (Me.SelectedItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
-                            AndAlso Not Me.Items.Contains(Me.Folder) Then Return
+                Using Shell.OverrideCursor(Cursors.Wait)
+                    If e.Key = Key.C AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                                              AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                        Clipboard.CopyFiles({Me.SelectedItem})
+                        e.Handled = True
+                    ElseIf e.Key = Key.X AndAlso Keyboard.Modifiers.HasFlag(ModifierKeys.Control) _
+                        AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                        Clipboard.CutFiles({Me.SelectedItem})
+                        e.Handled = True
+                    ElseIf (e.Key = Key.Space OrElse e.Key = Key.Enter) AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                        AndAlso Not Me.SelectedItem Is Nothing AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                        If TypeOf Me.SelectedItem Is Folder Then
+                            If (If(Me.SelectedItem.Pidl?.Equals(Me.Folder?.Pidl), False) OrElse (Me.SelectedItem.Pidl Is Nothing AndAlso Me.Folder.Pidl Is Nothing)) _
+                                AndAlso Not Me.Items.Contains(Me.Folder) Then Return
 
-                        RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
-                        CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
-                        Me.Folder = Me.SelectedItem
-                        RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
-                    Else
-                        Dim __ = invokeDefaultCommand(Me.SelectedItem)
+                            RaiseEvent BeforeFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
+                            CType(Me.SelectedItem, Folder).LastScrollOffset = New Point()
+                            Me.Folder = Me.SelectedItem
+                            RaiseEvent AfterFolderOpened(Me, New FolderEventArgs(Me.SelectedItem))
+                        Else
+                            Dim __ = invokeDefaultCommand(Me.SelectedItem)
+                        End If
+                        e.Handled = True
+                    ElseIf e.Key = Key.Add AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                        AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                        CType(Me.SelectedItem, Folder).IsExpanded = True
+                        e.Handled = True
+                    ElseIf e.Key = Key.Subtract AndAlso Keyboard.Modifiers = ModifierKeys.None _
+                        AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
+                        CType(Me.SelectedItem, Folder).IsExpanded = False
+                        e.Handled = True
+                    ElseIf e.Key = Key.Up Then
+                        Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                        For x = view.Cast(Of Item).ToList().IndexOf(Me.PART_ListBox.SelectedItem) - 1 To 0 Step -1
+                            If CType(view(x), Item).IsVisibleInTree AndAlso Not TypeOf view(x) Is DummyFolder Then
+                                Me.SetSelectedItem(view(x))
+                                Exit For
+                            End If
+                        Next
+                        e.Handled = True
+                    ElseIf e.Key = Key.Down Then
+                        Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
+                        For x = view.Cast(Of Item).ToList().IndexOf(Me.PART_ListBox.SelectedItem) + 1 To view.Cast(Of Item).Count - 1
+                            If CType(view(x), Item).IsVisibleInTree AndAlso Not TypeOf view(x) Is DummyFolder Then
+                                Me.SetSelectedItem(view(x))
+                                Exit For
+                            End If
+                        Next
+                        e.Handled = True
                     End If
-                    e.Handled = True
-                ElseIf e.Key = Key.Add AndAlso Keyboard.Modifiers = ModifierKeys.None _
-                    AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                    CType(Me.SelectedItem, Folder).IsExpanded = True
-                    e.Handled = True
-                ElseIf e.Key = Key.Subtract AndAlso Keyboard.Modifiers = ModifierKeys.None _
-                    AndAlso TypeOf Me.SelectedItem Is Folder AndAlso Not TypeOf Me.SelectedItem Is DummyFolder Then
-                    CType(Me.SelectedItem, Folder).IsExpanded = False
-                    e.Handled = True
-                ElseIf e.Key = Key.Up Then
-                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                    For x = view.Cast(Of Item).ToList().IndexOf(Me.PART_ListBox.SelectedItem) - 1 To 0 Step -1
-                        If CType(view(x), Item).IsVisibleInTree AndAlso Not TypeOf view(x) Is DummyFolder Then
-                            Me.SetSelectedItem(view(x))
-                            Exit For
-                        End If
-                    Next
-                    e.Handled = True
-                ElseIf e.Key = Key.Down Then
-                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                    For x = view.Cast(Of Item).ToList().IndexOf(Me.PART_ListBox.SelectedItem) + 1 To view.Cast(Of Item).Count - 1
-                        If CType(view(x), Item).IsVisibleInTree AndAlso Not TypeOf view(x) Is DummyFolder Then
-                            Me.SetSelectedItem(view(x))
-                            Exit For
-                        End If
-                    Next
-                    e.Handled = True
-                End If
+                End Using
             End If
         End Sub
 

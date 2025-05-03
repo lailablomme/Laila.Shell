@@ -169,13 +169,13 @@ Namespace Helpers
             Return _icons2(String.Format("{0}_{1}", index, size))
         End Function
 
-        Public Shared Function ExtractIcon(ref As String) As BitmapSource
+        Public Shared Function ExtractIcon(ref As String, isSmall As Boolean) As BitmapSource
             If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
                 Dim s() As String = Split(ref, ","), icon As IntPtr, iconl As IntPtr
                 Try
                     Functions.ExtractIconEx(s(0), s(1), iconl, icon, 1)
                     If Not IntPtr.Zero.Equals(icon) Then
-                        Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(icon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                        Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(If(isSmall, icon, iconl), Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                         img.Freeze()
                         _iconsLock.Wait()
                         Try
