@@ -36,6 +36,8 @@ Namespace Controls
         Private _contextMenuItems As List(Of MenuItemData) = New List(Of MenuItemData)()
         Private _menuItems As List(Of MenuItemData) = New List(Of MenuItemData)()
         Private _helper As Helpers.ComHelper = New ComHelper()
+        Private _arrayCloudItems As IShellItemArray = Nothing
+        Private _arrayFileExplorerItems As IShellItemArray = Nothing
 
         Protected Overrides Sub Make(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             If _wasMade Then Return
@@ -67,12 +69,24 @@ Namespace Controls
                             Return methodInfo.Invoke(explorerMenuHelper, {resourceReference, packageFullName, packageName})
                         End Function
 
-                    ' get shell item array
-                    Dim array As IShellItemArray = Nothing
-                    If Not items Is Nothing AndAlso items.Count > 0 Then
-                        Dim pidls As List(Of Pidl) = items.Select(Function(i) i.Pidl.Clone()).ToList()
-                        Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), array)
-                    End If
+                    ' get shell item arrays
+                    Dim pidls As List(Of Pidl) = Nothing
+                    Try
+                        If Not items Is Nothing AndAlso items.Count > 0 Then
+                            pidls = items.Select(Function(i) i.Pidl.Clone()).ToList()
+                            Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), _arrayCloudItems)
+                            Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), _arrayFileExplorerItems)
+                        Else
+                            pidls = {folder}.Select(Function(i) i.Pidl.Clone()).ToList()
+                            Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), _arrayCloudItems)
+                        End If
+                    Finally
+                        If Not pidls Is Nothing Then
+                            For Each pidl In pidls
+                                pidl.Dispose()
+                            Next
+                        End If
+                    End Try
 
                     ' add standard commands
                     Dim isBackground As Boolean = (items Is Nothing OrElse items.Count = 0) AndAlso folder.Attributes.HasFlag(SFGAO.FILESYSTEM)
@@ -85,7 +99,7 @@ Namespace Controls
                             If TypeOf items(0) Is Folder Or items(0).IsDrive Then
                                 _menuItems(0).Icon = ImageHelper.GetApplicationIcon(Assembly.GetEntryAssembly().Location)
                             Else
-                                addFromCommandStore("Windows.OpenWith", folder, items, array, resolveMsResourceFromPackage)
+                                addFromCommandStore("Windows.OpenWith", folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
                                 If _menuItems.Count > 1 Then
                                     _menuItems(0).Icon = _menuItems(1).Items(0).Icon
                                     _menuItems.RemoveAt(1)
@@ -103,18 +117,25 @@ Namespace Controls
                     addFromContextMenu("rotate90", "Windows.rotate90")
                     addFromContextMenu("rotate270", "Windows.rotate270")
                     addFromContextMenu("undelete", "Windows.RecycleBin.RestoreItems")
-                    addFromCommandStore("Windows.CompressTo", folder, items, array, resolveMsResourceFromPackage)
+                    addFromCommandStore("Windows.CompressTo", folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
                     addFromContextMenu("copyaspath", "Windows.copyaspath", "Ctrl-Shift-C")
                     addFromContextMenu("format", "Windows.DiskFormat")
+                    addFromContextMenu("connectNetworkDrive", "Windows.connectNetworkDrive")
+                    addFromContextMenu("disconnectNetworkDrive", "Windows.DisconnectNetworkDrive")
                     addFromContextMenu("PinToStartScreen", "Windows.pintostartscreen")
                     addFromContextMenu("New", "Windows.newitem")
                     addFromContextMenu("properties", "Windows.properties", "Alt+Enter")
 
-                    ' add cloud menu item
-                    addCloudMenuItem(explorerMenuHelperType, explorerMenuHelper, folder, array, resolveMsResourceFromPackage)
+                    ' add cloud menu items
+                    If _menuItems.Count > 0 Then
+                        _menuItems.Add(New MenuItemData() With {.Header = "-----"})
+                    End If
+                    addFromContextMenu("MakeAvailableOffline", "cloud_download")
+                    addFromContextMenu("MakeAvailableOnline", "cloud")
+                    addCloudMenuItem(explorerMenuHelperType, explorerMenuHelper, folder, items, _arrayCloudItems, resolveMsResourceFromPackage)
 
                     ' add file explorer context menu items
-                    addFileExplorerContextMenuItems(explorerMenuHelperType, explorerMenuHelper, folder, items, array, resolveMsResourceFromPackage)
+                    addFileExplorerContextMenuItems(explorerMenuHelperType, explorerMenuHelper, folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
 
                     ' add show more options command
                     If _contextMenuItems.Count > 0 Then
@@ -159,6 +180,14 @@ Namespace Controls
                             End If
                         End Using
                     End Using
+                    If menuItem.Icon Is Nothing Then
+                        Dim uri As Uri = New Uri($"pack://application:,,,/Laila.Shell;component/Images/{commandForIcon}16.png", UriKind.Absolute)
+                        Try
+                            menuItem.Icon = New BitmapImage(uri)
+                            menuItem.Icon?.Freeze()
+                        Catch ex As Exception
+                        End Try
+                    End If
                 End If
 
                 menuItem.FontWeight = FontWeights.Regular
@@ -217,8 +246,12 @@ Namespace Controls
                                             menuItem.Icon = ImageHelper.ExtractIcon(icon, True)
                                         End If
                                         If menuItem.Icon Is Nothing Then
-                                            menuItem.Icon = New BitmapImage(New Uri($"pack://application:,,,/Laila.Shell;component/Images/{name}16.png", UriKind.Absolute))
-                                            menuItem.Icon.Freeze()
+                                            Dim uri As Uri = New Uri($"pack://application:,,,/Laila.Shell;component/Images/{name}16.png", UriKind.Absolute)
+                                            Try
+                                                menuItem.Icon = New BitmapImage(uri)
+                                                menuItem.Icon?.Freeze()
+                                            Catch ex As Exception
+                                            End Try
                                         End If
                                         _menuItems.Add(menuItem)
                                     End If
@@ -279,12 +312,26 @@ Namespace Controls
             End Using
         End Sub
 
-        Private Sub addCloudMenuItem(type As Type, instance As Object, folder As Folder, array As IShellItemArray,
+        Private Sub addCloudMenuItem(type As Type, instance As Object, folder As Folder, items As IEnumerable(Of Item), array As IShellItemArray,
                                      resolveMsResourceFromPackage As Func(Of String, String, String, String))
+            ' get parent folder
+            Dim parentFolder As Folder = Nothing
+            If Not items Is Nothing AndAlso items.Count > 0 Then
+                parentFolder = items(0).Parent
+            Else
+                parentFolder = folder.Parent
+                items = New List(Of Item) From {folder}
+            End If
+
+            ' cannot get cloud verbs if parent folder is nothing or if all items are not filesystem items or if items have multiple different parent folders
+            If parentFolder Is Nothing _
+                OrElse (Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) Not i.Attributes.HasFlag(SFGAO.FILESYSTEM))) _
+                OrElse (Not items Is Nothing AndAlso items.Count > 0 AndAlso items.Any(Function(i) Not parentFolder.Equals(i.Parent))) Then Return
+
             ' get cloud verbs
             Dim methodInfo As MethodInfo = type.GetMethod("GetCloudVerbs")
             Dim t As Task(Of Tuple(Of String, String, List(Of ExplorerCommandVerbInfo))) =
-                methodInfo.Invoke(instance, {folder.FullPath})
+            methodInfo.Invoke(instance, {parentFolder.FullPath})
             Dim result As Tuple(Of String, String, List(Of ExplorerCommandVerbInfo)) = t.Result
 
             If Not result Is Nothing Then
@@ -316,9 +363,6 @@ Namespace Controls
                 Next
 
                 If cloudMenuItem.Items.Count > 0 Then
-                    If _menuItems.Count > 0 Then
-                        _menuItems.Add(New MenuItemData() With {.Header = "-----"})
-                    End If
                     _menuItems.Add(cloudMenuItem)
                 End If
             End If
@@ -390,7 +434,7 @@ Namespace Controls
                 Next
 
                 If tempRoot.Count > 0 Then
-                    If _menuItems.Count > 0 Then
+                    If _menuItems.Count > 0 AndAlso _menuItems(_menuItems.Count - 1).Header <> "-----" Then
                         _menuItems.Add(New MenuItemData() With {.Header = "-----"})
                     End If
                     _menuItems.AddRange(tempRoot.OrderBy(Function(i) $"{i.ApplicationName}\{i.Header}"))
@@ -675,6 +719,14 @@ Namespace Controls
             If Not _helper Is Nothing Then
                 _helper.Dispose()
                 _helper = Nothing
+            End If
+            If Not _arrayCloudItems Is Nothing Then
+                Marshal.ReleaseComObject(_arrayCloudItems)
+                _arrayCloudItems = Nothing
+            End If
+            If Not _arrayFileExplorerItems Is Nothing Then
+                Marshal.ReleaseComObject(_arrayFileExplorerItems)
+                _arrayFileExplorerItems = Nothing
             End If
         End Sub
     End Class

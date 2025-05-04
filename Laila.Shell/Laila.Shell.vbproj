@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.66-alpha</Version>
+	<Version>0.0.67-alpha</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
@@ -46,6 +46,10 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <None Remove="Images\arrow_up16.png" />
     <None Remove="Images\check16.png" />
     <None Remove="Images\chevron16.png" />
+    <None Remove="Images\cloud16.png" />
+    <None Remove="Images\cloud32.png" />
+    <None Remove="Images\cloud_download16.png" />
+    <None Remove="Images\cloud_download32.png" />
     <None Remove="Images\collapseall16.png" />
     <None Remove="Images\compactmode16.png" />
     <None Remove="Images\content16.png" />
@@ -129,6 +133,10 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <Resource Include="Images\arrow_up16.png" />
     <Resource Include="Images\check16.png" />
     <Resource Include="Images\chevron16.png" />
+    <Resource Include="Images\cloud16.png" />
+    <Resource Include="Images\cloud32.png" />
+    <Resource Include="Images\cloud_download16.png" />
+    <Resource Include="Images\cloud_download32.png" />
     <Resource Include="Images\collapseall16.png" />
     <Resource Include="Images\compactmode16.png" />
     <Resource Include="Images\content16.png" />
