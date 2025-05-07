@@ -19,6 +19,13 @@ Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "Laila.Shell.SampleApp2.Pack
 EndProject
 Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Laila.Shell.SampleApp2", "Laila.Shell.SampleApp2\Laila.Shell.SampleApp2.vbproj", "{2836F335-6291-4D6C-A923-9E14EE8DF17A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution files", "Solution files", "{9208803F-FB3C-4F35-930C-E5BA0F26D8D8}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		.github\workflows\build.yaml = .github\workflows\build.yaml
+		Screenshot_2025-01-01_053759.png = Screenshot_2025-01-01_053759.png
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		CodeAnalysisDebug|Any CPU = CodeAnalysisDebug|Any CPU

@@ -7,13 +7,13 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="ea8a7c68-b2d7-42eb-a994-af9adbab63f4"
+    Name="Laila.Shell.SampleApp2"
     Publisher="CN=Laïla Software BV"
-    Version="0.0.66.0" />
+    Version="0.0.68.0" />
 
   <Properties>
-    <DisplayName>Laila.Shell SampleApp 2 Package</DisplayName>
-    <PublisherDisplayName>Laïla Blomme</PublisherDisplayName>
+    <DisplayName>Laila.Shell SampleApp 2</DisplayName>
+    <PublisherDisplayName>Laïla Software BV</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
 
