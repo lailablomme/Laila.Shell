@@ -93,7 +93,7 @@ jobs:
           $contentFolder = Split-Path $msix.FullName -Parent
           Write-Output "Found deployment folder: $contentFolder"
 
-          $zipName = "Laila.Shell.SampleApp2-$version-alpha-AppX.zip"
+          $zipName = "Laila.Shell.SampleApp2-$version-AppX.zip"
           Compress-Archive -Path "$contentFolder\*" -DestinationPath $zipName -Force
 
       - name: Upload SampleApp1 Artifact
