@@ -84,14 +84,17 @@ jobs:
       - name: Package full MSIX deployment output (flattened for root zip)
         run: |
           $version = "${{ steps.extract_version.outputs.version }}"
-          $appPackages = Get-ChildItem -Path "**/AppPackages" -Directory -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if (-not $appPackages) { throw "No AppPackages folder found." }
+          
+          # Find the generated .msix file
+          $msix = Get-ChildItem -Path "**/AppPackages/**/*.msix" -File | Select-Object -First 1
+          if (-not $msix) { throw "No .msix file found under AppPackages." }
 
-          $subfolder = Get-ChildItem -Path $appPackages.FullName -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if (-not $subfolder) { throw "No subfolder found inside AppPackages." }
+          # Use its parent folder as the content root
+          $contentFolder = Split-Path $msix.FullName -Parent
+          Write-Output "Found deployment folder: $contentFolder"
 
-          $zipName = "Laila.Shell.SampleApp2-$version-AppX.zip"
-          Compress-Archive -Path "$($subfolder.FullName)\*" -DestinationPath $zipName -Force
+          $zipName = "Laila.Shell.SampleApp2-$version-alpha-AppX.zip"
+          Compress-Archive -Path "$contentFolder\*" -DestinationPath $zipName -Force
 
       - name: Upload SampleApp1 Artifact
         uses: actions/upload-artifact@v4
