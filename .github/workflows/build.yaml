@@ -20,7 +20,7 @@ jobs:
         run: dotnet restore Laila.Shell.SampleApp2/Laila.Shell.SampleApp2.vbproj --runtime win-x64
 
       - name: Restore NuGet Packages
-        run: nuget restore Laila.Shell.sln --runtime win-x64
+        run: nuget restore Laila.Shell.sln
 
       - name: Extract Version from Tag
         id: extract_version
