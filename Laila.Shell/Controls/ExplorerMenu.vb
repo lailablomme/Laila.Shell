@@ -117,6 +117,7 @@ Namespace Controls
                     addFromContextMenu("rotate90", "Windows.rotate90")
                     addFromContextMenu("rotate270", "Windows.rotate270")
                     addFromContextMenu("undelete", "Windows.RecycleBin.RestoreItems")
+                    addFromContextMenu("extract", "Windows.CompressedFile.extract")
                     addFromCommandStore("Windows.CompressTo", folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
                     addFromContextMenu("copyaspath", "Windows.copyaspath", "Ctrl-Shift-C")
                     addFromContextMenu("format", "Windows.DiskFormat")
