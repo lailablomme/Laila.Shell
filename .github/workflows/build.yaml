@@ -49,9 +49,10 @@ jobs:
           msbuild Laila.Shell.SampleApp2.Package/Laila.Shell.SampleApp2.Package.wapproj `
             /t:Publish `
             /p:Configuration=Release `
-            /p:Platform="x64" `
+            /p:Platform=x64 `
             /p:AppxBundle=Never `
-            /p:GenerateAppInstallerFile=False
+            /p:GenerateAppInstallerFile=False `
+            /p:BuildProjectReferences=false
 
       - name: Package full MSIX deployment output (flattened for root zip)
         run: |
