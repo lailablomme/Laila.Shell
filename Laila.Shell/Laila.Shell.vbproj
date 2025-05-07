@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.75-alpha</Version>
+	<Version>0.0.76-alpha</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
@@ -24,7 +24,7 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-	<PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

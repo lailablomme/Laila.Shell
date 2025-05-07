@@ -10,7 +10,7 @@
 	<EnableRegFreeCom>true</EnableRegFreeCom>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<ApplicationIcon>0050-folder_search.ico</ApplicationIcon>
-	<PlatformTarget>x64</PlatformTarget>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
