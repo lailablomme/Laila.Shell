@@ -164,7 +164,7 @@
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Border Grid.Column="2" Width="24" Height="24" VerticalAlignment="Center">
-                                                                                        <Image Source="{Binding OverlayImage[24]}" Width="24" Height="24" 
+                                                                                        <Image Source="{Binding OverlayImageAsync[24], IsAsync=True}" Width="24" Height="24" 
                                                                                                UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                                                                VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                                                             <Image.Style>
@@ -432,7 +432,7 @@
                                                                                         </Image.Style>
                                                                                     </Image>
                                                                                     <Border Grid.Column="2" Width="48" Height="48" VerticalAlignment="Center">
-                                                                                        <Image Source="{Binding OverlayImage[48]}" Width="32" Height="32" 
+                                                                                        <Image Source="{Binding OverlayImageAsync[48], IsAsync=True}" Width="32" Height="32" 
                                                                                                UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                                                                VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                                                             <Image.Style>
