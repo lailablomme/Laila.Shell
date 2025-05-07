@@ -8,8 +8,8 @@
 
   <Identity
     Name="Laila.Shell.SampleApp2"
-    Publisher="CN=Laïla Software BV"
-    Version="0.0.69.0" />
+    Publisher="CN=Laïla Software SampleApp2 Certificate"
+    Version="0.0.71.0" />
 
   <Properties>
     <DisplayName>Laila.Shell SampleApp 2</DisplayName>
