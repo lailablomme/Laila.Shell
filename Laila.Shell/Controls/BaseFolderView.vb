@@ -877,10 +877,7 @@ Namespace Controls
                 _menu.Dispose()
             End If
 
-            _menu = If(Me.DoUseWindows11ExplorerMenu AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), New ExplorerMenu(), New RightClickMenu())
-            _menu.Folder = folder
-            _menu.SelectedItems = selectedItems
-            _menu.IsDefaultOnly = isDefaultOnly
+            _menu = Menus.GetContextMenu(Me.DoUseWindows11ExplorerMenu, folder, selectedItems, isDefaultOnly)
 
             AddHandler _menu.CommandInvoked,
                 Sub(s As Object, e2 As CommandInvokedEventArgs)

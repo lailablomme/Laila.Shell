@@ -468,6 +468,7 @@ Namespace Behaviors
 
             _skipResize = False
             resizeColumns()
+            calculateTotalColumnWidth(UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList())
         End Sub
 
         Public Sub UpdateSortGlyphs()
@@ -725,15 +726,12 @@ Namespace Behaviors
         End Sub
 
         Private Sub calculateTotalColumnWidth(headers As List(Of GridViewColumnHeader))
-            UIHelper.OnUIThreadAsync(
-                Sub()
-                    For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
-                        headers.Remove(header)
-                    Next
+            For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
+                headers.Remove(header)
+            Next
 
-                    Dim tcw As Double = headers.Sum(Function(h) h.ActualWidth)
-                    If Me.TotalColumnWidth <> tcw Then Me.TotalColumnWidth = tcw
-                End Sub, Threading.DispatcherPriority.DataBind)
+            Dim tcw As Double = headers.Sum(Function(h) h.Column.ActualWidth)
+            If Me.TotalColumnWidth <> tcw Then Me.TotalColumnWidth = tcw
         End Sub
 
         Private Sub resizeColumns()

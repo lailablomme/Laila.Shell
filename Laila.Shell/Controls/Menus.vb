@@ -58,6 +58,31 @@ Namespace Controls
             End Using
         End Function
 
+        Public Shared Function GetContextMenu(doUseWindows11ExplorerMenu As Boolean, folder As Folder, selectedItems As IEnumerable(Of Item), isDefaultOnly As Boolean) As BaseMenu
+            Dim doStandardMenu As Boolean = False
+            If Not doStandardMenu AndAlso folder.FullPath.Contains("::{") Then
+                ' don't show explorer menu for certain special folders
+                If Not doStandardMenu AndAlso Shell.GetSpecialFolder(SpecialFolders.Network).Pidl.Equals(folder.Pidl) Then doStandardMenu = True
+                If Not doStandardMenu AndAlso Shell.GetSpecialFolder(SpecialFolders.DevicesAndPrinters).Pidl.Equals(folder.Pidl) Then doStandardMenu = True
+                If Not doStandardMenu AndAlso Shell.GetSpecialFolder(SpecialFolders.WindowsTools).Pidl.Equals(folder.Pidl) Then doStandardMenu = True
+                If Not doStandardMenu AndAlso Shell.GetSpecialFolder(SpecialFolders.ProgramsAndFeatures).Pidl.Equals(folder.Pidl) Then doStandardMenu = True
+                If Not doStandardMenu AndAlso Shell.GetSpecialFolder(SpecialFolders.AllTasks).Pidl.Equals(folder.Pidl) Then doStandardMenu = True
+                Dim parent As Folder = folder
+                While Not doStandardMenu AndAlso Not parent Is Nothing
+                    ' don't show explorer menu for control panel and subfolders
+                    If Shell.GetSpecialFolder(SpecialFolders.ControlPanel).Pidl.Equals(parent.Pidl) Then doStandardMenu = True
+                    parent = parent.Parent
+                End While
+            End If
+
+            ' get menu
+            Dim menu As BaseMenu = If(Not doStandardMenu AndAlso doUseWindows11ExplorerMenu AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), New ExplorerMenu(), New RightClickMenu())
+            menu.Folder = folder
+            menu.SelectedItems = selectedItems
+            menu.IsDefaultOnly = isDefaultOnly
+            Return menu
+        End Function
+
         Delegate Sub GetItemNameCoordinatesDelegate(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                          ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
 

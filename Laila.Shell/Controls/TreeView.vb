@@ -592,9 +592,7 @@ Namespace Controls
                             If Not _menu Is Nothing Then
                                 _menu.Dispose()
                             End If
-                            _menu = If(Me.DoUseWindows11ExplorerMenu AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), New ExplorerMenu(), New RightClickMenu())
-                            _menu.Folder = If(clickedItem.Parent Is Nothing, Shell.Desktop, clickedItem.Parent)
-                            _menu.SelectedItems = {clickedItem}
+                            _menu = Menus.GetContextMenu(Me.DoUseWindows11ExplorerMenu, If(clickedItem.Parent Is Nothing, Shell.Desktop, clickedItem.Parent), {clickedItem}, False)
                             AddHandler _menu.CommandInvoked,
                                 Sub(s As Object, e2 As CommandInvokedEventArgs)
                                     Select Case e2.Verb
@@ -816,10 +814,7 @@ Namespace Controls
             If Not _menu Is Nothing Then
                 _menu.Dispose()
             End If
-            _menu = If(Me.DoUseWindows11ExplorerMenu AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift), New ExplorerMenu(), New RightClickMenu())
-            _menu.Folder = Me.Folder
-            _menu.SelectedItems = {item}
-            _menu.IsDefaultOnly = True
+            _menu = Menus.GetContextMenu(Me.DoUseWindows11ExplorerMenu, Me.Folder, {item}, True)
             Await _menu.Make()
             Await _menu.InvokeCommand(_menu.DefaultId)
         End Function

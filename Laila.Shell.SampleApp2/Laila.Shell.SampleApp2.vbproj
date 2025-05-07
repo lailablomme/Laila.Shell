@@ -11,6 +11,7 @@
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<ApplicationIcon>0050-folder_search.ico</ApplicationIcon>
 	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  <SelfContained>false</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>
