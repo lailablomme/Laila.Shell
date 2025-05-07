@@ -16,8 +16,11 @@ jobs:
       - name: Setup .NET Framework
         uses: microsoft/setup-msbuild@v2
 
+      - name: Restore runtime packs
+        run: dotnet restore Laila.Shell.SampleApp2/Laila.Shell.SampleApp2.vbproj --runtime win-x64
+
       - name: Restore NuGet Packages
-        run: nuget restore Laila.Shell.sln
+        run: nuget restore Laila.Shell.sln --runtime win-x64
 
       - name: Extract Version from Tag
         id: extract_version
