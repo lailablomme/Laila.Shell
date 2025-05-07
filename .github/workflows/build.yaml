@@ -44,6 +44,21 @@ jobs:
         run: |
           msbuild Laila.Shell.SampleApp2/Laila.Shell.SampleApp2.vbproj /t:"Build" /p:Configuration=Release /p:Platform="x64" 
 
+      - name: Find and import local .pfx certificate from project
+        id: import_cert
+        run: |
+          $pfx = Get-ChildItem -Path "**/*.pfx" -Recurse | Select-Object -First 1
+          if (-not $pfx) { throw "No .pfx file found in project." }
+
+          Write-Output "Using certificate at: $($pfx.FullName)"
+
+          $cert = Import-PfxCertificate -FilePath $pfx.FullName `
+            -CertStoreLocation Cert:\CurrentUser\My `
+            -Password (ConvertTo-SecureString -String "yourPasswordHere" -AsPlainText -Force)
+
+          Write-Output "Cert thumbprint: $($cert.Thumbprint)"
+          "thumbprint=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
       - name: Build MSIX package for SampleApp2 (Developer Sideload)
         run: |
           msbuild Laila.Shell.SampleApp2.Package/Laila.Shell.SampleApp2.Package.wapproj `
@@ -65,21 +80,6 @@ jobs:
           $outputDir = "./Laila.Shell.SampleApp2/bin/x64/Release/net6.0-windows7.0/win-x64"
           $zipFile = "Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip"
           Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
-
-      - name: Find and import local .pfx certificate from project
-        id: import_cert
-        run: |
-          $pfx = Get-ChildItem -Path "**/*.pfx" -Recurse | Select-Object -First 1
-          if (-not $pfx) { throw "No .pfx file found in project." }
-
-          Write-Output "Using certificate at: $($pfx.FullName)"
-
-          $cert = Import-PfxCertificate -FilePath $pfx.FullName `
-            -CertStoreLocation Cert:\CurrentUser\My `
-            -Password (ConvertTo-SecureString -String "yourPasswordHere" -AsPlainText -Force)
-
-          Write-Output "Cert thumbprint: $($cert.Thumbprint)"
-          "thumbprint=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Package full MSIX deployment output (flattened for root zip)
         run: |
