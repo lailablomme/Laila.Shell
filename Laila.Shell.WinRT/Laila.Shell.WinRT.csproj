@@ -14,7 +14,7 @@
 	  <CsWinRTWindowsMetadata>sdk</CsWinRTWindowsMetadata>
 	  <CsWinRTEnableLogging>true</CsWinRTEnableLogging>
 	  <CsWinRTComponent>true</CsWinRTComponent>
-	  <!-- Windows 10 metadata -->
+	  <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
