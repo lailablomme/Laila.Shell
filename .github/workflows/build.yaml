@@ -44,6 +44,27 @@ jobs:
         run: |
           msbuild Laila.Shell.SampleApp2/Laila.Shell.SampleApp2.vbproj /t:"Build" /p:Configuration=Release /p:Platform="x64" 
 
+      - name: Build MSIX package for SampleApp2 (Developer Sideload)
+        run: |
+          msbuild Laila.Shell.SampleApp2.Package/Laila.Shell.SampleApp2.Package.wapproj `
+            /t:Publish `
+            /p:Configuration=Release `
+            /p:Platform="x64" `
+            /p:AppxBundle=Never `
+            /p:GenerateAppInstallerFile=False
+
+      - name: Package full MSIX deployment output (flattened for root zip)
+        run: |
+          $version = "${{ steps.extract_version.outputs.version }}"
+          $appPackages = Get-ChildItem -Path "**/AppPackages" -Directory -Recurse | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $appPackages) { throw "No AppPackages folder found." }
+
+          $subfolder = Get-ChildItem -Path $appPackages.FullName -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $subfolder) { throw "No subfolder found inside AppPackages." }
+
+          $zipName = "Laila.Shell.SampleApp2-$version-AppX.zip"
+          Compress-Archive -Path "$($subfolder.FullName)\*" -DestinationPath $zipName -Force
+
       - name: Package SampleApp1
         run: |
           $outputDir = "./Laila.Shell.SampleApp1/bin/x64/Release/net6.0-windows7.0"
@@ -77,7 +98,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           tag_name: ${{ steps.extract_version.outputs.version }}
           name: Release ${{ steps.extract_version.outputs.version }}
@@ -86,6 +107,7 @@ jobs:
           files: |
             Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip
             Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip
+            Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}-AppX.zip
             ./Laila.Shell/bin/x64/Release/*.nupkg
 
       - name: Publish NuGet package to nuget.org
