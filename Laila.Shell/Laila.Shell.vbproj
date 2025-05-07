@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.76-alpha</Version>
+	<Version>0.0.77-alpha</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
@@ -209,7 +209,7 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
 			<PackagePath>runtimes/win-x64/native/</PackagePath>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\Laila.Shell.WinRT.dll">
+		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\win-x64\Laila.Shell.WinRT.dll">
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -226,12 +226,12 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
 		</None>
-		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\Microsoft.Windows.SDK.NET.dll">
+		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\win-x64\Microsoft.Windows.SDK.NET.dll">
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\WinRT.Runtime.dll">
+		<None Include="..\Laila.Shell.WinRT\bin\$(Platform)\$(Configuration)\net6.0-windows10.0.22621.0\win-x64\WinRT.Runtime.dll">
 			<Pack>true</Pack>
 			<PackagePath>lib\net6.0-windows7.0/</PackagePath>
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
