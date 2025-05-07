@@ -16,9 +16,6 @@ jobs:
       - name: Setup .NET Framework
         uses: microsoft/setup-msbuild@v2
 
-      - name: Restore runtime packs
-        run: dotnet restore Laila.Shell.SampleApp2/Laila.Shell.SampleApp2.vbproj --runtime win-x64
-
       - name: Restore NuGet Packages
         run: nuget restore Laila.Shell.sln
 
@@ -47,6 +44,18 @@ jobs:
         run: |
           msbuild Laila.Shell.SampleApp2/Laila.Shell.SampleApp2.vbproj /t:"Build" /p:Configuration=Release /p:Platform="x64" 
 
+      - name: Package SampleApp1
+        run: |
+          $outputDir = "./Laila.Shell.SampleApp1/bin/x64/Release/net6.0-windows7.0"
+          $zipFile = "Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip"
+          Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
+
+      - name: Package SampleApp2
+        run: |
+          $outputDir = "./Laila.Shell.SampleApp2/bin/x64/Release/net6.0-windows7.0/win-x64"
+          $zipFile = "Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip"
+          Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
+
       - name: Find and import local .pfx certificate from project
         id: import_cert
         run: |
@@ -62,6 +71,9 @@ jobs:
           Write-Output "Cert thumbprint: $($cert.Thumbprint)"
           "thumbprint=$($cert.Thumbprint)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
+      - name: Restore runtime packs
+        run: dotnet restore Laila.Shell.SampleApp2/Laila.Shell.SampleApp2.vbproj --runtime win-x64
+
       - name: Build MSIX package for SampleApp2 (Developer Sideload)
         run: |
           msbuild Laila.Shell.SampleApp2.Package/Laila.Shell.SampleApp2.Package.wapproj `
@@ -71,18 +83,6 @@ jobs:
             /p:AppxBundle=Never `
             /p:GenerateAppInstallerFile=False `
             /p:BuildProjectReferences=false
-
-      - name: Package SampleApp1
-        run: |
-          $outputDir = "./Laila.Shell.SampleApp1/bin/x64/Release/net6.0-windows7.0"
-          $zipFile = "Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip"
-          Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
-
-      - name: Package SampleApp2
-        run: |
-          $outputDir = "./Laila.Shell.SampleApp2/bin/x64/Release/net6.0-windows7.0/win-x64"
-          $zipFile = "Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip"
-          Compress-Archive -Path "$outputDir/*" -DestinationPath "$zipFile"
 
       - name: Package full MSIX deployment output (flattened for root zip)
         run: |
