@@ -829,7 +829,7 @@ Namespace Controls
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
                             AddHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             AddHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
-                            UIHelper.OnUIThread(
+                            UIHelper.OnUIThreadAsync(
                                 Sub()
                                     For Each item2 In folder._items.ToList().Where(Function(i) i.IsVisibleInTree).ToList()
                                         If Not Me.Items.Contains(item2) Then
@@ -846,7 +846,7 @@ Namespace Controls
                             Dim folder As Folder = item
                             RemoveHandler folder.PropertyChanged, AddressOf folder_PropertyChanged
                             RemoveHandler folder._items.CollectionChanged, AddressOf folder_CollectionChanged
-                            UIHelper.OnUIThread(
+                            UIHelper.OnUIThreadAsync(
                                 Sub()
                                     For Each item2 In Me.Items.Where(Function(i) i.CanShowInTree _
                                         AndAlso Not i._logicalParent Is Nothing AndAlso i._logicalParent.Equals(folder)).ToList()
