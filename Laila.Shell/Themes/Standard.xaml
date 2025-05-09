@@ -5,6 +5,37 @@
                     xmlns:converters="clr-namespace:Laila.Shell.Converters"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
+    <BitmapImage x:Key="lailaShell_GridViewExtBehavior_SortAsc" UriSource="pack://application:,,,/Laila.Shell;component/Images/sortasc.png"/>
+    <BitmapImage x:Key="lailaShell_GridViewExtBehavior_SortDesc" UriSource="pack://application:,,,/Laila.Shell;component/Images/sortdesc.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_CopyButtonIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/copy16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_CutButtonIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/cut16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_PasteButtonIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/paste16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_RenameButtonIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/rename16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_DeleteButtonIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/delete16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_PinButtonIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/pin16.png"/>
+    <BitmapImage x:Key="lailaShell_ExplorerMenu_MoreOptionsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/more_options16.png"/>
+    <BitmapImage x:Key="lailaShell_ExplorerMenu_Windows.CompressToIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/Windows.CompressTo16.png"/>
+    <BitmapImage x:Key="lailaShell_ExplorerMenu_cloudIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/cloud16.png"/>
+    <BitmapImage x:Key="lailaShell_ExplorerMenu_cloud_downloadIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/cloud_download16.png"/>
+    <BitmapImage x:Key="lailaShell_ExplorerMenu_ViewIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/view16.png"/>
+    <BitmapImage x:Key="lailaShell_ExplorerMenu_SortIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/sort16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_ViewIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/view16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_SortIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/sort16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_ExpandAllIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/expandall16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_CollapseAllIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/collapseall16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_CompactModeIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/compactmode16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_CheckboxesForItemsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/filecheck16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_FilenameExtensionsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/fileext16.png"/>
+    <BitmapImage x:Key="lailaShell_Menu_HiddenItemsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/eye16.png"/>
+    <BitmapImage x:Key="lailaShell_View_ExtraLargeIconsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/extralargeicons16.png"/>
+    <BitmapImage x:Key="lailaShell_View_LargeIconsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/largeicons16.png"/>
+    <BitmapImage x:Key="lailaShell_View_NormalIconsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/normalicons16.png"/>
+    <BitmapImage x:Key="lailaShell_View_SmallIconsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/smallicons16.png"/>
+    <BitmapImage x:Key="lailaShell_View_ListIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/list16.png"/>
+    <BitmapImage x:Key="lailaShell_View_DetailsIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/details16.png"/>
+    <BitmapImage x:Key="lailaShell_View_TilesIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/tiles16.png"/>
+    <BitmapImage x:Key="lailaShell_View_ContentIcon" UriSource="pack://application:,,,/Laila.Shell;component/Images/content16.png"/>
+
     <SolidColorBrush x:Key="Item.MouseOver.Background" Color="#1F26A0DA"/>
     <SolidColorBrush x:Key="Item.MouseOver.Border" Color="#1F26A0DA"/>
     <SolidColorBrush x:Key="Item.Pressed.Background" Color="#1F26A0DA"/>

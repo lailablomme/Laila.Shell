@@ -48,11 +48,11 @@ Namespace Controls
             image.Height = 16
             image.Margin = New Thickness(2)
             Select Case tag.Item2
-                Case "copy" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/copy16.png")
-                Case "cut" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/cut16.png")
-                Case "paste" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/paste16.png")
-                Case "rename" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/rename16.png")
-                Case "delete" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/delete16.png")
+                Case "copy" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_CopyButtonIcon")
+                Case "cut" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_CutButtonIcon")
+                Case "paste" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_PasteButtonIcon")
+                Case "rename" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_RenameButtonIcon")
+                Case "delete" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_DeleteButtonIcon")
             End Select
             button.Content = image
             button.ToolTip = toolTip
@@ -67,7 +67,7 @@ Namespace Controls
             image.Height = 16
             image.Margin = New Thickness(2)
             Select Case tag.Item2
-                Case "laila.shell.(un)pin" : image.Source = New ImageSourceConverter().ConvertFromString("pack://application:,,,/Laila.Shell;component/Images/pin16.png")
+                Case "laila.shell.(un)pin" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_PinButtonIcon")
             End Select
             button.Content = image
             button.ToolTip = toolTip

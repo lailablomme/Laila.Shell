@@ -14,7 +14,7 @@ Public Class Home_LastAccessedProperty
                       .CanonicalName = Home_LastAccessedProperty.CanonicalName
                    }, CType(Nothing, IShellItem2))
         _isCustom = True
-        _displayName = "Last accessed"
+        _displayName = My.Resources.Folder_Home_LastAccessedPropertyDisplayName
         _dataType = VarEnum.VT_FILETIME
     End Sub
 

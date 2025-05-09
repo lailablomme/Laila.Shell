@@ -267,35 +267,35 @@ Public Class [Property]
                 Dim lastMonth As DateTime = DateTime.Now.Date.AddMonths(-1)
 
                 If dt.Date = DateTime.Now.Date Then
-                    Return "Today"
+                    Return My.Resources.Property_Date_Today
                 ElseIf dt.Date = DateTime.Now.Date.AddDays(-1) Then
-                    Return "Yesterday"
+                    Return My.Resources.Property_Date_Yesterday
                 ElseIf thisWeek = fileWeek AndAlso thisYear = fileYear Then
-                    Return "Earlier this week"
+                    Return My.Resources.Property_Date_EarlierThisWeek
                 ElseIf lastWeek = fileWeek And lastYear = fileYear Then
-                    Return "Last week"
+                    Return My.Resources.Property_Date_LastWeek
                 ElseIf dt.Month = DateTime.Now.Month AndAlso dt.Year = DateTime.Now.Year Then
-                    Return "Earlier this month"
+                    Return My.Resources.Property_Date_EarlierThisMonth
                 ElseIf dt.Month = lastMonth.Month AndAlso dt.Year = lastMonth.Year Then
-                    Return "Last month"
+                    Return My.Resources.Property_Date_LastMonth
                 Else
-                    Return "Long ago"
+                    Return My.Resources.Property_Date_LongAgo
                 End If
             ElseIf Me.DataType = VarEnum.VT_UI8 Then
                 If Me.RawValue.vt = 0 Then
-                    Return "Unknown"
+                    Return My.Resources.Property_Size_Unknown 
                 ElseIf Me.Value <= 16 * 1024 Then
-                    Return "Very small (0 - 16 KB)"
+                    Return My.Resources.Property_Size_VerySmall
                 ElseIf Me.Value <= 1024 * 1024 Then
-                    Return "Small (16 KB - 1 MB)"
+                    Return My.Resources.Property_Size_Small
                 ElseIf Me.Value <= 128 * 1024 * 1024 Then
-                    Return "Normal (1 - 128 MB)"
+                    Return My.Resources.Property_Size_Normal
                 ElseIf Me.Value <= 1024 * 1024 * 1024 Then
-                    Return "Large (128 MB - 1 GB)"
+                    Return My.Resources.Property_Size_Large
                 ElseIf Me.Value <= 4L * 1024 * 1024 * 1024 Then
-                    Return "Very large (1 - 4 GB)"
+                    Return My.Resources.Property_Size_VeryLarge
                 Else
-                    Return "Gigantic (> 4 GB)"
+                    Return My.Resources.Property_Size_Gigantic
                 End If
             Else
                 Return Me.Text

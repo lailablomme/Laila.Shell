@@ -22,8 +22,6 @@ Namespace Controls
         Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(Previewer), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(Previewer), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
 
-        Private Const ERROR_MESSAGE As String = "A preview cannot be displayed for this item ({0})."
-
         Private Shared _thread As Helpers.ThreadPool = New Helpers.ThreadPool(1)
         Private _handler As IPreviewHandler
         Private _stream As IStream
@@ -94,13 +92,13 @@ Namespace Controls
             If Me.PART_Message Is Nothing Then Return
 
             If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
-                PART_Message.Text = "Select the file for which you want to display a preview."
+                PART_Message.Text = My.Resources.Previewer_SelectTheFileForWhichYouWantToDisplayAPreview
                 PART_Message.Visibility = Visibility.Visible
             ElseIf Not String.IsNullOrWhiteSpace(_errorText) Then
                 PART_Message.Text = _errorText
                 PART_Message.Visibility = Visibility.Visible
             ElseIf _handler Is Nothing AndAlso Not _isThumbnail AndAlso _isMade Then
-                PART_Message.Text = "Preview is not available."
+                PART_Message.Text = My.Resources.Previewer_PreviewIsNotAvailable
                 PART_Message.Visibility = Visibility.Visible
             Else
                 PART_Message.Visibility = Visibility.Collapsed
@@ -249,7 +247,7 @@ Namespace Controls
                                             UIHelper.OnUIThread(
                                                 Sub()
                                                     If _cancelTokenSource.IsCancellationRequested Then Return
-                                                    previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
+                                                    previewer._errorText = String.Format(My.Resources.Previewer_APreviewCannotBeDisplayedForThisItem, h)
                                                 End Sub)
                                             If _cancelTokenSource.IsCancellationRequested Then Return
                                             hidePreview(previewer)
@@ -259,7 +257,7 @@ Namespace Controls
                                     UIHelper.OnUIThread(
                                         Sub()
                                             If _cancelTokenSource.IsCancellationRequested Then Return
-                                            previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
+                                            previewer._errorText = String.Format(My.Resources.Previewer_APreviewCannotBeDisplayedForThisItem, h)
                                         End Sub)
                                 End If
 
@@ -288,7 +286,7 @@ Namespace Controls
                                         UIHelper.OnUIThread(
                                             Sub()
                                                 If _cancelTokenSource.IsCancellationRequested Then Return
-                                                previewer._errorText = String.Format(Previewer.ERROR_MESSAGE, h)
+                                                previewer._errorText = String.Format(My.Resources.Previewer_APreviewCannotBeDisplayedForThisItem, h)
                                             End Sub)
                                         hidePreview(previewer)
                                     Else

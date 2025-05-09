@@ -14,7 +14,7 @@ Public Class Home_CategoryProperty
                       .CanonicalName = Home_CategoryProperty.CanonicalName
                    }, CType(Nothing, IShellItem2))
         _isCustom = True
-        _displayName = "Home category"
+        _displayName = My.Resources.Folder_Home_CategoryPropertyDisplayName
         _dataType = VarEnum.VT_UI4
         _displayType = PropertyDisplayType.String
     End Sub
@@ -35,11 +35,11 @@ Public Class Home_CategoryProperty
         Get
             Select Case CType(Me.Value, [Type])
                 Case [Type].QUICK_LAUNCH
-                    Return "Quick launch"
+                    Return My.Resources.Folder_Home_QuickLaunch
                 Case [Type].FAVORITES
                     Return "Favorites"
                 Case [Type].RECENT_FILE
-                    Return "Recent files"
+                    Return My.Resources.Folder_Home_RecentFiles
                 Case Else
                     Return "Unknown"
             End Select

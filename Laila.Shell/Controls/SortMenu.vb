@@ -27,7 +27,7 @@ Namespace Controls
             End If
             If Me.Folder.CanGroupBy Then
                 Dim groupByMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Group by",
+                    .Header = My.Resources.Menu_GroupBy,
                     .Tag = "GroupBy"
                 }
                 Me.Items.Add(groupByMenuItem)
@@ -84,7 +84,7 @@ Namespace Controls
                 menu.Add(menuItem)
             Next
             If _additionalProperties.Count > 0 Then
-                moreMenuItem = New MenuItem() With {.Header = "More", .Tag = "SortMore"}
+                moreMenuItem = New MenuItem() With {.Header = My.Resources.Menu_SortMore, .Tag = "SortMore"}
                 menu.Add(moreMenuItem)
                 For Each propName In _additionalProperties
                     Dim menuItem As MenuItem = New MenuItem() With {
@@ -100,7 +100,7 @@ Namespace Controls
             End If
             menu.Add(New Separator())
             Dim sortAscendingMenuItem As MenuItem = New MenuItem() With {
-                .Header = "Ascending",
+                .Header = My.Resources.Menu_SortAscending,
                 .IsCheckable = True,
                 .Tag = "SortAscending",
                 .IsChecked = Me.Folder.ItemsSortDirection = ListSortDirection.Ascending
@@ -116,7 +116,7 @@ Namespace Controls
                 End Sub
             AddHandler sortAscendingMenuItem.Unchecked, menuItemUncheckedAction
             Dim sortDescendingMenuItem As MenuItem = New MenuItem() With {
-                .Header = "Descending",
+                .Header = My.Resources.Menu_SortDescending,
                 .IsCheckable = True,
                 .Tag = "SortDescending",
                 .IsChecked = Me.Folder.ItemsSortDirection = ListSortDirection.Descending
@@ -183,7 +183,7 @@ Namespace Controls
             Next
             If Not String.IsNullOrWhiteSpace(groupByPropertyName) Then
                 Dim groupByNoneMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "(None)",
+                    .Header = My.Resources.Menu_GroupByNone,
                     .Tag = "Group:",
                     .IsCheckable = True
                 }

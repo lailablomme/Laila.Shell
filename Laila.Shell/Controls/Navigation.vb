@@ -154,9 +154,9 @@ Namespace Controls
             Me.CanBack = _pointer > 0
             Me.CanForward = _pointer < _list.Count - 1
             Me.CanUp = Not Me.Folder.LogicalParent Is Nothing
-            Me.BackText = If(_pointer - 1 >= 0, "Back to " & _list(_pointer - 1).DisplayName, "")
-            Me.ForwardText = If(_pointer + 1 <= _list.Count - 1, "Forward to " & _list(_pointer + 1).DisplayName, "")
-            Me.UpText = If(Not Me.Folder.LogicalParent Is Nothing, "Up to " & Me.Folder.LogicalParent.DisplayName, "")
+            Me.BackText = If(_pointer - 1 >= 0, String.Format(My.Resources.Navigation_BackText, _list(_pointer - 1).DisplayName), "")
+            Me.ForwardText = If(_pointer + 1 <= _list.Count - 1, String.Format(My.Resources.Navigation_ForwardText, _list(_pointer + 1).DisplayName), "")
+            Me.UpText = If(Not Me.Folder.LogicalParent Is Nothing, String.Format(My.Resources.Navigation_UpText, Me.Folder.LogicalParent.DisplayName), "")
         End Sub
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)

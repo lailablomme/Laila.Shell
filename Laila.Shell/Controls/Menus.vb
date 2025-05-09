@@ -261,9 +261,9 @@ Namespace Controls
                                             .Placement = BalloonPlacementMode.Bottom,
                                             .PopupAnimation = Primitives.PopupAnimation.Fade,
                                             .Text = If(Not String.IsNullOrWhiteSpace(invalidChars),
-                                                        "The following characters can not appear in filenames:" & vbCrLf _
+                                                        My.Resources.Menus_TheFollowingCharactersCannotAppearInFileNames & vbCrLf _
                                                       & "     " & String.Join("   ", invalidChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32)),
-                                                        "Only the following characters can appear in filenames:" & vbCrLf _
+                                                        My.Resources.Menus_TheFollowingCharactersCanAppearInFileNames & vbCrLf _
                                                       & "     " & String.Join("   ", validChars.ToCharArray().Where(Function(ch) Asc(ch) >= 32))),
                                             .Timeout = 9000
                                         }

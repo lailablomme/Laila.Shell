@@ -20,8 +20,8 @@ Namespace Controls
 
                 Dim viewMenu As ViewMenu = New ViewMenu() With {.Folder = Me.Folder, .MenuStyle = ViewMenuStyle.RightClickMenu}
                 Dim viewMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "View",
-                    .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/view16.png", UriKind.Absolute))}
+                    .Header = My.Resources.Menu_View,
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"lailaShell_Menu_ViewIcon")}
                 }
                 viewMenu.AddItems(viewMenuItem.Items)
                 Me.Items.Insert(0, viewMenuItem)
@@ -32,8 +32,8 @@ Namespace Controls
 
                     If Me.Folder.CanSort Then
                         Dim sortMenuItem As MenuItem = New MenuItem() With {
-                            .Header = "Sort",
-                            .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/sort16.png", UriKind.Absolute))}
+                            .Header = My.Resources.Menu_Sort,
+                            .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"lailaShell_Menu_SortIcon")}
                         }
                         sortMenu.AddSortItems(sortMenuItem.Items)
                         Me.Items.Insert(insertIndex, sortMenuItem)
@@ -42,7 +42,7 @@ Namespace Controls
 
                     If Me.Folder.CanGroupBy Then
                         Dim groupByMenuItem As MenuItem = New MenuItem() With {
-                            .Header = "Group by"
+                            .Header = My.Resources.Menu_GroupBy
                         }
                         sortMenu.AddGroupByItems(groupByMenuItem.Items)
                         Me.Items.Insert(insertIndex, groupByMenuItem)

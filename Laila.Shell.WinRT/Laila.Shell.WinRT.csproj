@@ -35,4 +35,19 @@
     <ProjectReference Include="..\Laila.Shell.WinRT.Interface\Laila.Shell.WinRT.Interface.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Properties\ResourcesRT.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ResourcesRT.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\ResourcesRT.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ResourcesRT.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
 </Project>

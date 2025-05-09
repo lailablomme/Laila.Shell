@@ -25,7 +25,7 @@ Namespace Controls
             For Each item In Me.Folder.Views
                 Dim viewSubMenuItem As MenuItem = New MenuItem() With {
                     .Header = item.Title,
-                    .Icon = New Image() With {.Source = New BitmapImage(item.IconUri)},
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource(item.IconResourceKey)},
                     .Tag = "View:" & item.Guid.ToString(),
                     .IsCheckable = True,
                     .IsChecked = item.Guid = Me.Folder.ActiveView
@@ -52,8 +52,8 @@ Namespace Controls
             If Me.MenuStyle = ViewMenuStyle.RightClickMenu AndAlso Not String.IsNullOrWhiteSpace(Me.Folder.ItemsGroupByPropertyName) Then
                 menu.Add(New Separator())
                 Dim expandAllGroupsMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Expand all groups",
-                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/expandall16.png")}
+                    .Header = My.Resources.Menu_ExpandAllGroups,
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_ExpandAllIcon")}
                 }
                 AddHandler expandAllGroupsMenuItem.Click,
                     Sub(s As Object, e As EventArgs)
@@ -61,8 +61,8 @@ Namespace Controls
                     End Sub
                 menu.Add(expandAllGroupsMenuItem)
                 Dim collapseAllGroupsMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Collapse all groups",
-                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/collapseall16.png")}
+                    .Header = My.Resources.Menu_CollapseAllGroups,
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_CollapseAllIcon")}
                 }
                 AddHandler collapseAllGroupsMenuItem.Click,
                     Sub(s As Object, e As EventArgs)
@@ -74,12 +74,12 @@ Namespace Controls
             If Me.MenuStyle = ViewMenuStyle.Toolbar Then
                 menu.Add(New Separator())
                 Dim viewSubMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "View"
+                    .Header = My.Resources.Menu_View
                 }
                 menu.Add(viewSubMenuItem)
                 Dim compactModeMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Compact mode",
-                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/compactmode16.png")},
+                    .Header = My.Resources.Menu_CompactMode,
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_CompactModeIcon")},
                     .IsCheckable = True,
                     .IsChecked = Shell.Settings.IsCompactMode
                 }
@@ -90,8 +90,8 @@ Namespace Controls
                 viewSubMenuItem.Items.Add(compactModeMenuItem)
                 viewSubMenuItem.Items.Add(New Separator())
                 Dim checkBoxesForItemsMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Checkboxes for items",
-                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/filecheck16.png")},
+                    .Header = My.Resources.Menu_CheckboxesForItems,
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_CheckboxesForItemsIcon")},
                     .IsCheckable = True,
                     .IsChecked = Shell.Settings.DoShowCheckBoxesToSelect
                 }
@@ -101,8 +101,8 @@ Namespace Controls
                     End Sub
                 viewSubMenuItem.Items.Add(checkBoxesForItemsMenuItem)
                 Dim fileNameExtensionsMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Filename extensions",
-                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/fileext16.png")},
+                    .Header = My.Resources.Menu_FilenameExtensions,
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_FilenameExtensionsIcon")},
                     .IsCheckable = True,
                     .IsChecked = Not Shell.Settings.DoHideKnownFileExtensions
                 }
@@ -112,8 +112,8 @@ Namespace Controls
                     End Sub
                 viewSubMenuItem.Items.Add(fileNameExtensionsMenuItem)
                 Dim hiddenItemsMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "Hidden items",
-                    .Icon = New Image() With {.Source = New ImageSourceConverter().ConvertFromInvariantString("pack://application:,,,/Laila.Shell;component/Images/eye16.png")},
+                    .Header = My.Resources.Menu_HiddenItems,
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_HiddenItemsIcon")},
                     .IsCheckable = True,
                     .IsChecked = Shell.Settings.DoShowHiddenFilesAndFolders
                 }

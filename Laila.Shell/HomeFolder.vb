@@ -34,8 +34,8 @@ Public Class HomeFolder
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
 
         _views = New List(Of FolderViewRegistration) From {
-            New FolderViewRegistration(New Guid("5aab6a71-6d79-4bcd-8a85-3ed37a3fdb4d"), "Tiles", New Uri("pack://application:,,,/Laila.Shell;component/Images/tiles16.png"), GetType(HomeFolderTilesView)),
-            New FolderViewRegistration(New Guid("fc73e12c-6b88-4a3f-9a2e-c7414bcd1f1f"), "Details", New Uri("pack://application:,,,/Laila.Shell;component/Images/details16.png"), GetType(HomeFolderDetailsView))
+            New FolderViewRegistration(New Guid("5aab6a71-6d79-4bcd-8a85-3ed37a3fdb4d"), "Tiles", "lailaShell_View_TilesIcon", GetType(HomeFolderTilesView)),
+            New FolderViewRegistration(New Guid("fc73e12c-6b88-4a3f-9a2e-c7414bcd1f1f"), "Details", "lailaShell_View_DetailsIcon", GetType(HomeFolderDetailsView))
         }
         Me.DefaultView = New Guid("5aab6a71-6d79-4bcd-8a85-3ed37a3fdb4d")
 
@@ -68,7 +68,7 @@ Public Class HomeFolder
 
     Public Overrides ReadOnly Property DisplayName As String
         Get
-            Return "Home"
+            Return My.Resources.Folder_Home_DisplayName
         End Get
     End Property
 
@@ -309,7 +309,7 @@ Public Class HomeFolder
                 AndAlso (UIHelper.GetParentOfType(Of BaseFolderView)(overListBoxItem) Is Nothing _
                          OrElse CType(overListBoxItem?.DataContext, Item).IsPinned))
         If canPinItem Then
-            WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, "Pin to %1", "Quick launch")
+            WpfDragTargetProxy.SetDropDescription(dataObject, DROPIMAGETYPE.DROPIMAGE_LINK, My.Resources.Folder_Home_DragDrop_PinTo, My.Resources.Folder_Home_QuickLaunch)
             Return HRESULT.S_OK
         Else
             Return HRESULT.S_FALSE

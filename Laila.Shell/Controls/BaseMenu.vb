@@ -9,6 +9,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Input
+Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 
 Namespace Controls
@@ -244,7 +245,7 @@ Namespace Controls
         Protected Class MenuItemData
             Public Property ApplicationName As String
             Public Property Header As String
-            Public Property Icon As BitmapSource
+            Public Property Icon As ImageSource
             Public Property Tag As Object
             Public Property IsEnabled As Boolean
             Public Property FontWeight As FontWeight

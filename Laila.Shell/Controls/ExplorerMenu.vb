@@ -143,7 +143,7 @@ Namespace Controls
                         If _menuItems.Count > 0 Then
                             _menuItems.Add(New MenuItemData() With {.Header = "-----"})
                         End If
-                        Dim icon As BitmapSource = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/more_options16.png", UriKind.Absolute))
+                        Dim icon As ImageSource = System.Windows.Application.Current.TryFindResource("lailaShell_ExplorerMenu_MoreOptionsIcon")
                         icon.Freeze()
                         Dim showMoreOptionsMenuItem As New MenuItemData() With {
                             .Header = "Show more options...",
@@ -182,9 +182,8 @@ Namespace Controls
                         End Using
                     End Using
                     If menuItem.Icon Is Nothing Then
-                        Dim uri As Uri = New Uri($"pack://application:,,,/Laila.Shell;component/Images/{commandForIcon}16.png", UriKind.Absolute)
                         Try
-                            menuItem.Icon = New BitmapImage(uri)
+                            menuItem.Icon = System.Windows.Application.Current.TryFindResource($"lailaShell_ExplorerMenu_{commandForIcon}Icon")
                             menuItem.Icon?.Freeze()
                         Catch ex As Exception
                         End Try
@@ -247,9 +246,8 @@ Namespace Controls
                                             menuItem.Icon = ImageHelper.ExtractIcon(icon, True)
                                         End If
                                         If menuItem.Icon Is Nothing Then
-                                            Dim uri As Uri = New Uri($"pack://application:,,,/Laila.Shell;component/Images/{name}16.png", UriKind.Absolute)
                                             Try
-                                                menuItem.Icon = New BitmapImage(uri)
+                                                menuItem.Icon = System.Windows.Application.Current.TryFindResource($"lailaShell_ExplorerMenu_{name}Icon")
                                                 menuItem.Icon?.Freeze()
                                             Catch ex As Exception
                                             End Try
@@ -595,8 +593,8 @@ Namespace Controls
 
                 Dim viewMenu As ViewMenu = New ViewMenu() With {.Folder = Me.Folder, .MenuStyle = ViewMenuStyle.RightClickMenu}
                 Dim viewMenuItem As MenuItem = New MenuItem() With {
-                    .Header = "View",
-                    .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/view16.png", UriKind.Absolute))}
+                    .Header = My.Resources.Menu_View,
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"lailaShell_ExplorerMenu_ViewIcon")}
                 }
                 viewMenu.AddItems(viewMenuItem.Items)
                 Me.Items.Insert(0, viewMenuItem)
@@ -607,8 +605,8 @@ Namespace Controls
 
                     If Me.Folder.CanSort Then
                         Dim sortMenuItem As MenuItem = New MenuItem() With {
-                            .Header = "Sort",
-                            .Icon = New Image() With {.Source = New BitmapImage(New Uri("pack://application:,,,/Laila.Shell;component/Images/sort16.png", UriKind.Absolute))}
+                            .Header = My.Resources.Menu_Sort,
+                            .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"lailaShell_ExplorerMenu_SortIcon")}
                         }
                         sortMenu.AddSortItems(sortMenuItem.Items)
                         Me.Items.Insert(insertIndex, sortMenuItem)
@@ -617,7 +615,7 @@ Namespace Controls
 
                     If Me.Folder.CanGroupBy Then
                         Dim groupByMenuItem As MenuItem = New MenuItem() With {
-                            .Header = "Group by"
+                            .Header = My.Resources.Menu_GroupBy
                         }
                         sortMenu.AddGroupByItems(groupByMenuItem.Items)
                         Me.Items.Insert(insertIndex, groupByMenuItem)

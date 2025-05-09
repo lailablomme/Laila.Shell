@@ -8,7 +8,7 @@ Namespace Adorners
     Public Class GridViewColumnHeaderGlyphAdorner
         Inherits Adorner
 
-        Public Shared Sub Add(columnHeader As GridViewColumnHeader, code As String, index As Integer, imageSource As String, alignment As HorizontalAlignment)
+        Public Shared Sub Add(columnHeader As GridViewColumnHeader, code As String, index As Integer, imageResourceKey As String, alignment As HorizontalAlignment)
             Dim adornerLayer As AdornerLayer = System.Windows.Documents.AdornerLayer.GetAdornerLayer(columnHeader)
             If Not adornerLayer Is Nothing Then
                 Dim adorners As Adorner() = adornerLayer.GetAdorners(columnHeader)
@@ -20,7 +20,7 @@ Namespace Adorners
                     adornerLayer.Add(adorner)
                 End If
                 Dim isc As ImageSourceConverter = New ImageSourceConverter()
-                adorner.add(code, New GridViewColumnHeaderGlyph(index, isc.ConvertFromInvariantString(imageSource), alignment))
+                adorner.add(code, New GridViewColumnHeaderGlyph(index, System.Windows.Application.Current.TryFindResource(imageResourceKey), alignment))
             End If
         End Sub
 

@@ -89,5 +89,572 @@ Namespace My.Resources
                 Return CType(obj,Byte())
             End Get
         End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Category.
+        '''</summary>
+        Friend ReadOnly Property Folder_Home_CategoryPropertyDisplayName() As String
+            Get
+                Return ResourceManager.GetString("Folder_Home_CategoryPropertyDisplayName", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Home.
+        '''</summary>
+        Friend ReadOnly Property Folder_Home_DisplayName() As String
+            Get
+                Return ResourceManager.GetString("Folder_Home_DisplayName", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Pin to %1.
+        '''</summary>
+        Friend ReadOnly Property Folder_Home_DragDrop_PinTo() As String
+            Get
+                Return ResourceManager.GetString("Folder_Home_DragDrop_PinTo", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Last accessed.
+        '''</summary>
+        Friend ReadOnly Property Folder_Home_LastAccessedPropertyDisplayName() As String
+            Get
+                Return ResourceManager.GetString("Folder_Home_LastAccessedPropertyDisplayName", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Quick launch.
+        '''</summary>
+        Friend ReadOnly Property Folder_Home_QuickLaunch() As String
+            Get
+                Return ResourceManager.GetString("Folder_Home_QuickLaunch", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Recent files.
+        '''</summary>
+        Friend ReadOnly Property Folder_Home_RecentFiles() As String
+            Get
+                Return ResourceManager.GetString("Folder_Home_RecentFiles", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to {0} items selected.
+        '''</summary>
+        Friend ReadOnly Property FolderView_StatusText_MultipleItemsSelected() As String
+            Get
+                Return ResourceManager.GetString("FolderView_StatusText_MultipleItemsSelected", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to {0} items.
+        '''</summary>
+        Friend ReadOnly Property FolderView_StatusText_MultipleTotalItems() As String
+            Get
+                Return ResourceManager.GetString("FolderView_StatusText_MultipleTotalItems", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to 1 item selected.
+        '''</summary>
+        Friend ReadOnly Property FolderView_StatusText_OneItemSelected() As String
+            Get
+                Return ResourceManager.GetString("FolderView_StatusText_OneItemSelected", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to 1 item.
+        '''</summary>
+        Friend ReadOnly Property FolderView_StatusText_OneTotalItem() As String
+            Get
+                Return ResourceManager.GetString("FolderView_StatusText_OneTotalItem", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to GridViewExtBehavior requires all columns have unique names..
+        '''</summary>
+        Friend ReadOnly Property GridViewExtBehavior_AllColumnsMustHaveUniqueNames() As String
+            Get
+                Return ResourceManager.GetString("GridViewExtBehavior_AllColumnsMustHaveUniqueNames", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to GridViewExtBehavior requires that each column has a name..
+        '''</summary>
+        Friend ReadOnly Property GridViewExtBehavior_EachColumnMustHaveAName() As String
+            Get
+                Return ResourceManager.GetString("GridViewExtBehavior_EachColumnMustHaveAName", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Group by this column.
+        '''</summary>
+        Friend ReadOnly Property GridViewExtBehavior_GroupByThisColumn() As String
+            Get
+                Return ResourceManager.GetString("GridViewExtBehavior_GroupByThisColumn", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Checkboxes for items.
+        '''</summary>
+        Friend ReadOnly Property Menu_CheckboxesForItems() As String
+            Get
+                Return ResourceManager.GetString("Menu_CheckboxesForItems", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to CollapseAllGroups.
+        '''</summary>
+        Friend ReadOnly Property Menu_CollapseAllGroups() As String
+            Get
+                Return ResourceManager.GetString("Menu_CollapseAllGroups", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Compact mode.
+        '''</summary>
+        Friend ReadOnly Property Menu_CompactMode() As String
+            Get
+                Return ResourceManager.GetString("Menu_CompactMode", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Copy.
+        '''</summary>
+        Friend ReadOnly Property Menu_Copy() As String
+            Get
+                Return ResourceManager.GetString("Menu_Copy", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Cut.
+        '''</summary>
+        Friend ReadOnly Property Menu_Cut() As String
+            Get
+                Return ResourceManager.GetString("Menu_Cut", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Delete.
+        '''</summary>
+        Friend ReadOnly Property Menu_Delete() As String
+            Get
+                Return ResourceManager.GetString("Menu_Delete", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Expand all groups.
+        '''</summary>
+        Friend ReadOnly Property Menu_ExpandAllGroups() As String
+            Get
+                Return ResourceManager.GetString("Menu_ExpandAllGroups", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Filename extensions.
+        '''</summary>
+        Friend ReadOnly Property Menu_FilenameExtensions() As String
+            Get
+                Return ResourceManager.GetString("Menu_FilenameExtensions", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Group by.
+        '''</summary>
+        Friend ReadOnly Property Menu_GroupBy() As String
+            Get
+                Return ResourceManager.GetString("Menu_GroupBy", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to (None).
+        '''</summary>
+        Friend ReadOnly Property Menu_GroupByNone() As String
+            Get
+                Return ResourceManager.GetString("Menu_GroupByNone", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Hidden items.
+        '''</summary>
+        Friend ReadOnly Property Menu_HiddenItems() As String
+            Get
+                Return ResourceManager.GetString("Menu_HiddenItems", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Paste.
+        '''</summary>
+        Friend ReadOnly Property Menu_Paste() As String
+            Get
+                Return ResourceManager.GetString("Menu_Paste", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Pin item.
+        '''</summary>
+        Friend ReadOnly Property Menu_PinItem() As String
+            Get
+                Return ResourceManager.GetString("Menu_PinItem", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Rename.
+        '''</summary>
+        Friend ReadOnly Property Menu_Rename() As String
+            Get
+                Return ResourceManager.GetString("Menu_Rename", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Sort.
+        '''</summary>
+        Friend ReadOnly Property Menu_Sort() As String
+            Get
+                Return ResourceManager.GetString("Menu_Sort", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Ascending.
+        '''</summary>
+        Friend ReadOnly Property Menu_SortAscending() As String
+            Get
+                Return ResourceManager.GetString("Menu_SortAscending", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Descending.
+        '''</summary>
+        Friend ReadOnly Property Menu_SortDescending() As String
+            Get
+                Return ResourceManager.GetString("Menu_SortDescending", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to More.
+        '''</summary>
+        Friend ReadOnly Property Menu_SortMore() As String
+            Get
+                Return ResourceManager.GetString("Menu_SortMore", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Unpin item.
+        '''</summary>
+        Friend ReadOnly Property Menu_UnpinItem() As String
+            Get
+                Return ResourceManager.GetString("Menu_UnpinItem", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to View.
+        '''</summary>
+        Friend ReadOnly Property Menu_View() As String
+            Get
+                Return ResourceManager.GetString("Menu_View", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Only the following characters can appear in filenames:.
+        '''</summary>
+        Friend ReadOnly Property Menus_TheFollowingCharactersCanAppearInFileNames() As String
+            Get
+                Return ResourceManager.GetString("Menus_TheFollowingCharactersCanAppearInFileNames", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to The following characters can not appear in filenames:.
+        '''</summary>
+        Friend ReadOnly Property Menus_TheFollowingCharactersCannotAppearInFileNames() As String
+            Get
+                Return ResourceManager.GetString("Menus_TheFollowingCharactersCannotAppearInFileNames", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Back to {0}.
+        '''</summary>
+        Friend ReadOnly Property Navigation_BackText() As String
+            Get
+                Return ResourceManager.GetString("Navigation_BackText", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Forward to {0}.
+        '''</summary>
+        Friend ReadOnly Property Navigation_ForwardText() As String
+            Get
+                Return ResourceManager.GetString("Navigation_ForwardText", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Up to {0}.
+        '''</summary>
+        Friend ReadOnly Property Navigation_UpText() As String
+            Get
+                Return ResourceManager.GetString("Navigation_UpText", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to A preview cannot be displayed for this item ({0})..
+        '''</summary>
+        Friend ReadOnly Property Previewer_APreviewCannotBeDisplayedForThisItem() As String
+            Get
+                Return ResourceManager.GetString("Previewer_APreviewCannotBeDisplayedForThisItem", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Preview is not available..
+        '''</summary>
+        Friend ReadOnly Property Previewer_PreviewIsNotAvailable() As String
+            Get
+                Return ResourceManager.GetString("Previewer_PreviewIsNotAvailable", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Select the file for which you want to display a preview..
+        '''</summary>
+        Friend ReadOnly Property Previewer_SelectTheFileForWhichYouWantToDisplayAPreview() As String
+            Get
+                Return ResourceManager.GetString("Previewer_SelectTheFileForWhichYouWantToDisplayAPreview", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Earlier this month.
+        '''</summary>
+        Friend ReadOnly Property Property_Date_EarlierThisMonth() As String
+            Get
+                Return ResourceManager.GetString("Property_Date_EarlierThisMonth", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Earlier this week.
+        '''</summary>
+        Friend ReadOnly Property Property_Date_EarlierThisWeek() As String
+            Get
+                Return ResourceManager.GetString("Property_Date_EarlierThisWeek", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Last month.
+        '''</summary>
+        Friend ReadOnly Property Property_Date_LastMonth() As String
+            Get
+                Return ResourceManager.GetString("Property_Date_LastMonth", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Last week.
+        '''</summary>
+        Friend ReadOnly Property Property_Date_LastWeek() As String
+            Get
+                Return ResourceManager.GetString("Property_Date_LastWeek", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Long ago.
+        '''</summary>
+        Friend ReadOnly Property Property_Date_LongAgo() As String
+            Get
+                Return ResourceManager.GetString("Property_Date_LongAgo", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Today.
+        '''</summary>
+        Friend ReadOnly Property Property_Date_Today() As String
+            Get
+                Return ResourceManager.GetString("Property_Date_Today", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Yesterday.
+        '''</summary>
+        Friend ReadOnly Property Property_Date_Yesterday() As String
+            Get
+                Return ResourceManager.GetString("Property_Date_Yesterday", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Gigantic (&gt; 4 GB).
+        '''</summary>
+        Friend ReadOnly Property Property_Size_Gigantic() As String
+            Get
+                Return ResourceManager.GetString("Property_Size_Gigantic", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Large (128 MB - 1 GB).
+        '''</summary>
+        Friend ReadOnly Property Property_Size_Large() As String
+            Get
+                Return ResourceManager.GetString("Property_Size_Large", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Normal (1 - 128 MB).
+        '''</summary>
+        Friend ReadOnly Property Property_Size_Normal() As String
+            Get
+                Return ResourceManager.GetString("Property_Size_Normal", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Small (16 KB - 1 MB).
+        '''</summary>
+        Friend ReadOnly Property Property_Size_Small() As String
+            Get
+                Return ResourceManager.GetString("Property_Size_Small", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Unknown.
+        '''</summary>
+        Friend ReadOnly Property Property_Size_Unknown() As String
+            Get
+                Return ResourceManager.GetString("Property_Size_Unknown", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Very large (1 - 4 GB).
+        '''</summary>
+        Friend ReadOnly Property Property_Size_VeryLarge() As String
+            Get
+                Return ResourceManager.GetString("Property_Size_VeryLarge", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Very small (0 - 16 KB).
+        '''</summary>
+        Friend ReadOnly Property Property_Size_VerySmall() As String
+            Get
+                Return ResourceManager.GetString("Property_Size_VerySmall", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Content.
+        '''</summary>
+        Friend ReadOnly Property View_Content() As String
+            Get
+                Return ResourceManager.GetString("View_Content", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Details.
+        '''</summary>
+        Friend ReadOnly Property View_Details() As String
+            Get
+                Return ResourceManager.GetString("View_Details", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Extra large icons.
+        '''</summary>
+        Friend ReadOnly Property View_ExtraLargeIcons() As String
+            Get
+                Return ResourceManager.GetString("View_ExtraLargeIcons", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Large icons.
+        '''</summary>
+        Friend ReadOnly Property View_LargeIcons() As String
+            Get
+                Return ResourceManager.GetString("View_LargeIcons", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to List.
+        '''</summary>
+        Friend ReadOnly Property View_List() As String
+            Get
+                Return ResourceManager.GetString("View_List", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Normal icons.
+        '''</summary>
+        Friend ReadOnly Property View_NormalIcons() As String
+            Get
+                Return ResourceManager.GetString("View_NormalIcons", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Small icons.
+        '''</summary>
+        Friend ReadOnly Property View_SmallIcons() As String
+            Get
+                Return ResourceManager.GetString("View_SmallIcons", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Tiles.
+        '''</summary>
+        Friend ReadOnly Property View_Tiles() As String
+            Get
+                Return ResourceManager.GetString("View_Tiles", resourceCulture)
+            End Get
+        End Property
     End Module
 End Namespace

@@ -127,4 +127,193 @@
   <data name="cursor_move" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\cursor_move.cur;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="FolderView_StatusText_MultipleItemsSelected" xml:space="preserve">
+    <value>{0} items selected</value>
+  </data>
+  <data name="FolderView_StatusText_MultipleTotalItems" xml:space="preserve">
+    <value>{0} items</value>
+  </data>
+  <data name="FolderView_StatusText_OneItemSelected" xml:space="preserve">
+    <value>1 item selected</value>
+  </data>
+  <data name="FolderView_StatusText_OneTotalItem" xml:space="preserve">
+    <value>1 item</value>
+  </data>
+  <data name="Folder_Home_CategoryPropertyDisplayName" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="Folder_Home_DisplayName" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Folder_Home_DragDrop_PinTo" xml:space="preserve">
+    <value>Pin to %1</value>
+  </data>
+  <data name="Folder_Home_LastAccessedPropertyDisplayName" xml:space="preserve">
+    <value>Last accessed</value>
+  </data>
+  <data name="Folder_Home_QuickLaunch" xml:space="preserve">
+    <value>Quick launch</value>
+  </data>
+  <data name="Folder_Home_RecentFiles" xml:space="preserve">
+    <value>Recent files</value>
+  </data>
+  <data name="GridViewExtBehavior_AllColumnsMustHaveUniqueNames" xml:space="preserve">
+    <value>GridViewExtBehavior requires all columns have unique names.</value>
+  </data>
+  <data name="GridViewExtBehavior_EachColumnMustHaveAName" xml:space="preserve">
+    <value>GridViewExtBehavior requires that each column has a name.</value>
+  </data>
+  <data name="GridViewExtBehavior_GroupByThisColumn" xml:space="preserve">
+    <value>Group by this column</value>
+  </data>
+  <data name="Menus_TheFollowingCharactersCanAppearInFileNames" xml:space="preserve">
+    <value>Only the following characters can appear in filenames:</value>
+  </data>
+  <data name="Menus_TheFollowingCharactersCannotAppearInFileNames" xml:space="preserve">
+    <value>The following characters can not appear in filenames:</value>
+  </data>
+  <data name="Menu_CheckboxesForItems" xml:space="preserve">
+    <value>Checkboxes for items</value>
+  </data>
+  <data name="Menu_CollapseAllGroups" xml:space="preserve">
+    <value>CollapseAllGroups</value>
+  </data>
+  <data name="Menu_CompactMode" xml:space="preserve">
+    <value>Compact mode</value>
+  </data>
+  <data name="Menu_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Menu_Cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="Menu_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Menu_ExpandAllGroups" xml:space="preserve">
+    <value>Expand all groups</value>
+  </data>
+  <data name="Menu_FilenameExtensions" xml:space="preserve">
+    <value>Filename extensions</value>
+  </data>
+  <data name="Menu_GroupBy" xml:space="preserve">
+    <value>Group by</value>
+  </data>
+  <data name="Menu_GroupByNone" xml:space="preserve">
+    <value>(None)</value>
+  </data>
+  <data name="Menu_HiddenItems" xml:space="preserve">
+    <value>Hidden items</value>
+  </data>
+  <data name="Menu_Paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="Menu_PinItem" xml:space="preserve">
+    <value>Pin item</value>
+  </data>
+  <data name="Menu_Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Menu_Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Menu_SortAscending" xml:space="preserve">
+    <value>Ascending</value>
+  </data>
+  <data name="Menu_SortDescending" xml:space="preserve">
+    <value>Descending</value>
+  </data>
+  <data name="Menu_SortMore" xml:space="preserve">
+    <value>More</value>
+  </data>
+  <data name="Menu_UnpinItem" xml:space="preserve">
+    <value>Unpin item</value>
+  </data>
+  <data name="Menu_View" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="Navigation_BackText" xml:space="preserve">
+    <value>Back to {0}</value>
+  </data>
+  <data name="Navigation_ForwardText" xml:space="preserve">
+    <value>Forward to {0}</value>
+  </data>
+  <data name="Navigation_UpText" xml:space="preserve">
+    <value>Up to {0}</value>
+  </data>
+  <data name="Previewer_APreviewCannotBeDisplayedForThisItem" xml:space="preserve">
+    <value>A preview cannot be displayed for this item ({0}).</value>
+  </data>
+  <data name="Previewer_PreviewIsNotAvailable" xml:space="preserve">
+    <value>Preview is not available.</value>
+  </data>
+  <data name="Previewer_SelectTheFileForWhichYouWantToDisplayAPreview" xml:space="preserve">
+    <value>Select the file for which you want to display a preview.</value>
+  </data>
+  <data name="Property_Date_EarlierThisMonth" xml:space="preserve">
+    <value>Earlier this month</value>
+  </data>
+  <data name="Property_Date_EarlierThisWeek" xml:space="preserve">
+    <value>Earlier this week</value>
+  </data>
+  <data name="Property_Date_LastMonth" xml:space="preserve">
+    <value>Last month</value>
+  </data>
+  <data name="Property_Date_LastWeek" xml:space="preserve">
+    <value>Last week</value>
+  </data>
+  <data name="Property_Date_LongAgo" xml:space="preserve">
+    <value>Long ago</value>
+  </data>
+  <data name="Property_Date_Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Property_Date_Yesterday" xml:space="preserve">
+    <value>Yesterday</value>
+  </data>
+  <data name="Property_Size_Gigantic" xml:space="preserve">
+    <value>Gigantic (&gt; 4 GB)</value>
+  </data>
+  <data name="Property_Size_Large" xml:space="preserve">
+    <value>Large (128 MB - 1 GB)</value>
+  </data>
+  <data name="Property_Size_Normal" xml:space="preserve">
+    <value>Normal (1 - 128 MB)</value>
+  </data>
+  <data name="Property_Size_Small" xml:space="preserve">
+    <value>Small (16 KB - 1 MB)</value>
+  </data>
+  <data name="Property_Size_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Property_Size_VeryLarge" xml:space="preserve">
+    <value>Very large (1 - 4 GB)</value>
+  </data>
+  <data name="Property_Size_VerySmall" xml:space="preserve">
+    <value>Very small (0 - 16 KB)</value>
+  </data>
+  <data name="View_Content" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="View_Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="View_ExtraLargeIcons" xml:space="preserve">
+    <value>Extra large icons</value>
+  </data>
+  <data name="View_LargeIcons" xml:space="preserve">
+    <value>Large icons</value>
+  </data>
+  <data name="View_List" xml:space="preserve">
+    <value>List</value>
+  </data>
+  <data name="View_NormalIcons" xml:space="preserve">
+    <value>Normal icons</value>
+  </data>
+  <data name="View_SmallIcons" xml:space="preserve">
+    <value>Small icons</value>
+  </data>
+  <data name="View_Tiles" xml:space="preserve">
+    <value>Tiles</value>
+  </data>
 </root>

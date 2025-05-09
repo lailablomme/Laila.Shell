@@ -23,6 +23,7 @@ Namespace Behaviors
 
         Private Const COLUMN_MARGIN As Double = 5
         Private Const MARGIN_LEFT As Double = 20
+        Private Const SORT_GLYPH_ID As String = "GridViewExtBehavior.Sort"
 
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(ColumnsInData), GetType(GridViewExtBehavior), New FrameworkPropertyMetadata(Nothing, AddressOf OnColumnsInChanged))
 
@@ -363,7 +364,7 @@ Namespace Behaviors
                     If Not columnNames.Contains(name) Then
                         columnNames.Add(name)
                     Else
-                        Throw New InvalidOperationException("GridViewExtBehavior requires all columns have unique names.")
+                        Throw New InvalidOperationException(My.Resources.GridViewExtBehavior_AllColumnsMustHaveUniqueNames)
                     End If
                 Next
 
@@ -476,17 +477,17 @@ Namespace Behaviors
             If Not _headerRowPresenter Is Nothing AndAlso Me.ColumnsIn.CanSort Then
                 Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
                 For Each ch In hcs
-                    GridViewColumnHeaderGlyphAdorner.Remove(ch, "GridViewExtBehavior.Sort")
+                    GridViewColumnHeaderGlyphAdorner.Remove(ch, SORT_GLYPH_ID)
                 Next
 
                 Dim currentSortedColumnHeader As GridViewColumnHeader = Me.GetCurrentSortedColumnHeader()
                 If Not currentSortedColumnHeader Is Nothing Then
                     If Me.GetCurrentSortDirection() = ListSortDirection.Ascending Then
-                        GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
-                               "pack://application:,,,/Laila.Shell;component/Images/sortasc.png", HorizontalAlignment.Center)
+                        GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, SORT_GLYPH_ID, 1,
+                               "lailaShell_GridViewExtBehavior_SortAsc", HorizontalAlignment.Center)
                     Else
-                        GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, "GridViewExtBehavior.Sort", 1,
-                               "pack://application:,,,/Laila.Shell;component/Images/sortdesc.png", HorizontalAlignment.Center)
+                        GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, SORT_GLYPH_ID, 1,
+                               "lailaShell_GridViewExtBehavior_SortDesc", HorizontalAlignment.Center)
                     End If
                 End If
             End If
@@ -634,7 +635,7 @@ Namespace Behaviors
                 Dim headerClicked As GridViewColumnHeader = sender
                 If Not headerClicked Is Nothing AndAlso Not headerClicked.Column Is Nothing Then
                     ' make "group by" menu item
-                    Dim groupMenuItem As MenuItem = New MenuItem() With {.Header = "Groepeer op deze kolom", .IsCheckable = True, .IsEnabled = True, .IsChecked = False}
+                    Dim groupMenuItem As MenuItem = New MenuItem() With {.Header = My.Resources.GridViewExtBehavior_GroupByThisColumn, .IsCheckable = True, .IsEnabled = True, .IsChecked = False}
                     Dim propertyName As String = GetGroupByPropertyName(headerClicked.Column)
                     If String.IsNullOrEmpty(propertyName) Then
                         propertyName = GetPropertyName(headerClicked.Column)
@@ -845,7 +846,7 @@ Namespace Behaviors
                 name = column.Header
             End If
             If String.IsNullOrWhiteSpace(name) Then
-                Throw New InvalidDataException("GridViewExtBehavior requires that each column has a name.")
+                Throw New InvalidDataException(My.Resources.GridViewExtBehavior_EachColumnMustHaveAName)
             Else
                 Return name
             End If

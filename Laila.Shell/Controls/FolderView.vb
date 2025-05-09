@@ -287,9 +287,13 @@ Namespace Controls
         Private Async Sub updateStatusText()
             'Await Task.Delay(100)
             If Not Me.Folder Is Nothing Then
-                Dim text As String = String.Format("{0} {1}", Me.Folder.Items.Count, If(Me.Folder.Items.Count = 1, "item", "items"))
+                Dim text As String = If(Me.Folder.Items.Count = 1,
+                    String.Format(My.Resources.FolderView_StatusText_OneTotalItem, Me.Folder.Items.Count),
+                    String.Format(My.Resources.FolderView_StatusText_MultipleTotalItems, Me.Folder.Items.Count))
                 If Not Me.SelectedItems Is Nothing AndAlso Not Me.SelectedItems.Count = 0 Then
-                    text &= String.Format("       {0} {1} selected", Me.SelectedItems.Count, If(Me.SelectedItems.Count = 1, "item", "items"))
+                    text &= "       " & If(Me.SelectedItems.Count = 1,
+                    String.Format(My.Resources.FolderView_StatusText_OneItemSelected, Me.SelectedItems.Count),
+                    String.Format(My.Resources.FolderView_StatusText_MultipleItemsSelected, Me.SelectedItems.Count))
                     Dim items As IEnumerable(Of Item) = Me.SelectedItems.ToList()
                     Dim tcs As New TaskCompletionSource()
                     Shell.GlobalThreadPool.Add(

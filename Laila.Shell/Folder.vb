@@ -129,14 +129,14 @@ Public Class Folder
         _items = items
 
         _views = New List(Of FolderViewRegistration) From {
-            New FolderViewRegistration(New Guid("5a0a0f55-1f79-4b96-8e47-0092f06d73d6"), "Extra large icons", New Uri("pack://application:,,,/Laila.Shell;component/Images/extralargeicons16.png"), GetType(ExtraLargeIconsView)),
-            New FolderViewRegistration(New Guid("69785b58-7418-4f1b-ae2b-04f62a5cf090"), "Large icons", New Uri("pack://application:,,,/Laila.Shell;component/Images/largeicons16.png"), GetType(LargeIconsView)),
-            New FolderViewRegistration(New Guid("bde20919-1132-4f64-8124-b7b1c5b3ec47"), "Normal icons", New Uri("pack://application:,,,/Laila.Shell;component/Images/normalicons16.png"), GetType(NormalIconsView)),
-            New FolderViewRegistration(New Guid("0fc82e4f-844c-4ec4-90ff-fb4f2ec9b3c6"), "Small icons", New Uri("pack://application:,,,/Laila.Shell;component/Images/smallicons16.png"), GetType(SmallIconsView)),
-            New FolderViewRegistration(New Guid("d2e1c65f-58b4-49d1-a4c9-5d43cb2554cf"), "List", New Uri("pack://application:,,,/Laila.Shell;component/Images/list16.png"), GetType(Controls.ListView)),
-            New FolderViewRegistration(New Guid("ffc28f55-2f56-4698-97d4-f80ff8817713"), "Details", New Uri("pack://application:,,,/Laila.Shell;component/Images/details16.png"), GetType(DetailsView)),
-            New FolderViewRegistration(New Guid("3e7ea73f-22d7-4697-b858-cde65c9c9ea7"), "Tiles", New Uri("pack://application:,,,/Laila.Shell;component/Images/tiles16.png"), GetType(TileView)),
-            New FolderViewRegistration(New Guid("9d96a6be-4061-4c89-9cb7-d97c6b8dfe41"), "Content", New Uri("pack://application:,,,/Laila.Shell;component/Images/content16.png"), GetType(ContentView))
+            New FolderViewRegistration(New Guid("5a0a0f55-1f79-4b96-8e47-0092f06d73d6"), My.Resources.View_ExtraLargeIcons, "lailaShell_View_ExtraLargeIconsIcon", GetType(ExtraLargeIconsView)),
+            New FolderViewRegistration(New Guid("69785b58-7418-4f1b-ae2b-04f62a5cf090"), My.Resources.View_LargeIcons, "lailaShell_View_LargeIconsIcon", GetType(LargeIconsView)),
+            New FolderViewRegistration(New Guid("bde20919-1132-4f64-8124-b7b1c5b3ec47"), My.Resources.View_NormalIcons, "lailaShell_View_NormalIconsIcon", GetType(NormalIconsView)),
+            New FolderViewRegistration(New Guid("0fc82e4f-844c-4ec4-90ff-fb4f2ec9b3c6"), My.Resources.View_SmallIcons, "lailaShell_View_SmallIconsIcon", GetType(SmallIconsView)),
+            New FolderViewRegistration(New Guid("d2e1c65f-58b4-49d1-a4c9-5d43cb2554cf"), My.Resources.View_List, "lailaShell_View_ListIcon", GetType(Controls.ListView)),
+            New FolderViewRegistration(New Guid("ffc28f55-2f56-4698-97d4-f80ff8817713"), My.Resources.View_Details, "lailaShell_View_DetailsIcon", GetType(DetailsView)),
+            New FolderViewRegistration(New Guid("3e7ea73f-22d7-4697-b858-cde65c9c9ea7"), My.Resources.View_Tiles, "lailaShell_View_TilesIcon", GetType(TileView)),
+            New FolderViewRegistration(New Guid("9d96a6be-4061-4c89-9cb7-d97c6b8dfe41"), My.Resources.View_Content, "lailaShell_View_ContentIcon", GetType(ContentView))
         }
         Me.DefaultView = New Guid("ffc28f55-2f56-4698-97d4-f80ff8817713")
     End Sub
@@ -702,17 +702,17 @@ Public Class Folder
                 AndAlso (menu.SelectedItems Is Nothing OrElse menu.SelectedItems.Count = 0) _
                 AndAlso Clipboard.CanPaste(Me)
 
-        If Clipboard.CanCut(menu.SelectedItems) Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "cut", Nothing), "Cut"))
-        If Clipboard.CanCopy(menu.SelectedItems) Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "copy", Nothing), "Copy"))
-        If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "paste", Nothing), "Paste"))
+        If Clipboard.CanCut(menu.SelectedItems) Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "cut", Nothing), My.Resources.Menu_Cut))
+        If Clipboard.CanCopy(menu.SelectedItems) Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "copy", Nothing), My.Resources.Menu_Copy))
+        If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "paste", Nothing), My.Resources.Menu_Paste))
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 AndAlso menu.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME)) Then _
-                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "rename", Nothing), "Rename"))
+                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "rename", Nothing), My.Resources.Menu_Rename))
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count > 0 AndAlso menu.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANDELETE)) Then _
-                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "delete", Nothing), "Delete"))
+                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "delete", Nothing), My.Resources.Menu_Delete))
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 Then
             Dim isPinned As Boolean = PinnedItems.GetIsPinned(menu.SelectedItems(0))
             menu.Buttons.Add(menu.MakeToggleButton(New Tuple(Of Integer, String, Object)(-1, "laila.shell.(un)pin", Nothing),
-                                                        If(isPinned, "Unpin item", "Pin item"), isPinned))
+                                                        If(isPinned, My.Resources.Menu_UnpinItem, My.Resources.Menu_PinItem), isPinned))
         End If
     End Sub
 
@@ -761,16 +761,16 @@ Public Class Folder
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
         menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "paste")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", ""))) _
-                Else If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "paste", Nothing), "Paste"))
+                Else If hasPaste Then menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "paste", Nothing), My.Resources.Menu_Paste))
         menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "rename")
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 AndAlso menu.SelectedItems.All(Function(i) i.Attributes.HasFlag(SFGAO.CANRENAME)) Then _
-                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "rename", Nothing), "Rename"))
+                menu.Buttons.Add(menu.MakeButton(New Tuple(Of Integer, String, Object)(-1, "rename", Nothing), My.Resources.Menu_Rename))
         menuItem = menuItems.FirstOrDefault(Function(i) If(Not i.Tag Is Nothing, CType(i.Tag, Tuple(Of Integer, String, Object)).Item2, Nothing) = "delete")
         If Not menuItem Is Nothing Then menu.Buttons.Add(menu.MakeButton(menuItem.Tag, menuItem.Header.ToString().Replace("_", "")))
         If Not menu.SelectedItems Is Nothing AndAlso menu.SelectedItems.Count = 1 Then
             Dim isPinned As Boolean = PinnedItems.GetIsPinned(menu.SelectedItems(0))
             menu.Buttons.Add(menu.MakeToggleButton(New Tuple(Of Integer, String, Object)(-1, "laila.shell.(un)pin", Nothing),
-                                                        If(isPinned, "Unpin item", "Pin item"), isPinned))
+                                                        If(isPinned, My.Resources.Menu_UnpinItem, My.Resources.Menu_PinItem), isPinned))
         End If
     End Sub
 
@@ -1747,13 +1747,13 @@ Public Class Folder
     Public Class FolderViewRegistration
         Public Property Guid As Guid
         Public Property Title As String
-        Public Property IconUri As Uri
+        Public Property IconResourceKey As String
         Public Property Type As Type
 
-        Public Sub New(guid As Guid, title As String, iconUri As Uri, type As Type)
+        Public Sub New(guid As Guid, title As String, iconResourceKey As String, type As Type)
             Me.Guid = guid
             Me.Title = title
-            Me.IconUri = iconUri
+            Me.IconResourceKey = iconResourceKey
             Me.Type = type
         End Sub
     End Class
