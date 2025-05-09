@@ -65,7 +65,7 @@ Namespace Controls
 
         Public Overridable ReadOnly Property TilesGroupName As String
             Get
-                Return "Quick launch"
+                Return My.Resources.Folder_Home_QuickLaunch
             End Get
         End Property
 
