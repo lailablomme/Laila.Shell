@@ -24,9 +24,21 @@
                         </Grid.Resources>
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" 
-                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
+                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLengthUnit="Page"
                                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   VirtualizingPanel.ScrollUnit="Pixel">
+                            <ListView.Style>
+                                <Style>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="0">
+                                            <Setter Property="VirtualizingPanel.CacheLength" Value="0" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="1">
+                                            <Setter Property="VirtualizingPanel.CacheLength" Value="2" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.Style>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <VirtualizingStackPanel Margin="20,0,0,0" x:Name="PART_StackPanel" />

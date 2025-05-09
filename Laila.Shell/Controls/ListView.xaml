@@ -24,8 +24,8 @@
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" 
-                                  VirtualizingPanel.CacheLengthUnit="Page">
+                                  VirtualizingPanel.VirtualizationMode="Standard"
+                                  VirtualizingPanel.CacheLengthUnit="Page" VirtualizingPanel.CacheLength="0">
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.Panel>
@@ -61,7 +61,7 @@
                             </ListView.Resources>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <vwp:VirtualizingWrapPanel SpacingMode="None" Orientation="Vertical">
+                                    <vwp:VirtualizingWrapPanel SpacingMode="None" Orientation="Vertical" AllowDifferentSizedItems="True">
                                         <vwp:VirtualizingWrapPanel.Style>
                                             <Style>
                                                 <Style.Triggers>
@@ -78,7 +78,7 @@
                                                             <Condition Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False" />
                                                         </MultiDataTrigger.Conditions>
                                                         <MultiDataTrigger.Setters>
-                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,20" />
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,28" />
                                                         </MultiDataTrigger.Setters>
                                                     </MultiDataTrigger>
                                                     <MultiDataTrigger>
@@ -87,7 +87,7 @@
                                                             <Condition Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="False" />
                                                         </MultiDataTrigger.Conditions>
                                                         <MultiDataTrigger.Setters>
-                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,20" />
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,28" />
                                                         </MultiDataTrigger.Setters>
                                                     </MultiDataTrigger>
                                                     <MultiDataTrigger>
@@ -96,7 +96,7 @@
                                                             <Condition Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="True" />
                                                         </MultiDataTrigger.Conditions>
                                                         <MultiDataTrigger.Setters>
-                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,28" />
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="250,20" />
                                                         </MultiDataTrigger.Setters>
                                                     </MultiDataTrigger>
                                                     <MultiDataTrigger>
@@ -105,7 +105,7 @@
                                                             <Condition Binding="{Binding Tag.IsCompactMode, ElementName=PART_Grid}" Value="True" />
                                                         </MultiDataTrigger.Conditions>
                                                         <MultiDataTrigger.Setters>
-                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,28" />
+                                                            <Setter Property="vwp:VirtualizingWrapPanel.ItemSize" Value="265,20" />
                                                         </MultiDataTrigger.Setters>
                                                     </MultiDataTrigger>
                                                 </Style.Triggers>
@@ -124,7 +124,7 @@
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Border>
-                                        <Grid>
+                                        <Grid Height="20">
                                             <Grid.Style>
                                                 <Style>
                                                     <Style.Triggers>

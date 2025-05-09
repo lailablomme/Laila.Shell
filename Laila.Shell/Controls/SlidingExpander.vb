@@ -97,8 +97,6 @@ Namespace Controls
             AddHandler Me.PART_ToggleButton.Unchecked,
                 Async Sub(s As Object, e As RoutedEventArgs)
                     If Me.IsExpanded Then
-                        VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(3))
-                        Await Task.Delay(5)
                         _doIgnoreExpandCollapse = True
                         Me.IsExpanded = False
                         _doIgnoreExpandCollapse = False
@@ -114,8 +112,6 @@ Namespace Controls
             AddHandler Me.PART_ToggleButton.Checked,
                 Async Sub(s As Object, e As RoutedEventArgs)
                     If Not Me.IsExpanded Then
-                        VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(3))
-                        Await Task.Delay(5)
                         _doIgnoreExpandCollapse = True
                         Me.IsExpanded = True
                         _doIgnoreExpandCollapse = False
@@ -139,7 +135,6 @@ Namespace Controls
             If _currentStep <= 0.0 Then
                 _timer.Stop()
                 Me.PART_ContentContainer.Visibility = Visibility.Collapsed
-                VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(0))
             Else
                 Me.PART_ContentContainer.Height = Math.Max(0, _totalHeight * _currentStep)
                 Me.PART_ContentContainer.ScrollToBottom()
@@ -151,7 +146,6 @@ Namespace Controls
             If _currentStep >= 1.0 Then
                 _timer.Stop()
                 Me.PART_ContentContainer.Height = Double.NaN
-                VirtualizingPanel.SetCacheLength(Me.PART_ListBox, New VirtualizationCacheLength(0))
             Else
                 Me.PART_ContentContainer.Height = Math.Min(_totalHeight, _totalHeight * _currentStep)
                 Me.PART_ContentContainer.ScrollToBottom()

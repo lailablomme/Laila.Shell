@@ -23,8 +23,20 @@
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" 
+                                  VirtualizingPanel.VirtualizationMode="Standard"
                                   VirtualizingPanel.CacheLengthUnit="Page">
+                            <ListView.Style>
+                                <Style>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="0">
+                                            <Setter Property="VirtualizingPanel.CacheLength" Value="0" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="1">
+                                            <Setter Property="VirtualizingPanel.CacheLength" Value="2" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.Style>
                             <ListView.Resources>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.ContainerStyle>
