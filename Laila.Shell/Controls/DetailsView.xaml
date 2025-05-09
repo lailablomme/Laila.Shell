@@ -4,7 +4,9 @@
                     xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
                     xmlns:converters="clr-namespace:Laila.Shell.Converters"
                     xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=Laila.VirtualizingWrapPanel"
-                    xmlns:i="http://schemas.microsoft.com/xaml/behaviors">
+                    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+                    xmlns:helpers="clr-namespace:Laila.Shell.Helpers"
+                    xmlns:shell="clr-namespace:Laila.Shell">
 
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
@@ -225,7 +227,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="10" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="1" Text="This folder is empty." Margin="0,25,0,0" 
+                            <TextBlock Grid.Column="1" Text="{shell:Resource FolderView_ThisFolderIsEmpty}" Margin="0,25,0,0" 
                                        TextAlignment="Center" TextWrapping="Wrap" Foreground="Gray" />
                         </Grid>
                         <Grid x:Name="PART_DragInsertIndicator" Visibility="Collapsed" IsHitTestVisible="False" 

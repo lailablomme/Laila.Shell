@@ -1,8 +1,9 @@
-﻿Imports System.Reflection
+﻿Imports System.Globalization
+Imports System.Reflection
 
 Class Application
     Public Sub New()
-
+        CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InstalledUICulture
     End Sub
 
     Private Sub Application_Startup(sender As Object, e As StartupEventArgs)

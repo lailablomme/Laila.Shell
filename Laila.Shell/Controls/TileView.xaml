@@ -492,7 +492,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="10" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="1" Text="This folder is empty." Margin="0,5,0,0" 
+                            <TextBlock Grid.Column="1" Text="{shell:Resource FolderView_ThisFolderIsEmpty}" Margin="0,5,0,0" 
                                        TextAlignment="Center" TextWrapping="Wrap" Foreground="Gray" />
                         </Grid>
                         <Grid x:Name="PART_DragInsertIndicator" Visibility="Collapsed" IsHitTestVisible="False" 

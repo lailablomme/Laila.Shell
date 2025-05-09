@@ -61,6 +61,15 @@ Namespace My.Resources
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Loading....
+        '''</summary>
+        Friend ReadOnly Property AddressBar_Loading() As String
+            Get
+                Return ResourceManager.GetString("AddressBar_Loading", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized resource of type System.Byte[].
         '''</summary>
         Friend ReadOnly Property cursor_copy() As Byte()
@@ -181,6 +190,15 @@ Namespace My.Resources
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to This folder is empty..
+        '''</summary>
+        Friend ReadOnly Property FolderView_ThisFolderIsEmpty() As String
+            Get
+                Return ResourceManager.GetString("FolderView_ThisFolderIsEmpty", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to GridViewExtBehavior requires all columns have unique names..
         '''</summary>
         Friend ReadOnly Property GridViewExtBehavior_AllColumnsMustHaveUniqueNames() As String
@@ -217,7 +235,7 @@ Namespace My.Resources
         End Property
         
         '''<summary>
-        '''  Looks up a localized string similar to CollapseAllGroups.
+        '''  Looks up a localized string similar to Collapse all groups.
         '''</summary>
         Friend ReadOnly Property Menu_CollapseAllGroups() As String
             Get
@@ -334,6 +352,15 @@ Namespace My.Resources
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Show more options....
+        '''</summary>
+        Friend ReadOnly Property Menu_ShowMoreOptions() As String
+            Get
+                Return ResourceManager.GetString("Menu_ShowMoreOptions", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to Sort.
         '''</summary>
         Friend ReadOnly Property Menu_Sort() As String
@@ -420,6 +447,15 @@ Namespace My.Resources
         Friend ReadOnly Property Navigation_ForwardText() As String
             Get
                 Return ResourceManager.GetString("Navigation_ForwardText", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Refresh {0}.
+        '''</summary>
+        Friend ReadOnly Property Navigation_RefreshText() As String
+            Get
+                Return ResourceManager.GetString("Navigation_RefreshText", resourceCulture)
             End Get
         End Property
         
@@ -582,6 +618,150 @@ Namespace My.Resources
         Friend ReadOnly Property Property_Size_VerySmall() As String
             Get
                 Return ResourceManager.GetString("Property_Size_VerySmall", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Search in.
+        '''</summary>
+        Friend ReadOnly Property SearchBox_SearchIn() As String
+            Get
+                Return ResourceManager.GetString("SearchBox_SearchIn", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Search results for {0}.
+        '''</summary>
+        Friend ReadOnly Property SearchFolder_SearchResultsFor() As String
+            Get
+                Return ResourceManager.GetString("SearchFolder_SearchResultsFor", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Copy.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_CopyButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_CopyButtonToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Cut.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_CutButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_CutButtonToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Delete.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_DeleteButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_DeleteButtonToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to New.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_NewMenuButton() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_NewMenuButton", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Make a new item in the current location..
+        '''</summary>
+        Friend ReadOnly Property ToolBar_NewMenuButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_NewMenuButtonToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Paste.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_PasteButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_PasteButtonToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Preview.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_PreviewButton() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_PreviewButton", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Refresh.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_RefreshButton() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_RefreshButton", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Rename.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_RenameButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_RenameButtonToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Share.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_ShareButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_ShareButtonToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Sorting.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_SortMenuButton() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_SortMenuButton", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Options for sorting and grouping..
+        '''</summary>
+        Friend ReadOnly Property ToolBar_SortMenuButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_SortMenuButtonToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to View.
+        '''</summary>
+        Friend ReadOnly Property ToolBar_ViewMenuButton() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_ViewMenuButton", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Layout and view options..
+        '''</summary>
+        Friend ReadOnly Property ToolBar_ViewMenuButtonToolTip() As String
+            Get
+                Return ResourceManager.GetString("ToolBar_ViewMenuButtonToolTip", resourceCulture)
             End Get
         End Property
         

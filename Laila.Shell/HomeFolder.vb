@@ -34,8 +34,8 @@ Public Class HomeFolder
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
 
         _views = New List(Of FolderViewRegistration) From {
-            New FolderViewRegistration(New Guid("5aab6a71-6d79-4bcd-8a85-3ed37a3fdb4d"), "Tiles", "lailaShell_View_TilesIcon", GetType(HomeFolderTilesView)),
-            New FolderViewRegistration(New Guid("fc73e12c-6b88-4a3f-9a2e-c7414bcd1f1f"), "Details", "lailaShell_View_DetailsIcon", GetType(HomeFolderDetailsView))
+            New FolderViewRegistration(New Guid("5aab6a71-6d79-4bcd-8a85-3ed37a3fdb4d"), My.Resources.View_Tiles, "lailaShell_View_TilesIcon", GetType(HomeFolderTilesView)),
+            New FolderViewRegistration(New Guid("fc73e12c-6b88-4a3f-9a2e-c7414bcd1f1f"), My.Resources.View_Details, "lailaShell_View_DetailsIcon", GetType(HomeFolderDetailsView))
         }
         Me.DefaultView = New Guid("5aab6a71-6d79-4bcd-8a85-3ed37a3fdb4d")
 

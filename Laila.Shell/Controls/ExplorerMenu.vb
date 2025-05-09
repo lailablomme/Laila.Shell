@@ -137,7 +137,7 @@ Namespace Controls
                         Dim icon As ImageSource = System.Windows.Application.Current.TryFindResource("lailaShell_ExplorerMenu_MoreOptionsIcon")
                         icon.Freeze()
                         Dim showMoreOptionsMenuItem As New MenuItemData() With {
-                            .Header = "Show more options...",
+                            .Header = My.Resources.Menu_ShowMoreOptions,
                             .IsEnabled = True,
                             .Icon = icon
                         }

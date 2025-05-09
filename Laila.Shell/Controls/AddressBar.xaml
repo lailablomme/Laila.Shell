@@ -4,7 +4,8 @@
                     xmlns:parts="clr-namespace:Laila.Shell.Controls.Parts"
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers"
                     xmlns:balloon="clr-namespace:Laila.BalloonTip;assembly=Laila.BalloonTip"
-                    xmlns:autocomplete="clr-namespace:Laila.AutoCompleteTextBox;assembly=Laila.AutoCompleteTextBox">
+                    xmlns:autocomplete="clr-namespace:Laila.AutoCompleteTextBox;assembly=Laila.AutoCompleteTextBox"
+                    xmlns:shell="clr-namespace:Laila.Shell">
 
     <parts:AddressBarSuggestionProvider x:Key="suggestionProvider" />
 
@@ -70,7 +71,7 @@
                     <Viewbox Grid.Column="0" StretchDirection="Both" Stretch="Uniform" Width="16" Height="16">
                         <local:LoadingSpinner />
                     </Viewbox>
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center">Loading...</TextBlock>
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{shell:Resource AddressBar_Loading}" />
                 </Grid>
             </Setter.Value>
         </Setter>

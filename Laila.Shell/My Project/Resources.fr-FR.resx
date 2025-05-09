@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -118,262 +118,252 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AddressBar_Loading" xml:space="preserve">
-    <value>Loading...</value>
-  </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="cursor_copy" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\cursor_copy.cur;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="cursor_link" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\cursor_link.cur;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="cursor_move" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\cursor_move.cur;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>Chargement...</value>
   </data>
   <data name="FolderView_StatusText_MultipleItemsSelected" xml:space="preserve">
-    <value>{0} items selected</value>
+    <value>{0} éléments sélectionnés</value>
   </data>
   <data name="FolderView_StatusText_MultipleTotalItems" xml:space="preserve">
-    <value>{0} items</value>
+    <value>{0} éléments</value>
   </data>
   <data name="FolderView_StatusText_OneItemSelected" xml:space="preserve">
-    <value>1 item selected</value>
+    <value>1 élément sélectionné</value>
   </data>
   <data name="FolderView_StatusText_OneTotalItem" xml:space="preserve">
-    <value>1 item</value>
+    <value>1 élément</value>
   </data>
   <data name="FolderView_ThisFolderIsEmpty" xml:space="preserve">
-    <value>This folder is empty.</value>
+    <value>Ce dossier est vide.</value>
   </data>
   <data name="Folder_Home_CategoryPropertyDisplayName" xml:space="preserve">
-    <value>Category</value>
+    <value>Catégorie</value>
   </data>
   <data name="Folder_Home_DisplayName" xml:space="preserve">
-    <value>Home</value>
+    <value>Accueil</value>
   </data>
   <data name="Folder_Home_DragDrop_PinTo" xml:space="preserve">
-    <value>Pin to %1</value>
+    <value>Épingler à %1</value>
   </data>
   <data name="Folder_Home_LastAccessedPropertyDisplayName" xml:space="preserve">
-    <value>Last accessed</value>
+    <value>Dernier accès</value>
   </data>
   <data name="Folder_Home_QuickLaunch" xml:space="preserve">
-    <value>Quick launch</value>
+    <value>Lancement rapide</value>
   </data>
   <data name="Folder_Home_RecentFiles" xml:space="preserve">
-    <value>Recent files</value>
+    <value>Fichiers récents</value>
   </data>
   <data name="GridViewExtBehavior_AllColumnsMustHaveUniqueNames" xml:space="preserve">
-    <value>GridViewExtBehavior requires all columns have unique names.</value>
+    <value>GridViewExtBehavior requiert que toutes les colonnes aient des noms uniques.</value>
   </data>
   <data name="GridViewExtBehavior_EachColumnMustHaveAName" xml:space="preserve">
-    <value>GridViewExtBehavior requires that each column has a name.</value>
+    <value>GridViewExtBehavior requiert que chaque colonne ait un nom.</value>
   </data>
   <data name="GridViewExtBehavior_GroupByThisColumn" xml:space="preserve">
-    <value>Group by this column</value>
+    <value>Grouper par cette colonne</value>
   </data>
   <data name="Menus_TheFollowingCharactersCanAppearInFileNames" xml:space="preserve">
-    <value>Only the following characters can appear in filenames:</value>
+    <value>Seuls les caractères suivants peuvent apparaître dans les noms de fichiers :</value>
   </data>
   <data name="Menus_TheFollowingCharactersCannotAppearInFileNames" xml:space="preserve">
-    <value>The following characters can not appear in filenames:</value>
+    <value>Les caractères suivants ne peuvent pas apparaître dans les noms de fichiers :</value>
   </data>
   <data name="Menu_CheckboxesForItems" xml:space="preserve">
-    <value>Checkboxes for items</value>
+    <value>Cases à cocher pour les éléments</value>
   </data>
   <data name="Menu_CollapseAllGroups" xml:space="preserve">
-    <value>Collapse all groups</value>
+    <value>Réduire tous les groupes</value>
   </data>
   <data name="Menu_CompactMode" xml:space="preserve">
-    <value>Compact mode</value>
+    <value>Mode compact</value>
   </data>
   <data name="Menu_Copy" xml:space="preserve">
-    <value>Copy</value>
+    <value>Copier</value>
   </data>
   <data name="Menu_Cut" xml:space="preserve">
-    <value>Cut</value>
+    <value>Couper</value>
   </data>
   <data name="Menu_Delete" xml:space="preserve">
-    <value>Delete</value>
+    <value>Supprimer</value>
   </data>
   <data name="Menu_ExpandAllGroups" xml:space="preserve">
-    <value>Expand all groups</value>
+    <value>Développer tous les groupes</value>
   </data>
   <data name="Menu_FilenameExtensions" xml:space="preserve">
-    <value>Filename extensions</value>
+    <value>Extensions de fichier</value>
   </data>
   <data name="Menu_GroupBy" xml:space="preserve">
-    <value>Group by</value>
+    <value>Grouper par</value>
   </data>
   <data name="Menu_GroupByNone" xml:space="preserve">
-    <value>(None)</value>
+    <value>(Aucun)</value>
   </data>
   <data name="Menu_HiddenItems" xml:space="preserve">
-    <value>Hidden items</value>
+    <value>Éléments cachés</value>
   </data>
   <data name="Menu_Paste" xml:space="preserve">
-    <value>Paste</value>
+    <value>Coller</value>
   </data>
   <data name="Menu_PinItem" xml:space="preserve">
-    <value>Pin item</value>
+    <value>Épingler l'élément</value>
   </data>
   <data name="Menu_Rename" xml:space="preserve">
-    <value>Rename</value>
+    <value>Renommer</value>
   </data>
   <data name="Menu_ShowMoreOptions" xml:space="preserve">
-    <value>Show more options...</value>
+    <value>Afficher plus d’options...</value>
   </data>
   <data name="Menu_Sort" xml:space="preserve">
-    <value>Sort</value>
+    <value>Trier</value>
   </data>
   <data name="Menu_SortAscending" xml:space="preserve">
-    <value>Ascending</value>
+    <value>Croissant</value>
   </data>
   <data name="Menu_SortDescending" xml:space="preserve">
-    <value>Descending</value>
+    <value>Décroissant</value>
   </data>
   <data name="Menu_SortMore" xml:space="preserve">
-    <value>More</value>
+    <value>Plus d'options de tri</value>
   </data>
   <data name="Menu_UnpinItem" xml:space="preserve">
-    <value>Unpin item</value>
+    <value>Désépingler l'élément</value>
   </data>
   <data name="Menu_View" xml:space="preserve">
-    <value>View</value>
+    <value>Affichage</value>
   </data>
   <data name="Navigation_BackText" xml:space="preserve">
-    <value>Back to {0}</value>
+    <value>Retour à {0}</value>
   </data>
   <data name="Navigation_ForwardText" xml:space="preserve">
-    <value>Forward to {0}</value>
+    <value>Avancer vers {0}</value>
   </data>
   <data name="Navigation_RefreshText" xml:space="preserve">
-    <value>Refresh {0}</value>
+    <value>Actualiser {0}</value>
   </data>
   <data name="Navigation_UpText" xml:space="preserve">
-    <value>Up to {0}</value>
+    <value>Remonter vers {0}</value>
   </data>
   <data name="Previewer_APreviewCannotBeDisplayedForThisItem" xml:space="preserve">
-    <value>A preview cannot be displayed for this item ({0}).</value>
+    <value>Un aperçu ne peut pas être affiché pour cet élément ({0}).</value>
   </data>
   <data name="Previewer_PreviewIsNotAvailable" xml:space="preserve">
-    <value>Preview is not available.</value>
+    <value>Aperçu non disponible.</value>
   </data>
   <data name="Previewer_SelectTheFileForWhichYouWantToDisplayAPreview" xml:space="preserve">
-    <value>Select the file for which you want to display a preview.</value>
+    <value>Sélectionnez le fichier dont vous souhaitez afficher un aperçu.</value>
   </data>
   <data name="Property_Date_EarlierThisMonth" xml:space="preserve">
-    <value>Earlier this month</value>
+    <value>Plus tôt ce mois-ci</value>
   </data>
   <data name="Property_Date_EarlierThisWeek" xml:space="preserve">
-    <value>Earlier this week</value>
+    <value>Plus tôt cette semaine</value>
   </data>
   <data name="Property_Date_LastMonth" xml:space="preserve">
-    <value>Last month</value>
+    <value>Le mois dernier</value>
   </data>
   <data name="Property_Date_LastWeek" xml:space="preserve">
-    <value>Last week</value>
+    <value>La semaine dernière</value>
   </data>
   <data name="Property_Date_LongAgo" xml:space="preserve">
-    <value>Long ago</value>
+    <value>Il y a longtemps</value>
   </data>
   <data name="Property_Date_Today" xml:space="preserve">
-    <value>Today</value>
+    <value>Aujourd'hui</value>
   </data>
   <data name="Property_Date_Yesterday" xml:space="preserve">
-    <value>Yesterday</value>
+    <value>Hier</value>
   </data>
   <data name="Property_Size_Gigantic" xml:space="preserve">
-    <value>Gigantic (&gt; 4 GB)</value>
+    <value>Gigantesque (&gt; 4 Go)</value>
   </data>
   <data name="Property_Size_Large" xml:space="preserve">
-    <value>Large (128 MB - 1 GB)</value>
+    <value>Grand (128 Mo - 1 Go)</value>
   </data>
   <data name="Property_Size_Normal" xml:space="preserve">
-    <value>Normal (1 - 128 MB)</value>
+    <value>Normal (1 - 128 Mo)</value>
   </data>
   <data name="Property_Size_Small" xml:space="preserve">
-    <value>Small (16 KB - 1 MB)</value>
+    <value>Petit (16 Ko - 1 Mo)</value>
   </data>
   <data name="Property_Size_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Inconnu</value>
   </data>
   <data name="Property_Size_VeryLarge" xml:space="preserve">
-    <value>Very large (1 - 4 GB)</value>
+    <value>Très grand (1 - 4 Go)</value>
   </data>
   <data name="Property_Size_VerySmall" xml:space="preserve">
-    <value>Very small (0 - 16 KB)</value>
+    <value>Très petit (0 - 16 Ko)</value>
   </data>
   <data name="SearchBox_SearchIn" xml:space="preserve">
-    <value>Search in</value>
+    <value>Rechercher dans</value>
   </data>
   <data name="SearchFolder_SearchResultsFor" xml:space="preserve">
-    <value>Search results for {0}</value>
+    <value>Résultats de la recherche pour {0}</value>
   </data>
   <data name="ToolBar_CopyButtonToolTip" xml:space="preserve">
-    <value>Copy</value>
+    <value>Copier</value>
   </data>
   <data name="ToolBar_CutButtonToolTip" xml:space="preserve">
-    <value>Cut</value>
+    <value>Couper</value>
   </data>
   <data name="ToolBar_DeleteButtonToolTip" xml:space="preserve">
-    <value>Delete</value>
+    <value>Supprimer</value>
   </data>
   <data name="ToolBar_NewMenuButton" xml:space="preserve">
-    <value>New</value>
+    <value>Nouveau</value>
   </data>
   <data name="ToolBar_NewMenuButtonToolTip" xml:space="preserve">
-    <value>Make a new item in the current location.</value>
+    <value>Créer un nouvel élément à cet emplacement.</value>
   </data>
   <data name="ToolBar_PasteButtonToolTip" xml:space="preserve">
-    <value>Paste</value>
+    <value>Coller</value>
   </data>
   <data name="ToolBar_PreviewButton" xml:space="preserve">
-    <value>Preview</value>
+    <value>Aperçu</value>
   </data>
   <data name="ToolBar_RefreshButton" xml:space="preserve">
-    <value>Refresh</value>
+    <value>Actualiser</value>
   </data>
   <data name="ToolBar_RenameButtonToolTip" xml:space="preserve">
-    <value>Rename</value>
+    <value>Renommer</value>
   </data>
   <data name="ToolBar_ShareButtonToolTip" xml:space="preserve">
-    <value>Share</value>
+    <value>Partager</value>
   </data>
   <data name="ToolBar_SortMenuButton" xml:space="preserve">
-    <value>Sorting</value>
+    <value>Tri</value>
   </data>
   <data name="ToolBar_SortMenuButtonToolTip" xml:space="preserve">
-    <value>Options for sorting and grouping.</value>
+    <value>Options de tri et de regroupement.</value>
   </data>
   <data name="ToolBar_ViewMenuButton" xml:space="preserve">
-    <value>View</value>
+    <value>Affichage</value>
   </data>
   <data name="ToolBar_ViewMenuButtonToolTip" xml:space="preserve">
-    <value>Layout and view options.</value>
+    <value>Options de disposition et d'affichage.</value>
   </data>
   <data name="View_Content" xml:space="preserve">
-    <value>Content</value>
+    <value>Contenu</value>
   </data>
   <data name="View_Details" xml:space="preserve">
-    <value>Details</value>
+    <value>Détails</value>
   </data>
   <data name="View_ExtraLargeIcons" xml:space="preserve">
-    <value>Extra large icons</value>
+    <value>Très grandes icônes</value>
   </data>
   <data name="View_LargeIcons" xml:space="preserve">
-    <value>Large icons</value>
+    <value>Grandes icônes</value>
   </data>
   <data name="View_List" xml:space="preserve">
-    <value>List</value>
+    <value>Liste</value>
   </data>
   <data name="View_NormalIcons" xml:space="preserve">
-    <value>Normal icons</value>
+    <value>Icônes normales</value>
   </data>
   <data name="View_SmallIcons" xml:space="preserve">
-    <value>Small icons</value>
+    <value>Petites icônes</value>
   </data>
   <data name="View_Tiles" xml:space="preserve">
-    <value>Tiles</value>
+    <value>Vignettes</value>
   </data>
 </root>

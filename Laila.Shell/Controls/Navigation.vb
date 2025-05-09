@@ -14,6 +14,7 @@ Namespace Controls
         Public Shared ReadOnly BackTextProperty As DependencyProperty = DependencyProperty.Register("BackText", GetType(String), GetType(Navigation), New FrameworkPropertyMetadata("Back"))
         Public Shared ReadOnly ForwardTextProperty As DependencyProperty = DependencyProperty.Register("ForwardText", GetType(String), GetType(Navigation), New FrameworkPropertyMetadata("Forward"))
         Public Shared ReadOnly UpTextProperty As DependencyProperty = DependencyProperty.Register("UpText", GetType(String), GetType(Navigation), New FrameworkPropertyMetadata("Up"))
+        Public Shared ReadOnly RefreshTextProperty As DependencyProperty = DependencyProperty.Register("RefreshText", GetType(String), GetType(Navigation), New FrameworkPropertyMetadata("Refresh"))
 
         Private _isFolderChanging As Boolean
         Private _list As List(Of Folder)
@@ -101,6 +102,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property RefreshText As String
+            Get
+                Return GetValue(RefreshTextProperty)
+            End Get
+            Set(ByVal value As String)
+                SetCurrentValue(RefreshTextProperty, value)
+            End Set
+        End Property
+
         Public Sub Back()
             Using Shell.OverrideCursor(Cursors.Wait)
                 _isFolderChanging = True
@@ -157,6 +167,7 @@ Namespace Controls
             Me.BackText = If(_pointer - 1 >= 0, String.Format(My.Resources.Navigation_BackText, _list(_pointer - 1).DisplayName), "")
             Me.ForwardText = If(_pointer + 1 <= _list.Count - 1, String.Format(My.Resources.Navigation_ForwardText, _list(_pointer + 1).DisplayName), "")
             Me.UpText = If(Not Me.Folder.LogicalParent Is Nothing, String.Format(My.Resources.Navigation_UpText, Me.Folder.LogicalParent.DisplayName), "")
+            Me.RefreshText = If(Not Me.Folder Is Nothing, String.Format(My.Resources.Navigation_RefreshText, Me.Folder.DisplayName), "")
         End Sub
 
         Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)

@@ -60,7 +60,7 @@ Public Class SearchFolder
             factory.SetCondition(resolvedCondition)
 
             ' set folder properties
-            factory.SetDisplayName("Search results for " & parent.DisplayName)
+            factory.SetDisplayName(String.Format(My.Resources.SearchFolder_SearchResultsFor, parent.DisplayName))
             factory.SetFolderTypeID(Guids.FOLDERTYPEID_GenericSearchResults)
 
             ' get and return shellitem

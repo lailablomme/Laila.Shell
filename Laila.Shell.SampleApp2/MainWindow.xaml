@@ -251,13 +251,7 @@
                                     </Image>
                                 </Button>
                                 <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="RefreshButton" Margin="0,0,5,0" Click="RefreshButton_Click"
-                                    Tag="{Binding ., ElementName=navigation}" IsTabStop="True">
-                                    <Button.ToolTip>
-                                        <TextBlock>
-                                        <Run>Refresh</Run>
-                                        <Run Text="{Binding Folder.DisplayName, Mode=OneWay}" />
-                                        </TextBlock>
-                                    </Button.ToolTip>
+                                    Tag="{Binding ., ElementName=navigation}" IsTabStop="True" ToolTip="{Binding RefreshText, ElementName=navigation, Mode=OneWay}">
                                     <Image Source="pack://application:,,,/Laila.Shell;component/Images/refresh16.png" Width="16" Height="16" />
                                 </Button>
                             </StackPanel>
@@ -277,7 +271,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Orientation="Horizontal">
                                 <ToggleButton x:Name="NewItemMenuButton" Margin="0,0,5,0" Checked="NewItemMenuButton_Checked" IsTabStop="True"
-                                          Tag="{Binding ., ElementName=menus}" ToolTip="Make a new item in the current location.">
+                                          Tag="{Binding ., ElementName=menus}" ToolTip="{shell:Resource ToolBar_NewMenuButtonToolTip}">
                                     <ToggleButton.Style>
                                         <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
                                             <Style.Triggers>
@@ -292,14 +286,14 @@
                                     </ToggleButton.Style>
                                     <StackPanel Orientation="Horizontal">
                                         <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/add16.png" />
-                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">New</TextBlock>
+                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_NewMenuButton}" />
                                         <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
                                     </StackPanel>
                                 </ToggleButton>
                                 <Line X1="0" Y1="0" X2="0" Y2="32" Stroke="Gray" Margin="0,0,5,0" />
                                 <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="CutButton" Margin="0,0,5,0" Click="CutButton_Click" 
                                     IsEnabled="{Binding CanCut, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
-                                    ToolTip="Cut">
+                                    ToolTip="{shell:Resource ToolBar_CutButtonToolTip}">
                                     <Image Width="16" Height="16">
                                         <Image.Style>
                                             <Style>
@@ -315,7 +309,7 @@
                                 </Button>
                                 <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="CopyButton" Margin="0,0,5,0" Click="CopyButton_Click"
                                     IsEnabled="{Binding CanCopy, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
-                                    ToolTip="Copy">
+                                    ToolTip="{shell:Resource ToolBar_CopyButtonToolTip}">
                                     <Image Width="16" Height="16">
                                         <Image.Style>
                                             <Style>
@@ -331,7 +325,7 @@
                                 </Button>
                                 <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="PasteButton" Margin="0,0,5,0" Click="PasteButton_Click" 
                                     IsEnabled="{Binding CanPaste, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
-                                    ToolTip="Paste">
+                                    ToolTip="{shell:Resource ToolBar_PasteButtonToolTip}">
                                     <Image Width="16" Height="16">
                                         <Image.Style>
                                             <Style>
@@ -347,7 +341,7 @@
                                 </Button>
                                 <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="RenameButton" Margin="0,0,5,0" Click="RenameButton_Click"
                                     IsEnabled="{Binding CanRename, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=folderView}"
-                                    ToolTip="Rename">
+                                    ToolTip="{shell:Resource ToolBar_RenameButtonToolTip}">
                                     <Image Width="16" Height="16">
                                         <Image.Style>
                                             <Style>
@@ -363,7 +357,7 @@
                                 </Button>
                                 <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="ShareButton" Margin="0,0,5,0" Click="ShareButton_Click"
                                     IsEnabled="{Binding CanShare, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
-                                    ToolTip="Share">
+                                    ToolTip="{shell:Resource ToolBar_ShareButtonToolTip}">
                                     <Image Width="16" Height="16">
                                         <Image.Style>
                                             <Style>
@@ -379,7 +373,7 @@
                                 </Button>
                                 <Button Style="{DynamicResource lailaShell_ToolbarButtonStyle}" x:Name="DeleteButton" Margin="0,0,5,0" Click="DeleteButton_Click" 
                                     IsEnabled="{Binding CanDelete, ElementName=menus, Mode=OneWay}" Tag="{Binding ., ElementName=menus}"
-                                    ToolTip="Delete">
+                                    ToolTip="{shell:Resource ToolBar_DeleteButtonToolTip}">
                                     <Image Width="16" Height="16">
                                         <Image.Style>
                                             <Style>
@@ -395,7 +389,7 @@
                                 </Button>
                                 <Line X1="0" Y1="0" X2="0" Y2="32" Stroke="Gray" Margin="0,0,5,0" />
                                 <ToggleButton x:Name="SortMenuButton" Margin="0,0,5,0" Checked="SortMenuButton_Checked"
-                                          Tag="{Binding ., ElementName=menus}" ToolTip="Options for sorting and grouping.">
+                                          Tag="{Binding ., ElementName=menus}" ToolTip="{shell:Resource ToolBar_SortMenuButtonToolTip}">
                                     <ToggleButton.Style>
                                         <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
                                             <Setter Property="ToggleButton.IsEnabled" Value="False" />
@@ -414,19 +408,19 @@
                                     </ToggleButton.Style>
                                     <StackPanel Orientation="Horizontal">
                                         <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/sort16.png" />
-                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">Sorting</TextBlock>
+                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_SortMenuButton}" />
                                         <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
                                     </StackPanel>
                                 </ToggleButton>
                                 <ToggleButton x:Name="ViewMenuButton" Margin="0,0,5,0" Checked="ViewMenuButton_Checked"
-                                          Tag="{Binding ., ElementName=menus}" ToolTip="Layout and view options.">
+                                          Tag="{Binding ., ElementName=menus}" ToolTip="{shell:Resource ToolBar_ViewMenuButtonToolTip}">
                                     <ToggleButton.Style>
                                         <Style TargetType="ToggleButton" BasedOn="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
                                         </Style>
                                     </ToggleButton.Style>
                                     <StackPanel Orientation="Horizontal">
                                         <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/view16.png" />
-                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">View</TextBlock>
+                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_ViewMenuButton}" />
                                         <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
                                     </StackPanel>
                                 </ToggleButton>
@@ -437,7 +431,7 @@
                                           Style="{StaticResource lailaShell_ToolbarToggleButtonStyle}">
                                     <StackPanel Orientation="Horizontal">
                                         <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/preview16.png" />
-                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">Preview</TextBlock>
+                                        <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_PreviewButton}" />
                                     </StackPanel>
                                 </ToggleButton>
                             </StackPanel>

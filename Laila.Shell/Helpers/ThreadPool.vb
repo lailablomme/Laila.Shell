@@ -61,7 +61,7 @@ Namespace Helpers
                                 _threads.Remove(thread)
                             End SyncLock
                         End Sub)
-                    thread.IsBackground = False
+                    thread.IsBackground = True
                     thread.SetApartmentState(ApartmentState.STA)
                     thread.Start(i)
                     _threads.Add(thread)
