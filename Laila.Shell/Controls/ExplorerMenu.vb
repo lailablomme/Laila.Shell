@@ -1,13 +1,10 @@
-﻿Imports System.IO
-Imports System.Reflection
+﻿Imports System.Reflection
 Imports System.Runtime.InteropServices
-Imports System.Security.Claims
 Imports System.Text
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement
-Imports System.Windows.Input
+Imports System.Windows.Interop
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Events
@@ -16,16 +13,10 @@ Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.COM
 Imports Laila.Shell.Interop.ContextMenu
 Imports Laila.Shell.Interop.DragDrop
-Imports Laila.Shell.Interop.Folders
-Imports Laila.Shell.Interop.Functions
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
-Imports Laila.Shell.Interop.Windows
-Imports Laila.Shell.WinRT
 Imports Laila.Shell.WinRT.Interface
-Imports Microsoft.VisualBasic.Devices
 Imports Microsoft.Win32
-Imports SHDocVw
 
 Namespace Controls
     Public Class ExplorerMenu
@@ -681,7 +672,10 @@ Namespace Controls
             Implements IOleWindow
 
             Public Function GetWindow(<Out> ByRef phwnd As IntPtr) As Integer Implements IOleWindow.GetWindow
-                phwnd = Shell._hwnd
+                phwnd = New WindowInteropHelper(If(New List(Of Window)(
+                                                      System.Windows.Application.Current.Windows.Cast(Of Window)()) _
+                                                          .Find(Function(w) w.IsActive),
+                                                   System.Windows.Application.Current.MainWindow)).Handle
             End Function
 
             Public Function ContextSensitiveHelp(<[In]> fEnterMode As Boolean) As Integer Implements IOleWindow.ContextSensitiveHelp
