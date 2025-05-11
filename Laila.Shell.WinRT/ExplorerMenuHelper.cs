@@ -189,62 +189,8 @@ namespace Laila.Shell.WinRT
 
         static Tuple<string, string?, string, string?, string?> getApplication(Package package, string manifestPath, XAttribute? idAttr, XElement app)
         {
-            XNamespace nsUap = "http://schemas.microsoft.com/appx/manifest/uap/windows10";
-            string? displayName = app.Element(nsUap + "VisualElements")?.Attribute("DisplayName")?.Value;
-            displayName = app.Element(nsUap + "VisualElements")?.Attribute("DisplayName")?.Value;
-            if (!string.IsNullOrWhiteSpace(displayName))
-                displayName = ResolveMsResourceFromPackage(displayName, package.Id.FullName, package.Id.Name);
-            string? logoPath = app.Element(nsUap + "VisualElements")?.Attribute("Square44x44Logo")?.Value;
-            if (!string.IsNullOrWhiteSpace(logoPath))
-            {
-                logoPath = ResolveMsResourceFromPackage(logoPath, package.Id.FullName, package.Id.Name);
-                if (System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(manifestPath)!, logoPath)))
-                    logoPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(manifestPath)!, logoPath);
-                else if (System.IO.File.Exists(System.IO.Path.Combine(package.EffectivePath, logoPath)))
-                    logoPath = System.IO.Path.Combine(package.EffectivePath, logoPath);
-                else
-                {
-                    string probePath = !string.IsNullOrWhiteSpace(System.IO.Path.GetDirectoryName(logoPath))
-                        ? System.IO.Path.Combine(System.IO.Path.GetDirectoryName(manifestPath)!, System.IO.Path.GetDirectoryName(logoPath)!)
-                        : System.IO.Path.GetDirectoryName(manifestPath)!;
-                    string? logoPathScaled1 = null;
-                    if (System.IO.Directory.Exists(probePath))
-                        logoPathScaled1 = System.IO.Directory.EnumerateFiles(probePath)
-                            .Where(fileName => System.IO.Path.GetFileNameWithoutExtension(fileName).ToLower().Contains("scale-"))
-                            .Select(fileName => new
-                            {
-                                fileName = fileName,
-                                scale = System.IO.Path.GetFileNameWithoutExtension(fileName).Substring(
-                                    System.IO.Path.GetFileNameWithoutExtension(fileName).ToLower().LastIndexOf("scale-") + "scale-".Length)
-                            })
-                            .Where(file => int.TryParse(file.scale, out _))
-                            .FirstOrDefault(file => Convert.ToInt32(file.scale) >= 100 && System.IO.Path.GetFileName(file.fileName).ToLower()
-                                .Equals($"{System.IO.Path.GetFileNameWithoutExtension(logoPath).ToLower()}.scale-{file.scale}{System.IO.Path.GetExtension(logoPath).ToLower()}"))?
-                            .fileName;
-
-                    if (!string.IsNullOrWhiteSpace(logoPathScaled1))
-                        logoPath = logoPathScaled1;
-                    else
-                        probePath = !string.IsNullOrWhiteSpace(System.IO.Path.GetDirectoryName(logoPath))
-                            ? System.IO.Path.Combine(package.EffectivePath, System.IO.Path.GetDirectoryName(logoPath)!)
-                            : package.EffectivePath;
-                        if (System.IO.Directory.Exists(probePath))
-                            logoPath = System.IO.Directory.EnumerateFiles(probePath)
-                                .Where(fileName => System.IO.Path.GetFileNameWithoutExtension(fileName).ToLower().Contains("scale-"))
-                                .Select(fileName => new
-                                {
-                                    fileName = fileName,
-                                    scale = System.IO.Path.GetFileNameWithoutExtension(fileName).Substring(
-                                        System.IO.Path.GetFileNameWithoutExtension(fileName).ToLower().LastIndexOf("scale-") + "scale-".Length)
-                                })
-                                .Where(file => int.TryParse(file.scale, out _))
-                                .FirstOrDefault(file => Convert.ToInt32(file.scale) >= 100 && System.IO.Path.GetFileName(file.fileName).ToLower()
-                                    .Equals($"{System.IO.Path.GetFileNameWithoutExtension(logoPath).ToLower()}.scale-{file.scale}{System.IO.Path.GetExtension(logoPath).ToLower()}"))?
-                                .fileName;
-                        else
-                            logoPath = null;
-                }
-            }
+            string? displayName = package.DisplayName;
+            string? logoPath = package.Logo.LocalPath;
             return new Tuple<string, string?, string, string?, string?>(manifestPath, idAttr?.Value, package.EffectivePath, displayName, logoPath);
         }
 

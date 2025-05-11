@@ -394,7 +394,9 @@ Namespace Controls
                         appMenuItem = New MenuItemData() With {
                             .ApplicationName = thisAppCommands(0).ApplicationName,
                             .Header = thisAppCommands(0).ApplicationName,
-                            .Icon = New BitmapImage(New Uri(thisAppCommands(0).ApplicationIconPath)),
+                            .Icon = If(Not String.IsNullOrWhiteSpace(thisAppCommands(0).ApplicationIconPath),
+                                       New BitmapImage(New Uri(thisAppCommands(0).ApplicationIconPath)),
+                                       Nothing),
                             .IsEnabled = True,
                             .Items = New List(Of MenuItemData)()
                         }
