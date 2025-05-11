@@ -395,7 +395,7 @@ Namespace Controls
                             .ApplicationName = thisAppCommands(0).ApplicationName,
                             .Header = thisAppCommands(0).ApplicationName,
                             .Icon = If(Not String.IsNullOrWhiteSpace(thisAppCommands(0).ApplicationIconPath),
-                                       New BitmapImage(New Uri(thisAppCommands(0).ApplicationIconPath)),
+                                       trimTransparentBorders(New BitmapImage(New Uri(thisAppCommands(0).ApplicationIconPath))),
                                        Nothing),
                             .IsEnabled = True,
                             .Items = New List(Of MenuItemData)()
