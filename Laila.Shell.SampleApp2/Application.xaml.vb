@@ -1,9 +1,21 @@
 ﻿Imports System.Globalization
 Imports System.Reflection
+Imports System.Windows.Markup
 
 Class Application
     Public Sub New()
-        CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InstalledUICulture
+        Dim culture As CultureInfo = CultureInfo.InstalledUICulture
+        CultureInfo.DefaultThreadCurrentUICulture = culture
+        CultureInfo.DefaultThreadCurrentCulture = culture
+
+        ' Set default FlowDirection based on culture direction
+        Dim direction = If(culture.TextInfo.IsRightToLeft, FlowDirection.RightToLeft, FlowDirection.LeftToRight)
+
+        ' Apply to all windows (optional)
+        FrameworkElement.LanguageProperty.OverrideMetadata(GetType(FrameworkElement),
+            New FrameworkPropertyMetadata(XmlLanguage.GetLanguage(culture.IetfLanguageTag)))
+        FrameworkElement.FlowDirectionProperty.OverrideMetadata(GetType(FrameworkElement),
+            New FrameworkPropertyMetadata(direction))
     End Sub
 
     Private Sub Application_Startup(sender As Object, e As StartupEventArgs)

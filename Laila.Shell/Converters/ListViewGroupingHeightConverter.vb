@@ -10,7 +10,7 @@ Namespace Converters
         Public Function Convert(values() As Object, targetType As Type, parameter As Object, culture As CultureInfo) As Object Implements IMultiValueConverter.Convert
             Dim stackPanel As StackPanel = values(0)
             stackPanel.Measure(New Windows.Size(Double.PositiveInfinity, Double.PositiveInfinity))
-            Return System.Convert.ToDouble(values(1) - stackPanel.DesiredSize.Height - 45)
+            Return System.Convert.ToDouble(values(1), CultureInfo.InvariantCulture) - stackPanel.DesiredSize.Height - 45
         End Function
 
         Public Function ConvertBack(value As Object, targetTypes() As Type, parameter As Object, culture As CultureInfo) As Object() Implements IMultiValueConverter.ConvertBack

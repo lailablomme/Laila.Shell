@@ -8,7 +8,7 @@ Namespace Converters
         Implements IMultiValueConverter
 
         Public Function Convert(values() As Object, targetType As Type, parameter As Object, culture As CultureInfo) As Object Implements IMultiValueConverter.Convert
-            Return New GridLength(System.Convert.ToDouble(values(0)) * System.Convert.ToDouble(values(1)), GridUnitType.Pixel)
+            Return New GridLength(System.Convert.ToDouble(values(0)) * System.Convert.ToDouble(values(1), CultureInfo.InvariantCulture), GridUnitType.Pixel)
         End Function
 
         Public Function ConvertBack(value As Object, targetTypes() As Type, parameter As Object, culture As CultureInfo) As Object() Implements IMultiValueConverter.ConvertBack
