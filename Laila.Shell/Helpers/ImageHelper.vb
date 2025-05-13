@@ -1,9 +1,11 @@
 ﻿Imports System.Drawing
 Imports System.Drawing.Imaging
 Imports System.Globalization
+Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
+Imports System.Windows.Forms
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Helpers
@@ -173,29 +175,63 @@ Namespace Helpers
         Public Shared Function ExtractIcon(ref As String, isSmall As Boolean) As BitmapSource
             If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
                 Dim s() As String = Split(ref, ","), icon As IntPtr, iconl As IntPtr
+
                 Try
-                    Functions.ExtractIconEx(s(0), Convert.ToInt32(s(1), CultureInfo.InvariantCulture), iconl, icon, 1)
-                    If Not IntPtr.Zero.Equals(icon) Then
-                        Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(If(isSmall, icon, iconl), Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                        img.Freeze()
-                        _iconsLock.Wait()
-                        Try
-                            If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
-                                _icons.Add(ref.ToLower().Trim(), img)
+                    If Not s.Length = 2 Then
+                        If IO.File.Exists(ref) Then
+                            If IO.Path.GetExtension(ref).ToLower() = ".ico" Then
+                                Using ico As New Icon(ref, -1, -1)
+                                    Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(ico.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                    img.Freeze()
+                                    _iconsLock.Wait()
+                                    Try
+                                        If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
+                                            _icons.Add(ref.ToLower().Trim(), img)
+                                        End If
+                                    Finally
+                                        _iconsLock.Release()
+                                    End Try
+                                End Using
                             End If
-                        Finally
-                            _iconsLock.Release()
-                        End Try
+                        Else
+                            Dim img As ImageSource = New BitmapImage(New Uri(ref, UriKind.Absolute))
+                            img.Freeze()
+                            _iconsLock.Wait()
+                            Try
+                                If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
+                                    _icons.Add(ref.ToLower().Trim(), img)
+                                End If
+                            Finally
+                                _iconsLock.Release()
+                            End Try
+                        End If
+                        Return Nothing
                     Else
-                        _iconsLock.Wait()
-                        Try
-                            If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
-                                _icons.Add(ref.ToLower().Trim(), Nothing)
-                            End If
-                        Finally
-                            _iconsLock.Release()
-                        End Try
+                        Functions.ExtractIconEx(s(0), Convert.ToInt32(s(1), CultureInfo.InvariantCulture), iconl, icon, 1)
+                        If Not IntPtr.Zero.Equals(icon) Then
+                            Dim img As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(If(isSmall, icon, iconl), Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                            img.Freeze()
+                            _iconsLock.Wait()
+                            Try
+                                If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
+                                    _icons.Add(ref.ToLower().Trim(), img)
+                                End If
+                            Finally
+                                _iconsLock.Release()
+                            End Try
+                        Else
+                            _iconsLock.Wait()
+                            Try
+                                If Not _icons.ContainsKey(ref.ToLower().Trim()) Then
+                                    _icons.Add(ref.ToLower().Trim(), Nothing)
+                                End If
+                            Finally
+                                _iconsLock.Release()
+                            End Try
+                        End If
                     End If
+                Catch ex As Exception
+                    Return Nothing
                 Finally
                     If Not IntPtr.Zero.Equals(icon) Then
                         Functions.DestroyIcon(icon)
