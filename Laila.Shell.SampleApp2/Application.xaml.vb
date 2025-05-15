@@ -38,13 +38,18 @@ Class Application
     End Sub
 
     Private Sub logException(ex As Exception)
-        Dim folder As String = IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location)
-
-        IO.File.AppendAllLines(IO.Path.Combine(folder, "error.log"), {String.Format("-----{0:d} {0:HH:mm:ss}-----", DateTime.Now)})
+        IO.File.AppendAllLines(getLogFileName(), {String.Format("-----{0:d} {0:HH:mm:ss}-----", DateTime.Now)})
 
         While Not ex Is Nothing
-            IO.File.AppendAllLines(IO.Path.Combine(folder, "error.log"), {ex.Message, ex.StackTrace?.ToString()})
+            IO.File.AppendAllLines(getLogFileName(), {ex.Message, ex.StackTrace?.ToString()})
             ex = ex.InnerException
         End While
     End Sub
+
+
+    Private Shared Function getLogFileName() As String
+        Dim path As String = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Laila", "Shell")
+        If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
+        Return IO.Path.Combine(path, "error.log")
+    End Function
 End Class
