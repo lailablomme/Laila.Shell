@@ -696,7 +696,7 @@ Public Class Shell
     Private Shared _listenerFileSystemWatchers As Dictionary(Of String, FileSystemWatcher) = New Dictionary(Of String, FileSystemWatcher)()
 
     Public Shared Sub StartListening(folder As Folder)
-        If Shell.ShuttingDownToken.IsCancellationRequested Then
+        If Shell.ShuttingDownToken.IsCancellationRequested OrElse Not IO.Directory.Exists(folder.FullPath) Then
             Return
         End If
 
@@ -852,7 +852,7 @@ Public Class Shell
                         _listenerFileSystemWatchers.Remove(folder.FullPath)
                     End If
                     _listenerCount.Remove(folder.FullPath)
-                Else
+                ElseIf count > 0 Then
                     _listenerCount(folder.FullPath) -= 1
                 End If
             End If

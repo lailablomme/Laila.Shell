@@ -41,7 +41,7 @@ Class Application
         IO.File.AppendAllLines(getLogFileName(), {String.Format("-----{0:d} {0:HH:mm:ss}-----", DateTime.Now)})
 
         While Not ex Is Nothing
-            IO.File.AppendAllLines(getLogFileName(), {ex.Message, ex.StackTrace?.ToString()})
+            IO.File.AppendAllLines(getLogFileName(), {$"{ex.Message} [{ex.GetType().ToString()}]", ex.StackTrace?.ToString()})
             ex = ex.InnerException
         End While
     End Sub

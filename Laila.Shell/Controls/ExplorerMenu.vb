@@ -678,6 +678,7 @@ Namespace Controls
                                                       System.Windows.Application.Current.Windows.Cast(Of Window)()) _
                                                           .Find(Function(w) w.IsActive),
                                                    System.Windows.Application.Current.MainWindow)).Handle
+                Return HRESULT.S_OK
             End Function
 
             Public Function ContextSensitiveHelp(<[In]> fEnterMode As Boolean) As Integer Implements IOleWindow.ContextSensitiveHelp

@@ -167,6 +167,7 @@ Public Class Folder
                 Return Folder.GetIShellFolderFromIShellItem2(Me.ShellItem2)
             End If
         End SyncLock
+        Return Nothing
     End Function
 
     ''' <summary>

@@ -156,7 +156,7 @@ Namespace Controls
                         Marshal.FreeHGlobal(mii.dwTypeData)
                     End Try
 
-                    Dim bitmapSource As BitmapSource
+                    Dim bitmapSource As BitmapSource = Nothing
 
                     Try
                         mii = New MENUITEMINFO()
@@ -170,9 +170,9 @@ Namespace Controls
                         ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
                             bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                             bitmapSource.Freeze()
-                        Else
-                            bitmapSource = Nothing
                         End If
+                    Catch ex As Exception
+                        ' Protect against invalid bitmap handles
                     Finally
                         If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
                             If Not _hbitmapsToDispose.Contains(mii.hbmpItem) Then _hbitmapsToDispose.Add(mii.hbmpItem)

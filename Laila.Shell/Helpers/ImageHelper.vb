@@ -102,6 +102,7 @@ Namespace Helpers
                     hBitmap = IntPtr.Zero
                 End If
             End Try
+            Return Nothing
         End Function
 
         Public Shared Function IsImage(fullPath As String) As Boolean

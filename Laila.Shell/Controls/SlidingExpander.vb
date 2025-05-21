@@ -95,7 +95,7 @@ Namespace Controls
                 End Sub
 
             AddHandler Me.PART_ToggleButton.Unchecked,
-                Async Sub(s As Object, e As RoutedEventArgs)
+                Sub(s As Object, e As RoutedEventArgs)
                     If Me.IsExpanded Then
                         _doIgnoreExpandCollapse = True
                         Me.IsExpanded = False
@@ -110,7 +110,7 @@ Namespace Controls
                     End If
                 End Sub
             AddHandler Me.PART_ToggleButton.Checked,
-                Async Sub(s As Object, e As RoutedEventArgs)
+                Sub(s As Object, e As RoutedEventArgs)
                     If Not Me.IsExpanded Then
                         _doIgnoreExpandCollapse = True
                         Me.IsExpanded = True
