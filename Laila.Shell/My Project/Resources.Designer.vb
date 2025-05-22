@@ -235,6 +235,15 @@ Namespace My.Resources
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Collapse.
+        '''</summary>
+        Friend ReadOnly Property Menu_Collapse() As String
+            Get
+                Return ResourceManager.GetString("Menu_Collapse", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to Collapse all groups.
         '''</summary>
         Friend ReadOnly Property Menu_CollapseAllGroups() As String
@@ -276,6 +285,15 @@ Namespace My.Resources
         Friend ReadOnly Property Menu_Delete() As String
             Get
                 Return ResourceManager.GetString("Menu_Delete", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Expand.
+        '''</summary>
+        Friend ReadOnly Property Menu_Expand() As String
+            Get
+                Return ResourceManager.GetString("Menu_Expand", resourceCulture)
             End Get
         End Property
         

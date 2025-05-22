@@ -29,9 +29,12 @@ Namespace Controls
         Private _helper As Helpers.ComHelper = New ComHelper()
         Private _arrayCloudItems As IShellItemArray = Nothing
         Private _arrayFileExplorerItems As IShellItemArray = Nothing
+        Private _resourcePrefix As String
 
         Protected Overrides Sub Make(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             If _wasMade Then Return
+
+            _resourcePrefix = Me.ResourcePrefix
 
             _activeItems = If(Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0,
                 Me.SelectedItems.ToList(), New List(Of Item) From {Me.Folder})
@@ -88,11 +91,17 @@ Namespace Controls
                         addFromContextMenu("open", Nothing, "Enter")
                         If _menuItems.Count > 0 Then
                             If TypeOf items(0) Is Folder Or items(0).IsDrive Then
-                                _menuItems(0).Icon = ImageHelper.GetApplicationIcon(Assembly.GetEntryAssembly().Location)
+                                Try
+                                    _menuItems(0).Icon = ImageHelper.GetApplicationIcon(Assembly.GetEntryAssembly().Location)
+                                Catch ex As Exception
+                                    ' Protect against invalid image
+                                End Try
                             Else
                                 addFromCommandStore("Windows.OpenWith", folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
                                 If _menuItems.Count > 1 Then
-                                    _menuItems(0).Icon = _menuItems(1).Items(0).Icon
+                                    If Not _menuItems(1).Items(0).Icon Is Nothing Then
+                                        _menuItems(0).Icon = _menuItems(1).Items(0).Icon
+                                    End If
                                     _menuItems.RemoveAt(1)
                                 End If
                                 If _menuItems(0).Icon Is Nothing Then
@@ -104,17 +113,20 @@ Namespace Controls
                     addFromContextMenu("openas", "Windows.OpenWith")
                     addFromContextMenu("empty", "Windows.RecycleBin.Empty")
                     addFromContextMenu("Windows.ModernShare", "Windows.ModernShare")
-                    addFromContextMenu("setdesktopwallpaper", "Windows.setdesktopwallpaper")
+                    addFromContextMenu("PinToStartScreen", "Windows.pintostartscreen")
+                    addFromContextMenu("Install", "Windows.Install")
                     addFromContextMenu("rotate90", "Windows.rotate90")
                     addFromContextMenu("rotate270", "Windows.rotate270")
+                    addFromContextMenu("Windows.PowerShell.Run", "Windows.MultiVerb.PowerShell")
+                    addFromContextMenu("opencontaining", "Windows.Shortcut.opencontaining")
                     addFromContextMenu("undelete", "Windows.RecycleBin.RestoreItems")
                     addFromContextMenu("extract", "Windows.CompressedFile.extract")
+                    addFromContextMenu("setdesktopwallpaper", "Windows.setdesktopwallpaper")
                     addFromCommandStore("Windows.CompressTo", folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
                     addFromContextMenu("copyaspath", "Windows.copyaspath", "Ctrl-Shift-C")
                     addFromContextMenu("format", "Windows.DiskFormat")
                     addFromContextMenu("connectNetworkDrive", "Windows.connectNetworkDrive")
                     addFromContextMenu("disconnectNetworkDrive", "Windows.DisconnectNetworkDrive")
-                    addFromContextMenu("PinToStartScreen", "Windows.pintostartscreen")
                     addFromContextMenu("New", "Windows.newitem")
                     addFromContextMenu("properties", "Windows.properties", "Alt+Enter")
 
@@ -134,7 +146,7 @@ Namespace Controls
                         If _menuItems.Count > 0 Then
                             _menuItems.Add(New MenuItemData() With {.Header = "-----"})
                         End If
-                        Dim icon As ImageSource = System.Windows.Application.Current.TryFindResource("lailaShell_ExplorerMenu_MoreOptionsIcon")
+                        Dim icon As ImageSource = System.Windows.Application.Current.TryFindResource($"{_resourcePrefix}MoreOptionsIcon")
                         icon.Freeze()
                         Dim showMoreOptionsMenuItem As New MenuItemData() With {
                             .Header = My.Resources.Menu_ShowMoreOptions,
@@ -167,14 +179,14 @@ Namespace Controls
                                 ' get icon  
                                 Dim icon As String = CType(subKey.GetValue("Icon"), String)
                                 If Not icon Is Nothing Then
-                                    menuItem.Icon = ImageHelper.ExtractIcon(icon, True)
+                                    menuItem.Icon = ImageHelper.ExtractIcon(icon, False)
                                 End If
                             End If
                         End Using
                     End Using
                     If menuItem.Icon Is Nothing Then
                         Try
-                            menuItem.Icon = System.Windows.Application.Current.TryFindResource($"lailaShell_ExplorerMenu_{commandForIcon}Icon")
+                            menuItem.Icon = System.Windows.Application.Current.TryFindResource($"{_resourcePrefix}{commandForIcon}Icon")
                             menuItem.Icon?.Freeze()
                         Catch ex As Exception
                         End Try
@@ -234,11 +246,11 @@ Namespace Controls
                                         End If
                                         menuItem.Header = menuItem.Header
                                         If menuItem.Icon Is Nothing AndAlso Not icon Is Nothing Then
-                                            menuItem.Icon = ImageHelper.ExtractIcon(icon, True)
+                                            menuItem.Icon = ImageHelper.ExtractIcon(icon, False)
                                         End If
                                         If menuItem.Icon Is Nothing Then
                                             Try
-                                                menuItem.Icon = System.Windows.Application.Current.TryFindResource($"lailaShell_ExplorerMenu_{name}Icon")
+                                                menuItem.Icon = System.Windows.Application.Current.TryFindResource($"{_resourcePrefix}{name}Icon")
                                                 menuItem.Icon?.Freeze()
                                             Catch ex As Exception
                                             End Try
@@ -281,18 +293,19 @@ Namespace Controls
                                 Dim state As EXPCMDSTATE = 0
                                 Dim h As HRESULT = commandState.GetState(Nothing, True, state)
                                 Debug.WriteLine("GetState=" & h.ToString() & "--" & state.ToString())
-                                If state <> 100 Then
+                                If state <> EXPCMDSTATE.ECS_HIDDEN Then
                                     _menuItems.Add(New MenuItemData() With {
                                         .Header = name & "-" & If(muiVerb, ""),
-                                        .Tag = handlerGUID
+                                        .IsEnabled = state = EXPCMDSTATE.ECS_ENABLED
                                     })
-                                    Dim a As Action =
-                                            Sub()
-                                                command.Execute()
-                                            End Sub
-                                    _menuItems(_menuItems.Count - 1).Tag = a
+                                    Dim action As Action =
+                                        Sub()
+                                            command.Execute()
+                                        End Sub
+                                    Dim canonicalName As String = If(subKey.GetValue("CanonicalName"), handlerGUID.ToString())
+                                    _menuItems(_menuItems.Count - 1).Tag = New Tuple(Of Integer, String, Object)(-1, canonicalName, action)
                                     If Not icon Is Nothing Then
-                                        _menuItems(_menuItems.Count - 1).Icon = ImageHelper.ExtractIcon(icon, True)
+                                        _menuItems(_menuItems.Count - 1).Icon = ImageHelper.ExtractIcon(icon, False)
                                     End If
                                 End If
                             End If
@@ -391,16 +404,24 @@ Namespace Controls
                     If thisAppCommands.Count = 1 Then
                         addTo = tempRoot
                     Else
+                        Dim icon As ImageSource = Nothing
+                        Try
+                            icon = If(Not String.IsNullOrWhiteSpace(thisAppCommands(0).ApplicationIconPath) _
+                                        AndAlso IO.File.Exists(thisAppCommands(0).ApplicationIconPath),
+                                      trimTransparentBorders(New BitmapImage(New Uri(thisAppCommands(0).ApplicationIconPath))),
+                                      Nothing)
+                            If Not icon Is Nothing Then icon.Freeze()
+                        Catch ex As Exception
+                            ' protect against invalid image
+                        End Try
+
                         appMenuItem = New MenuItemData() With {
                             .ApplicationName = thisAppCommands(0).ApplicationName,
                             .Header = thisAppCommands(0).ApplicationName,
-                            .Icon = If(Not String.IsNullOrWhiteSpace(thisAppCommands(0).ApplicationIconPath),
-                                       trimTransparentBorders(New BitmapImage(New Uri(thisAppCommands(0).ApplicationIconPath))),
-                                       Nothing),
+                            .Icon = icon,
                             .IsEnabled = True,
                             .Items = New List(Of MenuItemData)()
                         }
-                        appMenuItem.Icon.Freeze()
                         addTo = New List(Of MenuItemData)()
                     End If
 
@@ -455,10 +476,14 @@ Namespace Controls
                             Dim parts() As String = cleaned.Split("?")
                             Dim iconFileName As String = resolveMsResourceFromPackage(parts(1), parts(0), Nothing)
                             If IO.File.Exists(iconFileName) Then
-                                menuItem.Icon = trimTransparentBorders(New BitmapImage(New Uri(iconFileName, UriKind.Absolute)))
+                                Try
+                                    menuItem.Icon = putOnBlueBackground(trimTransparentBorders(New BitmapImage(New Uri(iconFileName, UriKind.Absolute))))
+                                Catch ex As Exception
+                                    ' Protect against invalid image
+                                End Try
                             End If
                         Else
-                            menuItem.Icon = ImageHelper.ExtractIcon(iconResource, True)
+                            menuItem.Icon = ImageHelper.ExtractIcon(iconResource, False)
                         End If
                         If Not menuItem.Icon Is Nothing Then
                             menuItem.Icon.Freeze()
@@ -501,7 +526,28 @@ Namespace Controls
             End If
         End Function
 
+        Private Function putOnBlueBackground(source As BitmapSource) As BitmapSource
+            Dim size As Integer = If(source.Width > source.Height, source.Width, source.Height)
+            Dim pixelSize As Integer = If(source.PixelWidth > source.PixelHeight, source.PixelWidth, source.PixelHeight)
+
+            Dim dv As New DrawingVisual()
+            Using dc As DrawingContext = dv.RenderOpen()
+                ' Fill the background with blue
+                dc.DrawRectangle(Brushes.Blue, Nothing, New Rect(0, 0, size, size))
+
+                ' Draw the image onto the bitmap 
+                dc.DrawImage(source, New Rect((size - source.Width) / 2, (size - source.Height) / 2, source.Width, source.Height))
+            End Using
+
+            ' 4. Render the DrawingVisual to a RenderTargetBitmap
+            Dim rtb As New RenderTargetBitmap(pixelSize, pixelSize, source.DpiX, source.DpiY, PixelFormats.Pbgra32)
+            rtb.Render(dv)
+
+            Return rtb
+        End Function
+
         Private Function trimTransparentBorders(source As BitmapSource) As BitmapSource
+            ' Convert to BGRA32 if needed
             If source.Format <> PixelFormats.Bgra32 Then
                 source = New FormatConvertedBitmap(source, PixelFormats.Bgra32, Nothing, 0)
             End If
@@ -510,20 +556,16 @@ Namespace Controls
             Dim height = source.PixelHeight
             Dim stride = width * 4
             Dim pixels(width * height * 4 - 1) As Byte
-
             source.CopyPixels(pixels, stride, 0)
 
-            Dim minX = width
-            Dim minY = height
-            Dim maxX = 0
-            Dim maxY = 0
+            ' Find bounding box of non-transparent pixels
+            Dim minX = width, minY = height, maxX = 0, maxY = 0
             Dim foundPixel = False
 
             For y = 0 To height - 1
                 For x = 0 To width - 1
                     Dim index = y * stride + x * 4
                     Dim alpha = pixels(index + 3)
-
                     If alpha <> 0 Then
                         foundPixel = True
                         If x < minX Then minX = x
@@ -535,12 +577,58 @@ Namespace Controls
             Next
 
             If Not foundPixel Then
-                ' Entire image is transparent – return a 1x1 transparent pixel
-                Return New CroppedBitmap(source, New Int32Rect(0, 0, 1, 1))
+                ' Entirely transparent image — return a 1x1 transparent bitmap with original DPI
+                Dim empty = New WriteableBitmap(1, 1, source.DpiX, source.DpiY, PixelFormats.Bgra32, Nothing)
+                empty.Lock()
+                empty.Unlock()
+                Return empty
             End If
 
-            Dim cropRect = New Int32Rect(minX, minY, maxX - minX + 1, maxY - minY + 1)
-            Return New CroppedBitmap(source, cropRect)
+            ' Define crop region
+            Dim cropWidth = maxX - minX + 1
+            Dim cropHeight = maxY - minY + 1
+            Dim cropStride = cropWidth * 4
+            Dim cropPixels(cropWidth * cropHeight * 4 - 1) As Byte
+
+            ' Copy pixels from the crop region
+            For y = 0 To cropHeight - 1
+                Dim srcIndex = (minY + y) * stride + minX * 4
+                Dim dstIndex = y * cropStride
+                Array.Copy(pixels, srcIndex, cropPixels, dstIndex, cropStride)
+            Next
+
+            ' Create new WriteableBitmap with the original DPI
+            Dim result = New WriteableBitmap(cropWidth, cropHeight, source.DpiX, source.DpiY, PixelFormats.Bgra32, Nothing)
+            result.WritePixels(New Int32Rect(0, 0, cropWidth, cropHeight), cropPixels, cropStride, 0)
+            Return result
+        End Function
+
+        Private Function isEmpty(source As BitmapImage) As Boolean
+            Dim width = source.PixelWidth
+            Dim height = source.PixelHeight
+            Dim stride = width * 4
+            Dim pixels(width * height * 4 - 1) As Byte
+            source.CopyPixels(pixels, stride, 0)
+
+            ' Find bounding box of non-transparent pixels
+            Dim minX = width, minY = height, maxX = 0, maxY = 0
+            Dim foundPixel = False
+
+            For y = 0 To height - 1
+                For x = 0 To width - 1
+                    Dim index = y * stride + x * 4
+                    Dim alpha = pixels(index + 3)
+                    If alpha <> 0 Then
+                        foundPixel = True
+                        If x < minX Then minX = x
+                        If y < minY Then minY = y
+                        If x > maxX Then maxX = x
+                        If y > maxY Then maxY = y
+                    End If
+                Next
+            Next
+
+            Return Not foundPixel
         End Function
 
         Public Overrides Async Function InvokeCommand(id As Tuple(Of Integer, String, Object)) As Task
@@ -580,6 +668,8 @@ Namespace Controls
                 Me.Folder.AddExplorerMenuItems(Me)
             End If
 
+            Dim hasItems As Boolean = Me.Items.Count > 0
+
             ' add view, sort and group by menus
             If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
                 Dim insertIndex As Integer = 0
@@ -587,9 +677,9 @@ Namespace Controls
                 Dim viewMenu As ViewMenu = New ViewMenu() With {.Folder = Me.Folder, .MenuStyle = ViewMenuStyle.RightClickMenu}
                 Dim viewMenuItem As MenuItem = New MenuItem() With {
                     .Header = My.Resources.Menu_View,
-                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"lailaShell_ExplorerMenu_ViewIcon")}
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"{_resourcePrefix}ViewIcon")}
                 }
-                viewMenu.AddItems(viewMenuItem.Items)
+                viewMenu.AddItems(viewMenuItem.Items, _resourcePrefix)
                 Me.Items.Insert(0, viewMenuItem)
                 insertIndex += 1
 
@@ -599,9 +689,9 @@ Namespace Controls
                     If Me.Folder.CanSort Then
                         Dim sortMenuItem As MenuItem = New MenuItem() With {
                             .Header = My.Resources.Menu_Sort,
-                            .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"lailaShell_ExplorerMenu_SortIcon")}
+                            .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"{_resourcePrefix}SortIcon")}
                         }
-                        sortMenu.AddSortItems(sortMenuItem.Items)
+                        sortMenu.AddSortItems(sortMenuItem.Items, _resourcePrefix)
                         Me.Items.Insert(insertIndex, sortMenuItem)
                         insertIndex += 1
                     End If
@@ -616,7 +706,7 @@ Namespace Controls
                     End If
                 End If
 
-                If insertIndex > 0 Then
+                If insertIndex > 0 AndAlso hasItems Then
                     Me.Items.Insert(insertIndex, New Separator())
                 End If
             End If

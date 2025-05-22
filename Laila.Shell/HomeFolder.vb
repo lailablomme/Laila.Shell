@@ -253,20 +253,20 @@ Public Class HomeFolder
                 AndAlso (Not TypeOf target Is Folder OrElse Not target.Attributes.HasFlag(SFGAO.STORAGEANCESTOR)) _
                 AndAlso target.IsExisting _
                 AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
-                target.LogicalParent = Me
-                target._hasCustomProperties = True
-                target.CanShowInTree = False
+                item.LogicalParent = Me
+                item._hasCustomProperties = True
+                item.CanShowInTree = False
 
                 Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
-                target.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
+                item.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
                 Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(modifiedProperty.Value)
-                target._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
+                item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
 
                 Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.RECENT_FILE)
-                target._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
+                item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)
 
-                Return target
+                Return item
             End If
         End If
 

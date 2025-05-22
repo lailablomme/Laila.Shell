@@ -34,6 +34,7 @@ Namespace Controls
         Protected _renameRequestTimer As Timer
         Protected _thread As Helpers.ThreadPool
         Protected _wasMade As Boolean
+        Private _makeLock As Object = New Object()
         Protected disposedValue As Boolean
 
         Public Sub New()
@@ -65,18 +66,24 @@ Namespace Controls
         Protected MustOverride Function DoRenameAfter(Tag As Tuple(Of Integer, String, Object)) As Boolean
 
         Public Overrides Async Function Make() As Task
-            If _wasMade Then Return
+            Using Shell.OverrideCursor(Cursors.Wait)
+                SyncLock _makeLock
+                    If _wasMade Then Return
 
-            _activeItems = If(Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0,
-                Me.SelectedItems.ToList(), New List(Of Item) From {Me.Folder})
+                    _activeItems = If(Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0,
+                    Me.SelectedItems.ToList(), New List(Of Item) From {Me.Folder})
 
-            Make(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
+                    Make(Me.Folder, Me.SelectedItems, Me.IsDefaultOnly)
 
-            ' make our menu
-            Me.Items.Clear()
-            Me.Buttons.Clear()
+                    ' make our menu
+                    Me.Items.Clear()
+                    Me.Buttons.Clear()
 
-            Await Me.AddItems()
+                    _wasMade = True
+                End SyncLock
+
+                Await Me.AddItems()
+            End Using
 
             AddHandler Me.Closed,
                 Sub(s As Object, e As EventArgs)
@@ -111,8 +118,6 @@ Namespace Controls
                 End Sub
             wireMenuItems(Me.Items.Cast(Of Control).ToList())
             wireMenuItems(Me.Buttons.Cast(Of Control).ToList())
-
-            _wasMade = True
         End Function
 
         Protected MustOverride Overloads Sub Make(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)

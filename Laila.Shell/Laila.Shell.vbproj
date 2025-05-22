@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.94-alpha</Version>
+	<Version>0.0.95-alpha</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>
@@ -51,7 +51,6 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <None Remove="Images\cloud32.png" />
     <None Remove="Images\cloud_download16.png" />
     <None Remove="Images\cloud_download32.png" />
-    <None Remove="Images\collapseall16.png" />
     <None Remove="Images\compactmode16.png" />
     <None Remove="Images\content16.png" />
     <None Remove="Images\copy16.png" />
@@ -61,7 +60,6 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <None Remove="Images\dropdown_arrow.png" />
     <None Remove="Images\error16.png" />
     <None Remove="Images\error32.png" />
-    <None Remove="Images\expandall16.png" />
     <None Remove="Images\extralargeicons16.png" />
     <None Remove="Images\eye16.png" />
     <None Remove="Images\filecheck16.png" />
@@ -88,6 +86,8 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <None Remove="Images\view16.png" />
     <None Remove="Images\Windows.CompressTo16.png" />
     <None Remove="Images\Windows.CompressTo32.png" />
+    <None Remove="Images\Windows.Install16.png" />
+    <None Remove="Images\Windows.Install32.png" />
     <None Remove="Interop\7z\7z.dll" />
   </ItemGroup>
 
@@ -138,7 +138,7 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <Resource Include="Images\cloud32.png" />
     <Resource Include="Images\cloud_download16.png" />
     <Resource Include="Images\cloud_download32.png" />
-    <Resource Include="Images\collapseall16.png" />
+    <Resource Include="Images\collapse16.png" />
     <Resource Include="Images\compactmode16.png" />
     <Resource Include="Images\content16.png" />
     <Resource Include="Images\copy16.png" />
@@ -148,7 +148,7 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <Resource Include="Images\dropdown_arrow.png" />
     <Resource Include="Images\error16.png" />
     <Resource Include="Images\error32.png" />
-    <Resource Include="Images\expandall16.png" />
+    <Resource Include="Images\expand16.png" />
     <Resource Include="Images\extralargeicons16.png" />
     <Resource Include="Images\eye16.png" />
     <Resource Include="Images\filecheck16.png" />
@@ -175,6 +175,8 @@ Basic functionality has been tested on Windows 7, 8.1, 10 and 11.</PackageReleas
     <Resource Include="Images\view16.png" />
     <Resource Include="Images\Windows.CompressTo16.png" />
     <Resource Include="Images\Windows.CompressTo32.png" />
+    <Resource Include="Images\Windows.Install16.png" />
+    <Resource Include="Images\Windows.Install32.png" />
   </ItemGroup>
 
   <ItemGroup>

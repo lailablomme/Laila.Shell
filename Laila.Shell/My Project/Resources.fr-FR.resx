@@ -171,6 +171,9 @@
   <data name="Menu_CheckboxesForItems" xml:space="preserve">
     <value>Cases à cocher pour les éléments</value>
   </data>
+  <data name="Menu_Collapse" xml:space="preserve">
+    <value>Réduire</value>
+  </data>
   <data name="Menu_CollapseAllGroups" xml:space="preserve">
     <value>Réduire tous les groupes</value>
   </data>
@@ -185,6 +188,9 @@
   </data>
   <data name="Menu_Delete" xml:space="preserve">
     <value>Supprimer</value>
+  </data>
+  <data name="Menu_Expand" xml:space="preserve">
+    <value>Développer</value>
   </data>
   <data name="Menu_ExpandAllGroups" xml:space="preserve">
     <value>Développer tous les groupes</value>

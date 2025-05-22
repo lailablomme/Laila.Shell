@@ -635,6 +635,34 @@ Namespace Controls
 
                             PART_ListBox.ContextMenu = _menu
                             e.Handled = True
+
+                            UIHelper.OnUIThreadAsync(
+                                Async Sub()
+                                    Await _menu.Make()
+                                    Dim hasItems As Boolean = _menu.Items.Count > 0
+                                    If clickedItem.HasSubFolders Then
+                                        Dim expandCollapseGroupsMenuItem As MenuItem = Nothing
+                                        If Not clickedItem.IsExpanded Then
+                                            expandCollapseGroupsMenuItem = New MenuItem() With {
+                                                .Header = My.Resources.Menu_Expand,
+                                                .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"{_menu.ResourcePrefix}ExpandIcon")}
+                                            }
+                                        Else
+                                            expandCollapseGroupsMenuItem = New MenuItem() With {
+                                                .Header = My.Resources.Menu_Collapse,
+                                                .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"{_menu.ResourcePrefix}CollapseIcon")}
+                                            }
+                                        End If
+                                        AddHandler expandCollapseGroupsMenuItem.Click,
+                                    Sub(s2 As Object, e2 As EventArgs)
+                                        clickedItem.IsExpanded = Not clickedItem.IsExpanded
+                                    End Sub
+                                        _menu.Items.Insert(0, expandCollapseGroupsMenuItem)
+                                        If hasItems Then
+                                            _menu.Items.Insert(1, New Separator())
+                                        End If
+                                    End If
+                                End Sub)
                         Else
                             PART_ListBox.ContextMenu = Nothing
                         End If

@@ -14,6 +14,8 @@ Namespace Controls
                 Me.Folder.AddRightClickMenuItems(Me)
             End If
 
+            Dim hasItems As Boolean = Me.Items.Count > 0
+
             ' add view, sort and group by menus
             If Me.SelectedItems Is Nothing OrElse Me.SelectedItems.Count = 0 Then
                 Dim insertIndex As Integer = 0
@@ -21,9 +23,9 @@ Namespace Controls
                 Dim viewMenu As ViewMenu = New ViewMenu() With {.Folder = Me.Folder, .MenuStyle = ViewMenuStyle.RightClickMenu}
                 Dim viewMenuItem As MenuItem = New MenuItem() With {
                     .Header = My.Resources.Menu_View,
-                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"lailaShell_Menu_ViewIcon")}
+                    .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}ViewIcon")}
                 }
-                viewMenu.AddItems(viewMenuItem.Items)
+                viewMenu.AddItems(viewMenuItem.Items, Me.ResourcePrefix)
                 Me.Items.Insert(0, viewMenuItem)
                 insertIndex += 1
 
@@ -33,9 +35,9 @@ Namespace Controls
                     If Me.Folder.CanSort Then
                         Dim sortMenuItem As MenuItem = New MenuItem() With {
                             .Header = My.Resources.Menu_Sort,
-                            .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"lailaShell_Menu_SortIcon")}
+                            .Icon = New Image() With {.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}SortIcon")}
                         }
-                        sortMenu.AddSortItems(sortMenuItem.Items)
+                        sortMenu.AddSortItems(sortMenuItem.Items, Me.ResourcePrefix)
                         Me.Items.Insert(insertIndex, sortMenuItem)
                         insertIndex += 1
                     End If
@@ -50,7 +52,7 @@ Namespace Controls
                     End If
                 End If
 
-                If insertIndex > 0 Then
+                If insertIndex > 0 AndAlso hasItems Then
                     Me.Items.Insert(insertIndex, New Separator())
                 End If
             End If

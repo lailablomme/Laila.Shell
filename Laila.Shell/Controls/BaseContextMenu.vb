@@ -48,11 +48,11 @@ Namespace Controls
             image.Height = 16
             image.Margin = New Thickness(2)
             Select Case tag.Item2
-                Case "copy" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_CopyButtonIcon")
-                Case "cut" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_CutButtonIcon")
-                Case "paste" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_PasteButtonIcon")
-                Case "rename" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_RenameButtonIcon")
-                Case "delete" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_DeleteButtonIcon")
+                Case "copy" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}CopyButtonIcon")
+                Case "cut" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}CutButtonIcon")
+                Case "paste" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}PasteButtonIcon")
+                Case "rename" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}RenameButtonIcon")
+                Case "delete" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}DeleteButtonIcon")
             End Select
             button.Content = image
             button.ToolTip = toolTip
@@ -67,7 +67,7 @@ Namespace Controls
             image.Height = 16
             image.Margin = New Thickness(2)
             Select Case tag.Item2
-                Case "laila.shell.(un)pin" : image.Source = System.Windows.Application.Current.TryFindResource("lailaShell_Menu_PinButtonIcon")
+                Case "laila.shell.(un)pin" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}PinButtonIcon")
             End Select
             button.Content = image
             button.ToolTip = toolTip
@@ -94,7 +94,7 @@ Namespace Controls
                 Else
                     Dim menuItem As MenuItem = New MenuItem() With {
                         .Header = item.Header,
-                        .Icon = If(Not item.Icon Is Nothing, New Image() With {.Source = item.Icon}, Nothing),
+                        .Icon = If(Not item.Icon Is Nothing, New Image() With {.Source = item.Icon, .Stretch = Stretch.Uniform}, Nothing),
                         .Tag = item.Tag,
                         .IsEnabled = item.IsEnabled,
                         .FontWeight = item.FontWeight,

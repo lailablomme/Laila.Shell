@@ -20,7 +20,7 @@ Namespace Controls
             Me.Items.Clear()
 
             If Me.Folder.CanSort Then
-                Me.AddSortItems(Me.Items)
+                Me.AddSortItems(Me.Items, Me.ResourcePrefix)
             End If
             If Me.Folder.CanSort AndAlso Me.Folder.CanGroupBy Then
                 Me.Items.Add(New Separator())
@@ -38,7 +38,7 @@ Namespace Controls
             Await MyBase.Make()
         End Function
 
-        Public Sub AddSortItems(menu As ItemCollection)
+        Public Sub AddSortItems(menu As ItemCollection, resourcePrefix As String)
             getProperties()
 
             Dim sortPropertyName As String = Me.Folder.ItemsSortPropertyName

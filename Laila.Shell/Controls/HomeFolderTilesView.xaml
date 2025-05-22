@@ -163,24 +163,6 @@
                                                                                             </Style>
                                                                                         </Image.Style>
                                                                                     </Image>
-                                                                                    <Border Grid.Column="2" Width="24" Height="24" VerticalAlignment="Center">
-                                                                                        <Image Source="{Binding OverlayImageAsync[24], IsAsync=True}" Width="24" Height="24" 
-                                                                                               UseLayoutRounding="True" SnapsToDevicePixels="True"
-                                                                                               VerticalAlignment="Bottom" HorizontalAlignment="Left">
-                                                                                            <Image.Style>
-                                                                                                <Style>
-                                                                                                    <Style.Triggers>
-                                                                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                                                                        </DataTrigger>
-                                                                                                        <DataTrigger Binding="{Binding IsCut}" Value="True">
-                                                                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                                                                        </DataTrigger>
-                                                                                                    </Style.Triggers>
-                                                                                                </Style>
-                                                                                            </Image.Style>
-                                                                                        </Image>
-                                                                                    </Border>
                                                                                     <Grid Grid.Column="4" x:Name="PART_DisplayNameGrid">
                                                                                         <Grid.Resources>
                                                                                             <converters:DoubleAdditionConverter x:Key="doubleAdditionConverter" />
@@ -431,24 +413,6 @@
                                                                                             </Style>
                                                                                         </Image.Style>
                                                                                     </Image>
-                                                                                    <Border Grid.Column="2" Width="48" Height="48" VerticalAlignment="Center">
-                                                                                        <Image Source="{Binding OverlayImageAsync[48], IsAsync=True}" Width="32" Height="32" 
-                                                                                               UseLayoutRounding="True" SnapsToDevicePixels="True"
-                                                                                               VerticalAlignment="Bottom" HorizontalAlignment="Left">
-                                                                                            <Image.Style>
-                                                                                                <Style>
-                                                                                                    <Style.Triggers>
-                                                                                                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                                                                        </DataTrigger>
-                                                                                                        <DataTrigger Binding="{Binding IsCut}" Value="True">
-                                                                                                            <Setter Property="Image.Opacity" Value="0.5" />
-                                                                                                        </DataTrigger>
-                                                                                                    </Style.Triggers>
-                                                                                                </Style>
-                                                                                            </Image.Style>
-                                                                                        </Image>
-                                                                                    </Border>
                                                                                     <Grid Grid.Column="4" VerticalAlignment="Center" MaxHeight="51">
                                                                                         <Grid.RowDefinitions>
                                                                                             <RowDefinition Height="Auto" />

@@ -181,6 +181,9 @@
   <data name="Menu_CheckboxesForItems" xml:space="preserve">
     <value>Checkboxes for items</value>
   </data>
+  <data name="Menu_Collapse" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
   <data name="Menu_CollapseAllGroups" xml:space="preserve">
     <value>Collapse all groups</value>
   </data>
@@ -195,6 +198,9 @@
   </data>
   <data name="Menu_Delete" xml:space="preserve">
     <value>Delete</value>
+  </data>
+  <data name="Menu_Expand" xml:space="preserve">
+    <value>Expand</value>
   </data>
   <data name="Menu_ExpandAllGroups" xml:space="preserve">
     <value>Expand all groups</value>

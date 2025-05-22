@@ -10,6 +10,7 @@ Namespace Controls
 
         Public Shared ReadOnly ShowButtonsTopOrBottomProperty As DependencyProperty = DependencyProperty.Register("ShowButtonsTopOrBottom", GetType(TopOrBottom),
             GetType(ContextMenu), New FrameworkPropertyMetadata(TopOrBottom.Unset, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ResourcePrefixProperty As DependencyProperty = DependencyProperty.Register("ResourcePrefix", GetType(String), GetType(ContextMenu), New FrameworkPropertyMetadata("lailaShell_Menu_", FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private _buttonsTop As StackPanel
         Private _buttonsBottom As StackPanel
@@ -88,6 +89,15 @@ Namespace Controls
             End Get
             Set(ByVal value As TopOrBottom)
                 SetCurrentValue(ShowButtonsTopOrBottomProperty, value)
+            End Set
+        End Property
+
+        Public Property ResourcePrefix As String
+            Get
+                Return GetValue(ResourcePrefixProperty)
+            End Get
+            Set(value As String)
+                SetValue(ResourcePrefixProperty, value)
             End Set
         End Property
 
