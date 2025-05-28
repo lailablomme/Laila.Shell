@@ -44,7 +44,7 @@ Namespace Controls
             Dim tcs4 As New TaskCompletionSource(Of List(Of MenuItemData))
             _thread.Run(
                 Sub()
-                    tcs4.SetResult(getMenuItemData(_hMenu, -1))
+                    tcs4.SetResult(getMenuItemData(_hMenu, -1, True))
                 End Sub)
             _contextMenuItems = tcs4.Task.Result
 
@@ -84,28 +84,33 @@ Namespace Controls
 
                     ' add standard commands
                     Dim isBackground As Boolean = (items Is Nothing OrElse items.Count = 0) AndAlso folder.Attributes.HasFlag(SFGAO.FILESYSTEM)
+                    Dim isMount As Boolean = False
                     If Not isBackground _
                         AndAlso (items?.ToList().All(Function(i) TypeOf i Is Folder) _
                                  OrElse items?.ToList().All(Function(i) i.IsDrive) _
                                  OrElse items?.ToList().All(Function(i) IO.Path.GetExtension(items(0).FullPath).ToLower().Equals(IO.Path.GetExtension(i.FullPath).ToLower()))) Then
-                        addFromContextMenu("open", Nothing, "Enter")
-                        If _menuItems.Count > 0 Then
-                            If TypeOf items(0) Is Folder Or items(0).IsDrive Then
-                                Try
-                                    _menuItems(0).Icon = ImageHelper.GetApplicationIcon(Assembly.GetEntryAssembly().Location)
-                                Catch ex As Exception
-                                    ' Protect against invalid image
-                                End Try
-                            Else
-                                addFromCommandStore("Windows.OpenWith", folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
-                                If _menuItems.Count > 1 Then
-                                    If Not _menuItems(1).Items(0).Icon Is Nothing Then
-                                        _menuItems(0).Icon = _menuItems(1).Items(0).Icon
+                        addFromContextMenu("mount", "Windows.mount")
+                        isMount = _menuItems.Count > 0
+                        If Not isMount Then
+                            addFromContextMenu("open", Nothing, "Enter")
+                            If _menuItems.Count > 0 Then
+                                If TypeOf items(0) Is Folder Or items(0).IsDrive Then
+                                    Try
+                                        _menuItems(0).Icon = ImageHelper.GetApplicationIcon(Assembly.GetEntryAssembly().Location)
+                                    Catch ex As Exception
+                                        ' Protect against invalid image
+                                    End Try
+                                Else
+                                    addFromCommandStore("Windows.OpenWith", folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
+                                    If _menuItems.Count > 1 Then
+                                        If Not _menuItems(1).Items(0).Icon Is Nothing Then
+                                            _menuItems(0).Icon = _menuItems(1).Items(0).Icon
+                                        End If
+                                        _menuItems.RemoveAt(1)
                                     End If
-                                    _menuItems.RemoveAt(1)
-                                End If
-                                If _menuItems(0).Icon Is Nothing Then
-                                    _menuItems(0).Icon = items(0).AssociatedApplicationIcon(48)
+                                    If _menuItems(0).Icon Is Nothing Then
+                                        _menuItems(0).Icon = items(0).AssociatedApplicationIcon(48)
+                                    End If
                                 End If
                             End If
                         End If
@@ -113,6 +118,7 @@ Namespace Controls
                     addFromContextMenu("openas", "Windows.OpenWith")
                     addFromContextMenu("empty", "Windows.RecycleBin.Empty")
                     addFromContextMenu("Windows.ModernShare", "Windows.ModernShare")
+                    addFromContextMenu("eject", "Windows.Eject")
                     addFromContextMenu("PinToStartScreen", "Windows.pintostartscreen")
                     addFromContextMenu("Install", "Windows.Install")
                     addFromContextMenu("rotate90", "Windows.rotate90")
@@ -141,6 +147,10 @@ Namespace Controls
                     ' add file explorer context menu items
                     addFileExplorerContextMenuItems(explorerMenuHelperType, explorerMenuHelper, folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
 
+                    If isMount AndAlso _menuItems.Count > 1 Then
+                        _menuItems.Insert(1, New MenuItemData() With {.Header = "-----"})
+                    End If
+
                     ' add show more options command
                     If _contextMenuItems.Count > 0 Then
                         If _menuItems.Count > 0 Then
@@ -154,15 +164,15 @@ Namespace Controls
                             .Icon = icon
                         }
                         Dim action As Action =
-                        Sub()
-                            UIHelper.OnUIThread(
+                            Sub()
+                                UIHelper.OnUIThread(
                                 Sub()
                                     Dim rightClickMenu As RightClickMenu = New RightClickMenu()  ' 
                                     rightClickMenu.Folder = folder
                                     rightClickMenu.SelectedItems = items
                                     rightClickMenu.IsOpen = True
                                 End Sub)
-                        End Sub
+                            End Sub
                         showMoreOptionsMenuItem.Tag = New Tuple(Of Integer, String, Object)(-1, Guid.NewGuid().ToString(), action)
                         _menuItems.Add(showMoreOptionsMenuItem)
                     End If
@@ -420,7 +430,8 @@ Namespace Controls
                             .Header = thisAppCommands(0).ApplicationName,
                             .Icon = icon,
                             .IsEnabled = True,
-                            .Items = New List(Of MenuItemData)()
+                            .Items = New List(Of MenuItemData)(),
+                            .IsSubMenu = True
                         }
                         addTo = New List(Of MenuItemData)()
                     End If
@@ -508,6 +519,7 @@ Namespace Controls
                             Dim flags2 As EXPCMDFLAGS = 0
                             Dim subMenuItem As MenuItemData = getMenuItem(cmd(0), array, flags2, resolveMsResourceFromPackage)
                             If Not subMenuItem Is Nothing Then
+                                menuItem.IsSubMenu = True
                                 If flags2.HasFlag(EXPCMDFLAGS.ECF_SEPARATORBEFORE) Then
                                     menuItem.Items.Add(New MenuItemData() With {.Header = "-----"})
                                 End If

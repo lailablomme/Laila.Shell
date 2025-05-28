@@ -253,6 +253,11 @@ Public Class HomeFolder
                 AndAlso (Not TypeOf target Is Folder OrElse Not target.Attributes.HasFlag(SFGAO.STORAGEANCESTOR)) _
                 AndAlso target.IsExisting _
                 AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
+
+                Dim shellItem2 As IShellItem2
+                shellItem2 = GetIShellItem2FromPidl(item.Pidl.AbsolutePIDL, LogicalParent?.ShellFolder) ' get the IShellItem2
+                item = New Home_RecentItemLink(shellItem2, item.LogicalParent, False, True, Nothing, item.Pidl.Clone())
+
                 item.LogicalParent = Me
                 item._hasCustomProperties = True
                 item.CanShowInTree = False

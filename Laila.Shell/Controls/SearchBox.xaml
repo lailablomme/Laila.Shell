@@ -4,7 +4,7 @@
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers"
                     xmlns:shell="clr-namespace:Laila.Shell">
 
-    <SolidColorBrush Color="#41B1E1" x:Key="laila_AutoComplete_FocusBrush" />
+    <SolidColorBrush Color="{x:Static shell:Settings.WindowsAccentColor5}" x:Key="laila_AutoComplete_FocusBrush" />
 
     <Style TargetType="Button" x:Key="lailaShell_SearchBoxCancelButtonStyle">
         <Setter Property="Background" Value="Transparent"/>

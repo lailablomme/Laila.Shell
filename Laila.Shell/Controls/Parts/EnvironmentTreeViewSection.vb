@@ -15,8 +15,8 @@ Namespace Controls.Parts
             For Each guid In getShellExtensions(Registry.CurrentUser, DESKTOP_SHELL_EXTENSIONS_KEY)
                 Dim item As Item = Item.FromParsingName("shell:::" & guid, Nothing)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder _
-                    AndAlso Not item.FullPath.Equals(Shell.GetSpecialFolder(SpecialFolders.OneDrive)?.FullPath) _
-                    AndAlso Not item.FullPath.Equals(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness)?.FullPath) Then
+                    AndAlso Not Shell.GetSpecialFolders().Where(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
+                        .Any(Function(f) item.FullPath.Equals(f.Value?.FullPath)) Then
                     shellExts.Add(item)
                 End If
             Next

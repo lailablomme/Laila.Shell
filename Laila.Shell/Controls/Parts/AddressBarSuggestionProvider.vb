@@ -66,16 +66,16 @@ Namespace Controls.Parts
                     ' filter items
                     Dim byPath As List(Of Item) =
                         items.Where(Function(f) _
-                            If(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
-                               f.FullPath.Trim(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
-                               f.FullPath.Trim(IO.Path.DirectorySeparatorChar)) _
+                            If(If(f.FullPath, "").Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
+                               If(f.FullPath, "").Trim(IO.Path.DirectorySeparatorChar).Substring(If(f.FullPath, "").Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
+                               If(f.FullPath, "").Trim(IO.Path.DirectorySeparatorChar)) _
                                    .ToLower().StartsWith(fileName.ToLower())).ToList()
                     If Not folder Is Nothing Then
                         For Each f In byPath
                             f.AddressBarDisplayName =
-                                If(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
-                                   f.FullPath.Trim(IO.Path.DirectorySeparatorChar).Substring(f.FullPath.Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
-                                   f.FullPath.Trim(IO.Path.DirectorySeparatorChar))
+                                If(If(f.FullPath, "").Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) <> -1,
+                                   If(f.FullPath, "").Trim(IO.Path.DirectorySeparatorChar).Substring(If(f.FullPath, "").Trim(IO.Path.DirectorySeparatorChar).LastIndexOf(IO.Path.DirectorySeparatorChar) + 1),
+                                   If(f.FullPath, "").Trim(IO.Path.DirectorySeparatorChar))
                         Next
                     End If
                     Dim byDisplayName As List(Of Item) =
@@ -105,7 +105,11 @@ Namespace Controls.Parts
                     For Each item In items
                         dist.Add(item.FullPath)
                     Next
-                    items = dist.Distinct().Select(Function(d) items.FirstOrDefault(Function(i) i.FullPath.Equals(d))).ToList()
+                    items = dist _
+                        .Distinct() _
+                        .Select(Function(d) items.FirstOrDefault(Function(i) If(i.FullPath, "").Equals(d))) _
+                        .Where(Function(i) Not i Is Nothing) _
+                        .ToList()
 
                     SyncLock _lock
                         ' release previous folder

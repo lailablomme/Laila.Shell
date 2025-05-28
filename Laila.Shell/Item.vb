@@ -513,7 +513,7 @@ Public Class Item
         End If
 
         If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
-            If Not oldFullPath.Equals(Me.FullPath) Then Shell.UpdateFileSystemCache(oldFullPath, Me)
+            If Not oldFullPath?.Equals(Me.FullPath) Then Shell.UpdateFileSystemCache(oldFullPath, Me)
             If Not _logicalParent Is Nothing AndAlso Not oldAttr = 0 _
                 AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> attr.HasFlag(SFGAO.FOLDER) _
                 OrElse oldAttr.HasFlag(SFGAO.LINK) <> attr.HasFlag(SFGAO.LINK)) Then

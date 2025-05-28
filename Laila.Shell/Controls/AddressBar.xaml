@@ -9,7 +9,7 @@
 
     <parts:AddressBarSuggestionProvider x:Key="suggestionProvider" />
 
-    <SolidColorBrush Color="#41B1E1" x:Key="laila_AutoComplete_FocusBrush" />
+    <SolidColorBrush Color="{x:Static shell:Settings.WindowsAccentColor5}" x:Key="laila_AutoComplete_FocusBrush" />
 
     <VisualBrush x:Key="WavyBrush" Viewbox="0,-1,3.5,5" ViewboxUnits="Absolute" Viewport="0,-1,3.5,4" ViewportUnits="Absolute" TileMode="Tile">
         <VisualBrush.Visual>

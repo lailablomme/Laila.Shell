@@ -61,20 +61,20 @@ Public Class Link
         End Get
     End Property
 
-    'Public ReadOnly Property TargetFullPath As String
-    '    Get
-    '        If String.IsNullOrWhiteSpace(_targetFullPath) Then
-    '            Try
-    '                Dim fullPath As StringBuilder = New StringBuilder(New String(Chr(0), 2048 + 2))
-    '                _shellLinkW.GetPath(fullPath, 2048, Nothing, SLGP_FLAGS.RAWPATH)
-    '                _targetFullPath = Environment.ExpandEnvironmentVariables(fullPath.ToString())
-    '            Catch ex As Exception
-    '            End Try
-    '        End If
+    Public ReadOnly Property TargetFullPath As String
+        Get
+            If String.IsNullOrWhiteSpace(_targetFullPath) Then
+                Try
+                    Dim fullPath As StringBuilder = New StringBuilder(New String(Chr(0), 2048 + 2))
+                    Me.ShellLink?.GetPath(fullPath, 2048, Nothing, SLGP_FLAGS.RAWPATH)
+                    _targetFullPath = Environment.ExpandEnvironmentVariables(fullPath.ToString())
+                Catch ex As Exception
+                End Try
+            End If
 
-    '        Return _targetFullPath
-    '    End Get
-    'End Property
+            Return _targetFullPath
+        End Get
+    End Property
 
     Public ReadOnly Property TargetItem As Item
         Get

@@ -20,7 +20,7 @@
             <Setter Property="WindowStyle" Value="None" />
             <Setter Property="Background" Value="White" />
             <Setter Property="AllowsTransparency" Value="True" />
-            <Setter Property="GlowColor" Value="DarkViolet" />
+            <Setter Property="GlowColor" Value="{x:Static shell:Settings.WindowsAccentColor5}" />
             <Setter Property="GlowSize" Value="15" />
             <Setter Property="GlowStyle" Value="Glowing" />
             <Setter Property="CaptionHeight"  Value="33" />
@@ -45,7 +45,7 @@
                             </Border.Triggers>
                             <Border Grid.Row="1" Grid.Column="1" x:Name="PART_GlowBorder" CornerRadius="10">
                                 <Border x:Name="PART_MainBorder" CornerRadius="10"  
-                                    Background="{TemplateBinding Background}" BorderBrush="DarkViolet" BorderThickness="1">
+                                    Background="{TemplateBinding Background}" BorderBrush="{x:Static shell:Settings.WindowsAccentBrush5}" BorderThickness="1">
                                     <Border.Effect>
                                         <DropShadowEffect BlurRadius="{Binding Path=GlowSize, 
                                             RelativeSource={RelativeSource Mode=TemplatedParent}, FallbackValue=15}" 
@@ -53,21 +53,24 @@
                                             RelativeSource={RelativeSource Mode=TemplatedParent}, FallbackValue=Gray}" />
                                     </Border.Effect>
                                     <Border CornerRadius="10" ClipToBounds="True" x:Name="PART_ClippingBorder">
-                                        <Grid x:Name="PART_MainGrid" Margin="0">
-                                            <Grid.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                    <LinearGradientBrush.GradientStops>
-                                                        <GradientStopCollection>
-                                                            <GradientStop Color="BlueViolet" Offset="0.0" />
-                                                            <GradientStop Color="Violet" Offset="1.0" />
-                                                        </GradientStopCollection>
-                                                    </LinearGradientBrush.GradientStops>
-                                                </LinearGradientBrush>
-                                            </Grid.Background>
+                                        <Grid x:Name="PART_MainGrid" Margin="0" Background="{x:Static shell:Settings.WindowsAccentBrush5}">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="*" />
                                             </Grid.RowDefinitions>
+
+                                            <Border Grid.RowSpan="2" CornerRadius="10">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                        <LinearGradientBrush.GradientStops>
+                                                            <GradientStopCollection>
+                                                                <GradientStop Color="#66CCCCCC" Offset="0.0" />
+                                                                <GradientStop Color="#EEEEEEEE" Offset="1.0" />
+                                                            </GradientStopCollection>
+                                                        </LinearGradientBrush.GradientStops>
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                            </Border>
 
                                             <ContentPresenter Grid.Row="0" Grid.RowSpan="2" WindowChrome.IsHitTestVisibleInChrome="True" Margin="0,7,0,0"
                                           Content="{Binding Content, RelativeSource={RelativeSource Mode=TemplatedParent}}" />

@@ -3,6 +3,7 @@
                     xmlns:behaviors="clr-namespace:Laila.Shell.Behaviors"
                     xmlns:controls="clr-namespace:Laila.Shell.Controls"
                     xmlns:converters="clr-namespace:Laila.Shell.Converters"
+                    xmlns:shell="clr-namespace:Laila.Shell"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <BitmapImage x:Key="lailaShell_GridViewExtBehavior_SortAsc" UriSource="pack://application:,,,/Laila.Shell;component/Images/sortasc.png"/>
@@ -98,6 +99,9 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListViewItem">
+                    <ControlTemplate.Resources>
+                        <shell:Settings x:Key="settings" />
+                    </ControlTemplate.Resources>
                     <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"
                             Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True" Margin="3,1,13,1"
                             HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}">
@@ -115,7 +119,7 @@
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Background" TargetName="Bd" Value="#EEEEEE"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{x:Static shell:Settings.WindowsAccentBrush10}"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" TargetName="Bd" Value="#EFEFEF"/>
@@ -340,7 +344,7 @@
                             </MultiTrigger.EnterActions>
                             <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Background}"/>
                             <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedInactive.Border}"/>
-                            <Setter Property="Background" TargetName="PART_RowIndicator" Value="{StaticResource Item.SelectedActive.Border}"/>
+                            <Setter Property="Background" TargetName="PART_RowIndicator" Value="{x:Static shell:Settings.WindowsAccentBrush5}"/>
                         </MultiTrigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -360,8 +364,8 @@
                                 </BeginStoryboard>
                             </MultiTrigger.EnterActions>
                             <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Background}"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.SelectedActive.Border}"/>
-                            <Setter Property="Background" TargetName="PART_RowIndicator" Value="{StaticResource Item.SelectedActive.Border}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{x:Static shell:Settings.WindowsAccentBrush5}"/>
+                            <Setter Property="Background" TargetName="PART_RowIndicator" Value="{x:Static shell:Settings.WindowsAccentBrush5}"/>
                         </MultiTrigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
@@ -412,9 +416,9 @@
                             </Trigger.EnterActions>
                             <Setter TargetName="PART_Check" Property="Visibility" Value="Visible" />
                             <Setter TargetName="PART_LayOver" Property="Visibility" Value="Visible" />
-                            <Setter Property="Background" TargetName="Bd" Value="#0690CA"/>
-                            <Setter Property="Background" TargetName="PART_LayOver" Value="#0690CA"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="#0690CA"/>
+                            <Setter Property="Background" TargetName="Bd" Value="{x:Static shell:Settings.WindowsAccentBrush7}"/>
+                            <Setter Property="Background" TargetName="PART_LayOver" Value="{x:Static shell:Settings.WindowsAccentBrush7}"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{x:Static shell:Settings.WindowsAccentBrush7}"/>
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -422,9 +426,9 @@
                                 <Condition Property="IsChecked" Value="True" />
                             </MultiTrigger.Conditions>
                             <MultiTrigger.Setters>
-                                <Setter Property="Background" TargetName="PART_LayOver" Value="#26A0DA"/>
-                                <Setter Property="Background" TargetName="Bd" Value="#26A0DA"/>
-                                <Setter Property="Background" TargetName="PART_LayOver" Value="#0690CA"/>
+                                <Setter Property="Background" TargetName="PART_LayOver" Value="{x:Static shell:Settings.WindowsAccentBrush10}"/>
+                                <Setter Property="Background" TargetName="Bd" Value="{x:Static shell:Settings.WindowsAccentBrush10}"/>
+                                <Setter Property="Background" TargetName="PART_LayOver" Value="{x:Static shell:Settings.WindowsAccentBrush7}"/>
                             </MultiTrigger.Setters>
                         </MultiTrigger>
                         <MultiTrigger>

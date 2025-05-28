@@ -333,11 +333,10 @@ Namespace Controls
 
         Public Shared Async Function DoShare(items As IEnumerable(Of Item)) As Task
             Using Shell.OverrideCursor(Cursors.Wait)
-                If ((Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
-                    AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar)) _
-                    OrElse (Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) _
-                        AndAlso items(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).FullPath & IO.Path.DirectorySeparatorChar))) _
-                    AndAlso Not items Is Nothing AndAlso items.Count = 1 Then
+                If Not items Is Nothing AndAlso items.Count = 1 _
+                    AndAlso Shell.GetSpecialFolders().Any(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
+                        AndAlso Shell.GetSpecialFolders().Where(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
+                            .Any(Function(f) items(0).FullPath.StartsWith(f.Value.FullPath & IO.Path.DirectorySeparatorChar)) Then
                     If Not _rightClickMenu Is Nothing Then
                         _rightClickMenu.Dispose()
                     End If
@@ -353,11 +352,15 @@ Namespace Controls
                     Dim type As Type = assembly.GetType("Laila.Shell.WinRT.ModernShare")
                     Dim methodInfo As MethodInfo = type.GetMethod("ShowShareUI")
                     Dim instance As Object = Activator.CreateInstance(type)
-                    methodInfo.Invoke(instance, {items.ToList().Select(Function(i) i.FullPath).ToList(),
-                                      If(New List(Of Window)(
-                                            System.Windows.Application.Current.Windows.Cast(Of Window)()) _
-                                                .FirstOrDefault(Function(w) w.IsActive),
-                                         System.Windows.Application.Current.MainWindow)})
+                    Try
+                        methodInfo.Invoke(instance, {items.ToList().Select(Function(i) i.FullPath).ToList(),
+                            If(New List(Of Window)(
+                                System.Windows.Application.Current.Windows.Cast(Of Window)()) _
+                                    .FirstOrDefault(Function(w) w.IsActive),
+                                System.Windows.Application.Current.MainWindow)})
+                    Catch ex As Exception
+                        ' TODO: do something
+                    End Try
                 End If
             End Using
         End Function
@@ -395,11 +398,9 @@ Namespace Controls
                 Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANRENAME))
                 Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANDELETE))
                 If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
-                    If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) _
-                        AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDrive).FullPath & IO.Path.DirectorySeparatorChar) Then
-                        Me.CanShare = True
-                    ElseIf Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) _
-                        AndAlso Me.SelectedItems(0).FullPath.StartsWith(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).FullPath & IO.Path.DirectorySeparatorChar) Then
+                    If Shell.GetSpecialFolders().Any(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
+                        AndAlso Shell.GetSpecialFolders().Where(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
+                            .Any(Function(f) Me.SelectedItems(0).FullPath.StartsWith(f.Value.FullPath & IO.Path.DirectorySeparatorChar)) Then
                         Me.CanShare = True
                     Else
                         Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))

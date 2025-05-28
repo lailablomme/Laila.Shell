@@ -5,6 +5,7 @@ Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
+Imports System.Windows.Documents
 Imports System.Windows.Forms.PropertyGridInternal
 Imports System.Windows.Input
 Imports System.Windows.Media
@@ -29,6 +30,7 @@ Namespace Controls
         Private _contextMenu2 As IContextMenu2
         Private _contextMenu3 As IContextMenu3
         Protected _hMenu As IntPtr
+        Private _disposeLock As Object = New Object()
 
         Protected Overrides Function DoRenameAfter(Tag As Tuple(Of Integer, String, Object)) As Boolean
             Dim newMenuItem As MenuItem = Me.Items.Cast(Of Control) _
@@ -76,16 +78,20 @@ Namespace Controls
             Return button
         End Function
 
-        Public Overridable Function GetMenuItems() As List(Of Control)
+        Public Overridable Overloads Function GetMenuItems() As List(Of Control)
+            Return Me.GetMenuItems(_hMenu, True)
+        End Function
+
+        Public Overridable Overloads Function GetMenuItems(hMenu As IntPtr, dontGetSubMenus As Boolean) As List(Of Control)
             Dim tcs4 As New TaskCompletionSource(Of List(Of MenuItemData))
             _thread.Run(
                 Sub()
-                    tcs4.SetResult(getMenuItemData(_hMenu, -1))
+                    tcs4.SetResult(getMenuItemData(hMenu, -1, dontGetSubMenus))
                 End Sub)
             Return getMenuItems(tcs4.Task.Result)
         End Function
 
-        Protected Function getMenuItems(data As List(Of MenuItemData)) As List(Of Control)
+        Protected Overloads Function getMenuItems(data As List(Of MenuItemData)) As List(Of Control)
             Dim result As List(Of Control) = New List(Of Control)()
 
             For Each item In data
@@ -100,7 +106,18 @@ Namespace Controls
                         .FontWeight = item.FontWeight,
                         .InputGestureText = item.ShortcutKeyText
                     }
-                    If Not item.Items Is Nothing Then
+                    If item.IsSubMenu AndAlso Not IntPtr.Zero.Equals(item.SubMenuHMenu) Then
+                        _thread.Add(
+                            Sub()
+                                Dim list As List(Of MenuItemData) = getMenuItemData(item.SubMenuHMenu, 2, True)
+                                UIHelper.OnUIThreadAsync(
+                                    Sub()
+                                        For Each subItem In getMenuItems(list)
+                                            menuItem.Items.Add(subItem)
+                                        Next
+                                    End Sub)
+                            End Sub)
+                    ElseIf item.IsSubMenu Then
                         For Each subItem In getMenuItems(item.Items)
                             menuItem.Items.Add(subItem)
                         Next
@@ -112,24 +129,25 @@ Namespace Controls
             Return result
         End Function
 
-        Protected Function getMenuItemData(hMenu2 As IntPtr, parentIndex As Integer) As List(Of MenuItemData)
+        Protected Function getMenuItemData(hMenu2 As IntPtr, parentIndex As Integer, dontGetSubMenus As Boolean) As List(Of MenuItemData)
             Dim result As List(Of MenuItemData) = New List(Of MenuItemData)()
 
-            If Not _contextMenu Is Nothing AndAlso Not IntPtr.Zero.Equals(hMenu2) Then
-                If parentIndex >= 0 Then
-                    Dim lParam As Integer = (&H0) Or (parentIndex And &HFFFF)
-                    If Not _contextMenu3 Is Nothing Then
-                        Dim ptr3 As IntPtr, ptr4 As IntPtr
-                        Dim h As HRESULT = _contextMenu3.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
-                        h = _contextMenu3.HandleMenuMsg2(WM.MENUSELECT, hMenu2, lParam, ptr4)
-                    ElseIf Not _contextMenu2 Is Nothing Then
-                        _contextMenu2.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
-                        _contextMenu2.HandleMenuMsg(WM.MENUSELECT, hMenu2, lParam)
-                    End If
+            SyncLock _disposeLock
+                If Not _contextMenu Is Nothing AndAlso Not IntPtr.Zero.Equals(hMenu2) AndAlso Not disposedValue Then
+                    If parentIndex >= 0 Then
+                        Dim lParam As Integer = (&H0) Or (parentIndex And &HFFFF)
+                        If Not _contextMenu3 Is Nothing Then
+                            Dim ptr3 As IntPtr, ptr4 As IntPtr
+                            _contextMenu3?.HandleMenuMsg2(WM.INITMENUPOPUP, hMenu2, lParam, ptr3)
+                            _contextMenu3?.HandleMenuMsg2(WM.MENUSELECT, hMenu2, lParam, ptr4)
+                        ElseIf Not _contextMenu2 Is Nothing Then
+                            _contextMenu2?.HandleMenuMsg(WM.INITMENUPOPUP, hMenu2, lParam)
+                            _contextMenu2?.HandleMenuMsg(WM.MENUSELECT, hMenu2, lParam)
+                        End If
 
-                    If Functions.GetMenuItemCount(hMenu2) = 0 Then
-                        ' wait for menu to populate
-                        Shell.GlobalThreadPool.Run(
+                        If Functions.GetMenuItemCount(hMenu2) = 0 Then
+                            ' wait for menu to populate
+                            Shell.GlobalThreadPool.Run(
                             Sub()
                                 Dim initialCount As Integer
                                 Do
@@ -137,85 +155,85 @@ Namespace Controls
                                     Thread.Sleep(50)
                                 Loop While Functions.GetMenuItemCount(hMenu2) <> initialCount
                             End Sub)
+                        End If
                     End If
-                End If
 
-                For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
-                    Dim mii As MENUITEMINFO
-                    mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                    mii.fMask = MIIM.MIIM_STRING
-                    Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-
-                    Dim header As String
-                    mii.cch += 1
-                    Try
-                        mii.dwTypeData = Marshal.AllocHGlobal(CType(mii.cch * 2, Integer))
-                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
-                        header = Marshal.PtrToStringUni(mii.dwTypeData)
-                    Finally
-                        Marshal.FreeHGlobal(mii.dwTypeData)
-                    End Try
-
-                    Dim bitmapSource As BitmapSource = Nothing
-
-                    Try
-                        mii = New MENUITEMINFO()
+                    For i = 0 To Functions.GetMenuItemCount(hMenu2) - 1
+                        Dim mii As MENUITEMINFO
                         mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                        mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE Or MIIM.MIIM_CHECKMARKS
+                        mii.fMask = MIIM.MIIM_STRING
                         Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                            bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                            bitmapSource.Freeze()
-                        ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
-                            bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
-                            bitmapSource.Freeze()
-                        End If
-                    Catch ex As Exception
-                        ' Protect against invalid bitmap handles
-                    Finally
-                        If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
-                            If Not _hbitmapsToDispose.Contains(mii.hbmpItem) Then _hbitmapsToDispose.Add(mii.hbmpItem)
-                        End If
-                        If Not IntPtr.Zero.Equals(mii.hbmpChecked) Then
-                            If Not _hbitmapsToDispose.Contains(mii.hbmpChecked) Then _hbitmapsToDispose.Add(mii.hbmpChecked)
-                        End If
-                        If Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
-                            If Not _hbitmapsToDispose.Contains(mii.hbmpUnchecked) Then _hbitmapsToDispose.Add(mii.hbmpUnchecked)
-                        End If
-                    End Try
+                        Dim header As String
+                        mii.cch += 1
+                        Try
+                            mii.dwTypeData = Marshal.AllocHGlobal(CType(mii.cch * 2, Integer))
+                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+                            header = Marshal.PtrToStringUni(mii.dwTypeData)
+                        Finally
+                            Marshal.FreeHGlobal(mii.dwTypeData)
+                        End Try
 
-                    If mii.fType = MFT.SEPARATOR Then
-                        ' refuse initial and double separators
-                        If Not result.Count = 0 AndAlso Not result(result.Count - 1).Header = "-----" Then
-                            result.Add(New MenuItemData() With {.Header = "-----"})
-                        End If
-                    Else
-                        mii = New MENUITEMINFO()
-                        mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                        mii.fMask = MIIM.MIIM_ID
-                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+                        Dim bitmapSource As BitmapSource = Nothing
 
-                        Dim verb As String = Nothing, id As Integer
-                        Dim cmd As StringBuilder = New StringBuilder()
-                        cmd.Append(New String(" ", 512))
-                        If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
-                            id = mii.wID - 1
-                            _contextMenu.GetCommandString(id, GCS.VERBW, 0, cmd, 512)
-                            If cmd.Length = 0 Then
-                                _contextMenu.GetCommandString(id, GCS.VERBA, 0, cmd, 512)
+                        Try
+                            mii = New MENUITEMINFO()
+                            mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                            mii.fMask = MIIM.MIIM_BITMAP Or MIIM.MIIM_FTYPE Or MIIM.MIIM_CHECKMARKS
+                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+
+                            If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
+                                bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpItem, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                bitmapSource.Freeze()
+                            ElseIf Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
+                                bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(mii.hbmpUnchecked, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
+                                bitmapSource.Freeze()
                             End If
-                            verb = cmd.ToString()
-                        End If
+                        Catch ex As Exception
+                            ' Protect against invalid bitmap handles
+                        Finally
+                            If Not IntPtr.Zero.Equals(mii.hbmpItem) Then
+                                If Not _hbitmapsToDispose.Contains(mii.hbmpItem) Then _hbitmapsToDispose.Add(mii.hbmpItem)
+                            End If
+                            If Not IntPtr.Zero.Equals(mii.hbmpChecked) Then
+                                If Not _hbitmapsToDispose.Contains(mii.hbmpChecked) Then _hbitmapsToDispose.Add(mii.hbmpChecked)
+                            End If
+                            If Not IntPtr.Zero.Equals(mii.hbmpUnchecked) Then
+                                If Not _hbitmapsToDispose.Contains(mii.hbmpUnchecked) Then _hbitmapsToDispose.Add(mii.hbmpUnchecked)
+                            End If
+                        End Try
 
-                        Debug.WriteLine(header & "  " & id & vbTab & verb?.ToString())
+                        If mii.fType = MFT.SEPARATOR Then
+                            ' refuse initial and double separators
+                            If Not result.Count = 0 AndAlso Not result(result.Count - 1).Header = "-----" Then
+                                result.Add(New MenuItemData() With {.Header = "-----"})
+                            End If
+                        Else
+                            mii = New MENUITEMINFO()
+                            mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                            mii.fMask = MIIM.MIIM_ID
+                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
 
-                        mii = New MENUITEMINFO()
-                        mii.cbSize = CUInt(Marshal.SizeOf(mii))
-                        mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
-                        Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+                            Dim verb As String = Nothing, id As Integer
+                            Dim cmd As StringBuilder = New StringBuilder()
+                            cmd.Append(New String(" ", 512))
+                            If mii.wID >= 1 AndAlso mii.wID <= 99999 Then
+                                id = mii.wID - 1
+                                _contextMenu?.GetCommandString(id, GCS.VERBW, 0, cmd, 512)
+                                If cmd.Length = 0 Then
+                                    _contextMenu?.GetCommandString(id, GCS.VERBA, 0, cmd, 512)
+                                End If
+                                verb = cmd.ToString()
+                            End If
 
-                        Dim menuItem As MenuItemData = New MenuItemData() With {
+                            Debug.WriteLine(header & "  " & id & vbTab & verb?.ToString())
+
+                            mii = New MENUITEMINFO()
+                            mii.cbSize = CUInt(Marshal.SizeOf(mii))
+                            mii.fMask = MIIM.MIIM_SUBMENU Or MIIM.MIIM_STATE
+                            Functions.GetMenuItemInfo(hMenu2, i, True, mii)
+
+                            Dim menuItem As MenuItemData = New MenuItemData() With {
                             .Header = header.Replace("&", "_"),
                             .Icon = bitmapSource,
                             .Tag = New Tuple(Of Integer, String, Object)(id, verb, Nothing),
@@ -223,23 +241,27 @@ Namespace Controls
                             .FontWeight = If(CType(mii.fState, MFS).HasFlag(MFS.MFS_DEFAULT), FontWeights.Bold, FontWeights.Normal)
                         }
 
-                        If CBool(mii.fState And MFS.MFS_DEFAULT) Then
-                            Me.DefaultId = menuItem.Tag
+                            If CBool(mii.fState And MFS.MFS_DEFAULT) Then
+                                Me.DefaultId = menuItem.Tag
+                            End If
+
+                            menuItem.IsSubMenu = Not IntPtr.Zero.Equals(mii.hSubMenu)
+                            menuItem.SubMenuHMenu = mii.hSubMenu
+                            If menuItem.IsSubMenu AndAlso Not dontGetSubMenus Then
+                                menuItem.SubMenuHMenu = IntPtr.Zero
+                                menuItem.Items = getMenuItemData(mii.hSubMenu, i, dontGetSubMenus)
+                            End If
+
+                            result.Add(menuItem)
                         End If
+                    Next
 
-                        If Not IntPtr.Zero.Equals(mii.hSubMenu) Then
-                            menuItem.Items = getMenuItemData(mii.hSubMenu, i)
-                        End If
-
-                        result.Add(menuItem)
-                    End If
-                Next
-
-                ' remove trailing separators
-                While result.Count > 0 AndAlso result(result.Count - 1).Header = "-----"
-                    result.RemoveAt(result.Count - 1)
-                End While
-            End If
+                    ' remove trailing separators
+                    While result.Count > 0 AndAlso result(result.Count - 1).Header = "-----"
+                        result.RemoveAt(result.Count - 1)
+                    End While
+                End If
+            End SyncLock
 
             Return result
         End Function
@@ -456,23 +478,24 @@ Namespace Controls
         End Function
 
         Protected Overrides Sub Dispose(disposing As Boolean)
-            MyBase.Dispose(disposing)
+            SyncLock _disposeLock
+                MyBase.Dispose(disposing)
 
-            ' clean up context menu
-            If Not _contextMenu Is Nothing Then
-                'If Not TypeOf _contextMenu Is IContextMenuImpl Then
-                Marshal.ReleaseComObject(_contextMenu)
-                'Else
-                '    CType(_contextMenu, IContextMenuImpl).Dispose()
-                'End If
-                _contextMenu = Nothing
-            End If
+                ' clean up context menu
+                If Not _contextMenu Is Nothing Then
+                    Dim oldContextMenu As IContextMenu = _contextMenu
+                    _contextMenu = Nothing
+                    _contextMenu2 = Nothing
+                    _contextMenu3 = Nothing
+                    Marshal.ReleaseComObject(oldContextMenu)
+                End If
 
-            ' destroy hmenu
-            If Not IntPtr.Zero.Equals(_hMenu) Then
-                Functions.DestroyMenu(_hMenu)
-                _hMenu = IntPtr.Zero
-            End If
+                ' destroy hmenu
+                If Not IntPtr.Zero.Equals(_hMenu) Then
+                    Functions.DestroyMenu(_hMenu)
+                    _hMenu = IntPtr.Zero
+                End If
+            End SyncLock
         End Sub
     End Class
 End Namespace

@@ -2,6 +2,8 @@
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows.Input
+Imports System.Windows.Media
+Imports Laila.Shell.Converters
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.Registry
@@ -55,7 +57,7 @@ Public Class Settings
     Private _doShowLibrariesInTreeView As Boolean = False
     Private _doUseWindows11ExplorerMenu As Boolean
 
-    Public Sub New()
+    Public Sub Initialize()
         Me.StartMonitoring()
 
         If Not Helpers.OSVersionHelper.IsWindows7OrLower Then
@@ -78,7 +80,7 @@ Public Class Settings
 
         If Helpers.OSVersionHelper.IsWindows11_21H2OrGreater Then
             ' instantiate the helper
-            Dim assembly As Assembly = assembly.LoadFrom(IO.Path.Combine(IO.Path.GetDirectoryName(assembly.GetExecutingAssembly().Location), "Laila.Shell.WinRT.dll"))
+            Dim assembly As Assembly = Assembly.LoadFrom(IO.Path.Combine(IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Laila.Shell.WinRT.dll"))
             Dim type As Type = assembly.GetType("Laila.Shell.WinRT.PackageHelper")
             Dim instance As Object = Activator.CreateInstance(type)
             Dim methodInfo As MethodInfo = type.GetMethod("IsRunningPackaged")
@@ -563,6 +565,64 @@ Public Class Settings
         Set(value As Boolean)
             _doUseWindows11ExplorerMenu = value
         End Set
+    End Property
+
+    Public Shared ReadOnly Property WindowsAccentColor As Color
+        Get
+            Dim colorizationColor As UInteger
+            Dim opaqueBlend As Boolean
+
+            Functions.DwmGetColorizationColor(colorizationColor, opaqueBlend)
+
+            Dim a As Byte = CByte((colorizationColor >> 24) And &HFF)
+            Dim r As Byte = CByte((colorizationColor >> 16) And &HFF)
+            Dim g As Byte = CByte((colorizationColor >> 8) And &HFF)
+            Dim b As Byte = CByte(colorizationColor And &HFF)
+
+            Return Color.FromArgb(a, r, g, b)
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property WindowsAccentColor5 As Color
+        Get
+            Return New LightnessColorConverter().Convert(WindowsAccentColor, GetType(Color), 2, Nothing)
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property WindowsAccentColor7 As Color
+        Get
+            Return New LightnessColorConverter().Convert(WindowsAccentColor, GetType(Color), 2.5, Nothing)
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property WindowsAccentColor10 As Color
+        Get
+            Return New LightnessColorConverter().Convert(WindowsAccentColor, GetType(Color), 3, Nothing)
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property WindowsAccentBrush As SolidColorBrush
+        Get
+            Return New SolidColorBrush(WindowsAccentColor)
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property WindowsAccentBrush5 As SolidColorBrush
+        Get
+            Return New SolidColorBrush(WindowsAccentColor5)
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property WindowsAccentBrush7 As SolidColorBrush
+        Get
+            Return New SolidColorBrush(WindowsAccentColor7)
+        End Get
+    End Property
+
+    Public Shared ReadOnly Property WindowsAccentBrush10 As SolidColorBrush
+        Get
+            Return New SolidColorBrush(WindowsAccentColor10)
+        End Get
     End Property
 
     Public Sub Touch()

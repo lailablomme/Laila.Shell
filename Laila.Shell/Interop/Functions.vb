@@ -14,6 +14,9 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Interop
     Public Class Functions
+        <DllImport("dwmapi.dll", EntryPoint:="DwmGetColorizationColor")>
+        Public Shared Sub DwmGetColorizationColor(ByRef pcrColorization As UInteger, ByRef pfOpaqueBlend As Boolean)
+        End Sub
         <DllImport("shlwapi.dll", CharSet:=CharSet.Unicode)>
         Public Shared Function SHLoadIndirectString(
     pszSource As String,

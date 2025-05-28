@@ -12,20 +12,19 @@ namespace Laila.Shell.WinRT
         {
             IntPtr hwnd = new WindowInteropHelper(window).Handle;
 
+            var files = new List<IStorageItem>();
+            foreach (var filePath in filePaths)
+            {
+                var file = StorageFile.GetFileFromPathAsync(filePath).AsTask().Result;
+                files.Add(file);
+            }
+
             var dataTransferManager = DataTransferManagerHelper.GetForWindow(hwnd);
             dataTransferManager.DataRequested += (DataTransferManager sender, DataRequestedEventArgs args) =>
             {
                 var requestData = args.Request.Data;
                 requestData.Properties.Title = ResourcesRT.ModernShare_Title;
                 requestData.Properties.Description = ResourcesRT.ModernShare_Description;
-
-                var files = new List<IStorageItem>();
-                foreach (var filePath in filePaths)
-                {
-                    var file = StorageFile.GetFileFromPathAsync(filePath).AsTask().Result;
-                    files.Add(file);
-                }
-
                 requestData.SetStorageItems(files);
             };
 

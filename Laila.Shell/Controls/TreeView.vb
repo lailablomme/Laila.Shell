@@ -638,7 +638,10 @@ Namespace Controls
 
                             UIHelper.OnUIThreadAsync(
                                 Async Sub()
-                                    Await _menu.Make()
+                                    Using Shell.OverrideCursor(Cursors.Wait)
+                                        Await _menu.Make()
+                                    End Using
+
                                     Dim hasItems As Boolean = _menu.Items.Count > 0
                                     If clickedItem.HasSubFolders Then
                                         Dim expandCollapseGroupsMenuItem As MenuItem = Nothing
@@ -654,9 +657,9 @@ Namespace Controls
                                             }
                                         End If
                                         AddHandler expandCollapseGroupsMenuItem.Click,
-                                    Sub(s2 As Object, e2 As EventArgs)
-                                        clickedItem.IsExpanded = Not clickedItem.IsExpanded
-                                    End Sub
+                                            Sub(s2 As Object, e2 As EventArgs)
+                                                clickedItem.IsExpanded = Not clickedItem.IsExpanded
+                                            End Sub
                                         _menu.Items.Insert(0, expandCollapseGroupsMenuItem)
                                         If hasItems Then
                                             _menu.Items.Insert(1, New Separator())

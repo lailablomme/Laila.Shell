@@ -11,8 +11,11 @@
                 If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.Libraries) Then Me.Items.Add(Shell.GetSpecialFolder(SpecialFolders.Libraries).Clone())
             End If
 
-            If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDrive) Then Me.Items.Add(Shell.GetSpecialFolder(SpecialFolders.OneDrive).Clone())
-            If Shell.GetSpecialFolders().ContainsKey(SpecialFolders.OneDriveBusiness) Then Me.Items.Add(Shell.GetSpecialFolder(SpecialFolders.OneDriveBusiness).Clone())
+            For Each item In Shell.GetSpecialFolders() _
+                .Where(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
+                .OrderBy(Function(f) f.Value.DisplayName)
+                Me.Items.Add(item.Value.Clone())
+            Next
         End Sub
     End Class
 End Namespace

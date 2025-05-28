@@ -28,5 +28,9 @@ Namespace Controls
         Protected Overrides Function DoRenameAfter(Tag As Tuple(Of Integer, String, Object)) As Boolean
             Return True
         End Function
+
+        Public Overloads Overrides Function GetMenuItems() As List(Of Control)
+            Return Me.GetMenuItems(_hMenu, False)
+        End Function
     End Class
 End Namespace

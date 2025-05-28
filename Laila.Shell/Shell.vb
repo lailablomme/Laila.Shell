@@ -22,6 +22,13 @@ Public Class Shell
 
     Public Shared Event ClipboardChanged As EventHandler
 
+    Public Shared Property PrivilegedCloudProviders As List(Of SpecialFolders) = New List(Of SpecialFolders) From {
+        SpecialFolders.OneDrive,
+        SpecialFolders.OneDriveBusiness,
+        SpecialFolders.OneDriveBusiness2,
+        SpecialFolders.OneDriveBusinessBasic
+    }
+
     Public Shared NotificationMainThread As Helpers.ThreadPool
     Public Shared NotificationThreadPool As Helpers.ThreadPool
     Public Shared GlobalThreadPool As Helpers.ThreadPool
@@ -73,6 +80,8 @@ Public Class Shell
     Shared Sub New()
         ' watch for windows being loaded so we can gracefully shutdown when they're closed
         EventManager.RegisterClassHandler(GetType(Window), Window.LoadedEvent, New RoutedEventHandler(AddressOf window_Loaded))
+
+        _settings.Initialize()
 
         If Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown Then
             ' hook application exit
@@ -204,6 +213,8 @@ Public Class Shell
                 '                                 .GetItems().First(Function(i) i.FullPath.EndsWith("\Recent")))
                 Shell.AddSpecialFolder(SpecialFolders.OneDrive, Folder.FromParsingName("shell:::{018D5C66-4533-4307-9B53-224DE2ED1FE6}", Nothing, False))
                 Shell.AddSpecialFolder(SpecialFolders.OneDriveBusiness, Folder.FromParsingName("shell:::{04271989-C4D2-BEC7-A521-3DF166FAB4BA}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.OneDriveBusiness2, Folder.FromParsingName("shell:::{04271989-C4D2-D678-C596-AE7D03458BA4}", Nothing, False))
+                Shell.AddSpecialFolder(SpecialFolders.OneDriveBusinessBasic, Folder.FromParsingName("shell:::{04271989-C4D2-F0A2-7D2E-0556FAA01142}", Nothing, False))
                 Shell.AddSpecialFolder(SpecialFolders.WindowsTools, Folder.FromParsingName("shell:::{D20EA4E1-3957-11D2-A40B-0C5020524153}", Nothing, False))
                 Shell.AddSpecialFolder(SpecialFolders.Libraries, Folder.FromParsingName("shell:::{031E4825-7B94-4DC3-B131-E946B44C8DD5}", Nothing, False))
                 'addSpecialFolder("User Pinned", Folder.FromParsingName("shell:::{1F3427C8-5C10-4210-AA03-2EE45287D668}", Nothing, False))

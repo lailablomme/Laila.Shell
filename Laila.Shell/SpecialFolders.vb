@@ -14,6 +14,8 @@
     Recent
     OneDrive
     OneDriveBusiness
+    OneDriveBusiness2
+    OneDriveBusinessBasic
     WindowsTools
     Libraries
     ControlPanel
