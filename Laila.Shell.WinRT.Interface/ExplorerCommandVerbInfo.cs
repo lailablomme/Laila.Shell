@@ -6,6 +6,9 @@
         public string? ApplicationId { get; set; }
         public string? ApplicationName { get; set; }
         public string? ApplicationIconPath { get; set; }
+        public string? ApplicationExecutable { get; set; }
+        public string? ManifestPath { get; set; }
+        public string? InstalledPath { get; set; }
         public string? ItemType { get; set; }
         public string? Id { get; set; }
         public Guid ClsId { get; set; }

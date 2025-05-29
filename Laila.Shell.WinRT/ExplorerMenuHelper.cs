@@ -130,6 +130,9 @@ namespace Laila.Shell.WinRT
                                             verb.PackageId = package.Id.Name;
                                             verb.ApplicationName = application.Item4;
                                             verb.ApplicationIconPath = application.Item5;
+                                            verb.ApplicationExecutable = app?.Attribute("Executable")?.Value;
+                                            verb.ManifestPath = manifestPath;
+                                            verb.InstalledPath = package.EffectivePath;
                                         }
                                         verbs.AddRange(explorerCommandVerbs);
                                     }
@@ -190,6 +193,10 @@ namespace Laila.Shell.WinRT
         static Tuple<string, string?, string, string?, string?> getApplication(Package package, string manifestPath, XAttribute? idAttr, XElement app)
         {
             string? displayName = package.DisplayName;
+            if (displayName.StartsWith("Microsoft "))
+                displayName = displayName.Substring("Microsoft ".Length);
+            if (displayName.StartsWith("Windows "))
+                displayName = displayName.Substring("Windows ".Length);
             string? logoPath = package.Logo.LocalPath;
             return new Tuple<string, string?, string, string?, string?>(manifestPath, idAttr?.Value, package.EffectivePath, displayName, logoPath);
         }

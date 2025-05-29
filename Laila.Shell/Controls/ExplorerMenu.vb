@@ -249,7 +249,7 @@ Namespace Controls
                                 ' get menu item
                                 If Not command Is Nothing Then
                                     Dim flags As EXPCMDFLAGS = 0
-                                    Dim menuItem As MenuItemData = getMenuItem(command, array, flags, resolveMsResourceFromPackage)
+                                    Dim menuItem As MenuItemData = getMenuItem(command, array, flags, folder, items, resolveMsResourceFromPackage)
                                     If Not menuItem Is Nothing Then
                                         If String.IsNullOrWhiteSpace(menuItem.Header) Then
                                             menuItem.Header = If(muiVerb, "")
@@ -363,7 +363,7 @@ Namespace Controls
                 For Each item In result.Item3
                     Dim command As IExplorerCommand = _helper.MakeComObject(item.ComServerPath, item.ClsId, GetType(IExplorerCommand).GUID)
                     Dim flags As EXPCMDFLAGS
-                    Dim menuItem As MenuItemData = getMenuItem(command, array, flags, resolveMsResourceFromPackage)
+                    Dim menuItem As MenuItemData = getMenuItem(command, array, flags, folder, items, resolveMsResourceFromPackage)
                     If Not menuItem Is Nothing Then
                         If flags.HasFlag(EXPCMDFLAGS.ECF_SEPARATORBEFORE) Then
                             cloudMenuItem.Items.Add(New MenuItemData() With {.Header = "-----"})
@@ -439,7 +439,7 @@ Namespace Controls
                     For Each commandItem In thisAppCommands
                         Dim command As IExplorerCommand = _helper.MakeComObject(commandItem.ComServerPath, commandItem.ClsId, GetType(IExplorerCommand).GUID)
                         Dim flags As EXPCMDFLAGS
-                        Dim menuItem As MenuItemData = getMenuItem(command, array, flags, resolveMsResourceFromPackage)
+                        Dim menuItem As MenuItemData = getMenuItem(command, array, flags, folder, items, resolveMsResourceFromPackage)
                         If Not menuItem Is Nothing Then
                             If Not menuItem.Items Is Nothing AndAlso menuItem.Items.Count = 1 _
                                 AndAlso menuItem.Items(0).Header?.Equals(menuItem.Header) Then
@@ -447,6 +447,26 @@ Namespace Controls
                                 menuItem = menuItem.Items(0)
                             End If
                             menuItem.ApplicationName = commandItem.ApplicationName
+                            If menuItem.Icon Is Nothing AndAlso IO.File.Exists(commandItem.ApplicationIconPath) Then
+                                Try
+                                    menuItem.Icon = trimTransparentBorders(New BitmapImage(New Uri(commandItem.ApplicationIconPath, UriKind.Absolute)))
+                                    If Not menuItem.Icon Is Nothing Then menuItem.Icon.Freeze()
+                                Catch ex As Exception
+                                    ' Protect against invalid image
+                                End Try
+                            End If
+                            If menuItem.Icon Is Nothing _
+                                AndAlso Not String.IsNullOrWhiteSpace(commandItem.ApplicationExecutable) _
+                                AndAlso Not String.IsNullOrWhiteSpace(commandItem.InstalledPath) Then
+                                Dim fullExePath As String = IO.Path.Combine(commandItem.InstalledPath, commandItem.ApplicationExecutable)
+                                While Not IO.File.Exists(fullExePath) _
+                                    AndAlso Not String.IsNullOrWhiteSpace(IO.Path.GetDirectoryName(IO.Path.GetDirectoryName(fullExePath)))
+                                    fullExePath = IO.Path.Combine(IO.Path.GetDirectoryName(IO.Path.GetDirectoryName(fullExePath)), commandItem.ApplicationExecutable)
+                                End While
+                                If IO.File.Exists(fullExePath) Then
+                                    menuItem.Icon = ImageHelper.GetApplicationIcon(fullExePath)
+                                End If
+                            End If
                             addTo.Add(menuItem)
                         End If
                     Next
@@ -467,6 +487,7 @@ Namespace Controls
         End Sub
 
         Private Function getMenuItem(command As IExplorerCommand, array As IShellItemArray, ByRef flags As EXPCMDFLAGS,
+                                     folder As Folder, items As IEnumerable(Of Item),
                                      resolveMsResourceFromPackage As Func(Of String, String, String, String)) As MenuItemData
             Dim state As EXPCMDSTATE = 0
             Dim h As HRESULT = command.GetState(array, True, state)
@@ -502,6 +523,21 @@ Namespace Controls
                     End If
                     Dim guid As Guid = Guid.Empty
                     command.GetCanonicalName(guid)
+
+                    ' init?
+                    Dim init As IShellExtInit = TryCast(command, IShellExtInit)
+                    If Not init Is Nothing Then
+                        Dim dobj As IDataObject_PreserveSig = Clipboard.GetDataObjectFor(folder, items)
+                        init.Initialize(folder.Pidl.AbsolutePIDL, dobj, IntPtr.Zero)
+                    End If
+
+                    ' set site?
+                    Dim s As IObjectWithSite = TryCast(command, IObjectWithSite)
+                    If Not s Is Nothing Then
+                        Dim sp As MockServiceProvider = New MockServiceProvider()
+                        Dim h2 As HRESULT = s.SetSite(sp)
+                    End If
+
                     Dim action As Action =
                         Sub()
                             Dim bindCtx As ComTypes.IBindCtx = Nothing
@@ -517,7 +553,7 @@ Namespace Controls
                         enumExplorerCommand.Next(1, cmd, fetched)
                         While fetched > 0
                             Dim flags2 As EXPCMDFLAGS = 0
-                            Dim subMenuItem As MenuItemData = getMenuItem(cmd(0), array, flags2, resolveMsResourceFromPackage)
+                            Dim subMenuItem As MenuItemData = getMenuItem(cmd(0), array, flags2, folder, items, resolveMsResourceFromPackage)
                             If Not subMenuItem Is Nothing Then
                                 menuItem.IsSubMenu = True
                                 If flags2.HasFlag(EXPCMDFLAGS.ECF_SEPARATORBEFORE) Then
@@ -648,20 +684,21 @@ Namespace Controls
                 Dim e As CommandInvokedEventArgs = Nothing
 
                 UIHelper.OnUIThread(
-                Sub()
-                    Folder = Me.Folder
-                    SelectedItems = Me.SelectedItems
+                    Sub()
+                        Folder = Me.Folder
+                        SelectedItems = Me.SelectedItems
 
-                    e = New CommandInvokedEventArgs() With {
-                        .Id = id.Item1,
-                        .Verb = id.Item2
-                    }
-                    Dim c As Control = Me.Buttons.Cast(Of Control).FirstOrDefault(Function(i) id.Equals(i.Tag))
-                    If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
-                    RaiseCommandInvoked(e)
-                End Sub)
+                        e = New CommandInvokedEventArgs() With {
+                            .Id = id.Item1,
+                            .Verb = id.Item2
+                        }
+                        Dim c As Control = Me.Buttons.Cast(Of Control).FirstOrDefault(Function(i) id.Equals(i.Tag))
+                        If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
+                        RaiseCommandInvoked(e)
+                    End Sub)
 
                 If Not e.IsHandled Then
+                    ' Or just deactivate focus
                     _thread.Add(
                         Sub()
                             CType(id.Item3, Action).Invoke()
@@ -762,7 +799,7 @@ Namespace Controls
             Implements IInvocationLocation
 
             Public Function GetInvocationType(<Out> ByRef result As Integer) As Integer Implements IInvocationLocation.GetInvocationType
-                Return 1
+                Return &HFFFFFF
             End Function
 
             Public Function SetInvocationType(<[In]> value As Integer) As Integer Implements IInvocationLocation.SetInvocationType
