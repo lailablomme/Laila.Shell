@@ -120,9 +120,15 @@ Namespace Controls
 
         Protected MustOverride Overloads Sub Make(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
 
-        Protected Overridable Sub menuItem_Click(c As Control, e2 As EventArgs)
-            invokeCommandDelayed(c.Tag)
-            Me.IsOpen = False
+        Protected Overridable Sub menuItem_Click(sender As Object, e As RoutedEventArgs)
+            Dim c As Control =
+                If(TypeOf e.OriginalSource Is MenuItem Or TypeOf e.OriginalSource Is ButtonBase,
+                    e.OriginalSource,
+                    If(UIHelper.GetParentOfType(Of MenuItem)(e.OriginalSource), UIHelper.GetParentOfType(Of ButtonBase)(e.OriginalSource)))
+            If Not c Is Nothing Then
+                invokeCommandDelayed(c.Tag)
+                Me.IsOpen = False
+            End If
         End Sub
 
         Protected Sub invokeCommandDelayed(id As Tuple(Of Integer, String, Object))
