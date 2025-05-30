@@ -20,40 +20,16 @@ Imports WpfToolkit.Controls
 
 Namespace Controls
     Public MustInherit Class BaseFolderView
-        Inherits Control
+        Inherits BaseControl
         Implements IDisposable
 
-        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ColumnsInProperty As DependencyProperty = DependencyProperty.Register("ColumnsIn", GetType(Behaviors.GridViewExtBehavior.ColumnsInData), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly IsLoadingProperty As DependencyProperty = DependencyProperty.Register("IsLoading", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowCheckBoxesToSelectProperty As DependencyProperty = DependencyProperty.Register("DoShowCheckBoxesToSelect", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowCheckBoxesToSelectOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowCheckBoxesToSelectOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowCheckBoxesToSelectOverrideChanged))
-        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
-        Public Shared ReadOnly IsDoubleClickToOpenItemProperty As DependencyProperty = DependencyProperty.Register("IsDoubleClickToOpenItem", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly IsDoubleClickToOpenItemOverrideProperty As DependencyProperty = DependencyProperty.Register("IsDoubleClickToOpenItemOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsDoubleClickToOpenItemOverrideChanged))
-        Public Shared ReadOnly IsUnderlineItemOnHoverProperty As DependencyProperty = DependencyProperty.Register("IsUnderlineItemOnHover", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly IsUnderlineItemOnHoverOverrideProperty As DependencyProperty = DependencyProperty.Register("IsUnderlineItemOnHoverOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsUnderlineItemOnHoverOverrideChanged))
-        Public Shared ReadOnly DoShowIconsOnlyProperty As DependencyProperty = DependencyProperty.Register("DoShowIconsOnly", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowIconsOnlyOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowIconsOnlyOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowIconsOnlyOverrideChanged))
-        Public Shared ReadOnly DoShowTypeOverlayProperty As DependencyProperty = DependencyProperty.Register("DoShowTypeOverlay", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowTypeOverlayOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowTypeOverlayOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowTypeOverlayOverrideChanged))
-        Public Shared ReadOnly DoShowFolderContentsInInfoTipProperty As DependencyProperty = DependencyProperty.Register("DoShowFolderContentsInInfoTip", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowFolderContentsInInfoTipOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowFolderContentsInInfoTipOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowFolderContentsInInfoTipOverrideChanged))
-        Public Shared ReadOnly DoShowInfoTipsProperty As DependencyProperty = DependencyProperty.Register("DoShowInfoTips", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowInfoTipsOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowInfoTipsOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowInfoTipsOverrideChanged))
-        Public Shared ReadOnly IsCompactModeProperty As DependencyProperty = DependencyProperty.Register("IsCompactMode", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly IsCompactModeOverrideProperty As DependencyProperty = DependencyProperty.Register("IsCompactModeOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsCompactModeOverrideChanged))
-        Public Shared ReadOnly DoTypeToSelectProperty As DependencyProperty = DependencyProperty.Register("DoTypeToSelect", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoTypeToSelectOverrideProperty As DependencyProperty = DependencyProperty.Register("DoTypeToSelectOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoTypeToSelectOverrideChanged))
         Public Shared ReadOnly SearchBoxProperty As DependencyProperty = DependencyProperty.Register("SearchBox", GetType(SearchBox), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ScrollOffsetProperty As DependencyProperty = DependencyProperty.Register("ScrollOffset", GetType(Point), GetType(BaseFolderView), New FrameworkPropertyMetadata(New Point(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ExpandCollapseAllStateProperty As DependencyProperty = DependencyProperty.Register("ExpandCollapseAllState", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoUseWindows11ExplorerMenuProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenu", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoUseWindows11ExplorerMenuOverrideProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenuOverride", GetType(Boolean?), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoUseWindows11ExplorerMenuOverrideChanged))
 
         Friend Host As FolderView
         Private PART_CheckBoxSelectAll As CheckBox
@@ -125,43 +101,6 @@ Namespace Controls
                         End If
                     End Sub
             End If
-
-            AddHandler Shell.Settings.PropertyChanged,
-                Sub(s As Object, e As PropertyChangedEventArgs)
-                    Select Case e.PropertyName
-                        Case "DoShowCheckBoxesToSelect"
-                            setDoShowCheckBoxesToSelect()
-                        Case "DoShowEncryptedOrCompressedFilesInColor"
-                            setDoShowEncryptedOrCompressedFilesInColor()
-                        Case "IsDoubleClickToOpenItem"
-                            setIsDoubleClickToOpenItem()
-                        Case "IsUnderlineItemOnHover"
-                            setIsUnderlineItemOnHover()
-                        Case "DoShowIconsOnly"
-                            setDoShowIconsOnly()
-                        Case "DoShowTypeOverlay"
-                            setDoShowTypeOverlay()
-                        Case "DoShowFolderContentsInInfoTip"
-                            setDoShowFolderContentsInInfoTip()
-                        Case "DoShowInfoTips"
-                            setDoShowInfoTips()
-                        Case "IsCompactMode"
-                            setIsCompactMode()
-                        Case "DoTypeToSelect"
-                            setDoTypeToSelect()
-                    End Select
-                End Sub
-            setDoShowCheckBoxesToSelect()
-            setDoShowEncryptedOrCompressedFilesInColor()
-            setIsDoubleClickToOpenItem()
-            setIsUnderlineItemOnHover()
-            setDoShowIconsOnly()
-            setDoShowTypeOverlay()
-            setDoShowFolderContentsInInfoTip()
-            setDoShowInfoTips()
-            setIsCompactMode()
-            setDoTypeToSelect()
-            setDoUseWindows11ExplorerMenu()
 
             AddHandler PART_ListBox.Loaded,
                 Sub(s As Object, e As EventArgs)
@@ -937,24 +876,6 @@ Namespace Controls
             Menus.DoRename(AddressOf Me.GetItemNameCoordinates, Me.PART_Grid, listBoxItem, Me.PART_ListBox)
         End Sub
 
-        Public Overridable Property SelectedItems As IEnumerable(Of Item)
-            Get
-                Return GetValue(SelectedItemsProperty)
-            End Get
-            Set(value As IEnumerable(Of Item))
-                SetCurrentValue(SelectedItemsProperty, value)
-            End Set
-        End Property
-
-        Public Property Folder As Folder
-            Get
-                Return GetValue(FolderProperty)
-            End Get
-            Set(ByVal value As Folder)
-                SetCurrentValue(FolderProperty, value)
-            End Set
-        End Property
-
         Public Property IsLoading As Boolean
             Get
                 Return GetValue(IsLoadingProperty)
@@ -972,347 +893,6 @@ Namespace Controls
                 SetCurrentValue(IsSelectingProperty, value)
             End Set
         End Property
-
-        Public Property DoShowCheckBoxesToSelect As Boolean
-            Get
-                Return GetValue(DoShowCheckBoxesToSelectProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowCheckBoxesToSelectProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowCheckBoxesToSelect()
-            If Me.DoShowCheckBoxesToSelectOverride.HasValue Then
-                Me.DoShowCheckBoxesToSelect = Me.DoShowCheckBoxesToSelectOverride.Value
-            Else
-                Me.DoShowCheckBoxesToSelect = Shell.Settings.DoShowCheckBoxesToSelect
-            End If
-        End Sub
-
-        Public Property DoShowCheckBoxesToSelectOverride As Boolean?
-            Get
-                Return GetValue(DoShowCheckBoxesToSelectOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowCheckBoxesToSelectOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowCheckBoxesToSelectOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setDoShowCheckBoxesToSelect()
-        End Sub
-
-        Public Property DoShowEncryptedOrCompressedFilesInColor As Boolean
-            Get
-                Return GetValue(DoShowEncryptedOrCompressedFilesInColorProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowEncryptedOrCompressedFilesInColor()
-            If Me.DoShowEncryptedOrCompressedFilesInColorOverride.HasValue Then
-                Me.DoShowEncryptedOrCompressedFilesInColor = Me.DoShowEncryptedOrCompressedFilesInColorOverride.Value
-            Else
-                Me.DoShowEncryptedOrCompressedFilesInColor = Shell.Settings.DoShowEncryptedOrCompressedFilesInColor
-            End If
-        End Sub
-
-        Public Property DoShowEncryptedOrCompressedFilesInColorOverride As Boolean?
-            Get
-                Return GetValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setDoShowEncryptedOrCompressedFilesInColor()
-        End Sub
-
-        Public Property IsDoubleClickToOpenItem As Boolean
-            Get
-                Return GetValue(IsDoubleClickToOpenItemProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(IsDoubleClickToOpenItemProperty, value)
-            End Set
-        End Property
-
-        Private Sub setIsDoubleClickToOpenItem()
-            If Me.IsDoubleClickToOpenItemOverride.HasValue Then
-                Me.IsDoubleClickToOpenItem = Me.IsDoubleClickToOpenItemOverride.Value
-            Else
-                Me.IsDoubleClickToOpenItem = Shell.Settings.IsDoubleClickToOpenItem
-            End If
-        End Sub
-
-        Public Property IsDoubleClickToOpenItemOverride As Boolean?
-            Get
-                Return GetValue(IsDoubleClickToOpenItemOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(IsDoubleClickToOpenItemOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnIsDoubleClickToOpenItemOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setIsDoubleClickToOpenItem()
-        End Sub
-
-        Public Property IsUnderlineItemOnHover As Boolean
-            Get
-                Return GetValue(IsUnderlineItemOnHoverProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(IsUnderlineItemOnHoverProperty, value)
-            End Set
-        End Property
-
-        Private Sub setIsUnderlineItemOnHover()
-            If Me.IsUnderlineItemOnHoverOverride.HasValue Then
-                Me.IsUnderlineItemOnHover = Me.IsUnderlineItemOnHoverOverride.Value
-            Else
-                Me.IsUnderlineItemOnHover = Shell.Settings.IsUnderlineItemOnHover
-            End If
-        End Sub
-
-        Public Property IsUnderlineItemOnHoverOverride As Boolean?
-            Get
-                Return GetValue(IsUnderlineItemOnHoverOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(IsUnderlineItemOnHoverOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnIsUnderlineItemOnHoverOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setIsUnderlineItemOnHover()
-        End Sub
-
-        Public Property DoShowIconsOnly As Boolean
-            Get
-                Return GetValue(DoShowIconsOnlyProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowIconsOnlyProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowIconsOnly()
-            If Me.DoShowIconsOnlyOverride.HasValue Then
-                Me.DoShowIconsOnly = Me.DoShowIconsOnlyOverride.Value
-            Else
-                Me.DoShowIconsOnly = Shell.Settings.DoShowIconsOnly
-            End If
-        End Sub
-
-        Public Property DoShowIconsOnlyOverride As Boolean?
-            Get
-                Return GetValue(DoShowIconsOnlyOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowIconsOnlyOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowIconsOnlyOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setDoShowIconsOnly()
-        End Sub
-
-        Public Property DoShowTypeOverlay As Boolean
-            Get
-                Return GetValue(DoShowTypeOverlayProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowTypeOverlayProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowTypeOverlay()
-            If Me.DoShowTypeOverlayOverride.HasValue Then
-                Me.DoShowTypeOverlay = Me.DoShowTypeOverlayOverride.Value
-            Else
-                Me.DoShowTypeOverlay = Shell.Settings.DoShowTypeOverlay
-            End If
-        End Sub
-
-        Public Property DoShowTypeOverlayOverride As Boolean?
-            Get
-                Return GetValue(DoShowTypeOverlayOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowTypeOverlayOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowTypeOverlayOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setDoShowTypeOverlay()
-        End Sub
-
-        Public Property DoShowFolderContentsInInfoTip As Boolean
-            Get
-                Return GetValue(DoShowFolderContentsInInfoTipProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowFolderContentsInInfoTipProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowFolderContentsInInfoTip()
-            If Me.DoShowFolderContentsInInfoTipOverride.HasValue Then
-                Me.DoShowFolderContentsInInfoTip = Me.DoShowFolderContentsInInfoTipOverride.Value
-            Else
-                Me.DoShowFolderContentsInInfoTip = Shell.Settings.DoShowFolderContentsInInfoTip
-            End If
-        End Sub
-
-        Public Property DoShowFolderContentsInInfoTipOverride As Boolean?
-            Get
-                Return GetValue(DoShowFolderContentsInInfoTipOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowFolderContentsInInfoTipOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowFolderContentsInInfoTipOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setDoShowFolderContentsInInfoTip()
-        End Sub
-
-        Public Property DoShowInfoTips As Boolean
-            Get
-                Return GetValue(DoShowInfoTipsProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowInfoTipsProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowInfoTips()
-            If Me.DoShowInfoTipsOverride.HasValue Then
-                Me.DoShowInfoTips = Me.DoShowInfoTipsOverride.Value
-            Else
-                Me.DoShowInfoTips = Shell.Settings.DoShowInfoTips
-            End If
-        End Sub
-
-        Public Property DoShowInfoTipsOverride As Boolean?
-            Get
-                Return GetValue(DoShowInfoTipsOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowInfoTipsOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowInfoTipsOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setDoShowInfoTips()
-        End Sub
-
-        Public Property IsCompactMode As Boolean
-            Get
-                Return GetValue(IsCompactModeProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(IsCompactModeProperty, value)
-            End Set
-        End Property
-
-        Private Sub setIsCompactMode()
-            If Me.IsCompactModeOverride.HasValue Then
-                Me.IsCompactMode = Me.IsCompactModeOverride.Value
-            Else
-                Me.IsCompactMode = Shell.Settings.IsCompactMode
-            End If
-        End Sub
-
-        Public Property IsCompactModeOverride As Boolean?
-            Get
-                Return GetValue(IsCompactModeOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(IsCompactModeOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnIsCompactModeOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setIsCompactMode()
-        End Sub
-
-        Public Property DoTypeToSelect As Boolean
-            Get
-                Return GetValue(DoTypeToSelectProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoTypeToSelectProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoTypeToSelect()
-            If Me.DoTypeToSelectOverride.HasValue Then
-                Me.DoTypeToSelect = Me.DoTypeToSelectOverride.Value
-            Else
-                Me.DoTypeToSelect = Shell.Settings.DoTypeToSelect
-            End If
-        End Sub
-
-        Public Property DoTypeToSelectOverride As Boolean?
-            Get
-                Return GetValue(DoTypeToSelectOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoTypeToSelectOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoTypeToSelectOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setDoTypeToSelect()
-        End Sub
-
-        Public Property DoUseWindows11ExplorerMenu As Boolean
-            Get
-                Return GetValue(DoUseWindows11ExplorerMenuProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoUseWindows11ExplorerMenuProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoUseWindows11ExplorerMenu()
-            If Me.DoUseWindows11ExplorerMenuOverride.HasValue Then
-                Me.DoUseWindows11ExplorerMenu = Me.DoUseWindows11ExplorerMenuOverride.Value
-            Else
-                Me.DoUseWindows11ExplorerMenu = Shell.Settings.DoUseWindows11ExplorerMenu
-            End If
-        End Sub
-
-        Public Property DoUseWindows11ExplorerMenuOverride As Boolean?
-            Get
-                Return GetValue(DoUseWindows11ExplorerMenuOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoUseWindows11ExplorerMenuOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoUseWindows11ExplorerMenuOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = d
-            bfv.setDoUseWindows11ExplorerMenu()
-        End Sub
 
         Public Property ScrollOffset As Point
             Get
@@ -1468,33 +1048,31 @@ Namespace Controls
             End If
         End Sub
 
-        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As BaseFolderView = TryCast(d, BaseFolderView)
-
+        Protected Overrides Sub OnFolderChanged(ByVal e As DependencyPropertyChangedEventArgs)
             ' hide listview so no-one sees us binding to the new folder and restoring the scroll position
-            If Not bfv.PART_ListBox Is Nothing Then
-                bfv.PART_ListBox.Visibility = Visibility.Hidden
+            If Not Me.PART_ListBox Is Nothing Then
+                Me.PART_ListBox.Visibility = Visibility.Hidden
             End If
 
             If Not e.OldValue Is Nothing Then
                 Dim oldValue As Folder = e.OldValue
 
                 ' stop listening for events
-                RemoveHandler oldValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
-                RemoveHandler oldValue.ExpandAllGroups, AddressOf bfv.Folder_ExpandAllGroups
-                RemoveHandler oldValue.CollapseAllGroups, AddressOf bfv.Folder_CollapseAllGroups
-                RemoveHandler oldValue.Items.CollectionChanged, AddressOf bfv.folder_Items_CollectionChanged
+                RemoveHandler oldValue.PropertyChanged, AddressOf Me.Folder_PropertyChanged
+                RemoveHandler oldValue.ExpandAllGroups, AddressOf Me.Folder_ExpandAllGroups
+                RemoveHandler oldValue.CollapseAllGroups, AddressOf Me.Folder_CollapseAllGroups
+                RemoveHandler oldValue.Items.CollectionChanged, AddressOf Me.folder_Items_CollectionChanged
 
                 ' record last scroll value for use with the back and forward navigation buttons
-                oldValue.LastScrollOffset = bfv.ScrollOffset
-                oldValue.LastScrollSize = bfv._lastScrollSize
-                If Not bfv.PART_ScrollViewer Is Nothing Then
-                    bfv.PART_ScrollViewer.ScrollToHorizontalOffset(0)
-                    bfv.PART_ScrollViewer.ScrollToVerticalOffset(0)
+                oldValue.LastScrollOffset = Me.ScrollOffset
+                oldValue.LastScrollSize = Me._lastScrollSize
+                If Not Me.PART_ScrollViewer Is Nothing Then
+                    Me.PART_ScrollViewer.ScrollToHorizontalOffset(0)
+                    Me.PART_ScrollViewer.ScrollToVerticalOffset(0)
                 End If
 
                 ' clear view binding
-                bfv.ClearBinding()
+                Me.ClearBinding()
             End If
 
             If Not e.NewValue Is Nothing Then
@@ -1518,23 +1096,21 @@ Namespace Controls
                 End If
 
                 ' get notified of folder property changes
-                AddHandler newValue.PropertyChanged, AddressOf bfv.Folder_PropertyChanged
-                AddHandler newValue.ExpandAllGroups, AddressOf bfv.Folder_ExpandAllGroups
-                AddHandler newValue.CollapseAllGroups, AddressOf bfv.Folder_CollapseAllGroups
-                AddHandler newValue.Items.CollectionChanged, AddressOf bfv.folder_Items_CollectionChanged
+                AddHandler newValue.PropertyChanged, AddressOf Me.Folder_PropertyChanged
+                AddHandler newValue.ExpandAllGroups, AddressOf Me.Folder_ExpandAllGroups
+                AddHandler newValue.CollapseAllGroups, AddressOf Me.Folder_CollapseAllGroups
+                AddHandler newValue.Items.CollectionChanged, AddressOf Me.folder_Items_CollectionChanged
 
                 ' bind view
-                Dim ___ = bfv.MakeBinding(newValue)
+                Dim ___ = Me.MakeBinding(newValue)
             End If
         End Sub
 
-        Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim dlv As BaseFolderView = TryCast(d, BaseFolderView)
-
-            If Not dlv._selectionHelper Is Nothing Then
-                dlv._selectionHelper.SetSelectedItems(e.NewValue)
+        Protected Overrides Sub OnSelectedItemsChanged(ByVal e As DependencyPropertyChangedEventArgs)
+            If Not Me._selectionHelper Is Nothing Then
+                Me._selectionHelper.SetSelectedItems(e.NewValue)
             End If
-            dlv.updateCheckBoxSelectAll()
+            Me.updateCheckBoxSelectAll()
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)

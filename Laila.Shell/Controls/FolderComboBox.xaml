@@ -94,7 +94,7 @@
                                             <Border Background="White" BorderThickness="1" BorderBrush="Gray" CornerRadius="5" Padding="2">
                                                 <Grid>
                                                     <local:TreeView Folder="{Binding Folder, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}" 
-                                                                    x:Name="PART_TreeView" FocusVisualStyle="{x:Null}" DoShowPinnedAndFrequentItemsPlaceholder="False" />
+                                                                    x:Name="PART_TreeView" FocusVisualStyle="{x:Null}" />
                                                 </Grid>
                                             </Border>
                                         </Popup>

@@ -3,7 +3,9 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
 Imports System.Windows.Interop
+Imports System.Windows.Media
 Imports Laila.Shell.Controls.Parts
+Imports Laila.Shell.Converters
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop.Windows
 
@@ -20,6 +22,19 @@ Namespace Controls
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
         Public Shared Shadows ReadOnly IsTabStopProperty As DependencyProperty = DependencyProperty.Register("IsTabStop", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoUseLightThemeProperty As DependencyProperty = DependencyProperty.Register("DoUseLightTheme", GetType(Boolean), GetType(AddressBar), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly DoUseLightThemeOverrideProperty As DependencyProperty = DependencyProperty.Register("DoUseLightThemeOverride", GetType(Boolean?), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoUseLightThemeOverrideChanged))
+        Public Shared ReadOnly AccentProperty As DependencyProperty = DependencyProperty.Register("Accent", GetType(Brush), GetType(AddressBar), New FrameworkPropertyMetadata(Brushes.Blue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly AccentColorProperty As DependencyProperty = DependencyProperty.Register("AccentColor", GetType(Color), GetType(AddressBar), New FrameworkPropertyMetadata(Colors.Blue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly AccentColorOverrideProperty As DependencyProperty = DependencyProperty.Register("AccentColorOverride", GetType(Color?), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnAccentColorOverrideChanged))
+        Public Shared ReadOnly AccentDarkerProperty As DependencyProperty = DependencyProperty.Register("AccentDarker", GetType(Brush), GetType(AddressBar), New FrameworkPropertyMetadata(Brushes.Blue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly AccentDarkerColorProperty As DependencyProperty = DependencyProperty.Register("AccentDarkerColor", GetType(Color), GetType(AddressBar), New FrameworkPropertyMetadata(Colors.Blue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly AccentLighterProperty As DependencyProperty = DependencyProperty.Register("AccentLighter", GetType(Brush), GetType(AddressBar), New FrameworkPropertyMetadata(Brushes.Blue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly AccentLighterColorProperty As DependencyProperty = DependencyProperty.Register("AccentLighterColor", GetType(Color), GetType(AddressBar), New FrameworkPropertyMetadata(Colors.Blue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ForegroundColorProperty As DependencyProperty = DependencyProperty.Register("ForegroundColor", GetType(Color), GetType(AddressBar), New FrameworkPropertyMetadata(Colors.Black, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ForegroundColorOverride", GetType(Color?), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnForegroundColorOverrideChanged))
+        Public Shared ReadOnly BackgroundColorProperty As DependencyProperty = DependencyProperty.Register("BackgroundColor", GetType(Color), GetType(AddressBar), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly BackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("BackgroundColorOverride", GetType(Color?), GetType(AddressBar), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnBackgroundColorOverrideChanged))
 
         Private PART_NavigationButtonsPanel As SelectedFolderControl
         Private PART_NavigationButtons As Border
@@ -259,6 +274,184 @@ Namespace Controls
         Public Shared Sub OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim ab As AddressBar = d
             ab.setDoShowEncryptedOrCompressedFilesInColor()
+        End Sub
+
+        Public Property DoUseLightTheme As Boolean
+            Get
+                Return GetValue(DoUseLightThemeProperty)
+            End Get
+            Protected Set(ByVal value As Boolean)
+                SetCurrentValue(DoUseLightThemeProperty, value)
+            End Set
+        End Property
+
+        Private Sub setDoUseLightTheme()
+            If Me.DoUseLightThemeOverride.HasValue Then
+                Me.DoUseLightTheme = Me.DoUseLightThemeOverride.Value
+            Else
+                Me.DoUseLightTheme = Shell.Settings.DoUseLightTheme
+            End If
+            setForegroundColor()
+            setBackgroundColor()
+        End Sub
+
+        Public Property DoUseLightThemeOverride As Boolean?
+            Get
+                Return GetValue(DoUseLightThemeOverrideProperty)
+            End Get
+            Set(ByVal value As Boolean?)
+                SetCurrentValue(DoUseLightThemeOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnDoUseLightThemeOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As AddressBar = d
+            bfv.setDoUseLightTheme()
+        End Sub
+
+        Public Property Accent As Brush
+            Get
+                Return GetValue(AccentProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(AccentProperty, value)
+            End Set
+        End Property
+
+        Public Property AccentColor As Color
+            Get
+                Return GetValue(AccentColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(AccentColorProperty, value)
+            End Set
+        End Property
+
+        Public Property AccentDarker As Brush
+            Get
+                Return GetValue(AccentDarkerProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(AccentDarkerProperty, value)
+            End Set
+        End Property
+
+        Public Property AccentDarkerColor As Color
+            Get
+                Return GetValue(AccentDarkerColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(AccentDarkerColorProperty, value)
+            End Set
+        End Property
+
+        Public Property AccentLighter As Brush
+            Get
+                Return GetValue(AccentLighterProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(AccentLighterProperty, value)
+            End Set
+        End Property
+
+        Public Property AccentLighterColor As Color
+            Get
+                Return GetValue(AccentLighterColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(AccentLighterColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setAccentColor()
+            If Me.AccentColorOverride.HasValue Then
+                Me.AccentColor = Me.AccentColorOverride.Value
+            Else
+                Me.AccentColor = Shell.Settings.WindowsAccentColor
+            End If
+            Me.Accent = New SolidColorBrush(Me.AccentColor)
+            Me.AccentDarkerColor = New LightnessColorConverter().Convert(Me.AccentColor, Nothing, 0.8, Nothing)
+            Me.AccentDarker = New SolidColorBrush(Me.AccentDarkerColor)
+            Me.AccentLighterColor = New LightnessColorConverter().Convert(Me.AccentColor, Nothing, 1.2, Nothing)
+            Me.AccentLighter = New SolidColorBrush(Me.AccentLighterColor)
+        End Sub
+
+        Public Property AccentColorOverride As Color?
+            Get
+                Return GetValue(AccentColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(AccentColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnAccentColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As AddressBar = d
+            bfv.setAccentColor()
+        End Sub
+
+        Public Property ForegroundColor As Color
+            Get
+                Return GetValue(ForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setForegroundColor()
+            If Me.ForegroundColorOverride.HasValue Then
+                Me.ForegroundColor = Me.ForegroundColorOverride.Value
+            Else
+                Me.ForegroundColor = If(Me.DoUseLightTheme, Colors.Black, Colors.White)
+            End If
+            Me.Foreground = New SolidColorBrush(Me.ForegroundColor)
+        End Sub
+
+        Public Property ForegroundColorOverride As Color?
+            Get
+                Return GetValue(ForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As AddressBar = d
+            bfv.setForegroundColor()
+        End Sub
+
+        Public Property BackgroundColor As Color
+            Get
+                Return GetValue(BackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(BackgroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setBackgroundColor()
+            If Me.BackgroundColorOverride.HasValue Then
+                Me.BackgroundColor = Me.BackgroundColorOverride.Value
+            Else
+                Me.BackgroundColor = If(Me.DoUseLightTheme, Colors.White, Colors.Black)
+            End If
+            Me.Background = New SolidColorBrush(Me.BackgroundColor)
+        End Sub
+
+        Public Property BackgroundColorOverride As Color?
+            Get
+                Return GetValue(BackgroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(BackgroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As AddressBar = d
+            bfv.setBackgroundColor()
         End Sub
 
         Public Overloads Property IsTabStop As Boolean

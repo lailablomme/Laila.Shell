@@ -22,6 +22,9 @@ Class MainWindow
             Sub(s As Object, e As KeyEventArgs)
                 focusTextBlock.Text = Keyboard.FocusedElement.ToString() & " " & If(TypeOf Keyboard.FocusedElement Is FrameworkElement, CType(Keyboard.FocusedElement, FrameworkElement).Name, "")
             End Sub
+
+        Me.GlowColor = Shell.Settings.WindowsAccentColor
+        Me.Background = Shell.Settings.WindowsAccentBrush
     End Sub
 
     Public Overrides Sub OnLoadPosition()

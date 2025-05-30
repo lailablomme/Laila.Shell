@@ -15,6 +15,7 @@ Public Class Settings
 
     Private Const EXPLORER_KEYPATH As String = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer"
     Private Const EXPLORER_ADVANCED_KEYPATH As String = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+    Private Const WINDOWS_PERSONALIZE_KEYPATH As String = "Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
     Private Const LIBRARIES_KEYPATH As String = "Software\Classes\CLSID\{031E4825-7B94-4dc3-B131-E946B44C8DD5}"
     Private Const SHOWENCRYPTEDORCOMPRESSEDFILESINCOLOR_VALUENAME As String = "ShowEncryptCompressedColor"
     Private Const UNDERLINEITEMONHOVER_VALUENAME As String = "IconUnderline"
@@ -26,6 +27,7 @@ Public Class Settings
     Private Const NAVPANESHOWALLCLOUDSTATES_VALUENAME As String = "NavPaneShowAllCloudStates"
     Private Const NAVPANEEXPANDTOCURRENTFOLDER_VALUENAME As String = "NavPaneExpandToCurrentFolder"
     Private Const SHOWLIBRARIES_VALUENAME As String = "System.IsPinnedToNameSpaceTree"
+    Private Const APPSUSELIGHTTHEME_VALUENAME As String = "AppsUseLightTheme"
 
     Public Shared Property DpiScaleX As Double = 1
     Public Shared Property DpiScaleY As Double = 1
@@ -35,6 +37,7 @@ Public Class Settings
     Private _stopped1 As TaskCompletionSource
     Private _stopped2 As TaskCompletionSource
     Private _stopped3 As TaskCompletionSource
+    Private _stopped4 As TaskCompletionSource
     Private _cancel As CancellationTokenSource
     Private _doHideKnownFileExtensions As Boolean = False
     Private _doShowProtectedOperatingSystemFiles As Boolean = True
@@ -56,6 +59,7 @@ Public Class Settings
     Private _doExpandTreeViewToCurrentFolder As Boolean = True
     Private _doShowLibrariesInTreeView As Boolean = False
     Private _doUseWindows11ExplorerMenu As Boolean
+    Private _doUseLightTheme As Boolean = True
 
     Public Sub Initialize()
         Me.StartMonitoring()
@@ -100,6 +104,7 @@ Public Class Settings
             _stopped1 = New TaskCompletionSource()
             _stopped2 = New TaskCompletionSource()
             _stopped3 = New TaskCompletionSource()
+            _stopped4 = New TaskCompletionSource()
             _cancel = New CancellationTokenSource()
 
             ' start monitoring
@@ -160,6 +165,15 @@ Public Class Settings
                         Me.NotifyOfPropertyChange("DoShowLibrariesInTreeView")
                     End If
                 End Sub, _cancel.Token, _stopped3)
+            monitorRegistryKey(WINDOWS_PERSONALIZE_KEYPATH,
+                Sub()
+                    Dim b As Boolean
+                    b = readDoUseLightTheme()
+                    If Not b = _doUseLightTheme Then
+                        _doUseLightTheme = b
+                        Me.NotifyOfPropertyChange("DoUseLightTheme")
+                    End If
+                End Sub, _cancel.Token, _stopped4)
 
             ' mark
             _isMonitoring = True
@@ -181,11 +195,14 @@ Public Class Settings
             SetRegistryBoolean(EXPLORER_ADVANCED_KEYPATH, "Laila_Shell_Monitor", Not b)
             b = GetRegistryBoolean(LIBRARIES_KEYPATH, "Laila_Shell_Monitor", False)
             SetRegistryBoolean(LIBRARIES_KEYPATH, "Laila_Shell_Monitor", Not b)
+            b = GetRegistryBoolean(WINDOWS_PERSONALIZE_KEYPATH, "Laila_Shell_Monitor", False)
+            SetRegistryBoolean(WINDOWS_PERSONALIZE_KEYPATH, "Laila_Shell_Monitor", Not b)
 
             ' wait for threads to end
             _stopped1.Task.Wait()
             _stopped2.Task.Wait()
             _stopped3.Task.Wait()
+            _stopped4.Task.Wait()
 
             ' mark
             _isMonitoring = False
@@ -567,7 +584,17 @@ Public Class Settings
         End Set
     End Property
 
-    Public Shared ReadOnly Property WindowsAccentColor As Color
+    Private Function readDoUseLightTheme() As Boolean
+        Return GetRegistryBoolean(WINDOWS_PERSONALIZE_KEYPATH, APPSUSELIGHTTHEME_VALUENAME, False)
+    End Function
+
+    Public ReadOnly Property DoUseLightTheme As Boolean
+        Get
+            Return _doUseLightTheme
+        End Get
+    End Property
+
+    Public ReadOnly Property WindowsAccentColor As Color
         Get
             Dim colorizationColor As UInteger
             Dim opaqueBlend As Boolean
@@ -583,45 +610,9 @@ Public Class Settings
         End Get
     End Property
 
-    Public Shared ReadOnly Property WindowsAccentColor5 As Color
+    Public ReadOnly Property WindowsAccentBrush As Brush
         Get
-            Return New LightnessColorConverter().Convert(WindowsAccentColor, GetType(Color), 2, Nothing)
-        End Get
-    End Property
-
-    Public Shared ReadOnly Property WindowsAccentColor7 As Color
-        Get
-            Return New LightnessColorConverter().Convert(WindowsAccentColor, GetType(Color), 2.5, Nothing)
-        End Get
-    End Property
-
-    Public Shared ReadOnly Property WindowsAccentColor10 As Color
-        Get
-            Return New LightnessColorConverter().Convert(WindowsAccentColor, GetType(Color), 3, Nothing)
-        End Get
-    End Property
-
-    Public Shared ReadOnly Property WindowsAccentBrush As SolidColorBrush
-        Get
-            Return New SolidColorBrush(WindowsAccentColor)
-        End Get
-    End Property
-
-    Public Shared ReadOnly Property WindowsAccentBrush5 As SolidColorBrush
-        Get
-            Return New SolidColorBrush(WindowsAccentColor5)
-        End Get
-    End Property
-
-    Public Shared ReadOnly Property WindowsAccentBrush7 As SolidColorBrush
-        Get
-            Return New SolidColorBrush(WindowsAccentColor7)
-        End Get
-    End Property
-
-    Public Shared ReadOnly Property WindowsAccentBrush10 As SolidColorBrush
-        Get
-            Return New SolidColorBrush(WindowsAccentColor10)
+            Return New SolidColorBrush(Me.WindowsAccentColor)
         End Get
     End Property
 
@@ -698,6 +689,7 @@ Public Class Settings
                 _doShowAvailabilityStatusInTreeView = readDoShowAvailabilityStatusInTreeView()
                 _doExpandTreeViewToCurrentFolder = readDoExpandTreeViewToCurrentFolder()
                 _doShowLibrariesInTreeView = readDoShowLibrariesInTreeView()
+                _doUseLightTheme = readDoUseLightTheme()
             End If
         End Using
     End Sub

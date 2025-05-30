@@ -17,11 +17,9 @@ Imports Laila.Shell.Interop.Properties
 
 Namespace Controls
     Public Class FolderView
-        Inherits Control
+        Inherits BaseControl
         Implements IDisposable, IProcessNotifications
 
-        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
-        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
         Public Shared ReadOnly IsSelectingProperty As DependencyProperty = DependencyProperty.Register("IsSelecting", GetType(Boolean), GetType(FolderView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly StatusTextProperty As DependencyProperty = DependencyProperty.Register("StatusText", GetType(String), GetType(FolderView), New FrameworkPropertyMetadata(String.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SearchBoxProperty As DependencyProperty = DependencyProperty.Register("SearchBox", GetType(SearchBox), GetType(FolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
@@ -230,24 +228,6 @@ Namespace Controls
             End Set
         End Property
 
-        Public Overridable Property SelectedItems As IEnumerable(Of Item)
-            Get
-                Return GetValue(SelectedItemsProperty)
-            End Get
-            Set(value As IEnumerable(Of Item))
-                SetCurrentValue(SelectedItemsProperty, value)
-            End Set
-        End Property
-
-        Public Property Folder As Folder
-            Get
-                Return GetValue(FolderProperty)
-            End Get
-            Set(ByVal value As Folder)
-                SetCurrentValue(FolderProperty, value)
-            End Set
-        End Property
-
         Public Property IsSelecting As Boolean
             Get
                 Return GetValue(IsSelectingProperty)
@@ -339,12 +319,11 @@ Namespace Controls
             End If
         End Sub
 
-        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim fv As FolderView = d
-            fv.SelectedItems = Nothing
+        Protected Overrides Sub OnFolderChanged(ByVal e As DependencyPropertyChangedEventArgs)
+            Me.SelectedItems = Nothing
             If Not e.OldValue Is Nothing Then
-                RemoveHandler CType(e.OldValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
-                RemoveHandler CType(e.OldValue, Folder).Items.CollectionChanged, AddressOf fv.folder_Items_CollectionChanged
+                RemoveHandler CType(e.OldValue, Folder).PropertyChanged, AddressOf Me.folder_PropertyChanged
+                RemoveHandler CType(e.OldValue, Folder).Items.CollectionChanged, AddressOf Me.folder_Items_CollectionChanged
             End If
             If Not e.NewValue Is Nothing Then
                 CType(e.NewValue, Folder).IsActiveInFolderView = True
@@ -352,14 +331,14 @@ Namespace Controls
                 If Not CType(e.NewValue, Folder).ActiveView.HasValue Then
                     CType(e.NewValue, Folder).ActiveView = folderViewState.ActiveView
                 End If
-                fv.changeView(CType(e.NewValue, Folder).ActiveView, e.NewValue)
-                AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf fv.folder_PropertyChanged
-                AddHandler CType(e.NewValue, Folder).Items.CollectionChanged, AddressOf fv.folder_Items_CollectionChanged
+                Me.changeView(CType(e.NewValue, Folder).ActiveView, e.NewValue)
+                AddHandler CType(e.NewValue, Folder).PropertyChanged, AddressOf Me.folder_PropertyChanged
+                AddHandler CType(e.NewValue, Folder).Items.CollectionChanged, AddressOf Me.folder_Items_CollectionChanged
             End If
             If Not e.OldValue Is Nothing Then
                 CType(e.OldValue, Folder).IsActiveInFolderView = False
             End If
-            fv.updateStatusText()
+            Me.updateStatusText()
         End Sub
 
         Private Sub folder_Items_CollectionChanged(sender As Object, e As NotifyCollectionChangedEventArgs)
@@ -412,9 +391,8 @@ Namespace Controls
             End If
         End Sub
 
-        Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim fv As FolderView = d
-            fv.updateStatusText()
+        Protected Overrides Sub OnSelectedItemsChanged(ByVal e As DependencyPropertyChangedEventArgs)
+            updateStatusText()
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)

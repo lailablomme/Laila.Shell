@@ -1660,7 +1660,7 @@ Public Class Folder
                         End Sub)
                     Next
 
-                    Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
+                    'Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
                 End If
             End If
         End If

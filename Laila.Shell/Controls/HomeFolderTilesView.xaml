@@ -22,8 +22,163 @@
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   ScrollViewer.IsDeferredScrollingEnabled="False" 
                                   ScrollViewer.CanContentScroll="False" BorderThickness="0" 
-                                  Grid.IsSharedSizeScope="True">
+                                  Grid.IsSharedSizeScope="True"
+                                  Background="{Binding Tag.Background, ElementName=PART_Grid}"
+                                  Foreground="{Binding Tag.Foreground, ElementName=PART_Grid}">
                             <ListView.Resources>
+                                <Style TargetType="ListViewItem" x:Key="lailaShell_ListViewItemHome">
+                                    <Setter Property="OverridesDefaultStyle" Value="True"/>
+                                    <Setter Property="SnapsToDevicePixels" Value="True"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="2"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="FocusVisualStyle">
+                                        <Setter.Value>
+                                            <Style>
+                                                <Setter Property="Control.Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate>
+                                                            <Border BorderBrush="Black" BorderThickness="2" Background="Transparent" CornerRadius="5" Margin="0,-2,10,-2" SnapsToDevicePixels="true"/>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListViewItem">
+                                                <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"
+                                                        Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True" Margin="3,1,13,1"
+                                                        HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}">
+                                                    <Grid HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}">
+                                                        <GridViewRowPresenter VerticalAlignment="{TemplateBinding VerticalContentAlignment}" x:Name="rowPresenter" />
+                                                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Visibility="Collapsed"
+                                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" x:Name="contentPresenter" />
+                                                    </Grid>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="GridView.ColumnCollection" Value="{x:Null}">
+                                                        <Setter TargetName="contentPresenter" Property="Visibility" Value="Visible"/>
+                                                        <Setter TargetName="rowPresenter" Property="Visibility" Value="Collapsed"/>
+                                                    </Trigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True" />
+                                                            <Condition Binding="{Binding Tag.DoUseLightTheme, ElementName=PART_Grid}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="Background" TargetName="Bd" Value="#EFEFEF"/>
+                                                            <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Accent, ElementName=PART_Grid}"/>
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True" />
+                                                            <Condition Binding="{Binding Tag.DoUseLightTheme, ElementName=PART_Grid}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="Background" TargetName="Bd" Value="#333333"/>
+                                                            <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Accent, ElementName=PART_Grid}"/>
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=Self}}" Value="True" />
+                                                            <Condition Binding="{Binding Tag.DoUseLightTheme, ElementName=PART_Grid}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="Background" TargetName="Bd" Value="#EFEFEF"/>
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=Self}}" Value="True" />
+                                                            <Condition Binding="{Binding Tag.DoUseLightTheme, ElementName=PART_Grid}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter Property="Background" TargetName="Bd" Value="#333333"/>
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Geometry x:Key="CheckHome">M 0,3 L 4,7 L 10,0</Geometry>
+                                <Style TargetType="CheckBox" x:Key="lailaShell_CheckBoxHomeStyle">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderBrush" Value="Gray" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                    <Setter Property="Height" Value="20" />
+                                    <Setter Property="Width" Value="20" />
+                                    <Setter Property="MinHeight" Value="20" />
+                                    <Setter Property="MinWidth" Value="20" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="CheckBox">
+                                                <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="5" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}" Padding="0" 
+                                                        Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                                    <Grid>
+                                                        <Path x:Name="PART_Check" Data="{StaticResource CheckHome}" StrokeThickness="1.5" Visibility="Hidden" Margin="0" 
+                                                              Fill="Transparent" Stroke="White" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="8"/>
+                                                        <Border x:Name="PART_LayOver" CornerRadius="5" Width="19" Height="19" Visibility="Hidden"
+                                                                BorderThickness="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                                        </Border>
+                                                    </Grid>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Trigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation 
+                                                                        Storyboard.TargetProperty="Width"
+                                                                        Storyboard.TargetName="PART_LayOver"
+                                                                        Duration="0:0:0.3" 
+                                                                        From="19" 
+                                                                        To="0" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </Trigger.EnterActions>
+                                                        <Setter TargetName="PART_Check" Property="Visibility" Value="Visible" />
+                                                        <Setter TargetName="PART_LayOver" Property="Visibility" Value="Visible" />
+                                                        <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Accent, ElementName=PART_Grid}"/>
+                                                        <Setter Property="Background" TargetName="PART_LayOver" Value="{Binding Tag.Accent, ElementName=PART_Grid}"/>
+                                                        <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Accent, ElementName=PART_Grid}"/>
+                                                    </Trigger>
+                                                    <MultiTrigger>
+                                                        <MultiTrigger.Conditions>
+                                                            <Condition Property="IsMouseOver" Value="True" />
+                                                            <Condition Property="IsChecked" Value="True" />
+                                                        </MultiTrigger.Conditions>
+                                                        <MultiTrigger.Setters>
+                                                            <Setter Property="Background" TargetName="PART_LayOver" Value="{Binding Tag.AccentLighter, ElementName=PART_Grid}"/>
+                                                            <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.AccentLighter, ElementName=PART_Grid}"/>
+                                                        </MultiTrigger.Setters>
+                                                    </MultiTrigger>
+                                                    <MultiTrigger>
+                                                        <MultiTrigger.Conditions>
+                                                            <Condition Property="IsMouseOver" Value="True" />
+                                                            <Condition Property="IsChecked" Value="False" />
+                                                        </MultiTrigger.Conditions>
+                                                        <MultiTrigger.Setters>
+                                                            <Setter Property="Background" TargetName="Bd" Value="#EEEEEE"/>
+                                                        </MultiTrigger.Setters>
+                                                    </MultiTrigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
                                 <GroupStyle x:Key="groupStyle">
                                     <GroupStyle.ContainerStyle>
                                         <Style TargetType="{x:Type GroupItem}">
@@ -44,7 +199,9 @@
                                                                 <ListView ItemsSource="{Binding Items}" Margin="25,0,0,0" SelectionMode="Extended"
                                                                           behaviors:SharedSelectedItemsBehavior.SyncedSelectedItemsWith="{Binding Tag, ElementName=PART_Grid}"
                                                                           behaviors:ScrollViewerFix.IsEnabled="True" BorderThickness="0" IsTabStop="False" Focusable="False"
-                                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False">
+                                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False"
+                                                                          Background="{Binding Tag.Background, ElementName=PART_Grid}"
+                                                                          Foreground="{Binding Tag.Foreground, ElementName=PART_Grid}">
                                                                     <ListView.Resources>
                                                                         <!-- Default panel and template -->
                                                                         <ItemsPanelTemplate x:Key="GridPanel">
@@ -92,7 +249,7 @@
                                                                                                     <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
                                                                                                         <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                                                                         <Setter Property="ItemsControl.Width" Value="{Binding StorageProviderUIStatusIconWidth16}" />
-                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16}" />
+                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
                                                                                                     </DataTrigger>
                                                                                                 </Style.Triggers>
                                                                                             </Style>
@@ -154,10 +311,10 @@
                                                                                                         <Setter Property="Image.Opacity" Value="0.5" />
                                                                                                     </DataTrigger>
                                                                                                     <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="True">
-                                                                                                        <Setter Property="Image.Source" Value="{Binding Icon[24]}" />
+                                                                                                        <Setter Property="Image.Source" Value="{Binding IconAsync[24], IsAsync=True}" />
                                                                                                     </DataTrigger>
                                                                                                     <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="False">
-                                                                                                        <Setter Property="Image.Source" Value="{Binding Image[24]}" />
+                                                                                                        <Setter Property="Image.Source" Value="{Binding ImageAsync[24], IsAsync=True}" />
                                                                                                     </DataTrigger>
                                                                                                 </Style.Triggers>
                                                                                             </Style>
@@ -319,7 +476,7 @@
                                                                                                     <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
                                                                                                         <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                                                                         <Setter Property="ItemsControl.Width" Value="{Binding StorageProviderUIStatusIconWidth16}" />
-                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16}" />
+                                                                                                        <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
                                                                                                     </DataTrigger>
                                                                                                 </Style.Triggers>
                                                                                             </Style>
@@ -381,10 +538,10 @@
                                                                                                         <Setter Property="Image.Opacity" Value="0.5" />
                                                                                                     </DataTrigger>
                                                                                                     <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="True">
-                                                                                                        <Setter Property="Image.Source" Value="{Binding Icon[48]}" />
+                                                                                                        <Setter Property="Image.Source" Value="{Binding IconAsync[48], IsAsync=True}" />
                                                                                                     </DataTrigger>
                                                                                                     <DataTrigger Binding="{Binding Tag.DoShowIconsOnly, ElementName=PART_Grid}" Value="False">
-                                                                                                        <Setter Property="Image.Source" Value="{Binding Image[48]}" />
+                                                                                                        <Setter Property="Image.Source" Value="{Binding ImageAsync[48], IsAsync=True}" />
                                                                                                     </DataTrigger>
                                                                                                 </Style.Triggers>
                                                                                             </Style>

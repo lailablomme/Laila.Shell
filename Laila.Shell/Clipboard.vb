@@ -98,7 +98,9 @@ Public Class Clipboard
                             Dim effect As DROPEFFECT = ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.GetClipboard()
                             Dim grfKeyState As MK = MK.MK_LBUTTON
                             If effect = DROPEFFECT.DROPEFFECT_COPY Then grfKeyState = grfKeyState Or MK.MK_CONTROL
-                            Dim hr As HRESULT = dropTarget.DragEnter(dataObject, grfKeyState, New WIN32POINT(), effect)
+                            Dim checkEffect As DROPEFFECT = effect
+                            Dim hr As HRESULT = dropTarget.DragEnter(dataObject, grfKeyState, New WIN32POINT(), checkEffect)
+                            If checkEffect = DROPEFFECT.DROPEFFECT_NONE AndAlso effect = DROPEFFECT.DROPEFFECT_MOVE Then effect = DROPEFFECT.DROPEFFECT_COPY
                             dropTarget.Drop(dataObject, grfKeyState, New WIN32POINT(), effect)
                         End If
                     Finally

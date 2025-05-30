@@ -20,28 +20,13 @@ Imports Laila.Shell.PinnedItems
 
 Namespace Controls
     Public Class TreeView
-        Inherits Control
+        Inherits BaseControl
         Implements IDisposable, IProcessNotifications
 
-        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly ItemsProperty As DependencyProperty = DependencyProperty.Register("Items", GetType(ItemsCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SectionsProperty As DependencyProperty = DependencyProperty.Register("Sections", GetType(ObservableCollection(Of BaseTreeViewSection)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly RootsProperty As DependencyProperty = DependencyProperty.Register("Roots", GetType(ObservableCollection(Of Item)), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
-        Public Shared ReadOnly IsCompactModeProperty As DependencyProperty = DependencyProperty.Register("IsCompactMode", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly IsCompactModeOverrideProperty As DependencyProperty = DependencyProperty.Register("IsCompactModeOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnIsCompactModeOverrideChanged))
-        Public Shared ReadOnly DoShowAllFoldersInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFoldersInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowAllFoldersInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAllFoldersInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAllFoldersInTreeViewOverrideChanged))
-        Public Shared ReadOnly DoShowAvailabilityStatusInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowAvailabilityStatusInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowAvailabilityStatusInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowAvailabilityStatusInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowAvailabilityStatusInTreeViewOverrideChanged))
-        Public Shared ReadOnly DoExpandTreeViewToCurrentFolderProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolder", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoExpandTreeViewToCurrentFolderOverrideProperty As DependencyProperty = DependencyProperty.Register("DoExpandTreeViewToCurrentFolderOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoExpandTreeViewToCurrentFolderOverrideChanged))
-        Public Shared ReadOnly DoShowLibrariesInTreeViewProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeView", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoShowLibrariesInTreeViewOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowLibrariesInTreeViewOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowLibrariesInTreeViewOverrideChanged))
-        Public Shared ReadOnly DoUseWindows11ExplorerMenuProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenu", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoUseWindows11ExplorerMenuOverrideProperty As DependencyProperty = DependencyProperty.Register("DoUseWindows11ExplorerMenuOverride", GetType(Boolean?), GetType(TreeView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoUseWindows11ExplorerMenuOverrideChanged))
-        Public Shared ReadOnly DoShowPinnedAndFrequentItemsPlaceholderProperty As DependencyProperty = DependencyProperty.Register("DoShowPinnedAndFrequentItemsPlaceholder", GetType(Boolean), GetType(TreeView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
         Public Event BeforeFolderOpened As EventHandler(Of FolderEventArgs)
@@ -112,31 +97,6 @@ Namespace Controls
 
             Me.Sections = New ObservableCollection(Of BaseTreeViewSection)()
             AddHandler Me.Sections.CollectionChanged, AddressOf sections_CollectionChanged
-
-            AddHandler Shell.Settings.PropertyChanged,
-                Sub(s As Object, e As PropertyChangedEventArgs)
-                    Select Case e.PropertyName
-                        Case "DoShowEncryptedOrCompressedFilesInColor"
-                            setDoShowEncryptedOrCompressedFilesInColor()
-                        Case "IsCompactMode"
-                            setIsCompactMode()
-                        Case "DoShowAllFoldersInTreeView"
-                            setDoShowAllFoldersInTreeView()
-                        Case "DoShowAvailabilityStatusInTreeView"
-                            setDoShowAvailabilityStatusInTreeView()
-                        Case "DoExpandTreeViewToCurrentFolder"
-                            setDoExpandTreeViewToCurrentFolder()
-                        Case "DoShowLibrariesInTreeView"
-                            setDoShowLibrariesInTreeView()
-                    End Select
-                End Sub
-            setDoShowEncryptedOrCompressedFilesInColor()
-            setIsCompactMode()
-            setDoShowAllFoldersInTreeView()
-            setDoShowAvailabilityStatusInTreeView()
-            setDoExpandTreeViewToCurrentFolder()
-            setDoShowLibrariesInTreeView()
-            setDoUseWindows11ExplorerMenu()
 
             Shell.SubscribeToNotifications(Me)
 
@@ -1060,23 +1020,9 @@ Namespace Controls
             Return If(isVisibleInTree.HasValue, isVisibleInTree.Value, False)
         End Function
 
-        ''' <summary>
-        ''' Gets/sets the current folder.
-        ''' </summary>
-        ''' <returns>The current Folder object</returns>
-        Public Property Folder As Folder
-            Get
-                Return GetValue(FolderProperty)
-            End Get
-            Set(ByVal value As Folder)
-                SetCurrentValue(FolderProperty, value)
-            End Set
-        End Property
-
-        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim tv As TreeView = TryCast(d, TreeView)
-            If Not tv._selectionHelper Is Nothing Then
-                Dim __ = tv.SetSelectedFolder(e.NewValue)
+        Protected Overrides Sub OnFolderChanged(ByVal e As DependencyPropertyChangedEventArgs)
+            If Not _selectionHelper Is Nothing Then
+                Dim __ = Me.SetSelectedFolder(e.NewValue)
             End If
         End Sub
 
@@ -1104,234 +1050,6 @@ Namespace Controls
             End Get
             Protected Set(ByVal value As ObservableCollection(Of Item))
                 SetCurrentValue(RootsProperty, value)
-            End Set
-        End Property
-
-        Public Property DoShowEncryptedOrCompressedFilesInColor As Boolean
-            Get
-                Return GetValue(DoShowEncryptedOrCompressedFilesInColorProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowEncryptedOrCompressedFilesInColor()
-            If Me.DoShowEncryptedOrCompressedFilesInColorOverride.HasValue Then
-                Me.DoShowEncryptedOrCompressedFilesInColor = Me.DoShowEncryptedOrCompressedFilesInColorOverride.Value
-            Else
-                Me.DoShowEncryptedOrCompressedFilesInColor = Shell.Settings.DoShowEncryptedOrCompressedFilesInColor
-            End If
-        End Sub
-
-        Public Property DoShowEncryptedOrCompressedFilesInColorOverride As Boolean?
-            Get
-                Return GetValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim tv As TreeView = d
-            tv.setDoShowEncryptedOrCompressedFilesInColor()
-        End Sub
-
-        Public Property IsCompactMode As Boolean
-            Get
-                Return GetValue(IsCompactModeProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(IsCompactModeProperty, value)
-            End Set
-        End Property
-
-        Private Sub setIsCompactMode()
-            If Me.IsCompactModeOverride.HasValue Then
-                Me.IsCompactMode = Me.IsCompactModeOverride.Value
-            Else
-                Me.IsCompactMode = Shell.Settings.IsCompactMode
-            End If
-        End Sub
-
-        Public Property IsCompactModeOverride As Boolean?
-            Get
-                Return GetValue(IsCompactModeOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(IsCompactModeOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnIsCompactModeOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As TreeView = d
-            bfv.setIsCompactMode()
-        End Sub
-
-        Public Property DoShowAllFoldersInTreeView As Boolean
-            Get
-                Return GetValue(DoShowAllFoldersInTreeViewProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowAllFoldersInTreeViewProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowAllFoldersInTreeView()
-            If Me.DoShowAllFoldersInTreeViewOverride.HasValue Then
-                Me.DoShowAllFoldersInTreeView = Me.DoShowAllFoldersInTreeViewOverride.Value
-            Else
-                Me.DoShowAllFoldersInTreeView = Shell.Settings.DoShowAllFoldersInTreeView
-            End If
-            loadSections()
-        End Sub
-
-        Public Property DoShowAllFoldersInTreeViewOverride As Boolean?
-            Get
-                Return GetValue(DoShowAllFoldersInTreeViewOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowAllFoldersInTreeViewOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowAllFoldersInTreeViewOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As TreeView = d
-            bfv.setDoShowAllFoldersInTreeView()
-        End Sub
-
-        Public Property DoShowAvailabilityStatusInTreeView As Boolean
-            Get
-                Return GetValue(DoShowAvailabilityStatusInTreeViewProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowAvailabilityStatusInTreeViewProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowAvailabilityStatusInTreeView()
-            If Me.DoShowAvailabilityStatusInTreeViewOverride.HasValue Then
-                Me.DoShowAvailabilityStatusInTreeView = Me.DoShowAvailabilityStatusInTreeViewOverride.Value
-            Else
-                Me.DoShowAvailabilityStatusInTreeView = Shell.Settings.DoShowAvailabilityStatusInTreeView
-            End If
-        End Sub
-
-        Public Property DoShowAvailabilityStatusInTreeViewOverride As Boolean?
-            Get
-                Return GetValue(DoShowAvailabilityStatusInTreeViewOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowAvailabilityStatusInTreeViewOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowAvailabilityStatusInTreeViewOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As TreeView = d
-            bfv.setDoShowAvailabilityStatusInTreeView()
-        End Sub
-
-        Public Property DoExpandTreeViewToCurrentFolder As Boolean
-            Get
-                Return GetValue(DoExpandTreeViewToCurrentFolderProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoExpandTreeViewToCurrentFolderProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoExpandTreeViewToCurrentFolder()
-            If Me.DoExpandTreeViewToCurrentFolderOverride.HasValue Then
-                Me.DoExpandTreeViewToCurrentFolder = Me.DoExpandTreeViewToCurrentFolderOverride.Value
-            Else
-                Me.DoExpandTreeViewToCurrentFolder = Shell.Settings.DoExpandTreeViewToCurrentFolder
-            End If
-        End Sub
-
-        Public Property DoExpandTreeViewToCurrentFolderOverride As Boolean?
-            Get
-                Return GetValue(DoExpandTreeViewToCurrentFolderOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoExpandTreeViewToCurrentFolderOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoExpandTreeViewToCurrentFolderOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As TreeView = d
-            bfv.setDoExpandTreeViewToCurrentFolder()
-        End Sub
-
-        Public Property DoShowLibrariesInTreeView As Boolean
-            Get
-                Return GetValue(DoShowLibrariesInTreeViewProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowLibrariesInTreeViewProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoShowLibrariesInTreeView()
-            If Me.DoShowLibrariesInTreeViewOverride.HasValue Then
-                Me.DoShowLibrariesInTreeView = Me.DoShowLibrariesInTreeViewOverride.Value
-            Else
-                Me.DoShowLibrariesInTreeView = Shell.Settings.DoShowLibrariesInTreeView
-            End If
-            loadSections()
-        End Sub
-
-        Public Property DoShowLibrariesInTreeViewOverride As Boolean?
-            Get
-                Return GetValue(DoShowLibrariesInTreeViewOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoShowLibrariesInTreeViewOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoShowLibrariesInTreeViewOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As TreeView = d
-            bfv.setDoShowLibrariesInTreeView()
-        End Sub
-
-        Public Property DoUseWindows11ExplorerMenu As Boolean
-            Get
-                Return GetValue(DoUseWindows11ExplorerMenuProperty)
-            End Get
-            Protected Set(ByVal value As Boolean)
-                SetCurrentValue(DoUseWindows11ExplorerMenuProperty, value)
-            End Set
-        End Property
-
-        Private Sub setDoUseWindows11ExplorerMenu()
-            If Me.DoUseWindows11ExplorerMenuOverride.HasValue Then
-                Me.DoUseWindows11ExplorerMenu = Me.DoUseWindows11ExplorerMenuOverride.Value
-            Else
-                Me.DoUseWindows11ExplorerMenu = Shell.Settings.DoUseWindows11ExplorerMenu
-            End If
-        End Sub
-
-        Public Property DoUseWindows11ExplorerMenuOverride As Boolean?
-            Get
-                Return GetValue(DoUseWindows11ExplorerMenuOverrideProperty)
-            End Get
-            Set(ByVal value As Boolean?)
-                SetCurrentValue(DoUseWindows11ExplorerMenuOverrideProperty, value)
-            End Set
-        End Property
-
-        Public Shared Sub OnDoUseWindows11ExplorerMenuOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim bfv As TreeView = d
-            bfv.setDoUseWindows11ExplorerMenu()
-        End Sub
-
-        Public Property DoShowPinnedAndFrequentItemsPlaceholder As Boolean
-            Get
-                Return GetValue(DoShowPinnedAndFrequentItemsPlaceholderProperty)
-            End Get
-            Set(ByVal value As Boolean)
-                SetCurrentValue(DoShowPinnedAndFrequentItemsPlaceholderProperty, value)
             End Set
         End Property
 

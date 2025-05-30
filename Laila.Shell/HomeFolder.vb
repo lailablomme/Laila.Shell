@@ -262,9 +262,13 @@ Public Class HomeFolder
                 item._hasCustomProperties = True
                 item.CanShowInTree = False
 
-                item._propertiesByKey.Add("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6".ToLower(), target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6"))
+                item._propertiesByKey.Add(System_StorageProviderUIStatusProperty.Key.ToString(),
+                                          target.PropertiesByKey(System_StorageProviderUIStatusProperty.Key))
 
-                Dim modifiedProperty As [Property] = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
+                item._propertiesByKey.Add("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6".ToLower(),
+                                          target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6"))
+
+                Dim modifiedProperty As [Property] = target.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
                 item.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
                 Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(modifiedProperty.Value)

@@ -163,8 +163,10 @@
                                 <RepeatButton Grid.Column="0" x:Name="TabLeftButtonTop" 
                                           Style="{StaticResource lailaShell_TabScrollLeftButtonStyle}" />
 
-                                <ScrollViewer Grid.Column="1" x:Name="TabScrollViewerTop" IsTabStop="False" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" 
-                                                    BorderThickness="0" Padding="0,0,0,0" Margin="0,0,0,-3" >
+                                <ScrollViewer Grid.Column="1" x:Name="TabScrollViewerTop" IsTabStop="False" 
+                                              VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" 
+                                                    BorderThickness="0" Padding="0,0,0,0" Margin="0,0,0,-2"
+                                              UseLayoutRounding="True" SnapsToDevicePixels="True">
                                     <TabPanel x:Name="HeaderPanel" IsItemsHost="true" />
                                 </ScrollViewer>
 
