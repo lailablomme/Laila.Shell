@@ -2,14 +2,12 @@
 Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
-Imports Laila.AutoCompleteTextBox
 Imports Laila.Shell.Helpers
 
 Namespace Controls
     Public Class SearchBox
-        Inherits Control
+        Inherits BaseControl
 
-        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(SearchBox), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnFolderChanged))
         Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(SearchBox), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared Shadows ReadOnly IsTabStopProperty As DependencyProperty = DependencyProperty.Register("IsTabStop", GetType(Boolean), GetType(SearchBox), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
@@ -67,15 +65,6 @@ Namespace Controls
                 End Sub
         End Sub
 
-        Public Property Folder As Folder
-            Get
-                Return GetValue(FolderProperty)
-            End Get
-            Set(value As Folder)
-                SetValue(FolderProperty, value)
-            End Set
-        End Property
-
         Public Property Navigation As Navigation
             Get
                 Return GetValue(NavigationProperty)
@@ -94,13 +83,12 @@ Namespace Controls
             End Set
         End Property
 
-        Shared Sub OnFolderChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim sb As SearchBox = d
-            If Not sb.PART_TextBox Is Nothing Then
+        Protected Overrides Sub OnFolderChanged(ByVal e As DependencyPropertyChangedEventArgs)
+            If Not Me.PART_TextBox Is Nothing Then
                 If Not e.NewValue Is Nothing AndAlso TypeOf e.NewValue Is SearchFolder Then
-                    sb.PART_TextBox.Text = CType(e.NewValue, SearchFolder).Terms
+                    Me.PART_TextBox.Text = CType(e.NewValue, SearchFolder).Terms
                 Else
-                    sb.PART_TextBox.Text = Nothing
+                    Me.PART_TextBox.Text = Nothing
                 End If
             End If
         End Sub

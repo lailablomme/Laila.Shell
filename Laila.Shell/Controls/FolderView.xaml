@@ -7,7 +7,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:FolderView}">
-                    <Grid x:Name="PART_Grid" />
+                    <Grid x:Name="PART_Grid" Background="{Binding Colors.Background, RelativeSource={RelativeSource Mode=Self}}" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

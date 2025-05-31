@@ -272,39 +272,6 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <Geometry x:Key="ChevronGroupByHome">M 0,0 L 5,6 L 10,0</Geometry>
-    <Style TargetType="ToggleButton" x:Key="lailaShell_GroupByExpanderToggleButtonHomeStyle">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="Foreground" Value="Black" />
-        <Setter Property="Height" Value="35" />
-        <Setter Property="Padding" Value="0,0,0,0" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" Margin="0,0,4,0" HorizontalAlignment="Left"
-                                BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="5" 
-                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
-                        <StackPanel Orientation="Horizontal">
-                            <Path x:Name="PART_Chevron" Data="{StaticResource ChevronGroupByHome}" StrokeThickness="1" Margin="0" 
-                              Fill="Transparent" Stroke="Black" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="7"/>
-                            <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsChecked" Value="False">
-                            <Setter TargetName="PART_Chevron" Property="RenderTransform">
-                                <Setter.Value>
-                                    <RotateTransform Angle="-90"/>
-                                </Setter.Value>
-                            </Setter>
-                            <Setter TargetName="PART_Chevron" Property="Margin" Value="2,17,-2,0" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
     <Style TargetType="Expander" x:Key="lailaShell_GroupByExpanderStyle">
         <Setter Property="Margin" Value="0,0,-5,0" />
         <Setter Property="Foreground" Value="Black" />
@@ -327,98 +294,6 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsExpanded" Value="True">
                             <Setter TargetName="ExpanderContent" Property="Visibility" Value="Visible"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-    <Style TargetType="controls:SlidingExpander" x:Key="lailaShell_GroupByExpanderHomeStyle">
-        <Setter Property="Foreground" Value="Black" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="ToggleButtonStyle" Value="{StaticResource lailaShell_GroupByExpanderToggleButtonHomeStyle}" />
-        <Setter Property="Padding" Value="12,0,12,0" />
-        <Setter Property="Margin" Value="20,1,0,0" />
-        <Setter Property="DoSelectAllBehavior" Value="False" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="controls:SlidingExpander">
-                    <ControlTemplate.Resources>
-                        <converters:SubstractionConverter x:Key="substractionConverter" />
-                    </ControlTemplate.Resources>
-                    <Grid x:Name="PART_Grid" HorizontalAlignment="Stretch">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition x:Name="PART_ContentRow" Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" HorizontalAlignment="Left" CornerRadius="5"
-                                BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" 
-                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
-                            <DockPanel>
-                                <ToggleButton DockPanel.Dock="Left" x:Name="PART_ToggleButton" IsChecked="True" Focusable="False" VerticalAlignment="Center"
-                                              Style="{Binding ToggleButtonStyle, RelativeSource={RelativeSource TemplatedParent}}" Margin="4,0,0,0"
-                                              Visibility="{TemplateBinding ToggleButtonVisibility}">
-                                </ToggleButton>
-                                <Button x:Name="PART_TitleLabel" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Left" Margin="4,0,4,1">
-                                    <Button.FocusVisualStyle>
-                                        <Style>
-                                            <Setter Property="Control.Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate>
-                                                        <Border BorderBrush="Black" BorderThickness="2" Background="Transparent" CornerRadius="5" Margin="-43,-2,-19,-2" SnapsToDevicePixels="true"/>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.FocusVisualStyle>
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
-                                                                BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True" UseLayoutRounding="True">
-                                                            <ContentPresenter x:Name="Content" ContentSource="Content" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </Button.Style>
-                                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center" x:Name="PART_Title" HorizontalAlignment="Stretch" />
-                                </Button>
-                            </DockPanel>
-                        </Border>
-                        <Grid Grid.Row="1" x:Name="PART_Content" Tag="1.0" VerticalAlignment="Bottom" ClipToBounds="True" HorizontalAlignment="Stretch">
-                            <ScrollViewer x:Name="PART_ContentContainer" IsTabStop="False" behaviors:ScrollViewerFix.IsEnabled="True" 
-                                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden" HorizontalAlignment="Stretch">
-                                <ContentPresenter VerticalAlignment="Bottom" x:Name="PART_ContentPresenter" ContentSource="Content" />
-                            </ScrollViewer>
-                        </Grid>
-                    </Grid>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="Orientation" Value="Vertical">
-                            <Trigger.Setters>
-                                <Setter Property="MaxHeight" TargetName="PART_ContentContainer">
-                                    <Setter.Value>
-                                        <MultiBinding Converter="{StaticResource substractionConverter}">
-                                            <Binding Path="ViewportHeight" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type ScrollViewer}}" />
-                                            <Binding Path="ActualHeight" ElementName="PART_ToggleButton" />
-                                        </MultiBinding>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger.Setters>
-                        </Trigger>
-                        <Trigger Property="Orientation" Value="Horizontal">
-                            <Trigger.Setters>
-                                <Setter Property="MaxWidth" TargetName="PART_ContentContainer" 
-                                        Value="{Binding ViewportWidth, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type ScrollViewer}}}" />
-                            </Trigger.Setters>
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" SourceName="Bd" Value="True">
-                            <Setter Property="Background" TargetName="Bd" Value="#ececec"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="#ececec"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

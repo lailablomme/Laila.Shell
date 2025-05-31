@@ -701,6 +701,7 @@ Namespace Controls
                     ' Or just deactivate focus
                     _thread.Add(
                         Sub()
+                            Functions.AllowSetForegroundWindow(Functions.ASFW_ANY)
                             CType(id.Item3, Action).Invoke()
                         End Sub)
                 End If

@@ -84,10 +84,11 @@ Namespace Helpers
             Return If(lp Is Nothing, vp, lp)
         End Function
 
-        Public Shared Function GetParentOfType(Of T As DependencyObject)(child As DependencyObject) As T
+        Public Shared Function GetParentOfType(Of T As DependencyObject)(child As DependencyObject, Optional root As DependencyObject = Nothing) As T
             Dim parent = GetParent(child)
+            If Not root Is Nothing AndAlso root.Equals(parent) Then parent = Nothing
             If Not parent Is Nothing AndAlso Not TypeOf parent Is T Then
-                Return GetParentOfType(Of T)(parent)
+                Return GetParentOfType(Of T)(parent, root)
             End If
             Return parent
         End Function

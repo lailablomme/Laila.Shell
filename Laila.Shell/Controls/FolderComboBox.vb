@@ -1,11 +1,7 @@
-﻿Imports System.Collections.ObjectModel
-Imports System.Windows
+﻿Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Input
-Imports Laila.AutoCompleteTextBox
-Imports Laila.Shell.Controls.Parts
-Imports Laila.Shell.Helpers
 
 Namespace Controls
     Public Class FolderComboBox

@@ -309,6 +309,11 @@ Namespace Controls
                 .Path = New PropertyPath(If(column.CanonicalName = "System.ItemNameDisplay", "DisplayName", String.Format("PropertiesByKeyAsText[{0}].Text", column.PROPERTYKEY.ToString()))),
                 .Mode = BindingMode.OneWay
             })
+            textBlockFactory.SetValue(TextBlock.ForegroundProperty, New Binding() With {
+                .Path = New PropertyPath("Colors.Foreground"),
+                .Source = Me,
+                .Mode = BindingMode.OneWay
+            })
             Dim textBlockStyle As Style = New Style(GetType(TextBlock))
             textBlockStyle.Setters.Add(New Setter(TextBlock.ForegroundProperty, Brushes.Black))
             textBlockStyle.Setters.Add(New Setter(TextBlock.OpacityProperty, Convert.ToDouble(1)))

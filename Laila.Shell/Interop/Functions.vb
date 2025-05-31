@@ -14,6 +14,11 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Interop
     Public Class Functions
+        Public Const ASFW_ANY As UInteger = &HFFFFFFFFUI
+
+        <DllImport("user32.dll", SetLastError:=True)>
+        Public Shared Function AllowSetForegroundWindow(dwProcessId As UInteger) As Boolean
+        End Function
         <DllImport("dwmapi.dll", EntryPoint:="DwmGetColorizationColor")>
         Public Shared Sub DwmGetColorizationColor(ByRef pcrColorization As UInteger, ByRef pfOpaqueBlend As Boolean)
         End Sub

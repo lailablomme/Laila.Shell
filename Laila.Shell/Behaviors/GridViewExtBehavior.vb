@@ -259,11 +259,11 @@ Namespace Behaviors
                    headerRowScrollViewer.Content = New AdornerDecorator() With {.Child = headerRowGrid}
                    _headerRowPresenter.SetValue(Grid.ColumnProperty, 1)
                    headerRowGrid.Children.Add(_headerRowPresenter)
-                   Dim headerRowMarginPresenter As GridViewHeaderRowPresenter = New GridViewHeaderRowPresenter()
-                   headerRowMarginPresenter.SetValue(Grid.ColumnProperty, 0)
-                   headerRowMarginPresenter.SetValue(GridViewHeaderRowPresenter.MarginProperty, New Thickness(0, 0, -5, 0))
-                   headerRowMarginPresenter.SetValue(Panel.ZIndexProperty, -1)
-                   headerRowGrid.Children.Add(headerRowMarginPresenter)
+                   'Dim headerRowMarginPresenter As GridViewHeaderRowPresenter = New GridViewHeaderRowPresenter()
+                   'headerRowMarginPresenter.SetValue(Grid.ColumnProperty, 0)
+                   'headerRowMarginPresenter.SetValue(GridViewHeaderRowPresenter.MarginProperty, New Thickness(0, 0, -5, 0))
+                   'headerRowMarginPresenter.SetValue(Panel.ZIndexProperty, -1)
+                   'headerRowGrid.Children.Add(headerRowMarginPresenter)
 
                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
                    _isLoaded = True

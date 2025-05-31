@@ -4,7 +4,6 @@
                     xmlns:parts="clr-namespace:Laila.Shell.Controls.Parts"
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers"
                     xmlns:balloon="clr-namespace:Laila.BalloonTip;assembly=Laila.BalloonTip"
-                    xmlns:autocomplete="clr-namespace:Laila.AutoCompleteTextBox;assembly=Laila.AutoCompleteTextBox"
                     xmlns:shell="clr-namespace:Laila.Shell">
 
     <parts:AddressBarSuggestionProvider x:Key="suggestionProvider" />
@@ -36,7 +35,7 @@
         </Setter>
     </Style>
 
-    <Style TargetType="{x:Type local:AddressBar}" BasedOn="{StaticResource {x:Type autocomplete:AutoCompleteTextBox}}">
+    <Style TargetType="{x:Type local:AddressBar}">
         <Setter Property="Provider" Value="{StaticResource suggestionProvider}" />
         <Setter Property="DisplayMember" Value="AddressBarDisplayPath" />
         <Setter Property="SelectedValuePath" Value="FullPath" />

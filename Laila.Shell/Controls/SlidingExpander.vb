@@ -19,6 +19,7 @@ Namespace Controls
         Public Shared ReadOnly DoSelectAllBehaviorProperty As DependencyProperty = DependencyProperty.Register("DoSelectAllBehavior", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ExpandCollapseAllStateProperty As DependencyProperty = DependencyProperty.Register("ExpandCollapseAllState", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf ExpandCollapseAllStateChanged))
         Public Shared ReadOnly CanExpandCollapseProperty As DependencyProperty = DependencyProperty.Register("CanExpandCollapse", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MouseOverBackgroundProperty As DependencyProperty = DependencyProperty.Register("MouseOverBackground", GetType(Brush), GetType(SlidingExpander), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(SlidingExpander), New FrameworkPropertyMetadata(GetType(SlidingExpander)))
@@ -218,6 +219,15 @@ Namespace Controls
             End Get
             Set(value As Boolean)
                 SetValue(CanExpandCollapseProperty, value)
+            End Set
+        End Property
+
+        Public Property MouseOverBackground As Brush
+            Get
+                Return GetValue(MouseOverBackgroundProperty)
+            End Get
+            Set(ByVal value As Brush)
+                SetCurrentValue(MouseOverBackgroundProperty, value)
             End Set
         End Property
 

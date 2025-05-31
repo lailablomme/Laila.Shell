@@ -36,16 +36,18 @@
     </Style>
         
     <Style TargetType="{x:Type local:SearchBox}">
-        <Setter Property="Background" Value="White" />
-        <Setter Property="Foreground" Value="Black" />
         <Setter Property="IsTabStop" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:SearchBox}">
-                    <Border BorderBrush="White" BorderThickness="1" CornerRadius="5" x:Name="PART_Border">
-                        <Border BorderBrush="White" BorderThickness="2" CornerRadius="5" Background="{TemplateBinding Background}">
-                            <Border Margin="0,-3,0,-3" BorderBrush="Transparent" BorderThickness="0,0,0,1" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore1">
-                                <Border Padding="0,3,0,3" BorderBrush="Transparent" BorderThickness="0,0,0,1" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore2">
+                    <Border BorderBrush="{Binding Tag.Colors.Background, ElementName=PART_Grid}" BorderThickness="1" CornerRadius="5" 
+                            Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}" x:Name="PART_Border">
+                        <Border BorderBrush="{Binding Tag.Colors.Background, ElementName=PART_Grid}" BorderThickness="2" CornerRadius="5" 
+                                Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}">
+                            <Border Margin="0,-3,0,-3" BorderBrush="Transparent" BorderThickness="0,0,0,1" 
+                                    Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore1">
+                                <Border Padding="0,3,0,3" BorderBrush="Transparent" BorderThickness="0,0,0,1" 
+                                        Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore2">
                                     <Grid x:Name="PART_Grid" Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:SearchBox}}}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -54,10 +56,11 @@
                                         </Grid.ColumnDefinitions>
 
                                         <TextBox Grid.Column="0" x:Name="PART_TextBox" HorizontalAlignment="Stretch" VerticalAlignment="Center" 
-                                             BorderThickness="0" Background="Transparent" Padding="0,1,0,1" 
-                                             Foreground="{TemplateBinding Foreground}" Style="{x:Null}"  
-                                             IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}"
-                                             MaxLength="260" />
+                                                 BorderThickness="0" Background="Transparent" Padding="0,1,0,1" 
+                                                 Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" 
+                                                 CaretBrush="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" Style="{x:Null}"  
+                                                 IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}"
+                                                 MaxLength="260" />
                                         <TextBlock Grid.Column="0" x:Name="PART_Watermark1" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"
                                                    VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" Foreground="Gray" Margin="3,0">
                                             <TextBlock.Style>
@@ -122,8 +125,8 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsFocused" SourceName="PART_TextBox" Value="True">
-                            <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore1" Value="{Binding Tag.Accent, ElementName=PART_Grid}" />
-                            <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore2" Value="{Binding Tag.Accent, ElementName=PART_Grid}" />
+                            <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore1" Value="{Binding Tag.Colors.Accent, ElementName=PART_Grid}" />
+                            <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore2" Value="{Binding Tag.Colors.Accent, ElementName=PART_Grid}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5" TargetName="PART_Border" />
