@@ -157,7 +157,7 @@ Namespace Controls
             'Dim vwp As VirtualizingPanel = UIHelper.FindVisualChildren(Of VirtualizingPanel)(Me.PART_ContentContainer).ToList()(0)
             Dim group As CollectionViewGroup = Me.DataContext
             Dim listBox As ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
-            If Me.DoSelectAllBehavior AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
+            If Not listBox Is Nothing AndAlso Me.DoSelectAllBehavior AndAlso Not Keyboard.Modifiers.HasFlag(ModifierKeys.Control) Then
                 If Not Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then listBox.SelectedItems.Clear()
                 For Each item In group.Items
                     If Not listBox.SelectedItems.Contains(item) Then

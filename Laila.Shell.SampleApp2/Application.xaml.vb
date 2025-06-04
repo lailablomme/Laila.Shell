@@ -16,6 +16,8 @@ Class Application
             New FrameworkPropertyMetadata(XmlLanguage.GetLanguage(culture.IetfLanguageTag)))
         FrameworkElement.FlowDirectionProperty.OverrideMetadata(GetType(FrameworkElement),
             New FrameworkPropertyMetadata(direction))
+
+        Debug.WriteLine("Log: " & getLogFileName())
     End Sub
 
     Private Sub Application_Startup(sender As Object, e As StartupEventArgs)

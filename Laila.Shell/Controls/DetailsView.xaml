@@ -140,7 +140,7 @@
                             </ListView.ItemContainerStyle>
                             <ListView.Resources>
                                 <Style x:Key="GridViewColumnHeaderGripper" TargetType="Thumb">
-                                    <Setter Property="Background" Value="Gray" />
+                                    <Setter Property="Background" Value="#AAAAAA" />
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="{x:Type Thumb}">
@@ -176,19 +176,19 @@
                                                 <Grid>
                                                     <Rectangle x:Name="HeaderRect" Fill="Transparent" IsHitTestVisible="True" />
                                                     <Border x:Name="HeaderBorder" Padding="{TemplateBinding Padding}" 
-                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                                        HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
                                                         <ContentControl x:Name="HeaderContent" Focusable="False"
-                                                  Margin="0 0 0 1"
-                                                  Content="{TemplateBinding Content}"
-                                                  ContentStringFormat="{TemplateBinding ContentStringFormat}"
-                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                  ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
-                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                              Margin="0 0 0 1"
+                                                              Content="{TemplateBinding Content}"
+                                                              ContentStringFormat="{TemplateBinding ContentStringFormat}"
+                                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                              ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
+                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                                     </Border>
                                                     <Thumb x:Name="PART_HeaderGripper"
-                               Margin="0 0 -9 0"
-                               HorizontalAlignment="Right"
-                               Style="{StaticResource GridViewColumnHeaderGripper}" />
+                                                       Margin="0 0 -9 0"
+                                                       HorizontalAlignment="Right"
+                                                       Style="{StaticResource GridViewColumnHeaderGripper}" />
                                                 </Grid>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">

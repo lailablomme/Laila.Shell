@@ -460,7 +460,7 @@ Namespace Behaviors
             UIHelper.OnUIThreadAsync(
                 Sub()
                     Dim headers As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
-                    For Each header In headers.Where(Function(h) h.Column Is Nothing).ToList()
+                    For Each header In headers.Where(Function(h) h?.Column Is Nothing).ToList()
                         headers.Remove(header)
                     Next
 
