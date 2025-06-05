@@ -136,8 +136,11 @@ Public Class [Property]
                             .PropertyKey = pkey,
                             .CanonicalName = canonicalName
                         }
-                        _cachedDescriptionsByCanonicalName.Add(canonicalName, result)
-                        _cachedDescriptionsByPropertyKey.Add(pkey.ToString().ToLower(), result)
+                        Try
+                            _cachedDescriptionsByCanonicalName.Add(canonicalName, result)
+                            _cachedDescriptionsByPropertyKey.Add(pkey.ToString().ToLower(), result)
+                        Catch ex As Exception
+                        End Try
                     End If
                     _cachedDescriptionsLock.Release()
                 End If
@@ -168,8 +171,11 @@ Public Class [Property]
                             .PropertyKey = pkey,
                             .CanonicalName = canonicalName
                         }
-                        _cachedDescriptionsByCanonicalName.Add(canonicalName, result)
-                        _cachedDescriptionsByPropertyKey.Add(pkey.ToString().ToLower(), result)
+                        Try
+                            _cachedDescriptionsByCanonicalName.Add(canonicalName, result)
+                            _cachedDescriptionsByPropertyKey.Add(pkey.ToString().ToLower(), result)
+                        Catch ex As Exception
+                        End Try
                     End If
                     _cachedDescriptionsLock.Release()
                 End If

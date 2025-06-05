@@ -22,9 +22,9 @@ Namespace Helpers
                             _id = _hist.Keys.Max() + 1
                         Else
                             _id = 0
-                            End If
-                            _hist.Add(_id, cursor)
-                            Mouse.OverrideCursor = cursor
+                        End If
+                        _hist(_id) = cursor
+                        Mouse.OverrideCursor = cursor
                     End Sub, DispatcherPriority.Send)
             End If
         End Sub

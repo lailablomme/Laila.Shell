@@ -290,7 +290,7 @@
                                                             <ColumnDefinition Width="*" />
                                                         </Grid.ColumnDefinitions>
 
-                                                        <Image VerticalAlignment="Top" Source="pack://application:,,,/Laila.AutoCompleteTextBox;component/Images/ERROR24.png" Width="24" Height="24" />
+                                                        <Image VerticalAlignment="Top" Source="pack://application:,,,/Laila.Shell;component/Images/error32.png" Width="24" Height="24" />
                                                         <TextBlock Grid.Column="2" Text="{Binding ErrorMessage, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}" MaxWidth="650" TextWrapping="Wrap" />
                                                     </Grid>
                                                 </DataTemplate>

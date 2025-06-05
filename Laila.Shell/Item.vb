@@ -51,7 +51,7 @@ Public Class Item
     Private _preloadedAttributesMask As SFGAO = SFGAO.CANCOPY Or SFGAO.CANMOVE Or SFGAO.CANRENAME Or SFGAO.CANDELETE
     Protected _propertiesByCanonicalName As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
     Friend _propertiesByKey As Dictionary(Of String, [Property]) = New Dictionary(Of String, [Property])
-    Private _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+    Friend _propertiesLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Friend _shellItem2 As IShellItem2
     Protected _shellItemLockMakeIShellFolderOnCurrentThread As Object = New Object()
     Friend _shellItemLockDisplayName As Object = New Object()
@@ -1312,7 +1312,12 @@ Public Class Item
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByKey.ContainsKey(propertyKey) Then
-                            _propertiesByKey.Add(key.ToString(), [property])
+                            Try
+                                _propertiesByKey.Add(key.ToString(), [property])
+                            Catch ex As Exception
+                                [property].Dispose()
+                                [property] = _propertiesByKey(propertyKey.ToString())
+                            End Try
                         Else
                             [property].Dispose()
                             [property] = _propertiesByKey(key.ToString())
@@ -1345,7 +1350,12 @@ Public Class Item
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByKey.ContainsKey(propertyKey.ToString()) Then
-                            _propertiesByKey.Add(propertyKey.ToString(), [property])
+                            Try
+                                _propertiesByKey.Add(propertyKey.ToString(), [property])
+                            Catch ex As Exception
+                                [property].Dispose()
+                                [property] = _propertiesByKey(propertyKey.ToString())
+                            End Try
                         Else
                             [property].Dispose()
                             [property] = _propertiesByKey(propertyKey.ToString())
@@ -1378,7 +1388,12 @@ Public Class Item
                     _propertiesLock.Wait()
                     If Not [property] Is Nothing Then
                         If Not _propertiesByCanonicalName.ContainsKey(canonicalName) Then
-                            _propertiesByCanonicalName.Add(canonicalName, [property])
+                            Try
+                                _propertiesByCanonicalName.Add(canonicalName, [property])
+                            Catch ex As Exception
+                                [property].Dispose()
+                                [property] = _propertiesByCanonicalName(canonicalName)
+                            End Try
                         Else
                             [property].Dispose()
                             [property] = _propertiesByCanonicalName(canonicalName)

@@ -15,10 +15,11 @@ Imports Laila.Shell.Interop.Items
 Namespace Helpers
     Public Class ImageHelper
         Private Shared _iconsLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
+        Private Shared _icons2Lock As SemaphoreSlim = New SemaphoreSlim(1, 1)
         Private Shared _icons As Dictionary(Of String, BitmapSource) = New Dictionary(Of String, BitmapSource)()
         Private Shared _icons2 As Dictionary(Of String, BitmapSource) = New Dictionary(Of String, BitmapSource)()
         Private Shared _overlayIconIndexes As Dictionary(Of Byte, Integer) = New Dictionary(Of Byte, Integer)()
-        Private Shared _overlayIconLock As Object = New Object()
+        Private Shared _overlayIconLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
         Private Shared _imageListSmall As IImageList
         Private Shared _imageListLarge As IImageList
         Private Shared _imageListExtraLarge As IImageList
@@ -114,12 +115,12 @@ Namespace Helpers
                 Dim index As Integer
                 UIHelper.OnUIThread(
                     Sub()
-                        SyncLock _overlayIconLock
-                            If Not _overlayIconIndexes.ContainsKey(overlayIconIndex) Then
-                                _imageListSmall.GetOverlayImage(overlayIconIndex, index)
-                                _overlayIconIndexes.Add(overlayIconIndex, index)
-                            End If
-                        End SyncLock
+                        _overlayIconLock.Wait()
+                        If Not _overlayIconIndexes.ContainsKey(overlayIconIndex) Then
+                            _imageListSmall.GetOverlayImage(overlayIconIndex, index)
+                            _overlayIconIndexes.Add(overlayIconIndex, index)
+                        End If
+                        _overlayIconLock.Release()
                     End Sub)
             End If
 
@@ -149,11 +150,14 @@ Namespace Helpers
                                 hBitmap = bitmap.GetHbitmap()
                                 Dim image As BitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions())
                                 image.Freeze()
-                                SyncLock _overlayIconLock
+                                _icons2Lock.Wait()
+                                Try
                                     If Not _icons2.ContainsKey(String.Format("{0}_{1}", index, size)) Then
                                         _icons2.Add(String.Format("{0}_{1}", index, size), image)
                                     End If
-                                End SyncLock
+                                Finally
+                                    _icons2Lock.Release()
+                                End Try
                             Finally
                                 If Not IntPtr.Zero.Equals(hBitmap) Then
                                     Functions.DeleteObject(hBitmap)

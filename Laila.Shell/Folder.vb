@@ -843,7 +843,7 @@ Public Class Folder
                     prevEnumerationCancellationTokenSource.Cancel()
                 End If
             End If
-            Return _items.ToList()
+            Return _items?.ToList()
         Finally
             If _enumerationLock.CurrentCount = 0 Then
                 Me.IsLoading = False
@@ -871,7 +871,7 @@ Public Class Folder
                         originalCancellationTokenSource = _enumerationCancellationTokenSource
                         enumerateItems(True, _enumerationCancellationTokenSource.Token, threadId, doRefreshAllExistingItems, doRecursive)
                     End If
-                    tcs.SetResult(_items.ToList())
+                    tcs.SetResult(_items?.ToList())
                 Catch ex As Exception
                     tcs.SetException(ex)
                 Finally
@@ -902,32 +902,36 @@ Public Class Folder
 
     Protected Sub enumerateItems(isAsync As Boolean, cancellationToken As CancellationToken, threadId As Integer?,
                                  Optional doRefreshAllExistingItems As Boolean = True, Optional doRecursive As Boolean = False)
-        Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
-        Shell.BlockDisposer(True)
-        Me.IsEmpty = False
+        Try
+            Debug.WriteLine("Start loading " & Me.DisplayName & " (" & Me.FullPath & ")")
+            Shell.BlockDisposer(True)
+            Me.IsEmpty = False
 
-        Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS
-        If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
-        If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
-        If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
+            Dim flags As UInt32 = SHCONTF.FOLDERS Or SHCONTF.NONFOLDERS
+            If Shell.Settings.DoShowHiddenFilesAndFolders Then flags = flags Or SHCONTF.INCLUDEHIDDEN
+            If Shell.Settings.DoShowProtectedOperatingSystemFiles Then flags = flags Or SHCONTF.INCLUDESUPERHIDDEN
+            If isAsync Then flags = flags Or SHCONTF.ENABLE_ASYNC
 
-        enumerateItems(flags, cancellationToken, threadId, doRefreshAllExistingItems, doRecursive)
+            enumerateItems(flags, cancellationToken, threadId, doRefreshAllExistingItems, doRecursive)
 
-        Dim poolSize As Integer = Math.Min(100, Math.Max(1, _notificationSubscribers.Count / 1000))
-        If _notificationThreadPool Is Nothing Then
-            _notificationThreadPool = New Helpers.ThreadPool(poolSize)
-        ElseIf poolSize > _notificationThreadPool.Size Then
-            _notificationThreadPool.Redimension(poolSize)
-        End If
+            Dim poolSize As Integer = Math.Min(100, Math.Max(1, _notificationSubscribers.Count / 1000))
+            If _notificationThreadPool Is Nothing Then
+                _notificationThreadPool = New Helpers.ThreadPool(poolSize)
+            ElseIf poolSize > _notificationThreadPool.Size Then
+                _notificationThreadPool.Redimension(poolSize)
+            End If
 
-        If Not cancellationToken.IsCancellationRequested Then
-            _wasActivity = False
-            Me.IsEmpty = _items.Count = 0
-            Debug.WriteLine("End loading " & Me.DisplayName)
-        Else
-            Debug.WriteLine("Cancelled loading " & Me.DisplayName)
-        End If
-        Shell.BlockDisposer(False)
+            If Not cancellationToken.IsCancellationRequested Then
+                _wasActivity = False
+                Me.IsEmpty = _items.Count = 0
+                Debug.WriteLine("End loading " & Me.DisplayName)
+            Else
+                Debug.WriteLine("Cancelled loading " & Me.DisplayName)
+            End If
+            Shell.BlockDisposer(False)
+        Catch ex As Exception
+            Me.EnumerationException = ex
+        End Try
     End Sub
 
     Protected Sub enumerateItems(flags As UInt32, cancellationToken As CancellationToken, threadId As Integer?,
@@ -1660,7 +1664,7 @@ Public Class Folder
                         End Sub)
                     Next
 
-                    'Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
+                    Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
                 End If
             End If
         End If

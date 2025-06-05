@@ -151,6 +151,7 @@ Namespace Controls
                                 Debug.WriteLine("RenameItem returned " & h)
                                 h = fileOperation.PerformOperations()
                                 Debug.WriteLine("PerformOperations returned " & h)
+                                listBoxItem.Focus()
                             Finally
                                 If Not fileOperation Is Nothing Then
                                     Marshal.ReleaseComObject(fileOperation)

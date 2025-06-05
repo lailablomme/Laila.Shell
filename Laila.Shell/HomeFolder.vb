@@ -74,7 +74,7 @@ Public Class HomeFolder
 
     Public Overrides ReadOnly Property FullPath As String
         Get
-            Return "::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}"
+            Return "::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}HOME"
         End Get
     End Property
 

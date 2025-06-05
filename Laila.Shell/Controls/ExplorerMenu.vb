@@ -68,12 +68,11 @@ Namespace Controls
                     Try
                         If Not items Is Nothing AndAlso items.Count > 0 Then
                             pidls = items.Select(Function(i) i.Pidl.Clone()).ToList()
-                            Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), _arrayCloudItems)
-                            Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), _arrayFileExplorerItems)
                         Else
                             pidls = {folder}.Select(Function(i) i.Pidl.Clone()).ToList()
-                            Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), _arrayCloudItems)
                         End If
+                        Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), _arrayCloudItems)
+                        Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), _arrayFileExplorerItems)
                     Finally
                         If Not pidls Is Nothing Then
                             For Each pidl In pidls
@@ -142,10 +141,16 @@ Namespace Controls
                     End If
                     addFromContextMenu("MakeAvailableOffline", "cloud_download")
                     addFromContextMenu("MakeAvailableOnline", "cloud")
-                    addCloudMenuItem(explorerMenuHelperType, explorerMenuHelper, folder, items, _arrayCloudItems, resolveMsResourceFromPackage)
+                    addCloudMenuItem(explorerMenuHelperType, explorerMenuHelper,
+                                     If(items Is Nothing OrElse items.Count = 0, folder.Parent, folder),
+                                     If(items Is Nothing OrElse items.Count = 0, {folder}, items),
+                                     _arrayCloudItems, resolveMsResourceFromPackage)
 
                     ' add file explorer context menu items
-                    addFileExplorerContextMenuItems(explorerMenuHelperType, explorerMenuHelper, folder, items, _arrayFileExplorerItems, resolveMsResourceFromPackage)
+                    addFileExplorerContextMenuItems(explorerMenuHelperType, explorerMenuHelper,
+                                                    If(items Is Nothing OrElse items.Count = 0, folder.Parent, folder),
+                                                    If(items Is Nothing OrElse items.Count = 0, {folder}, items),
+                                                    _arrayFileExplorerItems, resolveMsResourceFromPackage)
 
                     If isMount AndAlso _menuItems.Count > 1 Then
                         _menuItems.Insert(1, New MenuItemData() With {.Header = "-----"})

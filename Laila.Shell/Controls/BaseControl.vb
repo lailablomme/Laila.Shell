@@ -47,10 +47,12 @@ Namespace Controls
             DefaultStyleKeyProperty.OverrideMetadata(GetType(BaseControl), New FrameworkPropertyMetadata(GetType(BaseControl)))
         End Sub
 
+        Public Sub New()
+            Me.Colors = New StandardColors()
+        End Sub
+
         Public Overrides Sub OnApplyTemplate()
             MyBase.OnApplyTemplate()
-
-            If Me.Colors Is Nothing Then Me.Colors = New StandardColors()
 
             AddHandler Shell.Settings.PropertyChanged,
                 Sub(s As Object, e As PropertyChangedEventArgs)

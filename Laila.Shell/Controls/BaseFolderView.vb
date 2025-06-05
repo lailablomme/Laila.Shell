@@ -487,6 +487,8 @@ Namespace Controls
         End Sub
 
         Protected Overridable Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
+            If Me.PART_ListBox Is Nothing OrElse Me.PART_ScrollViewer Is Nothing Then Return
+
             If TypeOf e.OriginalSource Is ListBoxItem AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
                 Dim item As ListBoxItem = e.OriginalSource
                 If Not item Is Nothing AndAlso UIHelper.IsAncestor(PART_ScrollViewer, item) Then

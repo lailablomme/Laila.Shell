@@ -4,6 +4,17 @@ Imports System.Windows.Markup
 
 Class Application
     Public Sub New()
+        AddHandler Me.DispatcherUnhandledException, AddressOf Application_DispatcherUnhandledException
+        AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException
+        AddHandler AppDomain.CurrentDomain.ProcessExit, Sub() logException(New Exception("Process is exiting."))
+        AddHandler AppDomain.CurrentDomain.DomainUnload, Sub() logException(New Exception("AppDomain is unloading."))
+        AddHandler TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException
+        'AddHandler AppDomain.CurrentDomain.FirstChanceException,
+        '    Sub(sender, e)
+        '        ' Very verbose — useful for diagnostics only
+        '        IO.File.AppendAllLines(getLogFileName(), {$"FirstChance: {e.Exception.GetType().Name} - {e.Exception.Message}" & Environment.NewLine & e.Exception.StackTrace})
+        '    End Sub
+
         Dim culture As CultureInfo = CultureInfo.InstalledUICulture
         CultureInfo.DefaultThreadCurrentUICulture = culture
         CultureInfo.DefaultThreadCurrentCulture = culture
@@ -21,9 +32,6 @@ Class Application
     End Sub
 
     Private Sub Application_Startup(sender As Object, e As StartupEventArgs)
-        AddHandler Me.DispatcherUnhandledException, AddressOf Application_DispatcherUnhandledException
-        AddHandler AppDomain.CurrentDomain.UnhandledException, AddressOf OnUnhandledException
-        AddHandler TaskScheduler.UnobservedTaskException, AddressOf OnUnobservedTaskException
     End Sub
 
     Private Sub OnUnhandledException(sender As Object, e As UnhandledExceptionEventArgs)
