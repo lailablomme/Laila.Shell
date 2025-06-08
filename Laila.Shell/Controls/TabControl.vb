@@ -7,6 +7,7 @@ Imports System.Windows.Input
 Imports Laila.Shell.Controls.Parts
 Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop.DragDrop
+Imports Laila.Shell.Themes
 
 Namespace Controls
     <TemplatePart(Name:="PART_ItemsHolder", Type:=GetType(Panel))>
@@ -15,6 +16,7 @@ Namespace Controls
         Implements IDisposable
 
         Public Shared ReadOnly ModelTypeProperty As DependencyProperty = DependencyProperty.Register("ModelType", GetType(Type), GetType(TabControl), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ColorsProperty As DependencyProperty = DependencyProperty.Register("Colors", GetType(StandardColors), GetType(TabControl), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private PART_ItemsHolder As Panel
         Private PART_LeftButton As RepeatButton
@@ -35,6 +37,8 @@ Namespace Controls
         End Sub
 
         Public Sub New()
+            Me.Colors = New StandardColors()
+
             Shell.AddToControlCache(Me)
 
             Me.ItemsSource = _items
@@ -386,6 +390,15 @@ Namespace Controls
             End Get
             Set(value As Type)
                 SetValue(ModelTypeProperty, value)
+            End Set
+        End Property
+
+        Public Property Colors As StandardColors
+            Get
+                Return GetValue(ColorsProperty)
+            End Get
+            Protected Set(ByVal value As StandardColors)
+                SetCurrentValue(ColorsProperty, value)
             End Set
         End Property
 

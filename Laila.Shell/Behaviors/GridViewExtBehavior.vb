@@ -492,10 +492,10 @@ Namespace Behaviors
                 If Not currentSortedColumnHeader Is Nothing Then
                     If Me.GetCurrentSortDirection() = ListSortDirection.Ascending Then
                         GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, SORT_GLYPH_ID, 1,
-                               "lailaShell_GridViewExtBehavior_SortAsc", HorizontalAlignment.Center)
+                            _listView.TryFindResource("lailaShell_GridViewExtBehavior_SortAsc"), HorizontalAlignment.Center)
                     Else
                         GridViewColumnHeaderGlyphAdorner.Add(currentSortedColumnHeader, SORT_GLYPH_ID, 1,
-                               "lailaShell_GridViewExtBehavior_SortDesc", HorizontalAlignment.Center)
+                            _listView.TryFindResource("lailaShell_GridViewExtBehavior_SortDesc"), HorizontalAlignment.Center)
                     End If
                 End If
             End If

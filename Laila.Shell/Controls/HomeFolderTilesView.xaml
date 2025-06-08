@@ -294,12 +294,13 @@
                                                                 </StackPanel>
                                                             </Expander.Header>
                                                             <Border Width="{Binding ActualWidth, ElementName=PART_ListView, Converter={StaticResource doubleAdditionConverter}, ConverterParameter=-40}">
-                                                                <ListView ItemsSource="{Binding Items}" Margin="25,0,0,0" SelectionMode="Extended"
+                                                                <ListView ItemsSource="{Binding Items}" Margin="25,0,0,0" SelectionMode="Extended" x:Name="PART_ListViewGrouped"
                                                                           behaviors:SharedSelectedItemsBehavior.SyncedSelectedItemsWith="{Binding Tag, ElementName=PART_Grid}"
                                                                           behaviors:ScrollViewerFix.IsEnabled="True" BorderThickness="0" IsTabStop="False" Focusable="False"
                                                                           ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False"
                                                                           Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}"
-                                                                          Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}">
+                                                                          Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}"
+                                                                          Tag="{Binding Tag, ElementName=PART_Grid}">
                                                                     <ListView.Resources>
                                                                         <!-- Default panel and template -->
                                                                         <ItemsPanelTemplate x:Key="GridPanel">
@@ -478,11 +479,11 @@
                                                                                             </Image>
                                                                                         </StackPanel>
                                                                                     </Grid>
-                                                                                    <TextBlock Grid.Column="5" Foreground="Gray" VerticalAlignment="Center"
+                                                                                    <TextBlock Grid.Column="5" Foreground="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}" VerticalAlignment="Center"
                                                                                                Text="{Binding PropertiesByKeyAsText[390DCE80-0981-4BBC-A55D-95F189A5A8FD:2].Text}" TextTrimming="CharacterEllipsis"
                                                                                                MaxWidth="200">
                                                                                     </TextBlock>
-                                                                                    <TextBlock Grid.Column="6" Foreground="Gray" VerticalAlignment="Center" 
+                                                                                    <TextBlock Grid.Column="6" Foreground="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}" VerticalAlignment="Center" 
                                                                                                Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
                                                                                                MaxWidth="200">
                                                                                     </TextBlock>
@@ -703,7 +704,7 @@
                                                                                                 </Style>
                                                                                             </TextBlock.Style>
                                                                                         </TextBlock>
-                                                                                        <TextBlock Grid.Row="1" Foreground="Gray" 
+                                                                                        <TextBlock Grid.Row="1" Foreground="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}" 
                                                                                                    Text="{Binding PropertiesByKeyAsText[E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6].Text}" TextTrimming="CharacterEllipsis"
                                                                                                    MaxWidth="200">
                                                                                             <TextBlock.Style>

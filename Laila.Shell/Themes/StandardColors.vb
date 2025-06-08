@@ -10,7 +10,7 @@ Namespace Themes
         Inherits DependencyObject
 
         Public Shared ReadOnly DoUseLightThemeProperty As DependencyProperty = DependencyProperty.Register("DoUseLightTheme", GetType(Boolean), GetType(StandardColors), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly DoUseLightThemeOverrideProperty As DependencyProperty = DependencyProperty.Register("DoUseLightThemeOverride", GetType(Boolean?), GetType(StandardColors), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoUseLightThemeOverrideChanged))
+        Public Shared ReadOnly DoUseLightThemeOverrideProperty As DependencyProperty = DependencyProperty.Register("DoUseLightThemeOverride", GetType(Boolean?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoUseLightThemeOverrideChanged))
         Public Shared ReadOnly AccentProperty As DependencyProperty = DependencyProperty.Register("Accent", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Blue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly AccentColorProperty As DependencyProperty = DependencyProperty.Register("AccentColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.Blue, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly AccentColorOverrideProperty As DependencyProperty = DependencyProperty.Register("AccentColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnAccentColorOverrideChanged))
@@ -21,9 +21,15 @@ Namespace Themes
         Public Shared ReadOnly ForegroundProperty As DependencyProperty = DependencyProperty.Register("Foreground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Black, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ForegroundColorProperty As DependencyProperty = DependencyProperty.Register("ForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.Black, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnForegroundColorOverrideChanged))
+        Public Shared ReadOnly GrayForegroundProperty As DependencyProperty = DependencyProperty.Register("GrayForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Black, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GrayForegroundColorProperty As DependencyProperty = DependencyProperty.Register("GrayForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.Black, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GrayForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("GrayForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnGrayForegroundColorOverrideChanged))
         Public Shared ReadOnly BackgroundProperty As DependencyProperty = DependencyProperty.Register("Background", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly BackgroundColorProperty As DependencyProperty = DependencyProperty.Register("BackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly BackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("BackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnBackgroundColorOverrideChanged))
+        Public Shared ReadOnly BackgroundLighterProperty As DependencyProperty = DependencyProperty.Register("BackgroundLighter", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly BackgroundLighterColorProperty As DependencyProperty = DependencyProperty.Register("BackgroundLighterColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly BackgroundLighterColorOverrideProperty As DependencyProperty = DependencyProperty.Register("BackgroundLighterColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnBackgroundLighterColorOverrideChanged))
         Public Shared ReadOnly SelectedBackgroundProperty As DependencyProperty = DependencyProperty.Register("SelectedBackground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedBackgroundColorProperty As DependencyProperty = DependencyProperty.Register("SelectedBackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly SelectedBackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("SelectedBackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedBackgroundColorOverrideChanged))
@@ -79,7 +85,9 @@ Namespace Themes
                 Me.DoUseLightTheme = Shell.Settings.DoUseLightTheme
             End If
             setForegroundColor()
+            setGrayForegroundColor()
             setBackgroundColor()
+            setBackgroundLighterColor()
             setSelectedBackgroundColor()
             setMouseOverBackgroundColor()
             setItemMouseOverBackgroundColor()
@@ -226,14 +234,46 @@ Namespace Themes
             bfv.setForegroundColor()
         End Sub
 
-        Public Property BackgroundColor As Color
+        Public Property GrayForeground As Brush
             Get
-                Return GetValue(BackgroundColorProperty)
+                Return GetValue(GrayForegroundProperty)
             End Get
-            Protected Set(ByVal value As Color)
-                SetCurrentValue(BackgroundColorProperty, value)
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(GrayForegroundProperty, value)
             End Set
         End Property
+
+        Public Property GrayForegroundColor As Color
+            Get
+                Return GetValue(GrayForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(GrayForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setGrayForegroundColor()
+            If Me.GrayForegroundColorOverride.HasValue Then
+                Me.GrayForegroundColor = Me.GrayForegroundColorOverride.Value
+            Else
+                Me.GrayForegroundColor = If(Me.DoUseLightTheme, Colors.Gray, Colors.Silver)
+            End If
+            Me.GrayForeground = New SolidColorBrush(Me.GrayForegroundColor)
+        End Sub
+
+        Public Property GrayForegroundColorOverride As Color?
+            Get
+                Return GetValue(GrayForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(GrayForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnGrayForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setGrayForegroundColor()
+        End Sub
 
         Public Property Background As Brush
             Get
@@ -241,6 +281,15 @@ Namespace Themes
             End Get
             Protected Set(ByVal value As Brush)
                 SetCurrentValue(BackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property BackgroundColor As Color
+            Get
+                Return GetValue(BackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(BackgroundColorProperty, value)
             End Set
         End Property
 
@@ -265,6 +314,47 @@ Namespace Themes
         Public Shared Sub OnBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As StandardColors = d
             bfv.setBackgroundColor()
+        End Sub
+
+        Public Property BackgroundLighter As Brush
+            Get
+                Return GetValue(BackgroundLighterProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(BackgroundLighterProperty, value)
+            End Set
+        End Property
+
+        Public Property BackgroundLighterColor As Color
+            Get
+                Return GetValue(BackgroundLighterColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(BackgroundLighterColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setBackgroundLighterColor()
+            If Me.BackgroundLighterColorOverride.HasValue Then
+                Me.BackgroundLighterColor = Me.BackgroundLighterColorOverride.Value
+            Else
+                Me.BackgroundLighterColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#CCFFFFFF"), ColorConverter.ConvertFromString("#33FFFFFF"))
+            End If
+            Me.BackgroundLighter = New SolidColorBrush(Me.BackgroundLighterColor)
+        End Sub
+
+        Public Property BackgroundLighterColorOverride As Color?
+            Get
+                Return GetValue(BackgroundLighterColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(BackgroundLighterColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnBackgroundLighterColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setBackgroundLighterColor()
         End Sub
 
         Public Property SelectedBackground As Brush

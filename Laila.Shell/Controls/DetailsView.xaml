@@ -21,6 +21,30 @@
                           Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}">
                         <Grid.Resources>
                             <converters:PointToMarginLeftConverter x:Key="pointToMarginLeftConverter"/>
+                            <DrawingImage x:Key="lailaShell_GridViewExtBehavior_SortAsc">
+                                <DrawingImage.Drawing>
+                                    <GeometryDrawing>
+                                        <GeometryDrawing.Pen>
+                                            <Pen Thickness="1" Brush="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}" />
+                                        </GeometryDrawing.Pen>
+                                        <GeometryDrawing.Geometry>
+                                            <PathGeometry Figures="M 0,5 L 5,0 L 10,5" />
+                                        </GeometryDrawing.Geometry>
+                                    </GeometryDrawing>
+                                </DrawingImage.Drawing>
+                            </DrawingImage>
+                            <DrawingImage x:Key="lailaShell_GridViewExtBehavior_SortDesc">
+                                <DrawingImage.Drawing>
+                                    <GeometryDrawing>
+                                        <GeometryDrawing.Pen>
+                                            <Pen Thickness="1" Brush="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}" />
+                                        </GeometryDrawing.Pen>
+                                        <GeometryDrawing.Geometry>
+                                            <PathGeometry Figures="M 0,0 L 5,5 L 10,0" />
+                                        </GeometryDrawing.Geometry>
+                                    </GeometryDrawing>
+                                </DrawingImage.Drawing>
+                            </DrawingImage>
                         </Grid.Resources>
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" 
@@ -105,14 +129,8 @@
                                                             <Setter Property="CheckBox.Visibility" TargetName="SelectionCheckBox" Value="Hidden" />
                                                         </MultiDataTrigger.Setters>
                                                     </MultiDataTrigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBackground, ElementName=PART_Grid}"/>
-                                                        <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBorder, ElementName=PART_Grid}"/>
-                                                        <Setter Property="Tag" TargetName="Bd" Value="MouseOver"/>
-                                                    </Trigger>
                                                     <MultiDataTrigger>
                                                         <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="False"/>
                                                             <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
                                                         </MultiDataTrigger.Conditions>
                                                         <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedInactiveBackground, ElementName=PART_Grid}"/>
@@ -120,10 +138,24 @@
                                                     </MultiDataTrigger>
                                                     <MultiDataTrigger>
                                                         <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="False"/>
                                                             <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="True"/>
                                                             <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
                                                         </MultiDataTrigger.Conditions>
                                                         <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedActiveBackground, ElementName=PART_Grid}"/>
+                                                        <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedActiveBorder, ElementName=PART_Grid}"/>
+                                                    </MultiDataTrigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBackground, ElementName=PART_Grid}"/>
+                                                        <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBorder, ElementName=PART_Grid}"/>
+                                                        <Setter Property="Tag" TargetName="Bd" Value="MouseOver"/>
+                                                    </Trigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="False"/>
+                                                            <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="True"/>
+                                                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
                                                         <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedActiveBorder, ElementName=PART_Grid}"/>
                                                     </MultiDataTrigger>
                                                     <Trigger Property="IsEnabled" Value="False">
@@ -139,29 +171,38 @@
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.Resources>
-                                <Style x:Key="GridViewColumnHeaderGripper" TargetType="Thumb">
-                                    <Setter Property="Background" Value="#AAAAAA" />
+                                <converters:IsLastColumnHeaderConverter x:Key="isLastColumnHeaderConverter" />
+                                <converters:IsFirstColumnHeaderConverter x:Key="isFirstColumnHeaderConverter" />
+                                <Style TargetType="Thumb" x:Key="GridViewColumnHeaderGripper">
+                                    <Setter Property="Width" Value="18"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
-                                            <ControlTemplate TargetType="{x:Type Thumb}">
-                                                <Border 
-                                                    Padding="{TemplateBinding Padding}"
-                                                    Background="Transparent">
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="Transparent">
                                                     <Rectangle Width="1"
-                                                        HorizontalAlignment="Center"
-                                                        Fill="{TemplateBinding Background}" />
+                                                       Fill="#555"
+                                                       HorizontalAlignment="Center"/>
                                                 </Border>
                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
-                                    <Setter Property="Width" Value="18" />
+                                    <Style.Triggers>
+                                        <DataTrigger Value="True">
+                                            <DataTrigger.Binding>
+                                                <MultiBinding Converter="{StaticResource isLastColumnHeaderConverter}">
+                                                    <Binding RelativeSource="{RelativeSource AncestorType=GridViewColumnHeader}" />
+                                                    <Binding RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                                </MultiBinding>
+                                            </DataTrigger.Binding>
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Setter Property="Width" Value="0" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
                                 </Style>
                                 <Style TargetType="GridViewColumnHeader">
-                                    <Setter Property="FontWeight" Value="SemiBold" />
                                     <Setter Property="Foreground" Value="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" />
                                     <Setter Property="Background" Value="{Binding Tag.Colors.Background, ElementName=PART_Grid}" />
                                     <Setter Property="HorizontalContentAlignment" Value="Left" />
-                                    <Setter Property="Padding" Value="4 5 4 5" />
                                     <Setter Property="SnapsToDevicePixels" Value="True" />
                                     <Setter Property="ContentTemplate">
                                         <Setter.Value>
@@ -174,16 +215,15 @@
                                         <Setter.Value>
                                             <ControlTemplate TargetType="GridViewColumnHeader">
                                                 <Grid>
-                                                    <Rectangle x:Name="HeaderRect" Fill="Transparent" IsHitTestVisible="True" />
-                                                    <Border x:Name="HeaderBorder" Padding="{TemplateBinding Padding}" 
-                                                        HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
-                                                        <ContentControl x:Name="HeaderContent" Focusable="False"
+                                                    <Border x:Name="HeaderBorder" Padding="7 5 4 5">
+                                                        <TextBlock x:Name="HeaderContent" Text="{TemplateBinding Content}" />
+                                                        <!--<ContentControl Focusable="False"
                                                               Margin="0 0 0 1"
                                                               Content="{TemplateBinding Content}"
                                                               ContentStringFormat="{TemplateBinding ContentStringFormat}"
                                                               ContentTemplate="{TemplateBinding ContentTemplate}"
                                                               ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
-                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />-->
                                                     </Border>
                                                     <Thumb x:Name="PART_HeaderGripper"
                                                        Margin="0 0 -9 0"
@@ -192,15 +232,34 @@
                                                 </Grid>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="HeaderRect" Property="Fill" Value="{Binding Tag.Colors.ItemMouseOverBackground, ElementName=PART_Grid}" />
+                                                        <Setter TargetName="HeaderBorder" Property="Background" Value="{Binding Tag.Colors.ItemMouseOverBackground, ElementName=PART_Grid}" />
                                                     </Trigger>
                                                     <Trigger Property="IsPressed" Value="True">
-                                                        <Setter TargetName="HeaderRect" Property="Fill" Value="{Binding Tag.Colors.ItemSelectedActiveBackground, ElementName=PART_Grid}" />
-                                                        <Setter TargetName="HeaderContent" Property="Margin" Value="1 1 0 0" />
+                                                        <Setter TargetName="HeaderBorder" Property="Background" Value="{Binding Tag.Colors.ItemSelectedActiveBackground, ElementName=PART_Grid}" />
+                                                        <Setter TargetName="HeaderContent" Property="Margin" Value="1 1 -1 -1" />
                                                     </Trigger>
                                                     <Trigger Property="IsEnabled" Value="False">
                                                         <Setter Property="Foreground" Value="Gray" />
                                                     </Trigger>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource isLastColumnHeaderConverter}">
+                                                                <Binding RelativeSource="{RelativeSource Mode=Self}" />
+                                                                <Binding RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Visibility" Value="Hidden" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{StaticResource isFirstColumnHeaderConverter}">
+                                                                <Binding RelativeSource="{RelativeSource Mode=Self}" />
+                                                                <Binding RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="Padding" TargetName="HeaderContent" Value="47 0 0 0" />
+                                                        <Setter Property="Margin" Value="-40 0 0 0" />
+                                                    </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -243,7 +302,7 @@
                             </i:Interaction.Behaviors>
                         </ListView>
                         <Grid Margin="{Binding ScrollOffset, RelativeSource={RelativeSource Mode=TemplatedParent}, Converter={StaticResource pointToMarginLeftConverter}}">
-                            <CheckBox x:Name="PART_CheckBoxSelectAll" Margin="15,6,0,0" Focusable="False"
+                            <CheckBox x:Name="PART_CheckBoxSelectAll" Margin="15,6,0,0" Focusable="False" IsTabStop="False"
                                   VerticalAlignment="Top" HorizontalAlignment="Left">
                                 <CheckBox.Style>
                                     <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
