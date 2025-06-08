@@ -6,6 +6,7 @@ Imports System.Threading
 Imports System.Windows.Input
 Imports System.Windows.Data
 Imports System.ComponentModel
+Imports Laila.Shell.Themes
 
 Namespace Controls
     Public Class SelectedFolderControl
@@ -16,6 +17,7 @@ Namespace Controls
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(SelectedFolderControl), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(SelectedFolderControl), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
         Public Shared ReadOnly IsTabStopProperty As DependencyProperty = DependencyProperty.Register("IsTabStop", GetType(Boolean), GetType(SelectedFolderControl), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ColorsProperty As DependencyProperty = DependencyProperty.Register("Colors", GetType(StandardColors), GetType(SelectedFolderControl), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private ReadOnly _lock As New SemaphoreSlim(1, 1)
         Private _visibleFolders As List(Of Folder) = New List(Of Folder)
@@ -34,6 +36,7 @@ Namespace Controls
         End Sub
 
         Public Sub New()
+            Me.Colors = New StandardColors()
             Me.Orientation = Orientation.Horizontal
             Me.Focusable = False
             AddHandler Me.Loaded,
@@ -128,6 +131,7 @@ Namespace Controls
                     If Not buttonStyle Is Nothing Then folderButton.Style = buttonStyle
                     folderButton.Content = currentFolder.DisplayName
                     folderButton.Tag = currentFolder
+                    folderButton.SetBinding(Button.ForegroundProperty, New Binding("Colors.Foreground") With {.Source = Me})
                     _visibleFolders.Add(currentFolder)
                     currentFolder.IsVisibleInAddressBar = True
                     AddHandler folderButton.Click,
@@ -385,6 +389,15 @@ Namespace Controls
             End Get
             Set(value As Boolean)
                 SetCurrentValue(IsTabStopProperty, value)
+            End Set
+        End Property
+
+        Public Property Colors As StandardColors
+            Get
+                Return GetValue(ColorsProperty)
+            End Get
+            Protected Set(ByVal value As StandardColors)
+                SetCurrentValue(ColorsProperty, value)
             End Set
         End Property
 

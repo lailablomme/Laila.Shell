@@ -9,32 +9,153 @@
         <ResourceDictionary Source="/Laila.Shell;component/Themes/Standard.xaml" />
     </ResourceDictionary.MergedDictionaries>
 
-    <parts:TreeViewItemStyleSelector 
-        x:Key="treeViewItemStyleSelector"
-        TreeViewItemStyle="{StaticResource lailaShell_TreeViewItemStyle}"
-        TreeViewSeparatorItemStyle="{StaticResource lailaShell_TreeViewSeparatorItemStyle}"
-        TreeViewPlaceholderItemStyle="{StaticResource lailaShell_TreeViewPlaceholderItemStyle}" />
-
     <Style TargetType="{x:Type local:TreeView}">
         <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:TreeView}">
+                    <ControlTemplate.Resources>
+                        <Style x:Key="lailaShell_TreeViewItemStyle" TargetType="ListBoxItem">
+                            <Setter Property="SnapsToDevicePixels" Value="True"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderBrush" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Grid MinHeight="20">
+                                            <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
+                                                    Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                            </Border>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBackground, ElementName=PART_Grid}"/>
+                                                <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBorder, ElementName=PART_Grid}"/>
+                                            </Trigger>
+                                            <Trigger Property="Tag" Value="Pressed">
+                                                <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBackground, ElementName=PART_Grid}"/>
+                                                <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBorder, ElementName=PART_Grid}"/>
+                                            </Trigger>
+                                            <MultiTrigger>
+                                                <MultiTrigger.Conditions>
+                                                    <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                                    <Condition Property="IsSelected" Value="True"/>
+                                                </MultiTrigger.Conditions>
+                                                <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedInactiveBackground, ElementName=PART_Grid}"/>
+                                                <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedInactiveBorder, ElementName=PART_Grid}"/>
+                                            </MultiTrigger>
+                                            <MultiTrigger>
+                                                <MultiTrigger.Conditions>
+                                                    <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                                    <Condition Property="IsSelected" Value="True"/>
+                                                </MultiTrigger.Conditions>
+                                                <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedActiveBackground, ElementName=PART_Grid}"/>
+                                                <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedActiveBorder, ElementName=PART_Grid}"/>
+                                            </MultiTrigger>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                        <Style TargetType="ToggleButton" x:Key="lailaShell_TreeChevronButtonStyle">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="11,7,0,0"/>
+                            <Setter Property="Opacity" Value="0" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Grid>
+                                            <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="5" />
+                                            <Border x:Name="border2" Background="Transparent" CornerRadius="5" />
+                                            <Border Padding="{TemplateBinding Padding}" Margin="0,0,-5,0">
+                                                <Path x:Name="PART_Chevron" Data="M -5,-3 L 0,3 L 5,-3" StrokeThickness="1.25" 
+                                                      Fill="Transparent" Stroke="{TemplateBinding Foreground}" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="7">
+                                                    <Path.RenderTransform>
+                                                        <RotateTransform x:Name="ChevronRotateTransform" Angle="-90" />
+                                                    </Path.RenderTransform>
+                                                </Path>
+                                            </Border>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding HasSubFolders}" Value="True" />
+                                                    <Condition Binding="{Binding Tag.IsMouseOver, ElementName=PART_Grid}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <MultiDataTrigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                             To="1" Duration="0:0:0.2" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </MultiDataTrigger.EnterActions>
+                                                <MultiDataTrigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                             To="0" Duration="0:0:0.2" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </MultiDataTrigger.ExitActions>
+                                            </MultiDataTrigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="ChevronRotateTransform"
+                                                                             Storyboard.TargetProperty="Angle"
+                                                                             To="0"
+                                                                             Duration="0:0:0.2" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="ChevronRotateTransform"
+                                                                             Storyboard.TargetProperty="Angle"
+                                                                             To="-90"
+                                                                             Duration="0:0:0.2" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                        <parts:TreeViewItemStyleSelector 
+                            x:Key="treeViewItemStyleSelector"
+                            TreeViewItemStyle="{StaticResource lailaShell_TreeViewItemStyle}"
+                            TreeViewSeparatorItemStyle="{StaticResource lailaShell_TreeViewSeparatorItemStyle}"
+                            TreeViewPlaceholderItemStyle="{StaticResource lailaShell_TreeViewPlaceholderItemStyle}" />
+                    </ControlTemplate.Resources>
                     <Grid x:Name="PART_Grid"
                           Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:TreeView}}}">
                         <ListBox ItemsSource="{TemplateBinding Items}" x:Name="PART_ListBox" SelectionMode="Single" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                             VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
-                             VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
-                             ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0"  
-                             VirtualizingPanel.ScrollUnit="Pixel" ItemContainerStyleSelector="{StaticResource treeViewItemStyleSelector}">
+                                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"  
+                                 VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="0" VirtualizingPanel.CacheLengthUnit="Page"
+                                 ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0"  
+                                 VirtualizingPanel.ScrollUnit="Pixel" ItemContainerStyleSelector="{StaticResource treeViewItemStyleSelector}"
+                                 Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}"
+                                 Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}">
                             <ListBox.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <VirtualizingStackPanel />
                                 </ItemsPanelTemplate>
                             </ListBox.ItemsPanel>
-                            <ListBox.Resources>
-                                <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource lailaShell_TreeViewItemStyle}" />
-                            </ListBox.Resources>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid>

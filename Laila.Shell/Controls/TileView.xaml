@@ -96,7 +96,7 @@
                                                         <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedActiveBorder, ElementName=PART_Grid}"/>
                                                     </MultiDataTrigger>
                                                     <Trigger Property="IsEnabled" Value="False">
-                                                        <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                                        <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>

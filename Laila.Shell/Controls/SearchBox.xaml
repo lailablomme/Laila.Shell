@@ -3,51 +3,60 @@
                     xmlns:local="clr-namespace:Laila.Shell.Controls"
                     xmlns:helpers="clr-namespace:Laila.Shell.Helpers"
                     xmlns:shell="clr-namespace:Laila.Shell">
-
-    <Style TargetType="Button" x:Key="lailaShell_SearchBoxCancelButtonStyle">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Foreground" Value="Black"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Padding" Value="5,0,5,0"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-        <Setter Property="Panel.ZIndex" Value="1"/>
-        <Setter Property="Focusable" Value="False"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="border" Padding="{TemplateBinding Padding}"
-                            Background="{TemplateBinding Background}"
-                            CornerRadius="5"
-                            BorderBrush="{TemplateBinding BorderBrush}">
-                        <TextBlock x:Name="contentPresenter" FontFamily="Wingdings 2" FontSize="14" Margin="1,1,0,0" 
-                                   VerticalAlignment="Center" HorizontalAlignment="Center">Î</TextBlock>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#11000000"/>
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="contentPresenter" Property="Opacity" Value="0.5"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
         
     <Style TargetType="{x:Type local:SearchBox}">
         <Setter Property="IsTabStop" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:SearchBox}">
-                    <Border BorderBrush="{Binding Tag.Colors.Background, ElementName=PART_Grid}" BorderThickness="1" CornerRadius="5" 
-                            Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}" x:Name="PART_Border">
-                        <Border BorderBrush="{Binding Tag.Colors.Background, ElementName=PART_Grid}" BorderThickness="2" CornerRadius="5" 
-                                Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}">
+                    <ControlTemplate.Resources>
+                        <SolidColorBrush x:Key="Background20" Color="{Binding Colors.BackgroundColor, RelativeSource={RelativeSource AncestorType={x:Type local:SearchBox}}}" Opacity="0.15" />
+                        <SolidColorBrush x:Key="Background21" Color="{Binding Colors.BackgroundColor, RelativeSource={RelativeSource AncestorType={x:Type local:SearchBox}}}" Opacity="0.4" />
+                        <SolidColorBrush x:Key="Background22" Color="{Binding Colors.ForegroundColor, RelativeSource={RelativeSource AncestorType={x:Type local:SearchBox}}}" Opacity="0.20" />
+                        <SolidColorBrush x:Key="Background23" Color="{Binding Colors.ForegroundColor, RelativeSource={RelativeSource AncestorType={x:Type local:SearchBox}}}" Opacity="0.10" />
+                        <Style TargetType="Button" x:Key="lailaShell_SearchBoxCancelButtonStyle">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="5,0,5,0"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="Panel.ZIndex" Value="1"/>
+                            <Setter Property="Focusable" Value="False"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Grid>
+                                            <Border x:Name="border" Background="Transparent" CornerRadius="5" />
+                                            <Border x:Name="border2" Background="Transparent" CornerRadius="5" />
+                                            <Border Padding="{TemplateBinding Padding}">
+                                                <Path Data="M0.5,0.5 L8.5,8.5 M8.5,0.5 L0.5,8.5" Stroke="{Binding Colors.Foreground, RelativeSource={RelativeSource AncestorType={x:Type local:SearchBox}}}" StrokeThickness="1" 
+                                                      Width="8.9" Height="8.9" VerticalAlignment="Center" HorizontalAlignment="Center" 
+                                                      SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+                                            </Border>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background20}"/>
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background23}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background21}"/>
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background22}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ControlTemplate.Resources>
+                    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="5" 
+                            Background="#33FFFFFF" x:Name="PART_Border">
+                        <Border BorderBrush="Transparent" BorderThickness="2" CornerRadius="5" 
+                                Background="Transparent">
                             <Border Margin="0,-3,0,-3" BorderBrush="Transparent" BorderThickness="0,0,0,1" 
-                                    Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore1">
+                                    Background="Transparent" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore1">
                                 <Border Padding="0,3,0,3" BorderBrush="Transparent" BorderThickness="0,0,0,1" 
-                                        Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore2">
+                                        Background="Transparent" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore2">
                                     <Grid x:Name="PART_Grid" Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:SearchBox}}}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
@@ -62,7 +71,7 @@
                                                  IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}"
                                                  MaxLength="260" />
                                         <TextBlock Grid.Column="0" x:Name="PART_Watermark1" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"
-                                                   VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" Foreground="Gray" Margin="3,0">
+                                                   VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" Foreground="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}" Margin="3,0">
                                             <TextBlock.Style>
                                                 <Style>
                                                     <Setter Property="TextBlock.Visibility" Value="Collapsed" />
@@ -83,7 +92,7 @@
                                             <Run Text="{Binding Folder.DisplayName, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=OneWay}" />
                                         </TextBlock>
                                         <TextBlock Grid.Column="0" x:Name="PART_Watermark2" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"
-                                                   VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" Foreground="Gray" Margin="3,0">
+                                                   VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" Foreground="{Binding Tag.Colors.GrayForeground, ElementName=PART_Grid}" Margin="3,0">
                                             <TextBlock.Style>
                                                 <Style>
                                                     <Setter Property="TextBlock.Visibility" Value="Collapsed" />

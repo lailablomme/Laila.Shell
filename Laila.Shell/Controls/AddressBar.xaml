@@ -75,11 +75,166 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:AddressBar}">
-                    <Border BorderBrush="White" BorderThickness="3" CornerRadius="5">
+                    <ControlTemplate.Resources>
+                        <SolidColorBrush x:Key="Background20" Color="{Binding Colors.BackgroundColor, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}" Opacity="0.15" />
+                        <SolidColorBrush x:Key="Background21" Color="{Binding Colors.BackgroundColor, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}" Opacity="0.4" />
+                        <SolidColorBrush x:Key="Background22" Color="{Binding Colors.ForegroundColor, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}" Opacity="0.20" />
+                        <SolidColorBrush x:Key="Background23" Color="{Binding Colors.ForegroundColor, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}" Opacity="0.10" />
+                        <Style TargetType="Button" x:Key="lailaShell_AddressBarButtonStyle">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{Binding Colors.Foreground, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="5,3,5,3"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="Panel.ZIndex" Value="1"/>
+                            <Setter Property="Focusable" Value="False"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Grid>
+                                            <Border x:Name="border" Background="Transparent" CornerRadius="5" />
+                                            <Border x:Name="border2" Background="Transparent" CornerRadius="5" />
+                                            <Border Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="contentPresenter" />
+                                            </Border>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background20}"/>
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background23}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background21}"/>
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background22}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                        <Style TargetType="ToggleButton" x:Key="lailaShell_AddressBarChevronButtonStyle">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{Binding Colors.Foreground, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="12,11,1,4"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="Panel.ZIndex" Value="1"/>
+                            <Setter Property="Focusable" Value="False"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Grid>
+                                            <Border x:Name="border" Background="Transparent" CornerRadius="5" />
+                                            <Border x:Name="border2" Background="Transparent" CornerRadius="5" />
+                                            <Border Padding="{TemplateBinding Padding}">
+                                                <Path x:Name="PART_Chevron" Data="M -5,-3 L 0,3 L 5,-3" StrokeThickness="1.25" 
+                                                      Fill="Transparent" Stroke="{TemplateBinding Foreground}" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="7">
+                                                    <Path.RenderTransform>
+                                                        <RotateTransform x:Name="ChevronRotateTransform" Angle="-90" />
+                                                    </Path.RenderTransform>
+                                                </Path>
+                                            </Border>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background20}"/>
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background23}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background21}"/>
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background22}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="ChevronRotateTransform"
+                                                                             Storyboard.TargetProperty="Angle"
+                                                                             To="0"
+                                                                             Duration="0:0:0.2" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="ChevronRotateTransform"
+                                                                             Storyboard.TargetProperty="Angle"
+                                                                             To="-90"
+                                                                             Duration="0:0:0.2" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                        <Style TargetType="ToggleButton" x:Key="lailaShell_AddressBarMoreButtonStyle">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="{Binding Colors.Foreground, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding" Value="5,10,5,10"/>
+                            <Setter Property="Focusable" Value="False"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Grid>
+                                            <Border x:Name="border" Background="Transparent" CornerRadius="5" />
+                                            <Border x:Name="border2" Background="Transparent" CornerRadius="5" />
+                                            <Border Padding="{TemplateBinding Padding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="3" Height="3" Fill="{TemplateBinding Foreground}" Stroke="{TemplateBinding Foreground}" />
+                                                    <Ellipse Width="3" Height="3" Fill="{TemplateBinding Foreground}" Stroke="{TemplateBinding Foreground}" Margin="3,0,0,0" />
+                                                    <Ellipse Width="3" Height="3" Fill="{TemplateBinding Foreground}" Stroke="{TemplateBinding Foreground}" Margin="3,0,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background20}"/>
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background23}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background21}"/>
+                                                <Setter TargetName="border" Property="Background" Value="{StaticResource Background22}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                        <Style TargetType="Button" x:Key="lailaShell_AddressBarPanelContainerStyle">
+                            <Setter Property="Focusable" Value="True"/>
+                            <Setter Property="IsTabStop" Value="True"/>
+                            <Setter Property="FocusVisualStyle">
+                                <Setter.Value>
+                                    <Style>
+                                        <Setter Property="Control.Template">
+                                            <Setter.Value>
+                                                <ControlTemplate>
+                                                    <Border BorderBrush="{Binding Colors.Foreground, RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}" BorderThickness="2" Background="Transparent" CornerRadius="5" Margin="-2" SnapsToDevicePixels="true"/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ControlTemplate.Resources>
+                    <Border BorderBrush="#33FFFFFF" Background="#33FFFFFF" BorderThickness="3" CornerRadius="5">
                         <Grid>
                             <Border Margin="0,-3,0,-3" BorderBrush="Gray" BorderThickness="0,0,0,1" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore1">
                                 <Border Padding="0,3,0,3" BorderBrush="Transparent" BorderThickness="0,0,0,1" SnapsToDevicePixels="True" x:Name="PART_Windows11StyleUnderscore2">
-                                    <Grid Background="{TemplateBinding Background}" x:Name="PART_Grid"
+                                    <Grid x:Name="PART_Grid"
                                           Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:AddressBar}}}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -118,30 +273,8 @@
                                                                     <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBackground, ElementName=PART_Grid}"/>
                                                                     <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemMouseOverBorder, ElementName=PART_Grid}"/>
                                                                 </Trigger>
-                                                                <!--<MultiTrigger>
-                                                                    <MultiTrigger.Conditions>
-                                                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
-                                                                        <Condition Property="IsSelected" Value="True"/>
-                                                                    </MultiTrigger.Conditions>
-                                                                    <MultiTrigger.EnterActions>
-                                                                        <BeginStoryboard>
-                                                                            <Storyboard>
-                                                                                <ThicknessAnimation 
-                                                                                    Storyboard.TargetProperty="Margin"
-                                                                                    Storyboard.TargetName="PART_RowIndicator"
-                                                                                    Duration="0:0:0.1" 
-                                                                                    From="0,10,0,10" 
-                                                                                    To="0,3,0,3" />
-                                                                            </Storyboard>
-                                                                        </BeginStoryboard>
-                                                                    </MultiTrigger.EnterActions>
-                                                                    <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedInactiveBackground, ElementName=PART_Grid}"/>
-                                                                    <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.ItemSelectedInactiveBorder, ElementName=PART_Grid}"/>
-                                                                    <Setter Property="Background" TargetName="PART_RowIndicator" Value="{Binding Tag.Colors.Accent, ElementName=PART_Grid}"/>
-                                                                </MultiTrigger>-->
                                                                 <MultiTrigger>
                                                                     <MultiTrigger.Conditions>
-                                                                        <!--<Condition Property="Selector.IsSelectionActive" Value="True"/>-->
                                                                         <Condition Property="IsSelected" Value="True"/>
                                                                     </MultiTrigger.Conditions>
                                                                     <MultiTrigger.EnterActions>
@@ -191,12 +324,13 @@
                                         </ContentPresenter>
 
                                         <TextBox Grid.Column="1" x:Name="PART_TextBox" HorizontalAlignment="Stretch" VerticalAlignment="Center" 
-                                             BorderThickness="0" Background="Transparent" Padding="0,1,0,1"
-                                             Foreground="{TemplateBinding Foreground}" Style="{x:Null}"  
-                                             IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}"
-                                             IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource Mode=TemplatedParent}}"
-                                             MaxLength="{Binding MaxLength, RelativeSource={RelativeSource Mode=TemplatedParent}}"
-                                             Text="{Binding Text, RelativeSource={RelativeSource Mode=TemplatedParent}, UpdateSourceTrigger=PropertyChanged}" />
+                                                 BorderThickness="0" Background="Transparent" Padding="0,1,0,1"
+                                                 Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" 
+                                                 CaretBrush="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" Style="{x:Null}"  
+                                                 IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}"
+                                                 IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                                 MaxLength="{Binding MaxLength, RelativeSource={RelativeSource Mode=TemplatedParent}}"
+                                                 Text="{Binding Text, RelativeSource={RelativeSource Mode=TemplatedParent}, UpdateSourceTrigger=PropertyChanged}" />
                                         <TextBlock Grid.Column="1" x:Name="PART_Watermark" Text="{TemplateBinding Watermark}" IsHitTestVisible="False"
                                            VerticalAlignment="Center" HorizontalAlignment="Left" Focusable="False" Foreground="Gray" Margin="3,0">
                                             <TextBlock.Style>
@@ -235,17 +369,19 @@
                                         </ToggleButton>
 
                                         <Popup x:Name="PART_Popup" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=OneWay}"
-                                       MinWidth="{TemplateBinding ActualWidth}" Focusable="False" AllowsTransparency="True" Placement="Bottom" 
-                                       PlacementTarget="{Binding ElementName=PART_Grid}" PopupAnimation="Fade" StaysOpen="True">
-                                            <Border Background="White" BorderThickness="1" BorderBrush="Gray" CornerRadius="5" Padding="2">
+                                               MinWidth="{TemplateBinding ActualWidth}" Focusable="False" AllowsTransparency="True" Placement="Bottom" 
+                                               PlacementTarget="{Binding ElementName=PART_Grid}" PopupAnimation="Fade" StaysOpen="True">
+                                            <Border Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}" BorderThickness="1" BorderBrush="Gray" CornerRadius="5" Padding="2">
                                                 <Grid>
                                                     <ListBox x:Name="PART_ListBox" VirtualizingPanel.IsVirtualizing="True"
-                                                         VirtualizingPanel.ScrollUnit="Pixel" 
-                                                         ItemTemplate="{TemplateBinding ItemTemplate}"
-                                                         Focusable="False" BorderThickness="0" Padding="0" 
-                                                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                                         ScrollViewer.VerticalScrollBarVisibility="Auto" 
-                                                         ItemContainerStyle="{DynamicResource laila_AutoComplete_SuggestionItemStyle}">
+                                                             VirtualizingPanel.ScrollUnit="Pixel" 
+                                                             ItemTemplate="{TemplateBinding ItemTemplate}"
+                                                             Focusable="False" BorderThickness="0" Padding="0" 
+                                                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                             ScrollViewer.VerticalScrollBarVisibility="Auto" 
+                                                             ItemContainerStyle="{DynamicResource laila_AutoComplete_SuggestionItemStyle}"
+                                                             Background="Transparent"
+                                                             Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}">
                                                         <ListBox.Style>
                                                             <Style>
                                                                 <Setter Property="ListBox.Visibility" Value="Visible" />
@@ -302,7 +438,7 @@
                             <Border BorderBrush="Transparent" BorderThickness="1,1,1,0" Margin="0,0,0,1" SnapsToDevicePixels="True" x:Name="PART_Border">
                             </Border>
                             <Border Margin="0,-3,0,-3" Padding="0,3,0,3" UseLayoutRounding="True" SnapsToDevicePixels="True" 
-                                    Background="White" x:Name="PART_NavigationButtons" Visibility="Visible">
+                                    Background="Transparent" x:Name="PART_NavigationButtons" Visibility="Visible">
                                 <Grid>
                                     <Viewbox StretchDirection="Both" Stretch="Uniform" Width="16" Height="16" x:Name="loadingViewBox" IsHitTestVisible="False"
                                              VerticalAlignment="Center" HorizontalAlignment="Left" Margin="4,0,0,0">
@@ -333,11 +469,11 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <local:SelectedFolderControl UseLayoutRounding="True" SnapsToDevicePixels="True"
+                                        <local:SelectedFolderControl UseLayoutRounding="True" SnapsToDevicePixels="True" 
                                                                      Folder="{Binding Folder, RelativeSource={RelativeSource Mode=TemplatedParent}}"
                                                                      x:Name="PART_NavigationButtonsPanel" HorizontalAlignment="Stretch"
                                                                      IsTabStop="{Binding IsTabStop, RelativeSource={RelativeSource Mode=TemplatedParent}, Mode=TwoWay}" />
-                                        <Border Grid.Column="1" Cursor="IBeam" Background="White" x:Name="PART_ClickToEdit" />
+                                        <Border Grid.Column="1" Cursor="IBeam" Background="Transparent" x:Name="PART_ClickToEdit" />
                                     </Grid>
                                 </Grid>
                             </Border>
@@ -363,6 +499,10 @@
                         <Trigger Property="IsFocused" SourceName="PART_TextBox" Value="True">
                             <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore1" Value="{Binding Tag.Colors.Accent, ElementName=PART_Grid}" />
                             <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore2" Value="{Binding Tag.Colors.Accent, ElementName=PART_Grid}" />
+                        </Trigger>
+                        <Trigger Property="Visibility" SourceName="PART_NavigationButtons" Value="Visible">
+                            <Setter Property="Visibility" TargetName="PART_TextBox" Value="Hidden" />
+                            <Setter Property="BorderBrush" TargetName="PART_Windows11StyleUnderscore1" Value="Transparent" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5" TargetName="PART_Border" />

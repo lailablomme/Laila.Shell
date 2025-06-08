@@ -84,6 +84,7 @@ Namespace Controls
                 End Sub
             AddHandler Me.PART_ClickToEdit.MouseDown,
                 Sub(s As Object, e As MouseButtonEventArgs)
+                    Me.PART_NavigationButtons.Visibility = Visibility.Hidden
                     Me.PART_TextBox.Focus()
                 End Sub
             AddHandler Me.PART_TextBox.PreviewKeyDown,

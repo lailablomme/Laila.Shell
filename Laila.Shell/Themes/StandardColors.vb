@@ -54,6 +54,33 @@ Namespace Themes
         Public Shared ReadOnly ItemSelectedActiveBorderProperty As DependencyProperty = DependencyProperty.Register("ItemSelectedActiveBorder", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ItemSelectedActiveBorderColorProperty As DependencyProperty = DependencyProperty.Register("ItemSelectedActiveBorderColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ItemSelectedActiveBorderColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ItemSelectedActiveBorderColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnItemSelectedActiveBorderColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBorderLightProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderLight", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBorderLightColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderLightColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBorderLightColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderLightColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBorderLightColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBorderMediumProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderMedium", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBorderMediumColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderMediumColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBorderMediumColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderMediumColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBorderMediumColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBorderDarkProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderDark", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBorderDarkColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderDarkColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBorderDarkColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBorderDarkColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBorderDarkColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBackgroundLightProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLight", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundLightColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLightColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundLightColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLightColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBackgroundLightColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBackgroundMediumProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMedium", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundMediumColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundMediumColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBackgroundMediumColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBackgroundLightMouseOverProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLightMouseOver", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundLightMouseOverColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLightMouseOverColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundLightMouseOverColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLightMouseOverColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBackgroundLightMouseOverColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBackgroundMediumMouseOverProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumMouseOver", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundMediumMouseOverColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumMouseOverColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundMediumMouseOverColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumMouseOverColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBackgroundMediumMouseOverColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBackgroundLightPressedProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLightPressed", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundLightPressedColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLightPressedColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundLightPressedColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundLightPressedColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBackgroundLightPressedColorOverrideChanged))
+        Public Shared ReadOnly ThreeDBackgroundMediumPressedProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumPressed", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundMediumPressedColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumPressedColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDBackgroundMediumPressedColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumPressedColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBackgroundMediumPressedColorOverrideChanged))
 
         Public Sub New()
             AddHandler Shell.Settings.PropertyChanged,
@@ -96,6 +123,15 @@ Namespace Themes
             setItemSelectedInactiveBorderColor()
             setItemSelectedActiveBackgroundColor()
             setItemSelectedActiveBorderColor()
+            setThreeDBackgroundLightColor()
+            setThreeDBackgroundLightMouseOverColor()
+            setThreeDBackgroundLightPressedColor()
+            setThreeDBackgroundMediumColor()
+            setThreeDBackgroundMediumMouseOverColor()
+            setThreeDBackgroundMediumPressedColor()
+            setThreeDBorderLightColor()
+            setThreeDBorderMediumColor()
+            setThreeDBorderDarkColor()
         End Sub
 
         Public Property DoUseLightThemeOverride As Boolean?
@@ -297,7 +333,7 @@ Namespace Themes
             If Me.BackgroundColorOverride.HasValue Then
                 Me.BackgroundColor = Me.BackgroundColorOverride.Value
             Else
-                Me.BackgroundColor = If(Me.DoUseLightTheme, Colors.White, Colors.Black)
+                Me.BackgroundColor = If(Me.DoUseLightTheme, Colors.White, ColorConverter.ConvertFromString("#181818"))
             End If
             Me.Background = New SolidColorBrush(Me.BackgroundColor)
         End Sub
@@ -666,7 +702,7 @@ Namespace Themes
             If Me.ItemSelectedActiveBorderColorOverride.HasValue Then
                 Me.ItemSelectedActiveBorderColor = Me.ItemSelectedActiveBorderColorOverride.Value
             Else
-                Me.ItemSelectedActiveBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#FF26A0DA"), ColorConverter.ConvertFromString("#ffffff"))
+                Me.ItemSelectedActiveBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#FF26A0DA"), Colors.Silver)
             End If
             Me.ItemSelectedActiveBorder = New SolidColorBrush(Me.ItemSelectedActiveBorderColor)
         End Sub
@@ -683,6 +719,375 @@ Namespace Themes
         Public Shared Sub OnItemSelectedActiveBorderColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As StandardColors = d
             bfv.setItemSelectedActiveBorderColor()
+        End Sub
+
+        Public Property ThreeDBorderLight As Brush
+            Get
+                Return GetValue(ThreeDBorderLightProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBorderLightProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBorderLightColor As Color
+            Get
+                Return GetValue(ThreeDBorderLightColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBorderLightColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBorderLightColor()
+            If Me.ThreeDBorderLightColorOverride.HasValue Then
+                Me.ThreeDBorderLightColor = Me.ThreeDBorderLightColorOverride.Value
+            Else
+                Me.ThreeDBorderLightColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#EEEEEE"), ColorConverter.ConvertFromString("#EEEEEE"))
+            End If
+            Me.ThreeDBorderLight = New SolidColorBrush(Me.ThreeDBorderLightColor)
+        End Sub
+
+        Public Property ThreeDBorderLightColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBorderLightColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBorderLightColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBorderLightColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBorderLightColor()
+        End Sub
+
+        Public Property ThreeDBorderMedium As Brush
+            Get
+                Return GetValue(ThreeDBorderMediumProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBorderMediumProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBorderMediumColor As Color
+            Get
+                Return GetValue(ThreeDBorderMediumColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBorderMediumColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBorderMediumColor()
+            If Me.ThreeDBorderMediumColorOverride.HasValue Then
+                Me.ThreeDBorderMediumColor = Me.ThreeDBorderMediumColorOverride.Value
+            Else
+                Me.ThreeDBorderMediumColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#666666"), ColorConverter.ConvertFromString("#999999"))
+            End If
+            Me.ThreeDBorderMedium = New SolidColorBrush(Me.ThreeDBorderMediumColor)
+        End Sub
+
+        Public Property ThreeDBorderMediumColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBorderMediumColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBorderMediumColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBorderMediumColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBorderMediumColor()
+        End Sub
+
+        Public Property ThreeDBorderDark As Brush
+            Get
+                Return GetValue(ThreeDBorderDarkProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBorderDarkProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBorderDarkColor As Color
+            Get
+                Return GetValue(ThreeDBorderDarkColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBorderDarkColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBorderDarkColor()
+            If Me.ThreeDBorderDarkColorOverride.HasValue Then
+                Me.ThreeDBorderDarkColor = Me.ThreeDBorderDarkColorOverride.Value
+            Else
+                Me.ThreeDBorderDarkColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#666666"), ColorConverter.ConvertFromString("#999999"))
+            End If
+            Me.ThreeDBorderDark = New SolidColorBrush(Me.ThreeDBorderDarkColor)
+        End Sub
+
+        Public Property ThreeDBorderDarkColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBorderDarkColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBorderDarkColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBorderDarkColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBorderDarkColor()
+        End Sub
+
+        Public Property ThreeDBackgroundLight As Brush
+            Get
+                Return GetValue(ThreeDBackgroundLightProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBackgroundLightProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBackgroundLightColor As Color
+            Get
+                Return GetValue(ThreeDBackgroundLightColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBackgroundLightColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBackgroundLightColor()
+            If Me.ThreeDBackgroundLightColorOverride.HasValue Then
+                Me.ThreeDBackgroundLightColor = Me.ThreeDBackgroundLightColorOverride.Value
+            Else
+                Me.ThreeDBackgroundLightColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#DDDDDD"), ColorConverter.ConvertFromString("#444444"))
+            End If
+            Me.ThreeDBackgroundLight = New SolidColorBrush(Me.ThreeDBackgroundLightColor)
+        End Sub
+
+        Public Property ThreeDBackgroundLightColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBackgroundLightColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBackgroundLightColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBackgroundLightColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBackgroundLightColor()
+        End Sub
+
+        Public Property ThreeDBackgroundMedium As Brush
+            Get
+                Return GetValue(ThreeDBackgroundMediumProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBackgroundMediumProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBackgroundMediumColor As Color
+            Get
+                Return GetValue(ThreeDBackgroundMediumColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBackgroundMediumColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBackgroundMediumColor()
+            If Me.ThreeDBackgroundMediumColorOverride.HasValue Then
+                Me.ThreeDBackgroundMediumColor = Me.ThreeDBackgroundMediumColorOverride.Value
+            Else
+                Me.ThreeDBackgroundMediumColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#DDDDDD"), ColorConverter.ConvertFromString("#444444"))
+            End If
+            Me.ThreeDBackgroundMedium = New SolidColorBrush(Me.ThreeDBackgroundMediumColor)
+        End Sub
+
+        Public Property ThreeDBackgroundMediumColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBackgroundMediumColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBackgroundMediumColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBackgroundMediumColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBackgroundMediumColor()
+        End Sub
+
+        Public Property ThreeDBackgroundLightMouseOver As Brush
+            Get
+                Return GetValue(ThreeDBackgroundLightMouseOverProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBackgroundLightMouseOverProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBackgroundLightMouseOverColor As Color
+            Get
+                Return GetValue(ThreeDBackgroundLightMouseOverColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBackgroundLightMouseOverColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBackgroundLightMouseOverColor()
+            If Me.ThreeDBackgroundLightMouseOverColorOverride.HasValue Then
+                Me.ThreeDBackgroundLightMouseOverColor = Me.ThreeDBackgroundLightMouseOverColorOverride.Value
+            Else
+                Me.ThreeDBackgroundLightMouseOverColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#BBBBBB"), ColorConverter.ConvertFromString("#333333"))
+            End If
+            Me.ThreeDBackgroundLightMouseOver = New SolidColorBrush(Me.ThreeDBackgroundLightMouseOverColor)
+        End Sub
+
+        Public Property ThreeDBackgroundLightMouseOverColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBackgroundLightMouseOverColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBackgroundLightMouseOverColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBackgroundLightMouseOverColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBackgroundLightMouseOverColor()
+        End Sub
+
+        Public Property ThreeDBackgroundMediumMouseOver As Brush
+            Get
+                Return GetValue(ThreeDBackgroundMediumMouseOverProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBackgroundMediumMouseOverProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBackgroundMediumMouseOverColor As Color
+            Get
+                Return GetValue(ThreeDBackgroundMediumMouseOverColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBackgroundMediumMouseOverColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBackgroundMediumMouseOverColor()
+            If Me.ThreeDBackgroundMediumMouseOverColorOverride.HasValue Then
+                Me.ThreeDBackgroundMediumMouseOverColor = Me.ThreeDBackgroundMediumMouseOverColorOverride.Value
+            Else
+                Me.ThreeDBackgroundMediumMouseOverColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#BBBBBB"), ColorConverter.ConvertFromString("#333333"))
+            End If
+            Me.ThreeDBackgroundMediumMouseOver = New SolidColorBrush(Me.ThreeDBackgroundMediumMouseOverColor)
+        End Sub
+
+        Public Property ThreeDBackgroundMediumMouseOverColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBackgroundMediumMouseOverColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBackgroundMediumMouseOverColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBackgroundMediumMouseOverColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBackgroundMediumMouseOverColor()
+        End Sub
+
+        Public Property ThreeDBackgroundLightPressed As Brush
+            Get
+                Return GetValue(ThreeDBackgroundLightPressedProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBackgroundLightPressedProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBackgroundLightPressedColor As Color
+            Get
+                Return GetValue(ThreeDBackgroundLightPressedColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBackgroundLightPressedColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBackgroundLightPressedColor()
+            If Me.ThreeDBackgroundLightPressedColorOverride.HasValue Then
+                Me.ThreeDBackgroundLightPressedColor = Me.ThreeDBackgroundLightPressedColorOverride.Value
+            Else
+                Me.ThreeDBackgroundLightPressedColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#AAAAAA"), ColorConverter.ConvertFromString("#222222"))
+            End If
+            Me.ThreeDBackgroundLightPressed = New SolidColorBrush(Me.ThreeDBackgroundLightPressedColor)
+        End Sub
+
+        Public Property ThreeDBackgroundLightPressedColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBackgroundLightPressedColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBackgroundLightPressedColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBackgroundLightPressedColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBackgroundLightPressedColor()
+        End Sub
+
+        Public Property ThreeDBackgroundMediumPressed As Brush
+            Get
+                Return GetValue(ThreeDBackgroundMediumPressedProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDBackgroundMediumPressedProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDBackgroundMediumPressedColor As Color
+            Get
+                Return GetValue(ThreeDBackgroundMediumPressedColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDBackgroundMediumPressedColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDBackgroundMediumPressedColor()
+            If Me.ThreeDBackgroundMediumPressedColorOverride.HasValue Then
+                Me.ThreeDBackgroundMediumPressedColor = Me.ThreeDBackgroundMediumPressedColorOverride.Value
+            Else
+                Me.ThreeDBackgroundMediumPressedColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#AAAAAA"), ColorConverter.ConvertFromString("#222222"))
+            End If
+            Me.ThreeDBackgroundMediumPressed = New SolidColorBrush(Me.ThreeDBackgroundMediumPressedColor)
+        End Sub
+
+        Public Property ThreeDBackgroundMediumPressedColorOverride As Color?
+            Get
+                Return GetValue(ThreeDBackgroundMediumPressedColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDBackgroundMediumPressedColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDBackgroundMediumPressedColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDBackgroundMediumPressedColor()
         End Sub
     End Class
 End Namespace
