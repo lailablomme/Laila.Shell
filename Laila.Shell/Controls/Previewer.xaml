@@ -8,8 +8,12 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:Previewer}">
                     <Grid>
+                        <Border Background="{Binding Colors.Background, RelativeSource={RelativeSource Mode=TemplatedParent}}" 
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                        <Border Background="{Binding Colors.Foreground, RelativeSource={RelativeSource Mode=TemplatedParent}}" 
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.1" />
                         <TextBlock x:Name="PART_Message" VerticalAlignment="Center" HorizontalAlignment="Center" 
-                                   Foreground="Gray" Visibility="Collapsed" TextWrapping="Wrap" Margin="20"
+                                   Foreground="{Binding Colors.GrayForeground, RelativeSource={RelativeSource Mode=TemplatedParent}}" Visibility="Collapsed" TextWrapping="Wrap" Margin="20"
                                    TextAlignment="Center" />
                         <Image x:Name="PART_Thumbnail" VerticalAlignment="Center" HorizontalAlignment="Center"
                                Visibility="Collapsed" Margin="10">

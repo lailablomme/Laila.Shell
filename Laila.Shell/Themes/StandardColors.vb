@@ -81,6 +81,9 @@ Namespace Themes
         Public Shared ReadOnly ThreeDBackgroundMediumPressedProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumPressed", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ThreeDBackgroundMediumPressedColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumPressedColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ThreeDBackgroundMediumPressedColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDBackgroundMediumPressedColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDBackgroundMediumPressedColorOverrideChanged))
+        Public Shared ReadOnly ThreeDForegroundProperty As DependencyProperty = DependencyProperty.Register("ThreeDForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDForegroundColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ThreeDForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDForegroundColorOverrideChanged))
 
         Public Sub New()
             AddHandler Shell.Settings.PropertyChanged,
@@ -1088,6 +1091,47 @@ Namespace Themes
         Public Shared Sub OnThreeDBackgroundMediumPressedColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As StandardColors = d
             bfv.setThreeDBackgroundMediumPressedColor()
+        End Sub
+
+        Public Property ThreeDForeground As Brush
+            Get
+                Return GetValue(ThreeDForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ThreeDForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property ThreeDForegroundColor As Color
+            Get
+                Return GetValue(ThreeDForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ThreeDForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setThreeDForegroundColor()
+            If Me.ThreeDForegroundColorOverride.HasValue Then
+                Me.ThreeDForegroundColor = Me.ThreeDForegroundColorOverride.Value
+            Else
+                Me.ThreeDForegroundColor = If(Me.DoUseLightTheme, Colors.Black, Colors.Silver)
+            End If
+            Me.ThreeDForeground = New SolidColorBrush(Me.ThreeDForegroundColor)
+        End Sub
+
+        Public Property ThreeDForegroundColorOverride As Color?
+            Get
+                Return GetValue(ThreeDForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ThreeDForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnThreeDForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setThreeDForegroundColor()
         End Sub
     End Class
 End Namespace

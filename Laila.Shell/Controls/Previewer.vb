@@ -4,7 +4,6 @@ Imports System.Runtime.InteropServices.ComTypes
 Imports System.Threading
 Imports System.Windows
 Imports System.Windows.Controls
-Imports System.Windows.Input
 Imports System.Windows.Interop
 Imports System.Windows.Media
 Imports Laila.Shell.Helpers
@@ -16,11 +15,8 @@ Imports Laila.Shell.Interop.Windows
 
 Namespace Controls
     Public Class Previewer
-        Inherits Control
+        Inherits BaseControl
         Implements IDisposable
-
-        Public Shared ReadOnly FolderProperty As DependencyProperty = DependencyProperty.Register("Folder", GetType(Folder), GetType(Previewer), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
-        Public Shared ReadOnly SelectedItemsProperty As DependencyProperty = DependencyProperty.Register("SelectedItems", GetType(IEnumerable(Of Item)), GetType(Previewer), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnSelectedItemsChanged))
 
         Private Shared _thread As Helpers.ThreadPool = New Helpers.ThreadPool(1)
         Private _handler As IPreviewHandler
@@ -120,30 +116,20 @@ Namespace Controls
             End If
         End Sub
 
-        Public Overridable Property SelectedItems As IEnumerable(Of Item)
-            Get
-                Return GetValue(SelectedItemsProperty)
-            End Get
-            Set(value As IEnumerable(Of Item))
-                SetCurrentValue(SelectedItemsProperty, value)
-            End Set
-        End Property
-
-        Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
-            Dim previewer As Previewer = d
-            If Not previewer._timer Is Nothing Then
-                previewer._timer.Dispose()
-                previewer._timer = Nothing
+        Protected Overrides Sub OnSelectedItemsChanged(ByVal e As DependencyPropertyChangedEventArgs)
+            If Not _timer Is Nothing Then
+                _timer.Dispose()
+                _timer = Nothing
             End If
-            previewer._timer = New Timer(New TimerCallback(
+            _timer = New Timer(New TimerCallback(
                 Sub()
-                    If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso previewer.IsVisible Then
-                        If Not previewer._timer Is Nothing Then
-                            previewer._timer.Dispose()
-                            previewer._timer = Nothing
+                    If Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso Me.IsVisible Then
+                        If Not _timer Is Nothing Then
+                            _timer.Dispose()
+                            _timer = Nothing
                         End If
 
-                        showPreview(d)
+                        showPreview(Me)
                     End If
                 End Sub), Nothing, 500, Timeout.Infinite)
         End Sub
@@ -160,7 +146,7 @@ Namespace Controls
                                 item = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
                         End Sub)
 
-                    If Not item Is Nothing AndAlso (previewer._previewItem Is Nothing OrElse Not item.FullPath?.Equals(previewer._previewItem?.FullPath)) Then
+                    If Not item Is Nothing AndAlso (previewer._previewItem Is Nothing OrElse Not item?.FullPath?.Equals(previewer._previewItem?.FullPath)) Then
                         hidePreview(previewer)
                         _cancelTokenSource = New CancellationTokenSource()
 
@@ -295,7 +281,7 @@ Namespace Controls
                                 End If
                             End If
                         End If
-                    Else
+                    ElseIf Not item?.FullPath?.Equals(previewer._previewItem?.FullPath) Then
                         hidePreview(previewer)
                     End If
 

@@ -183,15 +183,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <Color x:Key="DisabledControlLightColor">#666666</Color>
-        <Color x:Key="DisabledControlDarkColor">#333333</Color>
-        <Color x:Key="DisabledForegroundColor">#999999</Color>
-        <Color x:Key="ControlLightColor">#333333</Color>
-        <Color x:Key="ControlMediumColor">#666666</Color>
-        <Color x:Key="ControlDarkColor">#999999</Color>
-        <Color x:Key="GlyphColor">Silver</Color>
-        <Color x:Key="BorderMediumColor">#999999</Color>
-        <Color x:Key="BorderDarkColor">#666666</Color>
         <Style x:Key="ScrollBarLineButtonHorizontal" TargetType="{x:Type RepeatButton}">
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="OverridesDefaultStyle" Value="true" />
@@ -204,8 +195,8 @@
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                     <LinearGradientBrush.GradientStops>
                                         <GradientStopCollection>
-                                            <GradientStop Color="{DynamicResource BorderMediumColor}" Offset="0.0" />
-                                            <GradientStop Color="{DynamicResource BorderDarkColor}" Offset="1.0" />
+                                            <GradientStop Color="{Binding ThreeDBorderMediumColor, Source={StaticResource colors}}" Offset="0.0" />
+                                            <GradientStop Color="{Binding ThreeDBorderDarkColor, Source={StaticResource colors}}" Offset="1.0" />
                                         </GradientStopCollection>
                                     </LinearGradientBrush.GradientStops>
                                 </LinearGradientBrush>
@@ -214,8 +205,8 @@
                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                     <LinearGradientBrush.GradientStops>
                                         <GradientStopCollection>
-                                            <GradientStop Color="{DynamicResource ControlLightColor}"/>
-                                            <GradientStop Color="{DynamicResource ControlMediumColor}" Offset="1.0" />
+                                            <GradientStop Color="{Binding ThreeDBackgroundLightColor, Source={StaticResource colors}}"/>
+                                            <GradientStop Color="{Binding ThreeDBackgroundMediumColor, Source={StaticResource colors}}" Offset="1.0" />
                                         </GradientStopCollection>
                                     </LinearGradientBrush.GradientStops>
                                 </LinearGradientBrush>
@@ -223,40 +214,27 @@
                             <VisualStateManager.VisualStateGroups>
                                 <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal" />
-                                    <VisualState x:Name="MouseOver" />
+                                    <VisualState x:Name="MouseOver">
+                                        <Storyboard>
+                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
+                                                Storyboard.TargetProperty="(Panel.Background).(GradientBrush.GradientStops)[0].(GradientStop.Color)">
+                                                <EasingColorKeyFrame KeyTime="0" Value="{Binding ThreeDBackgroundLightMouseOverColor, Source={StaticResource colors}}" />
+                                            </ColorAnimationUsingKeyFrames>
+                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
+                                                Storyboard.TargetProperty="(Panel.Background).(GradientBrush.GradientStops)[1].(GradientStop.Color)">
+                                                <EasingColorKeyFrame KeyTime="0" Value="{Binding ThreeDBackgroundMediumMouseOverColor, Source={StaticResource colors}}" />
+                                            </ColorAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualState>
                                     <VisualState x:Name="Pressed">
                                         <Storyboard>
                                             <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
                                                 Storyboard.TargetProperty="(Panel.Background).(GradientBrush.GradientStops)[0].(GradientStop.Color)">
-                                                <EasingColorKeyFrame KeyTime="0" Value="{StaticResource ControlMediumColor}" />
+                                                <EasingColorKeyFrame KeyTime="0" Value="{Binding ThreeDBackgroundLightPressedColor, Source={StaticResource colors}}" />
                                             </ColorAnimationUsingKeyFrames>
                                             <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
                                                 Storyboard.TargetProperty="(Panel.Background).(GradientBrush.GradientStops)[1].(GradientStop.Color)">
-                                                <EasingColorKeyFrame KeyTime="0" Value="{StaticResource ControlDarkColor}" />
-                                            </ColorAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Disabled">
-                                        <Storyboard>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
-                                                Storyboard.TargetProperty="(Border.BorderBrush).(GradientBrush.GradientStops)[0].(GradientStop.Color)">
-                                                <EasingColorKeyFrame KeyTime="0" Value="Gray" />
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
-                                                Storyboard.TargetProperty="(Border.BorderBrush).(GradientBrush.GradientStops)[1].(GradientStop.Color)">
-                                                <EasingColorKeyFrame KeyTime="0" Value="Gray" />
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
-                                                Storyboard.TargetProperty="(Panel.Background).(GradientBrush.GradientStops)[0].(GradientStop.Color)">
-                                                <EasingColorKeyFrame KeyTime="0" Value="{StaticResource DisabledControlLightColor}" />
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
-                                                Storyboard.TargetProperty="(Panel.Background).(GradientBrush.GradientStops)[1].(GradientStop.Color)">
-                                                <EasingColorKeyFrame KeyTime="0" Value="{StaticResource DisabledControlDarkColor}" />
-                                            </ColorAnimationUsingKeyFrames>
-                                            <ColorAnimationUsingKeyFrames Storyboard.TargetName="Arrow"
-                                                Storyboard.TargetProperty="(Shape.Fill).(SolidColorBrush.Color)">
-                                                <EasingColorKeyFrame KeyTime="0" Value="{StaticResource DisabledForegroundColor}" />
+                                                <EasingColorKeyFrame KeyTime="0" Value="{Binding ThreeDBackgroundMediumPressedColor, Source={StaticResource colors}}" />
                                             </ColorAnimationUsingKeyFrames>
                                         </Storyboard>
                                     </VisualState>
@@ -268,7 +246,7 @@
                                   Data="{Binding Content, 
                                   RelativeSource={RelativeSource TemplatedParent}}" >
                                 <Path.Fill>
-                                    <SolidColorBrush Color="{DynamicResource GlyphColor}"/>
+                                    <SolidColorBrush Color="{Binding ThreeDForegroundColor, Source={StaticResource colors}}"/>
                                 </Path.Fill>
                             </Path>
                         </Border>
@@ -339,7 +317,7 @@
                                   Data="{Binding Content, 
                                   RelativeSource={RelativeSource TemplatedParent}}" >
                                 <Path.Fill>
-                                    <SolidColorBrush Color="{DynamicResource GlyphColor}"/>
+                                    <SolidColorBrush Color="{Binding ThreeDForegroundColor, Source={StaticResource colors}}"/>
                                 </Path.Fill>
                             </Path>
                         </Border>
@@ -594,6 +572,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Geometry x:Key="menuChevronDown">M 0 0 L 4 4 L 8 0</Geometry>
     </metroWindow:MetroWindow.Resources>
     <metroWindow:MetroWindow.Style>
         <Style TargetType="{x:Type local:MainWindow}">
@@ -879,7 +858,8 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/add16.png" />
                                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_NewMenuButton}" />
-                                                <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding Foreground, Source={StaticResource colors}}" 
+                                                      StrokeThickness="1.25" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                             </StackPanel>
                                         </ToggleButton>
                                         <Line X1="0" Y1="0" X2="0" Y2="32" Stroke="Gray" Margin="0,0,5,0" />
@@ -1001,7 +981,8 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/sort16.png" />
                                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_SortMenuButton}" />
-                                                <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding Foreground, Source={StaticResource colors}}" 
+                                                      StrokeThickness="1.25" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                             </StackPanel>
                                         </ToggleButton>
                                         <ToggleButton x:Name="ViewMenuButton" Margin="0,0,5,0" Checked="ViewMenuButton_Checked"
@@ -1013,7 +994,8 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/view16.png" />
                                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_ViewMenuButton}" />
-                                                <Image Width="9" Height="5" Margin="4,0,0,0" Source="pack://application:,,,/Laila.Shell;component/Images/dropdown_arrow.png" />
+                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding Foreground, Source={StaticResource colors}}" 
+                                                      StrokeThickness="1.25" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                             </StackPanel>
                                         </ToggleButton>
                                     </StackPanel>
