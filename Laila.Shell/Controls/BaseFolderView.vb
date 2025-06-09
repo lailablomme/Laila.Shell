@@ -680,6 +680,8 @@ Namespace Controls
                                         .Content = text,
                                         .Placement = PlacementMode.Mouse
                                     }
+                                    _toolTip.Tag = Me
+                                    _toolTip.Style = Me.FindResource(GetType(ToolTip))
                                     _toolTip.IsOpen = True
                                 End If
                             End Sub)
@@ -819,6 +821,8 @@ Namespace Controls
             End If
 
             _menu = Menus.GetContextMenu(Me.DoUseWindows11ExplorerMenu, folder, selectedItems, isDefaultOnly)
+            _menu.Colors = Me.Colors
+            _menu.Style = Me.FindResource("lailaShell_ContextMenuStyle")
 
             AddHandler _menu.CommandInvoked,
                 Sub(s As Object, e2 As CommandInvokedEventArgs)

@@ -3,6 +3,7 @@ Imports System.Windows.Controls
 Imports System.Windows.Controls.Primitives
 Imports System.Windows.Input
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Themes
 
 Namespace Controls
     Public Class ContextMenu
@@ -11,6 +12,7 @@ Namespace Controls
         Public Shared ReadOnly ShowButtonsTopOrBottomProperty As DependencyProperty = DependencyProperty.Register("ShowButtonsTopOrBottom", GetType(TopOrBottom),
             GetType(ContextMenu), New FrameworkPropertyMetadata(TopOrBottom.Unset, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ResourcePrefixProperty As DependencyProperty = DependencyProperty.Register("ResourcePrefix", GetType(String), GetType(ContextMenu), New FrameworkPropertyMetadata("lailaShell_Menu_", FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ColorsProperty As DependencyProperty = DependencyProperty.Register("Colors", GetType(StandardColors), GetType(ContextMenu), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private _buttonsTop As StackPanel
         Private _buttonsBottom As StackPanel
@@ -20,6 +22,10 @@ Namespace Controls
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(ContextMenu), New FrameworkPropertyMetadata(GetType(ContextMenu)))
+        End Sub
+
+        Public Sub New()
+            Me.Colors = New StandardColors()
         End Sub
 
         Public Overrides Sub OnApplyTemplate()
@@ -98,6 +104,15 @@ Namespace Controls
             End Get
             Set(value As String)
                 SetValue(ResourcePrefixProperty, value)
+            End Set
+        End Property
+
+        Public Property Colors As StandardColors
+            Get
+                Return GetValue(ColorsProperty)
+            End Get
+            Set(ByVal value As StandardColors)
+                SetCurrentValue(ColorsProperty, value)
             End Set
         End Property
 

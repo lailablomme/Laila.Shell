@@ -784,6 +784,15 @@ Namespace My.Resources
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Unknown.
+        '''</summary>
+        Friend ReadOnly Property Unknown() As String
+            Get
+                Return ResourceManager.GetString("Unknown", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to Content.
         '''</summary>
         Friend ReadOnly Property View_Content() As String

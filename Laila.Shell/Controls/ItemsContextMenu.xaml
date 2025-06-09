@@ -17,8 +17,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type controls:ItemsContextMenu}">
-                    <Border Padding="3" x:Name="PART_Menu" Opacity="0" BorderBrush="{StaticResource Menu.BorderBrush}" BorderThickness="1" 
-                            Background="{StaticResource Menu.Background}" Margin="0,0,6,6" UseLayoutRounding="True" SnapsToDevicePixels="True"
+                    <Border Padding="3" x:Name="PART_Menu" Opacity="0" BorderThickness="1" CornerRadius="5" 
+                            Background="{Binding Colors.MenuBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"  
+                            BorderBrush="{Binding Colors.MenuBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"
+                            Margin="0,0,6,6" UseLayoutRounding="True" SnapsToDevicePixels="True"
                             Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type controls:ItemsContextMenu}}}">
                         <Border.Triggers>
                             <EventTrigger RoutedEvent="Rectangle.Loaded">
@@ -34,13 +36,13 @@
                         </Border.Effect>
                         <Grid>
                             <ListBox x:Name="PART_ListBox" SelectionMode="Single" Background="Transparent"
-                                 ItemsSource="{TemplateBinding ItemsSource}"
-                                 FocusVisualStyle="{x:Null}" ScrollViewer.IsDeferredScrollingEnabled="False" 
-                                 ScrollViewer.CanContentScroll="True" BorderThickness="0" Width="255"
-                                 Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
-                                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                 VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="1" 
-                                 VirtualizingPanel.CacheLengthUnit="Item">
+                                     ItemsSource="{TemplateBinding ItemsSource}"
+                                     FocusVisualStyle="{x:Null}" ScrollViewer.IsDeferredScrollingEnabled="False" 
+                                     ScrollViewer.CanContentScroll="True" BorderThickness="0" Width="255"
+                                     Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
+                                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                                     VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLength="1" 
+                                     VirtualizingPanel.CacheLengthUnit="Item">
                                 <ListBox.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <VirtualizingStackPanel />
@@ -50,7 +52,7 @@
                                     <Style TargetType="ListBoxItem">
                                         <Setter Property="OverridesDefaultStyle" Value="True"/>
                                         <Setter Property="SnapsToDevicePixels" Value="True"/>
-                                        <Setter Property="Foreground" Value="{StaticResource Menu.Foreground}"/>
+                                        <Setter Property="Foreground" Value="{Binding Colors.MenuItemForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"/>
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="BorderBrush" Value="Transparent"/>
                                         <Setter Property="BorderThickness" Value="1"/>
@@ -67,19 +69,21 @@
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource MenuItem.Highlighted.Background}"/>
-                                                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource MenuItem.Highlighted.BorderBrush}"/>
+                                                            <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"/>
+                                                            <Setter Property="Background" TargetName="Bd" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"/>
+                                                            <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"/>
                                                         </Trigger>
                                                         <MultiDataTrigger>
                                                             <MultiDataTrigger.Conditions>
                                                                 <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Self}}" Value="True"/>
                                                                 <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListBox}}" Value="False"/>
                                                             </MultiDataTrigger.Conditions>
-                                                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource MenuItem.Highlighted.Background}"/>
-                                                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource MenuItem.Highlighted.BorderBrush}"/>
+                                                            <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"/>
+                                                            <Setter Property="Background" TargetName="Bd" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"/>
+                                                            <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"/>
                                                         </MultiDataTrigger>
                                                         <Trigger Property="IsEnabled" Value="False">
-                                                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                                                            <Setter Property="TextElement.Foreground" TargetName="Bd" Value="{Binding Colors.MenuItemDisabledForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}"/>
                                                         </Trigger>
                                                     </ControlTemplate.Triggers>
                                                 </ControlTemplate>
@@ -166,6 +170,36 @@
                                         </Style.Triggers>
                                     </Style>
                                 </ListBox.Style>
+                                <ListBox.Resources>
+                                    <Style TargetType="ToolTip">
+                                        <Setter Property="OverridesDefaultStyle" Value="True"/>
+                                        <Setter Property="HasDropShadow" Value="True"/>
+                                        <Setter Property="HasDropShadow" Value="True"/>
+                                        <Setter Property="Foreground" Value="{Binding Colors.ToolTipForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}" />
+                                        <Setter Property="Background" Value="{Binding Colors.ToolTipBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}" />
+                                        <Setter Property="BorderBrush" Value="{Binding Colors.ToolTipBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:ItemsContextMenu}}" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ToolTip">
+                                                    <Border 
+                                                        Name="Border"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="4"
+                                                        Padding="4"
+                                                        SnapsToDevicePixels="True">
+                                                        <ContentPresenter 
+                                                            Margin="0"
+                                                            RecognizesAccessKey="True" 
+                                                            VerticalAlignment="Center" 
+                                                            HorizontalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.Resources>
                             </ListBox>
                             <StackPanel Orientation="Horizontal" x:Name="PART_Loader" Width="255">
                                 <Viewbox Grid.Column="1" StretchDirection="Both" 

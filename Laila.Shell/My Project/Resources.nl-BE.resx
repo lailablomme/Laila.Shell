@@ -348,6 +348,9 @@
   <data name="ToolBar_ViewMenuButtonToolTip" xml:space="preserve">
     <value>Indeling en weergaveopties.</value>
   </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Onbekend</value>
+  </data>
   <data name="View_Content" xml:space="preserve">
     <value>Inhoud</value>
   </data>

@@ -17,6 +17,382 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:HomeFolderTilesView}">
+                    <ControlTemplate.Resources>
+                        <Style TargetType="ToolTip">
+                            <Setter Property="OverridesDefaultStyle" Value="True"/>
+                            <Setter Property="HasDropShadow" Value="True"/>
+                            <Setter Property="HasDropShadow" Value="True"/>
+                            <Setter Property="Foreground" Value="{Binding Tag.Colors.ToolTipForeground, RelativeSource={RelativeSource Mode=Self}}" />
+                            <Setter Property="Background" Value="{Binding Tag.Colors.ToolTipBackground, RelativeSource={RelativeSource Mode=Self}}" />
+                            <Setter Property="BorderBrush" Value="{Binding Tag.Colors.ToolTipBorder, RelativeSource={RelativeSource Mode=Self}}" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ToolTip">
+                                        <Border 
+                                            Name="Border"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="4"
+                                            SnapsToDevicePixels="True">
+                                            <ContentPresenter 
+                                                Margin="0"
+                                                RecognizesAccessKey="True" 
+                                                VerticalAlignment="Center" 
+                                                HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                        <Style TargetType="{x:Type local:ContextMenu}" x:Key="lailaShell_ContextMenuStyle">
+                            <Style.Resources>
+                                <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
+                                    <Setter Property="Height" Value="1" />
+                                    <Setter Property="Margin" Value="0,2,0,2" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type Separator}">
+                                                <Border BorderBrush="{Binding Colors.MenuItemSeparator, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" BorderThickness="0,1,0,0" Margin="-2,0,-2,0" />
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                    <Style.Resources>
+                                        <ControlTemplate x:Key="{ComponentResourceKey ResourceId=SubmenuItemTemplateKey, TypeInTargetAssembly={x:Type MenuItem}}" TargetType="{x:Type MenuItem}">
+                                            <Grid SnapsToDevicePixels="true">
+                                                <Border x:Name="Bg" BorderThickness="1" Background="Transparent" />
+                                                <Grid Height="22">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition SharedSizeGroup="MenuItemCheckColumnGroup" Width="Auto"/>
+                                                        <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition SharedSizeGroup="MenuItemIGTColumnGroup" Width="Auto"/>
+                                                        <ColumnDefinition Width="17"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border x:Name="GlyphPanel" Height="20" Margin="1" Visibility="Collapsed" Width="22">
+                                                        <Image x:Name="Glyph" Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/check16.png" />
+                                                    </Border>
+                                                    <ContentPresenter Grid.Column="1" x:Name="Icon" MaxHeight="16" MaxWidth="16" ContentSource="Icon" Margin="4,1,1,1" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center"/>
+                                                    <ContentPresenter Grid.Column="2" ContentSource="Header" VerticalAlignment="Center" Margin="4,0,0,0" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                                      TextBlock.Foreground="{Binding Colors.MenuItemForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <TextBlock x:Name="igText" Grid.Column="3" Margin="37,0,0,0" VerticalAlignment="Center" Text="{TemplateBinding InputGestureText}"
+                                                               Foreground="{Binding Colors.MenuItemInputGestureTextForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                </Grid>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="Icon" Value="{x:Null}">
+                                                    <Setter Property="Visibility" TargetName="Icon" Value="Collapsed"/>
+                                                </Trigger>
+                                                <Trigger Property="InputGestureText" Value="{x:Null}">
+                                                    <Setter Property="Visibility" TargetName="igText" Value="Collapsed"/>
+                                                </Trigger>
+                                                <Trigger Property="IsCheckable" Value="true">
+                                                    <Setter Property="Visibility" TargetName="GlyphPanel" Value="Hidden"/>
+                                                </Trigger>
+                                                <Trigger Property="IsChecked" Value="true">
+                                                    <Setter Property="Visibility" TargetName="GlyphPanel" Value="Visible"/>
+                                                </Trigger>
+                                                <Trigger Property="IsHighlighted" Value="true">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Background" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="BorderBrush" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="false">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemDisabledForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Opacity" TargetName="Glyph" Value="0.30"/>
+                                                    <Setter Property="Opacity" TargetName="Icon" Value="0.30"/>
+                                                </Trigger>
+                                                <Trigger Property="IsPressed" Value="true">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Background" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="BorderBrush" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                        <ControlTemplate x:Key="{ComponentResourceKey ResourceId=SubmenuContent, TypeInTargetAssembly={x:Type FrameworkElement}}" TargetType="{x:Type ContentControl}">
+                                            <Border Padding="0,3,0,3" x:Name="PART_Menu" Opacity="0"  BorderThickness="1" CornerRadius="5"
+                                                    BorderBrush="{Binding Colors.MenuBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"
+                                                    Background="{Binding Colors.MenuBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" Margin="0,0,6,6">
+                                                <Border.Triggers>
+                                                    <EventTrigger RoutedEvent="Rectangle.Loaded">
+                                                        <BeginStoryboard>
+                                                            <Storyboard>
+                                                                <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                </Border.Triggers>
+                                                <Border.Effect>
+                                                    <DropShadowEffect BlurRadius="3" Color="Black" ShadowDepth="3" Opacity="0.5" />
+                                                </Border.Effect>
+                                                <ScrollViewer x:Name="PART_ScrollViewer" UseLayoutRounding="True" SnapsToDevicePixels="True" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
+                                                    <ContentPresenter />
+                                                </ScrollViewer>
+                                            </Border>
+                                        </ControlTemplate>
+                                        <ControlTemplate x:Key="{ComponentResourceKey ResourceId=TopLevelItemTemplateKey, TypeInTargetAssembly={x:Type MenuItem}}" TargetType="{x:Type MenuItem}">
+                                            <Grid SnapsToDevicePixels="true">
+                                                <Border x:Name="Bg" BorderThickness="1" Background="Transparent"/>
+                                                <DockPanel>
+                                                    <ContentPresenter x:Name="Icon" ContentSource="Icon" Margin="4,0,6,0" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center"/>
+                                                    <Image x:Name="GlyphPanel" Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/check16.png" Margin="7,0,0,0" Visibility="Collapsed" VerticalAlignment="Center" />
+                                                    <ContentPresenter ContentSource="Header" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                                      TextBlock.Foreground="{Binding Colors.MenuItemForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                </DockPanel>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="Icon" Value="{x:Null}">
+                                                    <Setter Property="Visibility" TargetName="Icon" Value="Collapsed"/>
+                                                </Trigger>
+                                                <Trigger Property="IsChecked" Value="true">
+                                                    <Setter Property="Visibility" TargetName="GlyphPanel" Value="Visible"/>
+                                                    <Setter Property="Visibility" TargetName="Icon" Value="Collapsed"/>
+                                                </Trigger>
+                                                <Trigger Property="IsHighlighted" Value="true">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Background" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="BorderBrush" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
+                                                </Trigger>
+                                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Background" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="BorderBrush" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="false">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemDisabledForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Opacity" TargetName="GlyphPanel" Value="0.30"/>
+                                                    <Setter Property="Opacity" TargetName="Icon" Value="0.30"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                        <Geometry x:Key="RightArrow">M 0,0 L 4,3.5 L 0,7</Geometry>
+                                        <ControlTemplate x:Key="{ComponentResourceKey ResourceId=SubmenuHeaderTemplateKey, TypeInTargetAssembly={x:Type MenuItem}}" TargetType="{x:Type MenuItem}">
+                                            <Grid SnapsToDevicePixels="true" UseLayoutRounding="True">
+                                                <Border x:Name="Bg" BorderThickness="1" Background="Transparent"/>
+                                                <Grid Height="22">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition SharedSizeGroup="MenuItemCheckColumnGroup" Width="Auto"/>
+                                                        <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="Auto"/>
+                                                        <ColumnDefinition Width="4"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="37"/>
+                                                        <ColumnDefinition SharedSizeGroup="MenuItemIGTColumnGroup" Width="Auto"/>
+                                                        <ColumnDefinition Width="17"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border x:Name="GlyphPanel" BorderBrush="#CDD3E6" BorderThickness="1" Background="#E6EFF4" CornerRadius="3" Height="20" Margin="1" Visibility="Collapsed" Width="22">
+                                                        <Image x:Name="Glyph" Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/check16.png" />
+                                                    </Border>
+                                                    <ContentPresenter Grid.Column="1" x:Name="Icon" Height="16" Width="16" ContentSource="Icon" Margin="4,1,1,1" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center"/>
+                                                    <ContentPresenter Grid.Column="3" ContentSource="Header" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                                                      TextBlock.Foreground="{Binding Colors.MenuItemForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <TextBlock Grid.Column="5" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" Text="{TemplateBinding InputGestureText}" Visibility="Collapsed"
+                                                               Foreground="{Binding Colors.MenuItemInputGestureTextForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Path Grid.Column="6" Data="{StaticResource RightArrow}" Margin="4,0,0,0" VerticalAlignment="Center"
+                                                          Stroke="{Binding Colors.MenuItemForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
+                                                </Grid>
+                                                <Popup x:Name="PART_Popup" AllowsTransparency="true" Focusable="false" HorizontalOffset="-2" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}" PopupAnimation="{DynamicResource {x:Static SystemParameters.MenuPopupAnimationKey}}" Placement="Right" VerticalOffset="-3">
+                                                    <ContentControl x:Name="SubMenuBorder" IsTabStop="false" Template="{DynamicResource {ComponentResourceKey ResourceId=SubmenuContent, TypeInTargetAssembly={x:Type FrameworkElement}}}">
+                                                        <ScrollViewer x:Name="PART_ScrollViewer" SnapsToDevicePixels="true" UseLayoutRounding="True" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
+                                                            <Grid>
+                                                                <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Cycle" Grid.IsSharedSizeScope="true" Margin="2" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" KeyboardNavigation.TabNavigation="Cycle"/>
+                                                            </Grid>
+                                                        </ScrollViewer>
+                                                    </ContentControl>
+                                                </Popup>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="Icon" Value="{x:Null}">
+                                                    <Setter Property="Visibility" TargetName="Icon" Value="Collapsed"/>
+                                                </Trigger>
+                                                <Trigger Property="IsCheckable" Value="true">
+                                                    <Setter Property="Visibility" TargetName="GlyphPanel" Value="Hidden"/>
+                                                </Trigger>
+                                                <Trigger Property="IsChecked" Value="true">
+                                                    <Setter Property="Visibility" TargetName="GlyphPanel" Value="Visible"/>
+                                                </Trigger>
+                                                <Trigger Property="IsHighlighted" Value="true">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Background" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="BorderBrush" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
+                                                </Trigger>
+                                                <Trigger Property="IsKeyboardFocused" Value="true">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Background" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="BorderBrush" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="false">
+                                                    <Setter Property="Foreground" Value="{Binding Colors.MenuItemDisabledForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    <Setter Property="Opacity" TargetName="GlyphPanel" Value="0.30"/>
+                                                    <Setter Property="Opacity" TargetName="Icon" Value="0.30"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Style.Resources>
+                                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="4,0,4,0"/>
+                                </Style>
+                                <Style TargetType="Button" x:Key="lailaShell_ContextMenuButtonStyle">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="{Binding Colors.MenuButtonForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0,0,3,0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="border" Padding="{TemplateBinding Padding}"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Foreground" Value="{Binding Colors.MenuButtonSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                        <Setter TargetName="border" Property="Background" Value="{Binding Colors.MenuButtonSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                        <Setter TargetName="border" Property="BorderBrush" Value="{Binding Colors.MenuButtonSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Style TargetType="ToggleButton" x:Key="lailaShell_ContextMenuToggleButtonStyle">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="{Binding Colors.MenuButtonForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0,0,3,0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border x:Name="border" Padding="{TemplateBinding Padding}"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Foreground" Value="{Binding Colors.MenuButtonSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                        <Setter TargetName="border" Property="Background" Value="{Binding Colors.MenuButtonSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                        <Setter TargetName="border" Property="BorderBrush" Value="{Binding Colors.MenuButtonSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter Property="Foreground" Value="{Binding Colors.MenuButtonSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                        <Setter TargetName="border" Property="Background" Value="{Binding Colors.MenuButtonSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                        <Setter TargetName="border" Property="BorderBrush" Value="{Binding Colors.MenuButtonSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Style.Resources>
+                            <Setter Property="SnapsToDevicePixels" Value="True" />
+                            <Setter Property="Grid.IsSharedSizeScope" Value="true" />
+                            <Setter Property="Foreground" Value="Black" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type local:ContextMenu}">
+                                        <Border Padding="0,3,0,3" x:Name="PART_Menu" Opacity="0" BorderThickness="1" CornerRadius="5" 
+                                                BorderBrush="{Binding Colors.MenuBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" 
+                                                Background="{Binding Colors.MenuBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" 
+                                                UseLayoutRounding="True" SnapsToDevicePixels="True">
+                                            <Border.Effect>
+                                                <DropShadowEffect BlurRadius="3" Color="Black" ShadowDepth="3" Opacity="0.5" />
+                                            </Border.Effect>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="*" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+
+                                                <Border x:Name="borderTop" Grid.Row="0" Padding="4,0,4,1" Visibility="Visible"
+                                                        Background="{Binding Colors.MenuButtonTrayBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}">
+                                                    <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsTop" />
+                                                </Border>
+                                                <Separator Grid.Row="1" x:Name="separatorTop" Style="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}" />
+                                                <ScrollViewer Grid.Row="2" x:Name="PART_ScrollViewer" RenderOptions.ClearTypeHint="Enabled"
+                                                                HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto">
+                                                    <ItemsPresenter Margin="0,0,0,1" x:Name="PART_ItemsPresenter" />
+                                                </ScrollViewer>
+                                                <Separator Grid.Row="3" x:Name="separatorBottom" Style="{StaticResource {x:Static MenuItem.SeparatorStyleKey}}" />
+                                                <Border x:Name="borderBottom" Grid.Row="4" Padding="4,1,4,0" Visibility="Visible"
+                                                        Background="{Binding Colors.MenuButtonTrayBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}">
+                                                    <StackPanel Orientation="Horizontal" x:Name="PART_ButtonsBottom" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="ShowButtonsTopOrBottom" Value="Top">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                            </Trigger>
+                                            <Trigger Property="ShowButtonsTopOrBottom" Value="Bottom">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                            </Trigger>
+                                            <Trigger Property="ShowButtonsTopOrBottom" Value="Both">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                            </Trigger>
+                                            <Trigger Property="ShowButtonsTopOrBottom" Value="None">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Duration="0:0:0.2" To="1" Storyboard.TargetProperty="Opacity" Storyboard.TargetName="PART_Menu" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                            </Trigger>
+                                            <Trigger Property="ShowButtonsTopOrBottom" Value="Bottom">
+                                                <Setter Property="Visibility" TargetName="borderTop" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="separatorTop" Value="Collapsed" />
+                                            </Trigger>
+                                            <Trigger Property="ShowButtonsTopOrBottom" Value="None">
+                                                <Setter Property="Visibility" TargetName="borderTop" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="separatorTop" Value="Collapsed" />
+                                            </Trigger>
+                                            <Trigger Property="ShowButtonsTopOrBottom" Value="Top">
+                                                <Setter Property="Visibility" TargetName="borderBottom" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="separatorBottom" Value="Collapsed" />
+                                            </Trigger>
+                                            <Trigger Property="ShowButtonsTopOrBottom" Value="None">
+                                                <Setter Property="Visibility" TargetName="borderBottom" Value="Collapsed" />
+                                                <Setter Property="Visibility" TargetName="separatorBottom" Value="Collapsed" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ControlTemplate.Resources>
                     <Grid x:Name="PART_Grid" UseLayoutRounding="True" SnapsToDevicePixels="True" 
                           Tag="{Binding ., RelativeSource={RelativeSource AncestorType={x:Type local:BaseFolderView}}}">
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
@@ -26,13 +402,13 @@
                                   Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}"
                                   Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}">
                             <ListView.Resources>
-                                <Geometry x:Key="ChevronGroupByHome">M 0,0 L 5,6 L 10,0</Geometry>
+                                <Geometry x:Key="ChevronGroupByHome">M -5,-3 L 0,3 L 5,-3</Geometry>
                                 <Style TargetType="ToggleButton" x:Key="lailaShell_GroupByExpanderToggleButtonHomeStyle">
                                     <Setter Property="Background" Value="Transparent" />
                                     <Setter Property="BorderBrush" Value="Transparent" />
                                     <Setter Property="Foreground" Value="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" />
                                     <Setter Property="Height" Value="35" />
-                                    <Setter Property="Padding" Value="0,0,0,0" />
+                                    <Setter Property="Padding" Value="3,6,0,0" />
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="ToggleButton">
@@ -40,19 +416,37 @@
                                                         BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" CornerRadius="5" 
                                                         Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                                                     <StackPanel Orientation="Horizontal">
-                                                        <Path x:Name="PART_Chevron" Data="{StaticResource ChevronGroupByHome}" StrokeThickness="1" Margin="0" 
-                                                              Fill="Transparent" Stroke="{TemplateBinding Foreground}" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="7"/>
-                                                        <ContentPresenter Margin="4,0,0,0" VerticalAlignment="Center" />
+                                                        <Path x:Name="PART_Chevron" Data="{StaticResource ChevronGroupByHome}" StrokeThickness="1.25" Margin="0" 
+                                                              Fill="Transparent" Stroke="{TemplateBinding Foreground}" VerticalAlignment="Center" 
+                                                              HorizontalAlignment="Center" Width="11" Height="7">
+                                                            <Path.RenderTransform>
+                                                                <RotateTransform x:Name="ChevronRotateTransform" Angle="0" />
+                                                            </Path.RenderTransform>
+                                                        </Path>
                                                     </StackPanel>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsChecked" Value="False">
-                                                        <Setter TargetName="PART_Chevron" Property="RenderTransform">
-                                                            <Setter.Value>
-                                                                <RotateTransform Angle="-90"/>
-                                                            </Setter.Value>
-                                                        </Setter>
-                                                        <Setter TargetName="PART_Chevron" Property="Margin" Value="2,17,-2,0" />
+                                                        <Trigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="ChevronRotateTransform"
+                                                                                     Storyboard.TargetProperty="Angle"
+                                                                                     To="-90"
+                                                                                     Duration="0:0:0.2" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </Trigger.EnterActions>
+                                                        <Trigger.ExitActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="ChevronRotateTransform"
+                                                                                     Storyboard.TargetProperty="Angle"
+                                                                                     To="0"
+                                                                                     Duration="0:0:0.2" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </Trigger.ExitActions>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
@@ -876,7 +1270,7 @@
                             </Grid.ColumnDefinitions>
                             <Border Grid.Column="1" Grid.ColumnSpan="2" Background="#eeeeee" CornerRadius="5" Margin="-5" />
                             <Image Grid.Column="1" Source="../Images/error32.png" Width="32" Height="32" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                            <TextBlock Grid.Column="2" Text="{Binding Folder.EnumerationException.Message}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Foreground="Red" Text="{Binding Folder.EnumerationException.Message}" VerticalAlignment="Center" />
                         </Grid>
                         <Grid VerticalAlignment="Top" HorizontalAlignment="Center" Panel.ZIndex="3">
                             <Grid.Style>
@@ -902,7 +1296,7 @@
                                 <ColumnDefinition Width="10" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="1" Text="{shell:Resource FolderView_ThisFolderIsEmpty}" Margin="0,5,0,0" 
-                                       TextAlignment="Center" TextWrapping="Wrap" Foreground="Gray" />
+                                       TextAlignment="Center" TextWrapping="Wrap" Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" />
                         </Grid>
                         <Grid x:Name="PART_DragInsertIndicator" Visibility="Collapsed" IsHitTestVisible="False" 
                               VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,0">

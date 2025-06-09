@@ -160,6 +160,8 @@ Public Class PinnedItems
                 Thread.Sleep(500)
             End Try
         End While
+
+        Return -1
     End Function
 
     Public Shared Sub NotifyReset()

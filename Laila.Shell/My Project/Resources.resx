@@ -358,6 +358,9 @@
   <data name="ToolBar_ViewMenuButtonToolTip" xml:space="preserve">
     <value>Layout and view options.</value>
   </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
   <data name="View_Content" xml:space="preserve">
     <value>Content</value>
   </data>

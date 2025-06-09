@@ -553,6 +553,8 @@ Namespace Controls
                                 _menu.Dispose()
                             End If
                             _menu = Menus.GetContextMenu(Me.DoUseWindows11ExplorerMenu, If(clickedItem.Parent Is Nothing, Shell.Desktop, clickedItem.Parent), {clickedItem}, False)
+                            _menu.Colors = Me.Colors
+                            _menu.Style = Me.FindResource("lailaShell_ContextMenuStyle")
                             AddHandler _menu.CommandInvoked,
                                 Sub(s As Object, e2 As CommandInvokedEventArgs)
                                     Select Case e2.Verb

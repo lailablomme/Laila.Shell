@@ -1187,9 +1187,9 @@ Public Class Item
             If Not disposedValue AndAlso _contentViewModeProperties Is Nothing Then
                 Dim propList As String
                 If _parent Is Nothing OrElse Not TypeOf _parent Is SearchFolder Then
-                    propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForBrowse").Text
+                    propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForBrowse")?.Text
                 Else
-                    propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForSearch").Text
+                    propList = Me.PropertiesByCanonicalName("System.PropList.ContentViewModeForSearch")?.Text
                 End If
                 If Not String.IsNullOrWhiteSpace(propList) Then
                     Dim propertyNames() As String = propList.Substring(5).Split(";")
@@ -1269,7 +1269,7 @@ Public Class Item
                     .fmtid = New Guid("C9944A21-A406-48FE-8225-AEC7E24C211B"),
                     .pid = 3
                 }
-                Dim system_PropList_TileInfo As String = Me.PropertiesByKey(PKEY_System_PropList_TileInfo).Text
+                Dim system_PropList_TileInfo As String = Me.PropertiesByKey(PKEY_System_PropList_TileInfo)?.Text
                 Dim properties() As String
                 If Not String.IsNullOrWhiteSpace(system_PropList_TileInfo) Then
                     properties = system_PropList_TileInfo.Substring(5).Split(";")
@@ -1291,6 +1291,12 @@ Public Class Item
             Else
                 Return Nothing
             End If
+        End Get
+    End Property
+
+    Public Overridable ReadOnly Property GroupByText(propertyKey As String) As String
+        Get
+            Return If(Me.PropertiesByKeyAsText(propertyKey)?.GroupByText, My.Resources.Unknown)
         End Get
     End Property
 

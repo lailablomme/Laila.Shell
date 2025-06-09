@@ -205,7 +205,7 @@ Public Class [Property]
             If String.IsNullOrWhiteSpace(_displayName) Then
                 Dim name As StringBuilder = New StringBuilder()
                 Me.Description.GetDisplayName(name)
-                _displayName = name.ToString()
+                _displayName = If(String.IsNullOrWhiteSpace(name.ToString()), Nothing, name.ToString())
             End If
             Return _displayName
         End Get
@@ -213,7 +213,7 @@ Public Class [Property]
 
     Public ReadOnly Property DisplayNameWithColon As String
         Get
-            Return Me.DisplayName.ToString() & ":"
+            Return Me.DisplayName?.ToString() & ":"
         End Get
     End Property
 
@@ -244,7 +244,7 @@ Public Class [Property]
                 Dim buffer As StringBuilder = New StringBuilder()
                 buffer.Append(New String(" ", 2050))
                 Functions.PSFormatForDisplay(_propertyKey, Me.RawValue, PropertyDescriptionFormatOptions.None, buffer, 2048)
-                _text = buffer.ToString()
+                _text = If(String.IsNullOrWhiteSpace(buffer.ToString()), Nothing, buffer.ToString())
             End If
             Return _text
         End Get
@@ -304,7 +304,7 @@ Public Class [Property]
                     Return My.Resources.Property_Size_Gigantic
                 End If
             Else
-                Return Me.Text
+                Return If(String.IsNullOrWhiteSpace(Me.Text), Nothing, Me.Text)
             End If
         End Get
     End Property

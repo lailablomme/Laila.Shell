@@ -362,7 +362,7 @@ Namespace Controls
                     .GlassFrameThickness = New Thickness(0)
                 })
             previewer._window.WindowStyle = WindowStyle.None
-            previewer._window.Background = Brushes.White
+            previewer._window.Background = previewer.Colors.Background
             previewer._window.ResizeMode = ResizeMode.NoResize
             previewer._window.ShowInTaskbar = False
             previewer._window.Owner = Window.GetWindow(previewer)

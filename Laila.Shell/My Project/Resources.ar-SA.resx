@@ -342,6 +342,9 @@
   <data name="ToolBar_ViewMenuButtonToolTip" xml:space="preserve">
     <value>خيارات التخطيط والعرض.</value>
   </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>غير معروف</value>
+  </data>
   <data name="View_Content" xml:space="preserve">
     <value>المحتوى</value>
   </data>

@@ -3,6 +3,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Input
 Imports Laila.Shell.Helpers
+Imports Laila.Shell.Themes
 
 Namespace Controls
     Public Class ItemsContextMenu
@@ -10,6 +11,7 @@ Namespace Controls
 
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColor", GetType(Boolean), GetType(ItemsContextMenu), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly DoShowEncryptedOrCompressedFilesInColorOverrideProperty As DependencyProperty = DependencyProperty.Register("DoShowEncryptedOrCompressedFilesInColorOverride", GetType(Boolean?), GetType(ItemsContextMenu), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnDoShowEncryptedOrCompressedFilesInColorOverrideChanged))
+        Public Shared ReadOnly ColorsProperty As DependencyProperty = DependencyProperty.Register("Colors", GetType(StandardColors), GetType(ItemsContextMenu), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Public Event ItemClicked As EventHandler
 
@@ -117,6 +119,15 @@ Namespace Controls
             End Get
             Set(ByVal value As Boolean?)
                 SetCurrentValue(DoShowEncryptedOrCompressedFilesInColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Property Colors As StandardColors
+            Get
+                Return GetValue(ColorsProperty)
+            End Get
+            Set(ByVal value As StandardColors)
+                SetCurrentValue(ColorsProperty, value)
             End Set
         End Property
 

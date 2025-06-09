@@ -10,7 +10,6 @@
     </ResourceDictionary.MergedDictionaries>
 
     <Style TargetType="local:SlidingExpander">
-        <Setter Property="Foreground" Value="Black" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Template">
             <Setter.Value>
@@ -29,7 +28,7 @@
                             <DockPanel>
                                 <ToggleButton DockPanel.Dock="Left" x:Name="PART_ToggleButton" IsChecked="True" Focusable="False" VerticalAlignment="Center"
                                               Style="{Binding ToggleButtonStyle, RelativeSource={RelativeSource TemplatedParent}}" Margin="4,0,0,0"
-                                              Visibility="{TemplateBinding ToggleButtonVisibility}">
+                                              Visibility="{TemplateBinding ToggleButtonVisibility}" Foreground="{TemplateBinding ChevronForeground}">
                                 </ToggleButton>
                                 <Button x:Name="PART_TitleLabel" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Left" Margin="4,0,4,1"
                                         FocusVisualStyle="{x:Null}">
@@ -79,11 +78,10 @@
                             </Trigger.Setters>
                         </Trigger>
                         <Trigger Property="IsMouseOver" SourceName="Bd" Value="True">
-                            <Setter Property="Background" TargetName="Bd" Value="{StaticResource Item.MouseOver.Background}"/>
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="{StaticResource Item.MouseOver.Border}"/>
+                            <Setter Property="Background" TargetName="Bd" Value="{Binding MouseOverBackground, RelativeSource={RelativeSource Mode=TemplatedParent}}"/>
                         </Trigger>
                         <Trigger Property="IsFocused" SourceName="PART_TitleLabel" Value="True">
-                            <Setter Property="BorderBrush" TargetName="Bd" Value="DarkBlue"/>
+                            <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding FocusedBorder, RelativeSource={RelativeSource Mode=TemplatedParent}}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

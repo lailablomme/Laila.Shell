@@ -171,12 +171,14 @@ Namespace Controls
                         Dim action As Action =
                             Sub()
                                 UIHelper.OnUIThread(
-                                Sub()
-                                    Dim rightClickMenu As RightClickMenu = New RightClickMenu()  ' 
-                                    rightClickMenu.Folder = folder
-                                    rightClickMenu.SelectedItems = items
-                                    rightClickMenu.IsOpen = True
-                                End Sub)
+                                    Sub()
+                                        Dim rightClickMenu As RightClickMenu = New RightClickMenu()  '
+                                        rightClickMenu.Colors = Me.Colors
+                                        rightClickMenu.Style = Me.Style
+                                        rightClickMenu.Folder = folder
+                                        rightClickMenu.SelectedItems = items
+                                        rightClickMenu.IsOpen = True
+                                    End Sub)
                             End Sub
                         showMoreOptionsMenuItem.Tag = New Tuple(Of Integer, String, Object)(-1, Guid.NewGuid().ToString(), action)
                         _menuItems.Add(showMoreOptionsMenuItem)

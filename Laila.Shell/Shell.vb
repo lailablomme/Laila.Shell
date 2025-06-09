@@ -352,7 +352,7 @@ Public Class Shell
     End Sub
 
     Private Shared Function hwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
-        'Debug.WriteLine(CType(msg, WM).ToString())
+        Debug.WriteLine(CType(msg, WM).ToString())
         Select Case msg
             Case WM.USER + 1
                 ' we received an SHChangeNotify message - go get the data

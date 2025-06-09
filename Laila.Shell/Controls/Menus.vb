@@ -10,6 +10,7 @@ Imports Laila.Shell.Helpers
 Imports Laila.Shell.Interop
 Imports Laila.Shell.Interop.DragDrop
 Imports Laila.Shell.Interop.Items
+Imports Laila.Shell.Themes
 Imports Shell32
 
 Namespace Controls
@@ -27,6 +28,7 @@ Namespace Controls
         Public Shared ReadOnly CanRenameProperty As DependencyProperty = DependencyProperty.Register("CanRename", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanDeleteProperty As DependencyProperty = DependencyProperty.Register("CanDelete", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly CanShareProperty As DependencyProperty = DependencyProperty.Register("CanShare", GetType(Boolean), GetType(Menus), New FrameworkPropertyMetadata(False, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ColorsProperty As DependencyProperty = DependencyProperty.Register("Colors", GetType(StandardColors), GetType(Menus), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Private disposedValue As Boolean
         Private Shared _rightClickMenu As RightClickMenu
@@ -36,6 +38,7 @@ Namespace Controls
         End Sub
 
         Public Sub New()
+            Me.Colors = New StandardColors()
             AddHandler Shell.ClipboardChanged,
                  Sub(s As Object, e As EventArgs)
                      Me.UpdateButtons()
@@ -376,6 +379,7 @@ Namespace Controls
 
             Await Task.Delay(250) ' wait for the UI to be ready
             Dim newItemMenu As NewItemMenu = New NewItemMenu() With {.Folder = Me.Folder}
+            newItemMenu.Colors = Me.Colors
             Await newItemMenu.Make()
             If newItemMenu.Items.Count > 0 Then
                 AddHandler newItemMenu.RenameRequest,
@@ -499,6 +503,15 @@ Namespace Controls
             End Get
             Set(value As FolderView)
                 SetValue(FolderViewProperty, value)
+            End Set
+        End Property
+
+        Public Property Colors As StandardColors
+            Get
+                Return GetValue(ColorsProperty)
+            End Get
+            Protected Set(ByVal value As StandardColors)
+                SetCurrentValue(ColorsProperty, value)
             End Set
         End Property
 

@@ -3,6 +3,7 @@ Imports System.Windows
 Imports System.Windows.Controls
 Imports System.Windows.Documents
 Imports System.Windows.Media
+Imports Laila.Shell.Helpers
 
 Namespace Adorners
     Public Class GridViewColumnHeaderGlyphAdorner
@@ -104,8 +105,11 @@ Namespace Adorners
                 z += 1
                 If _columnHeader.ActualWidth >= g.Glyph.Width Then
                     Dim y As Double = 0
-                    Dim x As Double = (_columnHeader.ActualWidth - _glyphs.Values.Where(Function(gl) gl.Alignment = HorizontalAlignment.Center).Sum(Function(gl) gl.Glyph.Width)) / 2 + _glyphs.Values.Take(z - 1).Sum(Function(gl) gl.Glyph.Width)
-                    Dim rect As Rect = New Rect(x, y, g.Glyph.Width, g.Glyph.Height)
+                    Dim tb As TextBlock = UIHelper.FindVisualChildren(Of TextBlock)(_columnHeader)(0)
+                    Dim x As Double = (_columnHeader.ActualWidth - If(tb?.Padding.Left, 0) - If(tb?.Padding.Right, 0) _
+                        - _glyphs.Values.Where(Function(gl) gl.Alignment = HorizontalAlignment.Center) _
+                            .Sum(Function(gl) gl.Glyph.Width)) / 2 + _glyphs.Values.Take(z - 1).Sum(Function(gl) gl.Glyph.Width)
+                    Dim rect As Rect = New Rect(x + If(tb?.Padding.Left, 0), y, g.Glyph.Width, g.Glyph.Height)
                     drawingContext.DrawImage(g.Glyph, rect)
                 End If
             Next

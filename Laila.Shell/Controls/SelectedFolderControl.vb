@@ -93,6 +93,7 @@ Namespace Controls
                 Dim specialFoldersButton As ToggleButton = New ToggleButton()
                 If Not chevronButtonStyle Is Nothing Then specialFoldersButton.Style = chevronButtonStyle
                 Dim specialFoldersContextMenu As ContextMenu = New ContextMenu()
+                specialFoldersContextMenu.Colors = Me.Colors
                 specialFoldersContextMenu.PlacementTarget = specialFoldersButton
                 specialFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
                 For Each specialFolder In Shell.GetSpecialFolders().Values.OrderBy(Function(f) f.DisplayName)
@@ -159,6 +160,7 @@ Namespace Controls
                                     subFolder = button.Tag
 
                                     subFoldersContextMenu = New ItemsContextMenu()
+                                    subFoldersContextMenu.Colors = Me.Colors
                                     subFoldersContextMenu.PlacementTarget = button
                                     subFoldersContextMenu.Placement = Primitives.PlacementMode.Bottom
                                     subFoldersContextMenu.DoShowEncryptedOrCompressedFilesInColorOverride = Me.DoShowEncryptedOrCompressedFilesInColorOverride

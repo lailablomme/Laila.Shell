@@ -84,6 +84,69 @@ Namespace Themes
         Public Shared ReadOnly ThreeDForegroundProperty As DependencyProperty = DependencyProperty.Register("ThreeDForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ThreeDForegroundColorProperty As DependencyProperty = DependencyProperty.Register("ThreeDForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ThreeDForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ThreeDForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnThreeDForegroundColorOverrideChanged))
+        Public Shared ReadOnly GroupByTitleForegroundProperty As DependencyProperty = DependencyProperty.Register("GroupByTitleForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GroupByTitleForegroundColorProperty As DependencyProperty = DependencyProperty.Register("GroupByTitleForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GroupByTitleForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("GroupByTitleForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnGroupByTitleForegroundColorOverrideChanged))
+        Public Shared ReadOnly GroupByMouseOverBackgroundProperty As DependencyProperty = DependencyProperty.Register("GroupByMouseOverBackground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GroupByMouseOverBackgroundColorProperty As DependencyProperty = DependencyProperty.Register("GroupByMouseOverBackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GroupByMouseOverBackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("GroupByMouseOverBackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnGroupByMouseOverBackgroundColorOverrideChanged))
+        Public Shared ReadOnly GroupByFocusedBorderProperty As DependencyProperty = DependencyProperty.Register("GroupByFocusedBorder", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GroupByFocusedBorderColorProperty As DependencyProperty = DependencyProperty.Register("GroupByFocusedBorderColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GroupByFocusedBorderColorOverrideProperty As DependencyProperty = DependencyProperty.Register("GroupByFocusedBorderColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnGroupByFocusedBorderColorOverrideChanged))
+        Public Shared ReadOnly GroupByChevronForegroundProperty As DependencyProperty = DependencyProperty.Register("GroupByChevronForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GroupByChevronForegroundColorProperty As DependencyProperty = DependencyProperty.Register("GroupByChevronForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly GroupByChevronForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("GroupByChevronForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnGroupByChevronForegroundColorOverrideChanged))
+        Public Shared ReadOnly MenuBackgroundProperty As DependencyProperty = DependencyProperty.Register("MenuBackground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuBackgroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuBackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuBackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuBackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuBackgroundColorOverrideChanged))
+        Public Shared ReadOnly MenuBorderProperty As DependencyProperty = DependencyProperty.Register("MenuBorder", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuBorderColorProperty As DependencyProperty = DependencyProperty.Register("MenuBorderColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuBorderColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuBorderColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuBorderColorOverrideChanged))
+        Public Shared ReadOnly MenuItemForegroundProperty As DependencyProperty = DependencyProperty.Register("MenuItemForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemForegroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuItemForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuItemForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuItemForegroundColorOverrideChanged))
+        Public Shared ReadOnly MenuItemSelectedForegroundProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemSelectedForegroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemSelectedForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuItemSelectedForegroundColorOverrideChanged))
+        Public Shared ReadOnly MenuItemSelectedBackgroundProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedBackground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemSelectedBackgroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedBackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemSelectedBackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedBackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuItemSelectedBackgroundColorOverrideChanged))
+        Public Shared ReadOnly MenuItemSelectedBorderProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedBorder", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemSelectedBorderColorProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedBorderColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemSelectedBorderColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuItemSelectedBorderColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuItemSelectedBorderColorOverrideChanged))
+        Public Shared ReadOnly MenuButtonTrayBackgroundProperty As DependencyProperty = DependencyProperty.Register("MenuButtonTrayBackground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonTrayBackgroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuButtonTrayBackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonTrayBackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuButtonTrayBackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuButtonTrayBackgroundColorOverrideChanged))
+        Public Shared ReadOnly MenuButtonForegroundProperty As DependencyProperty = DependencyProperty.Register("MenuButtonForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonForegroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuButtonForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuButtonForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuButtonForegroundColorOverrideChanged))
+        Public Shared ReadOnly MenuButtonSelectedForegroundProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonSelectedForegroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonSelectedForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuButtonSelectedForegroundColorOverrideChanged))
+        Public Shared ReadOnly MenuButtonSelectedBackgroundProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedBackground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonSelectedBackgroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedBackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonSelectedBackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedBackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuButtonSelectedBackgroundColorOverrideChanged))
+        Public Shared ReadOnly MenuButtonSelectedBorderProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedBorder", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonSelectedBorderColorProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedBorderColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuButtonSelectedBorderColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuButtonSelectedBorderColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuButtonSelectedBorderColorOverrideChanged))
+        Public Shared ReadOnly MenuItemInputGestureTextForegroundProperty As DependencyProperty = DependencyProperty.Register("MenuItemInputGestureTextForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemInputGestureTextForegroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuItemInputGestureTextForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemInputGestureTextForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuItemInputGestureTextForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuItemInputGestureTextForegroundColorOverrideChanged))
+        Public Shared ReadOnly MenuItemDisabledForegroundProperty As DependencyProperty = DependencyProperty.Register("MenuItemDisabledForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemDisabledForegroundColorProperty As DependencyProperty = DependencyProperty.Register("MenuItemDisabledForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemDisabledForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("MenuItemDisabledForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuItemDisabledForegroundColorOverrideChanged))
+        Public Shared ReadOnly MenuItemSeparatorProperty As DependencyProperty = DependencyProperty.Register("Separator", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemSeparatorColorProperty As DependencyProperty = DependencyProperty.Register("SeparatorColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly MenuItemSeparatorColorOverrideProperty As DependencyProperty = DependencyProperty.Register("SeparatorColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnMenuItemSeparatorColorOverrideChanged))
+        Public Shared ReadOnly ToolTipForegroundProperty As DependencyProperty = DependencyProperty.Register("ToolTipForeground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ToolTipForegroundColorProperty As DependencyProperty = DependencyProperty.Register("ToolTipForegroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ToolTipForegroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ToolTipForegroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnToolTipForegroundColorOverrideChanged))
+        Public Shared ReadOnly ToolTipBackgroundProperty As DependencyProperty = DependencyProperty.Register("ToolTipBackground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ToolTipBackgroundColorProperty As DependencyProperty = DependencyProperty.Register("ToolTipBackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ToolTipBackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ToolTipBackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnToolTipBackgroundColorOverrideChanged))
+        Public Shared ReadOnly ToolTipBorderProperty As DependencyProperty = DependencyProperty.Register("ToolTipBorder", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ToolTipBorderColorProperty As DependencyProperty = DependencyProperty.Register("ToolTipBorderColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ToolTipBorderColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ToolTipBorderColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnToolTipBorderColorOverrideChanged))
 
         Public Sub New()
             AddHandler Shell.Settings.PropertyChanged,
@@ -135,6 +198,28 @@ Namespace Themes
             setThreeDBorderLightColor()
             setThreeDBorderMediumColor()
             setThreeDBorderDarkColor()
+            setThreeDForegroundColor()
+            setGroupByChevronForegroundColor()
+            setGroupByFocusedBorderColor()
+            setGroupByMouseOverBackgroundColor()
+            setGroupByTitleForegroundColor()
+            setMenuBackgroundColor()
+            setMenuBorderColor()
+            setMenuButtonForegroundColor()
+            setMenuButtonSelectedBackgroundColor()
+            setMenuButtonSelectedBorderColor()
+            setMenuButtonSelectedForegroundColor()
+            setMenuButtonTrayBackgroundColor()
+            setMenuItemForegroundColor()
+            setMenuItemSelectedBackgroundColor()
+            setMenuItemSelectedBorderColor()
+            setMenuItemSelectedForegroundColor()
+            setMenuItemInputGestureTextForegroundColor()
+            setMenuItemDisabledForegroundColor()
+            setMenuItemSeparatorColor()
+            setToolTipBackgroundColor()
+            setToolTipBorderColor()
+            setToolTipForegroundColor()
         End Sub
 
         Public Property DoUseLightThemeOverride As Boolean?
@@ -1132,6 +1217,867 @@ Namespace Themes
         Public Shared Sub OnThreeDForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As StandardColors = d
             bfv.setThreeDForegroundColor()
+        End Sub
+
+        Public Property GroupByTitleForeground As Brush
+            Get
+                Return GetValue(GroupByTitleForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(GroupByTitleForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property GroupByTitleForegroundColor As Color
+            Get
+                Return GetValue(GroupByTitleForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(GroupByTitleForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setGroupByTitleForegroundColor()
+            If Me.GroupByTitleForegroundColorOverride.HasValue Then
+                Me.GroupByTitleForegroundColor = Me.GroupByTitleForegroundColorOverride.Value
+            Else
+                Me.GroupByTitleForegroundColor = If(Me.DoUseLightTheme, Colors.DarkBlue, Colors.White)
+            End If
+            Me.GroupByTitleForeground = New SolidColorBrush(Me.GroupByTitleForegroundColor)
+        End Sub
+
+        Public Property GroupByTitleForegroundColorOverride As Color?
+            Get
+                Return GetValue(GroupByTitleForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(GroupByTitleForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnGroupByTitleForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setGroupByTitleForegroundColor()
+        End Sub
+
+        Public Property GroupByMouseOverBackground As Brush
+            Get
+                Return GetValue(GroupByMouseOverBackgroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(GroupByMouseOverBackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property GroupByMouseOverBackgroundColor As Color
+            Get
+                Return GetValue(GroupByMouseOverBackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(GroupByMouseOverBackgroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setGroupByMouseOverBackgroundColor()
+            If Me.GroupByMouseOverBackgroundColorOverride.HasValue Then
+                Me.GroupByMouseOverBackgroundColor = Me.GroupByMouseOverBackgroundColorOverride.Value
+            Else
+                Me.GroupByMouseOverBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#1F26A0DA"), ColorConverter.ConvertFromString("#444444"))
+            End If
+            Me.GroupByMouseOverBackground = New SolidColorBrush(Me.GroupByMouseOverBackgroundColor)
+        End Sub
+
+        Public Property GroupByMouseOverBackgroundColorOverride As Color?
+            Get
+                Return GetValue(GroupByMouseOverBackgroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(GroupByMouseOverBackgroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnGroupByMouseOverBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setGroupByMouseOverBackgroundColor()
+        End Sub
+
+        Public Property GroupByFocusedBorder As Brush
+            Get
+                Return GetValue(GroupByFocusedBorderProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(GroupByFocusedBorderProperty, value)
+            End Set
+        End Property
+
+        Public Property GroupByFocusedBorderColor As Color
+            Get
+                Return GetValue(GroupByFocusedBorderColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(GroupByFocusedBorderColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setGroupByFocusedBorderColor()
+            If Me.GroupByFocusedBorderColorOverride.HasValue Then
+                Me.GroupByFocusedBorderColor = Me.GroupByFocusedBorderColorOverride.Value
+            Else
+                Me.GroupByFocusedBorderColor = If(Me.DoUseLightTheme, Colors.DarkBlue, Colors.White)
+            End If
+            Me.GroupByFocusedBorder = New SolidColorBrush(Me.GroupByFocusedBorderColor)
+        End Sub
+
+        Public Property GroupByFocusedBorderColorOverride As Color?
+            Get
+                Return GetValue(GroupByFocusedBorderColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(GroupByFocusedBorderColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnGroupByFocusedBorderColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setGroupByFocusedBorderColor()
+        End Sub
+
+        Public Property GroupByChevronForeground As Brush
+            Get
+                Return GetValue(GroupByChevronForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(GroupByChevronForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property GroupByChevronForegroundColor As Color
+            Get
+                Return GetValue(GroupByChevronForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(GroupByChevronForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setGroupByChevronForegroundColor()
+            If Me.GroupByChevronForegroundColorOverride.HasValue Then
+                Me.GroupByChevronForegroundColor = Me.GroupByChevronForegroundColorOverride.Value
+            Else
+                Me.GroupByChevronForegroundColor = If(Me.DoUseLightTheme, Colors.Gray, Colors.Silver)
+            End If
+            Me.GroupByChevronForeground = New SolidColorBrush(Me.GroupByChevronForegroundColor)
+        End Sub
+
+        Public Property GroupByChevronForegroundColorOverride As Color?
+            Get
+                Return GetValue(GroupByChevronForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(GroupByChevronForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnGroupByChevronForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setGroupByChevronForegroundColor()
+        End Sub
+
+        Public Property MenuBackground As Brush
+            Get
+                Return GetValue(MenuBackgroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuBackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuBackgroundColor As Color
+            Get
+                Return GetValue(MenuBackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuBackgroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuBackgroundColor()
+            If Me.MenuBackgroundColorOverride.HasValue Then
+                Me.MenuBackgroundColor = Me.MenuBackgroundColorOverride.Value
+            Else
+                Me.MenuBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#F0F0F0"), ColorConverter.ConvertFromString("#333333"))
+            End If
+            Me.MenuBackground = New SolidColorBrush(Me.MenuBackgroundColor)
+        End Sub
+
+        Public Property MenuBackgroundColorOverride As Color?
+            Get
+                Return GetValue(MenuBackgroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuBackgroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuBackgroundColor()
+        End Sub
+
+        Public Property MenuBorder As Brush
+            Get
+                Return GetValue(MenuBorderProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuBorderProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuBorderColor As Color
+            Get
+                Return GetValue(MenuBorderColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuBorderColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuBorderColor()
+            If Me.MenuBorderColorOverride.HasValue Then
+                Me.MenuBorderColor = Me.MenuBorderColorOverride.Value
+            Else
+                Me.MenuBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#999999"), ColorConverter.ConvertFromString("#555555"))
+            End If
+            Me.MenuBorder = New SolidColorBrush(Me.MenuBorderColor)
+        End Sub
+
+        Public Property MenuBorderColorOverride As Color?
+            Get
+                Return GetValue(MenuBorderColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuBorderColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuBorderColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuBorderColor()
+        End Sub
+
+        Public Property MenuItemForeground As Brush
+            Get
+                Return GetValue(MenuItemForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuItemForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuItemForegroundColor As Color
+            Get
+                Return GetValue(MenuItemForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuItemForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuItemForegroundColor()
+            If Me.MenuItemForegroundColorOverride.HasValue Then
+                Me.MenuItemForegroundColor = Me.MenuItemForegroundColorOverride.Value
+            Else
+                Me.MenuItemForegroundColor = If(Me.DoUseLightTheme, Colors.Black, Colors.White)
+            End If
+            Me.MenuItemForeground = New SolidColorBrush(Me.MenuItemForegroundColor)
+        End Sub
+
+        Public Property MenuItemForegroundColorOverride As Color?
+            Get
+                Return GetValue(MenuItemForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuItemForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuItemForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuItemForegroundColor()
+        End Sub
+
+        Public Property MenuItemSelectedForeground As Brush
+            Get
+                Return GetValue(MenuItemSelectedForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuItemSelectedForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuItemSelectedForegroundColor As Color
+            Get
+                Return GetValue(MenuItemSelectedForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuItemSelectedForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuItemSelectedForegroundColor()
+            If Me.MenuItemSelectedForegroundColorOverride.HasValue Then
+                Me.MenuItemSelectedForegroundColor = Me.MenuItemSelectedForegroundColorOverride.Value
+            Else
+                Me.MenuItemSelectedForegroundColor = If(Me.DoUseLightTheme, Colors.Black, Colors.White)
+            End If
+            Me.MenuItemSelectedForeground = New SolidColorBrush(Me.MenuItemSelectedForegroundColor)
+        End Sub
+
+        Public Property MenuItemSelectedForegroundColorOverride As Color?
+            Get
+                Return GetValue(MenuItemSelectedForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuItemSelectedForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuItemSelectedForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuItemSelectedForegroundColor()
+        End Sub
+
+        Public Property MenuItemSelectedBackground As Brush
+            Get
+                Return GetValue(MenuItemSelectedBackgroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuItemSelectedBackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuItemSelectedBackgroundColor As Color
+            Get
+                Return GetValue(MenuItemSelectedBackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuItemSelectedBackgroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuItemSelectedBackgroundColor()
+            If Me.MenuItemSelectedBackgroundColorOverride.HasValue Then
+                Me.MenuItemSelectedBackgroundColor = Me.MenuItemSelectedBackgroundColorOverride.Value
+            Else
+                Me.MenuItemSelectedBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#C0DDEB"), ColorConverter.ConvertFromString("#555555"))
+            End If
+            Me.MenuItemSelectedBackground = New SolidColorBrush(Me.MenuItemSelectedBackgroundColor)
+        End Sub
+
+        Public Property MenuItemSelectedBackgroundColorOverride As Color?
+            Get
+                Return GetValue(MenuItemSelectedBackgroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuItemSelectedBackgroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuItemSelectedBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuItemSelectedBackgroundColor()
+        End Sub
+
+        Public Property MenuItemSelectedBorder As Brush
+            Get
+                Return GetValue(MenuItemSelectedBorderProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuItemSelectedBorderProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuItemSelectedBorderColor As Color
+            Get
+                Return GetValue(MenuItemSelectedBorderColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuItemSelectedBorderColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuItemSelectedBorderColor()
+            If Me.MenuItemSelectedBorderColorOverride.HasValue Then
+                Me.MenuItemSelectedBorderColor = Me.MenuItemSelectedBorderColorOverride.Value
+            Else
+                Me.MenuItemSelectedBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#26A0DA"), ColorConverter.ConvertFromString("#555555"))
+            End If
+            Me.MenuItemSelectedBorder = New SolidColorBrush(Me.MenuItemSelectedBorderColor)
+        End Sub
+
+        Public Property MenuItemSelectedBorderColorOverride As Color?
+            Get
+                Return GetValue(MenuItemSelectedBorderColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuItemSelectedBorderColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuItemSelectedBorderColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuItemSelectedBorderColor()
+        End Sub
+
+        Public Property MenuButtonTrayBackground As Brush
+            Get
+                Return GetValue(MenuButtonTrayBackgroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuButtonTrayBackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuButtonTrayBackgroundColor As Color
+            Get
+                Return GetValue(MenuButtonTrayBackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuButtonTrayBackgroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuButtonTrayBackgroundColor()
+            If Me.MenuButtonTrayBackgroundColorOverride.HasValue Then
+                Me.MenuButtonTrayBackgroundColor = Me.MenuButtonTrayBackgroundColorOverride.Value
+            Else
+                Me.MenuButtonTrayBackgroundColor = If(Me.DoUseLightTheme, Colors.Transparent, Colors.Transparent)
+            End If
+            Me.MenuButtonTrayBackground = New SolidColorBrush(Me.MenuButtonTrayBackgroundColor)
+        End Sub
+
+        Public Property MenuButtonTrayBackgroundColorOverride As Color?
+            Get
+                Return GetValue(MenuButtonTrayBackgroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuButtonTrayBackgroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuButtonTrayBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuButtonTrayBackgroundColor()
+        End Sub
+
+        Public Property MenuButtonForeground As Brush
+            Get
+                Return GetValue(MenuButtonForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuButtonForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuButtonForegroundColor As Color
+            Get
+                Return GetValue(MenuButtonForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuButtonForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuButtonForegroundColor()
+            If Me.MenuButtonForegroundColorOverride.HasValue Then
+                Me.MenuButtonForegroundColor = Me.MenuButtonForegroundColorOverride.Value
+            Else
+                Me.MenuButtonForegroundColor = If(Me.DoUseLightTheme, Colors.Black, Colors.White)
+            End If
+            Me.MenuButtonForeground = New SolidColorBrush(Me.MenuButtonForegroundColor)
+        End Sub
+
+        Public Property MenuButtonForegroundColorOverride As Color?
+            Get
+                Return GetValue(MenuButtonForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuButtonForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuButtonForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuButtonForegroundColor()
+        End Sub
+
+        Public Property MenuButtonSelectedForeground As Brush
+            Get
+                Return GetValue(MenuButtonSelectedForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuButtonSelectedForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuButtonSelectedForegroundColor As Color
+            Get
+                Return GetValue(MenuButtonSelectedForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuButtonSelectedForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuButtonSelectedForegroundColor()
+            If Me.MenuButtonSelectedForegroundColorOverride.HasValue Then
+                Me.MenuButtonSelectedForegroundColor = Me.MenuButtonSelectedForegroundColorOverride.Value
+            Else
+                Me.MenuButtonSelectedForegroundColor = If(Me.DoUseLightTheme, Colors.Black, Colors.White)
+            End If
+            Me.MenuButtonSelectedForeground = New SolidColorBrush(Me.MenuButtonSelectedForegroundColor)
+        End Sub
+
+        Public Property MenuButtonSelectedForegroundColorOverride As Color?
+            Get
+                Return GetValue(MenuButtonSelectedForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuButtonSelectedForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuButtonSelectedForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuButtonSelectedForegroundColor()
+        End Sub
+
+        Public Property MenuButtonSelectedBackground As Brush
+            Get
+                Return GetValue(MenuButtonSelectedBackgroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuButtonSelectedBackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuButtonSelectedBackgroundColor As Color
+            Get
+                Return GetValue(MenuButtonSelectedBackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuButtonSelectedBackgroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuButtonSelectedBackgroundColor()
+            If Me.MenuButtonSelectedBackgroundColorOverride.HasValue Then
+                Me.MenuButtonSelectedBackgroundColor = Me.MenuButtonSelectedBackgroundColorOverride.Value
+            Else
+                Me.MenuButtonSelectedBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#C0DDEB"), ColorConverter.ConvertFromString("#555555"))
+            End If
+            Me.MenuButtonSelectedBackground = New SolidColorBrush(Me.MenuButtonSelectedBackgroundColor)
+        End Sub
+
+        Public Property MenuButtonSelectedBackgroundColorOverride As Color?
+            Get
+                Return GetValue(MenuButtonSelectedBackgroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuButtonSelectedBackgroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuButtonSelectedBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuButtonSelectedBackgroundColor()
+        End Sub
+
+        Public Property MenuButtonSelectedBorder As Brush
+            Get
+                Return GetValue(MenuButtonSelectedBorderProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuButtonSelectedBorderProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuButtonSelectedBorderColor As Color
+            Get
+                Return GetValue(MenuButtonSelectedBorderColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuButtonSelectedBorderColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuButtonSelectedBorderColor()
+            If Me.MenuButtonSelectedBorderColorOverride.HasValue Then
+                Me.MenuButtonSelectedBorderColor = Me.MenuButtonSelectedBorderColorOverride.Value
+            Else
+                Me.MenuButtonSelectedBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#26A0DA"), ColorConverter.ConvertFromString("#555555"))
+            End If
+            Me.MenuButtonSelectedBorder = New SolidColorBrush(Me.MenuButtonSelectedBorderColor)
+        End Sub
+
+        Public Property MenuButtonSelectedBorderColorOverride As Color?
+            Get
+                Return GetValue(MenuButtonSelectedBorderColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuButtonSelectedBorderColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuButtonSelectedBorderColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuButtonSelectedBorderColor()
+        End Sub
+
+        Public Property MenuItemInputGestureTextForeground As Brush
+            Get
+                Return GetValue(MenuItemInputGestureTextForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuItemInputGestureTextForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuItemInputGestureTextForegroundColor As Color
+            Get
+                Return GetValue(MenuItemInputGestureTextForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuItemInputGestureTextForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuItemInputGestureTextForegroundColor()
+            If Me.MenuItemInputGestureTextForegroundColorOverride.HasValue Then
+                Me.MenuItemInputGestureTextForegroundColor = Me.MenuItemInputGestureTextForegroundColorOverride.Value
+            Else
+                Me.MenuItemInputGestureTextForegroundColor = If(Me.DoUseLightTheme, Colors.Gray, Colors.Silver)
+            End If
+            Me.MenuItemInputGestureTextForeground = New SolidColorBrush(Me.MenuItemInputGestureTextForegroundColor)
+        End Sub
+
+        Public Property MenuItemInputGestureTextForegroundColorOverride As Color?
+            Get
+                Return GetValue(MenuItemInputGestureTextForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuItemInputGestureTextForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuItemInputGestureTextForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuItemInputGestureTextForegroundColor()
+        End Sub
+
+        Public Property MenuItemDisabledForeground As Brush
+            Get
+                Return GetValue(MenuItemDisabledForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuItemDisabledForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuItemDisabledForegroundColor As Color
+            Get
+                Return GetValue(MenuItemDisabledForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuItemDisabledForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuItemDisabledForegroundColor()
+            If Me.MenuItemDisabledForegroundColorOverride.HasValue Then
+                Me.MenuItemDisabledForegroundColor = Me.MenuItemDisabledForegroundColorOverride.Value
+            Else
+                Me.MenuItemDisabledForegroundColor = If(Me.DoUseLightTheme, Colors.Gray, Colors.Silver)
+            End If
+            Me.MenuItemDisabledForeground = New SolidColorBrush(Me.MenuItemDisabledForegroundColor)
+        End Sub
+
+        Public Property MenuItemDisabledForegroundColorOverride As Color?
+            Get
+                Return GetValue(MenuItemDisabledForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuItemDisabledForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuItemDisabledForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuItemDisabledForegroundColor()
+        End Sub
+
+        Public Property MenuItemSeparator As Brush
+            Get
+                Return GetValue(MenuItemSeparatorProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(MenuItemSeparatorProperty, value)
+            End Set
+        End Property
+
+        Public Property MenuItemSeparatorColor As Color
+            Get
+                Return GetValue(MenuItemSeparatorColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(MenuItemSeparatorColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setMenuItemSeparatorColor()
+            If Me.MenuItemSeparatorColorOverride.HasValue Then
+                Me.MenuItemSeparatorColor = Me.MenuItemSeparatorColorOverride.Value
+            Else
+                Me.MenuItemSeparatorColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#999999"), ColorConverter.ConvertFromString("#555555"))
+            End If
+            Me.MenuItemSeparator = New SolidColorBrush(Me.MenuItemSeparatorColor)
+        End Sub
+
+        Public Property MenuItemSeparatorColorOverride As Color?
+            Get
+                Return GetValue(MenuItemSeparatorColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(MenuItemSeparatorColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnMenuItemSeparatorColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setMenuItemSeparatorColor()
+        End Sub
+
+        Public Property ToolTipForeground As Brush
+            Get
+                Return GetValue(ToolTipForegroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ToolTipForegroundProperty, value)
+            End Set
+        End Property
+
+        Public Property ToolTipForegroundColor As Color
+            Get
+                Return GetValue(ToolTipForegroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ToolTipForegroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setToolTipForegroundColor()
+            If Me.ToolTipForegroundColorOverride.HasValue Then
+                Me.ToolTipForegroundColor = Me.ToolTipForegroundColorOverride.Value
+            Else
+                Me.ToolTipForegroundColor = If(Me.DoUseLightTheme, Colors.Black, Colors.White)
+            End If
+            Me.ToolTipForeground = New SolidColorBrush(Me.ToolTipForegroundColor)
+        End Sub
+
+        Public Property ToolTipForegroundColorOverride As Color?
+            Get
+                Return GetValue(ToolTipForegroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ToolTipForegroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnToolTipForegroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setToolTipForegroundColor()
+        End Sub
+
+        Public Property ToolTipBackground As Brush
+            Get
+                Return GetValue(ToolTipBackgroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ToolTipBackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property ToolTipBackgroundColor As Color
+            Get
+                Return GetValue(ToolTipBackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ToolTipBackgroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setToolTipBackgroundColor()
+            If Me.ToolTipBackgroundColorOverride.HasValue Then
+                Me.ToolTipBackgroundColor = Me.ToolTipBackgroundColorOverride.Value
+            Else
+                Me.ToolTipBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#F0F0F0"), ColorConverter.ConvertFromString("#333333"))
+            End If
+            Me.ToolTipBackground = New SolidColorBrush(Me.ToolTipBackgroundColor)
+        End Sub
+
+        Public Property ToolTipBackgroundColorOverride As Color?
+            Get
+                Return GetValue(ToolTipBackgroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ToolTipBackgroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnToolTipBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setToolTipBackgroundColor()
+        End Sub
+
+        Public Property ToolTipBorder As Brush
+            Get
+                Return GetValue(ToolTipBorderProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(ToolTipBorderProperty, value)
+            End Set
+        End Property
+
+        Public Property ToolTipBorderColor As Color
+            Get
+                Return GetValue(ToolTipBorderColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(ToolTipBorderColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setToolTipBorderColor()
+            If Me.ToolTipBorderColorOverride.HasValue Then
+                Me.ToolTipBorderColor = Me.ToolTipBorderColorOverride.Value
+            Else
+                Me.ToolTipBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#999999"), ColorConverter.ConvertFromString("#555555"))
+            End If
+            Me.ToolTipBorder = New SolidColorBrush(Me.ToolTipBorderColor)
+        End Sub
+
+        Public Property ToolTipBorderColorOverride As Color?
+            Get
+                Return GetValue(ToolTipBorderColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(ToolTipBorderColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnToolTipBorderColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setToolTipBorderColor()
         End Sub
     End Class
 End Namespace

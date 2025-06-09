@@ -27,6 +27,9 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
+                        <ControlTemplate.Resources>
+                            <converters:OpacityConverter x:Key="opacityConverter" />
+                        </ControlTemplate.Resources>
                         <Border x:Name="bd" Background="Transparent">
                             <Border x:Name="bd2" Background="Transparent">
                                 <TextBlock Foreground="{Binding Foreground, Source={StaticResource colors}}" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="tb"
@@ -40,22 +43,14 @@
                                 <Setter TargetName="tb" Property="Style" Value="{DynamicResource metroWindowInactiveTitleTextStyle}" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=Self}}" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#11000000" />
+                                <Setter TargetName="bd" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.15}" />
                             </DataTrigger>
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding DoIntegrateMenu, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}}" Value="True" />
                                     <Condition Binding="{Binding IsPressed, RelativeSource={RelativeSource Mode=Self}}" Value="True" />
                                 </MultiDataTrigger.Conditions>
                                 <Setter TargetName="bd" Property="Background" Value="{DynamicResource metroWindowBorderBrush}" />
-                            </MultiDataTrigger>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding DoIntegrateMenu, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:MainWindow}}}" Value="False" />
-                                    <Condition Binding="{Binding IsPressed, RelativeSource={RelativeSource Mode=Self}}" Value="True" />
-                                </MultiDataTrigger.Conditions>
-                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource metroWindowBorderBrush}" />
-                                <Setter TargetName="bd2" Property="Background" Value="#33000000" />
+                                <Setter TargetName="bd2" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.3}" />
                             </MultiDataTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -93,6 +88,36 @@
             </Setter>
         </Style>
         <Style TargetType="Button" x:Key="lailaShell_ToolbarButtonStyle">
+            <Style.Resources>
+                <Style TargetType="ToolTip">
+                    <Setter Property="OverridesDefaultStyle" Value="True"/>
+                    <Setter Property="HasDropShadow" Value="True"/>
+                    <Setter Property="HasDropShadow" Value="True"/>
+                    <Setter Property="Foreground" Value="{Binding ToolTipForeground, Source={StaticResource colors}}" />
+                    <Setter Property="Background" Value="{Binding ToolTipBackground, Source={StaticResource colors}}" />
+                    <Setter Property="BorderBrush" Value="{Binding ToolTipBorder, Source={StaticResource colors}}" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ToolTip">
+                                <Border 
+                                                        Name="Border"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="4"
+                                                        Padding="4"
+                                                        SnapsToDevicePixels="True">
+                                    <ContentPresenter 
+                                                            Margin="0"
+                                                            RecognizesAccessKey="True" 
+                                                            VerticalAlignment="Center" 
+                                                            HorizontalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Style.Resources>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{Binding Foreground, Source={StaticResource colors}}" />
             <Setter Property="BorderThickness" Value="0"/>
@@ -126,10 +151,10 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.15}"/>
+                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.20}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.4}"/>
+                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.10}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -137,6 +162,36 @@
             </Setter>
         </Style>
         <Style TargetType="ToggleButton" x:Key="lailaShell_ToolbarToggleButtonStyle">
+            <Style.Resources>
+                <Style TargetType="ToolTip">
+                    <Setter Property="OverridesDefaultStyle" Value="True"/>
+                    <Setter Property="HasDropShadow" Value="True"/>
+                    <Setter Property="HasDropShadow" Value="True"/>
+                    <Setter Property="Foreground" Value="{Binding ToolTipForeground, Source={StaticResource colors}}" />
+                    <Setter Property="Background" Value="{Binding ToolTipBackground, Source={StaticResource colors}}" />
+                    <Setter Property="BorderBrush" Value="{Binding ToolTipBorder, Source={StaticResource colors}}" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ToolTip">
+                                <Border 
+                                                        Name="Border"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="4"
+                                                        Padding="4"
+                                                        SnapsToDevicePixels="True">
+                                    <ContentPresenter 
+                                                            Margin="0"
+                                                            RecognizesAccessKey="True" 
+                                                            VerticalAlignment="Center" 
+                                                            HorizontalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Style.Resources>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{Binding Foreground, Source={StaticResource colors}}" />
             <Setter Property="BorderThickness" Value="0"/>
@@ -170,13 +225,13 @@
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.15}"/>
+                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.20}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.4}"/>
+                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.10}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.4}"/>
+                                <Setter TargetName="border" Property="Background" Value="{Binding Foreground, Source={StaticResource colors}, Converter={StaticResource opacityConverter}, ConverterParameter=0.10}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -693,8 +748,9 @@
                             <Trigger Property="ActualWindowState" Value="Maximized">
                                 <Setter Property="Content" TargetName="PART_MaximizeRestoreButton">
                                     <Setter.Value>
-                                        <Path Data="M0.5,2.5 L8.5,2.5 L8.5,10.5 L0.5,10.5 L0.5,3.5 M3.5,2.5 L3.5,0.5 L10.5,0.5 L10.5,8.5 L8.5,8.5" Stroke="Black" StrokeThickness="1"
-                                            Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True"/>
+                                        <Path Data="M0.5,2.5 L8.5,2.5 L8.5,10.5 L0.5,10.5 L0.5,3.5 M3.5,2.5 L3.5,0.5 L10.5,0.5 L10.5,8.5 L8.5,8.5" StrokeThickness="1"
+                                              Width="10.9" Height="10.9" VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True" 
+                                              Stroke="{Binding Foreground, Source={StaticResource colors}}"/>
                                     </Setter.Value>
                                 </Setter>
                             </Trigger>
@@ -858,7 +914,7 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/add16.png" />
                                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_NewMenuButton}" />
-                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding Foreground, Source={StaticResource colors}}" 
+                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding GrayForeground, Source={StaticResource colors}}" 
                                                       StrokeThickness="1.25" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                             </StackPanel>
                                         </ToggleButton>
@@ -981,7 +1037,7 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/sort16.png" />
                                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_SortMenuButton}" />
-                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding Foreground, Source={StaticResource colors}}" 
+                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding GrayForeground, Source={StaticResource colors}}" 
                                                       StrokeThickness="1.25" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                             </StackPanel>
                                         </ToggleButton>
@@ -994,7 +1050,7 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <Image Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/view16.png" />
                                                 <TextBlock VerticalAlignment="Center" Margin="4,0,0,0" Text="{shell:Resource ToolBar_ViewMenuButton}" />
-                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding Foreground, Source={StaticResource colors}}" 
+                                                <Path Data="{StaticResource menuChevronDown}" Stroke="{Binding GrayForeground, Source={StaticResource colors}}" 
                                                       StrokeThickness="1.25" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                             </StackPanel>
                                         </ToggleButton>
@@ -1012,13 +1068,13 @@
                                 </Grid>
                             </Border>
                             <controls:TreeView Grid.Row="1" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
-                            <GridSplitter Grid.Row="1" Grid.Column="1" ResizeDirection="Columns" Width="5" Background="{Binding BackgroundColor, Source={StaticResource colors}}"
+                            <GridSplitter Grid.Row="1" Grid.Column="1" ResizeDirection="Columns" Width="5" Background="#01000000"
                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Focusable="False" BorderThickness="1,0,0,0" BorderBrush="Gray" />
                             <controls:FolderView Grid.Row="1" Grid.Column="2" x:Name="folderView" SearchBox="{Binding ., ElementName=searchBox}"
                                          Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
                                          Navigation="{Binding ., ElementName=navigation}" />
-                            <GridSplitter Grid.Row="1" Grid.Column="3" ResizeDirection="Columns" Width="5" Focusable="False" Background="{Binding BackgroundColor, Source={StaticResource colors}}" 
-                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="previewSplitter" BorderThickness="1,0,0,0" BorderBrush="Gray" />
+                            <GridSplitter Grid.Row="1" Grid.Column="3" ResizeDirection="Columns" Width="5" Focusable="False" Background="#01000000" 
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="previewSplitter" BorderThickness="0,0,1,0" BorderBrush="Gray" />
                             <controls:Previewer Grid.Row="1" Grid.Column="4" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
                                         x:Name="previewer" Tag="{Binding ., ElementName=previewSplitter}" />
                             <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Foreground="{Binding GrayForeground, Source={StaticResource colors}}"

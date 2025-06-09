@@ -20,6 +20,8 @@ Namespace Controls
         Public Shared ReadOnly ExpandCollapseAllStateProperty As DependencyProperty = DependencyProperty.Register("ExpandCollapseAllState", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf ExpandCollapseAllStateChanged))
         Public Shared ReadOnly CanExpandCollapseProperty As DependencyProperty = DependencyProperty.Register("CanExpandCollapse", GetType(Boolean), GetType(SlidingExpander), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly MouseOverBackgroundProperty As DependencyProperty = DependencyProperty.Register("MouseOverBackground", GetType(Brush), GetType(SlidingExpander), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly FocusedBorderProperty As DependencyProperty = DependencyProperty.Register("FocusedBorder", GetType(Brush), GetType(SlidingExpander), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly ChevronForegroundProperty As DependencyProperty = DependencyProperty.Register("ChevronForeground", GetType(Brush), GetType(SlidingExpander), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(SlidingExpander), New FrameworkPropertyMetadata(GetType(SlidingExpander)))
@@ -31,7 +33,6 @@ Namespace Controls
 
         Private PART_ContentContainer As ScrollViewer
         Private PART_ContentPresenter As ContentPresenter
-        Private PART_ListBox As ListBox
         Private PART_Title As ContentPresenter
         Private PART_TitleLabel As Button
         Private PART_ToggleButton As ToggleButton
@@ -51,8 +52,6 @@ Namespace Controls
             Me.PART_ToggleButton = Template.FindName("PART_ToggleButton", Me)
 
             Me.IsExpanded = Me.ExpandCollapseAllState
-
-            Me.PART_ListBox = UIHelper.GetParentOfType(Of ListBox)(Me)
 
             _timer = New DispatcherTimer()
 
@@ -228,6 +227,24 @@ Namespace Controls
             End Get
             Set(ByVal value As Brush)
                 SetCurrentValue(MouseOverBackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property FocusedBorder As Brush
+            Get
+                Return GetValue(FocusedBorderProperty)
+            End Get
+            Set(ByVal value As Brush)
+                SetCurrentValue(FocusedBorderProperty, value)
+            End Set
+        End Property
+
+        Public Property ChevronForeground As Brush
+            Get
+                Return GetValue(ChevronForegroundProperty)
+            End Get
+            Set(ByVal value As Brush)
+                SetCurrentValue(ChevronForegroundProperty, value)
             End Set
         End Property
 
