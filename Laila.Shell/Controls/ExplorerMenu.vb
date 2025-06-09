@@ -30,6 +30,12 @@ Namespace Controls
         Private _arrayCloudItems As IShellItemArray = Nothing
         Private _arrayFileExplorerItems As IShellItemArray = Nothing
         Private _resourcePrefix As String
+        Private _screenPoint As Point
+
+        Protected Overrides Sub OnOpened(e As RoutedEventArgs)
+            MyBase.OnOpened(e)
+            _screenPoint = Me.PointToScreen(New Point(0, 0))
+        End Sub
 
         Protected Overrides Sub Make(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             If _wasMade Then Return
@@ -136,9 +142,8 @@ Namespace Controls
                     addFromContextMenu("properties", "Windows.properties", "Alt+Enter")
 
                     ' add cloud menu items
-                    If _menuItems.Count > 0 Then
-                        _menuItems.Add(New MenuItemData() With {.Header = "-----"})
-                    End If
+                    Dim subTotal As Integer = _menuItems.Count
+
                     addFromContextMenu("MakeAvailableOffline", "cloud_download")
                     addFromContextMenu("MakeAvailableOnline", "cloud")
                     addCloudMenuItem(explorerMenuHelperType, explorerMenuHelper,
@@ -151,6 +156,10 @@ Namespace Controls
                                                     If(items Is Nothing OrElse items.Count = 0, folder.Parent, folder),
                                                     If(items Is Nothing OrElse items.Count = 0, {folder}, items),
                                                     _arrayFileExplorerItems, resolveMsResourceFromPackage)
+
+                    If _menuItems.Count > subTotal Then
+                        _menuItems.Insert(subTotal, New MenuItemData() With {.Header = "-----"})
+                    End If
 
                     If isMount AndAlso _menuItems.Count > 1 Then
                         _menuItems.Insert(1, New MenuItemData() With {.Header = "-----"})
@@ -174,9 +183,14 @@ Namespace Controls
                                     Sub()
                                         Dim rightClickMenu As RightClickMenu = New RightClickMenu()  '
                                         rightClickMenu.Colors = Me.Colors
-                                        rightClickMenu.Style = Me.Style
+                                        If Not Me.Tag Is Nothing AndAlso TypeOf Me.Tag Is Control Then
+                                            rightClickMenu.Style = CType(Me.Tag, Control).FindResource(rightClickMenu.GetType())
+                                        End If
                                         rightClickMenu.Folder = folder
                                         rightClickMenu.SelectedItems = items
+                                        rightClickMenu.Placement = PlacementMode.Absolute
+                                        rightClickMenu.HorizontalOffset = _screenPoint.X
+                                        rightClickMenu.VerticalOffset = _screenPoint.Y
                                         rightClickMenu.IsOpen = True
                                     End Sub)
                             End Sub
@@ -579,6 +593,31 @@ Namespace Controls
             Else
                 Return Nothing
             End If
+        End Function
+
+        Protected Overrides Function MakeButtonContent(tag As Tuple(Of Integer, String, Object), ByRef toolTip As String) As FrameworkElement
+            Dim grid As Grid = New Grid()
+            grid.RowDefinitions.Add(New RowDefinition() With {.Height = New GridLength(Convert.ToDouble(24))})
+            grid.RowDefinitions.Add(New RowDefinition() With {.Height = New GridLength(Convert.ToDouble(1), GridUnitType.Auto)})
+            Dim image As Image = New Image()
+            image.Width = 16
+            image.Height = 16
+            image.Margin = New Thickness(2)
+            image.VerticalAlignment = VerticalAlignment.Center
+            image.HorizontalAlignment = HorizontalAlignment.Center
+            Select Case tag.Item2
+                Case "copy" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}CopyButtonIcon")
+                Case "cut" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}CutButtonIcon")
+                Case "paste" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}PasteButtonIcon")
+                Case "rename" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}RenameButtonIcon")
+                Case "delete" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}DeleteButtonIcon")
+                Case "laila.shell.(un)pin" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}PinButtonIcon")
+            End Select
+            grid.Children.Add(image)
+            Dim textBlock As TextBlock = New TextBlock() With {.Text = toolTip} : toolTip = Nothing
+            textBlock.SetValue(Grid.RowProperty, 1)
+            grid.Children.Add(textBlock)
+            Return grid
         End Function
 
         Private Function putOnBlueBackground(source As BitmapSource) As BitmapSource

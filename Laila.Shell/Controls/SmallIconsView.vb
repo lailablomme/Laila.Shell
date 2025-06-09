@@ -24,7 +24,7 @@ Namespace Controls
             point = Me.PointFromScreen(textBlock.PointToScreen(New Point(0, 0)))
             point.X += -2
             point.Y += -1
-            size.Width = textBlock.ActualWidth + 4
+            size.Width = Double.NaN
             size.Height = textBlock.ActualHeight + 2
             textAlignment = TextAlignment.Left
             fontSize = textBlock.FontSize

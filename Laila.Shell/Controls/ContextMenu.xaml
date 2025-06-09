@@ -28,7 +28,7 @@
                             <Grid Height="22">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition SharedSizeGroup="MenuItemCheckColumnGroup" Width="Auto"/>
-                                    <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="Auto"/>
+                                    <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="21"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition SharedSizeGroup="MenuItemIGTColumnGroup" Width="Auto"/>
                                     <ColumnDefinition Width="17"/>
@@ -94,41 +94,6 @@
                             </ScrollViewer>
                         </Border>
                     </ControlTemplate>
-                    <ControlTemplate x:Key="{ComponentResourceKey ResourceId=TopLevelItemTemplateKey, TypeInTargetAssembly={x:Type MenuItem}}" TargetType="{x:Type MenuItem}">
-                        <Grid SnapsToDevicePixels="true">
-                            <Border x:Name="Bg" BorderThickness="1" Background="Transparent"/>
-                            <DockPanel>
-                                <ContentPresenter x:Name="Icon" ContentSource="Icon" Margin="4,0,6,0" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="Center"/>
-                                <Image x:Name="GlyphPanel" Width="16" Height="16" Source="pack://application:,,,/Laila.Shell;component/Images/check16.png" Margin="7,0,0,0" Visibility="Collapsed" VerticalAlignment="Center" />
-                                <ContentPresenter ContentSource="Header" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
-                                                                      TextBlock.Foreground="{Binding Colors.MenuItemForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
-                            </DockPanel>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="Icon" Value="{x:Null}">
-                                <Setter Property="Visibility" TargetName="Icon" Value="Collapsed"/>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="true">
-                                <Setter Property="Visibility" TargetName="GlyphPanel" Value="Visible"/>
-                                <Setter Property="Visibility" TargetName="Icon" Value="Collapsed"/>
-                            </Trigger>
-                            <Trigger Property="IsHighlighted" Value="true">
-                                <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
-                                <Setter Property="Background" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
-                                <Setter Property="BorderBrush" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocused" Value="true">
-                                <Setter Property="Foreground" Value="{Binding Colors.MenuItemSelectedForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
-                                <Setter Property="Background" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
-                                <Setter Property="BorderBrush" TargetName="Bg" Value="{Binding Colors.MenuItemSelectedBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="false">
-                                <Setter Property="Foreground" Value="{Binding Colors.MenuItemDisabledForeground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}"/>
-                                <Setter Property="Opacity" TargetName="GlyphPanel" Value="0.30"/>
-                                <Setter Property="Opacity" TargetName="Icon" Value="0.30"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
                     <Geometry x:Key="RightArrow">M 0,0 L 4,3.5 L 0,7</Geometry>
                     <ControlTemplate x:Key="{ComponentResourceKey ResourceId=SubmenuHeaderTemplateKey, TypeInTargetAssembly={x:Type MenuItem}}" TargetType="{x:Type MenuItem}">
                         <Grid SnapsToDevicePixels="true" UseLayoutRounding="True">
@@ -136,7 +101,7 @@
                             <Grid Height="22">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition SharedSizeGroup="MenuItemCheckColumnGroup" Width="Auto"/>
-                                    <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="Auto"/>
+                                    <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="21"/>
                                     <ColumnDefinition Width="4"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="37"/>
@@ -262,10 +227,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ContextMenu}">
-                    <Border Padding="0,3,0,3" x:Name="PART_Menu" Opacity="0" BorderThickness="1" CornerRadius="5" 
-                                                BorderBrush="{Binding Colors.MenuBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" 
-                                                Background="{Binding Colors.MenuBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" 
-                                                UseLayoutRounding="True" SnapsToDevicePixels="True">
+                    <Border Padding="0,3,0,3" Margin="0,0,6,6" x:Name="PART_Menu" Opacity="0" BorderThickness="1" CornerRadius="5" 
+                            BorderBrush="{Binding Colors.MenuBorder, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" 
+                            Background="{Binding Colors.MenuBackground, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=local:ContextMenu}}" 
+                            UseLayoutRounding="True" SnapsToDevicePixels="True">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="3" Color="Black" ShadowDepth="3" Opacity="0.5" />
                         </Border.Effect>

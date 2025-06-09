@@ -822,7 +822,8 @@ Namespace Controls
 
             _menu = Menus.GetContextMenu(Me.DoUseWindows11ExplorerMenu, folder, selectedItems, isDefaultOnly)
             _menu.Colors = Me.Colors
-            _menu.Style = Me.FindResource("lailaShell_ContextMenuStyle")
+            _menu.Style = Me.FindResource(_menu.GetType())
+            _menu.Tag = Me
 
             AddHandler _menu.CommandInvoked,
                 Sub(s As Object, e2 As CommandInvokedEventArgs)
@@ -879,7 +880,7 @@ Namespace Controls
         End Sub
 
         Public Sub DoRename(listBoxItem As ListBoxItem)
-            Menus.DoRename(AddressOf Me.GetItemNameCoordinates, Me.PART_Grid, listBoxItem, Me.PART_ListBox)
+            Menus.DoRename(AddressOf Me.GetItemNameCoordinates, Me.PART_Grid, listBoxItem, Me.PART_ListBox, Me.Colors)
         End Sub
 
         Public Property IsLoading As Boolean

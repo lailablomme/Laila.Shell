@@ -90,7 +90,7 @@ Namespace Controls
                          ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
 
         Friend Shared Sub DoRename(getCoords As GetItemNameCoordinatesDelegate,
-                                   grid As Grid, listBoxItem As ListBoxItem, listBox As ListBox)
+                                   grid As Grid, listBoxItem As ListBoxItem, listBox As ListBox, colors As StandardColors)
             Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
             Dim item As Item = listBoxItem.DataContext
             Dim originalName As String = Nothing, ext As String = "", isDrive As Boolean, isWithExt As Boolean
@@ -188,7 +188,11 @@ Namespace Controls
                 .TextAlignment = textAlignment,
                 .UseLayoutRounding = True,
                 .SnapsToDevicePixels = True,
-                .FontSize = fontSize
+                .FontSize = fontSize,
+                .Foreground = colors.Foreground,
+                .CaretBrush = colors.Foreground,
+                .Background = colors.Background,
+                .BorderBrush = colors.ItemSelectedActiveBorder
             }
             textBox.SetValue(Panel.ZIndexProperty, 100)
             textBox.Text = originalName

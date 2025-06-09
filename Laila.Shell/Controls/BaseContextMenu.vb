@@ -45,6 +45,22 @@ Namespace Controls
 
         Public Function MakeButton(tag As Tuple(Of Integer, String, Object), toolTip As String) As Button
             Dim button As Button = New Button()
+            button.Content = MakeButtonContent(tag, toolTip)
+            button.ToolTip = toolTip
+            button.Tag = tag
+            Return button
+        End Function
+
+        Public Function MakeToggleButton(tag As Tuple(Of Integer, String, Object), toolTip As String, isChecked As Boolean) As ToggleButton
+            Dim button As ToggleButton = New ToggleButton()
+            button.Content = MakeButtonContent(tag, toolTip)
+            button.ToolTip = toolTip
+            button.Tag = tag
+            button.IsChecked = isChecked
+            Return button
+        End Function
+
+        Protected Overridable Function MakeButtonContent(tag As Tuple(Of Integer, String, Object), ByRef toolTip As String) As FrameworkElement
             Dim image As Image = New Image()
             image.Width = 16
             image.Height = 16
@@ -55,27 +71,9 @@ Namespace Controls
                 Case "paste" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}PasteButtonIcon")
                 Case "rename" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}RenameButtonIcon")
                 Case "delete" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}DeleteButtonIcon")
-            End Select
-            button.Content = image
-            button.ToolTip = toolTip
-            button.Tag = tag
-            Return button
-        End Function
-
-        Public Function MakeToggleButton(tag As Tuple(Of Integer, String, Object), toolTip As String, isChecked As Boolean) As ToggleButton
-            Dim button As ToggleButton = New ToggleButton()
-            Dim image As Image = New Image()
-            image.Width = 16
-            image.Height = 16
-            image.Margin = New Thickness(2)
-            Select Case tag.Item2
                 Case "laila.shell.(un)pin" : image.Source = System.Windows.Application.Current.TryFindResource($"{ResourcePrefix}PinButtonIcon")
             End Select
-            button.Content = image
-            button.ToolTip = toolTip
-            button.Tag = tag
-            button.IsChecked = isChecked
-            Return button
+            Return image
         End Function
 
         Public Overridable Overloads Function GetMenuItems() As List(Of Control)

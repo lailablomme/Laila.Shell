@@ -554,7 +554,8 @@ Namespace Controls
                             End If
                             _menu = Menus.GetContextMenu(Me.DoUseWindows11ExplorerMenu, If(clickedItem.Parent Is Nothing, Shell.Desktop, clickedItem.Parent), {clickedItem}, False)
                             _menu.Colors = Me.Colors
-                            _menu.Style = Me.FindResource("lailaShell_ContextMenuStyle")
+                            _menu.Style = Me.FindResource(_menu.GetType())
+                            _menu.Tag = Me
                             AddHandler _menu.CommandInvoked,
                                 Sub(s As Object, e2 As CommandInvokedEventArgs)
                                     Select Case e2.Verb
@@ -577,13 +578,13 @@ Namespace Controls
                                                 Sub(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
                                                     ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
                                                     point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
-                                                    point.X += clickedItem.TreeMargin.Left + 41
-                                                    point.Y -= 0
-                                                    size = New Size(Me.ActualWidth - point.X - 2, listBoxItem.ActualHeight)
+                                                    point.X += clickedItem.TreeMargin.Left + 44
+                                                    point.Y += 1
+                                                    size = New Size(Double.NaN, listBoxItem.ActualHeight)
                                                     textAlignment = TextAlignment.Left
                                                     fontSize = Me.FontSize
                                                 End Sub
-                                            Menus.DoRename(getCoords, Me.PART_Grid, treeViewItem, Me.PART_ListBox)
+                                            Menus.DoRename(getCoords, Me.PART_Grid, treeViewItem, Me.PART_ListBox, Me.Colors)
                                             e2.IsHandled = True
                                         Case "laila.shell.(un)pin"
                                             If e2.IsChecked Then
