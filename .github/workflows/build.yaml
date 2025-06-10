@@ -125,11 +125,7 @@ jobs:
           name: Release ${{ steps.extract_version.outputs.version }}
           draft: false
           prerelease: ${{ steps.extract_version.outputs.prerelease }}
-          artifacts: |
-            Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip,
-            Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip,
-            Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}-AppX.zip,
-            ./Laila.Shell/bin/x64/Release/*.nupkg
+          artifacts: Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip,Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip,Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}-AppX.zip,./Laila.Shell/bin/x64/Release/*.nupkg
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Publish NuGet package to nuget.org
