@@ -4,7 +4,8 @@ on:
   push:
     tags:
       - 'v*'
-
+  workflow_dispatch:
+  
 jobs:
   build:
     runs-on: windows-latest
@@ -23,7 +24,8 @@ jobs:
         id: extract_version
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}"
+          git fetch --tags --force
+          $version = git for-each-ref --sort=-taggerdate --format '%(refname:short)' refs/tags | Select-Object -First 1
           $isPrerelease = $version -match "alpha"
           Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
           Write-Output "prerelease=$isPrerelease" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
@@ -118,19 +120,14 @@ jobs:
           path: ./Laila.Shell/bin/x64/Release/*.nupkg
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        env:
-         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ steps.extract_version.outputs.version }}
+          tag: ${{ steps.extract_version.outputs.version }}
           name: Release ${{ steps.extract_version.outputs.version }}
           draft: false
           prerelease: ${{ steps.extract_version.outputs.prerelease }}
-          files: |
-            Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip
-            Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip
-            Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}-AppX.zip
-            ./Laila.Shell/bin/x64/Release/*.nupkg
+          artifacts: Laila.Shell.SampleApp1-${{ steps.extract_version.outputs.version }}.zip,Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}.zip,Laila.Shell.SampleApp2-${{ steps.extract_version.outputs.version }}-AppX.zip,./Laila.Shell/bin/x64/Release/*.nupkg
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Publish NuGet package to nuget.org
         run: |
