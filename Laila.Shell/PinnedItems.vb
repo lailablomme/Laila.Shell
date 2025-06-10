@@ -61,6 +61,8 @@ Public Class PinnedItems
     End Function
 
     Public Shared Function GetIsPinned(item As Item) As Boolean
+        If item Is Nothing Then Return False
+
         Dim isSuccess As Boolean, numTries As Integer
         While (Not isSuccess AndAlso numTries <= 5)
             Try
@@ -69,7 +71,7 @@ Public Class PinnedItems
                         ' register in db
                         Dim collection As ILiteCollection(Of PinnedItem) = db.GetCollection(Of PinnedItem)("PinnedItems")
                         Dim pinnedItems As IEnumerable(Of PinnedItem) = collection _
-                            .Find(Function(f) Not item.Pidl Is Nothing AndAlso Not f.Pidl Is Nothing AndAlso Not f.Pidl Is Nothing AndAlso f.Pidl.Equals(item.Pidl.ToString()))
+                            .Find(Function(f) Not item.Pidl Is Nothing AndAlso Not f.Pidl Is Nothing AndAlso f.Pidl.Equals(item.Pidl.ToString()))
                         Return pinnedItems.Count > 0
                     End Using
                 End SyncLock

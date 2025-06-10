@@ -576,13 +576,16 @@ Namespace Controls
                                         Case "rename"
                                             Dim getCoords As Menus.GetItemNameCoordinatesDelegate =
                                                 Sub(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
-                                                    ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
+                                                    ByRef point As Point, ByRef size As Size, ByRef fontSize As Double,
+                                                    ByRef displayNameElemant As FrameworkElement)
                                                     point = Me.PointFromScreen(listBoxItem.PointToScreen(New Point(0, 0)))
                                                     point.X += clickedItem.TreeMargin.Left + 44
                                                     point.Y += 1
                                                     size = New Size(Double.NaN, listBoxItem.ActualHeight)
                                                     textAlignment = TextAlignment.Left
                                                     fontSize = Me.FontSize
+                                                    displayNameElemant = UIHelper.FindVisualChildren(Of TextBlock)(listBoxItem) _
+                                                        .FirstOrDefault(Function(b) b.Name = "PART_DisplayName")
                                                 End Sub
                                             Menus.DoRename(getCoords, Me.PART_Grid, treeViewItem, Me.PART_ListBox, Me.Colors)
                                             e2.IsHandled = True

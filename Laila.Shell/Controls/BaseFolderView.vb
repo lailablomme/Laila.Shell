@@ -856,7 +856,8 @@ Namespace Controls
         End Function
 
         Protected MustOverride Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
-                                                          ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
+                                                          ByRef point As Point, ByRef size As Size, ByRef fontSize As Double,
+                                                          ByRef displayNameElemant As FrameworkElement)
 
         Public Async Function DoRename(fullPath As String) As Task(Of Boolean)
             If Not Me.Folder Is Nothing Then

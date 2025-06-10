@@ -147,6 +147,9 @@ Namespace Themes
         Public Shared ReadOnly ToolTipBorderProperty As DependencyProperty = DependencyProperty.Register("ToolTipBorder", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ToolTipBorderColorProperty As DependencyProperty = DependencyProperty.Register("ToolTipBorderColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ToolTipBorderColorOverrideProperty As DependencyProperty = DependencyProperty.Register("ToolTipBorderColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnToolTipBorderColorOverrideChanged))
+        Public Shared ReadOnly RenameBackgroundProperty As DependencyProperty = DependencyProperty.Register("RenameBackground", GetType(Brush), GetType(StandardColors), New FrameworkPropertyMetadata(Brushes.Silver, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly RenameBackgroundColorProperty As DependencyProperty = DependencyProperty.Register("RenameBackgroundColor", GetType(Color), GetType(StandardColors), New FrameworkPropertyMetadata(Colors.White, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly RenameBackgroundColorOverrideProperty As DependencyProperty = DependencyProperty.Register("RenameBackgroundColorOverride", GetType(Color?), GetType(StandardColors), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, AddressOf OnRenameBackgroundColorOverrideChanged))
 
         Public Sub New()
             AddHandler Shell.Settings.PropertyChanged,
@@ -225,6 +228,7 @@ Namespace Themes
             setToolTipBackgroundColor()
             setToolTipBorderColor()
             setToolTipForegroundColor()
+            setRenameBackgroundColor()
         End Sub
 
         Public Property DoUseLightThemeOverride As Boolean?
@@ -2083,6 +2087,47 @@ Namespace Themes
         Public Shared Sub OnToolTipBorderColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bfv As StandardColors = d
             bfv.setToolTipBorderColor()
+        End Sub
+
+        Public Property RenameBackground As Brush
+            Get
+                Return GetValue(RenameBackgroundProperty)
+            End Get
+            Protected Set(ByVal value As Brush)
+                SetCurrentValue(RenameBackgroundProperty, value)
+            End Set
+        End Property
+
+        Public Property RenameBackgroundColor As Color
+            Get
+                Return GetValue(RenameBackgroundColorProperty)
+            End Get
+            Protected Set(ByVal value As Color)
+                SetCurrentValue(RenameBackgroundColorProperty, value)
+            End Set
+        End Property
+
+        Private Sub setRenameBackgroundColor()
+            If Me.RenameBackgroundColorOverride.HasValue Then
+                Me.RenameBackgroundColor = Me.RenameBackgroundColorOverride.Value
+            Else
+                Me.RenameBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#F0F0F0"), ColorConverter.ConvertFromString("#333333"))
+            End If
+            Me.RenameBackground = New SolidColorBrush(Me.RenameBackgroundColor)
+        End Sub
+
+        Public Property RenameBackgroundColorOverride As Color?
+            Get
+                Return GetValue(RenameBackgroundColorOverrideProperty)
+            End Get
+            Set(ByVal value As Color?)
+                SetCurrentValue(RenameBackgroundColorOverrideProperty, value)
+            End Set
+        End Property
+
+        Public Shared Sub OnRenameBackgroundColorOverrideChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
+            Dim bfv As StandardColors = d
+            bfv.setRenameBackgroundColor()
         End Sub
     End Class
 End Namespace

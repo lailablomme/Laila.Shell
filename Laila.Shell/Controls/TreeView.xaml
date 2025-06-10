@@ -915,7 +915,8 @@
                                                 <local:LoadingSpinner />
                                             </Viewbox>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Path=DisplayName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                           x:Name="PART_DisplayName">
                                                     <TextBlock.Style>
                                                         <Style>
                                                             <Style.Triggers>

@@ -895,7 +895,7 @@
                                                         Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                                                     <Grid>
                                                         <Path x:Name="PART_Check" Data="{StaticResource CheckHome}" StrokeThickness="1.5" Visibility="Hidden" Margin="0" 
-                                                              Fill="Transparent" Stroke="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="8"/>
+                                                              Fill="Transparent" Stroke="White" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="8"/>
                                                         <Border x:Name="PART_LayOver" CornerRadius="5" Width="19" Height="19" Visibility="Hidden"
                                                                 BorderThickness="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                                 Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">

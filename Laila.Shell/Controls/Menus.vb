@@ -87,11 +87,11 @@ Namespace Controls
         End Function
 
         Delegate Sub GetItemNameCoordinatesDelegate(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
-                         ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
+                         ByRef point As Point, ByRef size As Size, ByRef fontSize As Double, ByRef displayNameElemant As FrameworkElement)
 
         Friend Shared Sub DoRename(getCoords As GetItemNameCoordinatesDelegate,
                                    grid As Grid, listBoxItem As ListBoxItem, listBox As ListBox, colors As StandardColors)
-            Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double
+            Dim point As Point, size As Size, textAlignment As TextAlignment, fontSize As Double, displayNameElemant As FrameworkElement = Nothing
             Dim item As Item = listBoxItem.DataContext
             Dim originalName As String = Nothing, ext As String = "", isDrive As Boolean, isWithExt As Boolean
             Dim doHideKnownFileExtensions As Boolean = Shell.Settings.DoHideKnownFileExtensions
@@ -173,7 +173,7 @@ Namespace Controls
             End If
 
             ' get coords
-            getCoords(listBoxItem, textAlignment, point, size, fontSize)
+            getCoords(listBoxItem, textAlignment, point, size, fontSize, displayNameElemant)
 
             ' make textbox
             Dim textBox As System.Windows.Controls.TextBox
@@ -191,13 +191,14 @@ Namespace Controls
                 .FontSize = fontSize,
                 .Foreground = colors.Foreground,
                 .CaretBrush = colors.Foreground,
-                .Background = colors.Background,
+                .Background = colors.RenameBackground,
                 .BorderBrush = colors.ItemSelectedActiveBorder
             }
             textBox.SetValue(Panel.ZIndexProperty, 100)
             textBox.Text = originalName
             grid.Children.Add(textBox)
             textBox.Focus()
+            displayNameElemant.Visibility = Visibility.Hidden
 
             Dim doCancel As Action =
                 Sub()
@@ -214,7 +215,7 @@ Namespace Controls
                 Sub(s As Object, e As ScrollChangedEventArgs)
                     If Not PresentationSource.FromVisual(listBoxItem) Is Nothing Then
                         ' get coords
-                        getCoords(listBoxItem, textAlignment, point, size, fontSize)
+                        getCoords(listBoxItem, textAlignment, point, size, fontSize, displayNameElemant)
 
                         If point.X >= 0 AndAlso point.X + size.Width < listBox.ActualWidth _
                             AndAlso point.Y >= 0 AndAlso point.Y + size.Height < listBox.ActualHeight Then
@@ -250,6 +251,7 @@ Namespace Controls
             ' hook textbox
             AddHandler textBox.LostFocus,
                 Sub(s2 As Object, e2 As RoutedEventArgs)
+                    displayNameElemant.Visibility = Visibility.Visible
                     RemoveHandler tbWindow.PreviewMouseDown, windowMouseDown
                     RemoveHandler scrollViewer.ScrollChanged, onScrollChanged
                     grid.Children.Remove(textBox)

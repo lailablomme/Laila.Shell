@@ -18,7 +18,8 @@ Namespace Controls
         End Sub
 
         Protected Overrides Sub GetItemNameCoordinates(listBoxItem As ListBoxItem, ByRef textAlignment As TextAlignment,
-                                                       ByRef point As Point, ByRef size As Size, ByRef fontSize As Double)
+                                                       ByRef point As Point, ByRef size As Size, ByRef fontSize As Double,
+                                                       ByRef displayNameElemant As FrameworkElement)
             Dim textBlock As TextBlock = UIHelper.FindVisualChildren(Of TextBlock)(listBoxItem) _
                 .FirstOrDefault(Function(b) b.Name = "PART_DisplayName")
             point = Me.PointFromScreen(textBlock.PointToScreen(New Point(0, 0)))
@@ -28,6 +29,7 @@ Namespace Controls
             size.Height = textBlock.ActualHeight + 2
             textAlignment = TextAlignment.Left
             fontSize = textBlock.FontSize
+            displayNameElemant = textBlock
         End Sub
     End Class
 End Namespace
