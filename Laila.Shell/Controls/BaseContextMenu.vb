@@ -31,6 +31,8 @@ Namespace Controls
         Private _contextMenu3 As IContextMenu3
         Protected _hMenu As IntPtr
         Private _disposeLock As Object = New Object()
+        Private _tag As Object = Nothing
+        Private _selectedItems As IEnumerable(Of Item) = Nothing
 
         Protected Overrides Function DoRenameAfter(Tag As Tuple(Of Integer, String, Object)) As Boolean
             Dim newMenuItem As MenuItem = Me.Items.Cast(Of Control) _
@@ -261,19 +263,49 @@ Namespace Controls
                 End If
             End SyncLock
 
+            If parentIndex < 0 AndAlso Not _tag Is Nothing AndAlso TypeOf _tag Is BaseControl _
+                AndAlso Not _selectedItems Is Nothing AndAlso _selectedItems.Count = 1 AndAlso TypeOf _selectedItems(0) Is ProxyLink Then
+                Dim openContainingMenuItem As New MenuItemData() With {
+                    .Header = My.Resources.Menu_OpenContaining,
+                    .IsEnabled = True
+                }
+                Dim action As Action =
+                    Sub()
+                        UIHelper.OnUIThread(
+                            Sub()
+                                If Not _tag Is Nothing AndAlso TypeOf _tag Is BaseControl Then
+                                    CType(_tag, BaseControl).Folder = CType(_selectedItems(0), ProxyLink).TargetItem.Parent.Clone()
+                                End If
+                            End Sub)
+                    End Sub
+                openContainingMenuItem.Tag = New Tuple(Of Integer, String, Object)(-1, Guid.NewGuid().ToString(), action)
+                Dim openItemIndex As Integer = result.FindIndex(Function(i) Not i.Tag Is Nothing AndAlso TypeOf i.Tag Is Tuple(Of Integer, String, Object) _
+                                                                    AndAlso CType(i.Tag, Tuple(Of Integer, String, Object)).Item2?.ToLower().Equals("open"))
+                Dim editItemIndex As Integer = result.FindIndex(Function(i) Not i.Tag Is Nothing AndAlso TypeOf i.Tag Is Tuple(Of Integer, String, Object) _
+                                                                    AndAlso CType(i.Tag, Tuple(Of Integer, String, Object)).Item2?.ToLower().Equals("edit"))
+                Dim printItemIndex As Integer = result.FindIndex(Function(i) Not i.Tag Is Nothing AndAlso TypeOf i.Tag Is Tuple(Of Integer, String, Object) _
+                                                                    AndAlso CType(i.Tag, Tuple(Of Integer, String, Object)).Item2?.ToLower().Equals("print"))
+                Dim maxIndex As Integer = Math.Max(openItemIndex, Math.Max(editItemIndex, printItemIndex))
+                result.Insert(maxIndex + 1, openContainingMenuItem)
+            End If
+
+
             Return result
         End Function
 
         Protected Overloads Overrides Sub Make(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             Dim folderPidl As Pidl = Nothing, itemPidls As Pidl() = Nothing, doUseAbsolutePidls As Boolean
+            _tag = Me.Tag
+            _selectedItems = items
 
             Shell.GlobalThreadPool.Run(
                 Sub()
                     If Not items Is Nothing AndAlso items.Count > 0 Then
                         ' user clicked on an item
-                        Dim f As Folder = items(0).Parent
-                        If items.All(Function(i) (i.Parent Is Nothing AndAlso f Is Nothing) _
-                                         OrElse (Not i.Parent Is Nothing AndAlso If(i.Parent.Pidl?.Equals(f?.Pidl), False))) Then
+                        Dim f As Folder = items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i))(0).Parent
+                        If items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)) _
+                                .All(Function(i) (i.Parent Is Nothing AndAlso f Is Nothing) _
+                            OrElse (Not i.Parent Is Nothing AndAlso If(i.Parent.Pidl?.Equals(f?.Pidl), False))) Then
                             folder = f
                         Else
                             folder = Shell.Desktop
@@ -281,7 +313,8 @@ Namespace Controls
                         End If
                         If folder Is Nothing Then folder = Shell.Desktop
                         folderPidl = folder.Pidl?.Clone()
-                        itemPidls = items.Where(Function(i) Not i.Pidl Is Nothing).Select(Function(i) i.Pidl?.Clone()).ToArray()
+                        itemPidls = items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)) _
+                            .Where(Function(i) Not i.Pidl Is Nothing).Select(Function(i) i.Pidl?.Clone()).ToArray()
                     Else
                         ' user clicked on the background
                         If folder.FullPath = Shell.Desktop.FullPath Then
@@ -342,8 +375,8 @@ Namespace Controls
                                 shellExtInit = TryCast(_contextMenu, IShellExtInit)
                                 If Not shellExtInit Is Nothing Then
                                     Functions.SHCreateDataObject(folderPidl.AbsolutePIDL, itemPidls.Count,
-                                                     itemPidls.Select(Function(p) If(doUseAbsolutePidls, p.AbsolutePIDL, p.RelativePIDL)).ToArray(),
-                                                     Nothing, GetType(IDataObject_PreserveSig).GUID, dataObject)
+                                        itemPidls.Select(Function(p) If(doUseAbsolutePidls, p.AbsolutePIDL, p.RelativePIDL)).ToArray(),
+                                        Nothing, GetType(IDataObject_PreserveSig).GUID, dataObject)
                                     shellExtInit.Initialize(If(folder.Pidl?.AbsolutePIDL, IntPtr.Zero), dataObject, IntPtr.Zero)
                                 End If
                             Finally
@@ -378,9 +411,32 @@ Namespace Controls
 
             Await Make()
 
+            Dim e As CommandInvokedEventArgs = Nothing
+
+            If Not id.Item3 Is Nothing Then
+                UIHelper.OnUIThread(
+                    Sub()
+                        e = New CommandInvokedEventArgs() With {
+                            .Id = id.Item1,
+                            .Verb = id.Item2
+                        }
+                        Dim c As Control = Me.Buttons.Cast(Of Control).FirstOrDefault(Function(i) id.Equals(i.Tag))
+                        If TypeOf c Is ToggleButton Then e.IsChecked = CType(c, ToggleButton).IsChecked
+                        RaiseCommandInvoked(e)
+                    End Sub)
+
+                If Not e.IsHandled Then
+                    _thread.Add(
+                        Sub()
+                            CType(id.Item3, Action).Invoke()
+                        End Sub)
+                End If
+
+                Return
+            End If
+
             Dim folder As Folder = Nothing
             Dim selectedItems As IEnumerable(Of Item) = Nothing
-            Dim e As CommandInvokedEventArgs = Nothing
 
             If id.Item1.Equals(Me.DefaultId?.Item1) Then
                 For Each item In _activeItems

@@ -156,6 +156,8 @@ Public Class SearchFolder
     End Function
 
     Public Sub Update(terms As String)
+        If Me.Terms.Equals(terms) Then Return
+
         If Me.IsLoading Then
             ' cancel enumeration
             Me.CancelEnumeration()

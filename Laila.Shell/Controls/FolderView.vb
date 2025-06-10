@@ -264,6 +264,8 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property NotificationThreadId As Integer? Implements IProcessNotifications.NotificationThreadId
+
         Private Async Sub updateStatusText()
             'Await Task.Delay(100)
             If Not Me.Folder Is Nothing Then
@@ -357,7 +359,7 @@ Namespace Controls
                 Dim selectedItems As IEnumerable(Of Item) = If(Not Me.SelectedItems Is Nothing, Me.SelectedItems.ToList(), Nothing)
                 Dim hasFocus As Boolean = Me.IsKeyboardFocusWithin
                 If Not Me.ActiveView Is Nothing Then
-                    Me.ActiveView.Folder = Nothing
+                    BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.FolderProperty)
                     BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.SelectedItemsProperty)
                     BindingOperations.ClearBinding(Me.ActiveView, BaseFolderView.IsSelectingProperty)
                 End If
@@ -370,6 +372,7 @@ Namespace Controls
                     Me.ActiveView.SearchBox = Me.SearchBox
                     Me.ActiveView.Navigation = Me.Navigation
                     Me.ActiveView.Visibility = Visibility.Hidden
+                    Me.ActiveView.Colors = Me.Colors
                     _views.Add(newValue, Me.ActiveView)
                     If Not Me.PART_Grid Is Nothing Then
                         Me.PART_Grid.Children.Add(Me.ActiveView)
@@ -380,7 +383,7 @@ Namespace Controls
                 Me.ActiveView.Visibility = Visibility.Visible
                 Me.ActiveView.SetValue(Panel.ZIndexProperty, 1)
                 If hasFocus Then Me.ActiveView.Focus()
-                Me.ActiveView.Folder = folder
+                Me.ActiveView.SetBinding(BaseFolderView.FolderProperty, New Binding("Folder") With {.Source = Me})
                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder)
                 folderViewState.ActiveView = newValue
                 folderViewState.Persist()

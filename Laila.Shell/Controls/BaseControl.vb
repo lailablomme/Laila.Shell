@@ -598,7 +598,7 @@ Namespace Controls
             Get
                 Return GetValue(ColorsProperty)
             End Get
-            Protected Set(ByVal value As StandardColors)
+            Set(ByVal value As StandardColors)
                 SetCurrentValue(ColorsProperty, value)
             End Set
         End Property

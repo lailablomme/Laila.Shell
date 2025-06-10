@@ -682,6 +682,75 @@
                                   Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}"
                                   Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}">
                             <ListView.Resources>
+                                <Geometry x:Key="Check">M 0,3 L 4,7 L 10,0</Geometry>
+                                <Style TargetType="CheckBox" x:Key="lailaShell_CheckBoxStyle">
+                                    <Setter Property="Background" Value="{Binding Tag.Colors.Background, ElementName=PART_Grid}" />
+                                    <Setter Property="BorderBrush" Value="Gray" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                    <Setter Property="Height" Value="16" />
+                                    <Setter Property="Width" Value="16" />
+                                    <Setter Property="MinHeight" Value="16" />
+                                    <Setter Property="MinWidth" Value="16" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="CheckBox">
+                                                <Border x:Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" CornerRadius="3" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}" Padding="0" 
+                                                        Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                                    <Grid>
+                                                        <Path x:Name="PART_Check" Data="{StaticResource Check}" StrokeThickness="1.5" Visibility="Hidden" Margin="0" 
+                                                              Fill="Transparent" Stroke="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" VerticalAlignment="Center" HorizontalAlignment="Center" Width="10" Height="8"/>
+                                                        <Border x:Name="PART_LayOver" CornerRadius="3" Width="14" Height="14" Visibility="Hidden" Margin="1"
+                                                                BorderThickness="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                                Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                                        </Border>
+                                                    </Grid>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Trigger.EnterActions>
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation 
+                                                                        Storyboard.TargetProperty="Width"
+                                                                        Storyboard.TargetName="PART_LayOver"
+                                                                        Duration="0:0:0.3" 
+                                                                        From="19" 
+                                                                        To="0" />
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </Trigger.EnterActions>
+                                                        <Setter TargetName="PART_Check" Property="Visibility" Value="Visible" />
+                                                        <Setter TargetName="PART_LayOver" Property="Visibility" Value="Visible" />
+                                                        <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.Accent, ElementName=PART_Grid}"/>
+                                                        <Setter Property="Background" TargetName="PART_LayOver" Value="{Binding Tag.Colors.Accent, ElementName=PART_Grid}"/>
+                                                        <Setter Property="BorderBrush" TargetName="Bd" Value="{Binding Tag.Colors.Accent, ElementName=PART_Grid}"/>
+                                                    </Trigger>
+                                                    <MultiTrigger>
+                                                        <MultiTrigger.Conditions>
+                                                            <Condition Property="IsMouseOver" Value="True" />
+                                                            <Condition Property="IsChecked" Value="True" />
+                                                        </MultiTrigger.Conditions>
+                                                        <MultiTrigger.Setters>
+                                                            <Setter Property="Background" TargetName="PART_LayOver" Value="{Binding Tag.Colors.AccentLighter, ElementName=PART_Grid}"/>
+                                                            <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.AccentLighter, ElementName=PART_Grid}"/>
+                                                        </MultiTrigger.Setters>
+                                                    </MultiTrigger>
+                                                    <MultiTrigger>
+                                                        <MultiTrigger.Conditions>
+                                                            <Condition Property="IsMouseOver" Value="True" />
+                                                            <Condition Property="IsChecked" Value="False" />
+                                                        </MultiTrigger.Conditions>
+                                                        <MultiTrigger.Setters>
+                                                            <Setter Property="Background" TargetName="Bd" Value="{Binding Tag.Colors.SelectedBackground, ElementName=PART_Grid}"/>
+                                                        </MultiTrigger.Setters>
+                                                    </MultiTrigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
                                 <Style TargetType="ListViewItem" x:Key="lailaShell_ListViewItem">
                                     <Setter Property="OverridesDefaultStyle" Value="True"/>
                                     <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -716,7 +785,6 @@
                                                     </MultiDataTrigger>
                                                     <MultiDataTrigger>
                                                         <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="False"/>
                                                             <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ListView}}" Value="True"/>
                                                             <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Mode=Self}}" Value="True"/>
                                                         </MultiDataTrigger.Conditions>
@@ -866,7 +934,7 @@
                                             </Grid.Resources>
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                       VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
-                                                      Visibility="Collapsed" IsTabStop="False" Focusable="False"/>
+                                                      Visibility="Collapsed" IsTabStop="False" Focusable="False" Style="{StaticResource lailaShell_CheckBoxStyle}"/>
                                             <ItemsControl Grid.Column="1" Margin="0,0,2,0">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>

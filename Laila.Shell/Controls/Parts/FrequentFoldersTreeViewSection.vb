@@ -13,6 +13,8 @@ Namespace Controls.Parts
 
         Public Property IsProcessingNotifications As Boolean = True Implements IProcessNotifications.IsProcessingNotifications
 
+        Public Property NotificationThreadId As Integer? Implements IProcessNotifications.NotificationThreadId
+
         Private _timer As Timer = Nothing
         Private _signature As String = String.Empty
 

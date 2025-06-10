@@ -343,6 +343,15 @@ Namespace My.Resources
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Open file location.
+        '''</summary>
+        Friend ReadOnly Property Menu_OpenContaining() As String
+            Get
+                Return ResourceManager.GetString("Menu_OpenContaining", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to Paste.
         '''</summary>
         Friend ReadOnly Property Menu_Paste() As String

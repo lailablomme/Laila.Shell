@@ -256,7 +256,7 @@ Public Class HomeFolder
 
                 Dim shellItem2 As IShellItem2
                 shellItem2 = GetIShellItem2FromPidl(item.Pidl.AbsolutePIDL, LogicalParent?.ShellFolder) ' get the IShellItem2
-                item = New Home_RecentItemLink(shellItem2, item.LogicalParent, False, True, Nothing, item.Pidl.Clone())
+                item = New ProxyLink(shellItem2, item.LogicalParent, False, True, Nothing, item.Pidl.Clone())
 
                 item.LogicalParent = Me
                 item._hasCustomProperties = True

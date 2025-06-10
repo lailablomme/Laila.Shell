@@ -678,7 +678,7 @@
                                                 <LinearGradientBrush.GradientStops>
                                                     <GradientStopCollection>
                                                         <GradientStop Color="{Binding BackgroundColor, Source={StaticResource colors}, 
-                                                            Converter={StaticResource opacityConverter}, ConverterParameter=0.3}" Offset="0.0" />
+                                                            Converter={StaticResource opacityConverter}, ConverterParameter=0.1}" Offset="0.0" />
                                                         <GradientStop Color="{Binding BackgroundColor, Source={StaticResource colors}, 
                                                             Converter={StaticResource opacityConverter}, ConverterParameter=0.6}" Offset="0.75" />
                                                     </GradientStopCollection>
@@ -887,6 +887,8 @@
                                 <ColumnDefinition Width="5" />
                                 <ColumnDefinition Width="250" />
                             </Grid.ColumnDefinitions>
+                            <Image Source="Images/dorabg.png" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                   Grid.RowSpan="3" Grid.ColumnSpan="5" Opacity="0.15"/>
                             <controls:Menus x:Name="menus" Folder="{Binding Folder}" 
                                     SelectedItems="{Binding SelectedItems}"
                                     FolderView="{Binding ., ElementName=folderView}" />
@@ -1067,16 +1069,28 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
-                            <controls:TreeView Grid.Row="1" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}" />
+                            <controls:TreeView Grid.Row="1" x:Name="treeView" Folder="{Binding Folder, Mode=TwoWay}">
+                                <controls:TreeView.Colors>
+                                    <themes:StandardColors BackgroundColorOverride="Transparent" />
+                                </controls:TreeView.Colors>
+                            </controls:TreeView>
                             <GridSplitter Grid.Row="1" Grid.Column="1" ResizeDirection="Columns" Width="5" Background="#01000000"
                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Focusable="False" BorderThickness="1,0,0,0" BorderBrush="Gray" />
                             <controls:FolderView Grid.Row="1" Grid.Column="2" x:Name="folderView" SearchBox="{Binding ., ElementName=searchBox}"
                                          Folder="{Binding Folder, Mode=TwoWay}" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
-                                         Navigation="{Binding ., ElementName=navigation}" />
+                                         Navigation="{Binding ., ElementName=navigation}">
+                                <controls:FolderView.Colors>
+                                    <themes:StandardColors BackgroundColorOverride="Transparent" />
+                                </controls:FolderView.Colors>
+                            </controls:FolderView>
                             <GridSplitter Grid.Row="1" Grid.Column="3" ResizeDirection="Columns" Width="5" Focusable="False" Background="#01000000" 
                                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="previewSplitter" BorderThickness="0,0,1,0" BorderBrush="Gray" />
                             <controls:Previewer Grid.Row="1" Grid.Column="4" SelectedItems="{Binding SelectedItems, Mode=TwoWay}"
-                                        x:Name="previewer" Tag="{Binding ., ElementName=previewSplitter}" />
+                                        x:Name="previewer" Tag="{Binding ., ElementName=previewSplitter}">
+                                <controls:Previewer.Colors>
+                                    <themes:StandardColors BackgroundColorOverride="Transparent" />
+                                </controls:Previewer.Colors>
+                            </controls:Previewer>
                             <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Foreground="{Binding GrayForeground, Source={StaticResource colors}}"
                                Text="{Binding StatusText, ElementName=folderView}" Margin="15,0,0,0">
                                 <TextBlock.Style>

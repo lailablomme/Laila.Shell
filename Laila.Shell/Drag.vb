@@ -48,9 +48,10 @@ Public Class Drag
             Try
                 Debug.WriteLine("Drag.Start")
 
-                _dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items.ToList())
+                _dataObject = Clipboard.GetDataObjectFor(items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i))(0).Parent,
+                                                         items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)))
 
-                makeDragImageObjects(items)
+                makeDragImageObjects(items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)))
                 InitializeDragImage()
 
                 Dim availableDropEffects As DROPEFFECT

@@ -21,6 +21,7 @@ Public Class Shell
     Private Shared _desktop As Folder
 
     Public Shared Event ClipboardChanged As EventHandler
+    Public Shared Event AccentColorChanged As EventHandler
 
     Public Shared Property PrivilegedCloudProviders As List(Of SpecialFolders) = New List(Of SpecialFolders) From {
         SpecialFolders.OneDrive,
@@ -171,6 +172,10 @@ Public Class Shell
         Dim source As HwndSource = HwndSource.FromHwnd(hwnd)
         source.AddHook(AddressOf hwndHook)
         _hwnd = hwnd
+
+        ' hide messaging window from ALT-TAB screen
+        Dim extendedStyle = Functions.GetWindowLong(hwnd, GWL.GWL_EXSTYLE)
+        Functions.SetWindowLong(hwnd, GWL.GWL_EXSTYLE, extendedStyle Or WS.WS_EX_TOOLWINDOW)
 
         ' start listening for clipboard changes
         _nextClipboardViewer = Functions.SetClipboardViewer(hwnd)
@@ -352,7 +357,7 @@ Public Class Shell
     End Sub
 
     Private Shared Function hwndHook(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr, ByRef handled As Boolean) As IntPtr
-        Debug.WriteLine(CType(msg, WM).ToString())
+        'Debug.WriteLine(CType(msg, WM).ToString())
         Select Case msg
             Case WM.USER + 1
                 ' we received an SHChangeNotify message - go get the data
@@ -424,9 +429,6 @@ Public Class Shell
                                 notifySubscribers(e)
                             End If
 
-                            If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
-                            If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
-
                             ' unlock
                             Functions.SHChangeNotification_Unlock(hLock)
                         End Sub)
@@ -441,37 +443,80 @@ Public Class Shell
                 ElseIf _nextClipboardViewer <> IntPtr.Zero Then
                     Functions.SendMessage(_nextClipboardViewer, msg, wParam, lParam)
                 End If
+            Case WM.DWMCOLORIZATIONCOLORCHANGED
+                RaiseEvent AccentColorChanged(Nothing, New EventArgs())
         End Select
     End Function
 
     Private Shared Sub notifySubscribers(e As NotificationEventArgs)
+        Shell.NotifySubscribers(_notificationSubscribers, _notificationSubscribersLock, Shell.NotificationThreadPool, e)
+    End Sub
+
+    Public Shared Sub NotifySubscribers(notificationSubscribers As List(Of IProcessNotifications), notificationSubscribersLock As Object,
+                                        notificationThreadPool As Helpers.ThreadPool, e As NotificationEventArgs)
         Dim list As List(Of IProcessNotifications) = Nothing
-        SyncLock _notificationSubscribersLock
-            list = _notificationSubscribers.Where(Function(i) i.IsProcessingNotifications).ToList()
+        SyncLock notificationSubscribersLock
+            list = notificationSubscribers.Where(Function(i) i.IsProcessingNotifications).ToList()
         End SyncLock
         If list.Count > 0 Then
+            SyncLock e
+                e.ProcessorCount += list.Count
+            End SyncLock
+
             Dim size As Integer = Math.Max(1, Math.Min(list.Count / 10, 250))
-            Dim chuncks()() As IProcessNotifications = list.Chunk(list.Count / size).ToArray()
+            Dim chuncks As List(Of IProcessNotifications()) = New List(Of IProcessNotifications())()
+            For Each threadId In list.Select(Function(i) i.NotificationThreadId).Distinct()
+                If threadId.HasValue Then
+                    chuncks.Add(list.Where(Function(i) threadId.Equals(i.NotificationThreadId)).ToArray())
+                End If
+            Next
+            chuncks.AddRange(list.Where(Function(i) Not i.NotificationThreadId.HasValue).Chunk(list.Count / size).ToArray())
             Dim tcses As List(Of TaskCompletionSource) = New List(Of TaskCompletionSource)()
 
             ' threads for refreshing
             For i = 0 To chuncks.Count - 1
                 Dim j As Integer = i
                 Dim tcs As TaskCompletionSource = New TaskCompletionSource()
+                Dim threadId As Integer = If(chuncks(j)(0).NotificationThreadId, notificationThreadPool.GetNextFreeThreadId())
                 tcses.Add(tcs)
-                Shell.NotificationThreadPool.Add(
+                notificationThreadPool.Add(
                     Sub()
                         ' Process tasks from the queue
                         For Each item In chuncks(j)
+                            If Not item.NotificationThreadId.HasValue Then item.NotificationThreadId = threadId
                             If Shell.ShuttingDownToken.IsCancellationRequested Then Exit For
                             item?.ProcessNotification(e)
                         Next
 
+                        ' Decrement number of processors
+                        Dim count As Integer = 0
+                        SyncLock e
+                            e.ProcessorCount -= chuncks(j).Count
+                            count = e.ProcessorCount
+                        End SyncLock
+
+                        ' If no more processors, check for a while if it stays at 0
+                        If count = 0 Then
+                            For x = 1 To 5
+                                SyncLock e
+                                    count = e.ProcessorCount
+                                End SyncLock
+                                If count <> 0 Then Exit For
+                                Thread.Sleep(500)
+                            Next
+                        End If
+
+                        ' If it stayed at 0, dispose of the items
+                        If count = 0 Then
+                            If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
+                            If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
+                        End If
+
                         tcs.SetResult()
-                    End Sub)
+                    End Sub, threadId)
             Next
 
-            Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
+            'Task.WaitAll(tcses.Select(Function(tcs) tcs.Task).ToArray(), Shell.ShuttingDownToken)
         End If
     End Sub
 
@@ -740,10 +785,6 @@ Public Class Shell
                         (Not e.Item2 Is Nothing OrElse (e.Event <> SHCNE.RENAMEITEM AndAlso e.Event <> SHCNE.RENAMEFOLDER)) Then
                         ' notify components
                         notifySubscribers(e)
-
-                        ' dispose of items
-                        If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
-                        If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
                     End If
                 End Sub
 

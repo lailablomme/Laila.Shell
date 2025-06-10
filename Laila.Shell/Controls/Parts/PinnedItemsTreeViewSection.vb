@@ -100,6 +100,8 @@ Namespace Controls.Parts
             End Get
         End Property
 
+        Public Property NotificationThreadId As Integer? Implements IProcessNotifications.NotificationThreadId
+
         Public Function DragInsertBefore(dataObject As IDataObject_PreserveSig, files As List(Of Item), index As Integer, overListBoxItem As ListBoxItem) As Interop.HRESULT Implements ISupportDragInsert.DragInsertBefore
             Dim canPinItem As Boolean =
                 (Me.Items.Count = 2 AndAlso TypeOf Me.Items(1) Is PinnedItemsPlaceholderFolder AndAlso index = -1) _

@@ -1426,6 +1426,8 @@ Public Class Item
         End Set
     End Property
 
+    Public Property NotificationThreadId As Integer? Implements IProcessNotifications.NotificationThreadId
+
     Public Shared Async Function FromParsingNameDeepGetAsync(parsingName As String) As Task(Of Item)
         ' resolve environment variable?
         parsingName = Environment.ExpandEnvironmentVariables(parsingName)

@@ -41,6 +41,7 @@ Namespace Controls
             If _wasMade Then Return
 
             _resourcePrefix = Me.ResourcePrefix
+            Dim tag As Object = Me.Tag
 
             _activeItems = If(Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0,
                 Me.SelectedItems.ToList(), New List(Of Item) From {Me.Folder})
@@ -129,7 +130,37 @@ Namespace Controls
                     addFromContextMenu("rotate90", "Windows.rotate90")
                     addFromContextMenu("rotate270", "Windows.rotate270")
                     addFromContextMenu("Windows.PowerShell.Run", "Windows.MultiVerb.PowerShell")
-                    addFromContextMenu("opencontaining", "Windows.Shortcut.opencontaining")
+                    If Not tag Is Nothing AndAlso TypeOf tag Is BaseControl _
+                        AndAlso Not items Is Nothing AndAlso items.Count = 1 AndAlso TypeOf items(0) Is ProxyLink Then
+                        Dim openContainingMenuItem As New MenuItemData() With {
+                            .Header = My.Resources.Menu_OpenContaining,
+                            .IsEnabled = True
+                        }
+                        Using commandStoreKey As RegistryKey = Registry.LocalMachine.OpenSubKey(COMMANDSTORE_PATH)
+                            Using subKey As RegistryKey = commandStoreKey.OpenSubKey("Windows.Shortcut.opencontaining")
+                                If Not subKey Is Nothing Then
+                                    ' get icon  
+                                    Dim icon As String = CType(subKey.GetValue("Icon"), String)
+                                    If Not icon Is Nothing Then
+                                        openContainingMenuItem.Icon = ImageHelper.ExtractIcon(icon, False)
+                                    End If
+                                End If
+                            End Using
+                        End Using
+                        Dim action As Action =
+                            Sub()
+                                UIHelper.OnUIThread(
+                                    Sub()
+                                        If Not tag Is Nothing AndAlso TypeOf tag Is BaseControl Then
+                                            CType(tag, BaseControl).Folder = CType(items(0), ProxyLink).TargetItem.Parent.Clone()
+                                        End If
+                                    End Sub)
+                            End Sub
+                        openContainingMenuItem.Tag = New Tuple(Of Integer, String, Object)(-1, Guid.NewGuid().ToString(), action)
+                        _menuItems.Add(openContainingMenuItem)
+                    Else
+                        addFromContextMenu("opencontaining", "Windows.Shortcut.opencontaining")
+                    End If
                     addFromContextMenu("undelete", "Windows.RecycleBin.RestoreItems")
                     addFromContextMenu("extract", "Windows.CompressedFile.extract")
                     addFromContextMenu("setdesktopwallpaper", "Windows.setdesktopwallpaper")
@@ -744,7 +775,6 @@ Namespace Controls
                     End Sub)
 
                 If Not e.IsHandled Then
-                    ' Or just deactivate focus
                     _thread.Add(
                         Sub()
                             Functions.AllowSetForegroundWindow(Functions.ASFW_ANY)

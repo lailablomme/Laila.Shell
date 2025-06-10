@@ -171,6 +171,9 @@
   <data name="Menu_CheckboxesForItems" xml:space="preserve">
     <value>خانات اختيار للعناصر</value>
   </data>
+  <data name="Menu_Collapse" xml:space="preserve">
+    <value>طي</value>
+  </data>
   <data name="Menu_CollapseAllGroups" xml:space="preserve">
     <value>طي كل المجموعات</value>
   </data>
@@ -186,6 +189,9 @@
   <data name="Menu_Delete" xml:space="preserve">
     <value>حذف</value>
   </data>
+  <data name="Menu_Expand" xml:space="preserve">
+    <value>توسيع</value>
+  </data>
   <data name="Menu_ExpandAllGroups" xml:space="preserve">
     <value>توسيع كل المجموعات</value>
   </data>
@@ -200,6 +206,9 @@
   </data>
   <data name="Menu_HiddenItems" xml:space="preserve">
     <value>عناصر مخفية</value>
+  </data>
+  <data name="Menu_OpenContaining" xml:space="preserve">
+    <value>فتح موقع الملف</value>
   </data>
   <data name="Menu_Paste" xml:space="preserve">
     <value>لصق</value>

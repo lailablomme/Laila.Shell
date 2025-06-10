@@ -45,11 +45,11 @@ Namespace Controls
 
                             UIHelper.OnUIThread(
                                 Sub()
-                                    If Not TypeOf Me.Folder Is SearchFolder Then
+                                    If Not String.IsNullOrWhiteSpace(Me.PART_TextBox.Text) AndAlso Not TypeOf Me.Folder Is SearchFolder Then
                                         Me.Folder = SearchFolder.FromTerms(Me.PART_TextBox.Text, Me.Folder)
                                     ElseIf Not String.IsNullOrWhiteSpace(Me.PART_TextBox.Text) Then
                                         CType(Me.Folder, SearchFolder).Update(Me.PART_TextBox.Text)
-                                    Else
+                                    ElseIf TypeOf Me.Folder Is SearchFolder Then
                                         Me.Folder.CancelEnumeration()
                                         Me.Navigation.Back()
                                     End If

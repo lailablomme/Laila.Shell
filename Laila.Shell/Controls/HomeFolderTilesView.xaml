@@ -895,7 +895,7 @@
                                                         Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                                                     <Grid>
                                                         <Path x:Name="PART_Check" Data="{StaticResource CheckHome}" StrokeThickness="1.5" Visibility="Hidden" Margin="0" 
-                                                              Fill="Transparent" Stroke="{Binding Tag.Colors.Background, ElementName=PART_Grid}" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="8"/>
+                                                              Fill="Transparent" Stroke="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" VerticalAlignment="Center" HorizontalAlignment="Center" Width="11" Height="8"/>
                                                         <Border x:Name="PART_LayOver" CornerRadius="5" Width="19" Height="19" Visibility="Hidden"
                                                                 BorderThickness="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                                 Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
@@ -1025,7 +1025,7 @@
                                                                                             </Style>
                                                                                         </ItemsControl.Style>
                                                                                     </ItemsControl>
-                                                                                    <Image Grid.Column="2" Source="{Binding DefaultFileIconLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
+                                                                                    <Image Grid.Column="2" Source="{Binding DefaultFileIconLarge, Source={StaticResource imageHelper}}" Width="24" Height="24"
                                                                                             UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                                                         <Image.Style>
                                                                                             <Style>
@@ -1047,7 +1047,7 @@
                                                                                             </Style>
                                                                                         </Image.Style>
                                                                                     </Image>
-                                                                                    <Image Grid.Column="2" Source="{Binding DefaultFolderIconLarge, Source={StaticResource imageHelper}}" Width="48" Height="48"
+                                                                                    <Image Grid.Column="2" Source="{Binding DefaultFolderIconLarge, Source={StaticResource imageHelper}}" Width="24" Height="24"
                                                                                             UseLayoutRounding="True" SnapsToDevicePixels="True">
                                                                                         <Image.Style>
                                                                                             <Style>

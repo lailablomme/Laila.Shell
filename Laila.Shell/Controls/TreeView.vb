@@ -1056,6 +1056,8 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property NotificationThreadId As Integer? Implements IProcessNotifications.NotificationThreadId
+
         Protected Overridable Sub Dispose(disposing As Boolean)
             If Not disposedValue Then
                 If disposing Then

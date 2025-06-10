@@ -207,6 +207,9 @@
   <data name="Menu_HiddenItems" xml:space="preserve">
     <value>Verborgen items</value>
   </data>
+  <data name="Menu_OpenContaining" xml:space="preserve">
+    <value>Bestandslocatie openen</value>
+  </data>
   <data name="Menu_Paste" xml:space="preserve">
     <value>Plakken</value>
   </data>

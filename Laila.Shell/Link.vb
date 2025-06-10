@@ -65,9 +65,7 @@ Public Class Link
         Get
             If String.IsNullOrWhiteSpace(_targetFullPath) Then
                 Try
-                    Dim fullPath As StringBuilder = New StringBuilder(New String(Chr(0), 2048 + 2))
-                    Me.ShellLink?.GetPath(fullPath, 2048, Nothing, SLGP_FLAGS.RAWPATH)
-                    _targetFullPath = Environment.ExpandEnvironmentVariables(fullPath.ToString())
+                    _targetFullPath = Me.TargetItem?.FullPath
                 Catch ex As Exception
                 End Try
             End If

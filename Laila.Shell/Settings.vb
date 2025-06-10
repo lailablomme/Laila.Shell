@@ -108,6 +108,7 @@ Public Class Settings
             _cancel = New CancellationTokenSource()
 
             ' start monitoring
+            AddHandler Shell.AccentColorChanged, AddressOf shell_AccentColorChanged
             monitorRegistryKey(EXPLORER_KEYPATH,
                 Sub()
                     Dim b As Boolean
@@ -184,6 +185,8 @@ Public Class Settings
 
     Public Sub StopMonitoring()
         If _isMonitoring Then
+            RemoveHandler Shell.AccentColorChanged, AddressOf shell_AccentColorChanged
+
             ' make loops end
             _cancel.Cancel()
 
@@ -209,6 +212,11 @@ Public Class Settings
         Else
             Throw New Exception("We're not monitoring now.")
         End If
+    End Sub
+
+    Private Sub shell_AccentColorChanged(sender As Object, e As EventArgs)
+        Me.NotifyOfPropertyChange("WindowsAccentColor")
+        Me.NotifyOfPropertyChange("WindowsAccentBrush")
     End Sub
 
     Private Sub monitorRegistryKey(keyPath As String, onChange As Action,

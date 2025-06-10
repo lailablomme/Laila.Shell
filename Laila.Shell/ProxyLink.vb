@@ -1,6 +1,6 @@
 ﻿Imports Laila.Shell.Interop.Items
 
-Public Class Home_RecentItemLink
+Public Class ProxyLink
     Inherits Link
 
     Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer?, Optional pidl As Pidl = Nothing)

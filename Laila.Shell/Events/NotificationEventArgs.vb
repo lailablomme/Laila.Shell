@@ -9,5 +9,6 @@ Namespace Events
         Public Property [Event] As SHCNE
         Public Property IsHandled1 As Boolean
         Public Property IsHandled2 As Boolean
+        Public Property ProcessorCount As Integer
     End Class
 End Namespace

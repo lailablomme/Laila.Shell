@@ -150,11 +150,12 @@ Namespace Themes
 
         Public Sub New()
             AddHandler Shell.Settings.PropertyChanged,
-                Sub(s As Object, e As PropertyChangedEventArgs)
+                Async Sub(s As Object, e As PropertyChangedEventArgs)
                     Select Case e.PropertyName
                         Case "DoUseLightTheme"
                             setDoUseLightTheme()
                         Case "WindowsAccentColor"
+                            Await Task.Delay(500) ' Delay to ensure settings are fully applied
                             setAccentColor()
                     End Select
                 End Sub
@@ -177,6 +178,10 @@ Namespace Themes
             Else
                 Me.DoUseLightTheme = Shell.Settings.DoUseLightTheme
             End If
+            loadColors()
+        End Sub
+
+        Private Sub loadColors()
             setForegroundColor()
             setGrayForegroundColor()
             setBackgroundColor()
@@ -421,7 +426,7 @@ Namespace Themes
             If Me.BackgroundColorOverride.HasValue Then
                 Me.BackgroundColor = Me.BackgroundColorOverride.Value
             Else
-                Me.BackgroundColor = If(Me.DoUseLightTheme, Colors.White, ColorConverter.ConvertFromString("#181818"))
+                Me.BackgroundColor = If(Me.DoUseLightTheme, Colors.White, ColorConverter.ConvertFromString("#1B1B1B"))
             End If
             Me.Background = New SolidColorBrush(Me.BackgroundColor)
         End Sub

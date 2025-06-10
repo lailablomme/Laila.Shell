@@ -214,6 +214,8 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property NotificationThreadId As Integer? Implements IProcessNotifications.NotificationThreadId
+
         Shared Sub OnSelectedItemsChanged(ByVal d As DependencyObject, ByVal e As DependencyPropertyChangedEventArgs)
             Dim bm As BaseMenu = d
             If bm.IsOpen Then bm.IsOpen = False

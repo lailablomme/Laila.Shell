@@ -11,11 +11,13 @@ Imports Laila.Shell.Interop.Windows
 
 Public Class Clipboard
     Public Shared Function CanCopy(items As IEnumerable(Of Item)) As Boolean
-        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANCOPY))
+        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)) _
+            .All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANCOPY))
     End Function
 
     Public Shared Function CanCut(items As IEnumerable(Of Item)) As Boolean
-        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANMOVE))
+        Return Not items Is Nothing AndAlso items.Count > 0 AndAlso items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)) _
+            .All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANMOVE))
     End Function
 
     Public Shared Function CanPaste(folder As Folder) As Boolean
@@ -59,7 +61,8 @@ Public Class Clipboard
     Public Shared Sub CopyFiles(items As IEnumerable(Of Item))
         Using Shell.OverrideCursor(Cursors.Wait)
             Dim dataObject As IDataObject_PreserveSig
-            dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+            dataObject = Clipboard.GetDataObjectFor(items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i))(0).Parent,
+                                                    items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)))
             Functions.OleSetClipboard(dataObject)
             ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_COPY)
         End Using
@@ -68,7 +71,8 @@ Public Class Clipboard
     Public Shared Sub CutFiles(items As IEnumerable(Of Item))
         Using Shell.OverrideCursor(Cursors.Wait)
             Dim dataObject As IDataObject_PreserveSig
-            dataObject = Clipboard.GetDataObjectFor(items(0).Parent, items)
+            dataObject = Clipboard.GetDataObjectFor(items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i))(0).Parent,
+                                                    items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)))
             Functions.OleSetClipboard(dataObject)
             ClipboardFormats.CFSTR_PREFERREDDROPEFFECT.SetClipboard(DROPEFFECT.DROPEFFECT_MOVE)
         End Using

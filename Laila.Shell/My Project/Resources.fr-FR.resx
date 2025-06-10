@@ -207,6 +207,9 @@
   <data name="Menu_HiddenItems" xml:space="preserve">
     <value>Éléments cachés</value>
   </data>
+  <data name="Menu_OpenContaining" xml:space="preserve">
+    <value>Ouvrir l’emplacement du fichier</value>
+  </data>
   <data name="Menu_Paste" xml:space="preserve">
     <value>Coller</value>
   </data>

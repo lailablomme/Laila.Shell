@@ -311,7 +311,7 @@ Namespace Controls
                         Dim pidls As List(Of Pidl) = Nothing
                         Try
                             fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
-                            pidls = items.Select(Function(i) i.Pidl.Clone()).ToList()
+                            pidls = items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i).Pidl.Clone()).ToList()
                             Functions.SHCreateShellItemArrayFromIDLists(pidls.Count, pidls.Select(Function(p) p.AbsolutePIDL).ToArray(), array)
                             If Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) Then fo.SetOperationFlags(FOF.FOFX_WANTNUKEWARNING)
                             fo.DeleteItems(array)
@@ -349,8 +349,8 @@ Namespace Controls
                         _rightClickMenu.Dispose()
                     End If
                     _rightClickMenu = New RightClickMenu() With {
-                        .Folder = items(0).Parent,
-                        .SelectedItems = items,
+                        .Folder = items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i))(0).Parent,
+                        .SelectedItems = items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)),
                         .IsDefaultOnly = False
                     }
                     Await _rightClickMenu.Make()
@@ -404,15 +404,19 @@ Namespace Controls
                 Me.CanCut = Clipboard.CanCut(Me.SelectedItems)
                 Me.CanCopy = Clipboard.CanCopy(Me.SelectedItems)
                 Me.CanPaste = Not Me.Folder.disposedValue AndAlso Not Me.Folder.IsReadyForDispose AndAlso Not Me.Folder Is Nothing AndAlso Clipboard.CanPaste(Me.Folder)
-                Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 AndAlso Me.SelectedItems.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANRENAME))
-                Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANDELETE))
+                Me.CanRename = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 _
+                    AndAlso Me.SelectedItems.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)).All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANRENAME))
+                Me.CanDelete = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
+                    AndAlso Me.SelectedItems.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)).All(Function(i) i._preloadedAttributes.HasFlag(SFGAO.CANDELETE))
                 If Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count = 1 Then
                     If Shell.GetSpecialFolders().Any(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
                         AndAlso Shell.GetSpecialFolders().Where(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
                             .Any(Function(f) Me.SelectedItems(0).FullPath.StartsWith(f.Value.FullPath & IO.Path.DirectorySeparatorChar)) Then
                         Me.CanShare = True
                     Else
-                        Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 AndAlso Me.SelectedItems.All(Function(i) IO.File.Exists(i.FullPath))
+                        Me.CanShare = Not Me.SelectedItems Is Nothing AndAlso Me.SelectedItems.Count > 0 _
+                            AndAlso Me.SelectedItems.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i)) _
+                                                    .All(Function(i) IO.File.Exists(i.FullPath))
                     End If
                 Else
                     Me.CanShare = False
