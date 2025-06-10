@@ -694,15 +694,15 @@
                                 </Style>
                             </ListView.Style>
                             <ListView.Resources>
-                                <Geometry x:Key="Check">M 0,3 L 4,7 L 10,0</Geometry>
+                                <Geometry x:Key="Check">M 0,4 L 3,7 L 8,1</Geometry>
                                 <Style TargetType="CheckBox" x:Key="lailaShell_CheckBoxStyle">
                                     <Setter Property="Background" Value="{Binding Tag.Colors.Background, ElementName=PART_Grid}" />
                                     <Setter Property="BorderBrush" Value="Gray" />
                                     <Setter Property="BorderThickness" Value="1" />
-                                    <Setter Property="Height" Value="16" />
-                                    <Setter Property="Width" Value="16" />
-                                    <Setter Property="MinHeight" Value="16" />
-                                    <Setter Property="MinWidth" Value="16" />
+                                    <Setter Property="Height" Value="14" />
+                                    <Setter Property="Width" Value="14" />
+                                    <Setter Property="MinHeight" Value="14" />
+                                    <Setter Property="MinWidth" Value="14" />
                                     <Setter Property="Padding" Value="0" />
                                     <Setter Property="Template">
                                         <Setter.Value>
@@ -712,8 +712,8 @@
                                                         Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                                                     <Grid>
                                                         <Path x:Name="PART_Check" Data="{StaticResource Check}" StrokeThickness="1.5" Visibility="Hidden" Margin="0" 
-                                                              Fill="Transparent" Stroke="White" VerticalAlignment="Center" HorizontalAlignment="Center" Width="10" Height="8"/>
-                                                        <Border x:Name="PART_LayOver" CornerRadius="3" Width="14" Height="14" Visibility="Hidden" Margin="1"
+                                                              Fill="Transparent" Stroke="White" VerticalAlignment="Center" HorizontalAlignment="Center" Width="8" Height="7"/>
+                                                        <Border x:Name="PART_LayOver" CornerRadius="3" Width="12" Height="12" Visibility="Hidden" Margin="1"
                                                                 BorderThickness="0" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                                 Background="{TemplateBinding Background}" SnapsToDevicePixels="True" UseLayoutRounding="True">
                                                         </Border>
