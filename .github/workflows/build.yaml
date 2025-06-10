@@ -24,7 +24,8 @@ jobs:
         id: extract_version
         shell: pwsh
         run: |
-          $version = git tag --sort=-creatordate | Select-Object -First 1
+          git fetch --tags --force
+          $version = git for-each-ref --sort=-taggerdate --format '%(refname:short)' refs/tags | Select-Object -First 1
           $isPrerelease = $version -match "alpha"
           Write-Output "version=$version" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
           Write-Output "prerelease=$isPrerelease" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
