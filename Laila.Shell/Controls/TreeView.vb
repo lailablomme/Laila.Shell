@@ -937,13 +937,12 @@ Namespace Controls
                             End If
                         Next
                         ' do this as flicker-free as possible
-                        If itemsToAdd.Count > 0 AndAlso itemsToRemove.Count > 0 Then
-                            Me.Items.UpdateRange(itemsToAdd, itemsToRemove)
-                        ElseIf itemsToRemove.Count > 0 Then
+                        If itemsToRemove.Count > 0 Then
                             For Each item In itemsToRemove
                                 Me.Items.Remove(item)
                             Next
-                        ElseIf itemsToAdd.Count > 0 Then
+                        End If
+                        If itemsToAdd.Count > 0 Then
                             For Each item In itemsToAdd
                                 Me.Items.Add(item)
                             Next

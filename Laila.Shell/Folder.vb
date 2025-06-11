@@ -1113,7 +1113,7 @@ Public Class Folder
         Dim tries As Integer = 0
         Do
             tries = tries + 1
-            enumEx = Me.EnumerateItems(Me.ShellItem2, flags, cancellationToken,
+            enumEx = Me.EnumerateItems(Nothing, flags, cancellationToken,
                 isSortPropertyByText, isSortPropertyDisplaySortValue, sortPropertyKey,
                 result, newFullPaths, addItems, threadId, dupes)
             If Not enumEx Is Nothing Then Thread.Sleep(150)
@@ -1154,6 +1154,7 @@ Public Class Folder
             propertyBag.Write("SHCONTF", var) '  STR_ENUM_ITEMS_FLAGS 
             bindCtx.RegisterObjectParam("SHBindCtxPropertyBag", propertyBag) ' STR_PROPERTYBAG_PARAM 
             SyncLock _shellItemLockEnumShellItems
+                If shellItem2 Is Nothing Then shellItem2 = Me.ShellItem2
                 If Not shellItem2 Is Nothing Then
                     CType(shellItem2, IShellItem2ForIEnumShellItems).BindToHandler _
                         (bindCtx, Guids.BHID_EnumItems, GetType(IEnumShellItems).GUID, enumShellItems)
@@ -1623,9 +1624,7 @@ Public Class Folder
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
                         If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
-                                OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) _
-                                AndAlso (e.Event = SHCNE.UPDATEDIR OrElse Not Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
-                                    OrElse _wasActivity OrElse Not _isEnumerated OrElse Not _isEnumeratedForTree) Then
+                                OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder Then
                                 _isEnumerated = False

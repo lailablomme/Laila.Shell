@@ -416,13 +416,13 @@ Public Class [Property]
         End Get
     End Property
 
-    Public Overridable ReadOnly Property Icons16 As ImageSource()
+    Public Overridable ReadOnly Property Icons16 As BitmapSource()
         Get
             Return Me.ImageReferences16?.Select(Function(i) ImageHelper.ExtractIcon(i, True)).ToArray()
         End Get
     End Property
 
-    Public Overridable ReadOnly Property Icons16Async As ImageSource()
+    Public Overridable ReadOnly Property Icons16Async As BitmapSource()
         Get
             Dim imageReferences16 As String() = Shell.GlobalThreadPool.Run(
                 Function() As String()
@@ -436,16 +436,16 @@ Public Class [Property]
         End Get
     End Property
 
-    Public ReadOnly Property FirstIcon16 As ImageSource
+    Public ReadOnly Property FirstIcon16 As BitmapSource
         Get
-            Dim icons16() As ImageSource = Me.Icons16
+            Dim icons16() As BitmapSource = Me.Icons16
             Return If(Not icons16 Is Nothing AndAlso icons16.Count > 0, icons16(0), Nothing)
         End Get
     End Property
 
-    Public Overridable ReadOnly Property FirstIcon16Async As ImageSource
+    Public Overridable ReadOnly Property FirstIcon16Async As BitmapSource
         Get
-            Dim icons16() As ImageSource = Me.Icons16Async
+            Dim icons16() As BitmapSource = Me.Icons16Async
             Return If(Not icons16 Is Nothing AndAlso icons16.Count > 0, icons16(0), Nothing)
         End Get
     End Property

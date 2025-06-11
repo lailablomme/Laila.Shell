@@ -110,9 +110,9 @@ Public Class HomeFolder
         End Set
     End Property
 
-    Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
+    Public Overrides ReadOnly Property Icon(size As Integer) As BitmapSource
         Get
-            Dim hbitmap As IntPtr, result As ImageSource = Nothing, shellItem As IShellItem2 = Nothing
+            Dim hbitmap As IntPtr, result As BitmapSource = Nothing, shellItem As IShellItem2 = Nothing
             Try
                 shellItem = Item.GetIShellItem2FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}")
                 Dim h As HRESULT = CType(shellItem, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), SIIGBF.SIIGBF_ICONONLY, hbitmap)
@@ -135,9 +135,9 @@ Public Class HomeFolder
         End Get
     End Property
 
-    Public Overrides ReadOnly Property Image(size As Integer) As ImageSource
+    Public Overrides ReadOnly Property Image(size As Integer) As BitmapSource
         Get
-            Dim hbitmap As IntPtr, result As ImageSource = Nothing, shellItem As IShellItem2 = Nothing
+            Dim hbitmap As IntPtr, result As BitmapSource = Nothing, shellItem As IShellItem2 = Nothing
             Try
                 shellItem = Item.GetIShellItem2FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}")
                 Dim h As HRESULT = CType(shellItem, IShellItemImageFactory).GetImage(New System.Drawing.Size(size * Settings.DpiScaleX, size * Settings.DpiScaleY), 0, hbitmap)
@@ -160,7 +160,7 @@ Public Class HomeFolder
         End Get
     End Property
 
-    Public Overrides ReadOnly Property OverlayImage(size As Integer) As ImageSource
+    Public Overrides ReadOnly Property OverlayImage(size As Integer) As BitmapSource
         Get
             Return Nothing
         End Get
@@ -353,7 +353,11 @@ Public Class HomeFolder
         End Try
     End Function
 
-    Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing, Optional newPidl As Pidl = Nothing, Optional doRefreshImage As Boolean = True, Optional threadId As Integer? = Nothing)
+    Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing,
+                                 Optional newPidl As Pidl = Nothing,
+                                 Optional doRefreshImage As Boolean = True,
+                                 Optional threadId As Integer? = Nothing,
+                                 Optional count As Integer = 1)
 
     End Sub
 End Class
