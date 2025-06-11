@@ -488,29 +488,32 @@ Public Class Shell
                             item?.ProcessNotification(e)
                         Next
 
-                        ' Decrement number of processors
-                        Dim count As Integer = 0
-                        SyncLock e
-                            e.ProcessorCount -= chuncks(j).Count
-                            count = e.ProcessorCount
-                        End SyncLock
-
-                        ' If no more processors, check for a while if it stays at 0
-                        If count = 0 Then
-                            For x = 1 To 5
+                        Shell.GlobalThreadPool.Add(
+                            Sub()
+                                ' Decrement number of processors
+                                Dim count As Integer = 0
                                 SyncLock e
+                                    e.ProcessorCount -= chuncks(j).Count
                                     count = e.ProcessorCount
                                 End SyncLock
-                                If count <> 0 Then Exit For
-                                Thread.Sleep(500)
-                            Next
-                        End If
 
-                        ' If it stayed at 0, dispose of the items
-                        If count = 0 Then
-                            If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
-                            If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
-                        End If
+                                ' If no more processors, check for a while if it stays at 0
+                                If count = 0 Then
+                                    For x = 1 To 5
+                                        SyncLock e
+                                            count = e.ProcessorCount
+                                        End SyncLock
+                                        If count <> 0 Then Exit For
+                                        Thread.Sleep(20)
+                                    Next
+                                End If
+
+                                ' If it stayed at 0, dispose of the items
+                                If count = 0 Then
+                                    If Not e.IsHandled1 AndAlso Not e.Item1 Is Nothing Then e.Item1.Dispose()
+                                    If Not e.IsHandled2 AndAlso Not e.Item2 Is Nothing Then e.Item2.Dispose()
+                                End If
+                            End Sub)
 
                         tcs.SetResult()
                     End Sub, threadId)

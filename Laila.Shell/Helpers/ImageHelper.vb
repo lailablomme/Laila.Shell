@@ -259,5 +259,19 @@ Namespace Helpers
             bmp.UnlockBits(data)
             Return bmp
         End Function
+
+        Private Shared Function GetPixelBytes(source As BitmapSource) As Byte()
+            Dim stride = source.PixelWidth * (source.Format.BitsPerPixel \ 8)
+            Dim pixels(stride * source.PixelHeight - 1) As Byte
+            source.CopyPixels(pixels, stride, 0)
+            Return pixels
+        End Function
+
+        Public Shared Function AreImagesEqual(bmp1 As BitmapSource, bmp2 As BitmapSource) As Boolean
+            If bmp1 Is Nothing OrElse bmp2 Is Nothing AndAlso Not (bmp1 Is Nothing AndAlso bmp2 Is Nothing) Then Return False
+            Dim pixels1 = GetPixelBytes(bmp1)
+            Dim pixels2 = GetPixelBytes(bmp2)
+            Return pixels1.SequenceEqual(pixels2)
+        End Function
     End Class
 End Namespace

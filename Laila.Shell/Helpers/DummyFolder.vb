@@ -1,5 +1,6 @@
 ﻿Imports System.Collections.ObjectModel
 Imports System.Windows.Media
+Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Interop.Items
 Imports Laila.Shell.Interop.Properties
 
@@ -18,7 +19,8 @@ Namespace Helpers
         Public Overrides Sub Refresh(Optional newShellItem As IShellItem2 = Nothing,
                                      Optional newPidl As Pidl = Nothing,
                                      Optional doRefreshImage As Boolean = True,
-                                     Optional threadId As Integer? = Nothing)
+                                     Optional threadId As Integer? = Nothing,
+                                     Optional count As Integer = 1)
         End Sub
 
         Public Overrides ReadOnly Property DisplayName As String
@@ -27,7 +29,7 @@ Namespace Helpers
             End Get
         End Property
 
-        Public Overrides ReadOnly Property Icon(size As Integer) As ImageSource
+        Public Overrides ReadOnly Property Icon(size As Integer) As BitmapSource
             Get
                 Return Nothing
             End Get

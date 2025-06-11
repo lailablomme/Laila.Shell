@@ -31,6 +31,7 @@ Namespace Controls
         Private PART_Thumbnail As Image
         Private Shared _cancelTokenSource As CancellationTokenSource
         Private disposedValue As Boolean
+        Private _modifiedOn As DateTime?
 
         Shared Sub New()
             DefaultStyleKeyProperty.OverrideMetadata(GetType(Previewer), New FrameworkPropertyMetadata(GetType(Previewer)))
@@ -154,6 +155,7 @@ Namespace Controls
                             RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
                         End If
                         previewer._previewItem = item
+                        previewer._modifiedOn = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14").Value
                         If Not previewer._previewItem Is Nothing Then
                             AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
                         End If
@@ -450,8 +452,11 @@ Namespace Controls
         End Function
 
         Protected Overridable Sub OnItemRefreshed(sender As Object, e As EventArgs)
-            hidePreview(Me)
-            showPreview(Me)
+            If Not EqualityComparer(Of DateTime?).Default.Equals(_modifiedOn,
+                CType(_previewItem?.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14").Value, DateTime?)) Then
+                hidePreview(Me)
+                showPreview(Me)
+            End If
         End Sub
 
         Protected Overridable Sub Dispose(disposing As Boolean)
