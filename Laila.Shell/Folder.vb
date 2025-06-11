@@ -61,6 +61,7 @@ Public Class Folder
     Private _shellFolder As IShellFolder
     Protected _views As List(Of FolderViewRegistration)
     Friend _wasActivity As Boolean
+    Protected _doAcceptRefresh As Boolean = True
 
     ''' <summary>
     ''' Creates a Folder object for the Desktop folder (the root).
@@ -341,7 +342,7 @@ Public Class Folder
 
         Dim result As List(Of String) = New List(Of String)()
 
-        If Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
+        If _isFileSystemItem Then
             Dim size As UInt64? = Shell.GlobalThreadPool.Run(
                 Function() As UInt64?
                     Return getSizeRecursive(2500, cancellationToken)
@@ -981,8 +982,10 @@ Public Class Folder
                                     Next
                                     Dim newItems As Item() = result.Where(Function(i) Not _previousFullPaths.Contains(i.Key)).Select(Function(kv) kv.Value).ToArray()
                                     Dim removedItems As Item() = _items.ToList().Where(Function(i) Not newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey))).ToArray()
-                                    existingItems = _items.ToList().Where(Function(i) newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey))) _
-                                            .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey)))).ToArray()
+                                    existingItems = _items.ToList() _
+                                        .Where(Function(i) newFullPaths.Contains(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey)) _
+                                                   AndAlso result.ContainsKey(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey))) _
+                                        .Select(Function(i) New Tuple(Of Item, Item)(i, result(If(Not dupeFullPaths.Contains(i.FullPath), i.FullPath & i.DeDupeKey, i.Pidl?.ToString() & i.DeDupeKey)))).ToArray()
 
                                     Dim seq As EqualityComparer(Of String) = EqualityComparer(Of String).Default
                                     For Each item In existingItems
@@ -1051,7 +1054,7 @@ Public Class Folder
                                         If item.Item1.IsPinned <> item.Item2.IsPinned Then item.Item1.IsPinned = item.Item2.IsPinned
                                         If item.Item1.CanShowInTree <> item.Item2.CanShowInTree Then item.Item1.CanShowInTree = item.Item2.CanShowInTree
                                         If item.Item2._hasCustomProperties Then
-                                            For Each [property] In item.Item2._propertiesByKey.Where(Function(p) p.Value.IsCustom).ToList()
+                                            For Each [property] In item.Item2._propertiesByKey.Where(Function(p) p.Value?.IsCustom).ToList()
                                                 item.Item1._propertiesByKey.Remove([property].Key)
                                                 item.Item1._propertiesByKey.Add([property].Key, [property].Value)
                                             Next
@@ -1103,7 +1106,7 @@ Public Class Folder
             End Sub
 
         SyncLock _listeningLock
-            If Not _isListening AndAlso Not _shellItem2 Is Nothing Then
+            If Not _isListening Then
                 Shell.StartListening(Me)
                 _isListening = True
             End If
@@ -1135,7 +1138,7 @@ Public Class Folder
     Protected Overridable Function EnumerateItems(shellItem2 As IShellItem2, flags As UInt32, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
         result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As System.Action,
-        threadId As Integer?, dupes As List(Of Item)) As Exception
+        threadId As Integer?, dupes As List(Of Item), Optional maxCount As Integer = -1) As Exception
 
         Dim isDebuggerAttached As Boolean = Debugger.IsAttached
         Dim isRootDesktop As Boolean = If(Me.Pidl?.Equals(Shell.Desktop.Pidl), False)
@@ -1162,7 +1165,7 @@ Public Class Folder
             End SyncLock
 
             If Not enumShellItems Is Nothing Then
-                Dim celt As Integer = If(TypeOf Me Is SearchFolder, 1, 25000)
+                Dim celt As Integer = If(TypeOf Me Is SearchFolder, 1, If(maxCount > 0, Math.Min(25000, maxCount), 25000))
                 Dim shellItems(celt - 1) As IShellItem, fetched As UInt32 = 1
                 Dim lastRefresh As DateTime = DateTime.Now, lastUpdate As DateTime = DateTime.Now
                 'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetching first", DateTime.Now)
@@ -1172,7 +1175,7 @@ Public Class Folder
                     Do
                         h = enumShellItems.Next(celt, shellItems, fetched)
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Fetched " & fetched & " items", DateTime.Now)
-                        For x = 0 To fetched - 1
+                        For x = 0 To If(maxCount > 0, Math.Min(fetched, maxCount), fetched) - 1
                             'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting attributes", DateTime.Now)
                             If Not cancellationToken.IsCancellationRequested _
                                 AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested Then
@@ -1277,10 +1280,12 @@ Public Class Folder
                                     shellItems(x) = Nothing
                                 End If
                             End If
+
+                            If maxCount > 0 AndAlso result.Count >= maxCount Then Exit For
                         Next
                         'Debug.WriteLine("{0:HH:mm:ss.ffff} Getting next", DateTime.Now)
                     Loop While celt = fetched AndAlso Not cancellationToken.IsCancellationRequested _
-                        AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested
+                        AndAlso Not Shell.ShuttingDownToken.IsCancellationRequested AndAlso (maxCount <= 0 OrElse result.Count < maxCount)
                     If Not (h = HRESULT.S_OK OrElse h = HRESULT.S_FALSE OrElse h = HRESULT.ERROR_INVALID_PARAMETER) Then
                         Throw Marshal.GetExceptionForHR(h)
                     End If
@@ -1484,7 +1489,7 @@ Public Class Folder
         If Not disposedValue Then
             Select Case e.Event
                 Case SHCNE.RENAMEFOLDER, SHCNE.RENAMEITEM
-                    If (Not e.Item2.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso e.Item2.Parent?.Pidl?.Equals(Me.Pidl)) _
+                    If (Not e.Item2.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso (e.Item2.Parent?.Pidl?.Equals(Me.Pidl) OrElse Not _isFileSystemItem)) _
                         OrElse (e.Item2.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item2.FullPath)?.Equals(Me.FullPath)) _
                         OrElse IO.Path.GetDirectoryName(e.Item2.FullPath)?.Equals(_hookFolderFullPath) Then
                         _wasActivity = True
@@ -1537,7 +1542,7 @@ Public Class Folder
                 Case SHCNE.CREATE, SHCNE.MKDIR
                     If _isLoaded Then
                         If ((Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM)) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Me.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
+                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             Dim existing As Item = Nothing, newItem As Item = Nothing
@@ -1570,17 +1575,20 @@ Public Class Folder
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
                         If ((Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM)) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Me.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
+                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso (IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) OrElse Not _isFileSystemItem)) _
                             OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
                             _wasActivity = True
                             SyncLock _items.Lock
-                                Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
-                                    AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing _
+                                    AndAlso (Not i.disposedValue AndAlso Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
                                         OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
-                                If Not existing Is Nothing Then
+                                While Not existing Is Nothing
                                     existing.Dispose()
                                     Me.OnItemsChanged()
-                                End If
+                                    existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing _
+                                        AndAlso (Not i.disposedValue AndAlso Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
+                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
+                                End While
                             End SyncLock
                         End If
                     End If
@@ -1626,7 +1634,7 @@ Public Class Folder
                         If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
                                 OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
-                                AndAlso Not TypeOf Me Is SearchFolder Then
+                                AndAlso Not TypeOf Me Is SearchFolder AndAlso _doAcceptRefresh Then
                                 _isEnumerated = False
                                 _isEnumeratedForTree = False
                                 Dim __ = Me.GetItemsAsync()

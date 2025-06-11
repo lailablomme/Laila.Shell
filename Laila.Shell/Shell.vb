@@ -412,17 +412,11 @@ Public Class Shell
                                 e.Event = SHCNE.MKDIR OrElse e.Event = SHCNE.CREATE OrElse e.Event = SHCNE.RMDIR _
                                 OrElse e.Event = SHCNE.DELETE OrElse e.Event = SHCNE.RENAMEFOLDER OrElse e.Event = SHCNE.RENAMEITEM
 
-                            Dim isFileSystemItem As Boolean = True
+                            Dim isFileSystemItem As Boolean = False
                             If isFileSystemNotification Then
-                                Dim parent As Item = e.Item1
-                                While Not parent Is Nothing AndAlso isFileSystemItem
-                                    isFileSystemItem = isFileSystemItem _
-                                        AndAlso parent.Attributes.HasFlag(SFGAO.FILESYSTEM) _
-                                        AndAlso e.Item1.Attributes.HasFlag(SFGAO.STORAGEANCESTOR)
-                                    If isFileSystemItem Then parent = parent.Parent
-                                End While
+                                isFileSystemItem = e.Item1?._isFileSystemItem
                             End If
-                            If e.Item1 Is Nothing OrElse Not isFileSystemNotification OrElse Not isFileSystemItem Then
+                            If e.Item1 Is Nothing OrElse Not isFileSystemItem Then
                                 Debug.Write(text)
 
                                 ' notify children
@@ -633,7 +627,7 @@ Public Class Shell
         _itemsCacheLock.Wait()
         Try
             _itemsCache.Add(New Tuple(Of Item, Date)(item, DateTime.Now))
-            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso item.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
+            If item._isFileSystemItem Then
                 AddToFileSystemCache(item)
             End If
         Finally
@@ -645,7 +639,7 @@ Public Class Shell
         _itemsCacheLock.Wait()
         Try
             _itemsCache.Remove(_itemsCache.FirstOrDefault(Function(i) item.Equals(i.Item1)))
-            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso item.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
+            If item._isFileSystemItem Then
                 RemoveFromFileSystemCache(item.FullPath)
             End If
         Finally
@@ -657,7 +651,7 @@ Public Class Shell
         _fileSystemCacheLock.Wait()
         Try
             Dim fullPath As String = item?.FullPath
-            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso item.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) _
+            If item._isFileSystemItem _
                 AndAlso Not String.IsNullOrWhiteSpace(fullPath) Then
                 If Not _fileSystemCache.ContainsKey(fullPath) Then
                     _fileSystemCache.Add(fullPath, item)
@@ -693,7 +687,7 @@ Public Class Shell
         _itemsCacheLock.Wait()
         Try
             RemoveFromFileSystemCache(oldFullPath)
-            If item.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso item.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) Then
+            If item._isFileSystemItem Then
                 AddToFileSystemCache(item)
             End If
         Finally
@@ -792,7 +786,7 @@ Public Class Shell
                 End Sub
 
             Dim fsw As FileSystemWatcher = Nothing, hNotify As UInt32?
-            If folder.Attributes.HasFlag(SFGAO.STORAGEANCESTOR) AndAlso folder.Attributes.HasFlag(SFGAO.FILESYSTEM) Then
+            If folder._isFileSystemItem Then
                 fsw = New FileSystemWatcher(folder.FullPath)
                 AddHandler fsw.Created,
                     Sub(s As Object, e As FileSystemEventArgs)
@@ -802,7 +796,7 @@ Public Class Shell
                                 Dim e2 As NotificationEventArgs = New NotificationEventArgs()
                                 e2.Event = SHCNE.CREATE
                                 e2.Item1 = Item.FromParsingName(e.FullPath, Nothing, False, False)
-                                If If(e2.Item1?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then fswNotify(e2)
+                                If e2.Item1?._isFileSystemItem Then fswNotify(e2)
                             End Sub)
                     End Sub
                 AddHandler fsw.Deleted,
@@ -821,7 +815,7 @@ Public Class Shell
                                 Finally
                                     _fileSystemCacheLock.Release()
                                 End Try
-                                If If(i?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then
+                                If i?._isFileSystemItem Then
                                     e2.Item1 = i?.Clone()
                                     If e2.Item1 Is Nothing Then
                                         e2.Item1 = New Item(e.FullPath)
@@ -846,7 +840,7 @@ Public Class Shell
                                 Finally
                                     _fileSystemCacheLock.Release()
                                 End Try
-                                If If(i?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then
+                                If i?._isFileSystemItem Then
                                     e2.Item1 = i?.Clone()
                                     If e2.Item1 Is Nothing Then
                                         e2.Item1 = New Item(e.OldFullPath)
@@ -854,7 +848,7 @@ Public Class Shell
                                     e2.Item2 = Item.FromParsingName(e.FullPath, Nothing, False, False)
                                     If TypeOf e2.Item2 Is Folder Then e2.Event = SHCNE.RENAMEFOLDER
                                     If e2.Item2 Is Nothing Then e2.Event = SHCNE.DELETE
-                                    If e2.Event = SHCNE.DELETE OrElse If(e2.Item2?.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), False) Then
+                                    If e2.Event = SHCNE.DELETE OrElse e2.Item2?._isFileSystemItem Then
                                         fswNotify(e2)
                                     End If
                                 End If
