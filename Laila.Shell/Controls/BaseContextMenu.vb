@@ -296,7 +296,7 @@ Namespace Controls
         Protected Overloads Overrides Sub Make(folder As Folder, items As IEnumerable(Of Item), isDefaultOnly As Boolean)
             Dim folderPidl As Pidl = Nothing, itemPidls As Pidl() = Nothing, doUseAbsolutePidls As Boolean
             _tag = Me.Tag
-            _selectedItems = items.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i))
+            _selectedItems = items?.Select(Function(i) If(TypeOf i Is ProxyLink, CType(i, ProxyLink).TargetItem, i))
 
             Shell.GlobalThreadPool.Run(
                 Sub()
