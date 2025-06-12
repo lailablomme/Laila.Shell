@@ -968,9 +968,9 @@
                                 <ColumnDefinition Width="2" />
                             </Grid.ColumnDefinitions>
 
-                            <Line Grid.Column="0" X1="1" Y1="0" X2="1" Y2="6" Stroke="Blue" StrokeThickness="2" />
-                            <Line Grid.Column="1" X1="0" Y1="3" X2="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}}" Y2="3" Stroke="Blue" StrokeThickness="2" />
-                            <Line Grid.Column="2" X1="0" Y1="0" X2="0" Y2="6" Stroke="Blue" StrokeThickness="2" />
+                            <Line Grid.Column="0" X1="1" Y1="0" X2="1" Y2="6" Stroke="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" StrokeThickness="2" />
+                            <Line Grid.Column="1" X1="0" Y1="3" X2="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}}" Y2="3" Stroke="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" StrokeThickness="2" />
+                            <Line Grid.Column="2" X1="0" Y1="0" X2="0" Y2="6" Stroke="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}" StrokeThickness="2" />
                         </Grid>
                     </Grid>
                 </ControlTemplate>

@@ -204,7 +204,7 @@ Public Class [Property]
         Get
             If String.IsNullOrWhiteSpace(_displayName) Then
                 Dim name As StringBuilder = New StringBuilder()
-                Me.Description.GetDisplayName(name)
+                Me.Description?.GetDisplayName(name)
                 _displayName = If(String.IsNullOrWhiteSpace(name.ToString()), Nothing, name.ToString())
             End If
             Return _displayName
@@ -312,7 +312,7 @@ Public Class [Property]
     Public Overridable ReadOnly Property DisplayType As PropertyDisplayType
         Get
             If _displayType = -1 Then
-                Me.Description.GetDisplayType(_displayType)
+                Me.Description?.GetDisplayType(_displayType)
             End If
             Return _displayType
         End Get
@@ -321,7 +321,7 @@ Public Class [Property]
     Public ReadOnly Property RelativeDescriptionType As RelativeDescriptionType
         Get
             Dim rdt As RelativeDescriptionType
-            Me.Description.GetRelativeDescriptionType(rdt)
+            Me.Description?.GetRelativeDescriptionType(rdt)
             Return rdt
         End Get
     End Property
@@ -337,7 +337,8 @@ Public Class [Property]
                     If Me.DisplayType = PropertyDisplayType.Enumerated Then
                         Dim propertyEnumTypeList As IPropertyEnumTypeList = Nothing
                         Try
-                            Me.Description.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
+                            Me.Description?.GetEnumTypeList(GetType(IPropertyEnumTypeList).GUID, propertyEnumTypeList)
+                            If propertyEnumTypeList Is Nothing Then Return False
                             Dim count As UInt32
                             propertyEnumTypeList.GetCount(count)
                             For x As UInt32 = 0 To count - 1
@@ -450,10 +451,13 @@ Public Class [Property]
         End Get
     End Property
 
-    Public ReadOnly Property IsCustom As Boolean
+    Public Property IsCustom As Boolean
         Get
             Return _isCustom
         End Get
+        Set(value As Boolean)
+            _isCustom = value
+        End Set
     End Property
 
     Protected Function getSelectedPropertyEnumType(value As PROPVARIANT, description As IPropertyDescription) As IPropertyEnumType

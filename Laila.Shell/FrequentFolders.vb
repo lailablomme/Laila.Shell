@@ -27,7 +27,7 @@ Public Class FrequentFolders
 
                     ' return most frequent
                     Dim mostFrequent1 As List(Of FrequentFolder) = collection.Query() _
-                        .OrderByDescending(Function(f) f.AccessCount).ToList()
+                        .OrderByDescending(Function(f) f.AccessCount).Limit(20).ToList()
 
                     Return Shell.GlobalThreadPool.Run(
                         Function() As IEnumerable(Of Item)
@@ -40,11 +40,13 @@ Public Class FrequentFolders
                                     Dim i As Item = Item.FromPidl(pidl, Nothing)
                                     If Not i Is Nothing AndAlso i.IsExisting AndAlso TypeOf i Is Folder _
                                         AndAlso Not CType(i, Folder).IsDrive _
-                                        AndAlso Not PinnedItems.GetIsPinned(i) Then
+                                        AndAlso Not PinnedItems.GetIsPinned(i) _
+                                        AndAlso (Not mostFrequent2.Exists(Function(j) j.FullPath?.Equals(i.FullPath)) _
+                                            OrElse i.FullPath?.Equals(Shell.Desktop.FullPath)) Then
                                         mostFrequent2.Add(i)
                                         count += 1
                                         If count = 5 Then Exit For
-                                    Else
+                                    ElseIf Not PinnedItems.GetIsPinned(i) Then
                                         collection.Delete(folder.Id)
                                         If Not i Is Nothing Then i.Dispose()
                                     End If
@@ -94,10 +96,10 @@ Public Class FrequentFolders
                             collection.Update(frequentFolder)
                         Else
                             Dim frequentFolder As FrequentFolder = New FrequentFolder() With {
-                        .Pidl = folder.Pidl.ToString(),
-                        .AccessCount = 1,
-                        .LastAccessedDateTime = DateTime.Now
-                    }
+                                .Pidl = folder.Pidl.ToString(),
+                                .AccessCount = 1,
+                                .LastAccessedDateTime = DateTime.Now
+                            }
                             collection.Insert(frequentFolder)
                         End If
                     End Using

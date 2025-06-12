@@ -25,6 +25,13 @@ Public Class HomeFolder
 
     Private _cachedHasSubFolders As Boolean?
 
+    Shared Sub New()
+        Shell.GlobalThreadPool.Add(
+            Sub()
+                Shell.StartListening(Shell.GetSpecialFolder(SpecialFolders.Recent))
+            End Sub)
+    End Sub
+
     Public Sub New(parent As Folder, doKeepAlive As Boolean)
         MyBase.New(Nothing, parent, doKeepAlive, True, Nothing)
 
@@ -176,7 +183,10 @@ Public Class HomeFolder
 
     Protected Overrides Function EnumerateItems(shellItem2 As IShellItem2, flags As UInteger, cancellationToken As CancellationToken,
         isSortPropertyByText As Boolean, isSortPropertyDisplaySortValue As Boolean, sortPropertyKey As String,
-        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action, threadId As Integer?, dupes As List(Of Item)) As Exception
+        result As Dictionary(Of String, Item), newFullPaths As HashSet(Of String), addItems As Action, threadId As Integer?,
+        dupes As List(Of Item), Optional maxCount As Integer = -1) As Exception
+
+        _hookFolderFullPath = Shell.GetSpecialFolder(SpecialFolders.Recent).FullPath
 
         ' enumerate pinned items
         Dim count As UInt64 = UInt64.MaxValue
@@ -227,22 +237,15 @@ Public Class HomeFolder
             count -= 1
         Next
 
+        Thread.Sleep(200) ' give the disk a chance to update
+
         ' enumerate recent files
-        _hookFolderFullPath = Shell.GetSpecialFolder(SpecialFolders.Recent).FullPath
         Return MyBase.EnumerateItems(Shell.GetSpecialFolder(SpecialFolders.Recent).Clone().ShellItem2, flags, cancellationToken, isSortPropertyByText,
-            isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId, dupes)
+            isSortPropertyDisplaySortValue, sortPropertyKey, result, newFullPaths, addItems, threadId, dupes, result.Count + 16)
     End Function
 
     Friend Overrides Sub OnItemsChanged(Optional item As Item = Nothing)
         MyBase.OnItemsChanged()
-
-        If Me.IsActiveInFolderView Then
-            UIHelper.OnUIThread(
-                Sub()
-                    Dim view As ICollectionView = CollectionViewSource.GetDefaultView(Me.Items)
-                    view.Refresh()
-                End Sub)
-        End If
     End Sub
 
     Protected Friend Overrides Function InitializeItem(item As Item) As Item
@@ -254,9 +257,17 @@ Public Class HomeFolder
                 AndAlso target.IsExisting _
                 AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
 
+                Dim modifiedProperty As [Property] = item.PropertiesByCanonicalName("System.DateModified")
+
                 Dim shellItem2 As IShellItem2
-                shellItem2 = GetIShellItem2FromPidl(item.Pidl.AbsolutePIDL, LogicalParent?.ShellFolder) ' get the IShellItem2
-                item = New ProxyLink(shellItem2, item.LogicalParent, False, True, Nothing, item.Pidl.Clone())
+                shellItem2 = GetIShellItem2FromPidl(item.Pidl.AbsolutePIDL, Nothing) ' get the IShellItem2
+                Dim pidl As Pidl = item.Pidl.Clone() ' clone the pidl to prevent it from being disposed
+                Shell.DisposerThreadPool.Add(
+                    Sub()
+                        item.Dispose()
+                    End Sub)
+                item = New ProxyLink(shellItem2, Me, True, True, Nothing, pidl)
+                target = CType(item, ProxyLink).TargetItem
 
                 item.LogicalParent = Me
                 item._hasCustomProperties = True
@@ -265,10 +276,10 @@ Public Class HomeFolder
                 item._propertiesByKey.Add(System_StorageProviderUIStatusProperty.Key.ToString(),
                                           target.PropertiesByKey(System_StorageProviderUIStatusProperty.Key))
 
-                item._propertiesByKey.Add("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6".ToLower(),
-                                          target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6"))
+                Dim locationProperty As [Property] = target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6")
+                locationProperty.IsCustom = True
+                item._propertiesByKey.Add("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6".ToLower(), locationProperty)
 
-                Dim modifiedProperty As [Property] = target.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")
                 item.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
                 Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(modifiedProperty.Value)

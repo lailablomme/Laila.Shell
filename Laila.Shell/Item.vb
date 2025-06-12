@@ -77,6 +77,7 @@ Public Class Item
     Private _treeRootIndex As Long = -1
     Private _treeSortPrefix As String = String.Empty
     Friend disposedValue As Boolean
+    Friend _isFileSystemItem As Boolean = False
 
     ''' <summary>
     ''' Makes a new Folder/Item/Link object from a parsing name.
@@ -571,26 +572,8 @@ Public Class Item
             End If
             Me.NotifyOfPropertyChange("ContentViewModeProperties")
             Me.NotifyOfPropertyChange("TileViewProperties")
-            If Not oldPropertiesByKey Is Nothing Then
-                For Each prop In oldPropertiesByKey
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}]", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Text", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].GroupByText", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].FirstIcon16Async", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].HasIconAsync", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByKeyAsText[{0}].Icons16Async", prop.Key))
-                Next
-            End If
-            If Not oldPropertiesByCanonicalName Is Nothing Then
-                For Each prop In oldPropertiesByCanonicalName
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}]", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Text", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].GroupByText", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].FirstIcon16Async", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].HasIconAsync", prop.Key))
-                    Me.NotifyOfPropertyChange(String.Format("PropertiesByCanonicalName[{0}].Icons16Async", prop.Key))
-                Next
-            End If
+            Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
+            Me.NotifyOfPropertyChange("PropertiesByCanonicalName")
             If Not ImageHelper.AreImagesEqual(Me.OverlayImage(32), oldOverlayImage32) Then
                 Me.NotifyOfPropertyChange("OverlayImageAsync")
             End If
@@ -605,12 +588,12 @@ Public Class Item
                 Me.NotifyOfPropertyChange("IsImage")
             End If
             Dim newStorageProviderUIStatusIcons16 As BitmapSource() = Me.StorageProviderUIStatusIcons16
-            If Not oldStorageProviderUIStatusIcons16.Count = newStorageProviderUIStatusIcons16.Count Then
+            If Not EqualityComparer(Of Integer?).Default.Equals(oldStorageProviderUIStatusIcons16?.Count, newStorageProviderUIStatusIcons16?.Count) Then
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
-            Else
+            ElseIf Not oldStorageProviderUIStatusIcons16 Is Nothing AndAlso Not newStorageProviderUIStatusIcons16 Is Nothing Then
                 For x = 0 To oldStorageProviderUIStatusIcons16.Count - 1
                     If Not ImageHelper.AreImagesEqual(newStorageProviderUIStatusIcons16(x), oldStorageProviderUIStatusIcons16(x)) Then
                         Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
@@ -651,6 +634,7 @@ Public Class Item
                         Me.ShellItem2.GetDisplayName(SIGDN.DESKTOPABSOLUTEPARSING, _fullPath)
                     End If
                 End SyncLock
+                _isFileSystemItem = (TypeOf Me Is Folder AndAlso IO.Directory.Exists(_fullPath)) OrElse (Not TypeOf Me Is Folder AndAlso IO.File.Exists(_fullPath))
             End If
 
             Return _fullPath
@@ -1142,7 +1126,7 @@ Public Class Item
             If Me.IsDrive AndAlso Shell.Settings.DoShowDriveLetters Then
                 Return String.Format("{0}{1}", Me.ItemNameDisplaySortValuePrefix, Me.FullPath)
             Else
-                Return String.Format("{0}{1}{2}", Me.ItemNameDisplaySortValuePrefix, If(Me.IsFolder AndAlso Me.Attributes.HasFlag(SFGAO.STORAGEANCESTOR), "0", "1"), Me.DisplayName)
+                Return String.Format("{0}{1}{2}", Me.ItemNameDisplaySortValuePrefix, If(Me.IsFolder AndAlso _isFileSystemItem, "0", "1"), Me.DisplayName)
             End If
         End Get
     End Property

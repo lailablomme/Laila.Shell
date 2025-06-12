@@ -18,18 +18,11 @@ Public Class Link
         MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, pidl)
 
         _threadId = Shell.GlobalThreadPool.GetNextFreeThreadId()
+        CType(shellItem2, IShellItem2ForShellLink).BindToHandler(Nothing, Guids.BHID_SFUIObject, GetType(IShellLinkW).GUID, _shellLinkW)
     End Sub
 
     Protected ReadOnly Property ShellLink As IShellLinkW
         Get
-            If _shellLinkW Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                SyncLock _shellItemLockShellLink
-                    If _shellLinkW Is Nothing AndAlso Not disposedValue AndAlso Not Me.ShellItem2 Is Nothing Then
-                        CType(ShellItem2, IShellItem2ForShellLink).BindToHandler(Nothing, Guids.BHID_SFUIObject, GetType(IShellLinkW).GUID, _shellLinkW)
-                    End If
-                End SyncLock
-            End If
-
             Return _shellLinkW
         End Get
     End Property
@@ -47,15 +40,11 @@ Public Class Link
     Public ReadOnly Property TargetPidl As Pidl
         Get
             If _targetPidl Is Nothing Then
-                _targetPidl = Shell.GlobalThreadPool.Run(
-                    Function() As Pidl
-                        Dim pidl As IntPtr
-                        Me.ShellLink?.GetIDList(pidl)
-                        If Not IntPtr.Zero.Equals(pidl) Then
-                            Return New Pidl(pidl)
-                        End If
-                        Return Nothing
-                    End Function,, _threadId)
+                Dim pidl As IntPtr
+                Me.ShellLink?.GetIDList(pidl)
+                If Not IntPtr.Zero.Equals(pidl) Then
+                    _targetPidl = New Pidl(pidl)
+                End If
             End If
             Return _targetPidl
         End Get
@@ -77,21 +66,8 @@ Public Class Link
     Public ReadOnly Property TargetItem As Item
         Get
             If Not disposedValue Then
-                If Not _targetItem Is Nothing Then
-                    SyncLock _targetItem._shellItemLockShellLink
-                        ' if still alive...
-                        If Not _targetItem.disposedValue Then
-                            ' extend lifetime
-                            Shell.RemoveFromItemsCache(_targetItem)
-                            Shell.AddToItemsCache(_targetItem)
-                        Else
-                            _targetItem = Nothing
-                        End If
-                    End SyncLock
-                End If
-
                 If _targetItem Is Nothing Then
-                    _targetItem = Item.FromPidl(Me.TargetPidl, Nothing, _doKeepAlive, True)
+                    _targetItem = Item.FromPidl(Me.TargetPidl, Nothing, True, True)
                 End If
             End If
 
@@ -114,6 +90,11 @@ Public Class Link
                 If Not _targetPidl Is Nothing Then
                     _targetPidl.Dispose()
                     _targetPidl = Nothing
+                End If
+
+                If Not _targetItem Is Nothing Then
+                    _targetItem.Dispose()
+                    _targetItem = Nothing
                 End If
             End Sub)
     End Sub
