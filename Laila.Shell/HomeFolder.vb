@@ -273,12 +273,13 @@ Public Class HomeFolder
                 item._hasCustomProperties = True
                 item.CanShowInTree = False
 
-                item._propertiesByKey.Add(System_StorageProviderUIStatusProperty.Key.ToString(),
-                                          target.PropertiesByKey(System_StorageProviderUIStatusProperty.Key))
-
                 Dim locationProperty As [Property] = target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6")
                 locationProperty.IsCustom = True
                 item._propertiesByKey.Add("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6".ToLower(), locationProperty)
+
+                Dim storageProviderProperty As [Property] = target.PropertiesByKeyAsText(System_StorageProviderUIStatusProperty.Key.ToString())
+                storageProviderProperty.IsCustom = True
+                item._propertiesByKey.Add(System_StorageProviderUIStatusProperty.Key.ToString(), storageProviderProperty)
 
                 item.ItemNameDisplaySortValuePrefix = String.Format("{0:yyyyMMddHHmmssffff}", modifiedProperty.Value)
 
