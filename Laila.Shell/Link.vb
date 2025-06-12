@@ -13,6 +13,7 @@ Public Class Link
     Private _targetPidl As Pidl
     Private _targetFullPath As String
     Private _targetItem As Item = Nothing
+    Private _targetLock As Object = New Object()
 
     Public Sub New(shellItem2 As IShellItem2, logicalParent As Folder, doKeepAlive As Boolean, doHookUpdates As Boolean, threadId As Integer?, Optional pidl As Pidl = Nothing)
         MyBase.New(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, pidl)
@@ -66,9 +67,11 @@ Public Class Link
     Public ReadOnly Property TargetItem As Item
         Get
             If Not disposedValue Then
-                If _targetItem Is Nothing Then
-                    _targetItem = Item.FromPidl(Me.TargetPidl, Nothing, True, True)
-                End If
+                SyncLock _targetLock
+                    If _targetItem Is Nothing Then
+                        _targetItem = Item.FromPidl(Me.TargetPidl, Nothing, True, True)
+                    End If
+                End SyncLock
             End If
 
             Return _targetItem
