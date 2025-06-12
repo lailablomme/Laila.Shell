@@ -380,7 +380,7 @@
                                                 <Grid Height="22">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition SharedSizeGroup="MenuItemCheckColumnGroup" Width="Auto"/>
-                                                        <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="21"/>
+                                                        <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="Auto"/>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition SharedSizeGroup="MenuItemIGTColumnGroup" Width="Auto"/>
                                                         <ColumnDefinition Width="17"/>
@@ -453,7 +453,7 @@
                                                 <Grid Height="22">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition SharedSizeGroup="MenuItemCheckColumnGroup" Width="Auto"/>
-                                                        <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="21"/>
+                                                        <ColumnDefinition SharedSizeGroup="MenuItemIconColumnGroup" Width="Auto"/>
                                                         <ColumnDefinition Width="4"/>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="37"/>
