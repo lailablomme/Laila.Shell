@@ -458,8 +458,14 @@ Namespace Behaviors
             Next
 
             UIHelper.OnUIThreadAsync(
-                Sub()
-                    Dim headers As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+                Async Sub()
+                    Dim headers As List(Of GridViewColumnHeader) = Nothing
+                    Do While headers Is Nothing OrElse headers.Count < _activeColumns.Where(Function(c) c.IsVisible).Count
+                        ' wait for headers to be created
+                        If Not headers Is Nothing Then Await Task.Delay(100)
+                        headers = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
+                    Loop
+
                     For Each header In headers.Where(Function(h) h?.Column Is Nothing).ToList()
                         headers.Remove(header)
                     Next
@@ -467,10 +473,12 @@ Namespace Behaviors
                     For Each column In _activeColumns.Where(Function(c) c.IsVisible)
                         ' (re)hook headers
                         Dim colHeader As GridViewColumnHeader = headers.FirstOrDefault(Function(h) Not h.Column Is Nothing AndAlso h.Column.Equals(column.Column))
-                        If GetIsHeaderVisible(column.Column) Then
-                            AddHandler colHeader.MouseRightButtonDown, AddressOf ColumnHeader_MouseRightButtonDown
-                        Else
-                            colHeader.Visibility = Visibility.Hidden
+                        If Not colHeader Is Nothing Then
+                            If GetIsHeaderVisible(column.Column) Then
+                                AddHandler colHeader.MouseRightButtonDown, AddressOf ColumnHeader_MouseRightButtonDown
+                            Else
+                                colHeader.Visibility = Visibility.Hidden
+                            End If
                         End If
                     Next
                 End Sub, Threading.DispatcherPriority.Loaded)
