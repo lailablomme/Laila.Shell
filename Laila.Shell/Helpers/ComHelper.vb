@@ -50,47 +50,15 @@ Namespace Helpers
         Private disposedValue As Boolean
 
         Public Function MakeComObject(dllPath As String, clsid As Guid, interfaceId As Guid) As Object
-            Dim ptr As IntPtr = IntPtr.Zero
-            Functions.CoCreateInstance(clsid, IntPtr.Zero, ClassContext.LocalServer, interfaceId, ptr)
-            Return Marshal.GetObjectForIUnknown(ptr)
-
-            Dim hModule As IntPtr = LoadLibrary(dllPath)
-            _modules.Add(hModule)
-            If hModule = IntPtr.Zero Then
-                Throw New Exception($"Failed to LoadLibrary: {dllPath} (Win32 error {Marshal.GetLastWin32Error()})")
-            End If
-
-            Dim procAddress As IntPtr = GetProcAddress(hModule, DllGetClassObjectName)
-            If procAddress = IntPtr.Zero Then
-                Throw New Exception("DllGetClassObject not found in DLL.")
-            End If
-
-            Dim dllGetClassObject = CType(Marshal.GetDelegateForFunctionPointer(procAddress, GetType(DllGetClassObjectDelegate)), DllGetClassObjectDelegate)
-
-            Dim classFactoryPtr As IntPtr, classFactory As IClassFactory = Nothing
-            Dim hr = dllGetClassObject(clsid, IID_IClassFactory, classFactoryPtr)
-            If hr <> 0 OrElse classFactoryPtr = IntPtr.Zero Then
-                Throw New COMException($"DllGetClassObject failed with HRESULT 0x{hr:X8}", hr)
-            End If
-
             Try
-                classFactory = CType(Marshal.GetUniqueObjectForIUnknown(classFactoryPtr), IClassFactory)
-
-                Dim objectPtr As IntPtr
-                hr = Functions.CoCreateInstance(clsid, IntPtr.Zero, ClassContext.LocalServer, interfaceId, objectPtr)
-                '  hr = classFactory.CreateInstance(IntPtr.Zero, interfaceId, objectPtr)
-                If hr <> 0 OrElse objectPtr = IntPtr.Zero Then
-                    Throw New COMException($"CreateInstance failed with HRESULT 0x{hr:X8}", hr)
-                End If
-
-                ' Now safely get a managed RCW for the final COM object
-                Dim comObject = Marshal.GetObjectForIUnknown(objectPtr)
+                Dim ptr As IntPtr = IntPtr.Zero
+                Functions.CoCreateInstance(clsid, IntPtr.Zero, ClassContext.LocalServer, interfaceId, ptr)
+                Dim comObject As Object = Marshal.GetObjectForIUnknown(ptr)
                 _objects.Add(comObject)
                 Return comObject
-            Finally
-                Marshal.Release(classFactoryPtr)
-                If Not classFactory Is Nothing Then Marshal.ReleaseComObject(classFactory)
+            Catch ex As Exception
             End Try
+            Return Nothing
         End Function
 
         Protected Overridable Sub Dispose(disposing As Boolean)

@@ -31,6 +31,7 @@ Namespace Controls
         Private _arrayFileExplorerItems As IShellItemArray = Nothing
         Private _resourcePrefix As String
         Private _screenPoint As Point
+        Private _moreMenu As RightClickMenu = Nothing
 
         Protected Overrides Sub OnOpened(e As RoutedEventArgs)
             MyBase.OnOpened(e)
@@ -212,17 +213,17 @@ Namespace Controls
                             Sub()
                                 UIHelper.OnUIThread(
                                     Sub()
-                                        Dim rightClickMenu As RightClickMenu = New RightClickMenu()  '
-                                        rightClickMenu.Colors = Me.Colors
+                                        _moreMenu = New RightClickMenu()  '
+                                        _moreMenu.Colors = Me.Colors
                                         If Not Me.Tag Is Nothing AndAlso TypeOf Me.Tag Is Control Then
-                                            rightClickMenu.Style = CType(Me.Tag, Control).FindResource(rightClickMenu.GetType())
+                                            _moreMenu.Style = CType(Me.Tag, Control).FindResource(_moreMenu.GetType())
                                         End If
-                                        rightClickMenu.Folder = folder
-                                        rightClickMenu.SelectedItems = items
-                                        rightClickMenu.Placement = PlacementMode.Absolute
-                                        rightClickMenu.HorizontalOffset = _screenPoint.X
-                                        rightClickMenu.VerticalOffset = _screenPoint.Y
-                                        rightClickMenu.IsOpen = True
+                                        _moreMenu.Folder = folder
+                                        _moreMenu.SelectedItems = items
+                                        _moreMenu.Placement = PlacementMode.Absolute
+                                        _moreMenu.HorizontalOffset = _screenPoint.X
+                                        _moreMenu.VerticalOffset = _screenPoint.Y
+                                        _moreMenu.IsOpen = True
                                     End Sub)
                             End Sub
                         showMoreOptionsMenuItem.Tag = New Tuple(Of Integer, String, Object)(-1, Guid.NewGuid().ToString(), action)
@@ -414,15 +415,17 @@ Namespace Controls
                 ' add commands
                 For Each item In result.Item3
                     Dim command As IExplorerCommand = _helper.MakeComObject(item.ComServerPath, item.ClsId, GetType(IExplorerCommand).GUID)
-                    Dim flags As EXPCMDFLAGS
-                    Dim menuItem As MenuItemData = getMenuItem(command, array, flags, folder, items, resolveMsResourceFromPackage)
-                    If Not menuItem Is Nothing Then
-                        If flags.HasFlag(EXPCMDFLAGS.ECF_SEPARATORBEFORE) Then
-                            cloudMenuItem.Items.Add(New MenuItemData() With {.Header = "-----"})
-                        End If
-                        cloudMenuItem.Items.Add(menuItem)
-                        If flags.HasFlag(EXPCMDFLAGS.ECF_SEPARATORAFTER) Then
-                            cloudMenuItem.Items.Add(New MenuItemData() With {.Header = "-----"})
+                    If Not command Is Nothing Then
+                        Dim flags As EXPCMDFLAGS
+                        Dim menuItem As MenuItemData = getMenuItem(command, array, flags, folder, items, resolveMsResourceFromPackage)
+                        If Not menuItem Is Nothing Then
+                            If flags.HasFlag(EXPCMDFLAGS.ECF_SEPARATORBEFORE) Then
+                                cloudMenuItem.Items.Add(New MenuItemData() With {.Header = "-----"})
+                            End If
+                            cloudMenuItem.Items.Add(menuItem)
+                            If flags.HasFlag(EXPCMDFLAGS.ECF_SEPARATORAFTER) Then
+                                cloudMenuItem.Items.Add(New MenuItemData() With {.Header = "-----"})
+                            End If
                         End If
                     End If
                 Next
@@ -490,36 +493,38 @@ Namespace Controls
 
                     For Each commandItem In thisAppCommands
                         Dim command As IExplorerCommand = _helper.MakeComObject(commandItem.ComServerPath, commandItem.ClsId, GetType(IExplorerCommand).GUID)
-                        Dim flags As EXPCMDFLAGS
+                        If Not command Is Nothing Then
+                            Dim flags As EXPCMDFLAGS
                         Dim menuItem As MenuItemData = getMenuItem(command, array, flags, folder, items, resolveMsResourceFromPackage)
-                        If Not menuItem Is Nothing Then
-                            If Not menuItem.Items Is Nothing AndAlso menuItem.Items.Count = 1 _
-                                AndAlso menuItem.Items(0).Header?.Equals(menuItem.Header) Then
-                                ' how is this possible that i have two apps who get this wrong?!
-                                menuItem = menuItem.Items(0)
-                            End If
-                            menuItem.ApplicationName = commandItem.ApplicationName
-                            If menuItem.Icon Is Nothing AndAlso IO.File.Exists(commandItem.ApplicationIconPath) Then
-                                Try
-                                    menuItem.Icon = trimTransparentBorders(New BitmapImage(New Uri(commandItem.ApplicationIconPath, UriKind.Absolute)))
-                                    If Not menuItem.Icon Is Nothing Then menuItem.Icon.Freeze()
-                                Catch ex As Exception
-                                    ' Protect against invalid image
-                                End Try
-                            End If
-                            If menuItem.Icon Is Nothing _
-                                AndAlso Not String.IsNullOrWhiteSpace(commandItem.ApplicationExecutable) _
-                                AndAlso Not String.IsNullOrWhiteSpace(commandItem.InstalledPath) Then
-                                Dim fullExePath As String = IO.Path.Combine(commandItem.InstalledPath, commandItem.ApplicationExecutable)
-                                While Not IO.File.Exists(fullExePath) _
-                                    AndAlso Not String.IsNullOrWhiteSpace(IO.Path.GetDirectoryName(IO.Path.GetDirectoryName(fullExePath)))
-                                    fullExePath = IO.Path.Combine(IO.Path.GetDirectoryName(IO.Path.GetDirectoryName(fullExePath)), commandItem.ApplicationExecutable)
-                                End While
-                                If IO.File.Exists(fullExePath) Then
-                                    menuItem.Icon = ImageHelper.GetApplicationIcon(fullExePath)
+                            If Not menuItem Is Nothing Then
+                                If Not menuItem.Items Is Nothing AndAlso menuItem.Items.Count = 1 _
+                                    AndAlso menuItem.Items(0).Header?.Equals(menuItem.Header) Then
+                                    ' how is this possible that i have two apps who get this wrong?!
+                                    menuItem = menuItem.Items(0)
                                 End If
+                                menuItem.ApplicationName = commandItem.ApplicationName
+                                If menuItem.Icon Is Nothing AndAlso IO.File.Exists(commandItem.ApplicationIconPath) Then
+                                    Try
+                                        menuItem.Icon = trimTransparentBorders(New BitmapImage(New Uri(commandItem.ApplicationIconPath, UriKind.Absolute)))
+                                        If Not menuItem.Icon Is Nothing Then menuItem.Icon.Freeze()
+                                    Catch ex As Exception
+                                        ' Protect against invalid image
+                                    End Try
+                                End If
+                                If menuItem.Icon Is Nothing _
+                                    AndAlso Not String.IsNullOrWhiteSpace(commandItem.ApplicationExecutable) _
+                                    AndAlso Not String.IsNullOrWhiteSpace(commandItem.InstalledPath) Then
+                                    Dim fullExePath As String = IO.Path.Combine(commandItem.InstalledPath, commandItem.ApplicationExecutable)
+                                    While Not IO.File.Exists(fullExePath) _
+                                        AndAlso Not String.IsNullOrWhiteSpace(IO.Path.GetDirectoryName(IO.Path.GetDirectoryName(fullExePath)))
+                                        fullExePath = IO.Path.Combine(IO.Path.GetDirectoryName(IO.Path.GetDirectoryName(fullExePath)), commandItem.ApplicationExecutable)
+                                    End While
+                                    If IO.File.Exists(fullExePath) Then
+                                        menuItem.Icon = ImageHelper.GetApplicationIcon(fullExePath)
+                                    End If
+                                End If
+                                addTo.Add(menuItem)
                             End If
-                            addTo.Add(menuItem)
                         End If
                     Next
 
@@ -939,6 +944,10 @@ Namespace Controls
             If Not _arrayFileExplorerItems Is Nothing Then
                 Marshal.ReleaseComObject(_arrayFileExplorerItems)
                 _arrayFileExplorerItems = Nothing
+            End If
+            If Not _moreMenu Is Nothing Then
+                _moreMenu.Dispose()
+                _moreMenu = Nothing
             End If
         End Sub
     End Class
