@@ -1409,7 +1409,7 @@ Public Class Folder
                     If Not String.IsNullOrWhiteSpace(value) Then
                         Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(value)
                         Dim groupSortDesc As SortDescription = New SortDescription() With {
-                            .PropertyName = value.Replace(".GroupByText", ".Value"),
+                            .PropertyName = value.Replace("GroupByText", "PropertiesByKeyAsText") & ".Value",
                             .Direction = Me.ItemsSortDirection
                         }
                         If view.GroupDescriptions.Count > 0 Then

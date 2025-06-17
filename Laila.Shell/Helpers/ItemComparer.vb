@@ -54,6 +54,8 @@ Namespace Helpers
         Private Function getPropertyValue(item As Item, propertyName As String) As Object
             If propertyName = "ItemNameDisplaySortValue" Then
                 Return item.ItemNameDisplaySortValue
+            ElseIf propertyName.Substring(0, 11) = "GroupByText" Then
+                Return item.PropertiesByKeyAsText(propertyName.Substring(12, propertyName.LastIndexOf("]") - 12))?.Value
             ElseIf propertyName.Substring(0, 18) = "PropertiesByKeyAsT" Then
                 Return item.PropertiesByKeyAsText(propertyName.Substring(22, propertyName.LastIndexOf("]") - 22))?.Value
             ElseIf propertyName.Substring(0, 18) = "PropertiesByCanoni" Then
@@ -66,6 +68,8 @@ Namespace Helpers
         Private Function getPropertyText(item As Item, propertyName As String) As Object
             If propertyName = "ItemNameDisplaySortValue" Then
                 Return item.ItemNameDisplaySortValue
+            ElseIf propertyName.Substring(0, 11) = "GroupByText" Then
+                Return item.PropertiesByKeyAsText(propertyName.Substring(12, propertyName.LastIndexOf("]") - 12))?.Text
             ElseIf propertyName.Substring(0, 18) = "PropertiesByKeyAsT" Then
                 Return item.PropertiesByKeyAsText(propertyName.Substring(22, propertyName.LastIndexOf("]") - 22))?.Text
             ElseIf propertyName.Substring(0, 18) = "PropertiesByCanoni" Then

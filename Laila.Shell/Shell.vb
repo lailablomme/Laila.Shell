@@ -492,15 +492,15 @@ Public Class Shell
                                 End SyncLock
 
                                 ' If no more processors, check for a while if it stays at 0
-                                If count = 0 Then
-                                    For x = 1 To 5
-                                        SyncLock e
-                                            count = e.ProcessorCount
-                                        End SyncLock
-                                        If count <> 0 Then Exit For
-                                        Thread.Sleep(20)
-                                    Next
-                                End If
+                                'If count = 0 Then
+                                '    For x = 1 To 5
+                                '        SyncLock e
+                                '            count = e.ProcessorCount
+                                '        End SyncLock
+                                '        If count <> 0 Then Exit For
+                                '        Thread.Sleep(20)
+                                '    Next
+                                'End If
 
                                 ' If it stayed at 0, dispose of the items
                                 If count = 0 Then
