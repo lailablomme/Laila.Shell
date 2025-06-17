@@ -37,7 +37,7 @@ Public Class HomeFolder
 
         _hasSubFolders = True
         _hasShellItem = False ' prevent getting disposed on refresh because we ain't got a shellitem
-        Me.ItemsGroupByPropertyName = "PropertiesByKeyAsText[" & Home_CategoryProperty.Key.ToString() & "].GroupByText"
+        Me.ItemsGroupByPropertyName = "GroupByText[" & Home_CategoryProperty.Key.ToString() & "]"
         Me.ItemsSortDirection = ComponentModel.ListSortDirection.Descending
 
         _views = New List(Of FolderViewRegistration) From {
@@ -250,7 +250,7 @@ Public Class HomeFolder
 
     Protected Friend Overrides Function InitializeItem(item As Item) As Item
         If TypeOf item Is Link Then
-            CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
+            'CType(item, Link).Resolve(SLR_FLAGS.NO_UI Or SLR_FLAGS.NOSEARCH)
             Dim target As Item = CType(item, Link).TargetItem
             If Not target Is Nothing _
                 AndAlso (Not TypeOf target Is Folder OrElse Not target.Attributes.HasFlag(SFGAO.STORAGEANCESTOR)) _
