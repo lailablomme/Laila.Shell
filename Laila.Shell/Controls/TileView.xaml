@@ -677,18 +677,17 @@
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                  VirtualizingPanel.VirtualizationMode="Standard"
                                   VirtualizingPanel.CacheLengthUnit="Page"
                                   Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}"
                                   Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}">
                             <ListView.Style>
                                 <Style>
+                                    <Setter Property="VirtualizingPanel.CacheLength" Value="0" />
+                                    <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="0">
-                                            <Setter Property="VirtualizingPanel.CacheLength" Value="0" />
-                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="1">
                                             <Setter Property="VirtualizingPanel.CacheLength" Value="2" />
+                                            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Standard" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -902,6 +901,8 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
+                                <helpers:ImageHelper x:Key="imageHelper" />
+                                <converters:NullToBooleanConverter x:Key="notNullConverter" Invert="True" />
                             </ListView.Resources>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -977,9 +978,6 @@
                                                 <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="*" SharedSizeGroup="A" />
                                             </Grid.ColumnDefinitions>
-                                            <Grid.Resources>
-                                                <helpers:ImageHelper x:Key="imageHelper" />
-                                            </Grid.Resources>
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
                                                       VerticalAlignment="Center" Margin="0,0,4,0" x:Name="SelectionCheckBox"
                                                       Visibility="Collapsed" IsTabStop="False" Focusable="False" Style="{StaticResource lailaShell_CheckBoxStyle}"/>
@@ -998,7 +996,7 @@
                                                     <Style>
                                                         <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
+                                                            <DataTrigger Binding="{Binding Tag.IsCloudFolder, ElementName=PART_Grid}" Value="True">
                                                                 <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                                 <Setter Property="ItemsControl.Width" Value="{Binding StorageProviderUIStatusIconWidth16}" />
                                                                 <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
@@ -1081,6 +1079,7 @@
                                                         <Style.Triggers>
                                                             <MultiDataTrigger>
                                                                 <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding Source, ElementName=PART_Image, Converter={StaticResource notNullConverter}}" Value="True" />
                                                                     <Condition Binding="{Binding IsFolder, IsAsync=True}" Value="False" />
                                                                     <Condition Binding="{Binding IsImage, IsAsync=True}" Value="False" />
                                                                     <Condition Binding="{Binding HasThumbnailAsync, IsAsync=True}" Value="True" />
@@ -1096,12 +1095,15 @@
                                                 </Image.Style>
                                             </Image>
                                             <Border Grid.Column="2" Width="48" Height="48" VerticalAlignment="Center">
-                                                <Image Source="{Binding OverlayImageAsync[48], IsAsync=True}" Width="48" Height="48" 
+                                                <Image Width="48" Height="48" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                        VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                     <Image.Style>
                                                         <Style>
                                                             <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Source, ElementName=PART_Image, Converter={StaticResource notNullConverter}}" Value="True">
+                                                                    <Setter Property="Image.Source" Value="{Binding OverlayImageAsync[48], IsAsync=True}" />
+                                                                </DataTrigger>
                                                                 <DataTrigger Binding="{Binding IsHidden}" Value="True">
                                                                     <Setter Property="Image.Opacity" Value="0.5" />
                                                                 </DataTrigger>

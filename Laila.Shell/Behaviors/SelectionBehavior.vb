@@ -39,7 +39,6 @@ Namespace Behaviors
                     If Not _isLoaded Then
                         _isLoaded = True
 
-                        _sv = UIHelper.FindVisualChildren(Of ScrollViewer)(_listBox)(0)
                         _selectionRectangle = New Border() With {
                             .BorderBrush = Brushes.SkyBlue,
                             .BorderThickness = New Thickness(1),
@@ -74,6 +73,9 @@ Namespace Behaviors
                         If Not _listBox.SelectedItems.Contains(clickedItem) _
                             AndAlso UIHelper.GetParentOfType(Of ScrollBar)(e.OriginalSource) Is Nothing _
                             AndAlso UIHelper.GetParentOfType(Of GridViewHeaderRowPresenter)(e.OriginalSource) Is Nothing Then
+
+                            _sv = UIHelper.FindVisualChildren(Of ScrollViewer)(_listBox)(0)
+
                             If TypeOf _listBox Is ListView AndAlso TypeOf CType(_listBox, ListView).View Is GridView Then
                                 Dim hrp As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listBox)(0)
                                 _headerHeight = hrp.ActualHeight

@@ -260,7 +260,11 @@ Namespace Helpers
             Return bmp
         End Function
 
-        Private Shared Function GetPixelBytes(source As BitmapSource) As Byte()
+        Public Shared Function GetPixelBytes(source As BitmapSource) As Byte()
+            If source Is Nothing Then
+                Dim b(0) As Byte
+                Return b
+            End If
             Dim stride = source.PixelWidth * (source.Format.BitsPerPixel \ 8)
             Dim pixels(stride * source.PixelHeight - 1) As Byte
             source.CopyPixels(pixels, stride, 0)

@@ -17,6 +17,8 @@ Namespace Controls
         End Sub
 
         Protected Overrides Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
+            EnsureScrollViewer()
+
             If TypeOf e.OriginalSource Is ListViewItem AndAlso UIHelper.GetParentOfType(Of ListBox)(e.OriginalSource)?.Equals(Me.PART_ListBox) Then
                 Dim item As ListViewItem = e.OriginalSource
                 If Not item Is Nothing Then
@@ -299,7 +301,7 @@ Namespace Controls
             textBlockFactory.SetValue(Grid.ColumnSpanProperty, 2)
             textBlockFactory.SetValue(TextBlock.TextAlignmentProperty, column.Alignment)
             textBlockFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center)
-            textBlockFactory.SetValue(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Left)
+            textBlockFactory.SetValue(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Stretch)
             textBlockFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis)
             textBlockFactory.SetValue(TextBlock.MarginProperty, New Thickness(0, 0, -3, 0))
             If column.CanonicalName = "System.ItemNameDisplay" Then

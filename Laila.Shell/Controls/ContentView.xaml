@@ -677,18 +677,17 @@
                                   ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   Grid.IsSharedSizeScope="True" VirtualizingPanel.ScrollUnit="Pixel" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-                                  VirtualizingPanel.VirtualizationMode="Standard"  
                                   VirtualizingPanel.CacheLengthUnit="Page"
                                   Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}"
                                   Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}">
                             <ListView.Style>
                                 <Style>
+                                    <Setter Property="VirtualizingPanel.CacheLength" Value="0" />
+                                    <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="0">
-                                            <Setter Property="VirtualizingPanel.CacheLength" Value="0" />
-                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="1">
                                             <Setter Property="VirtualizingPanel.CacheLength" Value="2" />
+                                            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Standard" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -897,6 +896,8 @@
                                         </Style>
                                     </GroupStyle.ContainerStyle>
                                 </GroupStyle>
+                                <helpers:ImageHelper x:Key="imageHelper" />
+                                <converters:NullToBooleanConverter x:Key="notNullConverter" Invert="True" />
                             </ListView.Resources>
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -938,9 +939,6 @@
                                                 <ColumnDefinition Width="4" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Grid.Resources>
-                                                <helpers:ImageHelper x:Key="imageHelper" />
-                                            </Grid.Resources>
                                             <Separator Margin="0,-3,0,0" VerticalAlignment="Top" Grid.ColumnSpan="5" 
                                                        UseLayoutRounding="True" SnapsToDevicePixels="True" />
                                             <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"
@@ -961,7 +959,7 @@
                                                     <Style>
                                                         <Setter Property="ItemsControl.Visibility" Value="Collapsed" />
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding StorageProviderUIStatusHasIcon}" Value="True">
+                                                            <DataTrigger Binding="{Binding Tag.IsCloudFolder, ElementName=PART_Grid}" Value="True">
                                                                 <Setter Property="ItemsControl.Visibility" Value="Visible" />
                                                                 <Setter Property="ItemsControl.ItemsSource" Value="{Binding StorageProviderUIStatusIcons16Async, IsAsync=True}" />
                                                             </DataTrigger>
@@ -1034,12 +1032,15 @@
                                                     </Style>
                                                 </Image.Style>
                                             </Image>
-                                            <Image Grid.Column="2" Source="{Binding OverlayImageAsync[32], IsAsync=True}" Width="32" Height="32" 
+                                            <Image Grid.Column="2" Width="32" Height="32" 
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True"
                                                     VerticalAlignment="Bottom" HorizontalAlignment="Left">
                                                 <Image.Style>
                                                     <Style>
                                                         <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Source, ElementName=PART_Image, Converter={StaticResource notNullConverter}}" Value="True">
+                                                                <Setter Property="Image.Source" Value="{Binding OverlayImageAsync[32], IsAsync=True}" />
+                                                            </DataTrigger>
                                                             <DataTrigger Binding="{Binding IsHidden}" Value="True">
                                                                 <Setter Property="Image.Opacity" Value="0.5" />
                                                             </DataTrigger>

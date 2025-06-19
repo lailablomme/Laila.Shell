@@ -839,19 +839,19 @@
                         </Grid.Resources>
                         <ListView x:Name="PART_ListView" SelectionMode="Extended" 
                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" 
-                                  VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.CacheLengthUnit="Page"
+                                  VirtualizingPanel.CacheLengthUnit="Page"
                                   ScrollViewer.IsDeferredScrollingEnabled="False" ScrollViewer.CanContentScroll="True" BorderThickness="0" 
                                   VirtualizingPanel.ScrollUnit="Pixel"
                                   Background="{Binding Tag.Colors.Background, ElementName=PART_Grid}"
                                   Foreground="{Binding Tag.Colors.Foreground, ElementName=PART_Grid}">
                             <ListView.Style>
                                 <Style>
+                                    <Setter Property="VirtualizingPanel.CacheLength" Value="0" />
+                                    <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="0">
-                                            <Setter Property="VirtualizingPanel.CacheLength" Value="0" />
-                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Path=Items.GroupDescriptions.Count, ElementName=PART_ListView}" Value="1">
                                             <Setter Property="VirtualizingPanel.CacheLength" Value="2" />
+                                            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Standard" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
