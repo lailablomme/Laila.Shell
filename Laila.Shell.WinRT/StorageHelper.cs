@@ -13,32 +13,40 @@ namespace Laila.Shell.WinRT
     {
         public async Task<string?> IsCloudFolder(string folderPath)
         {
-            // get sync root info
-            StorageFolder folder = await StorageFolder.GetFolderFromPathAsync(folderPath);
-            StorageProviderSyncRootInfo syncInfo = StorageProviderSyncRootManager.GetSyncRootInformationForFolder(folder);
-            string? applicationId = null;
-            if (syncInfo != null)
+            try
             {
-                if (string.IsNullOrWhiteSpace(syncInfo.Id))
+                // get sync root info
+                StorageFolder folder = await StorageFolder.GetFolderFromPathAsync(folderPath);
+                StorageProviderSyncRootInfo syncInfo = StorageProviderSyncRootManager.GetSyncRootInformationForFolder(folder);
+                string? applicationId = null;
+                if (syncInfo != null)
                 {
-                    Debug.WriteLine("Sync root ID is empty.");
+                    if (string.IsNullOrWhiteSpace(syncInfo.Id))
+                    {
+                        Debug.WriteLine("Sync root ID is empty.");
+                        return null;
+                    }
+                    if (syncInfo.Id.Contains("!"))
+                        applicationId = syncInfo.Id.Split('!')[0];
+                    else
+                        applicationId = syncInfo.Id;
+
+                    Console.WriteLine("✅ Found Sync Root Info!");
+                    Console.WriteLine("Provider ID: " + syncInfo.Id);
+                    Console.WriteLine("Display Name: " + syncInfo.DisplayNameResource);
+                    Console.WriteLine("Icon Resource: " + syncInfo.IconResource);
+
+                    return applicationId;
+                }
+                else
+                {
+                    Debug.WriteLine("Not a cloud folder.");
                     return null;
                 }
-                if (syncInfo.Id.Contains("!"))
-                    applicationId = syncInfo.Id.Split('!')[0];
-                else
-                    applicationId = syncInfo.Id;
-
-                Console.WriteLine("✅ Found Sync Root Info!");
-                Console.WriteLine("Provider ID: " + syncInfo.Id);
-                Console.WriteLine("Display Name: " + syncInfo.DisplayNameResource);
-                Console.WriteLine("Icon Resource: " + syncInfo.IconResource);
-
-                return applicationId;
             }
-            else
+            catch (Exception ex)
             {
-                Debug.WriteLine("Not a cloud folder.");
+                Debug.WriteLine("Error checking cloud folder: " + ex.Message);
                 return null;
             }
         }
