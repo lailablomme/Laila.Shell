@@ -38,6 +38,15 @@ Namespace Helpers
             Return _isWindows11_21H2OrGreater
         End Function
 
+        Private Shared _isWindows10_1709OrGreater As Boolean? = Nothing
+        Public Shared Function IsWindows10_1709OrGreater() As Boolean
+            If Not _isWindows10_1709OrGreater.HasValue Then
+                Dim ver = GetOSVersion()
+                _isWindows10_1709OrGreater = (ver.Major = 10 AndAlso ver.Build >= 16299)
+            End If
+            Return _isWindows10_1709OrGreater
+        End Function
+
         Private Shared _isWindows81OrLower As Boolean? = Nothing
         Public Shared Function IsWindows81OrLower() As Boolean
             If Not _isWindows81OrLower.HasValue Then

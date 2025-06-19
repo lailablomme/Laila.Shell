@@ -70,6 +70,8 @@ Namespace Controls
         End Property
 
         Protected Overrides Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
+            EnsureScrollViewer()
+
             If Me.PART_ListBox Is Nothing OrElse Me.PART_ScrollViewer Is Nothing Then Return
 
             If TypeOf e.OriginalSource Is ListBoxItem AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then

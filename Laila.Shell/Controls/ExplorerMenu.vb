@@ -405,7 +405,8 @@ Namespace Controls
                 Dim cloudMenuItem As New MenuItemData() With {
                     .Header = result.Item1,
                     .IsEnabled = True,
-                    .Items = New List(Of MenuItemData)()
+                    .Items = New List(Of MenuItemData)(),
+                    .IsSubMenu = True
                 }
                 If Not String.IsNullOrWhiteSpace(result.Item2) Then
                     cloudMenuItem.Icon = New BitmapImage(New Uri(result.Item2))

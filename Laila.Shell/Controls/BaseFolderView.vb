@@ -1,6 +1,7 @@
 ﻿Imports System.Collections.Specialized
 Imports System.ComponentModel
 Imports System.Media
+Imports System.Reflection
 Imports System.Security.AccessControl
 Imports System.Threading
 Imports System.Windows
@@ -30,13 +31,14 @@ Namespace Controls
         Public Shared ReadOnly NavigationProperty As DependencyProperty = DependencyProperty.Register("Navigation", GetType(Navigation), GetType(BaseFolderView), New FrameworkPropertyMetadata(Nothing, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ScrollOffsetProperty As DependencyProperty = DependencyProperty.Register("ScrollOffset", GetType(Point), GetType(BaseFolderView), New FrameworkPropertyMetadata(New Point(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
         Public Shared ReadOnly ExpandCollapseAllStateProperty As DependencyProperty = DependencyProperty.Register("ExpandCollapseAllState", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
+        Public Shared ReadOnly IsCloudFolderProperty As DependencyProperty = DependencyProperty.Register("IsCloudFolder", GetType(Boolean), GetType(BaseFolderView), New FrameworkPropertyMetadata(True, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault))
 
         Friend Host As FolderView
         Private PART_CheckBoxSelectAll As CheckBox
         Protected PART_DragInsertIndicator As Grid
         Protected PART_Grid As Grid
         Friend PART_ListBox As ListBox
-        Public PART_ScrollViewer As ScrollViewer
+        Protected PART_ScrollViewer As ScrollViewer
         Private _canOpenWithSingleClick As Boolean
         Private _doCancelScroll As Boolean = False
         Private _dragViewStrategy As IDragViewStrategy
@@ -135,15 +137,7 @@ Namespace Controls
                 End Sub
             _selectionHelper.SetSelectedItems(Me.SelectedItems)
 
-            Me.PART_ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
-            AddHandler Me.PART_ScrollViewer.ScrollChanged,
-                Sub(s2 As Object, e2 As ScrollChangedEventArgs)
-                    _doCancelScroll = True
-                    If Not Me.Folder Is Nothing Then
-                        Me.ScrollOffset = New Point(PART_ScrollViewer.HorizontalOffset, PART_ScrollViewer.VerticalOffset)
-                        _lastScrollSize = New Size(PART_ScrollViewer.ScrollableWidth, PART_ScrollViewer.ScrollableHeight)
-                    End If
-                End Sub
+            EnsureScrollViewer()
 
             If Not Me.Folder Is Nothing Then
                 setGrouping(Me.Folder)
@@ -154,7 +148,28 @@ Namespace Controls
             End If
         End Sub
 
+        Protected Sub EnsureScrollViewer()
+            If Me.PART_ListBox Is Nothing Then Return
+            Dim sv As ScrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(Me.PART_ListBox)(0)
+            If Not sv Is Nothing AndAlso Not sv.Equals(Me.PART_ScrollViewer) Then
+                If Not Me.PART_ScrollViewer Is Nothing Then
+                    RemoveHandler Me.PART_ScrollViewer.ScrollChanged, AddressOf PART_ScrollViewer_ScrollChanged
+                End If
+                Me.PART_ScrollViewer = sv
+                AddHandler Me.PART_ScrollViewer.ScrollChanged, AddressOf PART_ScrollViewer_ScrollChanged
+            End If
+        End Sub
+
+        Private Sub PART_ScrollViewer_ScrollChanged(s2 As Object, e2 As ScrollChangedEventArgs)
+            _doCancelScroll = True
+            If Not Me.Folder Is Nothing Then
+                Me.ScrollOffset = New Point(PART_ScrollViewer.HorizontalOffset, PART_ScrollViewer.VerticalOffset)
+                _lastScrollSize = New Size(PART_ScrollViewer.ScrollableWidth, PART_ScrollViewer.ScrollableHeight)
+            End If
+        End Sub
+
         Public Function GetListBoxClientSize() As Size
+            EnsureScrollViewer()
             If Not PART_ScrollViewer Is Nothing Then
                 Dim widthWithoutScroll As Double = Me.PART_ListBox.ActualWidth
                 Dim heightWithoutScroll As Double = Me.PART_ListBox.ActualHeight
@@ -233,6 +248,8 @@ Namespace Controls
 
         Private Function focusAdjacentItem(offsetX As Integer, offsetY As Integer) As Boolean
             If _isKeyboardScrolling Then Return False
+
+            EnsureScrollViewer()
 
             If TypeOf Keyboard.FocusedElement Is ListBoxItem OrElse TypeOf Keyboard.FocusedElement Is Button Then
                 Dim view As ListCollectionView = CollectionViewSource.GetDefaultView(Folder.Items)
@@ -487,6 +504,8 @@ Namespace Controls
         End Sub
 
         Protected Overridable Sub OnRequestBringIntoView(s As Object, e As RequestBringIntoViewEventArgs)
+            EnsureScrollViewer()
+
             If Me.PART_ListBox Is Nothing OrElse Me.PART_ScrollViewer Is Nothing Then Return
 
             If TypeOf e.OriginalSource Is ListBoxItem AndAlso UIHelper.IsAncestor(Me.PART_ListBox, e.OriginalSource) Then
@@ -938,6 +957,15 @@ Namespace Controls
             End Set
         End Property
 
+        Public Property IsCloudFolder As Boolean
+            Get
+                Return GetValue(IsCloudFolderProperty)
+            End Get
+            Set(value As Boolean)
+                SetValue(IsCloudFolderProperty, value)
+            End Set
+        End Property
+
         Public Property DragViewStrategy As IDragViewStrategy
             Get
                 Return _dragViewStrategy
@@ -972,6 +1000,7 @@ Namespace Controls
                     Sub()
                         ' async because otherwise we're a tad too early
                         If Not TypeOf folder Is SearchFolder Then
+                            EnsureScrollViewer()
                             If Not PART_ScrollViewer Is Nothing Then
                                 ' restore folder scroll position
                                 Me.ScrollOffset = folder.LastScrollOffset
@@ -1074,6 +1103,7 @@ Namespace Controls
                 ' record last scroll value for use with the back and forward navigation buttons
                 oldValue.LastScrollOffset = Me.ScrollOffset
                 oldValue.LastScrollSize = Me._lastScrollSize
+                EnsureScrollViewer()
                 If Not Me.PART_ScrollViewer Is Nothing Then
                     Me.PART_ScrollViewer.ScrollToHorizontalOffset(0)
                     Me.PART_ScrollViewer.ScrollToVerticalOffset(0)
@@ -1085,6 +1115,16 @@ Namespace Controls
 
             If Not e.NewValue Is Nothing Then
                 Dim newValue As Folder = e.NewValue
+
+                If OSVersionHelper.IsWindows10_1709OrGreater Then
+                    Dim assembly As Assembly = assembly.LoadFrom(IO.Path.Combine(IO.Path.GetDirectoryName(assembly.GetExecutingAssembly().Location), "Laila.Shell.WinRT.dll"))
+                    Dim storageHelperType As Type = assembly.GetType("Laila.Shell.WinRT.StorageHelper")
+                    Dim storageHelper As Object = Activator.CreateInstance(storageHelperType)
+                    Dim methodInfo As MethodInfo = storageHelperType.GetMethod("IsCloudFolder")
+                    Me.IsCloudFolder = Not methodInfo.Invoke(storageHelper, {newValue.FullPath}) Is Nothing
+                Else
+                    Me.IsCloudFolder = False
+                End If
 
                 ' track recent/frequent folders (in a task because for some folders this might take a while)
                 If Not TypeOf newValue Is SearchFolder Then

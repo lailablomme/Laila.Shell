@@ -779,6 +779,9 @@
                                     <VirtualizingStackPanel />
                                 </ItemsPanelTemplate>
                             </ListBox.ItemsPanel>
+                            <ListBox.Resources>
+                                <helpers:ImageHelper x:Key="imageHelper" />
+                            </ListBox.Resources>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid>
@@ -797,9 +800,6 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <Grid.Resources>
-                                                <helpers:ImageHelper x:Key="imageHelper" />
-                                            </Grid.Resources>
                                             <ToggleButton IsChecked="{Binding IsExpanded}" Style="{DynamicResource lailaShell_TreeChevronButtonStyle}" Focusable="False" />
                                             <Image Grid.Column="1" Source="{Binding DefaultFileIconSmall, Source={StaticResource imageHelper}}" Width="16" Height="16"
                                                     UseLayoutRounding="True" SnapsToDevicePixels="True" Margin="7,0,6,0">

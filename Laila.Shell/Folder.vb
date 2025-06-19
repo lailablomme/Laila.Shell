@@ -1060,18 +1060,12 @@ Public Class Folder
                                             Next
                                         End If
 
-                                        Dim newShellItem As IShellItem2 = Nothing
                                         If Not item.Item2 Is Nothing Then
-                                            SyncLock item.Item2._shellItemLockEnumRefresh
-                                                If Not item.Item2.disposedValue Then
-                                                    newShellItem = item.Item2.ShellItem2
-                                                    ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
-                                                    'Debug.WriteLine(item.Item1.FullPath)
-                                                    item.Item2._shellItem2 = Nothing
-                                                    item.Item2.LogicalParent = Nothing
-                                                    item.Item1.Refresh(newShellItem,,, item.Item2._livesOnThreadId)
-                                                End If
-                                            End SyncLock
+                                            item.Item2.LogicalParent = Nothing
+                                            Shell.GlobalThreadPool.Run(
+                                                Sub()
+                                                    item.Item1.Refresh()
+                                                End Sub,, item.Item1._livesOnThreadId)
                                         End If
 
                                         ' preload sort property

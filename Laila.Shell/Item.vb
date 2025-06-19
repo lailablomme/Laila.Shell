@@ -5,6 +5,8 @@ Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Threading
 Imports System.Windows
+Imports System.Windows.Controls
+Imports System.Windows.Data
 Imports System.Windows.Media
 Imports System.Windows.Media.Imaging
 Imports Laila.Shell.Controls.Parts
@@ -23,6 +25,8 @@ Public Class Item
 
     Public Event Refreshed As EventHandler
 
+    Public Property IsConnected As Boolean?
+
     Protected Const MAX_PATH_LENGTH As Integer = 260
 
     Private _attributes As SFGAO
@@ -33,6 +37,7 @@ Public Class Item
     Friend _fullPath As String
     Friend _hasCustomProperties As Boolean
     Protected _hasShellItem As Boolean = True
+    Private _hasThumbnail As Boolean? = Nothing
     Private _isCut As Boolean
     Private _isImage As Boolean?
     Private _isInstantiated As Boolean
@@ -40,6 +45,13 @@ Public Class Item
     Protected _isProcessingNotifications As Boolean
     Private _isVisibleInAddressBar As Boolean
     Private _itemNameDisplaySortValuePrefix As String
+    Private _lastImageSize As Integer = 32
+    Private _lastImageCrc32 As UInteger = 0
+    Private _lastIconSize As Integer = 32
+    Private _lastIconCrc32 As UInteger = 0
+    Private _lastOverlaySize As Integer = 32
+    Private _lastOverlayCrc32 As UInteger = 0
+    Private _lastStorageProviderUIStatusIcons16Crc32 As List(Of UInteger) = New List(Of UInteger)()
     Friend _livesOnThreadId As Integer?
     Friend _logicalParent As Folder
     Private _notifier As INotify
@@ -74,6 +86,7 @@ Public Class Item
     Protected _shellItemLockColumnManager As Object = New Object()
     Private _shellItemLockFullPath As Object = New Object()
     Private _shellItemLockProperties As Object = New Object()
+    Private _storageProviderUIStatusHasIcon As Boolean? = Nothing
     Private _treeRootIndex As Long = -1
     Private _treeSortPrefix As String = String.Empty
     Friend disposedValue As Boolean
@@ -368,13 +381,8 @@ Public Class Item
         Dim oldShellItem As IShellItem2 = Nothing
         Dim attr As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
         Dim didRefresh As Boolean = False
-        Dim oldImage32 As ImageSource = Me.Image(32)
-        Dim oldIcon32 As ImageSource = Me.Icon(32)
-        Dim oldOverlayImage32 As ImageSource = Me.OverlayImage(32)
         Dim oldDisplayName As String = Me.DisplayName
         Dim oldIsImage As Boolean = Me.IsImage
-        Dim oldStorageProviderUIStatusIcons16 As BitmapSource() = Me.StorageProviderUIStatusIcons16
-        Dim oldStorageProviderUIStatusHasIcon As Boolean = Me.StorageProviderUIStatusHasIcon
 
         SyncLock _shellItemLockMakeIShellFolderOnCurrentThread
             SyncLock _shellItemLockDisplayName
@@ -574,34 +582,43 @@ Public Class Item
             Me.NotifyOfPropertyChange("TileViewProperties")
             Me.NotifyOfPropertyChange("PropertiesByKeyAsText")
             Me.NotifyOfPropertyChange("PropertiesByCanonicalName")
-            If Not ImageHelper.AreImagesEqual(Me.OverlayImage(32), oldOverlayImage32) Then
+            Dim crc As UInteger = _lastOverlayCrc32
+            If Not Crc32.Compute(ImageHelper.GetPixelBytes(Me.OverlayImage(_lastOverlaySize))) = crc Then
                 Me.NotifyOfPropertyChange("OverlayImageAsync")
             End If
-            If Not ImageHelper.AreImagesEqual(Me.Icon(32), oldIcon32) Then
+            crc = _lastIconCrc32
+            If Not Crc32.Compute(ImageHelper.GetPixelBytes(Me.Icon(_lastIconSize))) = crc Then
                 Me.NotifyOfPropertyChange("IconAsync")
             End If
-            If Not ImageHelper.AreImagesEqual(Me.Image(32), oldImage32) Then
+            crc = _lastImageCrc32
+            If Not Crc32.Compute(ImageHelper.GetPixelBytes(Me.Image(_lastImageSize))) = crc Then
                 Me.NotifyOfPropertyChange("ImageAsync")
                 Me.NotifyOfPropertyChange("HasThumbnailAsync")
             End If
             If Not Me.IsImage.Equals(oldIsImage) Then
                 Me.NotifyOfPropertyChange("IsImage")
             End If
-            Dim newStorageProviderUIStatusIcons16 As BitmapSource() = Me.StorageProviderUIStatusIcons16
-            If Not EqualityComparer(Of Integer?).Default.Equals(oldStorageProviderUIStatusIcons16?.Count, newStorageProviderUIStatusIcons16?.Count) Then
+            Dim oldStorageProviderUIStatusIcons16Crc32 As List(Of UInteger) = _lastStorageProviderUIStatusIcons16Crc32
+            Dim newStorageProviderUIStatusIcons16Crc32 As List(Of UInteger) = New List(Of UInteger)()
+            If Not Me.StorageProviderUIStatusIcons16 Is Nothing Then
+                For Each item In Me.StorageProviderUIStatusIcons16
+                    newStorageProviderUIStatusIcons16Crc32.Add(Crc32.Compute(ImageHelper.GetPixelBytes(item)))
+                Next
+            End If
+            If Not EqualityComparer(Of Integer?).Default.Equals(oldStorageProviderUIStatusIcons16Crc32?.Count, newStorageProviderUIStatusIcons16Crc32?.Count) Then
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth12")
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusIconWidth16")
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
-            ElseIf Not oldStorageProviderUIStatusIcons16 Is Nothing AndAlso Not newStorageProviderUIStatusIcons16 Is Nothing Then
-                For x = 0 To oldStorageProviderUIStatusIcons16.Count - 1
-                    If Not ImageHelper.AreImagesEqual(newStorageProviderUIStatusIcons16(x), oldStorageProviderUIStatusIcons16(x)) Then
+            ElseIf Not oldStorageProviderUIStatusIcons16Crc32 Is Nothing AndAlso Not newStorageProviderUIStatusIcons16Crc32 Is Nothing Then
+                For x = 0 To oldStorageProviderUIStatusIcons16Crc32.Count - 1
+                    If Not newStorageProviderUIStatusIcons16Crc32(x) = oldStorageProviderUIStatusIcons16Crc32(x) Then
                         Me.NotifyOfPropertyChange("StorageProviderUIStatusFirstIcon16Async")
                         Me.NotifyOfPropertyChange("StorageProviderUIStatusIcons16Async")
                     End If
                 Next
             End If
-            If Not oldStorageProviderUIStatusHasIcon.Equals(Me.StorageProviderUIStatusHasIcon) Then
+            If Not _storageProviderUIStatusHasIcon.HasValue OrElse Not _storageProviderUIStatusHasIcon.Value.Equals(Me.StorageProviderUIStatusHasIcon) Then
                 Me.NotifyOfPropertyChange("StorageProviderUIStatusHasIcon")
             End If
 
@@ -769,6 +786,8 @@ Public Class Item
     ''' <returns>The associated application icon for this item</returns>
     Public Overridable ReadOnly Property AssociatedApplicationIconAsync(size As Integer) As ImageSource
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return Nothing
+
             Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource
                     Dim result As ImageSource
@@ -806,7 +825,10 @@ Public Class Item
         Get
             Dim overlayIconIndex As Byte = Me.OverlayIconIndex
             If overlayIconIndex > 0 Then
-                Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
+                Dim result As BitmapSource = ImageHelper.GetOverlayIcon(overlayIconIndex, size)
+                _lastOverlaySize = size
+                _lastOverlayCrc32 = If(result Is Nothing, 0UI, Crc32.Compute(ImageHelper.GetPixelBytes(result)))
+                Return result
             End If
             Return Nothing
         End Get
@@ -814,13 +836,18 @@ Public Class Item
 
     Public Overridable ReadOnly Property OverlayImageAsync(size As Integer) As BitmapSource
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return Nothing
+
             Dim overlayIconIndex As Byte? = Shell.GlobalThreadPool.Run(
                 Function() As Byte?
                     Return Me.OverlayIconIndex
                 End Function, 3)
 
             If overlayIconIndex.HasValue AndAlso overlayIconIndex > 0 Then
-                Return ImageHelper.GetOverlayIcon(overlayIconIndex, size)
+                Dim result As BitmapSource = ImageHelper.GetOverlayIcon(overlayIconIndex, size)
+                _lastOverlaySize = size
+                _lastOverlayCrc32 = If(result Is Nothing, 0UI, Crc32.Compute(ImageHelper.GetPixelBytes(result)))
+                Return result
             End If
             Return Nothing
         End Get
@@ -852,6 +879,8 @@ Public Class Item
                                 Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
                             End If
                         End If
+                        _lastIconSize = size
+                        _lastIconCrc32 = If(result Is Nothing, 0UI, Crc32.Compute(ImageHelper.GetPixelBytes(result)))
                         Return result
                     End If
                 End SyncLock
@@ -867,6 +896,8 @@ Public Class Item
 
     Public Overridable ReadOnly Property IconAsync(size As Integer) As BitmapSource
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return Nothing
+
             Return Shell.GlobalThreadPool.Run(
                 Function() As BitmapSource
                     Dim result As BitmapSource
@@ -903,6 +934,8 @@ Public Class Item
                                 Debug.WriteLine("IShellItemImageFactory.GetImage failed with hresult " & h.ToString())
                             End If
                         End If
+                        _lastImageSize = size
+                        _lastImageCrc32 = If(result Is Nothing, 0UI, Crc32.Compute(ImageHelper.GetPixelBytes(result)))
                         Return result
                     End If
                 End SyncLock
@@ -918,6 +951,8 @@ Public Class Item
 
     Public Overridable ReadOnly Property ImageAsync(size As Integer) As BitmapSource
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return Nothing
+
             Return Shell.GlobalThreadPool.Run(
                 Function() As BitmapSource
                     Dim result As BitmapSource
@@ -933,6 +968,12 @@ Public Class Item
             Dim result As BitmapSource() = Nothing
             If Not Me.disposedValue Then
                 result = Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.Icons16
+                _lastStorageProviderUIStatusIcons16Crc32 = New List(Of UInteger)()
+                If Not result Is Nothing Then
+                    For Each item In result
+                        _lastStorageProviderUIStatusIcons16Crc32.Add(Crc32.Compute(ImageHelper.GetPixelBytes(item)))
+                    Next
+                End If
             End If
             Return result
         End Get
@@ -940,6 +981,8 @@ Public Class Item
 
     Public Overridable ReadOnly Property StorageProviderUIStatusIcons16Async As BitmapSource()
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return Nothing
+
             Return Shell.GlobalThreadPool.Run(
                 Function() As BitmapSource()
                     Return Me.StorageProviderUIStatusIcons16
@@ -949,6 +992,8 @@ Public Class Item
 
     Public Overridable ReadOnly Property StorageProviderUIStatusFirstIcon16Async As BitmapSource
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return Nothing
+
             Return Shell.GlobalThreadPool.Run(
                 Function() As ImageSource
                     Dim result As ImageSource = Nothing
@@ -962,18 +1007,24 @@ Public Class Item
 
     Public Overridable ReadOnly Property StorageProviderUIStatusHasIcon As Boolean
         Get
-            Return If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.HasIcon, False)
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return False
+            If Not _storageProviderUIStatusHasIcon.HasValue Then
+                _storageProviderUIStatusHasIcon = If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.HasIcon, False)
+            End If
+            Return _storageProviderUIStatusHasIcon.Value
         End Get
     End Property
 
     Public ReadOnly Property StorageProviderUIStatusIconWidth12 As Double
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return 0
             Return If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.ImageReferences16.Count, 0) * 12
         End Get
     End Property
 
     Public ReadOnly Property StorageProviderUIStatusIconWidth16 As Double
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return 0
             Return If(Me.PropertiesByKeyAsText("e77e90df-6271-4f5b-834f-2dd1f245dda4:2")?.ImageReferences16.Count, 0) * 16
         End Get
     End Property
@@ -1004,16 +1055,16 @@ Public Class Item
 
     Public Overridable ReadOnly Property HasThumbnailAsync As Boolean
         Get
-            Dim result As Boolean? = Shell.GlobalThreadPool.Run(
-                Function() As Boolean?
-                    Return Me.HasThumbnail
-                End Function, 3)
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return False
 
-            If result.HasValue Then
-                Return result.Value
-            Else
-                Return False
+            If Not _hasThumbnail.HasValue Then
+                _hasThumbnail = Shell.GlobalThreadPool.Run(
+                    Function() As Boolean?
+                        Return Me.HasThumbnail
+                    End Function, 3)
             End If
+
+            Return _hasThumbnail.Value
         End Get
     End Property
 
@@ -1329,6 +1380,8 @@ Public Class Item
 
     Public Overridable ReadOnly Property PropertiesByKeyAsText(propertyKey As String) As [Property]
         Get
+            If Me.IsConnected.HasValue AndAlso Not Me.IsConnected.Value Then Return Nothing
+
             Dim [property] As [Property] = Nothing
             Dim key As PROPERTYKEY = New PROPERTYKEY(propertyKey)
             _propertiesLock.Wait()
@@ -1644,13 +1697,13 @@ Public Class Item
                                 Dim newPidl As Pidl = Nothing
                                 SyncLock e.Item2._shellItemLockRenameUpdate
                                     If Not e.Item2.disposedValue Then
-                                        newShellItem = e.Item2.ShellItem2
+                                        'newShellItem = e.Item2.ShellItem2
                                         newPidl = e.Item2.Pidl?.Clone()
                                         ' we've used this shell item in item1 now, so avoid it getting disposed when item2 gets disposed
-                                        e.Item2._shellItem2 = Nothing
-                                        Me.Refresh(newShellItem, newPidl,, e.Item2._livesOnThreadId) ' refresh this item
+                                        'e.Item2._shellItem2 = Nothing
                                     End If
                                 End SyncLock
+                                Me.Refresh(, newPidl) ' refresh this item
 
                                 If Not oldPidl Is Nothing AndAlso Not Me.Pidl Is Nothing Then
                                     ' rename pinned and frequent items with the same pidl

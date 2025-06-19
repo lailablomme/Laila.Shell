@@ -155,7 +155,7 @@ Namespace Controls
                             RemoveHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
                         End If
                         previewer._previewItem = item
-                        previewer._modifiedOn = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14").Value
+                        previewer._modifiedOn = item.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")?.Value
                         If Not previewer._previewItem Is Nothing Then
                             AddHandler previewer._previewItem.Refreshed, AddressOf previewer.OnItemRefreshed
                         End If

@@ -197,7 +197,7 @@ Public Class HomeFolder
                 item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
                 item._hasCustomProperties = True
 
-                Dim systemLastAccessedProperty As [Property] = item.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
+                Dim systemLastAccessedProperty As [Property] = item.PropertiesByKey(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:16"))
                 Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
                 item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
 
@@ -221,7 +221,7 @@ Public Class HomeFolder
             item.ItemNameDisplaySortValuePrefix = String.Format("{0:00000000000000000000}", count)
             item._hasCustomProperties = True
 
-            Dim systemLastAccessedProperty As [Property] = item.PropertiesByKeyAsText("B725F130-47EF-101A-A5F1-02608C9EEBAC:16")
+            Dim systemLastAccessedProperty As [Property] = item.PropertiesByKey(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:16"))
             Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
             item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
 
@@ -255,7 +255,7 @@ Public Class HomeFolder
             If Not target Is Nothing _
                 AndAlso (Not TypeOf target Is Folder OrElse Not target.Attributes.HasFlag(SFGAO.STORAGEANCESTOR)) _
                 AndAlso target.IsExisting _
-                AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6").Text) Then
+                AndAlso Not String.IsNullOrWhiteSpace(target.PropertiesByKey(New PROPERTYKEY("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6")).Text) Then
 
                 Dim modifiedProperty As [Property] = item.PropertiesByCanonicalName("System.DateModified")
 
@@ -273,11 +273,11 @@ Public Class HomeFolder
                 item._hasCustomProperties = True
                 item.CanShowInTree = False
 
-                Dim locationProperty As [Property] = target.PropertiesByKeyAsText("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6")
+                Dim locationProperty As [Property] = target.PropertiesByKey(New PROPERTYKEY("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6"))
                 locationProperty.IsCustom = True
                 item._propertiesByKey.Add("E3E0584C-B788-4A5A-BB20-7F5A44C9ACDD:6".ToLower(), locationProperty)
 
-                Dim storageProviderProperty As [Property] = target.PropertiesByKeyAsText(System_StorageProviderUIStatusProperty.Key.ToString())
+                Dim storageProviderProperty As [Property] = target.PropertiesByKey(System_StorageProviderUIStatusProperty.Key)
                 storageProviderProperty.IsCustom = True
                 item._propertiesByKey.Add(System_StorageProviderUIStatusProperty.Key.ToString(), storageProviderProperty)
 
