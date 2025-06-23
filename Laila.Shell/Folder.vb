@@ -50,7 +50,7 @@ Public Class Folder
     Private _isRefreshingItems As Boolean
     Friend _items As ItemsCollection(Of Item)
     Private _itemsGroupByPropertyName As String
-    Private _itemsSortDirection As ListSortDirection
+    Private _itemsSortDirection As ListSortDirection?
     Private _itemsSortPropertyName As String
     Private _listeningLock As Object = New Object()
     Private _notificationSubscribers As List(Of IProcessNotifications) = New List(Of IProcessNotifications)()
@@ -1338,7 +1338,7 @@ Public Class Folder
                     If Not String.IsNullOrWhiteSpace(value) Then
                         desc = New SortDescription() With {
                         .PropertyName = value,
-                        .Direction = Me.ItemsSortDirection
+                        .Direction = If(Me.ItemsSortDirection, ListSortDirection.Ascending)
                     }
                     End If
                     If view.SortDescriptions.Count = 0 AndAlso Not String.IsNullOrWhiteSpace(value) Then
@@ -1366,18 +1366,18 @@ Public Class Folder
         End Set
     End Property
 
-    Public Property ItemsSortDirection As ListSortDirection
+    Public Property ItemsSortDirection As ListSortDirection?
         Get
             Return If(_initializeItemsSortDirection <> -1, _initializeItemsSortDirection, _itemsSortDirection)
         End Get
-        Set(value As ListSortDirection)
+        Set(value As ListSortDirection?)
             If System.Windows.Application.Current.Dispatcher.CheckAccess() Then
                 Dim view As CollectionView = CollectionViewSource.GetDefaultView(Me.Items)
                 If Not view Is Nothing Then
                     For x = 0 To view.SortDescriptions.Count - 1
                         Dim desc As SortDescription = New SortDescription() With {
                             .PropertyName = view.SortDescriptions(x).PropertyName,
-                            .Direction = value
+                            .Direction = If(value, ListSortDirection.Ascending)
                         }
                         view.SortDescriptions(x) = desc
                     Next
@@ -1404,7 +1404,7 @@ Public Class Folder
                         Dim groupDescription As PropertyGroupDescription = New PropertyGroupDescription(value)
                         Dim groupSortDesc As SortDescription = New SortDescription() With {
                             .PropertyName = value.Replace("GroupByText", "PropertiesByKeyAsText") & ".Value",
-                            .Direction = Me.ItemsSortDirection
+                            .Direction = If(Me.ItemsSortDirection, ListSortDirection.Ascending)
                         }
                         If view.GroupDescriptions.Count > 0 Then
                             view.GroupDescriptions(0) = groupDescription
@@ -1484,8 +1484,8 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.RENAMEFOLDER, SHCNE.RENAMEITEM
                     If (Not e.Item2.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso (e.Item2.Parent?.Pidl?.Equals(Me.Pidl) OrElse Not _isFileSystemItem)) _
-                        OrElse (e.Item2.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item2.FullPath)?.Equals(Me.FullPath)) _
-                        OrElse IO.Path.GetDirectoryName(e.Item2.FullPath)?.Equals(_hookFolderFullPath) Then
+                        OrElse (e.Item2.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Item.ArePathsEqual(IO.Path.GetDirectoryName(e.Item2.FullPath), Me.FullPath)) _
+                        OrElse Item.ArePathsEqual(IO.Path.GetDirectoryName(e.Item2.FullPath), _hookFolderFullPath) Then
                         _wasActivity = True
                         Dim existing As Item = Nothing
                         SyncLock _items.Lock
@@ -1495,12 +1495,12 @@ Public Class Folder
                                 existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                     AndAlso ((Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl)) _
                                         OrElse (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl)) _
-                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath)) _
-                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
+                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, e.Item1.FullPath)) _
+                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, newItem.FullPath))))
                                 If existing Is Nothing Then
                                     newItem.LogicalParent = Me
                                     newItem.IsProcessingNotifications = True
-                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, If(Me.ItemsSortDirection, ListSortDirection.Ascending))
                                     _items.InsertSorted(newItem, c)
                                     SyncLock _previousFullPathsLock
                                         If Not _previousFullPaths.Contains(newItem.FullPath) Then
@@ -1535,9 +1535,9 @@ Public Class Folder
             Select Case e.Event
                 Case SHCNE.CREATE, SHCNE.MKDIR
                     If _isLoaded Then
-                        If ((Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM)) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath)) _
-                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
+                        If ((Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM)) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
+                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Item.ArePathsEqual(IO.Path.GetDirectoryName(e.Item1.FullPath), Me.FullPath)) _
+                            OrElse Item.ArePathsEqual(IO.Path.GetDirectoryName(e.Item1.FullPath), _hookFolderFullPath) Then
                             _wasActivity = True
                             Dim existing As Item = Nothing, newItem As Item = Nothing
                             newItem = Me.InitializeItem(e.Item1.Clone())
@@ -1545,11 +1545,11 @@ Public Class Folder
                                 SyncLock _items.Lock
                                     existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                         AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
-                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
+                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, newItem.FullPath))))
                                     If existing Is Nothing Then
                                         newItem.LogicalParent = Me
                                         newItem.IsProcessingNotifications = True
-                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                        Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, If(Me.ItemsSortDirection, ListSortDirection.Ascending))
                                         _items.InsertSorted(newItem, c)
                                         SyncLock _previousFullPathsLock
                                             If Not _previousFullPaths.Contains(newItem.FullPath) Then
@@ -1568,20 +1568,20 @@ Public Class Folder
                     End If
                 Case SHCNE.RMDIR, SHCNE.DELETE
                     If _isLoaded Then
-                        If ((Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM)) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
-                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso (IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(Me.FullPath) OrElse Not _isFileSystemItem)) _
-                            OrElse IO.Path.GetDirectoryName(e.Item1.FullPath)?.Equals(_hookFolderFullPath) Then
+                        If ((Not e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not Me.Attributes.HasFlag(SFGAO.FILESYSTEM)) AndAlso e.Item1.Parent?.Pidl?.Equals(Me.Pidl)) _
+                            OrElse (e.Item1.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso (Item.ArePathsEqual(IO.Path.GetDirectoryName(e.Item1.FullPath), Me.FullPath) OrElse Not _isFileSystemItem)) _
+                            OrElse Item.ArePathsEqual(IO.Path.GetDirectoryName(e.Item1.FullPath), _hookFolderFullPath) Then
                             _wasActivity = True
                             SyncLock _items.Lock
                                 Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing _
                                     AndAlso (Not i.disposedValue AndAlso Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
+                                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, e.Item1.FullPath))))
                                 While Not existing Is Nothing
                                     existing.Dispose()
                                     Me.OnItemsChanged()
                                     existing = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing _
                                         AndAlso (Not i.disposedValue AndAlso Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
+                                            OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, e.Item1.FullPath))))
                                 End While
                             End SyncLock
                         End If
@@ -1595,11 +1595,11 @@ Public Class Folder
                             SyncLock _items.Lock
                                 Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                     AndAlso (Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
-                                        OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
+                                        OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, newItem.FullPath))))
                                 If existing Is Nothing Then
                                     newItem.LogicalParent = Me
                                     newItem.IsProcessingNotifications = True
-                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, Me.ItemsSortDirection)
+                                    Dim c As IComparer = New Helpers.ItemComparer(Me.ItemsGroupByPropertyName, Me.ItemsSortPropertyName, If(Me.ItemsSortDirection, ListSortDirection.Ascending))
                                     _items.InsertSorted(newItem, c)
                                     Me.OnItemsChanged()
                                 End If
@@ -1616,7 +1616,7 @@ Public Class Folder
                         SyncLock _items.Lock
                             Dim existing As Item = _items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                 AndAlso (Not i.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso i.Pidl?.Equals(e.Item1.Pidl) _
-                                    OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso i.FullPath?.Equals(e.Item1.FullPath))))
+                                    OrElse ((i.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, e.Item1.FullPath))))
                             If Not existing Is Nothing AndAlso TypeOf existing Is Folder Then
                                 existing.Dispose()
                                 Me.OnItemsChanged()
@@ -1625,7 +1625,7 @@ Public Class Folder
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
-                        If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.Equals(e.Item1?.FullPath) OrElse _hookFolderFullPath?.Equals(e.Item1?.FullPath) _
+                        If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Item.ArePathsEqual(Me.FullPath, e.Item1?.FullPath) OrElse Item.ArePathsEqual(_hookFolderFullPath, e.Item1?.FullPath) _
                                 OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder AndAlso _doAcceptRefresh Then

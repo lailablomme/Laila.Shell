@@ -86,19 +86,19 @@ Namespace Controls.Parts
                     mustUpdate = Not Me.Items.ToList().FirstOrDefault(Function(i) _
                         Not i.disposedValue _
                         AndAlso Not i.FullPath Is Nothing _
-                        AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing
+                        AndAlso Item.ArePathsEqual(i.FullPath, e.Item1.FullPath)) Is Nothing
                 Case SHCNE.UPDATEDIR
                     mustUpdate = (Not Me.Items.ToList().FirstOrDefault(
                             Function(i)
                                 If Not i.disposedValue Then
                                     Return (Not i.Parent Is Nothing _
                                         AndAlso Not i.Parent.FullPath Is Nothing _
-                                        AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
+                                        AndAlso Item.ArePathsEqual(i.Parent.FullPath, e.Item1.FullPath))
                                 Else
                                     Return False
                                 End If
                             End Function) Is Nothing _
-                        OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath))
+                        OrElse Item.ArePathsEqual(Shell.Desktop.FullPath, e.Item1.FullPath))
             End Select
 
             If mustUpdate Then

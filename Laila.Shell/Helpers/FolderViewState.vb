@@ -57,7 +57,7 @@ Namespace Helpers
             result.ViewName = folder.FullPath
             If folder.ActiveView.HasValue AndAlso Not folder.ActiveView.Value.Equals(Guid.Empty) Then result.ActiveView = folder.ActiveView
             If Not String.IsNullOrWhiteSpace(folder.ItemsSortPropertyName) Then result.SortPropertyName = folder.ItemsSortPropertyName
-            If Not String.IsNullOrWhiteSpace(folder.ItemsSortDirection) Then result.SortDirection = folder.ItemsSortDirection
+            If folder.ItemsSortDirection.HasValue Then result.SortDirection = folder.ItemsSortDirection
             If Not String.IsNullOrWhiteSpace(folder.ItemsGroupByPropertyName) Then result.GroupByPropertyName = folder.ItemsGroupByPropertyName
             _cache(viewId) = result
 

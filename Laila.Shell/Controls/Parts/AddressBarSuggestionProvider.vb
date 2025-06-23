@@ -106,7 +106,7 @@ Namespace Controls.Parts
                     Next
                     items = dist _
                         .Distinct() _
-                        .Select(Function(d) items.FirstOrDefault(Function(i) If(i.FullPath, "").Equals(d))) _
+                        .Select(Function(d) items.FirstOrDefault(Function(i) Item.ArePathsEqual(i.FullPath, d))) _
                         .Where(Function(i) Not i Is Nothing) _
                         .ToList()
 

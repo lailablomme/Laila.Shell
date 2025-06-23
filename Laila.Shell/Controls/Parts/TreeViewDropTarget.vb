@@ -121,7 +121,7 @@ Namespace Controls.Parts
                         Dim pdwEffect2 As Integer = pdwEffect
                         t.Add(
                             Sub()
-                                If overItem.FullPath = Shell.GetSpecialFolder(SpecialFolders.RecycleBin).FullPath Then
+                                If Item.ArePathsEqual(overItem.FullPath, Shell.GetSpecialFolder(SpecialFolders.RecycleBin).FullPath) Then
                                     Dim fo As IFileOperation = Nothing
                                     Try
                                         fo = Activator.CreateInstance(Type.GetTypeFromCLSID(Guids.CLSID_FileOperation))
@@ -374,7 +374,7 @@ Namespace Controls.Parts
                             End If
                         End If
                         If Not _fileNameList Is Nothing AndAlso Not isOurSelvesOrParent Then
-                            isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) f.ToLower() = overItem.FullPath.ToLower())
+                            isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) Item.ArePathsEqual(f.ToLower(), overItem.FullPath.ToLower()))
                             If Not isOurSelvesOrParent Then
                                 isOurSelvesOrParent = _fileNameList.ToList().Exists(Function(f) _
                                             Not IO.Path.GetDirectoryName(f) Is Nothing _
@@ -501,7 +501,7 @@ Namespace Controls.Parts
         End Function
 
         Private Sub customizeDropDescription(overItem As Item, grfKeyState As MK, pdwEffect As DROPEFFECT)
-            If overItem.FullPath = Shell.GetSpecialFolder(SpecialFolders.RecycleBin).FullPath And grfKeyState.HasFlag(MK.MK_SHIFT) Then
+            If Item.ArePathsEqual(overItem.FullPath, Shell.GetSpecialFolder(SpecialFolders.RecycleBin).FullPath) And grfKeyState.HasFlag(MK.MK_SHIFT) Then
                 WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_WARNING, "Delete", "")
             ElseIf pdwEffect = DROPEFFECT.DROPEFFECT_COPY AndAlso Not overItem Is Nothing Then
                 WpfDragTargetProxy.SetDropDescription(_dataObject, DROPIMAGETYPE.DROPIMAGE_COPY, "Copy to %1", overItem.DisplayName)

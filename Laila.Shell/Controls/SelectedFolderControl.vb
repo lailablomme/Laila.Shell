@@ -226,13 +226,13 @@ Namespace Controls
                     Else
                         Exit While
                     End If
-                    If TypeOf currentFolder Is SearchFolder OrElse currentFolder.LogicalParent Is Nothing OrElse currentFolder.LogicalParent.FullPath = Shell.Desktop.FullPath Then
+                    If TypeOf currentFolder Is SearchFolder OrElse currentFolder.LogicalParent Is Nothing OrElse Item.ArePathsEqual(currentFolder.LogicalParent.FullPath, Shell.Desktop.FullPath) Then
                         computerImage.Source = currentFolder.Icon(16)
                         currentFolder = Nothing
                     End If
                     If Not currentFolder Is Nothing Then
                         currentFolder = currentFolder.LogicalParent
-                        If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
+                        If Not currentFolder Is Nothing AndAlso Item.ArePathsEqual(currentFolder.FullPath, Shell.Desktop.FullPath) Then
                             currentFolder = Nothing
                         End If
                     End If
@@ -265,13 +265,13 @@ Namespace Controls
                                     Me.Folder = moreMenuItem.Tag
                                 End Sub
                         moreContextMenu.Items.Add(moreMenuItem)
-                        If TypeOf currentFolder Is SearchFolder OrElse currentFolder.LogicalParent Is Nothing OrElse currentFolder.LogicalParent.FullPath = Shell.Desktop.FullPath Then
+                        If TypeOf currentFolder Is SearchFolder OrElse currentFolder.LogicalParent Is Nothing OrElse Item.ArePathsEqual(currentFolder.LogicalParent.FullPath, Shell.Desktop.FullPath) Then
                             computerImage.Source = currentFolder.Icon(16)
                             currentFolder = Nothing
                         End If
                         If Not currentFolder Is Nothing Then
                             currentFolder = currentFolder.LogicalParent
-                            If Not currentFolder Is Nothing AndAlso currentFolder.FullPath = Shell.Desktop.FullPath Then
+                            If Not currentFolder Is Nothing AndAlso Item.ArePathsEqual(currentFolder.FullPath, Shell.Desktop.FullPath) Then
                                 currentFolder = Nothing
                             End If
                         End If

@@ -317,7 +317,7 @@ Namespace Controls
                             .Where(Function(i) Not i.Pidl Is Nothing).Select(Function(i) i.Pidl?.Clone()).ToArray()
                     Else
                         ' user clicked on the background
-                        If folder.FullPath = Shell.Desktop.FullPath Then
+                        If Item.ArePathsEqual(folder.FullPath, Shell.Desktop.FullPath) Then
                             ' this is the desktop
                             folderPidl = Shell.Desktop.Pidl.Clone()
                             itemPidls = {Shell.Desktop.Pidl.Clone()}

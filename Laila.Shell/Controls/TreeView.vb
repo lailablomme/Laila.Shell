@@ -122,8 +122,8 @@ Namespace Controls
                     If Not selectedItem Is Nothing _
                         AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso e.Item2.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
-                                AndAlso (If(e.Item2.FullPath?.Equals(selectedItem.FullPath), False) OrElse If(e.Item2.FullPath?.Equals(selectedItem.FullPath.Split("~")(0)), False)))) Then
-                        If _deletedFullName?.Equals(selectedItem.FullPath) Then
+                                AndAlso (Item.ArePathsEqual(e.Item2.FullPath, selectedItem.FullPath) OrElse Item.ArePathsEqual(e.Item2.FullPath, selectedItem.FullPath.Split("~")(0))))) Then
+                        If Item.ArePathsEqual(_deletedFullName, selectedItem.FullPath) Then
                             _deletedFullName = Nothing
                         End If
                         Shell.GlobalThreadPool.Add(
@@ -137,7 +137,7 @@ Namespace Controls
                                     Dim replacement As Item = f.Items.ToList().LastOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                         AndAlso ((Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso If(i.Pidl?.Equals(e.Item2.Pidl), False)) _
                                             OrElse (i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
-                                                AndAlso If(i.FullPath?.Equals(e.Item2.FullPath), False)))
+                                                AndAlso Item.ArePathsEqual(i.FullPath, e.Item2.FullPath)))
                                     If Not replacement Is Nothing AndAlso TypeOf replacement Is Folder Then
                                         ' new folder matching the current folder was found -- select it
                                         UIHelper.OnUIThread(
@@ -171,7 +171,7 @@ Namespace Controls
                     While Not selectedItem Is Nothing AndAlso Not isDeleted
                         isDeleted = ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
-                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False)))
+                                AndAlso Item.ArePathsEqual(e.Item1.FullPath, selectedItem.FullPath)))
                         If Not isDeleted Then selectedItem = selectedItem.LogicalParent
                     End While
                     If isDeleted Then
@@ -435,7 +435,7 @@ Namespace Controls
                         Dim findNextRoot2 As Action =
                             Sub()
                                 While Not en3 Is Nothing AndAlso tf Is Nothing AndAlso en3.MoveNext()
-                                    If en3.Current.FullPath = en2.Current.FullPath Then
+                                    If Item.ArePathsEqual(en3.Current.FullPath, en2.Current.FullPath) Then
                                         tf = en3.Current
                                     End If
                                 End While
@@ -449,7 +449,7 @@ Namespace Controls
                                 End While
 
                                 If Not tf Is Nothing Then
-                                    If tf.FullPath = folder.FullPath Then
+                                    If Item.ArePathsEqual(tf.FullPath, folder.FullPath) Then
                                         Await cb()
                                         Return
                                     Else
@@ -464,7 +464,7 @@ Namespace Controls
                                 End If
 
                                 If Not Me.DoShowAllFoldersInTreeView AndAlso Not triedDesktop _
-                            AndAlso (list.Count = 0 OrElse list(0).FullPath <> Shell.Desktop.FullPath) Then
+                            AndAlso (list.Count = 0 OrElse Not Item.ArePathsEqual(list(0).FullPath, Shell.Desktop.FullPath)) Then
                                     Debug.WriteLine("SetSelectedFolder didn't find " & folder.FullPath & " -- trying Desktop")
                                     list.Insert(0, Shell.Desktop)
                                     en2 = list.GetEnumerator()
@@ -481,7 +481,7 @@ Namespace Controls
                             End Function
                         func =
                         Async Function(item As Folder, callback2 As Func(Of Task)) As Task
-                            Dim tf2 = (Await tf.GetItemsAsync(,, True)).FirstOrDefault(Function(f2) f2.FullPath = item.FullPath)
+                            Dim tf2 = (Await tf.GetItemsAsync(,, True)).FirstOrDefault(Function(f2) item.ArePathsEqual(f2.FullPath, item.FullPath))
                             If Not tf2 Is Nothing Then
                                 foldersToExpand.Add(tf)
                                 Debug.WriteLine("SetSelectedFolder found " & tf2.FullPath)
@@ -502,7 +502,7 @@ Namespace Controls
                                     f.IsExpanded = True
                                 Next
                                 _selectionHelper.SetSelectedItems({tf})
-                                If Not Me.Folder?.FullPath = tf?.FullPath Then Me.Folder = tf
+                                If Not Item.ArePathsEqual(Me.Folder?.FullPath, tf?.FullPath) Then Me.Folder = tf
                                 finish(tf)
                                 _isSettingSelectedFolder = False
                             End If
@@ -511,7 +511,7 @@ Namespace Controls
                         Await findNextRoot()
                     Else
                         _selectionHelper.SetSelectedItems({folder})
-                        If Not Me.Folder?.FullPath = folder?.FullPath Then Me.Folder = folder
+                        If Not Item.ArePathsEqual(Me.Folder?.FullPath, folder?.FullPath) Then Me.Folder = folder
                         _isSettingSelectedFolder = False
                     End If
                 Else
@@ -926,7 +926,7 @@ Namespace Controls
                             itemsToAdd.Add(item)
                             If Not Me.SelectedItem Is Nothing _
                                     AndAlso ((Not Me.SelectedItem.Pidl Is Nothing AndAlso Not item.Pidl Is Nothing AndAlso If(item.Pidl?.Equals(Me.SelectedItem.Pidl), False)) _
-                                        OrElse ((Me.SelectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso If(item.FullPath?.Equals(Me.SelectedItem.FullPath), False))) Then
+                                        OrElse ((Me.SelectedItem.Pidl Is Nothing OrElse item.Pidl Is Nothing) AndAlso Item.ArePathsEqual(item.FullPath, Me.SelectedItem.FullPath))) Then
                                 selectedItem = item
                             End If
                             If TypeOf item Is Folder Then

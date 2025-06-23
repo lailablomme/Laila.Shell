@@ -41,8 +41,8 @@ Public Class FrequentFolders
                                     If Not i Is Nothing AndAlso i.IsExisting AndAlso TypeOf i Is Folder _
                                         AndAlso Not CType(i, Folder).IsDrive _
                                         AndAlso Not PinnedItems.GetIsPinned(i) _
-                                        AndAlso (Not mostFrequent2.Exists(Function(j) j.FullPath?.Equals(i.FullPath)) _
-                                            OrElse i.FullPath?.Equals(Shell.Desktop.FullPath)) Then
+                                        AndAlso (Not mostFrequent2.Exists(Function(j) Item.ArePathsEqual(j.FullPath, i.FullPath)) _
+                                            OrElse Item.ArePathsEqual(i.FullPath, Shell.Desktop.FullPath)) Then
                                         mostFrequent2.Add(i)
                                         count += 1
                                         If count = 5 Then Exit For

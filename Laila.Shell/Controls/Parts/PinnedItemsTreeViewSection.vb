@@ -74,7 +74,7 @@ Namespace Controls.Parts
                     If Not Me.Items.ToList().FirstOrDefault(Function(i) _
                          Not i.disposedValue _
                          AndAlso Not i.FullPath Is Nothing _
-                         AndAlso i.FullPath.Equals(e.Item1.FullPath)) Is Nothing Then
+                         AndAlso Item.ArePathsEqual(i.FullPath, e.Item1.FullPath)) Is Nothing Then
                         updatePinnedItems()
                     End If
                 Case SHCNE.UPDATEDIR
@@ -83,12 +83,12 @@ Namespace Controls.Parts
                                 If Not i.disposedValue Then
                                     Return (Not i.Parent Is Nothing _
                                         AndAlso Not i.Parent.FullPath Is Nothing _
-                                        AndAlso i.Parent.FullPath.Equals(e.Item1.FullPath))
+                                        AndAlso Item.ArePathsEqual(i.Parent.FullPath, e.Item1.FullPath))
                                 Else
                                     Return False
                                 End If
                             End Function) Is Nothing _
-                        OrElse Shell.Desktop.FullPath.Equals(e.Item1.FullPath)) Then
+                        OrElse Item.ArePathsEqual(Shell.Desktop.FullPath, e.Item1.FullPath)) Then
                         updatePinnedItems()
                     End If
             End Select

@@ -530,7 +530,7 @@ Public Class Item
         End If
 
         If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
-            If Not oldFullPath?.Equals(Me.FullPath) Then Shell.UpdateFileSystemCache(oldFullPath, Me)
+            If Not Item.ArePathsEqual(oldFullPath, Me.FullPath) Then Shell.UpdateFileSystemCache(oldFullPath, Me)
             If Not _logicalParent Is Nothing AndAlso Not oldAttr = 0 _
                 AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> attr.HasFlag(SFGAO.FOLDER) _
                 OrElse oldAttr.HasFlag(SFGAO.LINK) <> attr.HasFlag(SFGAO.LINK)) Then
@@ -548,9 +548,9 @@ Public Class Item
                         SyncLock lp._items.Lock
                             Dim existing As Item = lp._items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                             AndAlso (Not i.Pidl Is Nothing AndAlso Not newItem.Pidl Is Nothing AndAlso i.Pidl?.Equals(newItem.Pidl) _
-                                OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso i.FullPath?.Equals(newItem.FullPath))))
+                                OrElse ((i.Pidl Is Nothing OrElse newItem.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, newItem.FullPath))))
                             If existing Is Nothing Then
-                                Dim c As IComparer = New Helpers.ItemComparer(lp.ItemsGroupByPropertyName, lp.ItemsSortPropertyName, lp.ItemsSortDirection)
+                                Dim c As IComparer = New Helpers.ItemComparer(lp.ItemsGroupByPropertyName, lp.ItemsSortPropertyName, If(lp.ItemsSortDirection, ListSortDirection.Ascending))
                                 lp._items.InsertSorted(newItem, c)
                                 SyncLock lp._previousFullPathsLock
                                     If Not lp._previousFullPaths.Contains(newItem.FullPath) Then
@@ -693,7 +693,7 @@ Public Class Item
     Public Overridable ReadOnly Property Parent As Folder
         Get
             ' if we're not disposed and we're not the desktop...
-            If Not disposedValue AndAlso Not Me.FullPath?.Equals(Shell.Desktop.FullPath) Then
+            If Not disposedValue AndAlso Not Item.ArePathsEqual(Me.FullPath, Shell.Desktop.FullPath) Then
                 If Not _parent Is Nothing Then ' we've still got a parent object
                     SyncLock _parent._shellItemLockParent
                         ' if still alive...
@@ -1666,7 +1666,7 @@ Public Class Item
 
             Select Case e.Event
                 Case SHCNE.UPDATEITEM, SHCNE.UPDATEDIR ' general update
-                    If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower()) Then ' if this is us...
+                    If Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Item.ArePathsEqual(Me.FullPath?.ToLower(), e.Item1?.FullPath.ToLower()) Then ' if this is us...
                         Shell.GlobalThreadPool.Run(
                             Sub()
                                 Me.Refresh() ' refresh
@@ -1689,7 +1689,7 @@ Public Class Item
                 Case SHCNE.RENAMEITEM, SHCNE.RENAMEFOLDER
                     ' all the following conditions are to support file operations in .zip folders
                     If (Not e.Item1?.Pidl Is Nothing AndAlso Not Me.Pidl Is Nothing AndAlso Me.Pidl?.Equals(e.Item1?.Pidl)) _  ' if this is our pidl
-                        OrElse ((e.Item1?.Pidl Is Nothing OrElse Me.Pidl Is Nothing) AndAlso Me.FullPath?.ToLower().Equals(e.Item1?.FullPath.ToLower())) Then
+                        OrElse ((e.Item1?.Pidl Is Nothing OrElse Me.Pidl Is Nothing) AndAlso Item.ArePathsEqual(Me.FullPath, e.Item1?.FullPath)) Then
                         Shell.GlobalThreadPool.Run(
                             Sub()
                                 Dim oldPidl As Pidl = Me.Pidl?.Clone() ' save old pidl
@@ -1718,6 +1718,19 @@ Public Class Item
             End Select
         End If
     End Sub
+
+    Shared Function ArePathsEqual(path1 As String, path2 As String) As Boolean
+        If String.IsNullOrWhiteSpace(path1) OrElse String.IsNullOrWhiteSpace(path2) Then Return False
+
+        Dim fullPath1 As String = If(IO.Directory.Exists(path1) OrElse IO.File.Exists(path1), Path.GetFullPath(path1), path1)
+        Dim fullPath2 As String = If(IO.Directory.Exists(path2) OrElse IO.File.Exists(path2), Path.GetFullPath(path2), path2)
+
+        Return String.Equals(
+            fullPath1.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            fullPath2.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            StringComparison.OrdinalIgnoreCase
+        )
+    End Function
 
     Protected Overridable Sub Settings_PropertyChanged(s As Object, e As PropertyChangedEventArgs)
         Select Case e.PropertyName
@@ -1833,7 +1846,7 @@ Public Class Item
                 End If
                 SyncLock _logicalParent._previousFullPathsLock
                     If Not String.IsNullOrWhiteSpace(_fullPath) _
-                        AndAlso Not _logicalParent._items.ToList().Exists(Function(i) If(i.FullPath?.Equals(_fullPath), False)) _
+                        AndAlso Not _logicalParent._items.ToList().Exists(Function(i) Item.ArePathsEqual(i.FullPath, _fullPath)) _
                         AndAlso _logicalParent._previousFullPaths.Contains(_fullPath & Me.DeDupeKey) Then
                         _logicalParent._previousFullPaths.Remove(_fullPath & Me.DeDupeKey)
                     ElseIf Not _pidl Is Nothing AndAlso Not _logicalParent._items.ToList() _
