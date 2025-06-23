@@ -105,7 +105,7 @@ Namespace Controls
             item._displayName = Nothing
 
             ' get name and extension
-            If item.FullPath.Equals(IO.Path.GetPathRoot(item.FullPath)) Then
+            If Item.ArePathsEqual(item.FullPath, IO.Path.GetPathRoot(item.FullPath)) Then
                 isDrive = True
                 SyncLock item._shellItemLockDisplayName
                     item.ShellItem2.GetDisplayName(SIGDN.PARENTRELATIVEEDITING, originalName)

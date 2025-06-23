@@ -16,7 +16,7 @@ Namespace Controls.Parts
                 Dim item As Item = Item.FromParsingName("shell:::" & guid, Nothing)
                 If Not item Is Nothing AndAlso TypeOf item Is Folder _
                     AndAlso Not Shell.GetSpecialFolders().Where(Function(f) Shell.PrivilegedCloudProviders.Contains(f.Key)) _
-                        .Any(Function(f) item.FullPath.Equals(f.Value?.FullPath)) Then
+                        .Any(Function(f) Item.ArePathsEqual(item.FullPath, f.Value?.FullPath)) Then
                     shellExts.Add(item)
                 End If
             Next

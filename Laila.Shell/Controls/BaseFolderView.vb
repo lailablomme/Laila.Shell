@@ -880,7 +880,7 @@ Namespace Controls
 
         Public Async Function DoRename(fullPath As String) As Task(Of Boolean)
             If Not Me.Folder Is Nothing Then
-                Dim item As Item = (Await Me.Folder.GetItemsAsync()).FirstOrDefault(Function(i) i.FullPath?.Equals(fullPath))
+                Dim item As Item = (Await Me.Folder.GetItemsAsync()).FirstOrDefault(Function(i) Item.ArePathsEqual(i.FullPath, fullPath))
                 If Not item Is Nothing Then
                     Me.SelectedItems = {item}
                     DoRename(item)
@@ -1031,7 +1031,7 @@ Namespace Controls
                             If Not folder.IsRefreshingItems AndAlso Not Me.Folder Is Nothing AndAlso Not TypeOf folder Is SearchFolder Then
                                 Dim folderViewState As FolderViewState = FolderViewState.FromViewName(folder)
                                 folderViewState.SortPropertyName = folder.ItemsSortPropertyName
-                                folderViewState.SortDirection = folder.ItemsSortDirection
+                                folderViewState.SortDirection = If(folder.ItemsSortDirection, ListSortDirection.Ascending)
                                 folderViewState.GroupByPropertyName = folder.ItemsGroupByPropertyName
                                 folderViewState.ActiveView = folder.ActiveView
                                 folderViewState.Persist()

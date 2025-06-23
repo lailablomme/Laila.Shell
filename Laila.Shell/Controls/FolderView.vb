@@ -107,8 +107,8 @@ Namespace Controls
                     If Not selectedItem Is Nothing _
                         AndAlso ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso e.Item2.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
-                                AndAlso (If(e.Item2.FullPath?.Equals(selectedItem.FullPath), False) OrElse If(e.Item2.FullPath?.Equals(selectedItem.FullPath.Split("~")(0)), False)))) Then
-                        If _deletedFullName?.Equals(selectedItem.FullPath) Then
+                                AndAlso (Item.ArePathsEqual(e.Item2.FullPath, selectedItem.FullPath) OrElse Item.ArePathsEqual(e.Item2.FullPath, selectedItem.FullPath.Split("~")(0))))) Then
+                        If Item.ArePathsEqual(_deletedFullName, selectedItem.FullPath) Then
                             _deletedFullName = Nothing
                         End If
                         Shell.GlobalThreadPool.Add(
@@ -123,7 +123,7 @@ Namespace Controls
                                     Dim replacement As Item = f.Items.ToList().LastOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
                                         AndAlso ((Not i.Pidl Is Nothing AndAlso Not e.Item2.Pidl Is Nothing AndAlso If(i.Pidl?.Equals(e.Item2.Pidl), False)) _
                                             OrElse (i.Pidl Is Nothing OrElse e.Item2.Pidl Is Nothing) _
-                                                AndAlso If(i.FullPath?.Equals(e.Item2.FullPath), False)))
+                                                AndAlso Item.ArePathsEqual(i.FullPath, e.Item2.FullPath)))
                                     If Not replacement Is Nothing AndAlso TypeOf replacement Is Folder Then
                                         ' new folder matching the current folder was found -- select it
                                         Debug.WriteLine("replacement found")
@@ -159,7 +159,7 @@ Namespace Controls
                     While Not selectedItem Is Nothing AndAlso Not isDeleted
                         isDeleted = ((Not selectedItem.Pidl Is Nothing AndAlso Not e.Item1.Pidl Is Nothing AndAlso e.Item1.Pidl.Equals(selectedItem.Pidl)) _
                             OrElse ((selectedItem.Pidl Is Nothing OrElse e.Item1.Pidl Is Nothing) _
-                                AndAlso If(e.Item1.FullPath?.Equals(selectedItem.FullPath), False)))
+                                AndAlso Item.ArePathsEqual(e.Item1.FullPath, selectedItem.FullPath)))
                         If Not isDeleted Then selectedItem = selectedItem.LogicalParent
                     End While
                     If isDeleted Then
@@ -191,7 +191,7 @@ Namespace Controls
             If selectedItem Is Nothing Then
                 ' no current folder -- give up
                 Return Nothing
-            ElseIf selectedItem?.Pidl?.Equals(folder.Pidl) OrElse selectedItem.FullPath?.Equals(folder.FullPath) Then
+            ElseIf selectedItem?.Pidl?.Equals(folder.Pidl) OrElse Item.ArePathsEqual(selectedItem.FullPath, folder.FullPath) Then
                 ' we found the current folder -- switch to it's parent
                 Return selectedItem.LogicalParent
             ElseIf Not selectedItem?.LogicalParent Is Nothing Then

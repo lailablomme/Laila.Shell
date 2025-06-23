@@ -141,7 +141,7 @@ Namespace Controls
                     If TypeOf Me.SelectedItem Is Folder Then
                         Dim selectedItem As Folder = Me.SelectedItem
                         If (Not selectedItem.Pidl Is Nothing AndAlso Not selectedItem.Pidl.Equals(Me.Folder?.Pidl)) _
-                            OrElse (selectedItem.Pidl Is Nothing AndAlso Not selectedItem.FullPath?.Equals(Me.Folder.FullPath)) Then
+                            OrElse (selectedItem.Pidl Is Nothing AndAlso Not Item.ArePathsEqual(selectedItem.FullPath, Me.Folder.FullPath)) Then
                             Dim folder As Folder = selectedItem.Clone()
                             Me.Folder = folder
                             AddressBarHistory.Track(folder)

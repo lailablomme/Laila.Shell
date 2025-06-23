@@ -147,7 +147,7 @@ Namespace Controls
                                 item = previewer.SelectedItems(previewer.SelectedItems.Count - 1)
                         End Sub)
 
-                    If Not item Is Nothing AndAlso (previewer._previewItem Is Nothing OrElse Not item?.FullPath?.Equals(previewer._previewItem?.FullPath)) Then
+                    If Not item Is Nothing AndAlso (previewer._previewItem Is Nothing OrElse Not Item.ArePathsEqual(item?.FullPath, previewer._previewItem?.FullPath)) Then
                         hidePreview(previewer)
                         _cancelTokenSource = New CancellationTokenSource()
 
@@ -283,7 +283,7 @@ Namespace Controls
                                 End If
                             End If
                         End If
-                    ElseIf Not item?.FullPath?.Equals(previewer._previewItem?.FullPath) Then
+                    ElseIf Not Item.ArePathsEqual(item?.FullPath, previewer._previewItem?.FullPath) Then
                         hidePreview(previewer)
                     End If
 
