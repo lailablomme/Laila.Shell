@@ -158,7 +158,7 @@ Namespace Themes
                         Case "DoUseLightTheme"
                             setDoUseLightTheme()
                         Case "WindowsAccentColor"
-                            Await Task.Delay(500) ' Delay to ensure settings are fully applied
+                            Await Task.Delay(1000) ' Delay to ensure settings are fully applied
                             setAccentColor()
                     End Select
                 End Sub
@@ -594,7 +594,7 @@ Namespace Themes
             If Me.ItemMouseOverBackgroundColorOverride.HasValue Then
                 Me.ItemMouseOverBackgroundColor = Me.ItemMouseOverBackgroundColorOverride.Value
             Else
-                Me.ItemMouseOverBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#1F26A0DA"), ColorConverter.ConvertFromString("#444444"))
+                Me.ItemMouseOverBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#1F26A0DA"), ColorConverter.ConvertFromString("#1FCCCCCC"))
             End If
             Me.ItemMouseOverBackground = New SolidColorBrush(Me.ItemMouseOverBackgroundColor)
         End Sub
@@ -635,7 +635,7 @@ Namespace Themes
             If Me.ItemMouseOverBorderColorOverride.HasValue Then
                 Me.ItemMouseOverBorderColor = Me.ItemMouseOverBorderColorOverride.Value
             Else
-                Me.ItemMouseOverBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#1F26A0DA"), ColorConverter.ConvertFromString("#444444"))
+                Me.ItemMouseOverBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#1F26A0DA"), ColorConverter.ConvertFromString("#1FCCCCCC"))
             End If
             Me.ItemMouseOverBorder = New SolidColorBrush(Me.ItemMouseOverBorderColor)
         End Sub
@@ -676,7 +676,7 @@ Namespace Themes
             If Me.ItemSelectedInactiveBackgroundColorOverride.HasValue Then
                 Me.ItemSelectedInactiveBackgroundColor = Me.ItemSelectedInactiveBackgroundColorOverride.Value
             Else
-                Me.ItemSelectedInactiveBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#cfcfcf"), ColorConverter.ConvertFromString("#333333"))
+                Me.ItemSelectedInactiveBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#33000000"), ColorConverter.ConvertFromString("#33FFFFFF"))
             End If
             Me.ItemSelectedInactiveBackground = New SolidColorBrush(Me.ItemSelectedInactiveBackgroundColor)
         End Sub
@@ -717,7 +717,7 @@ Namespace Themes
             If Me.ItemSelectedInactiveBorderColorOverride.HasValue Then
                 Me.ItemSelectedInactiveBorderColor = Me.ItemSelectedInactiveBorderColorOverride.Value
             Else
-                Me.ItemSelectedInactiveBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#cfcfcf"), ColorConverter.ConvertFromString("#333333"))
+                Me.ItemSelectedInactiveBorderColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#33000000"), ColorConverter.ConvertFromString("#33FFFFFF"))
             End If
             Me.ItemSelectedInactiveBorder = New SolidColorBrush(Me.ItemSelectedInactiveBorderColor)
         End Sub
@@ -758,7 +758,7 @@ Namespace Themes
             If Me.ItemSelectedActiveBackgroundColorOverride.HasValue Then
                 Me.ItemSelectedActiveBackgroundColor = Me.ItemSelectedActiveBackgroundColorOverride.Value
             Else
-                Me.ItemSelectedActiveBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#3D26A0DA"), ColorConverter.ConvertFromString("#5F5F5F"))
+                Me.ItemSelectedActiveBackgroundColor = If(Me.DoUseLightTheme, ColorConverter.ConvertFromString("#3D26A0DA"), ColorConverter.ConvertFromString("#3DCCCCCC"))
             End If
             Me.ItemSelectedActiveBackground = New SolidColorBrush(Me.ItemSelectedActiveBackgroundColor)
         End Sub

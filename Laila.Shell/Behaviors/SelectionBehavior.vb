@@ -112,22 +112,37 @@ Namespace Behaviors
                 Sub(s As Object, e As MouseEventArgs)
                     Dim actualMousePos As Point = e.GetPosition(_listBox)
 
-                    If Not Me.IsSelecting AndAlso _canStartSelecting _
-                       AndAlso Not (TypeOf _mouseOriginalSourceDown Is TextBlock _
-                                    AndAlso (CType(_mouseOriginalSourceDown, TextBlock).Tag = "PART_DisplayName" _
-                                             OrElse CType(_mouseOriginalSourceDown, TextBlock).Name = "PART_DisplayName")) Then
+                    If Not Me.IsSelecting AndAlso _canStartSelecting Then
+                        Dim canSelect As Boolean = True
+                        If (TypeOf _mouseOriginalSourceDown Is TextBlock _
+                            AndAlso (CType(_mouseOriginalSourceDown, TextBlock).Tag = "PART_DisplayName" _
+                                     OrElse CType(_mouseOriginalSourceDown, TextBlock).Name = "PART_DisplayName")) Then
+                            Dim textBlock As TextBlock = CType(_mouseOriginalSourceDown, TextBlock)
+                            Dim formattedText = New FormattedText(
+                                textBlock.Text,
+                                System.Globalization.CultureInfo.CurrentCulture,
+                                FlowDirection.LeftToRight,
+                                New Typeface(textBlock.FontFamily, textBlock.FontStyle, textBlock.FontWeight, textBlock.FontStretch),
+                                textBlock.FontSize,
+                                Brushes.Black,    ' This brush Is Not used for measuring
+                                VisualTreeHelper.GetDpi(textBlock).PixelsPerDip
+                            )
+                            canSelect = e.GetPosition(textBlock).X > formattedText.Width
+                        End If
                         If Math.Abs(actualMousePos.X - _mouseDownPos.X) > 2 OrElse Math.Abs(actualMousePos.Y - _mouseDownPos.Y) > 2 Then
-                            Me.IsSelecting = True
-                            _listBox.Focus()
-                            _mouseDownPos.X += _sv.HorizontalOffset
-                            _mouseDownPos.Y += _sv.VerticalOffset
-                            _control.CaptureMouse()
-                            _selectionRectangle.Margin = New Thickness(_mouseDownPos.X, _mouseDownPos.Y - _headerHeight, 0, 0)
-                            _selectionRectangle.Width = 0
-                            _selectionRectangle.Height = 0
-
-                            _selectionRectangle.Visibility = Visibility.Visible
-                            e.Handled = True
+                            If canSelect Then
+                                Me.IsSelecting = True
+                                _listBox.Focus()
+                                _mouseDownPos.X += _sv.HorizontalOffset
+                                _mouseDownPos.Y += _sv.VerticalOffset
+                                e.Handled = True
+                                _control.CaptureMouse()
+                                _selectionRectangle.Margin = New Thickness(_mouseDownPos.X, _mouseDownPos.Y - _headerHeight, 0, 0)
+                                _selectionRectangle.Width = 0
+                                _selectionRectangle.Height = 0
+                                _selectionRectangle.Visibility = Visibility.Visible
+                            End If
+                            _canStartSelecting = False
                         End If
                     End If
                 End Sub
