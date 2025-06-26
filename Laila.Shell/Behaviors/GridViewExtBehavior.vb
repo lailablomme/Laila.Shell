@@ -396,6 +396,9 @@ Namespace Behaviors
 
                                     ' write state
                                     writeState()
+
+                                    ' calculate total column width
+                                    calculateTotalColumnWidth()
                                 End If
                             End If
                         End Sub
