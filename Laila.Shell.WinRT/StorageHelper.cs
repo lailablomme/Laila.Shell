@@ -15,6 +15,12 @@ namespace Laila.Shell.WinRT
         {
             try
             {
+                if (!System.IO.Directory.Exists(folderPath))
+                {
+                    Debug.WriteLine("Folder does not exist: " + folderPath);
+                    return null;
+                }
+
                 // get sync root info
                 StorageFolder folder = await StorageFolder.GetFolderFromPathAsync(folderPath);
                 StorageProviderSyncRootInfo syncInfo = StorageProviderSyncRootManager.GetSyncRootInformationForFolder(folder);

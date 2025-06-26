@@ -248,16 +248,14 @@ Namespace Behaviors
                     End Sub)
             AddHandler _listView.Loaded,
                Sub(sender As Object, e As EventArgs)
-                   fixGridViewHeader()
-
-                   If _isLoaded Then Return
-
                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
-                   _isLoaded = True
 
                    If Not Me.ColumnsIn Is Nothing Then
                        loadColumns()
                    End If
+
+                   If _isLoaded Then Return
+                   _isLoaded = True
 
                    ' hook reorder event
                    AddHandler _gridView.Columns.CollectionChanged,
