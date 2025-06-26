@@ -248,6 +248,8 @@ Namespace Behaviors
                     End Sub)
             AddHandler _listView.Loaded,
                Sub(sender As Object, e As EventArgs)
+                   fixGridViewHeader()
+
                    If _isLoaded Then Return
 
                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
@@ -302,22 +304,26 @@ Namespace Behaviors
                End Sub
         End Sub
 
+        Private Sub fixGridViewHeader()
+            Dim hrp As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
+            If TypeOf hrp?.Parent Is ScrollViewer Then
+                _headerRowPresenter = hrp
+                Dim headerRowScrollViewer As ScrollViewer = _headerRowPresenter.Parent
+                Dim headerRowGrid As Grid = New Grid()
+                _marginColumnDefinition = New ColumnDefinition() With {.Width = New GridLength(Me.LeftMargin + MARGIN_LEFT, GridUnitType.Pixel)}
+                headerRowGrid.ColumnDefinitions.Add(_marginColumnDefinition)
+                headerRowGrid.ColumnDefinitions.Add(New ColumnDefinition() With {.Width = New GridLength(1, GridUnitType.Star)})
+                headerRowScrollViewer.Content = New AdornerDecorator() With {.Child = headerRowGrid}
+                _headerRowPresenter.SetValue(Grid.ColumnProperty, 1)
+                headerRowGrid.Children.Add(_headerRowPresenter)
+            End If
+        End Sub
+
         Private Sub loadColumns()
             Debug.WriteLine("loadColumns()")
             If _isLoaded Then
                 ' re-modify the header every time we find it's been switched back
-                Dim hrp As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
-                If TypeOf hrp?.Parent Is ScrollViewer Then
-                    _headerRowPresenter = hrp
-                    Dim headerRowScrollViewer As ScrollViewer = _headerRowPresenter.Parent
-                    Dim headerRowGrid As Grid = New Grid()
-                    _marginColumnDefinition = New ColumnDefinition() With {.Width = New GridLength(Me.LeftMargin + MARGIN_LEFT, GridUnitType.Pixel)}
-                    headerRowGrid.ColumnDefinitions.Add(_marginColumnDefinition)
-                    headerRowGrid.ColumnDefinitions.Add(New ColumnDefinition() With {.Width = New GridLength(1, GridUnitType.Star)})
-                    headerRowScrollViewer.Content = New AdornerDecorator() With {.Child = headerRowGrid}
-                    _headerRowPresenter.SetValue(Grid.ColumnProperty, 1)
-                    headerRowGrid.Children.Add(_headerRowPresenter)
-                End If
+                fixGridViewHeader()
 
                 _activeColumns = New List(Of ActiveColumnStateData)()
 
