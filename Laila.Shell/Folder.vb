@@ -33,7 +33,7 @@ Public Class Folder
     Private _enumerationException As Exception
     Friend _enumerationLock As SemaphoreSlim = New SemaphoreSlim(1, 1)
     Protected _hasSubFolders As Boolean?
-    Protected _hookFolderFullPath As String
+    Friend _hookFolderFullPath As String
     Protected _initializeItemsGroupByPropertyName As String
     Protected _initializeItemsSortDirection As ListSortDirection = -1
     Protected _initializeItemsSortPropertyName As String
@@ -1625,8 +1625,11 @@ Public Class Folder
                     End If
                 Case SHCNE.UPDATEDIR, SHCNE.UPDATEITEM
                     If _isLoaded Then
-                        If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Item.ArePathsEqual(Me.FullPath, e.Item1?.FullPath) OrElse Item.ArePathsEqual(_hookFolderFullPath, e.Item1?.FullPath) _
-                                OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) Then
+                        If (Me.Pidl?.Equals(e.Item1?.Pidl) OrElse Item.ArePathsEqual(Me.FullPath, e.Item1?.FullPath) _
+                            OrElse Item.ArePathsEqual(_hookFolderFullPath, e.Item1?.FullPath) _
+                            OrElse (IO.Directory.Exists(e.Item1?.FullPath) _
+                                AndAlso _items.ToList().Any(Function(i) Item.ArePathsEqual(e.Item1?.FullPath, IO.Path.GetDirectoryName(i?.FullPath)))) _
+                            OrElse (Shell.Desktop.Pidl.Equals(e.Item1.Pidl) AndAlso _wasActivity)) Then
                             If (Me.IsExpanded OrElse Me.IsActiveInFolderView OrElse Me.IsVisibleInAddressBar) _
                                 AndAlso Not TypeOf Me Is SearchFolder AndAlso _doAcceptRefresh Then
                                 _isEnumerated = False

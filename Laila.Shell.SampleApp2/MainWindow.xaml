@@ -7,6 +7,7 @@
                          xmlns:controls="clr-namespace:Laila.Shell.Controls;assembly=Laila.Shell" 
                          xmlns:data="clr-namespace:Laila.Shell.SampleApp.Data"
                          xmlns:shell="clr-namespace:Laila.Shell;assembly=Laila.Shell" 
+                         xmlns:localThemes="clr-namespace:Laila.Shell.SampleApp.Themes" 
                          xmlns:themes="clr-namespace:Laila.Shell.Themes;assembly=Laila.Shell" 
                          xmlns:converters="clr-namespace:Laila.Shell.Converters;assembly=Laila.Shell" 
                          xmlns:metroWindow="clr-namespace:Laila.MetroWindow.Controls;assembly=Laila.MetroWindow"
@@ -17,7 +18,7 @@
                          Title="{Binding SelectedItem.Folder.DisplayName, ElementName=tabControl}"
                          Height="450" Width="800" MinWidth="550">
     <metroWindow:MetroWindow.Resources>
-        <themes:StandardColors x:Key="colors" />
+        <localThemes:CustomColors x:Key="colors" />
         <Style x:Key="metroWindowButtonStyle" TargetType="Button">
             <Setter Property="FontFamily" Value="Marlett" />
             <Setter Property="Width" Value="35" />
@@ -887,7 +888,7 @@
                                 <ColumnDefinition Width="5" />
                                 <ColumnDefinition Width="250" />
                             </Grid.ColumnDefinitions>
-                            <Image Source="Images/dorabg.png" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                            <Image Source="{Binding BackgroundFileName, Source={StaticResource colors}}" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                    Grid.RowSpan="3" Grid.ColumnSpan="5" Opacity="0.15"/>
                             <controls:Menus x:Name="menus" Folder="{Binding Folder}" 
                                     SelectedItems="{Binding SelectedItems}"

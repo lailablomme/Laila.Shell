@@ -249,6 +249,7 @@ Namespace Behaviors
             AddHandler _listView.Loaded,
                Sub(sender As Object, e As EventArgs)
                    _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
+                   fixGridViewHeader()
 
                    If Not Me.ColumnsIn Is Nothing Then
                        loadColumns()
@@ -256,6 +257,16 @@ Namespace Behaviors
 
                    If _isLoaded Then Return
                    _isLoaded = True
+
+                   Dim _lastLayoutUpdated As DateTime = DateTime.Now
+                   AddHandler _listView.LayoutUpdated,
+                       Sub(s As Object, e2 As EventArgs)
+                           If DateTime.Now.Subtract(_lastLayoutUpdated).TotalMilliseconds > 500 Then
+                               _scrollViewer = UIHelper.FindVisualChildren(Of ScrollViewer)(_listView)(0)
+                               fixGridViewHeader()
+                               _lastLayoutUpdated = DateTime.Now
+                           End If
+                       End Sub
 
                    ' hook reorder event
                    AddHandler _gridView.Columns.CollectionChanged,
@@ -303,7 +314,7 @@ Namespace Behaviors
         End Sub
 
         Private Sub fixGridViewHeader()
-            Dim hrp As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView)(0)
+            Dim hrp As GridViewHeaderRowPresenter = UIHelper.FindVisualChildren(Of GridViewHeaderRowPresenter)(_listView,, 1)(0)
             If TypeOf hrp?.Parent Is ScrollViewer Then
                 _headerRowPresenter = hrp
                 Dim headerRowScrollViewer As ScrollViewer = _headerRowPresenter.Parent
@@ -314,15 +325,14 @@ Namespace Behaviors
                 headerRowScrollViewer.Content = New AdornerDecorator() With {.Child = headerRowGrid}
                 _headerRowPresenter.SetValue(Grid.ColumnProperty, 1)
                 headerRowGrid.Children.Add(_headerRowPresenter)
+
+                UpdateSortGlyphs()
             End If
         End Sub
 
         Private Sub loadColumns()
             Debug.WriteLine("loadColumns()")
             If _isLoaded Then
-                ' re-modify the header every time we find it's been switched back
-                fixGridViewHeader()
-
                 _activeColumns = New List(Of ActiveColumnStateData)()
 
                 _gridViewState = readState(Me.ColumnsIn.ViewName)
@@ -496,7 +506,7 @@ Namespace Behaviors
 
         Public Sub UpdateSortGlyphs()
             ' fix sort glyphs
-            If Not _headerRowPresenter Is Nothing AndAlso Me.ColumnsIn.CanSort Then
+            If Not _headerRowPresenter Is Nothing AndAlso Not Me.ColumnsIn Is Nothing AndAlso Me.ColumnsIn.CanSort Then
                 Dim hcs As List(Of GridViewColumnHeader) = UIHelper.FindVisualChildren(Of GridViewColumnHeader)(_headerRowPresenter).ToList()
                 For Each ch In hcs
                     GridViewColumnHeaderGlyphAdorner.Remove(ch, SORT_GLYPH_ID)

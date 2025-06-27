@@ -12,7 +12,7 @@
 	<ApplicationManifest>Laila.Shell.manifest</ApplicationManifest>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<Title>Laila.Shell</Title>
-	<Version>0.0.116-alpha</Version>
+	<Version>0.0.117-alpha</Version>
 	<Authors>laila_blomme</Authors>
 	<Description>A complete set of Windows Shell Controls for .NET6-Windows7 and up.</Description>
 	<Copyright>Copyright © 2024-2025 by Laïla Blomme</Copyright>

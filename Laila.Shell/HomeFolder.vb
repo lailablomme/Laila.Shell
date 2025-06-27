@@ -67,7 +67,10 @@ Public Class HomeFolder
     Public Overrides ReadOnly Property Pidl As Pidl
         Get
             If _pidl Is Nothing Then
-                _pidl = Shell.GetSpecialFolder(SpecialFolders.Recent).Pidl.Clone()
+                _pidl = Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, False, False, False)?.Pidl?.Clone()
+            End If
+            If _pidl Is Nothing Then
+                _pidl = Folder.FromParsingName("shell:::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}", Nothing, False, False, False)?.Pidl?.Clone()
             End If
             Return _pidl
         End Get
@@ -222,8 +225,10 @@ Public Class HomeFolder
             item._hasCustomProperties = True
 
             Dim systemLastAccessedProperty As [Property] = item.PropertiesByKey(New PROPERTYKEY("B725F130-47EF-101A-A5F1-02608C9EEBAC:16"))
-            Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
-            item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
+            If Not systemLastAccessedProperty Is Nothing Then
+                Dim lastAccessedProperty As Home_LastAccessedProperty = New Home_LastAccessedProperty(systemLastAccessedProperty.Value)
+                item._propertiesByKey.Add(Home_LastAccessedProperty.Key.ToString(), lastAccessedProperty)
+            End If
 
             Dim categoryProperty As Home_CategoryProperty = New Home_CategoryProperty(Home_CategoryProperty.Type.QUICK_LAUNCH)
             item._propertiesByKey.Add(Home_CategoryProperty.Key.ToString(), categoryProperty)

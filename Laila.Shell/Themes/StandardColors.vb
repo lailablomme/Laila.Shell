@@ -158,8 +158,10 @@ Namespace Themes
                         Case "DoUseLightTheme"
                             setDoUseLightTheme()
                         Case "WindowsAccentColor"
-                            Await Task.Delay(1000) ' Delay to ensure settings are fully applied
-                            setAccentColor()
+                            For x = 1 To 15 ' This often takes a while before we get the update
+                                Await Task.Delay(500)
+                                setAccentColor()
+                            Next
                     End Select
                 End Sub
             setDoUseLightTheme()
@@ -175,7 +177,7 @@ Namespace Themes
             End Set
         End Property
 
-        Private Sub setDoUseLightTheme()
+        Protected Overridable Sub SetDoUseLightTheme()
             If Me.DoUseLightThemeOverride.HasValue Then
                 Me.DoUseLightTheme = Me.DoUseLightThemeOverride.Value
             Else

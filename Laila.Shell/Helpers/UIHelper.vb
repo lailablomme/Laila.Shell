@@ -93,7 +93,9 @@ Namespace Helpers
             Return parent
         End Function
 
-        Public Shared Iterator Function FindVisualChildren(Of T As DependencyObject)(depObj As DependencyObject, Optional isDeep As Boolean = True) As IEnumerable(Of T)
+        Public Shared Iterator Function FindVisualChildren(Of T As DependencyObject) _
+            (depObj As DependencyObject, Optional isDeep As Boolean = True, Optional maxCount As Integer? = Nothing, Optional currentCount As Integer = 0) _
+            As IEnumerable(Of T)
             For i = 0 To VisualTreeHelper.GetChildrenCount(depObj) - 1
                 Dim isMatch As Boolean = False
                 Dim child As DependencyObject = Nothing
@@ -103,14 +105,21 @@ Namespace Helpers
                 End Try
                 If Not child Is Nothing AndAlso TypeOf child Is T Then
                     isMatch = True
+                    currentCount += 1
                     Yield child
                 End If
 
+                If maxCount.HasValue AndAlso currentCount >= maxCount.Value Then Exit For
+
                 If Not isMatch Or isDeep Then
-                    For Each childOfChild In FindVisualChildren(Of T)(child, isDeep)
+                    For Each childOfChild In FindVisualChildren(Of T)(child, isDeep, maxCount, currentCount)
+                        currentCount += 1
                         Yield childOfChild
+                        If maxCount.HasValue AndAlso currentCount >= maxCount.Value Then Exit For
                     Next
                 End If
+
+                If maxCount.HasValue AndAlso currentCount >= maxCount.Value Then Exit For
             Next
         End Function
 
