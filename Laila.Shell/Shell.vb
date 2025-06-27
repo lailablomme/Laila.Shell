@@ -180,16 +180,6 @@ Public Class Shell
         ' start listening for clipboard changes
         _nextClipboardViewer = Functions.SetClipboardViewer(hwnd)
 
-        _customFolders.Add(New CustomFolder() With {
-            .FullPath = "::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}",
-            .ReplacesFullPath = "::{679f85cb-0220-4080-b29b-5540cc05aab6}",
-            .Type = GetType(HomeFolder)
-        })
-        _customFolders.Add(New CustomFolder() With {
-            .FullPath = "::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}",
-            .ReplacesFullPath = "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}",
-            .Type = GetType(HomeFolder)
-        })
         _customPropertiesByCanonicalName = New Dictionary(Of String, Type) From {
             {System_StorageProviderUIStatusProperty.CanonicalName, GetType(System_StorageProviderUIStatusProperty)},
             {Home_CategoryProperty.CanonicalName, GetType(Home_CategoryProperty)}
@@ -201,6 +191,19 @@ Public Class Shell
 
         Shell.GlobalThreadPool.Add(
             Sub()
+                _customFolders.Add(New CustomFolder() With {
+                    .FullPath = "::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}",
+                    .ReplacesFullPath = "::{679f85cb-0220-4080-b29b-5540cc05aab6}",
+                    .ReplacesPidl = Folder.FromParsingName("shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}", Nothing, False, False, False)?.Pidl?.Clone(),
+                    .Type = GetType(HomeFolder)
+                })
+                _customFolders.Add(New CustomFolder() With {
+                    .FullPath = "::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}",
+                    .ReplacesFullPath = "::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}",
+                    .ReplacesPidl = Folder.FromParsingName("shell:::{F874310E-B6B7-47DC-BC84-B9E6B38F5903}", Nothing, False, False, False)?.Pidl?.Clone(),
+                    .Type = GetType(HomeFolder)
+                })
+
                 ' add special folders
                 Shell.AddSpecialFolder(SpecialFolders.Desktop, Folder.FromDesktop())
                 Shell.AddSpecialFolder(SpecialFolders.Home, Folder.FromParsingName("shell:::{b8b10b36-5c36-4f45-ae9a-79f0297d64e1}", Nothing, False))
@@ -924,5 +927,6 @@ Public Class Shell
         Public Property FullPath As String
         Public Property ReplacesFullPath As String
         Public Property Type As Type
+        Public Property ReplacesPidl As Pidl
     End Class
 End Class

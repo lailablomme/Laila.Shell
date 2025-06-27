@@ -100,8 +100,8 @@ Public Class Item
     ''' <param name="doKeepAlive">Set to 'true' to avoid this item getting disposed after 10 seconds if it isn't visible in the tree, folder view or address bar.</param>
     ''' <param name="doHookUpdates">Set to 'true' if you want this item to listen for update notifications while it's visible in the tree, folder view or address bar.</param>
     ''' <returns>A new Folder/Item/Link object</returns>
-    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder,
-                                           Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True) As Item
+    Public Shared Function FromParsingName(parsingName As String, logicalParent As Folder, Optional doKeepAlive As Boolean = False,
+                                           Optional doHookUpdates As Boolean = True, Optional canReplaceWithCustomFolder As Boolean = True) As Item
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId() ' select a random thread we're going to live on
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
@@ -109,7 +109,7 @@ Public Class Item
                 Dim customFolderType As Type = Shell.CustomFolders _
                     .FirstOrDefault(Function(f) f.FullPath.ToLower().Equals(parsingName.ToLower()) _
                                          OrElse ("shell:" & f.FullPath.ToLower()).Equals(parsingName.ToLower()))?.Type
-                If customFolderType Is Nothing Then
+                If customFolderType Is Nothing OrElse Not canReplaceWithCustomFolder Then
                     ' no custom implementation
                     parsingName = Environment.ExpandEnvironmentVariables(parsingName) ' expand environment variables
                     Dim shellItem2 As IShellItem2 = GetIShellItem2FromParsingName(parsingName) 'get the IShellItem2
@@ -144,8 +144,9 @@ Public Class Item
     ''' <param name="doHookUpdates">Set to 'true' if you want this item to listen for update notifications while it's visible in the tree, folder view or address bar.</param>
     ''' <param name="preservePidl">Set to 'true' to keep the given pidl as the value for the 'Pidl' property instead of disposing it and asking the system.</param>
     ''' <returns>A new Folder/Item/Link object</returns>
-    Public Shared Function FromPidl(pidl As Pidl, logicalParent As Folder,
-                                    Optional doKeepAlive As Boolean = False, Optional doHookUpdates As Boolean = True, Optional preservePidl As Boolean = False) As Item
+    Public Shared Function FromPidl(pidl As Pidl, logicalParent As Folder, Optional doKeepAlive As Boolean = False,
+                                    Optional doHookUpdates As Boolean = True, Optional preservePidl As Boolean = False,
+                                    Optional canReplaceWithCustomFolder As Boolean = True) As Item
         ' check input
         If pidl Is Nothing OrElse pidl.AbsolutePIDL.Equals(IntPtr.Zero) Then
             Return Nothing
@@ -153,23 +154,30 @@ Public Class Item
         Dim threadId As Integer = Shell.GlobalThreadPool.GetNextFreeThreadId() ' get a random thread we're going to live on
         Return Shell.GlobalThreadPool.Run(
             Function() As Item
-                Dim pidlClone As Pidl = pidl.Clone() ' clone the input pidl so we don't interfere with the original
-                Dim shellItem2 As IShellItem2
-                shellItem2 = GetIShellItem2FromPidl(pidlClone.AbsolutePIDL, logicalParent?.ShellFolder) ' get the IShellItem2
-                If Not preservePidl Then pidlClone.Dispose() ' dispose the clone if we're not going to keep it
-                If Not shellItem2 Is Nothing Then
-                    ' read the attributes and decide what type of item we're dealing with
-                    Dim attr As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
-                    shellItem2.GetAttributes(attr, attr)
-                    If attr.HasFlag(SFGAO.FOLDER) Then
-                        Return New Folder(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
-                    ElseIf attr.HasFlag(SFGAO.LINK) Then
-                        Return New Link(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                Dim customFolderType As Type = Shell.CustomFolders _
+                    .FirstOrDefault(Function(f) Not f.ReplacesPidl Is Nothing AndAlso f.ReplacesPidl?.Equals(pidl))?.Type
+                If customFolderType Is Nothing OrElse Not canReplaceWithCustomFolder Then
+                    Dim pidlClone As Pidl = pidl.Clone() ' clone the input pidl so we don't interfere with the original
+                    Dim shellItem2 As IShellItem2
+                    shellItem2 = GetIShellItem2FromPidl(pidlClone.AbsolutePIDL, logicalParent?.ShellFolder) ' get the IShellItem2
+                    If Not preservePidl Then pidlClone.Dispose() ' dispose the clone if we're not going to keep it
+                    If Not shellItem2 Is Nothing Then
+                        ' read the attributes and decide what type of item we're dealing with
+                        Dim attr As SFGAO = SFGAO.FOLDER Or SFGAO.LINK
+                        shellItem2.GetAttributes(attr, attr)
+                        If attr.HasFlag(SFGAO.FOLDER) Then
+                            Return New Folder(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                        ElseIf attr.HasFlag(SFGAO.LINK) Then
+                            Return New Link(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                        Else
+                            Return New Item(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                        End If
                     Else
-                        Return New Item(shellItem2, logicalParent, doKeepAlive, doHookUpdates, threadId, If(preservePidl, pidlClone, Nothing))
+                        Return Nothing
                     End If
                 Else
-                    Return Nothing
+                    ' return custom folder implementation (like for example the 'Home' folder)
+                    Return CType(Activator.CreateInstance(customFolderType, {logicalParent, doKeepAlive}), Folder)
                 End If
             End Function,, threadId)
     End Function

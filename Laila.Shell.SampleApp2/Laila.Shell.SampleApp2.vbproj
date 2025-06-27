@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <None Remove="Images\dorabg.png" />
+    <None Remove="Images\dorabg_light.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,6 +58,7 @@
 
   <ItemGroup>
     <Resource Include="Images\dorabg.png" />
+    <Resource Include="Images\dorabg_light.png" />
   </ItemGroup>
 
   <ItemGroup>
