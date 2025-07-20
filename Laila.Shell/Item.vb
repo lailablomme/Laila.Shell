@@ -613,6 +613,7 @@ Public Class Item
             If Not Crc32.Compute(ImageHelper.GetPixelBytes(Me.Image(_lastImageSize))) = crc Then
                 Me.NotifyOfPropertyChange("ImageAsync")
                 Me.NotifyOfPropertyChange("HasThumbnailAsync")
+                Me.NotifyOfPropertyChange("AssociatedApplicationIconAsync")
             End If
             If Not Me.IsImage.Equals(oldIsImage) Then
                 Me.NotifyOfPropertyChange("IsImage")
