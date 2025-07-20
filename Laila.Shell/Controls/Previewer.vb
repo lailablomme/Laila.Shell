@@ -453,7 +453,7 @@ Namespace Controls
 
         Protected Overridable Sub OnItemRefreshed(sender As Object, e As EventArgs)
             If Not EqualityComparer(Of DateTime?).Default.Equals(_modifiedOn,
-                CType(_previewItem?.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14").Value, DateTime?)) Then
+                CType(_previewItem?.PropertiesByKeyAsText("b725f130-47ef-101a-a5f1-02608c9eebac:14")?.Value, DateTime?)) Then
                 hidePreview(Me)
                 showPreview(Me)
             End If
