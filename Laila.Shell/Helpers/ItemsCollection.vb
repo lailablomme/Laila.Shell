@@ -38,16 +38,16 @@ Namespace Helpers
         End Sub
 
         Public Sub InsertSorted(newItem As T, comparer As IComparer)
-            ' Find the correct index using the comparer
-            Dim index As Integer = FindInsertionIndex(newItem, comparer)
+            SyncLock Me.Lock
+                ' Find the correct index using the comparer
+                Dim index As Integer = FindInsertionIndex(newItem, comparer)
 
-            ' Insert the item at the correct position
-            If index >= 0 AndAlso index <= Me.Items.Count Then
-                SyncLock Me.Lock
+                ' Insert the item at the correct position
+                If index >= 0 AndAlso index <= Me.Items.Count Then
                     Me.Items.Insert(index, newItem)
-                End SyncLock
-                Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newItem, index))
-            End If
+                    Me.OnCollectionChanged(New NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, newItem, index))
+                End If
+            End SyncLock
         End Sub
 
         ' Find the correct index for insertion using the IComparer

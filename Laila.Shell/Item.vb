@@ -538,6 +538,17 @@ Public Class Item
         End If
 
         If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
+            If Not _logicalParent Is Nothing Then
+                Dim existing As Item = _logicalParent.Items.ToList().FirstOrDefault(Function(i) Not i Is Nothing AndAlso Not i.disposedValue _
+                    AndAlso (Not i.Attributes.HasFlag(SFGAO.FILESYSTEM) AndAlso Not i.Pidl Is Nothing AndAlso Not Me.Pidl Is Nothing AndAlso i.Pidl?.Equals(Me.Pidl) _
+                        OrElse ((i.Attributes.HasFlag(SFGAO.FILESYSTEM) OrElse i.Pidl Is Nothing OrElse Me.Pidl Is Nothing) AndAlso Item.ArePathsEqual(i.FullPath, Me.FullPath))))
+                If Not existing Is Nothing AndAlso Not existing.Equals(Me) Then
+                    Me.Dispose()
+                End If
+            End If
+        End If
+
+        If Not disposedValue AndAlso Not _shellItem2 Is Nothing Then
             If Not Item.ArePathsEqual(oldFullPath, Me.FullPath) Then Shell.UpdateFileSystemCache(oldFullPath, Me)
             If Not _logicalParent Is Nothing AndAlso Not oldAttr = 0 _
                 AndAlso (oldAttr.HasFlag(SFGAO.FOLDER) <> attr.HasFlag(SFGAO.FOLDER) _
